@@ -1,0 +1,54 @@
+{
+  "name": "Bhaktisetu",
+  "short_name": "Bhaktisetu",
+  "description": "India's Devotional Super App — Live Darshan, Pujas, Spiritual Content",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FEFCF9",
+  "theme_color": "#E16318",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "entertainment", "shopping"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Live Darshan",
+      "short_name": "Darshan",
+      "url": "/darshan",
+      "description": "Watch live temple darshan streams"
+    },
+    {
+      "name": "Book a Puja",
+      "short_name": "Pujas",
+      "url": "/pujas",
+      "description": "Book online pujas at famous temples"
+    },
+    {
+      "name": "Panchang",
+      "short_name": "Panchang",
+      "url": "/panchang",
+      "description": "Daily Hindu calendar and auspicious timings"
+    },
+    {
+      "name": "Sacred Store",
+      "short_name": "Store",
+      "url": "/store",
+      "description": "Shop puja items and spiritual products"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Platform, StyleSheet } from 'react-native';
+import { colors } from '../../lib/theme';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+interface TabIconProps {
+  name: IoniconsName;
+  color: string;
+  size: number;
+}
+
+function TabIcon({ name, color, size }: TabIconProps) {
+  return <Ionicons name={name} size={size} color={color} />;
+}
+
+export default function TabLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.saffron[600],
+        tabBarInactiveTintColor: colors.stone[400],
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="home" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="temples"
+        options={{
+          title: 'Temples',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="location" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="darshan"
+        options={{
+          title: 'Darshan',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="videocam" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="content"
+        options={{
+          title: 'Content',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="musical-notes" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="person" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: colors.white,
+    borderTopColor: colors.stone[200],
+    borderTopWidth: 1,
+    height: Platform.OS === 'ios' ? 88 : 64,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+    elevation: 8,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  tabBarLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  tabBarItem: {
+    paddingVertical: 2,
+  },
+});

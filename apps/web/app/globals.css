@@ -1,0 +1,293 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Warm saffron-tinted neutrals (OKLCH) ────────────────────────── */
+  /* Hue 40-70° with slight chroma for warmth without looking colored  */
+  --color-surface-50: oklch(0.985 0.005 70);   /* warm off-white */
+  --color-surface-100: oklch(0.970 0.008 70);
+  --color-surface-200: oklch(0.935 0.012 65);
+  --color-surface-300: oklch(0.880 0.015 60);
+  --color-surface-400: oklch(0.720 0.018 55);
+  --color-surface-500: oklch(0.580 0.015 50);
+  --color-surface-550: oklch(0.480 0.012 50);
+  --color-surface-600: oklch(0.440 0.012 48);
+  --color-surface-700: oklch(0.350 0.010 45);
+  --color-surface-800: oklch(0.250 0.008 42);
+  --color-surface-900: oklch(0.180 0.008 40);
+
+  /* ── Saffron primary ────────────────────────────────────────────── */
+  --color-saffron-50: #FFF8F0;
+  --color-saffron-100: #FEEDD8;
+  --color-saffron-200: #FDD8AF;
+  --color-saffron-300: #FBBD7D;
+  --color-saffron-400: #F99A48;
+  --color-saffron-500: oklch(0.680 0.180 55);
+  --color-saffron-600: oklch(0.620 0.185 50);
+  --color-saffron-700: #BA4A15;
+  --color-saffron-800: #943B19;
+  --color-saffron-900: #783318;
+
+  /* ── Temple gold ────────────────────────────────────────────────── */
+  --color-temple-gold: #D4A438;
+  --color-temple-gold-light: #F0D060;
+  --color-temple-gold-dark: #B8892A;
+  --color-gold-400: #E5B94E;
+  --color-gold-500: #D4A438;
+  --color-gold-600: #B8892A;
+
+  /* ── Supporting colors ──────────────────────────────────────────── */
+  --color-sacred-red: #C53030;
+  --color-sacred-red-light: #fca5a5;
+  --color-vermillion-500: #C53030;
+  --color-vermillion-600: #9B2C2C;
+  --color-lotus-pink: #ec4899;
+  --color-lotus-pink-light: #f9a8d4;
+  --color-lotus-pink-dark: #be185d;
+  --color-tulsi-green: #16a34a;
+  --color-tulsi-green-light: #86efac;
+  --color-tulsi-green-dark: #166534;
+  --color-ganga-blue: #0ea5e9;
+  --color-ganga-blue-light: #7dd3fc;
+  --color-ganga-blue-dark: #0369a1;
+  --color-sandal-cream: #fef3c7;
+  --color-sandal-warm: #fde68a;
+  --color-rudraksha-brown: #78350f;
+  --color-rudraksha-light: #a16207;
+
+  /* ── Semantic ───────────────────────────────────────────────────── */
+  --color-success: #16A34A;
+  --color-error: #DC2626;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-family-sans: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Noto Sans', system-ui, sans-serif;
+
+  /* ── Type scale — Major Third (1.25) ratio ──────────────────────── */
+  /* Use these instead of arbitrary text-[13px] etc.                   */
+  --text-xs: 0.75rem;     /* 12px — labels, badges */
+  --text-sm: 0.875rem;    /* 14px — secondary text, metadata */
+  --text-base: 1rem;      /* 16px — body text */
+  --text-lg: 1.125rem;    /* 18px — lead paragraphs */
+  --text-xl: 1.25rem;     /* 20px — card titles */
+  --text-2xl: 1.5rem;     /* 24px — section headings */
+  --text-3xl: 1.875rem;   /* 30px — page headings */
+  --text-4xl: 2.25rem;    /* 36px — hero headings */
+  --text-5xl: 3rem;       /* 48px — hero display (mobile: 2.25rem) */
+
+  /* Line-height pairings */
+  --leading-tight: 1.15;    /* headings (xl+) */
+  --leading-relaxed: 1.6;   /* body (base-lg) */
+  --leading-normal: 1.5;    /* small text */
+
+  /* Letter-spacing */
+  --tracking-tight: -0.02em;  /* headings */
+  --tracking-normal: 0;       /* body */
+  --tracking-wide: 0.05em;    /* all-caps labels */
+
+  /* ── Radius (tight, not chunky) ─────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+}
+
+/* ── Spacing scale (reference) ──────────────────────────────────────── */
+/* 4px base unit: 1=4px, 2=8px, 3=12px, 4=16px, 5=20px, 6=24px,      */
+/* 8=32px, 10=40px, 12=48px, 16=64px, 20=80px, 24=96px                */
+/* Use Tailwind spacing classes (p-4, gap-6 etc.) mapped to this scale */
+
+/* ── Global resets ──────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--color-surface-50);
+  color: var(--color-surface-800);
+  line-height: var(--leading-relaxed);
+}
+
+::selection {
+  background-color: var(--color-saffron-200);
+  color: var(--color-saffron-900);
+}
+
+/* Anchor links clear the fixed nav */
+h1, h2, h3, h4, h5, h6 {
+  scroll-margin-top: 4rem;
+}
+
+/* Placeholder styling */
+::placeholder {
+  color: var(--color-surface-400);
+  opacity: 1;
+}
+
+/* Smooth image loading */
+img {
+  transition: opacity 0.3s ease;
+}
+
+/* Reduced motion: disable animations for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Utility classes ────────────────────────────────────────────────── */
+
+/* Gradient backgrounds */
+.gradient-saffron {
+  background: linear-gradient(135deg, var(--color-saffron-500), var(--color-saffron-600));
+}
+.gradient-divine {
+  background: linear-gradient(135deg, var(--color-saffron-600), var(--color-lotus-pink), var(--color-temple-gold));
+}
+.text-gradient-saffron {
+  background: linear-gradient(135deg, var(--color-saffron-600), var(--color-temple-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover — the ONLY hover pattern. Subtle lift + shadow. */
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -4px rgba(0,0,0,0.08);
+}
+
+/* Button press */
+.btn-press:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Fade in on scroll */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeInUp 0.5s ease both;
+}
+.animate-fade-in-delay-1 { animation-delay: 0.08s; }
+.animate-fade-in-delay-2 { animation-delay: 0.16s; }
+.animate-fade-in-delay-3 { animation-delay: 0.24s; }
+
+/* Float animation (for decorative elements only) */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Hide scrollbar on horizontal scroll containers */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Micro-interactions ────────────────────────────────────────────── */
+
+/* Button hover — subtle lift + soft shadow */
+.btn-hover {
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.btn-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1);
+}
+
+/* Card enter animation — staggered on scroll */
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-enter {
+  animation: cardEnter 0.4s ease both;
+}
+
+/* Link underline — grows from center on hover */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: all 0.25s ease;
+}
+.link-underline:hover::after {
+  left: 0;
+  width: 100%;
+}
+
+/* Focus ring — animated outline offset */
+:focus-visible {
+  outline: 2px solid var(--color-saffron-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+  transition: outline-offset 0.15s ease;
+}
+
+/* Skeleton loading pulse */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-surface-200) 25%, var(--color-surface-100) 50%, var(--color-surface-200) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Print styles ──────────────────────────────────────────────────── */
+@media print {
+  header, footer, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+  a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.8em;
+    color: #666;
+  }
+  .gradient-saffron,
+  .gradient-divine,
+  .text-gradient-saffron {
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+    color: black !important;
+  }
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

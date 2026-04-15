@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Bridge arc (setu) -->
+  <path
+    d="M6 36 C6 36 12 14 24 14 C36 14 42 36 42 36"
+    stroke="#D4A438"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- Bridge pillars -->
+  <line x1="10" y1="30" x2="10" y2="38" stroke="#D4A438" stroke-width="2" stroke-linecap="round"/>
+  <line x1="38" y1="30" x2="38" y2="38" stroke="#D4A438" stroke-width="2" stroke-linecap="round"/>
+  <!-- Bridge deck -->
+  <line x1="6" y1="36" x2="42" y2="36" stroke="#D4A438" stroke-width="2" stroke-linecap="round"/>
+  <!-- Diya base at peak -->
+  <ellipse cx="24" cy="14" rx="4" ry="1.5" fill="#D4A438"/>
+  <!-- Diya cup -->
+  <path
+    d="M21 14 C21 12 22 10.5 24 10.5 C26 10.5 27 12 27 14"
+    fill="#D4A438"
+  />
+  <!-- Flame outer glow -->
+  <path
+    d="M24 3 C24 3 27.5 6.5 27.5 8.5 C27.5 10.5 26 11 24 11 C22 11 20.5 10.5 20.5 8.5 C20.5 6.5 24 3 24 3Z"
+    fill="#E16318"
+    opacity="0.3"
+  />
+  <!-- Flame -->
+  <path
+    d="M24 4.5 C24 4.5 26.5 7 26.5 8.5 C26.5 10 25.5 10.5 24 10.5 C22.5 10.5 21.5 10 21.5 8.5 C21.5 7 24 4.5 24 4.5Z"
+    fill="#E16318"
+  />
+  <!-- Flame inner highlight -->
+  <path
+    d="M24 6.5 C24 6.5 25.2 7.8 25.2 8.5 C25.2 9.2 24.7 9.5 24 9.5 C23.3 9.5 22.8 9.2 22.8 8.5 C22.8 7.8 24 6.5 24 6.5Z"
+    fill="#F5A623"
+  />
+</svg>

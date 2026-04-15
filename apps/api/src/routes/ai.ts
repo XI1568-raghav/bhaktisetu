@@ -1,0 +1,306 @@
+import { FastifyInstance } from 'fastify';
+import { authenticateUser } from '../middlewares/auth.js';
+import { aiService } from '../services/ai.service.js';
+
+export async function aiRoutes(server: FastifyInstance) {
+  // ─── POST /chat — Streaming SSE chat response ──────────────────────────────
+
+  server.post('/chat', {
+    preHandler: [authenticateUser],
+  }, async (request, reply) => {
+    const { message, conversationId, language } = request.body as {
+      message?: string;
+      conversationId?: string;
+      language?: string;
+    };
+
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return reply.status(400).send({ error: 'Message is required' });
+    }
+
+    if (message.length > 2000) {
+      return reply.status(400).send({ error: 'Message too long. Maximum 2000 characters.' });
+    }
+
+    const userId = request.currentUser!.id;
+
+    try {
+      const { stream, conversationId: convId, citations, saveConversation } = await aiService.chat({
+        userId,
+        conversationId,
+        message: message.trim(),
+        language,
+      });
+
+      // SSE: write headers directly to the raw Node response
+      // reply.header() doesn't flush for SSE since reply.send() is never called
+      reply.hijack();
+      const raw = reply.raw;
+      raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': request.headers.origin || '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'X-Conversation-Id': convId,
+      });
+
+      // Track client disconnect
+      let clientDisconnected = false;
+      request.raw.on('close', () => {
+        clientDisconnected = true;
+      });
+
+      // Send initial metadata event
+      raw.write(`data: ${JSON.stringify({ type: 'metadata', conversationId: convId, citations })}\n\n`);
+
+      // Stream the response
+      let fullResponse = '';
+
+      try {
+        for await (const event of stream) {
+          if (clientDisconnected) break;
+
+          if (event.type === 'content_block_delta' && event.delta && 'text' in event.delta) {
+            const text = event.delta.text;
+            fullResponse += text;
+            raw.write(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`);
+          }
+        }
+      } catch (streamError) {
+        server.log.error(streamError, 'Stream error');
+        if (!clientDisconnected) {
+          raw.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream interrupted' })}\n\n`);
+        }
+      }
+
+      // Send completion event
+      if (!clientDisconnected) {
+        raw.write(`data: ${JSON.stringify({ type: 'done', fullContent: fullResponse })}\n\n`);
+        raw.end();
+      }
+
+      // Save conversation in background
+      saveConversation(fullResponse).catch((err) => {
+        server.log.error(err, 'Failed to save conversation');
+      });
+
+      // Return reply to prevent Fastify from auto-sending a response
+      return reply;
+    } catch (error: any) {
+      server.log.error(error, 'Chat error');
+
+      if (error.message === 'Conversation not found') {
+        return reply.status(404).send({ error: 'Conversation not found' });
+      }
+
+      return reply.status(500).send({ error: 'Failed to process chat message' });
+    }
+  });
+
+  // ─── GET /conversations — List user conversations ───────────────────────────
+
+  server.get('/conversations', {
+    preHandler: [authenticateUser],
+  }, async (request, reply) => {
+    const { page, limit } = request.query as { page?: string; limit?: string };
+    const userId = request.currentUser!.id;
+
+    try {
+      const result = await aiService.listConversations(
+        userId,
+        Number(page) || 1,
+        Math.min(Number(limit) || 20, 50),
+      );
+
+      return result;
+    } catch (error) {
+      server.log.error(error, 'Failed to list conversations');
+      return reply.status(500).send({ error: 'Failed to list conversations' });
+    }
+  });
+
+  // ─── GET /conversations/:id — Get a conversation ────────────────────────────
+
+  server.get('/conversations/:id', {
+    preHandler: [authenticateUser],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.currentUser!.id;
+
+    try {
+      const conversation = await aiService.getConversation(id, userId);
+
+      if (!conversation) {
+        return reply.status(404).send({ error: 'Conversation not found' });
+      }
+
+      return { conversation };
+    } catch (error) {
+      server.log.error(error, 'Failed to get conversation');
+      return reply.status(500).send({ error: 'Failed to get conversation' });
+    }
+  });
+
+  // ─── DELETE /conversations/:id — Delete a conversation ──────────────────────
+
+  server.delete('/conversations/:id', {
+    preHandler: [authenticateUser],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.currentUser!.id;
+
+    try {
+      const deleted = await aiService.deleteConversation(id, userId);
+
+      if (!deleted) {
+        return reply.status(404).send({ error: 'Conversation not found' });
+      }
+
+      return { success: true, message: 'Conversation deleted' };
+    } catch (error) {
+      server.log.error(error, 'Failed to delete conversation');
+      return reply.status(500).send({ error: 'Failed to delete conversation' });
+    }
+  });
+
+  // ─── POST /recommend-puja — Puja recommendations ───────────────────────────
+
+  server.post('/recommend-puja', async (request, reply) => {
+    const { lifeEvent, rashi, nakshatra, language } = request.body as {
+      lifeEvent?: string;
+      rashi?: string;
+      nakshatra?: string;
+      language?: string;
+    };
+
+    try {
+      const userId = request.currentUser?.id;
+
+      const result = await aiService.recommendPujas({
+        userId,
+        lifeEvent,
+        rashi,
+        nakshatra,
+        language,
+      });
+
+      return result;
+    } catch (error) {
+      server.log.error(error, 'Failed to recommend pujas');
+      return reply.status(500).send({ error: 'Failed to generate puja recommendations' });
+    }
+  });
+
+  // ─── POST /generate-sankalp — Sankalp generation ───────────────────────────
+
+  server.post('/generate-sankalp', {
+    preHandler: [authenticateUser],
+  }, async (request, reply) => {
+    const {
+      devoteeName,
+      gotra,
+      pujaName,
+      deity,
+      date,
+      city,
+      purpose,
+      additionalNames,
+    } = request.body as {
+      devoteeName?: string;
+      gotra?: string;
+      pujaName?: string;
+      deity?: string;
+      date?: string;
+      city?: string;
+      purpose?: string;
+      additionalNames?: string[];
+    };
+
+    if (!devoteeName || !pujaName || !deity) {
+      return reply.status(400).send({
+        error: 'devoteeName, pujaName, and deity are required',
+      });
+    }
+
+    try {
+      const result = await aiService.generateSankalp({
+        devoteeName,
+        gotra,
+        pujaName,
+        deity,
+        date,
+        city,
+        purpose,
+        additionalNames,
+      });
+
+      return result;
+    } catch (error) {
+      server.log.error(error, 'Failed to generate sankalp');
+      return reply.status(500).send({ error: 'Failed to generate sankalp' });
+    }
+  });
+
+  // ─── GET /personalize-content — Personalized content ───────────────────────
+
+  server.get('/personalize-content', async (request, reply) => {
+    const { timeOfDay, date } = request.query as {
+      timeOfDay?: string;
+      date?: string;
+    };
+
+    try {
+      const userId = request.currentUser?.id;
+
+      const result = await aiService.personalizeContent({
+        userId,
+        timeOfDay,
+        currentDate: date,
+      });
+
+      return result;
+    } catch (error) {
+      server.log.error(error, 'Failed to personalize content');
+      return reply.status(500).send({ error: 'Failed to personalize content' });
+    }
+  });
+
+  // ─── POST /translate — Translation ─────────────────────────────────────────
+
+  server.post('/translate', async (request, reply) => {
+    const { text, sourceLanguage, targetLanguage } = request.body as {
+      text?: string;
+      sourceLanguage?: string;
+      targetLanguage?: string;
+    };
+
+    if (!text || !sourceLanguage || !targetLanguage) {
+      return reply.status(400).send({
+        error: 'text, sourceLanguage, and targetLanguage are required',
+      });
+    }
+
+    if (text.length > 5000) {
+      return reply.status(400).send({ error: 'Text too long. Maximum 5000 characters.' });
+    }
+
+    try {
+      const translatedText = await aiService.translate({
+        text,
+        sourceLanguage,
+        targetLanguage,
+      });
+
+      return {
+        translatedText,
+        sourceLanguage,
+        targetLanguage,
+      };
+    } catch (error) {
+      server.log.error(error, 'Failed to translate');
+      return reply.status(500).send({ error: 'Failed to translate text' });
+    }
+  });
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "@bhaktisetu/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["dom", "ES2022"]
+  },
+  "include": ["src/**/*.ts"]
+}

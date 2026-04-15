@@ -1,0 +1,71 @@
+export const colors = {
+  saffron: {
+    50: '#FFF7ED',
+    100: '#FFEDD5',
+    200: '#FED7AA',
+    300: '#FDBA74',
+    400: '#FB923C',
+    500: '#F97316',
+    600: '#EA580C',
+    700: '#C2410C',
+    800: '#9A3412',
+    900: '#7C2D12',
+  },
+  amber: {
+    400: '#FBBF24',
+    500: '#F59E0B',
+    600: '#D97706',
+  },
+  stone: {
+    50: '#FAFAF9',
+    100: '#F5F5F4',
+    200: '#E7E5E4',
+    300: '#D6D3D1',
+    400: '#A8A29E',
+    500: '#78716C',
+    600: '#57534E',
+    700: '#44403C',
+    800: '#292524',
+    900: '#1C1917',
+  },
+  red: {
+    500: '#EF4444',
+    600: '#DC2626',
+  },
+  green: {
+    500: '#22C55E',
+    600: '#16A34A',
+  },
+  white: '#FFFFFF',
+  black: '#000000',
+  success: '#16A34A',
+  error: '#DC2626',
+} as const;
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  '2xl': 48,
+} as const;
+
+export const fontSize = {
+  xs: 10,
+  sm: 12,
+  base: 14,
+  lg: 16,
+  xl: 18,
+  '2xl': 22,
+  '3xl': 28,
+  '4xl': 34,
+} as const;
+
+export const borderRadius = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 20,
+  full: 9999,
+} as const;

@@ -1,0 +1,530 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ─────────────────────────────────────────────────────────────────────
+
+enum Language {
+  en
+  hi
+  ta
+  te
+  bn
+  mr
+  gu
+  kn
+  ml
+  pa
+}
+
+enum SubscriptionTier {
+  free
+  bhakti_pass
+  premium
+}
+
+enum Tradition {
+  shaiva
+  vaishnava
+  shakta
+  smarta
+  jain
+  sikh
+  buddhist
+  other
+}
+
+enum TempleStatus {
+  active
+  inactive
+  pending_review
+}
+
+enum PriestVerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PriestStatus {
+  active
+  inactive
+  suspended
+}
+
+enum PujaCategory {
+  daily
+  special_occasion
+  planetary
+  prosperity
+  health
+  memorial
+  festival
+}
+
+enum BookingStatus {
+  pending_payment
+  confirmed
+  priest_assigned
+  in_progress
+  completed
+  video_uploaded
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentGateway {
+  razorpay
+  stripe
+  phonepe
+}
+
+enum PaymentStatus {
+  initiated
+  authorized
+  captured
+  failed
+  refunded
+  partially_refunded
+}
+
+enum PayoutStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum ContentType {
+  aarti
+  chalisa
+  mantra
+  bhajan
+  story
+  article
+  shloka
+  video_reel
+}
+
+enum ContentStatus {
+  draft
+  published
+  archived
+}
+
+enum StreamStatus {
+  offline
+  live
+  scheduled
+}
+
+enum SubscriptionPlan {
+  bhakti_pass_monthly
+  bhakti_pass_yearly
+  nri_premium_monthly
+  nri_premium_yearly
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  expired
+  past_due
+}
+
+// ─── MODELS ────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String           @id @default(uuid()) @db.Uuid
+  phone             String           @unique
+  email             String?          @unique
+  fullName          String           @map("full_name")
+  avatarUrl         String?          @map("avatar_url")
+  preferredLanguage Language         @default(hi) @map("preferred_language")
+  locationCity      String?          @map("location_city")
+  locationState     String?          @map("location_state")
+  isNri             Boolean          @default(false) @map("is_nri")
+  nriCountry        String?          @map("nri_country")
+  gotra             String?
+  nakshatra         String?
+  rashi             String?
+  subscriptionTier  SubscriptionTier @default(free) @map("subscription_tier")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  addresses     UserAddress[]
+  bookings      PujaBooking[]
+  payments      Payment[]
+  subscription  Subscription[]
+  priest        Priest?
+  conversations AiConversation[]
+
+  @@map("users")
+}
+
+model UserAddress {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @map("user_id") @db.Uuid
+  label     String  @default("home")
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  country   String  @default("India")
+  isDefault Boolean @default(false) @map("is_default")
+  lat       Float?
+  lng       Float?
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings PujaBooking[]
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+model Temple {
+  id                 String       @id @default(uuid()) @db.Uuid
+  name               String
+  nameLocal          String?      @map("name_local")
+  slug               String       @unique
+  description        String
+  deityPrimary       String       @map("deity_primary")
+  deities            String[]
+  tradition          Tradition    @default(other)
+  addressLine        String       @map("address_line")
+  city               String
+  state              String
+  pincode            String
+  country            String       @default("India")
+  lat                Float
+  lng                Float
+  phone              String?
+  email              String?
+  websiteUrl         String?      @map("website_url")
+  images             Json         @default("[]")
+  timingInfo         Json?        @map("timing_info")
+  isVerified         Boolean      @default(false) @map("is_verified")
+  verificationDate   DateTime?    @map("verification_date")
+  trustScore         Float        @default(0) @map("trust_score")
+  liveDarshanEnabled Boolean      @default(false) @map("live_darshan_enabled")
+  streamUrl          String?      @map("stream_url")
+  status             TempleStatus @default(pending_review)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  priests       TemplePriest[]
+  pujaOfferings TemplePujaOffering[]
+  bookings      PujaBooking[]
+  darshanStream LiveDarshanStream[]
+
+  @@index([slug])
+  @@index([city])
+  @@index([state])
+  @@index([isVerified])
+  @@map("temples")
+}
+
+model Priest {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  userId             String                   @unique @map("user_id") @db.Uuid
+  displayName        String                   @map("display_name")
+  specializations    String[]
+  languages          String[]
+  experienceYears    Int                      @map("experience_years")
+  aadhaarVerified    Boolean                  @default(false) @map("aadhaar_verified")
+  certificationDocs  Json?                    @map("certification_docs")
+  ratingAvg          Float                    @default(0) @map("rating_avg")
+  ratingCount        Int                      @default(0) @map("rating_count")
+  isVerified         Boolean                  @default(false) @map("is_verified")
+  verificationStatus PriestVerificationStatus @default(pending) @map("verification_status")
+  bio                String?
+  avatarUrl          String?                  @map("avatar_url")
+  commissionRate     Float                    @default(0.70) @map("commission_rate")
+  status             PriestStatus             @default(active)
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  temples  TemplePriest[]
+  bookings PujaBooking[]
+  payouts  PriestPayout[]
+
+  @@map("priests")
+}
+
+model TemplePriest {
+  id        String   @id @default(uuid()) @db.Uuid
+  templeId  String   @map("temple_id") @db.Uuid
+  priestId  String   @map("priest_id") @db.Uuid
+  isPrimary Boolean  @default(false) @map("is_primary")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  temple Temple @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  priest Priest @relation(fields: [priestId], references: [id], onDelete: Cascade)
+
+  @@unique([templeId, priestId])
+  @@map("temple_priests")
+}
+
+model PujaType {
+  id                  String       @id @default(uuid()) @db.Uuid
+  name                String
+  nameLocal           String?      @map("name_local")
+  slug                String       @unique
+  description         String
+  category            PujaCategory
+  deity               String
+  durationMinutes     Int          @map("duration_minutes")
+  basePrice           Decimal      @map("base_price") @db.Decimal(10, 2)
+  nriPrice            Decimal      @map("nri_price") @db.Decimal(10, 2)
+  samagriIncluded     Boolean      @default(true) @map("samagri_included")
+  samagriItems        Json?        @map("samagri_items")
+  images              Json         @default("[]")
+  videoProofMandatory Boolean      @default(true) @map("video_proof_mandatory")
+  isActive            Boolean      @default(true) @map("is_active")
+  sortOrder           Int          @default(0) @map("sort_order")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  templeOfferings TemplePujaOffering[]
+  bookings        PujaBooking[]
+
+  @@index([slug])
+  @@index([category])
+  @@map("puja_types")
+}
+
+model TemplePujaOffering {
+  id                 String  @id @default(uuid()) @db.Uuid
+  templeId           String  @map("temple_id") @db.Uuid
+  pujaTypeId         String  @map("puja_type_id") @db.Uuid
+  priceOverride      Decimal? @map("price_override") @db.Decimal(10, 2)
+  availableSlots     Json    @default("[]") @map("available_slots")
+  maxBookingsPerSlot Int     @default(5) @map("max_bookings_per_slot")
+  isActive           Boolean @default(true) @map("is_active")
+
+  temple   Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  pujaType PujaType @relation(fields: [pujaTypeId], references: [id], onDelete: Cascade)
+  bookings PujaBooking[]
+
+  @@unique([templeId, pujaTypeId])
+  @@map("temple_puja_offerings")
+}
+
+model PujaBooking {
+  id                      String        @id @default(uuid()) @db.Uuid
+  bookingNumber           String        @unique @map("booking_number")
+  userId                  String        @map("user_id") @db.Uuid
+  templeId                String        @map("temple_id") @db.Uuid
+  pujaTypeId              String        @map("puja_type_id") @db.Uuid
+  priestId                String?       @map("priest_id") @db.Uuid
+  templePujaOfferingId    String        @map("temple_puja_offering_id") @db.Uuid
+  scheduledDate           DateTime      @map("scheduled_date") @db.Date
+  scheduledTimeSlot       String        @map("scheduled_time_slot")
+  devoteeNames            Json          @map("devotee_names")
+  sankalpDetails          String?       @map("sankalp_details")
+  specialInstructions     String?       @map("special_instructions")
+  priceAmount             Decimal       @map("price_amount") @db.Decimal(10, 2)
+  currency                String        @default("INR")
+  platformCommission      Decimal       @map("platform_commission") @db.Decimal(10, 2)
+  priestPayout            Decimal       @map("priest_payout") @db.Decimal(10, 2)
+  status                  BookingStatus @default(pending_payment)
+  videoProofUrl           String?       @map("video_proof_url")
+  videoUploadedAt         DateTime?     @map("video_uploaded_at")
+  prasadDeliveryRequested Boolean       @default(false) @map("prasad_delivery_requested")
+  prasadDeliveryAddressId String?       @map("prasad_delivery_address_id") @db.Uuid
+  prasadTrackingId        String?       @map("prasad_tracking_id")
+  rating                  Int?
+  reviewText              String?       @map("review_text")
+  cancelledAt             DateTime?     @map("cancelled_at")
+  cancellationReason      String?       @map("cancellation_reason")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  user              User               @relation(fields: [userId], references: [id])
+  temple            Temple             @relation(fields: [templeId], references: [id])
+  pujaType          PujaType           @relation(fields: [pujaTypeId], references: [id])
+  priest            Priest?            @relation(fields: [priestId], references: [id])
+  templePujaOffering TemplePujaOffering @relation(fields: [templePujaOfferingId], references: [id])
+  prasadAddress     UserAddress?       @relation(fields: [prasadDeliveryAddressId], references: [id])
+  payments          Payment[]
+  priestPayouts     PriestPayout[]
+
+  @@index([userId])
+  @@index([templeId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([templeId, scheduledDate, status])
+  @@map("puja_bookings")
+}
+
+model Payment {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @map("user_id") @db.Uuid
+  bookingId        String?        @map("booking_id") @db.Uuid
+  orderId          String?        @map("order_id")
+  amount           Decimal        @db.Decimal(10, 2)
+  currency         String         @default("INR")
+  paymentGateway   PaymentGateway @map("payment_gateway")
+  gatewayPaymentId String?        @map("gateway_payment_id")
+  gatewayOrderId   String?        @map("gateway_order_id")
+  status           PaymentStatus  @default(initiated)
+  method           String?
+  refundAmount     Decimal?       @map("refund_amount") @db.Decimal(10, 2)
+  metadata         Json?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  user    User         @relation(fields: [userId], references: [id])
+  booking PujaBooking? @relation(fields: [bookingId], references: [id])
+
+  @@index([gatewayPaymentId])
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+model PriestPayout {
+  id              String       @id @default(uuid()) @db.Uuid
+  priestId        String       @map("priest_id") @db.Uuid
+  bookingId       String       @map("booking_id") @db.Uuid
+  amount          Decimal      @db.Decimal(10, 2)
+  status          PayoutStatus @default(pending)
+  payoutMethod    String       @map("payout_method")
+  payoutReference String?      @map("payout_reference")
+  processedAt     DateTime?    @map("processed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  priest  Priest      @relation(fields: [priestId], references: [id])
+  booking PujaBooking @relation(fields: [bookingId], references: [id])
+
+  @@index([priestId])
+  @@index([status])
+  @@map("priest_payouts")
+}
+
+model ContentItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  type            ContentType
+  title           String
+  titleLocal      String?       @map("title_local")
+  slug            String        @unique
+  body            String
+  audioUrl        String?       @map("audio_url")
+  videoUrl        String?       @map("video_url")
+  imageUrl        String?       @map("image_url")
+  deity           String?
+  language        Language      @default(hi)
+  durationSeconds Int?          @map("duration_seconds")
+  tags            String[]
+  isPremium       Boolean       @default(false) @map("is_premium")
+  viewCount       Int           @default(0) @map("view_count")
+  likeCount       Int           @default(0) @map("like_count")
+  sortOrder       Int           @default(0) @map("sort_order")
+  status          ContentStatus @default(draft)
+  publishedAt     DateTime?     @map("published_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([type])
+  @@index([deity])
+  @@index([language])
+  @@map("content_items")
+}
+
+model DailyPanchang {
+  id           String   @id @default(uuid()) @db.Uuid
+  date         DateTime @unique @db.Date
+  tithi        String
+  nakshatra    String
+  yoga         String
+  karana       String
+  sunrise      String
+  sunset       String
+  rahuKaal     String   @map("rahu_kaal")
+  shubhMuhurat Json     @map("shubh_muhurat")
+  festivals    String[]
+  vrat         String[]
+  specialInfo  String?  @map("special_info")
+  locationCity String   @default("Delhi") @map("location_city")
+
+  @@map("daily_panchang")
+}
+
+model LiveDarshanStream {
+  id             String       @id @default(uuid()) @db.Uuid
+  templeId       String       @map("temple_id") @db.Uuid
+  streamKey      String       @map("stream_key")
+  playbackUrl    String       @map("playback_url")
+  status         StreamStatus @default(offline)
+  scheduledStart DateTime?    @map("scheduled_start")
+  actualStart    DateTime?    @map("actual_start")
+  viewerCount    Int          @default(0) @map("viewer_count")
+  peakViewers    Int          @default(0) @map("peak_viewers")
+  isPremium      Boolean      @default(false) @map("is_premium")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  temple Temple @relation(fields: [templeId], references: [id])
+
+  @@index([templeId])
+  @@index([status])
+  @@map("live_darshan_streams")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  userId               String             @map("user_id") @db.Uuid
+  plan                 SubscriptionPlan
+  price                Decimal            @db.Decimal(10, 2)
+  currency             String             @default("INR")
+  status               SubscriptionStatus @default(active)
+  currentPeriodStart   DateTime           @map("current_period_start")
+  currentPeriodEnd     DateTime           @map("current_period_end")
+  gatewaySubscriptionId String?           @map("gateway_subscription_id")
+  autoRenew            Boolean            @default(true) @map("auto_renew")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ─── AI Models ──────────────────────────────────────────────────────────────────
+
+model AiConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String?
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+model AiTranslationCache {
+  id             String   @id @default(uuid()) @db.Uuid
+  sourceText     String   @map("source_text")
+  sourceLanguage String   @map("source_language")
+  targetLanguage String   @map("target_language")
+  translatedText String   @map("translated_text")
+  contentHash    String   @unique @map("content_hash")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("ai_translation_cache")
+}
