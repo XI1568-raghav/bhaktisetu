@@ -1,0 +1,454 @@
+import type { Metadata } from "next";
+import { getProductImage } from "../../lib/images";
+import {
+  ShoppingBag,
+  Star,
+  Heart,
+  Search,
+  ChevronDown,
+  Filter,
+  ArrowRight,
+  Truck,
+  Shield,
+  RotateCcw,
+  Tag,
+  ShoppingCart,
+  Package,
+  Percent,
+  ChevronRight,
+  BadgeCheck,
+} from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Store",
+  description:
+    "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits. Free delivery on orders above Rs 499.",
+};
+
+const categories = [
+  { name: "All Products", count: 520, icon: ShoppingBag },
+  { name: "Puja Thali Sets", count: 45, icon: Package },
+  { name: "Idols & Murtis", count: 120, icon: Star },
+  { name: "Rudraksha & Malas", count: 65, icon: Star },
+  { name: "Incense & Dhoop", count: 80, icon: Star },
+  { name: "Puja Samagri", count: 95, icon: Package },
+  { name: "Books & Texts", count: 55, icon: Star },
+  { name: "Clothing", count: 40, icon: Star },
+  { name: "Home Decor", count: 20, icon: Star },
+];
+
+const products = [
+  {
+    id: 1,
+    handle: "premium-brass-puja-thali-set",
+    name: "Premium Brass Puja Thali Set (7 Piece)",
+    price: 1299,
+    originalPrice: 1899,
+    discount: 32,
+    rating: 4.7,
+    reviews: 342,
+    image: "/images/store/puja-thali.jpg",
+    tag: "Bestseller",
+    inStock: true,
+    freeDelivery: true,
+    category: "Puja Thali Sets",
+  },
+  {
+    id: 2,
+    handle: "5-mukhi-rudraksha-mala",
+    name: "5 Mukhi Natural Rudraksha Mala (108+1 beads)",
+    price: 599,
+    originalPrice: 999,
+    discount: 40,
+    rating: 4.8,
+    reviews: 567,
+    image: "/images/store/rudraksha.jpg",
+    tag: "Certified",
+    inStock: true,
+    freeDelivery: true,
+    category: "Rudraksha & Malas",
+  },
+  {
+    id: 3,
+    handle: "pure-sandalwood-incense-sticks",
+    name: "Pure Sandalwood Incense Sticks (100 pack)",
+    price: 249,
+    originalPrice: 399,
+    discount: 38,
+    rating: 4.6,
+    reviews: 891,
+    image: "/images/store/incense.jpg",
+    tag: "Top Rated",
+    inStock: true,
+    freeDelivery: false,
+    category: "Incense & Dhoop",
+  },
+  {
+    id: 4,
+    handle: "white-marble-ganesh-murti",
+    name: "Hand-carved White Marble Ganesh Murti (8 inch)",
+    price: 2499,
+    originalPrice: 3499,
+    discount: 29,
+    rating: 4.9,
+    reviews: 234,
+    image: "/images/store/ganesh-idol.jpg",
+    tag: "Premium",
+    inStock: true,
+    freeDelivery: true,
+    category: "Idols & Murtis",
+  },
+  {
+    id: 5,
+    handle: "complete-navratri-puja-kit",
+    name: "Complete Navratri Puja Kit",
+    price: 899,
+    originalPrice: 1499,
+    discount: 40,
+    rating: 4.7,
+    reviews: 156,
+    image: "/images/store/navratri-kit.jpg",
+    tag: "Festival Special",
+    inStock: true,
+    freeDelivery: true,
+    category: "Puja Samagri",
+  },
+  {
+    id: 6,
+    handle: "brass-krishna-playing-flute",
+    name: "Pure Brass Krishna Playing Flute (12 inch)",
+    price: 3299,
+    originalPrice: 4599,
+    discount: 28,
+    rating: 4.9,
+    reviews: 189,
+    image: "/images/store/krishna-idol.jpg",
+    tag: "Handcrafted",
+    inStock: true,
+    freeDelivery: true,
+    category: "Idols & Murtis",
+  },
+  {
+    id: 7,
+    handle: "organic-camphor-250g",
+    name: "Organic Camphor (Kapur) - 250g",
+    price: 199,
+    originalPrice: 299,
+    discount: 33,
+    rating: 4.5,
+    reviews: 1230,
+    image: "/images/store/camphor.jpg",
+    tag: null,
+    inStock: true,
+    freeDelivery: false,
+    category: "Puja Samagri",
+  },
+  {
+    id: 8,
+    handle: "silk-puja-dhoti-angavastram-set",
+    name: "Silk Puja Dhoti & Angavastram Set",
+    price: 799,
+    originalPrice: 1199,
+    discount: 33,
+    rating: 4.6,
+    reviews: 98,
+    image: "/images/store/dhoti-set.jpg",
+    tag: null,
+    inStock: true,
+    freeDelivery: true,
+    category: "Clothing",
+  },
+  {
+    id: 9,
+    handle: "bhagavad-gita-deluxe-edition",
+    name: "Bhagavad Gita (Hindi-English, Deluxe Edition)",
+    price: 349,
+    originalPrice: 599,
+    discount: 42,
+    rating: 4.9,
+    reviews: 2100,
+    image: "/images/store/gita.jpg",
+    tag: "Bestseller",
+    inStock: true,
+    freeDelivery: false,
+    category: "Books & Texts",
+  },
+  {
+    id: 10,
+    handle: "copper-kalash-coconut-set",
+    name: "Copper Kalash with Coconut Set",
+    price: 449,
+    originalPrice: 699,
+    discount: 36,
+    rating: 4.7,
+    reviews: 324,
+    image: "/images/store/kalash.jpg",
+    tag: null,
+    inStock: true,
+    freeDelivery: false,
+    category: "Puja Samagri",
+  },
+  {
+    id: 11,
+    handle: "tulsi-mala-silver-cap",
+    name: "Tulsi Mala with Silver Cap",
+    price: 399,
+    originalPrice: 649,
+    discount: 39,
+    rating: 4.8,
+    reviews: 456,
+    image: "/images/store/tulsi-mala.jpg",
+    tag: "Popular",
+    inStock: true,
+    freeDelivery: false,
+    category: "Rudraksha & Malas",
+  },
+  {
+    id: 12,
+    handle: "electric-led-diya-set",
+    name: "Electric LED Diya Set (12 pieces, brass finish)",
+    price: 549,
+    originalPrice: 899,
+    discount: 39,
+    rating: 4.5,
+    reviews: 678,
+    image: "/images/store/led-diya.jpg",
+    tag: "New Arrival",
+    inStock: true,
+    freeDelivery: true,
+    category: "Home Decor",
+  },
+];
+
+export default function StorePage() {
+  return (
+    <div className="min-h-screen bg-saffron-50">
+      {/* Hero */}
+      <section className="bg-surface-900 text-white py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+            Bhakti Store
+          </h1>
+          <p className="text-surface-300 text-lg max-w-2xl">
+            Authentic puja samagri, handcrafted idols, sacred rudraksha, and
+            spiritual essentials — sourced from trusted artisans and blessed at
+            temples.
+          </p>
+
+          {/* Trust badges */}
+          <div className="mt-6 flex flex-wrap gap-4">
+            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
+              <Truck className="w-4 h-4" />
+              Free Delivery above ₹499
+            </div>
+            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
+              <BadgeCheck className="w-4 h-4" />
+              Authentic & Certified
+            </div>
+            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
+              <RotateCcw className="w-4 h-4" />
+              Easy Returns
+            </div>
+            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
+              <Shield className="w-4 h-4" />
+              Secure Payments
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="mt-8 max-w-2xl">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-surface-700 bg-white text-stone-800 placeholder:text-stone-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-saffron-300"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Category pills */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+          {categories.map((cat, i) => (
+            <button
+              key={cat.name}
+              className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${
+                i === 0
+                  ? "bg-saffron-600 text-white"
+                  : "bg-white text-stone-600 border border-stone-200 hover:border-saffron-300 hover:text-saffron-600"
+              }`}
+            >
+              {cat.name}
+              <span
+                className={`text-xs px-1.5 py-0.5 rounded-full ${
+                  i === 0
+                    ? "bg-saffron-500 text-saffron-100"
+                    : "bg-stone-100 text-stone-400"
+                }`}
+              >
+                {cat.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Filters row */}
+        <div className="flex flex-wrap items-center gap-3 mb-8">
+          <div className="relative">
+            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+              <option>Sort: Popular</option>
+              <option>Price: Low to High</option>
+              <option>Price: High to Low</option>
+              <option>Rating: High to Low</option>
+              <option>Newest First</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+          </div>
+
+          <div className="relative">
+            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+              <option>Any Price</option>
+              <option>Under ₹500</option>
+              <option>₹500 - ₹1,000</option>
+              <option>₹1,000 - ₹2,500</option>
+              <option>Above ₹2,500</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+          </div>
+
+          <button className="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-lg px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 transition-colors">
+            <Truck className="w-4 h-4" />
+            Free Delivery
+          </button>
+
+          <button className="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-lg px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 transition-colors">
+            <Star className="w-4 h-4 text-temple-gold" />
+            4+ Rating
+          </button>
+
+          <span className="text-sm text-stone-500 ml-auto">
+            <span className="font-semibold text-stone-700">{products.length}</span> products
+          </span>
+        </div>
+
+        {/* Promo Banner */}
+        <div className="mb-8 bg-saffron-50 rounded-xl p-6 border border-saffron-200 flex items-center gap-6">
+          <div className="w-14 h-14 bg-saffron-200 rounded-xl flex items-center justify-center shrink-0">
+            <Percent className="w-7 h-7 text-saffron-700" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-stone-900">
+              Akshaya Tritiya Sale — Up to 50% Off!
+            </h3>
+            <p className="text-sm text-stone-500 mt-0.5">
+              Shop puja essentials, gold-plated idols, and rudraksha malas at
+              unbeatable prices. Offer valid till April 20.
+            </p>
+          </div>
+          <a
+            href="/store"
+            className="hidden sm:inline-flex items-center gap-1 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors shrink-0"
+          >
+            Shop Sale
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          {products.map((product) => (
+            <a
+              key={product.id}
+              href={`/store/${product.handle}`}
+              className="group bg-white rounded-xl overflow-hidden border border-stone-100 hover:shadow-md hover:border-surface-300 transition-all duration-300"
+            >
+              {/* Product image */}
+              <div className="relative aspect-square bg-gradient-to-br from-stone-50 to-saffron-50 overflow-hidden">
+                <img
+                  src={getProductImage(product.handle)}
+                  alt={product.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {product.tag && (
+                  <div className="absolute top-3 left-3">
+                    <span className="bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                      {product.tag}
+                    </span>
+                  </div>
+                )}
+
+                {product.discount > 0 && (
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-tulsi-green text-white text-xs font-bold px-2 py-1 rounded-full">
+                      -{product.discount}%
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  className="absolute bottom-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
+                  aria-label="Add to wishlist"
+                >
+                  <Heart className="w-4 h-4 text-stone-400" />
+                </button>
+              </div>
+
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-stone-900 line-clamp-2 min-h-[2.5rem] group-hover:text-saffron-600 transition-colors">
+                  {product.name}
+                </h3>
+
+                <div className="flex items-center gap-1 mt-2">
+                  <div className="flex items-center gap-0.5 bg-tulsi-green/10 px-1.5 py-0.5 rounded">
+                    <Star className="w-3 h-3 text-tulsi-green fill-tulsi-green" />
+                    <span className="text-xs font-bold text-tulsi-green">
+                      {product.rating}
+                    </span>
+                  </div>
+                  <span className="text-xs text-stone-400">
+                    ({product.reviews.toLocaleString("en-IN")})
+                  </span>
+                </div>
+
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-stone-900">
+                    ₹{product.price.toLocaleString("en-IN")}
+                  </span>
+                  <span className="text-sm text-stone-400 line-through">
+                    ₹{product.originalPrice.toLocaleString("en-IN")}
+                  </span>
+                </div>
+
+                {product.freeDelivery && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-tulsi-green font-medium">
+                    <Truck className="w-3 h-3" />
+                    Free Delivery
+                  </div>
+                )}
+
+                {/* Add to cart button */}
+                <button className="mt-3 w-full py-2.5 bg-saffron-50 text-saffron-700 font-medium text-sm rounded-lg border border-saffron-200 hover:bg-saffron-100 transition-colors flex items-center justify-center gap-1.5 group-hover:bg-saffron-600 group-hover:text-white group-hover:border-saffron-600">
+                  <ShoppingCart className="w-4 h-4" />
+                  Add to Cart
+                </button>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        {/* Load more */}
+        <div className="text-center mt-10">
+          <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-saffron-200 text-saffron-600 font-medium rounded-lg hover:bg-saffron-50 transition-colors">
+            Load More Products
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

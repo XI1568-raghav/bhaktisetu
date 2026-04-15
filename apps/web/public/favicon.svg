@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Simplified bridge arc -->
+  <path
+    d="M8 38 C8 38 14 16 24 16 C34 16 40 38 40 38"
+    stroke="#D4A438"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- Diya base -->
+  <ellipse cx="24" cy="16" rx="4.5" ry="1.8" fill="#D4A438"/>
+  <!-- Diya cup -->
+  <path
+    d="M20.5 16 C20.5 13.5 22 11.5 24 11.5 C26 11.5 27.5 13.5 27.5 16"
+    fill="#D4A438"
+  />
+  <!-- Flame -->
+  <path
+    d="M24 4 C24 4 27.5 8 27.5 10 C27.5 12 26 12.5 24 12.5 C22 12.5 20.5 12 20.5 10 C20.5 8 24 4 24 4Z"
+    fill="#E16318"
+  />
+  <!-- Flame inner -->
+  <path
+    d="M24 7 C24 7 25.5 9 25.5 10 C25.5 11 25 11.2 24 11.2 C23 11.2 22.5 11 22.5 10 C22.5 9 24 7 24 7Z"
+    fill="#F5A623"
+  />
+</svg>

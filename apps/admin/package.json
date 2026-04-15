@@ -1,0 +1,33 @@
+{
+  "name": "@bhaktisetu/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bhaktisetu/api-client": "workspace:*",
+    "@bhaktisetu/shared": "workspace:*",
+    "@bhaktisetu/ui": "workspace:*",
+    "@tanstack/react-query": "^5.74.4",
+    "next": "^15.3.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.4",
+    "@tailwindcss/postcss": "^4.1.4",
+    "lucide-react": "^0.503.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@bhaktisetu/tsconfig": "workspace:*",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "typescript": "^5.8.3"
+  }
+}

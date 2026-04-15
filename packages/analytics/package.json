@@ -1,0 +1,19 @@
+{
+  "name": "@bhaktisetu/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "posthog-js": "^1.237.0"
+  },
+  "devDependencies": {
+    "@bhaktisetu/tsconfig": "workspace:*",
+    "typescript": "^5.8.3"
+  }
+}
