@@ -117,18 +117,18 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* Top header bar */}
-      <div className="bg-saffron-600">
+      <div className="bg-[#ede9e3]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-saffron-200 text-sm mb-1">{greeting}</p>
-              <h1 className="text-2xl font-semibold text-white">
+              <p className="text-surface-500 text-sm mb-1">{greeting}</p>
+              <h1 className="text-2xl font-semibold text-surface-800">
                 {displayName === '' ? 'Welcome to Bhaktisetu' : displayName}
               </h1>
               {user?.fullName === '' && (
                 <a
                   href="/profile"
-                  className="inline-flex items-center gap-1 text-sm text-saffron-200 hover:text-white mt-1 transition-colors"
+                  className="inline-flex items-center gap-1 text-sm text-saffron-600 hover:text-saffron-700 mt-1 transition-colors"
                 >
                   Complete your profile <ArrowRight className="w-3.5 h-3.5" />
                 </a>
@@ -138,17 +138,17 @@ function DashboardContent() {
             <div className="flex items-center gap-2">
               <a
                 href="/profile"
-                className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                className="p-2.5 bg-surface-800/10 hover:bg-surface-800/20 rounded-lg transition-colors"
                 title="Edit Profile"
               >
-                <Settings className="w-5 h-5 text-white" />
+                <Settings className="w-5 h-5 text-surface-600" />
               </a>
               <button
                 onClick={signOut}
-                className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                className="p-2.5 bg-surface-800/10 hover:bg-surface-800/20 rounded-lg transition-colors"
                 title="Sign Out"
               >
-                <LogOut className="w-5 h-5 text-white" />
+                <LogOut className="w-5 h-5 text-surface-600" />
               </button>
             </div>
           </div>
@@ -159,7 +159,7 @@ function DashboardContent() {
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 -mt-12">
           {/* Bookings count */}
-          <div className="bg-white rounded-xl p-5 border border-surface-200/60 shadow-sm">
+          <div className="bg-[var(--color-surface)] rounded-xl p-5 border border-[var(--color-border)] shadow-warm-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-saffron-50 rounded-xl flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-saffron-600" />
@@ -174,7 +174,7 @@ function DashboardContent() {
           </div>
 
           {/* Subscription status */}
-          <div className="bg-white rounded-xl p-5 border border-surface-200/60 shadow-sm">
+          <div className="bg-[var(--color-surface)] rounded-xl p-5 border border-[var(--color-border)] shadow-warm-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-temple-gold/10 rounded-xl flex items-center justify-center">
                 <Crown className="w-5 h-5 text-temple-gold" />
@@ -195,7 +195,7 @@ function DashboardContent() {
           {/* Quick action */}
           <a
             href="/pujas"
-            className="bg-white rounded-xl p-5 border border-surface-200/60 shadow-sm hover:shadow-md hover:border-saffron-200 transition-all group"
+            className="bg-[var(--color-surface)] rounded-xl p-5 border border-[var(--color-border)] shadow-warm-sm hover:shadow-warm hover:border-saffron-200 transition-all group"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-sacred-red/10 rounded-xl flex items-center justify-center">
@@ -228,12 +228,12 @@ function DashboardContent() {
             </div>
 
             {isLoadingData ? (
-              <div className="bg-white rounded-xl p-8 border border-surface-200/60 text-center">
+              <div className="bg-[var(--color-surface)] rounded-xl p-8 border border-[var(--color-border)] text-center">
                 <div className="w-8 h-8 border-3 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-surface-400 text-sm">Loading bookings...</p>
               </div>
             ) : bookings.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 border border-surface-200/60 text-center">
+              <div className="bg-[var(--color-surface)] rounded-xl p-8 border border-[var(--color-border)] text-center">
                 <div className="w-14 h-14 bg-saffron-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Flame className="w-7 h-7 text-saffron-300" />
                 </div>
@@ -243,7 +243,7 @@ function DashboardContent() {
                 </p>
                 <a
                   href="/pujas"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 gradient-saffron text-white font-semibold rounded-lg text-sm hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg text-sm hover:bg-saffron-700 transition-colors"
                 >
                   <Flame className="w-4 h-4" />
                   Explore Pujas
@@ -254,7 +254,7 @@ function DashboardContent() {
                 {bookings.map((booking) => (
                   <div
                     key={booking.id}
-                    className="bg-white rounded-xl p-5 border border-surface-200/60 hover:shadow-md transition-shadow"
+                    className="bg-[var(--color-surface)] rounded-xl p-5 border border-[var(--color-border)] hover:shadow-warm transition-shadow"
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
@@ -310,7 +310,7 @@ function DashboardContent() {
               <div className="grid grid-cols-2 gap-3">
                 <a
                   href="/darshan"
-                  className="bg-white rounded-xl p-4 border border-surface-200/60 hover:shadow-md hover:border-saffron-200 transition-all text-center group"
+                  className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
                 >
                   <Video className="w-6 h-6 text-red-500 mx-auto mb-2" />
                   <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
@@ -319,7 +319,7 @@ function DashboardContent() {
                 </a>
                 <a
                   href="/panchang"
-                  className="bg-white rounded-xl p-4 border border-surface-200/60 hover:shadow-md hover:border-saffron-200 transition-all text-center group"
+                  className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
                 >
                   <Calendar className="w-6 h-6 text-purple-500 mx-auto mb-2" />
                   <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
@@ -328,7 +328,7 @@ function DashboardContent() {
                 </a>
                 <a
                   href="/content"
-                  className="bg-white rounded-xl p-4 border border-surface-200/60 hover:shadow-md hover:border-saffron-200 transition-all text-center group"
+                  className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
                 >
                   <BookOpen className="w-6 h-6 text-saffron-500 mx-auto mb-2" />
                   <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
@@ -337,7 +337,7 @@ function DashboardContent() {
                 </a>
                 <a
                   href="/store"
-                  className="bg-white rounded-xl p-4 border border-surface-200/60 hover:shadow-md hover:border-saffron-200 transition-all text-center group"
+                  className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
                 >
                   <Star className="w-6 h-6 text-temple-gold mx-auto mb-2" />
                   <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
@@ -349,7 +349,7 @@ function DashboardContent() {
 
             {/* Upgrade CTA (only for free tier) */}
             {!subscription && (
-              <div className="gradient-saffron rounded-xl p-5 text-white relative overflow-hidden">
+              <div className="bg-saffron-600 rounded-xl p-5 text-white relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('/images/pattern-mandala.svg')] opacity-10 bg-center bg-cover" />
                 <div className="relative">
                   <Crown className="w-8 h-8 text-sandal-cream mb-3" />

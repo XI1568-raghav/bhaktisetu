@@ -196,7 +196,7 @@ export default async function TempleDetailPage({
       {/* Breadcrumb */}
       <div className="border-b border-stone-100 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-2 text-sm text-stone-500">
+          <nav className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
             <Link href="/" className="hover:text-saffron-600">
               Home
             </Link>
@@ -213,7 +213,7 @@ export default async function TempleDetailPage({
       {/* Gallery Section */}
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="grid h-72 grid-cols-4 grid-rows-2 gap-3 overflow-hidden rounded-xl md:h-96">
+          <div className="grid h-72 grid-cols-4 grid-rows-2 gap-3 overflow-hidden rounded-xl md:h-96" style={{borderRadius: '12px'}}>
             <div className="group relative col-span-2 row-span-2 cursor-pointer overflow-hidden bg-gradient-to-br from-orange-200 to-orange-100">
               <img
                 src={getTempleHero(slug)}
@@ -525,7 +525,7 @@ export default async function TempleDetailPage({
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Info */}
-            <div className="sticky top-24 rounded-xl border border-stone-100 bg-white p-6">
+            <div className="sticky top-24 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
               <h3 className="mb-4 font-semibold text-surface-800">Temple Info</h3>
 
               <div className="space-y-4">

@@ -165,13 +165,21 @@ export default function RootLayout({
       lang="en"
       className={`${notoSans.variable} ${notoSansDevanagari.variable}`}
     >
-      <body className="font-[family-name:var(--font-noto-sans)] min-h-screen flex flex-col bg-surface-50">
+      <head>
+        {/* Fontshare — Cabinet Grotesk (display) + Satoshi (body) */}
+        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@300,400,500,700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]">
         <AuthProvider>
         <CartProvider>
         <CartDrawer />
 
         {/* ── Navigation ─────────────────────────────────────────────── */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-surface-200/40">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-surface-200/40">
           <nav
             className="mx-auto max-w-6xl flex items-center h-14 px-4 sm:px-6 lg:px-8"
             aria-label="Main navigation"
@@ -259,7 +267,7 @@ export default function RootLayout({
         <main className="flex-1 pt-14">{children}</main>
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
-        <footer className="bg-surface-900 text-surface-400">
+        <footer className="bg-[#2a2520] text-surface-400">
           {/* Decorative top border */}
           <div className="h-px bg-gradient-to-r from-transparent via-saffron-600/40 to-transparent" />
 

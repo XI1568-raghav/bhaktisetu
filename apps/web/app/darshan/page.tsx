@@ -424,9 +424,9 @@ async function ScheduledStreamsSection() {
 
 export default function DarshanPage() {
   return (
-    <div className="min-h-screen bg-stone-950">
+    <div className="min-h-screen bg-[#2a2520]">
       {/* Hero */}
-      <section className="bg-gradient-to-b from-stone-900 to-stone-950 py-12 md:py-16 border-b border-stone-800">
+      <section className="bg-gradient-to-b from-[#352f28] to-[#2a2520] py-12 md:py-16 border-b border-stone-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-1.5 bg-red-600/20 text-red-400 text-sm font-bold px-3 py-1.5 rounded-full">

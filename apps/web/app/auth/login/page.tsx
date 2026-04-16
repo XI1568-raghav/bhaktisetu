@@ -192,19 +192,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-surface-200/60 shadow-lg overflow-hidden">
+    <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-warm overflow-hidden">
       {/* Header */}
-      <div className="gradient-saffron px-6 py-8 text-center">
+      <div className="bg-[#ede9e3] px-6 py-8 text-center border-b border-[var(--color-border)]">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
-            <Flame className="w-4 h-4 text-white" />
+          <div className="w-7 h-7 bg-saffron-600/15 rounded-lg flex items-center justify-center">
+            <Flame className="w-4 h-4 text-saffron-600" />
           </div>
-          <span className="text-xl font-semibold text-white tracking-tight">
-            Bhakti<span className="text-sandal-cream">setu</span>
+          <span className="text-xl font-semibold text-surface-800 tracking-tight">
+            Bhakti<span className="text-saffron-600">setu</span>
           </span>
         </div>
 
-        <p className="text-saffron-100 text-sm">
+        <p className="text-surface-500 text-sm">
           {step === 'phone'
             ? 'Sign in to your spiritual journey'
             : 'Enter the code sent to your phone'}
@@ -306,7 +306,7 @@ export default function LoginPage() {
                 demoSignIn();
                 window.location.href = '/dashboard';
               }}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-surface-900 text-white font-medium rounded-lg hover:bg-surface-800 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-[#2a2520] text-white font-medium rounded-lg hover:bg-[#3a342d] transition-colors"
             >
               <span className="text-lg">🪔</span>
               Demo Sign In as Arjun Sharma

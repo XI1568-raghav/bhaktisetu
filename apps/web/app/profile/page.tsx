@@ -204,7 +204,7 @@ function ProfileContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-saffron-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface-50">
         <div className="text-center">
           <div className="w-10 h-10 border-3 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-3" />
           <p className="text-stone-400 text-sm">Loading profile...</p>
@@ -214,19 +214,19 @@ function ProfileContent() {
   }
 
   return (
-    <div className="min-h-screen bg-saffron-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-saffron-600 via-saffron-500 to-temple-gold">
+      <div className="bg-[#ede9e3] border-b border-[var(--color-border)]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-1 text-saffron-200 hover:text-white text-sm mb-4 transition-colors"
+            className="inline-flex items-center gap-1 text-surface-500 hover:text-saffron-600 text-sm mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </a>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Edit Profile</h1>
-          <p className="text-saffron-200 text-sm mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-surface-800">Edit Profile</h1>
+          <p className="text-surface-500 text-sm mt-1">
             Manage your personal and spiritual information
           </p>
         </div>
@@ -247,7 +247,7 @@ function ProfileContent() {
         )}
 
         {/* Avatar section */}
-        <div className="bg-white rounded-xl border border-stone-100 p-6 mb-6">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
           <div className="flex items-center gap-5">
             <div className="relative">
               <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center overflow-hidden">
@@ -275,7 +275,7 @@ function ProfileContent() {
         </div>
 
         {/* Personal Information */}
-        <div className="bg-white rounded-xl border border-stone-100 p-6 mb-6">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
           <h2 className="text-lg font-bold text-stone-900 mb-5 flex items-center gap-2">
             <User className="w-5 h-5 text-saffron-600" />
             Personal Information
@@ -292,7 +292,7 @@ function ProfileContent() {
                 value={form.fullName}
                 onChange={(e) => updateField('fullName', e.target.value)}
                 placeholder="Enter your full name"
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
               />
             </div>
 
@@ -301,7 +301,7 @@ function ProfileContent() {
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
                 Phone Number
               </label>
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-500">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-50 border border-[var(--color-border)] rounded-lg text-surface-500">
                 <Phone className="w-4 h-4" />
                 {user?.phone || 'N/A'}
               </div>
@@ -320,7 +320,7 @@ function ProfileContent() {
                   value={form.email}
                   onChange={(e) => updateField('email', e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
                 />
               </div>
             </div>
@@ -333,7 +333,7 @@ function ProfileContent() {
               <select
                 value={form.preferredLanguage}
                 onChange={(e) => updateField('preferredLanguage', e.target.value)}
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
               >
                 {languages.map((lang) => (
                   <option key={lang.value} value={lang.value}>
@@ -353,7 +353,7 @@ function ProfileContent() {
                   value={form.locationCity}
                   onChange={(e) => updateField('locationCity', e.target.value)}
                   placeholder="e.g., Mumbai"
-                  className="w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
                 />
               </div>
             </div>
@@ -361,7 +361,7 @@ function ProfileContent() {
         </div>
 
         {/* Spiritual Information */}
-        <div className="bg-white rounded-xl border border-stone-100 p-6 mb-6">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
           <h2 className="text-lg font-bold text-stone-900 mb-5 flex items-center gap-2">
             <Star className="w-5 h-5 text-temple-gold" />
             Spiritual Information
@@ -379,7 +379,7 @@ function ProfileContent() {
                 value={form.gotra}
                 onChange={(e) => updateField('gotra', e.target.value)}
                 placeholder="e.g., Kashyap, Bharadwaj"
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
               />
             </div>
 
@@ -391,7 +391,7 @@ function ProfileContent() {
               <select
                 value={form.nakshatra}
                 onChange={(e) => updateField('nakshatra', e.target.value)}
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
               >
                 <option value="">Select Nakshatra</option>
                 {nakshatras.map((n) => (
@@ -410,7 +410,7 @@ function ProfileContent() {
               <select
                 value={form.rashi}
                 onChange={(e) => updateField('rashi', e.target.value)}
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
               >
                 <option value="">Select Rashi</option>
                 {rashis.map((r) => (
@@ -424,7 +424,7 @@ function ProfileContent() {
         </div>
 
         {/* NRI Settings */}
-        <div className="bg-white rounded-xl border border-stone-100 p-6 mb-6">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
           <h2 className="text-lg font-bold text-stone-900 mb-5 flex items-center gap-2">
             <Globe className="w-5 h-5 text-ganga-blue" />
             NRI Settings
@@ -462,7 +462,7 @@ function ProfileContent() {
                 <select
                   value={form.nriCountry}
                   onChange={(e) => updateField('nriCountry', e.target.value)}
-                  className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
+                  className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
                 >
                   <option value="">Select Country</option>
                   {countries.map((c) => (
@@ -487,7 +487,7 @@ function ProfileContent() {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex items-center gap-2 px-6 py-2.5 gradient-saffron text-white font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-warm-sm"
           >
             {isSaving ? (
               <>

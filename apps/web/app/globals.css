@@ -1,33 +1,39 @@
 @import "tailwindcss";
 
-@theme {
-  /* ── Warm saffron-tinted neutrals (OKLCH) ────────────────────────── */
-  /* Hue 40-70° with slight chroma for warmth without looking colored  */
-  --color-surface-50: oklch(0.985 0.005 70);   /* warm off-white */
-  --color-surface-100: oklch(0.970 0.008 70);
-  --color-surface-200: oklch(0.935 0.012 65);
-  --color-surface-300: oklch(0.880 0.015 60);
-  --color-surface-400: oklch(0.720 0.018 55);
-  --color-surface-500: oklch(0.580 0.015 50);
-  --color-surface-550: oklch(0.480 0.012 50);
-  --color-surface-600: oklch(0.440 0.012 48);
-  --color-surface-700: oklch(0.350 0.010 45);
-  --color-surface-800: oklch(0.250 0.008 42);
-  --color-surface-900: oklch(0.180 0.008 40);
+/* ═══════════════════════════════════════════════════════════════════════════
+   BHAKTISETU DESIGN SYSTEM — Medtech Dashboard Adaptation
+   Warm cream/sand foundation · Cabinet Grotesk + Satoshi typography
+   Warm amber accent · Organic illustration palette
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-  /* ── Saffron primary ────────────────────────────────────────────── */
+/* ── Tailwind v4 @theme — keeps all existing class names working ────────── */
+@theme {
+  /* ── Warm saffron-tinted neutrals — remapped to new palette ──────────── */
+  --color-surface-50: #f5f3ef;   /* --color-bg */
+  --color-surface-100: #faf9f6;  /* --color-surface */
+  --color-surface-200: #ede9e3;  /* --color-surface-offset */
+  --color-surface-300: #e4dfd8;  /* --color-surface-dynamic */
+  --color-surface-400: #b5b0a8;  /* --color-text-faint */
+  --color-surface-500: #7a756e;  /* --color-text-muted */
+  --color-surface-550: #5a5650;
+  --color-surface-600: #4a4540;
+  --color-surface-700: #3a3530;
+  --color-surface-800: #2a2520;  /* --color-text */
+  --color-surface-900: #1a1510;
+
+  /* ── Saffron primary — warm amber for devotional context ─────────────── */
   --color-saffron-50: #FFF8F0;
   --color-saffron-100: #FEEDD8;
   --color-saffron-200: #FDD8AF;
   --color-saffron-300: #FBBD7D;
   --color-saffron-400: #F99A48;
-  --color-saffron-500: oklch(0.680 0.180 55);
-  --color-saffron-600: oklch(0.620 0.185 50);
-  --color-saffron-700: #BA4A15;
+  --color-saffron-500: #b87333;  /* --color-primary */
+  --color-saffron-600: #9e6229;  /* --color-primary-hover */
+  --color-saffron-700: #7d4e1f;  /* --color-primary-active */
   --color-saffron-800: #943B19;
   --color-saffron-900: #783318;
 
-  /* ── Temple gold ────────────────────────────────────────────────── */
+  /* ── Temple gold ────────────────────────────────────────────────────── */
   --color-temple-gold: #D4A438;
   --color-temple-gold-light: #F0D060;
   --color-temple-gold-dark: #B8892A;
@@ -35,7 +41,7 @@
   --color-gold-500: #D4A438;
   --color-gold-600: #B8892A;
 
-  /* ── Supporting colors ──────────────────────────────────────────── */
+  /* ── Supporting colors ──────────────────────────────────────────────── */
   --color-sacred-red: #C53030;
   --color-sacred-red-light: #fca5a5;
   --color-vermillion-500: #C53030;
@@ -54,51 +60,126 @@
   --color-rudraksha-brown: #78350f;
   --color-rudraksha-light: #a16207;
 
-  /* ── Semantic ───────────────────────────────────────────────────── */
-  --color-success: #16A34A;
-  --color-error: #DC2626;
+  /* ── Semantic ─────────────────────────────────────────────────────────── */
+  --color-success: #437a22;
+  --color-warning: #964219;
+  --color-error: #a12c7b;
+  --color-info: #006494;
 
-  /* ── Typography ─────────────────────────────────────────────────── */
-  --font-family-sans: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
-  --font-family-display: 'Noto Sans', system-ui, sans-serif;
+  /* ── Typography — font families ──────────────────────────────────────── */
+  --font-family-sans: 'Satoshi', 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Cabinet Grotesk', 'Noto Sans', system-ui, sans-serif;
 
-  /* ── Type scale — Major Third (1.25) ratio ──────────────────────── */
-  /* Use these instead of arbitrary text-[13px] etc.                   */
-  --text-xs: 0.75rem;     /* 12px — labels, badges */
-  --text-sm: 0.875rem;    /* 14px — secondary text, metadata */
-  --text-base: 1rem;      /* 16px — body text */
-  --text-lg: 1.125rem;    /* 18px — lead paragraphs */
-  --text-xl: 1.25rem;     /* 20px — card titles */
-  --text-2xl: 1.5rem;     /* 24px — section headings */
-  --text-3xl: 1.875rem;   /* 30px — page headings */
-  --text-4xl: 2.25rem;    /* 36px — hero headings */
-  --text-5xl: 3rem;       /* 48px — hero display (mobile: 2.25rem) */
+  /* ── Type scale — fluid clamp-based ──────────────────────────────────── */
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
 
-  /* Line-height pairings */
-  --leading-tight: 1.15;    /* headings (xl+) */
-  --leading-relaxed: 1.6;   /* body (base-lg) */
-  --leading-normal: 1.5;    /* small text */
+  /* ── Line-height pairings ─────────────────────────────────────────────── */
+  --leading-tight: 1.15;
+  --leading-relaxed: 1.6;
+  --leading-normal: 1.5;
 
-  /* Letter-spacing */
-  --tracking-tight: -0.02em;  /* headings */
-  --tracking-normal: 0;       /* body */
-  --tracking-wide: 0.05em;    /* all-caps labels */
+  /* ── Letter-spacing ───────────────────────────────────────────────────── */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
 
-  /* ── Radius (tight, not chunky) ─────────────────────────────────── */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-3xl: 20px;
+  /* ── Radius — warm, slightly more rounded ─────────────────────────────── */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.375rem;
+  --radius-2xl: 1.75rem;
+  --radius-3xl: 2rem;
 }
 
-/* ── Spacing scale (reference) ──────────────────────────────────────── */
-/* 4px base unit: 1=4px, 2=8px, 3=12px, 4=16px, 5=20px, 6=24px,      */
-/* 8=32px, 10=40px, 12=48px, 16=64px, 20=80px, 24=96px                */
-/* Use Tailwind spacing classes (p-4, gap-6 etc.) mapped to this scale */
+/* ═══════════════════════════════════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — Design System Tokens
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Global resets ──────────────────────────────────────────────────── */
+:root {
+  /* ── Surface system — warm cream/sand ─────────────────────────────────── */
+  --color-bg: #f5f3ef;
+  --color-surface: #faf9f6;
+  --color-surface-2: #ffffff;
+  --color-surface-offset: #ede9e3;
+  --color-surface-dynamic: #e4dfd8;
+  --color-divider: #dbd6cf;
+  --color-border: oklch(from #4a4540 l c h / 0.10);
+
+  /* ── Text ──────────────────────────────────────────────────────────────── */
+  --color-text: #2a2520;
+  --color-text-muted: #7a756e;
+  --color-text-faint: #b5b0a8;
+  --color-text-inverse: #f9f8f4;
+
+  /* ── Accent — warm amber (saffron brand) ──────────────────────────────── */
+  --color-primary: #b87333;
+  --color-primary-hover: #9e6229;
+  --color-primary-active: #7d4e1f;
+  --color-primary-highlight: #f5e6d0;
+
+  /* ── Status colors ────────────────────────────────────────────────────── */
+  --color-status-success: #437a22;
+  --color-status-warning: #964219;
+  --color-status-error: #a12c7b;
+  --color-status-info: #006494;
+
+  /* ── Illustration palette — organic card artwork ──────────────────────── */
+  --color-art-1: #c8d8d4;  /* Muted teal */
+  --color-art-2: #f2c4a8;  /* Warm peach */
+  --color-art-3: #e8ddd0;  /* Warm neutral */
+  --color-art-4: #d4c9bc;  /* Sand */
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  --font-display: 'Cabinet Grotesk', 'Helvetica Neue', sans-serif;
+  --font-body: 'Satoshi', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ── Fluid type scale ──────────────────────────────────────────────────── */
+  --type-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --type-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --type-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --type-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --type-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --type-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+
+  /* ── Shadows — warm-tinted ─────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px oklch(0.25 0.02 60 / 0.06);
+  --shadow-md: 0 4px 16px oklch(0.25 0.02 60 / 0.09);
+  --shadow-lg: 0 12px 40px oklch(0.25 0.02 60 / 0.13);
+  --shadow-float: 0 2px 8px oklch(0.25 0.02 60 / 0.07), 0 16px 48px oklch(0.25 0.02 60 / 0.08);
+
+  /* ── Easing curves ─────────────────────────────────────────────────────── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-data: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Durations ─────────────────────────────────────────────────────────── */
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 380ms;
+  --duration-xslow: 600ms;
+
+  /* ── Spacing ───────────────────────────────────────────────────────────── */
+  --space-1: 0.25rem;   --space-2: 0.5rem;   --space-3: 0.75rem;
+  --space-4: 1rem;      --space-5: 1.25rem;   --space-6: 1.5rem;
+  --space-8: 2rem;      --space-10: 2.5rem;   --space-12: 3rem;
+  --space-16: 4rem;     --space-20: 5rem;     --space-24: 6rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL RESETS
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 html {
   scroll-behavior: smooth;
@@ -107,14 +188,15 @@ html {
 }
 
 body {
-  background: var(--color-surface-50);
-  color: var(--color-surface-800);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
   line-height: var(--leading-relaxed);
 }
 
 ::selection {
-  background-color: var(--color-saffron-200);
-  color: var(--color-saffron-900);
+  background-color: var(--color-primary-highlight);
+  color: var(--color-primary-active);
 }
 
 /* Anchor links clear the fixed nav */
@@ -124,7 +206,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Placeholder styling */
 ::placeholder {
-  color: var(--color-surface-400);
+  color: var(--color-text-faint);
   opacity: 1;
 }
 
@@ -141,9 +223,62 @@ img {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
-/* ── Dark hero gradient orbs — only for dark backgrounds ───────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLL REVEAL ANIMATION SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--duration-slow) var(--ease-enter),
+    transform var(--duration-slow) var(--ease-enter);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger variants */
+[data-reveal="fade"]  { transform: none; }
+[data-reveal="up"]    { transform: translateY(16px); }
+[data-reveal="scale"] { transform: scale(0.97); }
+[data-reveal="left"]  { transform: translateX(-16px); }
+
+[data-reveal="fade"].is-visible,
+[data-reveal="up"].is-visible,
+[data-reveal="scale"].is-visible,
+[data-reveal="left"].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE TRANSITIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.page-enter {
+  animation: pageEnter var(--duration-slow) var(--ease-enter) forwards;
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO ORB — decorative blurs for dark backgrounds
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .hero-orb {
   position: absolute;
   border-radius: 9999px;
@@ -151,45 +286,56 @@ img {
   pointer-events: none;
 }
 
-/* ── Utility classes ────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES — gradients, card hover, btn-press, animations
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Gradient backgrounds */
 .gradient-saffron {
-  background: linear-gradient(135deg, var(--color-saffron-500), var(--color-saffron-600));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
 }
 .gradient-divine {
-  background: linear-gradient(135deg, var(--color-saffron-600), var(--color-lotus-pink), var(--color-temple-gold));
+  background: linear-gradient(135deg, var(--color-primary-hover), var(--color-art-2), #D4A438);
 }
 .text-gradient-saffron {
-  background: linear-gradient(135deg, var(--color-saffron-600), var(--color-temple-gold));
+  background: linear-gradient(135deg, var(--color-primary), #D4A438);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Card hover — the ONLY hover pattern. Subtle lift + shadow. */
+/* Card hover — translateY(-2px) + warm shadow. The ONLY hover pattern. */
 .card-hover {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 300ms var(--ease-smooth), box-shadow 300ms var(--ease-smooth);
   will-change: transform;
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px -4px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-md);
 }
 
 /* Button press */
 .btn-press:active {
   transform: scale(0.97);
-  transition: transform 0.1s ease;
+  transition: transform 100ms ease;
+}
+
+/* Button hover — subtle lift + soft shadow */
+.btn-hover {
+  transition: all 200ms var(--ease-smooth);
+}
+.btn-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Fade in on scroll */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fadeInUp 0.5s ease both;
+  animation: fadeInUp 0.5s var(--ease-enter) both;
 }
 .animate-fade-in-delay-1 { animation-delay: 0.08s; }
 .animate-fade-in-delay-2 { animation-delay: 0.16s; }
@@ -213,24 +359,13 @@ img {
   display: none;
 }
 
-/* ── Micro-interactions ────────────────────────────────────────────── */
-
-/* Button hover — subtle lift + soft shadow */
-.btn-hover {
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.btn-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1);
-}
-
 /* Card enter animation — staggered on scroll */
 @keyframes cardEnter {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .card-enter {
-  animation: cardEnter 0.4s ease both;
+  animation: cardEnter 0.4s var(--ease-enter) both;
 }
 
 /* Link underline — grows from center on hover */
@@ -245,7 +380,7 @@ img {
   width: 0;
   height: 1px;
   background: currentColor;
-  transition: all 0.25s ease;
+  transition: all 250ms var(--ease-smooth);
 }
 .link-underline:hover::after {
   left: 0;
@@ -254,24 +389,250 @@ img {
 
 /* Focus ring — animated outline offset */
 :focus-visible {
-  outline: 2px solid var(--color-saffron-400);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 4px;
-  transition: outline-offset 0.15s ease;
+  transition: outline-offset 150ms ease;
 }
 
-/* Skeleton loading pulse */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SKELETON LOADING — shimmer animation
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .skeleton {
-  background: linear-gradient(90deg, var(--color-surface-200) 25%, var(--color-surface-100) 50%, var(--color-surface-200) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-offset) 25%,
+    var(--color-surface) 50%,
+    var(--color-surface-offset) 75%
+  );
   background-size: 200% 100%;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
 }
-@keyframes skeleton-pulse {
+
+@keyframes skeleton-shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* ── Print styles ──────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORGANIC ILLUSTRATION SHAPES — card decorations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.organic-shape {
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  width: 140px;
+  height: 140px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Shell spiral using conic gradient */
+.art-shell {
+  background: conic-gradient(
+    from 0deg,
+    var(--color-art-1),
+    var(--color-art-3),
+    var(--color-art-2),
+    var(--color-art-1)
+  );
+  border-radius: 60% 40% 70% 30% / 50% 60% 40% 70%;
+  animation: morphShape 8s ease-in-out infinite;
+}
+
+@keyframes morphShape {
+  0%, 100% { border-radius: 60% 40% 70% 30% / 50% 60% 40% 70%; }
+  33%      { border-radius: 40% 60% 30% 70% / 60% 40% 70% 30%; }
+  66%      { border-radius: 70% 30% 50% 50% / 30% 70% 60% 40%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CARD TYPES — Three distinct styles from the design system
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Type A — Illustrated Feature Card */
+.card-featured {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, var(--color-art-3) 0%, var(--color-surface) 100%);
+  transition: transform 300ms var(--ease-smooth), box-shadow 300ms var(--ease-smooth);
+}
+.card-featured:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Type B — Status Card */
+.card-status {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  transition: background 200ms var(--ease-smooth);
+}
+.card-status:hover {
+  background: var(--color-surface-dynamic);
+}
+
+/* Status indicator dot */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.status-dot--success { background: var(--color-status-success); }
+.status-dot--warning { background: var(--color-status-warning); }
+.status-dot--error   { background: var(--color-status-error); }
+.status-dot--info    { background: var(--color-status-info); }
+
+/* Type C — Progress Card */
+.card-progress {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+}
+
+/* Icon square for progress cards */
+.icon-square {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-surface-offset);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  transition: width 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BENTO GRID LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-4);
+}
+.card--featured   { grid-column: span 8; }
+.card--secondary  { grid-column: span 4; }
+.card--half       { grid-column: span 6; }
+.card--full       { grid-column: span 12; }
+
+@media (max-width: 768px) {
+  .bento-grid > * { grid-column: span 12 !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATUS BADGES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: 9999px;
+  font-size: var(--type-xs);
+  font-weight: 500;
+}
+.badge--success { background: color-mix(in oklch, #437a22 12%, transparent); color: #437a22; }
+.badge--warning { background: color-mix(in oklch, #964219 12%, transparent); color: #964219; }
+.badge--error   { background: color-mix(in oklch, #a12c7b 12%, transparent); color: #a12c7b; }
+.badge--info    { background: color-mix(in oklch, #006494 12%, transparent); color: #006494; }
+.badge--neutral { background: var(--color-surface-offset); color: var(--color-text-muted); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTON
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.fab {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+  transition: transform 200ms var(--ease-spring), box-shadow 200ms ease;
+  z-index: 100;
+  border: none;
+}
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-lg);
+}
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AVATAR STACK
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.avatar-stack { display: flex; }
+.avatar-stack .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-bg);
+  margin-left: -8px;
+  object-fit: cover;
+}
+.avatar-stack .avatar:first-child { margin-left: 0; }
+.avatar-stack .avatar--count {
+  background: var(--color-surface-dynamic);
+  font-size: var(--type-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-INTERACTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Pulse animation for urgent status badges */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @media print {
   header, footer, .no-print {
     display: none !important;

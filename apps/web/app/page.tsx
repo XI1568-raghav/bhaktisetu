@@ -282,21 +282,22 @@ async function LiveDarshanSection() {
   }
 
   return (
-    <section className="py-16 md:py-20">
+    <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
+            <h2 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Live Darshan
             </h2>
-            <p className="text-surface-500 mt-2">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               Watch sacred temple ceremonies in real time
             </p>
           </div>
           <a
             href="/darshan"
-            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold transition-colors link-underline"
+            style={{ color: 'var(--color-primary)' }}
           >
             All Live Temples &rarr;
           </a>
@@ -307,7 +308,9 @@ async function LiveDarshanSection() {
             <a
               key={temple.id}
               href={`/darshan/${temple.id}`}
-              className={`group rounded-xl overflow-hidden bg-white border border-surface-200/60 card-hover animate-fade-in animate-fade-in-delay-${Math.min(idx, 3)}${idx === 0 ? ' sm:col-span-2' : ''}`}
+              data-reveal="up"
+              className={`group rounded-xl overflow-hidden card-hover${idx === 0 ? ' sm:col-span-2' : ''}`}
+              style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
             >
               {/* Temple image */}
               <div className={`relative ${idx === 0 ? 'aspect-[2/1]' : 'aspect-video'} bg-gradient-to-br from-saffron-200 to-saffron-100`}>
@@ -344,10 +347,10 @@ async function LiveDarshanSection() {
 
               {/* Info */}
               <div className="p-4">
-                <h3 className="font-semibold text-surface-900 group-hover:text-saffron-600 transition-colors">
+                <h3 className="font-semibold transition-colors" style={{ color: 'var(--color-text)' }}>
                   {temple.name}
                 </h3>
-                <p className="text-sm text-surface-500 flex items-center gap-1 mt-1">
+                <p className="text-sm flex items-center gap-1 mt-1" style={{ color: 'var(--color-text-muted)' }}>
                   <MapPin className="w-3.5 h-3.5" />
                   {temple.city} &middot; {temple.deity}
                 </p>
@@ -359,7 +362,8 @@ async function LiveDarshanSection() {
         <div className="mt-8 text-center sm:hidden">
           <a
             href="/darshan"
-            className="inline-flex items-center gap-1 text-saffron-600 font-semibold text-sm"
+            className="inline-flex items-center gap-1 font-semibold text-sm"
+            style={{ color: 'var(--color-primary)' }}
           >
             All Live Temples &rarr;
           </a>
@@ -422,14 +426,14 @@ async function PanchangSection() {
   const formattedDate = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
 
   return (
-    <section className="py-16 md:py-20 bg-white">
+    <section className="py-14 md:py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
+            <h2 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Today&rsquo;s Panchang
             </h2>
-            <p className="text-surface-500 mt-2">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               {formattedDate}
               {panchangData.tithiPaksha
                 ? ` \u00b7 ${panchangData.tithiPaksha} ${panchangData.tithi}`
@@ -438,7 +442,8 @@ async function PanchangSection() {
           </div>
           <a
             href="/panchang"
-            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold transition-colors link-underline"
+            style={{ color: 'var(--color-primary)' }}
           >
             Full Details <ArrowRight className="w-4 h-4" />
           </a>
@@ -447,54 +452,54 @@ async function PanchangSection() {
         {/* Bento grid: 4 cards top row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Sunrise */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-surface-200/50 card-hover">
+          <div data-reveal="up" className="rounded-xl p-6 card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mb-3">
               <Sunrise className="w-5 h-5 text-amber-500" />
             </div>
-            <div className="text-sm text-surface-500 font-medium">Sunrise</div>
-            <div className="text-xl font-semibold text-surface-900 mt-0.5">
+            <div className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Sunrise</div>
+            <div className="text-xl font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>
               {panchangData.sunrise}
             </div>
           </div>
 
           {/* Sunset */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-surface-200/50 card-hover">
+          <div data-reveal="up" className="rounded-xl p-6 card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mb-3">
               <Sunset className="w-5 h-5 text-orange-500" />
             </div>
-            <div className="text-sm text-surface-500 font-medium">Sunset</div>
-            <div className="text-xl font-semibold text-surface-900 mt-0.5">
+            <div className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Sunset</div>
+            <div className="text-xl font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>
               {panchangData.sunset}
             </div>
           </div>
 
           {/* Tithi */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-surface-200/50 card-hover">
+          <div data-reveal="up" className="rounded-xl p-6 card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <div className="w-10 h-10 bg-saffron-50 rounded-xl flex items-center justify-center mb-3">
               <Moon className="w-5 h-5 text-saffron-500" />
             </div>
-            <div className="text-sm text-surface-500 font-medium">Tithi</div>
-            <div className="text-lg font-semibold text-surface-900 mt-0.5">
+            <div className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Tithi</div>
+            <div className="text-lg font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>
               {panchangData.tithi}
             </div>
             {panchangData.tithiPaksha && (
-              <div className="text-xs text-surface-400 mt-0.5">
+              <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-faint)' }}>
                 {panchangData.tithiPaksha}
               </div>
             )}
           </div>
 
           {/* Nakshatra */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-surface-200/50 card-hover">
+          <div data-reveal="up" className="rounded-xl p-6 card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mb-3">
               <Star className="w-5 h-5 text-purple-500" />
             </div>
-            <div className="text-sm text-surface-500 font-medium">Nakshatra</div>
-            <div className="text-lg font-semibold text-surface-900 mt-0.5">
+            <div className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Nakshatra</div>
+            <div className="text-lg font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>
               {panchangData.nakshatra}
             </div>
             {panchangData.nakshatraUntil && (
-              <div className="text-xs text-surface-400 mt-0.5">
+              <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-faint)' }}>
                 {panchangData.nakshatraUntil}
               </div>
             )}
@@ -503,11 +508,11 @@ async function PanchangSection() {
 
         {/* Auspicious timings row */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-tulsi-green/5 border border-tulsi-green/15 rounded-xl p-6 card-hover">
+          <div data-reveal="up" className="bg-tulsi-green/5 border border-tulsi-green/15 rounded-xl p-6 card-hover">
             <h4 className="text-sm font-semibold text-tulsi-green mb-3">
               Shubh Muhurat
             </h4>
-            <div className="space-y-2 text-sm text-surface-700">
+            <div className="space-y-2 text-sm" style={{ color: 'var(--color-text)' }}>
               {panchangData.shubhMuhurat.map((m) => (
                 <div key={m.name} className="flex justify-between">
                   <span>{m.name}</span>
@@ -518,28 +523,28 @@ async function PanchangSection() {
               ))}
             </div>
           </div>
-          <div className="bg-sacred-red/5 border border-sacred-red/15 rounded-xl p-6 card-hover">
+          <div data-reveal="up" className="bg-sacred-red/5 border border-sacred-red/15 rounded-xl p-6 card-hover">
             <h4 className="text-sm font-semibold text-sacred-red mb-3">
               Rahu Kaal
             </h4>
-            <div className="text-sm text-surface-700">
+            <div className="text-sm" style={{ color: 'var(--color-text)' }}>
               <div className="flex justify-between">
                 <span>Avoid new beginnings</span>
                 <span className="font-medium">{panchangData.rahuKaal}</span>
               </div>
             </div>
           </div>
-          <div className="bg-ganga-blue/5 border border-ganga-blue/15 rounded-xl p-6 card-hover">
+          <div data-reveal="up" className="bg-ganga-blue/5 border border-ganga-blue/15 rounded-xl p-6 card-hover">
             <h4 className="text-sm font-semibold text-ganga-blue mb-3">
               Today&rsquo;s Vrat / Festival
             </h4>
-            <div className="text-sm text-surface-700">
+            <div className="text-sm" style={{ color: 'var(--color-text)' }}>
               {panchangData.vrat ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-saffron-100 text-saffron-700 rounded-full text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
                   {panchangData.vrat}
                 </span>
               ) : (
-                <span className="text-surface-400">No special observance</span>
+                <span style={{ color: 'var(--color-text-faint)' }}>No special observance</span>
               )}
             </div>
           </div>
@@ -577,20 +582,21 @@ async function FeaturedPujasSection() {
   }
 
   return (
-    <section className="py-16 md:py-20">
+    <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
+            <h2 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Featured Pujas
             </h2>
-            <p className="text-surface-500 mt-2">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               Book with verified pandits at renowned temples
             </p>
           </div>
           <a
             href="/pujas"
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-50 text-saffron-700 rounded-lg text-sm font-medium"
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors btn-hover"
+            style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
           >
             Browse All <ArrowRight className="w-4 h-4" />
           </a>
@@ -601,7 +607,9 @@ async function FeaturedPujasSection() {
             <a
               key={puja.name}
               href={`/pujas/${puja.slug}`}
-              className="group snap-start shrink-0 w-[280px] lg:w-auto rounded-xl overflow-hidden bg-white border border-surface-200/60 card-hover"
+              data-reveal="up"
+              className="group snap-start shrink-0 w-[280px] lg:w-auto rounded-xl overflow-hidden card-hover"
+              style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
             >
               {/* Deity image */}
               <div className="relative aspect-[16/10] bg-gradient-to-br from-saffron-100 to-amber-50">
@@ -628,35 +636,35 @@ async function FeaturedPujasSection() {
               </div>
 
               <div className="p-5">
-                <div className="flex items-center gap-1 text-sm text-surface-500 mb-1">
+                <div className="flex items-center gap-1 text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>
                   <MapPin className="w-3.5 h-3.5" />
                   {puja.temple}
                 </div>
-                <h3 className="text-lg font-semibold text-surface-900 group-hover:text-saffron-600 transition-colors">
+                <h3 className="text-lg font-semibold transition-colors" style={{ color: 'var(--color-text)' }}>
                   {puja.name}
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center gap-1 text-sm">
                     <Star className="w-4 h-4 text-temple-gold fill-temple-gold" />
-                    <span className="font-semibold text-surface-800">
+                    <span className="font-semibold" style={{ color: 'var(--color-text)' }}>
                       {puja.rating}
                     </span>
                   </div>
-                  <span className="text-surface-300">|</span>
-                  <span className="text-sm text-surface-500">
+                  <span style={{ color: 'var(--color-divider)' }}>|</span>
+                  <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                     {puja.reviews.toLocaleString('en-IN')} reviews
                   </span>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <div>
-                    <span className="text-xl font-semibold text-saffron-600">
+                    <span className="text-xl font-semibold" style={{ color: 'var(--color-primary)' }}>
                       &#x20B9;{puja.price.toLocaleString('en-IN')}
                     </span>
-                    <span className="text-sm text-surface-400 ml-1">
+                    <span className="text-sm ml-1" style={{ color: 'var(--color-text-faint)' }}>
                       onwards
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600 group-hover:translate-x-1 transition-transform">
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:translate-x-1 transition-transform" style={{ color: 'var(--color-primary)' }}>
                     Book <ChevronRight className="w-4 h-4" />
                   </span>
                 </div>
@@ -688,20 +696,21 @@ async function TrendingContentSection() {
   }
 
   return (
-    <section className="py-16 md:py-20 bg-white">
+    <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
+            <h2 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Trending Content
             </h2>
-            <p className="text-surface-500 mt-2">
+            <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
               Aartis, bhajans, mantras, and more
             </p>
           </div>
           <a
             href="/content"
-            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700 underline underline-offset-4 decoration-saffron-300 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold transition-colors link-underline"
+            style={{ color: 'var(--color-primary)' }}
           >
             Explore Library
           </a>
@@ -712,7 +721,9 @@ async function TrendingContentSection() {
             <a
               key={item.title}
               href={`/content/${item.slug}`}
-              className="flex items-center gap-4 p-4 bg-white rounded-xl border border-surface-200/40 hover:border-surface-300 transition-colors"
+              data-reveal="up"
+              className="flex items-center gap-4 p-4 rounded-xl transition-colors card-hover"
+              style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
             >
               <img
                 src={getDeityImage(item.deity.toLowerCase().replace(/\s+/g, '-'), 'square')}
@@ -721,14 +732,14 @@ async function TrendingContentSection() {
                 className="w-16 h-16 rounded-lg object-cover shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-surface-900 truncate">
+                <h3 className="font-semibold truncate" style={{ color: 'var(--color-text)' }}>
                   {item.title}
                 </h3>
-                <p className="text-sm text-surface-500 mt-0.5">
+                <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
                   {item.deity} &middot; <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${typeBadgeClasses(item.type)}`}>{item.type}</span> &middot; {item.plays} plays
                 </p>
               </div>
-              <span className="text-sm text-surface-400 shrink-0">{item.duration}</span>
+              <span className="text-sm shrink-0" style={{ color: 'var(--color-text-faint)' }}>{item.duration}</span>
             </a>
           ))}
         </div>
@@ -747,13 +758,16 @@ function SectionSkeleton({
   count?: number;
 }) {
   return (
-    <section className={`py-16 md:py-20 ${bg}`}>
+    <section
+      className="py-14 md:py-20"
+      style={bg === 'surface' ? { background: 'var(--color-surface)' } : undefined}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
-        <div className="h-8 bg-surface-200 rounded-xl w-64 mb-3" />
-        <div className="h-4 bg-surface-100 rounded-lg w-96 mb-10" />
+        <div className="h-8 rounded-xl w-64 mb-3" style={{ background: 'var(--color-surface-offset)' }} />
+        <div className="h-4 rounded-lg w-96 mb-10" style={{ background: 'var(--color-surface)' }} />
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${count} gap-5`}>
           {Array.from({ length: count }).map((_, i) => (
-            <div key={i} className="bg-surface-100 rounded-xl h-64" />
+            <div key={i} className="rounded-xl h-64" style={{ background: 'var(--color-surface)' }} />
           ))}
         </div>
       </div>
@@ -766,82 +780,105 @@ function SectionSkeleton({
 export default function HomePage() {
   return (
     <div className="min-h-screen">
-      {/* ============ HERO SECTION ("Sacred Dark" premium) ============ */}
-      <section className="relative bg-surface-900 overflow-hidden">
-        {/* Gradient orbs — purposeful, not generic */}
-        <div className="hero-orb top-0 right-1/4 w-[500px] h-[500px] bg-saffron-600/15" />
-        <div className="hero-orb bottom-0 left-1/4 w-[400px] h-[400px] bg-temple-gold/10 !blur-[100px]" />
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 text-center">
-          {/* Pill badge */}
-          <div className="animate-fade-in inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-surface-700 bg-surface-800/50 text-sm text-surface-300 mb-8">
-            <span className="w-2 h-2 bg-tulsi-green rounded-full animate-pulse" />
-            Live: 12,450+ devotees watching darshan now
-          </div>
-
-          {/* Main heading — large, bold, white */}
-          <h1 className="animate-fade-in animate-fade-in-delay-1 text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mx-auto">
-            Your Bridge to
-            <span className="text-saffron-400"> Sacred Traditions</span>
-          </h1>
-
-          <p className="animate-fade-in animate-fade-in-delay-2 mt-6 text-lg text-surface-400 max-w-2xl mx-auto leading-relaxed">
-            Book authentic pujas with verified priests. Watch live darshan from
-            India&rsquo;s most sacred temples. Get AI-powered spiritual guidance.
-          </p>
-
-          {/* Two buttons — primary solid white + secondary outlined */}
-          <div className="animate-fade-in animate-fade-in-delay-3 mt-10 flex items-center justify-center gap-4">
-            <a
-              href="/temples"
-              className="px-6 py-3 bg-white text-surface-900 font-medium text-sm rounded-lg hover:bg-surface-100 transition-colors btn-press"
-            >
-              Explore Temples
-            </a>
-            <a
-              href="/pujas"
-              className="px-6 py-3 border border-surface-600 text-surface-300 font-medium text-sm rounded-lg hover:bg-surface-800 hover:text-white transition-colors btn-press"
-            >
-              Book a Puja
-            </a>
-          </div>
-
-          {/* Stats row */}
-          <div className="mt-16 flex items-center justify-center gap-8 sm:gap-12 text-center">
+      {/* ============ HERO SECTION — Story-driven, warm ============ */}
+      <section className="relative overflow-hidden" style={{ background: 'var(--color-bg)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:pt-28 md:pb-24">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left — Story copy */}
             <div>
-              <div className="text-2xl font-semibold text-white">200+</div>
-              <div className="text-sm text-surface-500 mt-0.5">Temples</div>
+              <div
+                className="animate-fade-in inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-6"
+                style={{ background: 'var(--color-art-2)', color: 'var(--color-text)' }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                12,450+ devotees watching live darshan
+              </div>
+
+              <h1
+                className="animate-fade-in animate-fade-in-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]"
+                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+              >
+                Your bridge to<br />
+                <span style={{ color: 'var(--color-primary)' }}>sacred traditions</span>
+              </h1>
+
+              <p
+                className="animate-fade-in animate-fade-in-delay-2 mt-5 text-base md:text-lg leading-relaxed max-w-lg"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Book authentic pujas with verified priests. Watch live darshan from
+                India&rsquo;s most sacred temples. Get AI-powered spiritual guidance.
+              </p>
+
+              <div className="animate-fade-in animate-fade-in-delay-3 mt-8 flex items-center gap-3">
+                <a
+                  href="/temples"
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-colors btn-press btn-hover"
+                  style={{ background: 'var(--color-primary)' }}
+                >
+                  Explore Temples
+                </a>
+                <a
+                  href="/pujas"
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg transition-colors btn-press btn-hover"
+                  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+                >
+                  Book a Puja
+                </a>
+              </div>
+
+              {/* Trust badges */}
+              <div className="mt-10 flex items-center gap-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                <div><span className="font-semibold" style={{ color: 'var(--color-text)' }}>200+</span> Temples</div>
+                <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
+                <div><span className="font-semibold" style={{ color: 'var(--color-text)' }}>50K+</span> Pujas Booked</div>
+                <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
+                <div><span className="font-semibold" style={{ color: 'var(--color-text)' }}>4.9&#9733;</span> Rating</div>
+              </div>
             </div>
-            <div className="w-px h-8 bg-surface-700" />
-            <div>
-              <div className="text-2xl font-semibold text-white">50K+</div>
-              <div className="text-sm text-surface-500 mt-0.5">Pujas Booked</div>
-            </div>
-            <div className="w-px h-8 bg-surface-700" />
-            <div>
-              <div className="text-2xl font-semibold text-white">4.9&#9733;</div>
-              <div className="text-sm text-surface-500 mt-0.5">User Rating</div>
+
+            {/* Right — Featured illustrated card (bento style) */}
+            <div className="hidden md:block">
+              <div
+                className="rounded-2xl p-6 relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, var(--color-art-1), var(--color-art-3))' }}
+              >
+                <div className="organic-shape art-shell w-32 h-32 absolute -bottom-4 -right-4 opacity-40" />
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Live Now</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>Kashi Vishwanath &middot; Morning Aarti</p>
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>12,450 watching</span>
+                </div>
+                <img
+                  src={getTempleHero('kashi-vishwanath')}
+                  alt="Kashi Vishwanath"
+                  className="mt-4 rounded-xl w-full h-40 object-cover"
+                  loading="eager"
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ============ LIVE DARSHAN (dynamic) ============ */}
-      <Suspense fallback={<SectionSkeleton count={4} />}>
+      <Suspense fallback={<SectionSkeleton bg="surface" count={4} />}>
         <LiveDarshanSection />
       </Suspense>
 
       {/* ============ TODAY'S PANCHANG (dynamic) ============ */}
       <Suspense
         fallback={
-          <section className="py-16 md:py-20">
+          <section className="py-14 md:py-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
-              <div className="h-8 bg-surface-200 rounded-xl w-64 mb-10" />
+              <div className="h-8 rounded-xl w-64 mb-10" style={{ background: 'var(--color-surface-offset)' }} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={i}
-                    className="bg-surface-100 rounded-xl h-28"
+                    className="rounded-xl h-28"
+                    style={{ background: 'var(--color-surface)' }}
                   />
                 ))}
               </div>
@@ -853,7 +890,7 @@ export default function HomePage() {
       </Suspense>
 
       {/* ============ FEATURED PUJAS (dynamic) ============ */}
-      <Suspense fallback={<SectionSkeleton count={3} />}>
+      <Suspense fallback={<SectionSkeleton bg="surface" count={3} />}>
         <FeaturedPujasSection />
       </Suspense>
 
@@ -861,61 +898,77 @@ export default function HomePage() {
       <ForYouSection />
 
       {/* ============ TRENDING CONTENT (dynamic) ============ */}
-      <Suspense fallback={<SectionSkeleton count={4} />}>
+      <Suspense fallback={<SectionSkeleton bg="surface" count={4} />}>
         <TrendingContentSection />
       </Suspense>
 
       {/* ============ ASK PANDIT AI SECTION ============ */}
-      <section className="py-16 md:py-20">
+      <section className="py-14 md:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-surface-900 via-surface-800 to-surface-900 p-10 md:p-16 text-center">
-            {/* Decorative glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-saffron-500/15 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-temple-gold/10 rounded-full blur-3xl" />
+          <div
+            className="relative overflow-hidden rounded-2xl p-10 md:p-16"
+            style={{ background: 'linear-gradient(135deg, var(--color-art-3), var(--color-art-1))' }}
+          >
+            <div className="organic-shape art-shell w-48 h-48 absolute -bottom-8 -right-8 opacity-30" />
 
-            <div className="relative">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-xl bg-gradient-to-br from-saffron-500 to-temple-gold flex items-center justify-center shadow-lg shadow-saffron-500/20">
-                <Sparkles className="w-8 h-8 text-white" />
+            <div className="relative grid md:grid-cols-[1fr_auto] gap-8 items-center">
+              <div>
+                <div
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full mb-6 uppercase tracking-widest"
+                  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  AI-Powered
+                </div>
+                <h2
+                  className="text-2xl md:text-3xl font-semibold tracking-tight mb-4 max-w-xl"
+                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+                >
+                  Ask Pandit &mdash; Your Spiritual Guide
+                </h2>
+                <p className="text-base md:text-lg max-w-xl mb-8 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  Get instant answers about rituals, muhurat timings, festival
+                  significance, and personalized puja recommendations from our
+                  AI spiritual assistant.
+                </p>
+                <a
+                  href="/ask-pandit"
+                  className="inline-flex items-center gap-2.5 text-white font-medium px-6 py-3 rounded-lg transition-colors btn-press btn-hover"
+                  style={{ background: 'var(--color-primary)' }}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Start a Conversation
+                </a>
               </div>
-              <div className="inline-flex items-center gap-1.5 bg-white/10 text-saffron-300 text-xs font-bold px-3 py-1 rounded-full mb-6 uppercase tracking-widest">
-                <Bot className="w-3.5 h-3.5" />
-                AI-Powered
+              <div className="hidden md:flex items-center justify-center">
+                <div
+                  className="w-20 h-20 rounded-xl flex items-center justify-center"
+                  style={{ background: 'var(--color-surface-offset)' }}
+                >
+                  <Sparkles className="w-10 h-10" style={{ color: 'var(--color-primary)' }} />
+                </div>
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-4 max-w-xl mx-auto">
-                Ask Pandit &mdash; Your Spiritual Guide
-              </h2>
-              <p className="text-surface-400 text-lg max-w-xl mx-auto mb-8 leading-relaxed">
-                Get instant answers about rituals, muhurat timings, festival
-                significance, and personalized puja recommendations from our
-                AI spiritual assistant.
-              </p>
-              <a
-                href="/ask-pandit"
-                className="inline-flex items-center gap-2.5 bg-saffron-600 text-white font-medium px-7 py-3.5 rounded-lg hover:bg-saffron-700 transition-all shadow-lg shadow-saffron-500/20 btn-press"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Start a Conversation
-              </a>
             </div>
           </div>
         </div>
       </section>
 
       {/* ============ BHAKTI STORE (static) ============ */}
-      <section className="py-16 md:py-20">
+      <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
+              <h2 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
                 Bhakti Store
               </h2>
-              <p className="text-surface-500 mt-2">
+              <p className="mt-2" style={{ color: 'var(--color-text-muted)' }}>
                 Authentic puja samagri, idols, and spiritual essentials
               </p>
             </div>
             <a
               href="/store"
-              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-surface-900 text-white rounded-lg text-sm font-medium"
+              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors btn-hover"
+              style={{ background: 'var(--color-text)' }}
             >
               Shop Essentials
             </a>
@@ -926,9 +979,11 @@ export default function HomePage() {
               <a
                 key={product.name}
                 href="/store"
-                className="group rounded-xl overflow-hidden bg-white border border-surface-200/60 card-hover"
+                data-reveal="up"
+                className="group rounded-xl overflow-hidden card-hover"
+                style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
               >
-                <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-square flex items-center justify-center overflow-hidden" style={{ background: 'var(--color-surface-offset)' }}>
                   <img
                     src={
                       product.name.includes('Thali') ? getProductImage('brass-puja-thali') :
@@ -938,28 +993,31 @@ export default function HomePage() {
                     }
                     alt={product.name}
                     loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover transition-transform duration-500"
                   />
                 </div>
                 <div className="p-5">
-                  <h3 className="font-medium text-surface-900 text-sm line-clamp-2 group-hover:text-saffron-600 transition-colors">
+                  <h3 className="font-medium text-sm line-clamp-2 transition-colors" style={{ color: 'var(--color-text)' }}>
                     {product.name}
                   </h3>
                   <div className="flex items-center gap-1 mt-1.5">
                     <Star className="w-3.5 h-3.5 text-temple-gold fill-temple-gold" />
-                    <span className="text-sm font-medium text-surface-700">
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                       {product.rating}
                     </span>
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="text-lg font-semibold text-surface-900">
+                    <span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
                       &#x20B9;{product.price.toLocaleString('en-IN')}
                     </span>
-                    <span className="text-sm text-surface-400 line-through">
+                    <span className="text-sm line-through" style={{ color: 'var(--color-text-faint)' }}>
                       &#x20B9;{product.originalPrice.toLocaleString('en-IN')}
                     </span>
                   </div>
-                  <button className="mt-3 w-full py-2 text-sm font-medium text-saffron-600 bg-saffron-50 hover:bg-saffron-100 rounded-lg transition-colors btn-press">
+                  <button
+                    className="mt-3 w-full py-2 text-sm font-medium rounded-lg transition-colors btn-press"
+                    style={{ background: 'var(--color-surface-offset)', color: 'var(--color-primary)' }}
+                  >
                     Add to Cart
                   </button>
                 </div>
@@ -970,15 +1028,21 @@ export default function HomePage() {
       </section>
 
       {/* ============ CTA / APP DOWNLOAD (static) ============ */}
-      <section className="py-16 md:py-20">
+      <section className="py-14 md:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-xl gradient-saffron p-10 md:p-16 text-center">
-            <div className="absolute inset-0 bg-[url('/images/pattern-mandala.svg')] opacity-10 bg-center bg-cover" />
+          <div
+            className="relative overflow-hidden rounded-2xl p-10 md:p-16 text-center"
+            style={{ background: 'var(--color-text)', color: 'var(--color-text-inverse)' }}
+          >
+            <div className="absolute inset-0 bg-[url('/images/pattern-mandala.svg')] opacity-5 bg-center bg-cover" />
             <div className="relative">
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-4">
+              <h2
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
                 Your Spiritual Journey, Always with You
               </h2>
-              <p className="text-saffron-100/90 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+              <p className="text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed opacity-70">
                 Download the Bhaktisetu app for a personalized devotional experience
                 &mdash; daily panchang alerts, live darshan notifications, and
                 exclusive puja offers.
@@ -986,13 +1050,14 @@ export default function HomePage() {
               <div className="flex flex-wrap justify-center gap-4">
                 <a
                   href="#"
-                  className="inline-flex items-center gap-3 bg-white/15 backdrop-blur-sm text-white px-6 py-3.5 rounded-lg hover:bg-white/25 transition-colors border border-white/20"
+                  className="inline-flex items-center gap-3 px-6 py-3.5 rounded-lg transition-colors border"
+                  style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)' }}
                 >
                   <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
                     <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                   </svg>
                   <div className="text-left">
-                    <div className="text-[10px] uppercase tracking-wider opacity-80">
+                    <div className="text-[10px] uppercase tracking-wider opacity-60">
                       Download on the
                     </div>
                     <div className="text-sm font-semibold -mt-0.5">App Store</div>
@@ -1000,13 +1065,14 @@ export default function HomePage() {
                 </a>
                 <a
                   href="#"
-                  className="inline-flex items-center gap-3 bg-white/15 backdrop-blur-sm text-white px-6 py-3.5 rounded-lg hover:bg-white/25 transition-colors border border-white/20"
+                  className="inline-flex items-center gap-3 px-6 py-3.5 rounded-lg transition-colors border"
+                  style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)' }}
                 >
                   <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
                     <path d="M3.18 23.08c-.44-.27-.68-.72-.68-1.33V2.25c0-.61.24-1.06.68-1.33l11.06 11.08L3.18 23.08zm1.42.62l12.24-6.88-2.86-2.86-9.38 9.74zm14.54-8.17L6.27.82l9.38 9.74 2.86-2.86-12.24-6.88L17.14 6.7l2.11-1.19c.8-.45 1.47-.07 1.47.85 0 .19-.04.4-.13.61l-.06.13-2.39 8.43z" />
                   </svg>
                   <div className="text-left">
-                    <div className="text-[10px] uppercase tracking-wider opacity-80">
+                    <div className="text-[10px] uppercase tracking-wider opacity-60">
                       Get it on
                     </div>
                     <div className="text-sm font-semibold -mt-0.5">

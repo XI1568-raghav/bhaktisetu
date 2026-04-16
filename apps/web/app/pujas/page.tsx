@@ -241,14 +241,14 @@ const pujas = [
 
 export default function PujasPage() {
   return (
-    <div className="min-h-screen bg-saffron-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Hero */}
-      <section className="bg-surface-900 text-white py-12 md:py-16">
+      <section className="bg-[#ede9e3] py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
             Book Sacred Pujas Online
           </h1>
-          <p className="text-surface-300 text-lg max-w-2xl">
+          <p className="text-surface-500 text-lg max-w-2xl">
             Choose from 200+ authentic pujas performed by verified pandits at
             India&rsquo;s most revered temples. Live streaming and prasad delivery
             included.
@@ -256,20 +256,20 @@ export default function PujasPage() {
 
           {/* Trust badges */}
           <div className="mt-6 flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <Shield className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <Shield className="w-4 h-4 text-saffron-600" />
               Verified Pandits
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <Video className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <Video className="w-4 h-4 text-saffron-600" />
               Live Streaming
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <Gift className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <Gift className="w-4 h-4 text-saffron-600" />
               Prasad Delivery
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <CheckCircle2 className="w-4 h-4 text-saffron-600" />
               Money-Back Guarantee
             </div>
           </div>
@@ -277,11 +277,11 @@ export default function PujasPage() {
           {/* Search */}
           <div className="mt-8 max-w-2xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
               <input
                 type="text"
                 placeholder="Search pujas by name, deity, or temple..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-surface-700 bg-white text-stone-800 placeholder:text-stone-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[var(--color-border)] bg-white text-surface-800 placeholder:text-surface-500 shadow-warm-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
               />
             </div>
           </div>
@@ -351,7 +351,7 @@ export default function PujasPage() {
           {pujas.map((puja) => (
             <div
               key={puja.id}
-              className="group bg-white rounded-xl overflow-hidden border border-stone-100 hover:shadow-md hover:border-surface-300 transition-all duration-300"
+              className="group bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300"
             >
               {/* Puja image */}
               <div className="relative aspect-[16/10] bg-gradient-to-br from-saffron-100 to-amber-50">

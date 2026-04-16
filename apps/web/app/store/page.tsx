@@ -222,14 +222,14 @@ const products = [
 
 export default function StorePage() {
   return (
-    <div className="min-h-screen bg-saffron-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Hero */}
-      <section className="bg-surface-900 text-white py-12 md:py-16">
+      <section className="bg-[#ede9e3] py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
             Bhakti Store
           </h1>
-          <p className="text-surface-300 text-lg max-w-2xl">
+          <p className="text-surface-500 text-lg max-w-2xl">
             Authentic puja samagri, handcrafted idols, sacred rudraksha, and
             spiritual essentials — sourced from trusted artisans and blessed at
             temples.
@@ -237,20 +237,20 @@ export default function StorePage() {
 
           {/* Trust badges */}
           <div className="mt-6 flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <Truck className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <Truck className="w-4 h-4 text-saffron-600" />
               Free Delivery above ₹499
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <BadgeCheck className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <BadgeCheck className="w-4 h-4 text-saffron-600" />
               Authentic & Certified
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <RotateCcw className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <RotateCcw className="w-4 h-4 text-saffron-600" />
               Easy Returns
             </div>
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
-              <Shield className="w-4 h-4" />
+            <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
+              <Shield className="w-4 h-4 text-saffron-600" />
               Secure Payments
             </div>
           </div>
@@ -258,11 +258,11 @@ export default function StorePage() {
           {/* Search */}
           <div className="mt-8 max-w-2xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
               <input
                 type="text"
                 placeholder="Search products..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-surface-700 bg-white text-stone-800 placeholder:text-stone-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[var(--color-border)] bg-white text-surface-800 placeholder:text-surface-500 shadow-warm-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
               />
             </div>
           </div>
@@ -363,7 +363,7 @@ export default function StorePage() {
             <a
               key={product.id}
               href={`/store/${product.handle}`}
-              className="group bg-white rounded-xl overflow-hidden border border-stone-100 hover:shadow-md hover:border-surface-300 transition-all duration-300"
+              className="group bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300"
             >
               {/* Product image */}
               <div className="relative aspect-square bg-gradient-to-br from-stone-50 to-saffron-50 overflow-hidden">
