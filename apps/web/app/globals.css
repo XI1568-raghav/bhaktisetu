@@ -143,6 +143,14 @@ img {
   }
 }
 
+/* ── Dark hero gradient orbs — only for dark backgrounds ───────────── */
+.hero-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
 /* ── Utility classes ────────────────────────────────────────────────── */
 
 /* Gradient backgrounds */
