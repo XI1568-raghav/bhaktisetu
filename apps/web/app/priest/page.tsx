@@ -148,7 +148,7 @@ function getStatusBadge(status: string) {
     priest_assigned: { label: 'Accepted', cls: 'bg-blue-100 text-blue-700' },
     in_progress: { label: 'In Progress', cls: 'bg-saffron-100 text-saffron-700' },
   };
-  return map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600' };
+  return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600' };
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -182,7 +182,7 @@ export default function PriestDashboard() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-saffron-500" />
-        <span className="ml-3 text-stone-500">Loading dashboard...</span>
+        <span className="ml-3 text-surface-500">Loading dashboard...</span>
       </div>
     );
   }
@@ -233,7 +233,7 @@ export default function PriestDashboard() {
         <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
           Namaste, {data.priest.displayName.split(' ')[0]}!
         </h1>
-        <p className="text-stone-500 mt-1">
+        <p className="text-surface-500 mt-1">
           Here is your dashboard overview for today.
         </p>
       </div>
@@ -245,15 +245,15 @@ export default function PriestDashboard() {
           return (
             <div
               key={card.label}
-              className="bg-white rounded-xl border border-stone-100 p-5 hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center`}>
                   <Icon className={`w-5 h-5 ${card.color}`} />
                 </div>
-                <span className="text-sm text-stone-500">{card.label}</span>
+                <span className="text-sm text-surface-500">{card.label}</span>
               </div>
-              <p className="text-2xl font-bold text-stone-900">{card.value}</p>
+              <p className="text-2xl font-bold text-surface-800">{card.value}</p>
             </div>
           );
         })}
@@ -266,21 +266,21 @@ export default function PriestDashboard() {
           return (
             <div
               key={card.label}
-              className="bg-white rounded-xl border border-stone-100 p-4 text-center"
+              className="bg-white rounded-xl border border-surface-100 p-4 text-center"
             >
               <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
                 <Icon className={`w-5 h-5 ${card.color}`} />
               </div>
-              <p className="text-xl font-bold text-stone-900">{card.value}</p>
-              <p className="text-xs text-stone-500 mt-0.5">{card.label}</p>
+              <p className="text-xl font-bold text-surface-800">{card.value}</p>
+              <p className="text-xs text-surface-500 mt-0.5">{card.label}</p>
             </div>
           );
         })}
       </div>
 
       {/* Upcoming Bookings */}
-      <div className="bg-white rounded-xl border border-stone-100">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+      <div className="bg-white rounded-xl border border-surface-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100">
           <h2 className="font-semibold text-surface-800">Upcoming Bookings</h2>
           <Link
             href="/priest/bookings"
@@ -292,32 +292,32 @@ export default function PriestDashboard() {
 
         {data.upcomingBookings.length === 0 ? (
           <div className="p-8 text-center">
-            <Calendar className="w-10 h-10 text-stone-300 mx-auto mb-3" />
-            <p className="text-sm text-stone-500">No upcoming bookings</p>
+            <Calendar className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+            <p className="text-sm text-surface-500">No upcoming bookings</p>
           </div>
         ) : (
-          <div className="divide-y divide-stone-50">
+          <div className="divide-y divide-surface-50">
             {data.upcomingBookings.map((booking) => {
               const badge = getStatusBadge(booking.status);
               return (
                 <Link
                   key={booking.id}
                   href={`/priest/bookings/${booking.id}`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors"
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors"
                 >
                   <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center shrink-0">
                     <Flame className="w-5 h-5 text-saffron-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h3 className="text-sm font-semibold text-stone-900 truncate">
+                      <h3 className="text-sm font-semibold text-surface-800 truncate">
                         {booking.pujaType.name}
                       </h3>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
                         {badge.label}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-500">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-surface-500">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
                         {booking.temple.name}
@@ -327,15 +327,15 @@ export default function PriestDashboard() {
                         {formatDate(booking.scheduledDate)} at {formatTime(booking.scheduledTimeSlot)}
                       </span>
                     </div>
-                    <p className="text-xs text-stone-400 mt-0.5">
+                    <p className="text-xs text-surface-400 mt-0.5">
                       Devotees: {booking.devoteeNames.map((d) => d.name).join(', ')}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-stone-900">
+                    <p className="text-sm font-bold text-surface-800">
                       {formatCurrency(booking.priestPayout)}
                     </p>
-                    <p className="text-xs text-stone-400">Payout</p>
+                    <p className="text-xs text-surface-400">Payout</p>
                   </div>
                 </Link>
               );
@@ -348,30 +348,30 @@ export default function PriestDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
           href="/priest/bookings?status=confirmed"
-          className="flex items-center gap-4 bg-white rounded-xl border border-stone-100 p-5 hover:shadow-md transition-shadow group"
+          className="flex items-center gap-4 bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow group"
         >
           <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center group-hover:bg-saffron-100 transition-colors">
             <CheckCircle2 className="w-6 h-6 text-saffron-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-stone-900">Accept Bookings</h3>
-            <p className="text-sm text-stone-500">Review and accept new bookings</p>
+            <h3 className="font-semibold text-surface-800">Accept Bookings</h3>
+            <p className="text-sm text-surface-500">Review and accept new bookings</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-stone-300 ml-auto" />
+          <ArrowRight className="w-5 h-5 text-surface-300 ml-auto" />
         </Link>
 
         <Link
           href="/priest/bookings?status=completed"
-          className="flex items-center gap-4 bg-white rounded-xl border border-stone-100 p-5 hover:shadow-md transition-shadow group"
+          className="flex items-center gap-4 bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow group"
         >
           <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
             <Video className="w-6 h-6 text-purple-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-stone-900">Upload Video</h3>
-            <p className="text-sm text-stone-500">Upload video proof for completed pujas</p>
+            <h3 className="font-semibold text-surface-800">Upload Video</h3>
+            <p className="text-sm text-surface-500">Upload video proof for completed pujas</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-stone-300 ml-auto" />
+          <ArrowRight className="w-5 h-5 text-surface-300 ml-auto" />
         </Link>
       </div>
     </div>

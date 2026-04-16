@@ -35,7 +35,7 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex">
+    <div className="min-h-screen bg-surface-50 flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -46,12 +46,12 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 bg-white border-r border-stone-200 flex flex-col transition-transform duration-200 ${
+        className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 bg-white border-r border-surface-200 flex flex-col transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand header */}
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-stone-100 bg-gradient-to-r from-saffron-600 to-saffron-500">
+        <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-100 bg-gradient-to-r from-saffron-600 to-saffron-500">
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
             <Flame className="w-4 h-4 text-white" />
           </div>
@@ -68,16 +68,16 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Priest info */}
-        <div className="px-5 py-4 border-b border-stone-100">
+        <div className="px-5 py-4 border-b border-surface-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-saffron-100 rounded-full flex items-center justify-center">
               <UserCircle className="w-6 h-6 text-saffron-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-stone-900 truncate">
+              <p className="text-sm font-semibold text-surface-800 truncate">
                 {user?.fullName || 'Priest'}
               </p>
-              <p className="text-xs text-stone-500 truncate">{user?.phone}</p>
+              <p className="text-xs text-surface-500 truncate">{user?.phone}</p>
             </div>
           </div>
         </div>
@@ -95,10 +95,10 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? 'bg-saffron-50 text-saffron-700 border border-saffron-200'
-                    : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                    : 'text-surface-600 hover:bg-surface-50 hover:text-surface-800'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${active ? 'text-saffron-600' : 'text-stone-400'}`} />
+                <Icon className={`w-5 h-5 ${active ? 'text-saffron-600' : 'text-surface-400'}`} />
                 {link.label}
                 {active && <ChevronRight className="w-4 h-4 ml-auto text-saffron-400" />}
               </Link>
@@ -107,10 +107,10 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Bottom actions */}
-        <div className="px-3 py-4 border-t border-stone-100">
+        <div className="px-3 py-4 border-t border-surface-100">
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-stone-500 hover:bg-stone-50 hover:text-stone-700 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-surface-500 hover:bg-surface-50 hover:text-surface-600 transition-colors"
           >
             <ChevronRight className="w-5 h-5 rotate-180" />
             Back to Main Site
@@ -128,15 +128,15 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-16 bg-white border-b border-stone-200 flex items-center px-4 lg:px-6 sticky top-0 z-30">
+        <header className="h-16 bg-white border-b border-surface-200 flex items-center px-4 lg:px-6 sticky top-0 z-30">
           <button
-            className="lg:hidden p-2 -ml-2 text-stone-500 hover:text-stone-700"
+            className="lg:hidden p-2 -ml-2 text-surface-500 hover:text-surface-600"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-5 h-5" />
           </button>
           <div className="ml-2 lg:ml-0">
-            <h1 className="text-sm font-semibold text-stone-900 lg:hidden">Priest Portal</h1>
+            <h1 className="text-sm font-semibold text-surface-800 lg:hidden">Priest Portal</h1>
           </div>
         </header>
 

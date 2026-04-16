@@ -152,7 +152,7 @@ function getStatusConfig(status: string) {
     video_uploaded: { label: 'Video Uploaded', cls: 'bg-purple-100 text-purple-700' },
     delivered: { label: 'Delivered', cls: 'bg-green-100 text-green-700' },
   };
-  return map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600' };
+  return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600' };
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -297,12 +297,12 @@ export default function PriestBookingsPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-stone-900">My Bookings</h1>
-        <p className="text-stone-500 mt-1">Manage your assigned puja bookings</p>
+        <h1 className="text-2xl font-bold text-surface-800">My Bookings</h1>
+        <p className="text-surface-500 mt-1">Manage your assigned puja bookings</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-stone-100">
+      <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-surface-100">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -310,13 +310,13 @@ export default function PriestBookingsPage() {
             className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === tab.key
                 ? 'bg-saffron-600 text-white shadow-sm'
-                : 'text-stone-600 hover:bg-stone-50'
+                : 'text-surface-600 hover:bg-surface-50'
             }`}
           >
             {tab.label}
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'
+                activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-surface-100 text-surface-500'
               }`}
             >
               {tab.count}
@@ -329,18 +329,18 @@ export default function PriestBookingsPage() {
       {loading && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-saffron-500" />
-          <span className="ml-3 text-stone-500">Loading bookings...</span>
+          <span className="ml-3 text-surface-500">Loading bookings...</span>
         </div>
       )}
 
       {/* Empty */}
       {!loading && filteredBookings.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-stone-100 bg-white py-16">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-saffron-50">
             <Inbox className="h-8 w-8 text-saffron-400" />
           </div>
-          <h3 className="mb-2 text-lg font-semibold text-stone-800">No bookings found</h3>
-          <p className="text-sm text-stone-500">
+          <h3 className="mb-2 text-lg font-semibold text-surface-700">No bookings found</h3>
+          <p className="text-sm text-surface-500">
             {activeTab === 'all'
               ? 'You have no assigned bookings yet.'
               : `No bookings with "${tabs.find((t) => t.key === activeTab)?.label}" status.`}
@@ -357,7 +357,7 @@ export default function PriestBookingsPage() {
               <Link
                 key={booking.id}
                 href={`/priest/bookings/${booking.id}`}
-                className="block bg-white rounded-xl border border-stone-100 p-5 hover:border-saffron-200 card-hover transition-all"
+                className="block bg-white rounded-xl border border-surface-100 p-5 hover:border-saffron-200 card-hover transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                   {/* Icon */}
@@ -368,7 +368,7 @@ export default function PriestBookingsPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="text-base font-semibold text-stone-900">
+                      <h3 className="text-base font-semibold text-surface-800">
                         {booking.pujaType.name}
                       </h3>
                       <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusCfg.cls}`}>
@@ -376,9 +376,9 @@ export default function PriestBookingsPage() {
                       </span>
                     </div>
 
-                    <span className="text-xs font-mono text-stone-400">{booking.bookingNumber}</span>
+                    <span className="text-xs font-mono text-surface-400">{booking.bookingNumber}</span>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-stone-500">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-surface-500">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" />
                         {booking.temple.name}, {booking.temple.city}
@@ -397,7 +397,7 @@ export default function PriestBookingsPage() {
                       </span>
                     </div>
 
-                    <p className="text-xs text-stone-400 mt-1">
+                    <p className="text-xs text-surface-400 mt-1">
                       Booked by: {booking.user.fullName}
                     </p>
                   </div>
@@ -405,8 +405,8 @@ export default function PriestBookingsPage() {
                   {/* Right side */}
                   <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2">
                     <div className="text-right">
-                      <p className="text-lg font-bold text-stone-900">{formatCurrency(booking.priestPayout)}</p>
-                      <p className="text-xs text-stone-400">Your payout</p>
+                      <p className="text-lg font-bold text-surface-800">{formatCurrency(booking.priestPayout)}</p>
+                      <p className="text-xs text-surface-400">Your payout</p>
                     </div>
                     {getActionButton(booking)}
                   </div>

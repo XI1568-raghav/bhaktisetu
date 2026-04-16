@@ -130,7 +130,7 @@ function getStatusConfig(status: BookingStatus) {
     delivered: { label: 'Delivered', color: 'text-tulsi-green-dark', bg: 'bg-tulsi-green-light/30' },
     cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
   };
-  return map[status] || { label: status, color: 'text-stone-600', bg: 'bg-stone-100' };
+  return map[status] || { label: status, color: 'text-surface-600', bg: 'bg-surface-100' };
 }
 
 function formatDate(dateStr: string): string {
@@ -222,14 +222,14 @@ function BookingsContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Header */}
-      <div className="border-b border-stone-100 bg-white">
+      <div className="border-b border-surface-100 bg-white">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-stone-900">My Bookings</h1>
-              <p className="mt-1 text-sm text-stone-500">
+              <h1 className="text-2xl font-bold text-surface-800">My Bookings</h1>
+              <p className="mt-1 text-sm text-surface-500">
                 Track and manage your puja bookings
               </p>
             </div>
@@ -246,7 +246,7 @@ function BookingsContent() {
 
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         {/* Tabs */}
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-stone-100">
+        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-surface-100">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -254,7 +254,7 @@ function BookingsContent() {
               className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                 activeTab === tab.key
                   ? 'bg-saffron-600 text-white shadow-sm'
-                  : 'text-stone-600 hover:bg-stone-50'
+                  : 'text-surface-600 hover:bg-surface-50'
               }`}
             >
               {tab.label}
@@ -262,7 +262,7 @@ function BookingsContent() {
                 className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                   activeTab === tab.key
                     ? 'bg-white/20 text-white'
-                    : 'bg-stone-100 text-stone-500'
+                    : 'bg-surface-100 text-surface-500'
                 }`}
               >
                 {tab.count}
@@ -275,18 +275,18 @@ function BookingsContent() {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-saffron-500" />
-            <span className="ml-3 text-stone-500">Loading your bookings...</span>
+            <span className="ml-3 text-surface-500">Loading your bookings...</span>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && filteredBookings.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-stone-100 bg-white py-16">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-saffron-50">
               <Inbox className="h-8 w-8 text-saffron-400" />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-stone-800">No bookings yet</h3>
-            <p className="mb-6 max-w-sm text-center text-sm text-stone-500">
+            <h3 className="mb-2 text-lg font-semibold text-surface-700">No bookings yet</h3>
+            <p className="mb-6 max-w-sm text-center text-sm text-surface-500">
               {activeTab === 'all'
                 ? 'Explore our pujas to book your first sacred ritual.'
                 : `You have no ${activeTab} bookings at the moment.`}
@@ -315,13 +315,13 @@ function BookingsContent() {
               return (
                 <div
                   key={booking.id}
-                  className="group rounded-xl border border-stone-100 bg-white p-5 transition-all hover:border-saffron-200 card-hover"
+                  className="group rounded-xl border border-surface-100 bg-white p-5 transition-all hover:border-saffron-200 card-hover"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     {/* Left side */}
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-mono text-stone-400">
+                        <span className="text-xs font-mono text-surface-400">
                           {booking.bookingNumber}
                         </span>
                         <span
@@ -331,11 +331,11 @@ function BookingsContent() {
                         </span>
                       </div>
 
-                      <h3 className="mb-1 text-lg font-semibold text-stone-900">
+                      <h3 className="mb-1 text-lg font-semibold text-surface-800">
                         {booking.pujaName}
                       </h3>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-500">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3.5 w-3.5" />
                           {booking.templeName}, {booking.templeCity}
@@ -353,14 +353,14 @@ function BookingsContent() {
 
                     {/* Right side */}
                     <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                      <span className="text-xl font-bold text-stone-900">
+                      <span className="text-xl font-bold text-surface-800">
                         ₹{booking.totalAmount.toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-50 pt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-surface-50 pt-4">
                     <Link
                       href={`/bookings/${booking.id}`}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-saffron-50 px-3 py-2 text-xs font-semibold text-saffron-600 transition-colors hover:bg-saffron-100"

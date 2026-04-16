@@ -225,22 +225,22 @@ async function PanchangDetailsSection({
   return (
     <>
       {/* Date header */}
-      <div className="bg-white rounded-xl p-6 border border-stone-100">
+      <div className="bg-white rounded-xl p-6 border border-surface-100">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
               {formattedDate}
             </h2>
-            <p className="text-stone-500 mt-1">
+            <p className="text-surface-500 mt-1">
               {panchang.tithi} &middot; Vikram Samvat 2083
             </p>
           </div>
           <div className="flex items-center gap-2">
             <a
               href={`/panchang?offset=${prevOffset}`}
-              className="p-2 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors"
+              className="p-2 bg-surface-50 rounded-lg hover:bg-surface-100 transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-stone-500" />
+              <ChevronLeft className="w-5 h-5 text-surface-500" />
             </a>
             <a
               href="/panchang"
@@ -250,9 +250,9 @@ async function PanchangDetailsSection({
             </a>
             <a
               href={`/panchang?offset=${nextOffset}`}
-              className="p-2 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors"
+              className="p-2 bg-surface-50 rounded-lg hover:bg-surface-100 transition-colors"
             >
-              <ChevronRight className="w-5 h-5 text-stone-500" />
+              <ChevronRight className="w-5 h-5 text-surface-500" />
             </a>
           </div>
         </div>
@@ -263,10 +263,10 @@ async function PanchangDetailsSection({
             <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center mb-2">
               <Sunrise className="w-5 h-5 text-amber-600" />
             </div>
-            <div className="text-xs text-stone-500 font-medium uppercase tracking-wider">
+            <div className="text-xs text-surface-500 font-medium uppercase tracking-wider">
               Sunrise
             </div>
-            <div className="text-xl font-bold text-stone-900 mt-0.5">
+            <div className="text-xl font-bold text-surface-800 mt-0.5">
               {panchang.sunrise}
             </div>
           </div>
@@ -275,10 +275,10 @@ async function PanchangDetailsSection({
             <div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center mb-2">
               <Sunset className="w-5 h-5 text-orange-600" />
             </div>
-            <div className="text-xs text-stone-500 font-medium uppercase tracking-wider">
+            <div className="text-xs text-surface-500 font-medium uppercase tracking-wider">
               Sunset
             </div>
-            <div className="text-xl font-bold text-stone-900 mt-0.5">
+            <div className="text-xl font-bold text-surface-800 mt-0.5">
               {panchang.sunset}
             </div>
           </div>
@@ -287,10 +287,10 @@ async function PanchangDetailsSection({
             <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
               <Moon className="w-5 h-5 text-blue-600" />
             </div>
-            <div className="text-xs text-stone-500 font-medium uppercase tracking-wider">
+            <div className="text-xs text-surface-500 font-medium uppercase tracking-wider">
               Tithi
             </div>
-            <div className="text-lg font-bold text-stone-900 mt-0.5">
+            <div className="text-lg font-bold text-surface-800 mt-0.5">
               {panchang.tithi}
             </div>
           </div>
@@ -299,10 +299,10 @@ async function PanchangDetailsSection({
             <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center mb-2">
               <Star className="w-5 h-5 text-indigo-600" />
             </div>
-            <div className="text-xs text-stone-500 font-medium uppercase tracking-wider">
+            <div className="text-xs text-surface-500 font-medium uppercase tracking-wider">
               Nakshatra
             </div>
-            <div className="text-lg font-bold text-stone-900 mt-0.5">
+            <div className="text-lg font-bold text-surface-800 mt-0.5">
               {panchang.nakshatra}
             </div>
           </div>
@@ -310,7 +310,7 @@ async function PanchangDetailsSection({
       </div>
 
       {/* Five elements of Panchang */}
-      <div className="bg-white rounded-xl p-6 border border-stone-100">
+      <div className="bg-white rounded-xl p-6 border border-surface-100">
         <h3 className="text-lg font-semibold tracking-tight text-surface-800 mb-4">
           Panchangam (Five Limbs)
         </h3>
@@ -320,7 +320,7 @@ async function PanchangDetailsSection({
             return (
               <div
                 key={item.label}
-                className="flex items-start gap-4 p-4 rounded-xl bg-stone-50 border border-stone-100"
+                className="flex items-start gap-4 p-4 rounded-xl bg-surface-50 border border-surface-100"
               >
                 <div
                   className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center shrink-0`}
@@ -328,13 +328,13 @@ async function PanchangDetailsSection({
                   <Icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-sm text-stone-500 font-medium">
+                  <div className="text-sm text-surface-500 font-medium">
                     {item.label}
                   </div>
-                  <div className="text-lg font-bold text-stone-900">
+                  <div className="text-lg font-bold text-surface-800">
                     {item.value}
                   </div>
-                  <div className="text-sm text-stone-400 mt-0.5">
+                  <div className="text-sm text-surface-400 mt-0.5">
                     {item.detail}
                   </div>
                 </div>
@@ -347,7 +347,7 @@ async function PanchangDetailsSection({
       {/* Auspicious & Inauspicious timings */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Shubh Muhurat */}
-        <div className="bg-white rounded-xl p-6 border border-stone-100">
+        <div className="bg-white rounded-xl p-6 border border-surface-100">
           <h3 className="text-lg font-bold text-tulsi-green flex items-center gap-2 mb-4">
             <CheckCircle2 className="w-5 h-5" />
             Shubh Muhurat
@@ -358,7 +358,7 @@ async function PanchangDetailsSection({
                 key={item.name}
                 className="flex items-center justify-between p-3 bg-tulsi-green/5 rounded-lg border border-tulsi-green/10"
               >
-                <span className="text-sm font-medium text-stone-700">
+                <span className="text-sm font-medium text-surface-600">
                   {item.name}
                 </span>
                 <span className="text-sm font-semibold text-tulsi-green">
@@ -370,14 +370,14 @@ async function PanchangDetailsSection({
         </div>
 
         {/* Inauspicious */}
-        <div className="bg-white rounded-xl p-6 border border-stone-100">
+        <div className="bg-white rounded-xl p-6 border border-surface-100">
           <h3 className="text-lg font-bold text-sacred-red flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5" />
             Inauspicious Timings
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-sacred-red/5 rounded-lg border border-sacred-red/10">
-              <span className="text-sm font-medium text-stone-700">
+              <span className="text-sm font-medium text-surface-600">
                 Rahu Kaal
               </span>
               <span className="text-sm font-semibold text-sacred-red">
@@ -393,7 +393,7 @@ async function PanchangDetailsSection({
         panchang.festivals.length > 0 ||
         panchang.specialInfo) && (
         <div className="bg-gradient-to-r from-saffron-50 to-amber-50 rounded-xl p-6 border border-saffron-200">
-          <h3 className="text-lg font-bold text-stone-900 mb-3 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-surface-800 mb-3 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-saffron-500" />
             Today&rsquo;s Observance
           </h3>
@@ -403,12 +403,12 @@ async function PanchangDetailsSection({
                 <Moon className="w-6 h-6 text-saffron-600" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900">
+                <h4 className="font-bold text-surface-800">
                   {[...panchang.vrat, ...panchang.festivals].join(', ') ||
                     'No special observance'}
                 </h4>
                 {panchang.specialInfo && (
-                  <p className="text-sm text-stone-500 mt-1">
+                  <p className="text-sm text-surface-500 mt-1">
                     {panchang.specialInfo}
                   </p>
                 )}
@@ -425,7 +425,7 @@ async function FestivalsSidebar() {
   const festivals = await fetchFestivals();
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-stone-100">
+    <div className="bg-white rounded-xl p-6 border border-surface-100">
       <h3 className="font-semibold text-surface-800 mb-4">
         Upcoming Festivals & Vrats
       </h3>
@@ -433,20 +433,20 @@ async function FestivalsSidebar() {
         {festivals.map((f) => (
           <div
             key={f.name}
-            className="flex items-start gap-3 pb-4 border-b border-stone-50 last:border-0 last:pb-0"
+            className="flex items-start gap-3 pb-4 border-b border-surface-50 last:border-0 last:pb-0"
           >
             <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-saffron-100 text-saffron-600">
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs text-stone-400 font-medium">
+              <div className="text-xs text-surface-400 font-medium">
                 {f.date}
               </div>
-              <div className="font-semibold text-stone-900 text-sm">
+              <div className="font-semibold text-surface-800 text-sm">
                 {f.name}
               </div>
               {'description' in f && f.description && (
-                <p className="text-xs text-stone-500 mt-0.5">
+                <p className="text-xs text-surface-500 mt-0.5">
                   {f.description}
                 </p>
               )}
@@ -507,13 +507,13 @@ export default async function PanchangPage({
             <Suspense
               fallback={
                 <div className="space-y-6 animate-pulse">
-                  <div className="bg-white rounded-xl p-6 border border-stone-100">
-                    <div className="h-8 bg-stone-200 rounded w-3/4 mb-4" />
+                  <div className="bg-white rounded-xl p-6 border border-surface-100">
+                    <div className="h-8 bg-surface-200 rounded w-3/4 mb-4" />
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {Array.from({ length: 4 }).map((_, i) => (
                         <div
                           key={i}
-                          className="h-24 bg-stone-100 rounded-xl"
+                          className="h-24 bg-surface-100 rounded-xl"
                         />
                       ))}
                     </div>
@@ -528,15 +528,15 @@ export default async function PanchangPage({
           {/* Right Column - Calendar & Upcoming */}
           <div className="space-y-6">
             {/* Mini Calendar */}
-            <div className="bg-white rounded-xl p-6 border border-stone-100">
+            <div className="bg-white rounded-xl p-6 border border-surface-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-surface-800">April 2026</h3>
                 <div className="flex items-center gap-1">
-                  <button className="p-1.5 hover:bg-stone-50 rounded-lg">
-                    <ChevronLeft className="w-4 h-4 text-stone-400" />
+                  <button className="p-1.5 hover:bg-surface-50 rounded-lg">
+                    <ChevronLeft className="w-4 h-4 text-surface-400" />
                   </button>
-                  <button className="p-1.5 hover:bg-stone-50 rounded-lg">
-                    <ChevronRight className="w-4 h-4 text-stone-400" />
+                  <button className="p-1.5 hover:bg-surface-50 rounded-lg">
+                    <ChevronRight className="w-4 h-4 text-surface-400" />
                   </button>
                 </div>
               </div>
@@ -546,7 +546,7 @@ export default async function PanchangPage({
                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
                   <div
                     key={d}
-                    className="text-center text-xs font-semibold text-stone-400 py-1"
+                    className="text-center text-xs font-semibold text-surface-400 py-1"
                   >
                     {d}
                   </div>
@@ -562,12 +562,12 @@ export default async function PanchangPage({
                       d.isToday
                         ? 'bg-saffron-600 text-white font-bold'
                         : d.month !== 'current'
-                          ? 'text-stone-300'
+                          ? 'text-surface-300'
                           : d.festival
                             ? 'bg-saffron-50 text-saffron-700 font-medium'
                             : d.vrat
                               ? 'bg-amber-50 text-amber-700'
-                              : 'text-stone-700 hover:bg-stone-50'
+                              : 'text-surface-600 hover:bg-surface-50'
                     }`}
                   >
                     {d.day}
@@ -579,7 +579,7 @@ export default async function PanchangPage({
               </div>
 
               {/* Legend */}
-              <div className="mt-4 flex flex-wrap gap-3 text-xs text-stone-500">
+              <div className="mt-4 flex flex-wrap gap-3 text-xs text-surface-500">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-saffron-600 rounded-full" />
                   Today
@@ -598,11 +598,11 @@ export default async function PanchangPage({
             {/* Upcoming Festivals */}
             <Suspense
               fallback={
-                <div className="bg-white rounded-xl p-6 border border-stone-100 animate-pulse">
-                  <div className="h-5 bg-stone-200 rounded w-48 mb-4" />
+                <div className="bg-white rounded-xl p-6 border border-surface-100 animate-pulse">
+                  <div className="h-5 bg-surface-200 rounded w-48 mb-4" />
                   <div className="space-y-4">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-14 bg-stone-100 rounded" />
+                      <div key={i} className="h-14 bg-surface-100 rounded" />
                     ))}
                   </div>
                 </div>

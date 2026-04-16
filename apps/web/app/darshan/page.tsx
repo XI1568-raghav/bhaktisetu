@@ -284,7 +284,7 @@ async function LiveStreamsSection() {
         <h2 className="text-2xl font-semibold tracking-tight text-white mb-6 flex items-center gap-2">
           <Wifi className="w-5 h-5 text-red-400" />
           Live Now
-          <span className="text-sm font-normal text-stone-500 ml-2">
+          <span className="text-sm font-normal text-surface-500 ml-2">
             {streams.length} stream{streams.length !== 1 ? 's' : ''}
           </span>
         </h2>
@@ -299,10 +299,10 @@ async function LiveStreamsSection() {
               <a
                 key={stream.id}
                 href={`/darshan/${stream.id}`}
-                className="group rounded-xl overflow-hidden bg-stone-900 border border-stone-800 hover:border-stone-700 hover:shadow-lg transition-all duration-300"
+                className="group rounded-xl overflow-hidden bg-surface-800 border border-surface-700 hover:border-surface-600 hover:shadow-lg transition-all duration-300"
               >
                 {/* Video preview */}
-                <div className="relative aspect-video bg-gradient-to-br from-stone-800 to-stone-900">
+                <div className="relative aspect-video bg-gradient-to-br from-surface-800 to-surface-900">
                   <img
                     src={templeImage ? templeImage : getTempleHero(stream.temple.slug)}
                     alt={stream.temple.name}
@@ -338,11 +338,11 @@ async function LiveStreamsSection() {
                   <h3 className="font-semibold text-white group-hover:text-saffron-400 transition-colors truncate">
                     {stream.temple.name}
                   </h3>
-                  <p className="text-sm text-stone-500 flex items-center gap-1 mt-1">
+                  <p className="text-sm text-surface-500 flex items-center gap-1 mt-1">
                     <MapPin className="w-3.5 h-3.5 shrink-0" />
                     {stream.temple.city}
                   </p>
-                  <p className="text-xs text-stone-600 mt-1">
+                  <p className="text-xs text-surface-600 mt-1">
                     {stream.temple.deityPrimary}
                   </p>
                 </div>
@@ -359,7 +359,7 @@ async function ScheduledStreamsSection() {
   const streams = await fetchScheduledStreams();
 
   return (
-    <section className="py-10 border-t border-stone-800">
+    <section className="py-10 border-t border-surface-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-semibold tracking-tight text-white mb-6 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-saffron-400" />
@@ -370,10 +370,10 @@ async function ScheduledStreamsSection() {
           {streams.map((stream) => (
             <div
               key={stream.id}
-              className="group rounded-xl overflow-hidden bg-stone-900 border border-stone-800 hover:border-stone-700 transition-all"
+              className="group rounded-xl overflow-hidden bg-surface-800 border border-surface-700 hover:border-surface-600 transition-all"
             >
               {/* Upcoming stream preview */}
-              <div className="relative aspect-video bg-gradient-to-br from-stone-800 to-stone-900">
+              <div className="relative aspect-video bg-gradient-to-br from-surface-800 to-surface-900">
                 <img
                   src={getTempleHero(stream.temple.slug)}
                   alt={`${stream.temple.name} - Upcoming stream`}
@@ -382,13 +382,13 @@ async function ScheduledStreamsSection() {
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <Clock className="w-8 h-8 text-stone-400 mx-auto mb-1" />
-                    <span className="text-sm text-stone-400">Upcoming</span>
+                    <Clock className="w-8 h-8 text-surface-400 mx-auto mb-1" />
+                    <span className="text-sm text-surface-400">Upcoming</span>
                   </div>
                 </div>
 
                 {/* Scheduled time badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-stone-700 text-stone-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-surface-600 text-surface-200 text-xs font-bold px-2.5 py-1 rounded-full">
                   <Clock className="w-3 h-3" />
                   {stream.scheduledStart ?? 'TBD'}
                 </div>
@@ -398,7 +398,7 @@ async function ScheduledStreamsSection() {
                 <h3 className="font-semibold text-white truncate">
                   {stream.temple.name}
                 </h3>
-                <p className="text-sm text-stone-500 flex items-center gap-1 mt-1">
+                <p className="text-sm text-surface-500 flex items-center gap-1 mt-1">
                   <MapPin className="w-3.5 h-3.5 shrink-0" />
                   {stream.temple.city}
                 </p>
@@ -406,7 +406,7 @@ async function ScheduledStreamsSection() {
                   <span className="text-xs text-saffron-400 font-medium">
                     {stream.temple.deityPrimary}
                   </span>
-                  <button className="flex items-center gap-1 text-xs text-stone-400 hover:text-saffron-400 transition-colors">
+                  <button className="flex items-center gap-1 text-xs text-surface-400 hover:text-saffron-400 transition-colors">
                     <Bell className="w-3.5 h-3.5" />
                     Remind Me
                   </button>
@@ -426,7 +426,7 @@ export default function DarshanPage() {
   return (
     <div className="min-h-screen bg-[#2a2520]">
       {/* Hero */}
-      <section className="bg-gradient-to-b from-[#352f28] to-[#2a2520] py-12 md:py-16 border-b border-stone-800">
+      <section className="bg-gradient-to-b from-[#352f28] to-[#2a2520] py-12 md:py-16 border-b border-surface-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-1.5 bg-red-600/20 text-red-400 text-sm font-bold px-3 py-1.5 rounded-full">
@@ -434,14 +434,14 @@ export default function DarshanPage() {
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               LIVE
             </div>
-            <span className="text-stone-400 text-sm">
+            <span className="text-surface-400 text-sm">
               Temples streaming now
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
             Live Darshan
           </h1>
-          <p className="text-stone-400 text-lg max-w-2xl">
+          <p className="text-surface-400 text-lg max-w-2xl">
             Experience divine darshan from India&rsquo;s most sacred temples in real
             time. HD quality streams with temple audio.
           </p>
@@ -449,15 +449,15 @@ export default function DarshanPage() {
           {/* Search and filters */}
           <div className="mt-8 flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-64 max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
               <input
                 type="text"
                 placeholder="Search temples..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-stone-800 text-white placeholder:text-stone-500 border border-stone-700 focus:outline-none focus:ring-2 focus:ring-saffron-500/50 focus:border-saffron-500"
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-700 text-white placeholder:text-surface-500 border border-surface-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/50 focus:border-saffron-500"
               />
             </div>
             <div className="relative">
-              <select className="appearance-none bg-stone-800 border border-stone-700 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-stone-300 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/50 cursor-pointer">
+              <select className="appearance-none bg-surface-700 border border-surface-600 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-surface-300 hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/50 cursor-pointer">
                 <option>All Deities</option>
                 <option>Lord Shiva</option>
                 <option>Lord Vishnu</option>
@@ -465,17 +465,17 @@ export default function DarshanPage() {
                 <option>Lord Ganesha</option>
                 <option>Goddess Durga</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
             </div>
             <div className="relative">
-              <select className="appearance-none bg-stone-800 border border-stone-700 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-stone-300 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/50 cursor-pointer">
+              <select className="appearance-none bg-surface-700 border border-surface-600 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-surface-300 hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/50 cursor-pointer">
                 <option>All Regions</option>
                 <option>North India</option>
                 <option>South India</option>
                 <option>East India</option>
                 <option>West India</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -486,14 +486,14 @@ export default function DarshanPage() {
         fallback={
           <div className="py-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="h-6 bg-stone-800 rounded w-40 mb-6" />
+              <div className="h-6 bg-surface-700 rounded w-40 mb-6" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-video bg-stone-800 rounded-t-2xl" />
-                    <div className="bg-stone-900 rounded-b-2xl p-4 space-y-2">
-                      <div className="h-4 bg-stone-800 rounded w-3/4" />
-                      <div className="h-3 bg-stone-800 rounded w-1/2" />
+                    <div className="aspect-video bg-surface-700 rounded-t-2xl" />
+                    <div className="bg-surface-800 rounded-b-2xl p-4 space-y-2">
+                      <div className="h-4 bg-surface-700 rounded w-3/4" />
+                      <div className="h-3 bg-surface-700 rounded w-1/2" />
                     </div>
                   </div>
                 ))}
@@ -508,16 +508,16 @@ export default function DarshanPage() {
       {/* Scheduled Streams */}
       <Suspense
         fallback={
-          <div className="py-10 border-t border-stone-800">
+          <div className="py-10 border-t border-surface-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="h-6 bg-stone-800 rounded w-48 mb-6" />
+              <div className="h-6 bg-surface-700 rounded w-48 mb-6" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-video bg-stone-800 rounded-t-2xl" />
-                    <div className="bg-stone-900 rounded-b-2xl p-4 space-y-2">
-                      <div className="h-4 bg-stone-800 rounded w-3/4" />
-                      <div className="h-3 bg-stone-800 rounded w-1/2" />
+                    <div className="aspect-video bg-surface-700 rounded-t-2xl" />
+                    <div className="bg-surface-800 rounded-b-2xl p-4 space-y-2">
+                      <div className="h-4 bg-surface-700 rounded w-3/4" />
+                      <div className="h-3 bg-surface-700 rounded w-1/2" />
                     </div>
                   </div>
                 ))}
@@ -530,14 +530,14 @@ export default function DarshanPage() {
       </Suspense>
 
       {/* Daily Schedule */}
-      <section className="py-10 border-t border-stone-800">
+      <section className="py-10 border-t border-surface-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-semibold tracking-tight text-white mb-6">
             Today&rsquo;s Darshan Schedule
           </h2>
 
-          <div className="bg-stone-900 rounded-xl border border-stone-800 overflow-hidden">
-            <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-stone-800 text-sm font-semibold text-stone-400">
+          <div className="bg-surface-800 rounded-xl border border-surface-700 overflow-hidden">
+            <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-surface-700 text-sm font-semibold text-surface-400">
               <div className="col-span-2">Time</div>
               <div className="col-span-4">Temple</div>
               <div className="col-span-3">Event</div>
@@ -548,18 +548,18 @@ export default function DarshanPage() {
             {fallbackScheduleTable.map((row, i) => (
               <div
                 key={i}
-                className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 border-b border-stone-800/50 last:border-0 text-sm items-center hover:bg-stone-800/30 transition-colors"
+                className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 border-b border-surface-700/50 last:border-0 text-sm items-center hover:bg-surface-700/30 transition-colors"
               >
-                <div className="md:col-span-2 text-stone-300 font-medium">
-                  <span className="md:hidden text-stone-500 text-xs mr-2">Time:</span>
+                <div className="md:col-span-2 text-surface-300 font-medium">
+                  <span className="md:hidden text-surface-500 text-xs mr-2">Time:</span>
                   {row.time}
                 </div>
                 <div className="md:col-span-4 text-white font-medium">
-                  <span className="md:hidden text-stone-500 text-xs mr-2">Temple:</span>
+                  <span className="md:hidden text-surface-500 text-xs mr-2">Temple:</span>
                   {row.temple}
                 </div>
-                <div className="md:col-span-3 text-stone-400">
-                  <span className="md:hidden text-stone-500 text-xs mr-2">Event:</span>
+                <div className="md:col-span-3 text-surface-400">
+                  <span className="md:hidden text-surface-500 text-xs mr-2">Event:</span>
                   {row.event}
                 </div>
                 <div className="md:col-span-2">
@@ -569,9 +569,9 @@ export default function DarshanPage() {
                       LIVE
                     </span>
                   ) : row.status === 'completed' ? (
-                    <span className="text-xs text-stone-600">Completed</span>
+                    <span className="text-xs text-surface-600">Completed</span>
                   ) : (
-                    <span className="text-xs text-stone-500">Upcoming</span>
+                    <span className="text-xs text-surface-500">Upcoming</span>
                   )}
                 </div>
                 <div className="md:col-span-1 md:text-right">
@@ -583,7 +583,7 @@ export default function DarshanPage() {
                       <Play className="w-4 h-4" />
                     </a>
                   ) : row.status === 'upcoming' ? (
-                    <button className="text-stone-600 hover:text-stone-400">
+                    <button className="text-surface-600 hover:text-surface-400">
                       <Bell className="w-4 h-4" />
                     </button>
                   ) : null}

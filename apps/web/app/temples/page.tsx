@@ -242,48 +242,48 @@ export default async function TemplesPage() {
         {/* Filters */}
         <div className="mb-8 flex flex-wrap gap-3">
           <div className="relative">
-            <select className="cursor-pointer appearance-none rounded-lg border border-stone-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200">
+            <select className="cursor-pointer appearance-none rounded-lg border border-surface-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200">
               {cities.map((city) => (
                 <option key={city} value={city}>
                   {city}
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
           </div>
 
           <div className="relative">
-            <select className="cursor-pointer appearance-none rounded-lg border border-stone-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200">
+            <select className="cursor-pointer appearance-none rounded-lg border border-surface-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200">
               {traditions.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
           </div>
 
           <div className="relative">
-            <select className="cursor-pointer appearance-none rounded-lg border border-stone-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200">
+            <select className="cursor-pointer appearance-none rounded-lg border border-surface-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200">
               {deities.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
           </div>
 
-          <button className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:border-saffron-300">
+          <button className="inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-medium text-surface-600 transition-colors hover:border-saffron-300">
             <Video className="h-4 w-4 text-red-500" />
             Live Darshan Only
           </button>
         </div>
 
         {/* Results count */}
-        <p className="mb-6 text-sm text-stone-500">
-          Showing <span className="font-semibold text-stone-700">{temples.length}</span> of{' '}
-          <span className="font-semibold text-stone-700">{total}</span> temples
+        <p className="mb-6 text-sm text-surface-500">
+          Showing <span className="font-semibold text-surface-600">{temples.length}</span> of{' '}
+          <span className="font-semibold text-surface-600">{total}</span> temples
         </p>
 
         {/* Temple Grid */}
@@ -337,33 +337,33 @@ export default async function TemplesPage() {
                   className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 transition-colors hover:bg-white"
                   aria-label="Add to favorites"
                 >
-                  <Heart className="h-4 w-4 text-stone-400" />
+                  <Heart className="h-4 w-4 text-surface-400" />
                 </button>
               </div>
 
               {/* Info */}
               <div className="p-5">
-                <h3 className="mb-2 text-lg font-semibold leading-tight text-stone-900 transition-colors group-hover:text-saffron-600">
+                <h3 className="mb-2 text-lg font-semibold leading-tight text-surface-800 transition-colors group-hover:text-saffron-600">
                   {temple.name}
                 </h3>
 
-                <p className="mb-2 flex items-center gap-1 text-sm text-stone-500">
+                <p className="mb-2 flex items-center gap-1 text-sm text-surface-500">
                   <MapPin className="h-3.5 w-3.5 shrink-0" />
                   {temple.city}, {temple.state}
                 </p>
 
-                <p className="mb-3 line-clamp-2 text-sm text-stone-600">{temple.description}</p>
+                <p className="mb-3 line-clamp-2 text-sm text-surface-600">{temple.description}</p>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1 text-sm">
                       <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                      <span className="font-semibold text-stone-800">
+                      <span className="font-semibold text-surface-700">
                         {(temple.trustScore / 20).toFixed(1)}
                       </span>
                     </div>
-                    <span className="text-stone-200">|</span>
-                    <span className="text-sm capitalize text-stone-500">{temple.tradition}</span>
+                    <span className="text-surface-200">|</span>
+                    <span className="text-sm capitalize text-surface-500">{temple.tradition}</span>
                   </div>
                   <span className="text-sm font-medium text-saffron-600">
                     {temple.deityPrimary}

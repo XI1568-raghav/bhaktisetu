@@ -278,7 +278,7 @@ export default function StorePage() {
               className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${
                 i === 0
                   ? "bg-saffron-600 text-white"
-                  : "bg-white text-stone-600 border border-stone-200 hover:border-saffron-300 hover:text-saffron-600"
+                  : "bg-white text-surface-600 border border-surface-200 hover:border-saffron-300 hover:text-saffron-600"
               }`}
             >
               {cat.name}
@@ -286,7 +286,7 @@ export default function StorePage() {
                 className={`text-xs px-1.5 py-0.5 rounded-full ${
                   i === 0
                     ? "bg-saffron-500 text-saffron-100"
-                    : "bg-stone-100 text-stone-400"
+                    : "bg-surface-100 text-surface-400"
                 }`}
               >
                 {cat.count}
@@ -298,39 +298,39 @@ export default function StorePage() {
         {/* Filters row */}
         <div className="flex flex-wrap items-center gap-3 mb-8">
           <div className="relative">
-            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+            <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
               <option>Sort: Popular</option>
               <option>Price: Low to High</option>
               <option>Price: High to Low</option>
               <option>Rating: High to Low</option>
               <option>Newest First</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
           </div>
 
           <div className="relative">
-            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+            <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
               <option>Any Price</option>
               <option>Under ₹500</option>
               <option>₹500 - ₹1,000</option>
               <option>₹1,000 - ₹2,500</option>
               <option>Above ₹2,500</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
           </div>
 
-          <button className="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-lg px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 transition-colors">
+          <button className="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-4 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 transition-colors">
             <Truck className="w-4 h-4" />
             Free Delivery
           </button>
 
-          <button className="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-lg px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 transition-colors">
+          <button className="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-4 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 transition-colors">
             <Star className="w-4 h-4 text-temple-gold" />
             4+ Rating
           </button>
 
-          <span className="text-sm text-stone-500 ml-auto">
-            <span className="font-semibold text-stone-700">{products.length}</span> products
+          <span className="text-sm text-surface-500 ml-auto">
+            <span className="font-semibold text-surface-600">{products.length}</span> products
           </span>
         </div>
 
@@ -340,10 +340,10 @@ export default function StorePage() {
             <Percent className="w-7 h-7 text-saffron-700" />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-stone-900">
+            <h3 className="font-bold text-surface-800">
               Akshaya Tritiya Sale — Up to 50% Off!
             </h3>
-            <p className="text-sm text-stone-500 mt-0.5">
+            <p className="text-sm text-surface-500 mt-0.5">
               Shop puja essentials, gold-plated idols, and rudraksha malas at
               unbeatable prices. Offer valid till April 20.
             </p>
@@ -366,7 +366,7 @@ export default function StorePage() {
               className="group bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300"
             >
               {/* Product image */}
-              <div className="relative aspect-square bg-gradient-to-br from-stone-50 to-saffron-50 overflow-hidden">
+              <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 overflow-hidden">
                 <img
                   src={getProductImage(product.handle)}
                   alt={product.name}
@@ -394,12 +394,12 @@ export default function StorePage() {
                   className="absolute bottom-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
                   aria-label="Add to wishlist"
                 >
-                  <Heart className="w-4 h-4 text-stone-400" />
+                  <Heart className="w-4 h-4 text-surface-400" />
                 </button>
               </div>
 
               <div className="p-4">
-                <h3 className="text-sm font-medium text-stone-900 line-clamp-2 min-h-[2.5rem] group-hover:text-saffron-600 transition-colors">
+                <h3 className="text-sm font-medium text-surface-800 line-clamp-2 min-h-[2.5rem] group-hover:text-saffron-600 transition-colors">
                   {product.name}
                 </h3>
 
@@ -410,16 +410,16 @@ export default function StorePage() {
                       {product.rating}
                     </span>
                   </div>
-                  <span className="text-xs text-stone-400">
+                  <span className="text-xs text-surface-400">
                     ({product.reviews.toLocaleString("en-IN")})
                   </span>
                 </div>
 
                 <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-stone-900">
+                  <span className="text-lg font-bold text-surface-800">
                     ₹{product.price.toLocaleString("en-IN")}
                   </span>
-                  <span className="text-sm text-stone-400 line-through">
+                  <span className="text-sm text-surface-400 line-through">
                     ₹{product.originalPrice.toLocaleString("en-IN")}
                   </span>
                 </div>

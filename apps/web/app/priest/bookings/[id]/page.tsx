@@ -108,7 +108,7 @@ function getStatusConfig(status: string) {
     video_uploaded: { label: 'Video Uploaded', cls: 'bg-purple-100 text-purple-700', description: 'Video proof has been submitted. Awaiting delivery confirmation.' },
     delivered: { label: 'Delivered', cls: 'bg-green-100 text-green-700', description: 'Booking fully completed and delivered to the devotee.' },
   };
-  return map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600', description: '' };
+  return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600', description: '' };
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -214,7 +214,7 @@ export default function PriestBookingDetailPage() {
   if (!booking) {
     return (
       <div className="text-center py-20">
-        <p className="text-stone-500">Booking not found</p>
+        <p className="text-surface-500">Booking not found</p>
         <Link href="/priest/bookings" className="text-saffron-600 mt-2 inline-block">
           Back to bookings
         </Link>
@@ -229,21 +229,21 @@ export default function PriestBookingDetailPage() {
       {/* Back nav */}
       <Link
         href="/priest/bookings"
-        className="inline-flex items-center gap-2 text-sm text-stone-500 hover:text-saffron-600 transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-surface-500 hover:text-saffron-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Bookings
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-xl border border-stone-100 p-6">
+      <div className="bg-white rounded-xl border border-surface-100 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
           <div className="w-14 h-14 bg-saffron-50 rounded-xl flex items-center justify-center">
             <Flame className="w-7 h-7 text-saffron-500" />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-stone-900">{booking.pujaType.name}</h1>
-            <p className="text-sm text-stone-500 font-mono">{booking.bookingNumber}</p>
+            <h1 className="text-xl font-bold text-surface-800">{booking.pujaType.name}</h1>
+            <p className="text-sm text-surface-500 font-mono">{booking.bookingNumber}</p>
           </div>
           <span className={`self-start text-sm font-semibold px-3 py-1 rounded-full ${statusCfg.cls}`}>
             {statusCfg.label}
@@ -251,7 +251,7 @@ export default function PriestBookingDetailPage() {
         </div>
 
         {statusCfg.description && (
-          <div className="bg-stone-50 rounded-lg p-3 text-sm text-stone-600">
+          <div className="bg-surface-50 rounded-lg p-3 text-sm text-surface-600">
             {statusCfg.description}
           </div>
         )}
@@ -262,43 +262,43 @@ export default function PriestBookingDetailPage() {
         {/* Left: Details */}
         <div className="space-y-6">
           {/* Temple & Schedule */}
-          <div className="bg-white rounded-xl border border-stone-100 p-5">
-            <h2 className="font-semibold text-stone-900 mb-4">Schedule & Location</h2>
+          <div className="bg-white rounded-xl border border-surface-100 p-5">
+            <h2 className="font-semibold text-surface-800 mb-4">Schedule & Location</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-stone-400 mt-0.5" />
+                <MapPin className="w-4 h-4 text-surface-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-stone-900">{booking.temple.name}</p>
-                  <p className="text-xs text-stone-500">{booking.temple.city}, {booking.temple.state}</p>
+                  <p className="text-sm font-medium text-surface-800">{booking.temple.name}</p>
+                  <p className="text-xs text-surface-500">{booking.temple.city}, {booking.temple.state}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Calendar className="w-4 h-4 text-stone-400 mt-0.5" />
+                <Calendar className="w-4 h-4 text-surface-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-stone-900">{formatDate(booking.scheduledDate)}</p>
+                  <p className="text-sm font-medium text-surface-800">{formatDate(booking.scheduledDate)}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Clock className="w-4 h-4 text-stone-400 mt-0.5" />
+                <Clock className="w-4 h-4 text-surface-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-stone-900">{formatTime(booking.scheduledTimeSlot)}</p>
-                  <p className="text-xs text-stone-500">Duration: {booking.pujaType.durationMinutes} minutes</p>
+                  <p className="text-sm font-medium text-surface-800">{formatTime(booking.scheduledTimeSlot)}</p>
+                  <p className="text-xs text-surface-500">Duration: {booking.pujaType.durationMinutes} minutes</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Devotees */}
-          <div className="bg-white rounded-xl border border-stone-100 p-5">
-            <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-              <Users className="w-4 h-4 text-stone-400" />
+          <div className="bg-white rounded-xl border border-surface-100 p-5">
+            <h2 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
+              <Users className="w-4 h-4 text-surface-400" />
               Devotees ({booking.devoteeNames.length})
             </h2>
             <div className="space-y-3">
               {booking.devoteeNames.map((devotee, idx) => (
-                <div key={idx} className="bg-stone-50 rounded-lg p-3">
-                  <p className="text-sm font-medium text-stone-900">{devotee.name}</p>
-                  <div className="flex gap-4 mt-1 text-xs text-stone-500">
+                <div key={idx} className="bg-surface-50 rounded-lg p-3">
+                  <p className="text-sm font-medium text-surface-800">{devotee.name}</p>
+                  <div className="flex gap-4 mt-1 text-xs text-surface-500">
                     {devotee.gotra && <span>Gotra: {devotee.gotra}</span>}
                     {devotee.nakshatra && <span>Nakshatra: {devotee.nakshatra}</span>}
                   </div>
@@ -307,16 +307,16 @@ export default function PriestBookingDetailPage() {
             </div>
 
             {booking.sankalpDetails && (
-              <div className="mt-4 pt-4 border-t border-stone-100">
-                <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Sankalp</h3>
-                <p className="text-sm text-stone-700">{booking.sankalpDetails}</p>
+              <div className="mt-4 pt-4 border-t border-surface-100">
+                <h3 className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">Sankalp</h3>
+                <p className="text-sm text-surface-600">{booking.sankalpDetails}</p>
               </div>
             )}
 
             {booking.specialInstructions && (
-              <div className="mt-4 pt-4 border-t border-stone-100">
-                <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Special Instructions</h3>
-                <p className="text-sm text-stone-700">{booking.specialInstructions}</p>
+              <div className="mt-4 pt-4 border-t border-surface-100">
+                <h3 className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">Special Instructions</h3>
+                <p className="text-sm text-surface-600">{booking.specialInstructions}</p>
               </div>
             )}
           </div>
@@ -325,8 +325,8 @@ export default function PriestBookingDetailPage() {
         {/* Right: Actions & Payment */}
         <div className="space-y-6">
           {/* Action Section */}
-          <div className="bg-white rounded-xl border border-stone-100 p-5">
-            <h2 className="font-semibold text-stone-900 mb-4">Actions</h2>
+          <div className="bg-white rounded-xl border border-surface-100 p-5">
+            <h2 className="font-semibold text-surface-800 mb-4">Actions</h2>
 
             {booking.status === 'confirmed' && (
               <button
@@ -363,23 +363,23 @@ export default function PriestBookingDetailPage() {
 
             {booking.status === 'completed' && !videoSubmitted && (
               <div className="space-y-3">
-                <p className="text-sm text-stone-600">
+                <p className="text-sm text-surface-600">
                   Upload video proof of the completed puja. This is mandatory before payout is processed.
                 </p>
                 <div>
-                  <label className="block text-xs font-medium text-stone-500 mb-1.5">Video URL</label>
+                  <label className="block text-xs font-medium text-surface-500 mb-1.5">Video URL</label>
                   <input
                     type="url"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="https://youtube.com/watch?v=... or upload link"
-                    className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
+                    className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
                   />
                 </div>
 
-                <div className="bg-stone-50 rounded-lg p-3 border-2 border-dashed border-stone-200 text-center">
-                  <Upload className="w-6 h-6 text-stone-400 mx-auto mb-1" />
-                  <p className="text-xs text-stone-500">
+                <div className="bg-surface-50 rounded-lg p-3 border-2 border-dashed border-surface-200 text-center">
+                  <Upload className="w-6 h-6 text-surface-400 mx-auto mb-1" />
+                  <p className="text-xs text-surface-500">
                     Or drag and drop video file here (coming soon)
                   </p>
                 </div>
@@ -413,68 +413,68 @@ export default function PriestBookingDetailPage() {
                   </a>
                 )}
                 {/* Video preview placeholder */}
-                <div className="bg-stone-100 rounded-xl aspect-video flex items-center justify-center">
+                <div className="bg-surface-100 rounded-xl aspect-video flex items-center justify-center">
                   <div className="text-center">
-                    <Video className="w-10 h-10 text-stone-300 mx-auto mb-2" />
-                    <p className="text-xs text-stone-400">Video preview</p>
+                    <Video className="w-10 h-10 text-surface-300 mx-auto mb-2" />
+                    <p className="text-xs text-surface-400">Video preview</p>
                   </div>
                 </div>
               </div>
             )}
 
             {booking.rating && (
-              <div className="mt-4 pt-4 border-t border-stone-100">
-                <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Devotee Review</h3>
+              <div className="mt-4 pt-4 border-t border-surface-100">
+                <h3 className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">Devotee Review</h3>
                 <div className="flex items-center gap-1 mb-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
-                      className={`w-4 h-4 ${s <= (booking.rating ?? 0) ? 'text-temple-gold fill-temple-gold' : 'text-stone-200'}`}
+                      className={`w-4 h-4 ${s <= (booking.rating ?? 0) ? 'text-temple-gold fill-temple-gold' : 'text-surface-200'}`}
                     />
                   ))}
-                  <span className="text-sm font-medium text-stone-900 ml-1">{booking.rating}/5</span>
+                  <span className="text-sm font-medium text-surface-800 ml-1">{booking.rating}/5</span>
                 </div>
                 {booking.reviewText && (
-                  <p className="text-sm text-stone-600 italic">"{booking.reviewText}"</p>
+                  <p className="text-sm text-surface-600 italic">"{booking.reviewText}"</p>
                 )}
               </div>
             )}
           </div>
 
           {/* Price Breakdown */}
-          <div className="bg-white rounded-xl border border-stone-100 p-5">
-            <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-              <IndianRupee className="w-4 h-4 text-stone-400" />
+          <div className="bg-white rounded-xl border border-surface-100 p-5">
+            <h2 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
+              <IndianRupee className="w-4 h-4 text-surface-400" />
               Price Breakdown
             </h2>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Booking Amount</span>
-                <span className="text-stone-900">{formatCurrency(booking.priceAmount)}</span>
+                <span className="text-surface-500">Booking Amount</span>
+                <span className="text-surface-800">{formatCurrency(booking.priceAmount)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Platform Commission</span>
+                <span className="text-surface-500">Platform Commission</span>
                 <span className="text-red-500">-{formatCurrency(booking.platformCommission)}</span>
               </div>
-              <div className="border-t border-stone-100 pt-2 flex justify-between">
-                <span className="font-semibold text-stone-900">Your Payout</span>
+              <div className="border-t border-surface-100 pt-2 flex justify-between">
+                <span className="font-semibold text-surface-800">Your Payout</span>
                 <span className="font-bold text-lg text-tulsi-green">{formatCurrency(booking.priestPayout)}</span>
               </div>
             </div>
           </div>
 
           {/* Communication Placeholder */}
-          <div className="bg-white rounded-xl border border-stone-100 p-5">
-            <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-stone-400" />
+          <div className="bg-white rounded-xl border border-surface-100 p-5">
+            <h2 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-surface-400" />
               Communication
             </h2>
-            <div className="bg-stone-50 rounded-lg p-4 text-center">
-              <MessageSquare className="w-8 h-8 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm text-stone-500">
+            <div className="bg-surface-50 rounded-lg p-4 text-center">
+              <MessageSquare className="w-8 h-8 text-surface-300 mx-auto mb-2" />
+              <p className="text-sm text-surface-500">
                 In-app messaging with devotees coming soon.
               </p>
-              <p className="text-xs text-stone-400 mt-1">
+              <p className="text-xs text-surface-400 mt-1">
                 Devotee: {booking.user.fullName}
               </p>
             </div>

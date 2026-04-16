@@ -224,7 +224,7 @@ export default function HoroscopePage() {
     libra: 'from-pink-50 to-rose-50 border-pink-200/50',
     scorpio: 'from-red-50 to-rose-50 border-red-200/50',
     sagittarius: 'from-saffron-50 to-violet-50 border-saffron-200/50',
-    capricorn: 'from-stone-50 to-amber-50 border-stone-200/50',
+    capricorn: 'from-surface-50 to-amber-50 border-surface-200/50',
     aquarius: 'from-blue-50 to-saffron-50 border-blue-200/50',
     pisces: 'from-teal-50 to-cyan-50 border-teal-200/50',
   };

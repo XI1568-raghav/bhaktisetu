@@ -207,7 +207,7 @@ function ProfileContent() {
       <div className="min-h-screen flex items-center justify-center bg-surface-50">
         <div className="text-center">
           <div className="w-10 h-10 border-3 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-stone-400 text-sm">Loading profile...</p>
+          <p className="text-surface-400 text-sm">Loading profile...</p>
         </div>
       </div>
     );
@@ -265,18 +265,18 @@ function ProfileContent() {
               </button>
             </div>
             <div>
-              <h3 className="font-semibold text-stone-900">
+              <h3 className="font-semibold text-surface-800">
                 {form.fullName || 'Your Name'}
               </h3>
-              <p className="text-sm text-stone-500">{user?.phone}</p>
-              <p className="text-xs text-stone-400 mt-0.5">Avatar upload coming soon</p>
+              <p className="text-sm text-surface-500">{user?.phone}</p>
+              <p className="text-xs text-surface-400 mt-0.5">Avatar upload coming soon</p>
             </div>
           </div>
         </div>
 
         {/* Personal Information */}
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
-          <h2 className="text-lg font-bold text-stone-900 mb-5 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-surface-800 mb-5 flex items-center gap-2">
             <User className="w-5 h-5 text-saffron-600" />
             Personal Information
           </h2>
@@ -284,7 +284,7 @@ function ProfileContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Full Name */}
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -298,23 +298,23 @@ function ProfileContent() {
 
             {/* Phone (read-only) */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">
                 Phone Number
               </label>
               <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-50 border border-[var(--color-border)] rounded-lg text-surface-500">
                 <Phone className="w-4 h-4" />
                 {user?.phone || 'N/A'}
               </div>
-              <p className="text-xs text-stone-400 mt-1">Phone number cannot be changed</p>
+              <p className="text-xs text-surface-400 mt-1">Phone number cannot be changed</p>
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                 <input
                   type="email"
                   value={form.email}
@@ -327,7 +327,7 @@ function ProfileContent() {
 
             {/* Preferred Language */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">
                 Preferred Language
               </label>
               <select
@@ -345,9 +345,9 @@ function ProfileContent() {
 
             {/* Location */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">City</label>
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">City</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                 <input
                   type="text"
                   value={form.locationCity}
@@ -362,18 +362,18 @@ function ProfileContent() {
 
         {/* Spiritual Information */}
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
-          <h2 className="text-lg font-bold text-stone-900 mb-5 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-surface-800 mb-5 flex items-center gap-2">
             <Star className="w-5 h-5 text-temple-gold" />
             Spiritual Information
           </h2>
-          <p className="text-sm text-stone-500 mb-5">
+          <p className="text-sm text-surface-500 mb-5">
             Used for personalized puja recommendations and sankalp (prayer intention).
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Gotra */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">Gotra</label>
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">Gotra</label>
               <input
                 type="text"
                 value={form.gotra}
@@ -385,7 +385,7 @@ function ProfileContent() {
 
             {/* Nakshatra */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">
                 Nakshatra (Birth Star)
               </label>
               <select
@@ -404,7 +404,7 @@ function ProfileContent() {
 
             {/* Rashi */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label className="block text-sm font-medium text-surface-600 mb-1.5">
                 Rashi (Moon Sign)
               </label>
               <select
@@ -425,7 +425,7 @@ function ProfileContent() {
 
         {/* NRI Settings */}
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
-          <h2 className="text-lg font-bold text-stone-900 mb-5 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-surface-800 mb-5 flex items-center gap-2">
             <Globe className="w-5 h-5 text-ganga-blue" />
             NRI Settings
           </h2>
@@ -434,15 +434,15 @@ function ProfileContent() {
             {/* NRI Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-stone-800">I am an NRI</p>
-                <p className="text-sm text-stone-500">
+                <p className="font-medium text-surface-700">I am an NRI</p>
+                <p className="text-sm text-surface-500">
                   NRI users get pricing in USD and international shipping options.
                 </p>
               </div>
               <button
                 onClick={() => updateField('isNri', !form.isNri)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  form.isNri ? 'bg-saffron-600' : 'bg-stone-300'
+                  form.isNri ? 'bg-saffron-600' : 'bg-surface-300'
                 }`}
               >
                 <span
@@ -456,7 +456,7 @@ function ProfileContent() {
             {/* Country selector (shown only if NRI) */}
             {form.isNri && (
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                <label className="block text-sm font-medium text-surface-600 mb-1.5">
                   Country of Residence
                 </label>
                 <select
@@ -480,7 +480,7 @@ function ProfileContent() {
         <div className="flex items-center justify-end gap-4">
           <a
             href="/dashboard"
-            className="px-5 py-2.5 text-sm font-medium text-stone-600 hover:text-stone-800 transition-colors"
+            className="px-5 py-2.5 text-sm font-medium text-surface-600 hover:text-surface-700 transition-colors"
           >
             Cancel
           </a>
