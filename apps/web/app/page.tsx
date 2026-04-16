@@ -14,6 +14,10 @@ import {
   Heart,
   Moon,
   ChevronDown,
+  Globe,
+  Frown,
+  Zap,
+  CheckCircle,
 } from 'lucide-react';
 import { getTempleHero, getDeityImage, getContentImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
@@ -29,8 +33,8 @@ export default function HomePage() {
       <div style={{ background: 'var(--color-bg)' }}>
 
         {/* ═══ ACT 1: HERO — "The Call" ═══════════════════════════════════ */}
-        <section className="min-h-[90vh] flex flex-col justify-center relative">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <section className="min-h-[80vh] flex flex-col justify-center relative">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
             <div className="max-w-2xl">
               {/* Eyebrow badge */}
               <div
@@ -95,8 +99,132 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ═══ THE STORY — Problem → Scale → Solution → Impact ═════════════ */}
+
+        {/* --- Chapter 1: The Problem --- */}
+        <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div data-reveal="up" className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-2)' }}>
+                <Frown className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              </div>
+              <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>The Problem</p>
+            </div>
+            <h2 data-reveal="up" data-delay="1" className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+              Millions of devotees are disconnected from their spiritual roots
+            </h2>
+            <div className="space-y-4">
+              {[
+                'NRI families living abroad can\'t attend temple aartis or book pujas back home',
+                'No way to verify if a pandit actually performed the ritual you paid for',
+                'Spiritual content is scattered across dozens of apps with no unified experience',
+                'Young devotees want guidance but don\'t know where to turn for authentic wisdom',
+              ].map((point, i) => (
+                <div key={i} data-reveal="left" data-delay={String(i + 1)} className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full mt-2 shrink-0" style={{ background: 'var(--color-primary)' }} />
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{point}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* --- Chapter 2: The Scale --- */}
+        <section className="py-14 md:py-20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div data-reveal="fade" className="inline-flex items-center gap-2 mb-6">
+              <Globe className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>The Scale</p>
+            </div>
+            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-12" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+              This isn't a niche problem. It's a $58 billion market.
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {[
+                { number: '1B+', label: 'Hindus worldwide seeking spiritual connection' },
+                { number: '30M+', label: 'NRIs disconnected from temples back home' },
+                { number: '900+', label: 'Spiritual tech startups — but no super-app' },
+                { number: '$58B', label: 'Indian religious market, growing 28% yearly' },
+              ].map((stat, i) => (
+                <div key={stat.number} data-reveal="up" data-delay={String(i + 1)} className="p-4 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                  <p className="text-xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary)' }}>{stat.number}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* --- Chapter 3: The Solution --- */}
+        <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div data-reveal="up" className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-1)' }}>
+                <Zap className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              </div>
+              <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Our Solution</p>
+            </div>
+            <h2 data-reveal="up" data-delay="1" className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+              One app that bridges devotees to the divine — through technology
+            </h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                { title: 'Live Darshan', desc: 'HD streams from 200+ temples — watch morning aarti from anywhere in the world', href: '/darshan' },
+                { title: 'Verified Pujas', desc: 'Book rituals with Aadhaar-verified priests. Get video proof of every puja.', href: '/pujas' },
+                { title: 'AI Spiritual Guide', desc: 'Ask questions rooted in Bhagavad Gita, Upanishads — get instant wisdom', href: '/ask-pandit' },
+                { title: 'Sacred Content', desc: '5,000+ aartis, mantras, chalisas — your daily spiritual practice companion', href: '/content' },
+                { title: 'Cow Adoption', desc: 'Adopt a cow at a verified gaushala. Get monthly photo updates.', href: '/gaushala' },
+                { title: 'Astrology', desc: 'Free kundli, daily horoscope, live consultations with verified astrologers', href: '/astrology' },
+              ].map((item, i) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  data-reveal="up"
+                  data-delay={String((i % 2) + 1)}
+                  className="group flex gap-3 p-4 rounded-xl transition-all card-hover"
+                  style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+                >
+                  <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+                  <div>
+                    <h3 className="text-sm font-medium mb-1 group-hover:underline" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* --- Chapter 4: The Impact --- */}
+        <section className="py-14 md:py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div data-reveal="fade" className="inline-flex items-center gap-2 mb-6">
+              <Heart className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>The Impact</p>
+            </div>
+            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+              We're not just building an app. We're preserving traditions.
+            </h2>
+            <p data-reveal="up" data-delay="1" className="text-base max-w-xl mx-auto mb-10" style={{ color: 'var(--color-text-muted)' }}>
+              Every puja booked supports temple priests. Every darshan stream keeps traditions alive. Every cow adopted saves a life.
+            </p>
+            <div className="grid grid-cols-3 gap-6">
+              {[
+                { number: '50K+', label: 'Pujas performed with video proof' },
+                { number: '₹2Cr+', label: 'Donated to temples & gaushalas' },
+                { number: '12K+', label: 'Daily active devotees' },
+              ].map((stat, i) => (
+                <div key={stat.number} data-reveal="scale" data-delay={String(i + 1)}>
+                  <p className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{stat.number}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ═══ ACT 2: LIVE DARSHAN — "See the Divine" ══════════════════════ */}
-        <section className="py-20 md:py-28" style={{ background: 'var(--color-surface)' }}>
+        <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Live Darshan</p>
             <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
@@ -140,7 +268,7 @@ export default function HomePage() {
         </section>
 
         {/* ═══ ACT 3: PUJA BOOKING — "Book Your Ritual" ════════════════════ */}
-        <section className="py-20 md:py-28">
+        <section className="py-14 md:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               {/* Image */}
@@ -184,7 +312,7 @@ export default function HomePage() {
         </section>
 
         {/* ═══ ACT 4: AI PANDIT — "Ask the Wise" ═══════════════════════════ */}
-        <section className="py-20 md:py-28" style={{ background: 'var(--color-surface)' }}>
+        <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>AI Spiritual Guide</p>
             <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4 max-w-xl mx-auto" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
@@ -232,7 +360,7 @@ export default function HomePage() {
         </section>
 
         {/* ═══ ACT 5: CONTENT — "Listen & Learn" ═══════════════════════════ */}
-        <section className="py-20 md:py-28">
+        <section className="py-14 md:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Spiritual Content</p>
             <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
@@ -275,7 +403,7 @@ export default function HomePage() {
         </section>
 
         {/* ═══ ACT 6: MORE FEATURES — "Everything You Need" ════════════════ */}
-        <section className="py-20 md:py-28" style={{ background: 'var(--color-surface)' }}>
+        <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-10 text-center" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Everything for your spiritual journey
@@ -313,7 +441,7 @@ export default function HomePage() {
         </section>
 
         {/* ═══ ACT 7: FINAL CTA — "Begin Your Journey" ════════════════════ */}
-        <section className="py-20 md:py-28">
+        <section className="py-14 md:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Join 50,000+ devotees on Bhaktisetu
