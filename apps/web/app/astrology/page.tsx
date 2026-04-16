@@ -443,7 +443,7 @@ export default function AstrologyPage() {
             <Link
               key={astrologer.id}
               href={`/astrology/${astrologer.id}`}
-              className="group bg-white rounded-xl border border-surface-200/80 overflow-hidden hover:shadow-md hover:border-surface-300 transition-all duration-300"
+              className="group bg-white rounded-xl border border-surface-200/80 overflow-hidden card-hover transition-all duration-300"
             >
               {/* Card Header */}
               <div className="relative p-4 pb-3">
@@ -556,7 +556,7 @@ export default function AstrologyPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Free Kundli Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
                   <Sun className="w-5 h-5 text-white" />
@@ -620,7 +620,7 @@ export default function AstrologyPage() {
             </div>
 
             {/* Daily Horoscope Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
                   <Moon className="w-5 h-5 text-white" />
@@ -686,7 +686,7 @@ export default function AstrologyPage() {
             </div>
 
             {/* Compatibility Match Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
                   <Heart className="w-5 h-5 text-white" />

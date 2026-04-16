@@ -214,12 +214,12 @@ export default async function TemplesPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* Hero Header */}
-      <section className="bg-surface-900 text-white py-12 md:py-16">
+      <section className="bg-[#ede9e3] py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h1 className="mb-3 text-3xl font-bold text-white md:text-4xl">
+          <h1 className="mb-3 text-3xl font-bold text-surface-800 md:text-4xl">
             Sacred Temples of India
           </h1>
-          <p className="max-w-2xl text-lg text-surface-300">
+          <p className="max-w-2xl text-lg text-surface-500">
             Explore verified temples across the country. Watch live darshan, book pujas, and plan
             your pilgrimage.
           </p>
@@ -227,11 +227,11 @@ export default async function TemplesPage() {
           {/* Search bar */}
           <div className="mt-8 max-w-2xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-surface-500" />
               <input
                 type="text"
                 placeholder="Search temples by name, city, or deity..."
-                className="w-full rounded-lg border border-surface-700 bg-white py-3.5 pl-12 pr-4 text-stone-800 shadow-lg placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                className="w-full rounded-lg border border-[var(--color-border)] bg-white py-3.5 pl-12 pr-4 text-surface-800 shadow-warm-sm placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-saffron-300"
               />
             </div>
           </div>
@@ -292,7 +292,7 @@ export default async function TemplesPage() {
             <Link
               key={temple.slug}
               href={`/temples/${temple.slug}`}
-              className="group overflow-hidden rounded-xl border border-stone-100 bg-white transition-all duration-300 hover:shadow-md hover:border-surface-300"
+              className="group overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] card-hover transition-all duration-300"
             >
               {/* Temple image */}
               <div className="relative aspect-[16/10] bg-gradient-to-br from-orange-100 to-amber-50">

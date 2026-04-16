@@ -268,21 +268,21 @@ export default function GaushalaPage() {
   return (
     <div className="min-h-screen">
       {/* ── Hero ────────────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-emerald-50">
+      <section className="relative overflow-hidden bg-[#ede9e3]">
 
         <div className="relative max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-24">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-saffron-600/10 text-saffron-700 text-sm font-medium mb-6 border border-saffron-200/40">
               <Leaf className="w-4 h-4" />
               Gau Seva — A Sacred Act of Devotion
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-surface-900 leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-surface-800 leading-tight mb-6">
               Adopt a Cow,{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-amber-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron-600 to-amber-600">
                 Earn Divine Blessings
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-surface-600 leading-relaxed mb-8 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-surface-500 leading-relaxed mb-8 max-w-2xl mx-auto">
               Support verified gaushalas across India. Receive monthly photo
               updates of your adopted cow, visit anytime, and contribute to the
               protection of India's sacred cows.
@@ -290,14 +290,14 @@ export default function GaushalaPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
                 href="#cows"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-all shadow-sm btn-press"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-all shadow-sm btn-press"
               >
                 <Heart className="w-5 h-5" />
                 Adopt a Cow
               </a>
               <a
                 href="#plans"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-surface-700 font-medium rounded-lg hover:bg-surface-50 transition-all border border-surface-200 shadow-sm"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-surface-700 font-medium rounded-lg hover:bg-surface-50 transition-all border border-[var(--color-border)] shadow-sm"
               >
                 View Plans
                 <ArrowRight className="w-4 h-4" />
@@ -308,7 +308,7 @@ export default function GaushalaPage() {
       </section>
 
       {/* ── Trust Badges ────────────────────────────────────────────────────────── */}
-      <section className="bg-white border-y border-surface-100">
+      <section className="bg-[var(--color-surface)] border-y border-[var(--color-border)]">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             {[
@@ -337,8 +337,8 @@ export default function GaushalaPage() {
                 key={badge.label}
                 className="flex items-center gap-3 text-center md:text-left"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <badge.icon className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-xl bg-saffron-50 flex items-center justify-center shrink-0">
+                  <badge.icon className="w-5 h-5 text-saffron-600" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-surface-800">
@@ -369,7 +369,7 @@ export default function GaushalaPage() {
             {gaushalas.map((gs) => (
               <div
                 key={gs.id}
-                className="group bg-white rounded-xl overflow-hidden border border-surface-100 shadow-sm hover:shadow-md hover:border-surface-300 transition-all duration-300"
+                className="group bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] shadow-warm-sm card-hover transition-all duration-300"
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
@@ -420,7 +420,7 @@ export default function GaushalaPage() {
                   </div>
                   <Link
                     href={`/gaushala/${gs.id}`}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 font-medium rounded-lg hover:bg-emerald-100 transition-colors text-sm"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-saffron-50 text-saffron-700 font-medium rounded-lg hover:bg-saffron-100 transition-colors text-sm"
                   >
                     Explore Gaushala
                     <ChevronRight className="w-4 h-4" />
@@ -452,7 +452,7 @@ export default function GaushalaPage() {
               <Link
                 key={cow.id}
                 href={`/gaushala/${cow.id}`}
-                className="group min-w-[260px] sm:min-w-[280px] bg-surface-50 rounded-xl overflow-hidden border border-surface-100 hover:border-surface-300 hover:shadow-md transition-all duration-300 snap-start shrink-0"
+                className="group min-w-[260px] sm:min-w-[280px] bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300 snap-start shrink-0"
               >
                 <div className="relative h-44 overflow-hidden">
                   <img
@@ -510,13 +510,13 @@ export default function GaushalaPage() {
                 key={plan.id}
                 className={`relative bg-white rounded-xl border p-6 flex flex-col transition-all duration-300 hover:shadow-md ${
                   plan.popular
-                    ? "border-emerald-300 shadow-sm ring-1 ring-emerald-200"
+                    ? "border-saffron-300 shadow-sm ring-1 ring-saffron-200"
                     : "border-surface-200 hover:border-surface-300"
                 }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-4 py-1 bg-emerald-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-full">
+                    <span className="px-4 py-1 bg-saffron-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-full">
                       Most Popular
                     </span>
                   </div>
@@ -551,8 +551,8 @@ export default function GaushalaPage() {
                 <button
                   className={`w-full py-3 rounded-lg font-medium text-sm transition-all btn-press ${
                     plan.popular
-                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      ? "bg-saffron-600 text-white hover:bg-saffron-700"
+                      : "bg-saffron-50 text-saffron-700 hover:bg-saffron-100"
                   }`}
                 >
                   Select Plan
@@ -564,7 +564,7 @@ export default function GaushalaPage() {
       </section>
 
       {/* ── Impact Stats ────────────────────────────────────────────────────────── */}
-      <section className="py-16 lg:py-20 bg-surface-900 text-white">
+      <section className="py-16 lg:py-20 bg-[#2a2520] text-white">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold mb-3">
@@ -649,18 +649,18 @@ export default function GaushalaPage() {
       </section>
 
       {/* ── CTA Banner ──────────────────────────────────────────────────────────── */}
-      <section className="py-16 lg:py-20 bg-emerald-700">
+      <section className="py-16 lg:py-20 bg-saffron-700">
         <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Begin Your Gau Seva Today
           </h2>
-          <p className="text-emerald-100 text-lg mb-8 max-w-2xl mx-auto">
+          <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
             The scriptures say that serving a cow is equivalent to serving all
             33 crore devas. Start your journey of divine blessings today.
           </p>
           <a
             href="#cows"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-emerald-700 font-medium rounded-lg hover:bg-emerald-50 transition-all shadow-sm btn-press text-lg"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-saffron-700 font-medium rounded-lg hover:bg-saffron-50 transition-all shadow-sm btn-press text-lg"
           >
             <Heart className="w-5 h-5" />
             Adopt a Cow Now
