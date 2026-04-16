@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <ScrollReveal>
+      <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
       <div style={{ background: 'var(--color-bg)' }}>
 
         {/* ═══ ACT 1: HERO — "The Call" ═══════════════════════════════════ */}
@@ -38,7 +39,7 @@ export default function HomePage() {
             <div className="max-w-2xl">
               {/* Eyebrow badge */}
               <div
-                data-reveal="fade"
+                data-reveal="blur"
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8"
                 style={{ background: 'var(--color-art-2)', color: 'var(--color-text)' }}
               >
@@ -47,7 +48,7 @@ export default function HomePage() {
               </div>
 
               <h1
-                data-reveal="up"
+                data-reveal="up-far"
                 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.08]"
                 style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
               >
@@ -104,13 +105,13 @@ export default function HomePage() {
         {/* --- Chapter 1: The Problem --- */}
         <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div data-reveal="up" className="flex items-center gap-3 mb-6">
+            <div data-reveal="scale-up" className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-2)' }}>
                 <Frown className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
               </div>
               <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>The Problem</p>
             </div>
-            <h2 data-reveal="up" data-delay="1" className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Millions of devotees are disconnected from their spiritual roots
             </h2>
             <div className="space-y-4">
@@ -136,7 +137,7 @@ export default function HomePage() {
               <Globe className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
               <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>The Scale</p>
             </div>
-            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-12" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+            <h2 data-reveal="blur" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-12" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               This isn't a niche problem. It's a $58 billion market.
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -146,7 +147,7 @@ export default function HomePage() {
                 { number: '900+', label: 'Spiritual tech startups — but no super-app' },
                 { number: '$58B', label: 'Indian religious market, growing 28% yearly' },
               ].map((stat, i) => (
-                <div key={stat.number} data-reveal="up" data-delay={String(i + 1)} className="p-4 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <div key={stat.number} data-reveal="scale-up" data-delay={String(i + 1)} className="p-4 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <p className="text-xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary)' }}>{stat.number}</p>
                   <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{stat.label}</p>
                 </div>
@@ -158,13 +159,13 @@ export default function HomePage() {
         {/* --- Chapter 3: The Solution --- */}
         <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div data-reveal="up" className="flex items-center gap-3 mb-6">
+            <div data-reveal="fade" className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-1)' }}>
                 <Zap className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
               </div>
               <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Our Solution</p>
             </div>
-            <h2 data-reveal="up" data-delay="1" className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+            <h2 data-reveal="clip" className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               One app that bridges devotees to the divine — through technology
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -205,16 +206,17 @@ export default function HomePage() {
             <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               We're not just building an app. We're preserving traditions.
             </h2>
-            <p data-reveal="up" data-delay="1" className="text-base max-w-xl mx-auto mb-10" style={{ color: 'var(--color-text-muted)' }}>
+            <p data-reveal="up" data-delay="1" className="text-base max-w-xl mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
               Every puja booked supports temple priests. Every darshan stream keeps traditions alive. Every cow adopted saves a life.
             </p>
+            <div data-reveal="line" className="h-px mx-auto max-w-xs mb-10" style={{ background: 'var(--color-primary)' }} />
             <div className="grid grid-cols-3 gap-6">
               {[
                 { number: '50K+', label: 'Pujas performed with video proof' },
                 { number: '₹2Cr+', label: 'Donated to temples & gaushalas' },
                 { number: '12K+', label: 'Daily active devotees' },
               ].map((stat, i) => (
-                <div key={stat.number} data-reveal="scale" data-delay={String(i + 1)}>
+                <div key={stat.number} data-reveal="rotate" data-delay={String(i + 1)}>
                   <p className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{stat.number}</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{stat.label}</p>
                 </div>
@@ -235,7 +237,7 @@ export default function HomePage() {
             </p>
 
             {/* One large featured card */}
-            <div data-reveal="scale" className="relative rounded-2xl overflow-hidden card-hover" style={{ border: '1px solid var(--color-border)' }}>
+            <div data-reveal="scale-up" className="relative rounded-2xl overflow-hidden card-hover" style={{ border: '1px solid var(--color-border)' }}>
               <div className="aspect-[16/7] relative">
                 <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath Temple Live" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
@@ -272,7 +274,7 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               {/* Image */}
-              <div data-reveal="scale" className="rounded-2xl overflow-hidden">
+              <div data-reveal="clip" className="rounded-2xl overflow-hidden">
                 <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" className="w-full h-80 object-cover rounded-2xl" />
               </div>
               {/* Copy */}
@@ -292,7 +294,7 @@ export default function HomePage() {
                     { icon: Video, text: 'Live video proof of every puja performed' },
                     { icon: Gift, text: 'Sacred prasad delivered to your doorstep' },
                   ].map((f, i) => (
-                    <div key={f.text} data-reveal="left" data-delay={String(i + 1)} className="flex items-center gap-3">
+                    <div key={f.text} data-reveal="right" data-delay={String(i + 1)} className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--color-primary-highlight)' }}>
                         <f.icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
                       </div>
@@ -323,7 +325,7 @@ export default function HomePage() {
             </p>
 
             {/* Chat mockup */}
-            <div data-reveal="up" data-delay="2" className="max-w-lg mx-auto rounded-2xl overflow-hidden" style={{ background: 'var(--color-surface-2, #fff)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)' }}>
+            <div data-reveal="blur" data-delay="2" className="max-w-lg mx-auto rounded-2xl overflow-hidden" style={{ background: 'var(--color-surface-2, #fff)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)' }}>
               <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--color-divider)' }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-2)' }}>
                   <Sparkles className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
@@ -373,7 +375,7 @@ export default function HomePage() {
                 { type: 'Mantra', title: 'Gayatri Mantra (108×)', deity: 'Goddess Gayatri', img: getContentImage('mantra', 'thumbnail'), icon: Moon },
                 { type: 'Chalisa', title: 'Hanuman Chalisa', deity: 'Lord Hanuman', img: getContentImage('chalisa', 'thumbnail'), icon: Music },
               ].map((item, i) => (
-                <div key={item.title} data-reveal="up" data-delay={String(i + 1)} className="rounded-xl overflow-hidden card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <div key={item.title} data-reveal="rotate" data-delay={String(i + 1)} className="rounded-xl overflow-hidden card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <div className="relative aspect-[4/3]">
                     <img src={item.img} alt={item.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -414,9 +416,9 @@ export default function HomePage() {
                 <p data-reveal="up" data-delay="1" className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                   Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols — all delivered to your doorstep. Free shipping on orders above ₹499.
                 </p>
-                <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-6">
-                  {['Puja Thali Sets', 'Rudraksha', 'Idols', 'Incense', 'Books'].map((tag) => (
-                    <span key={tag} className="text-xs px-3 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {['Puja Thali Sets', 'Rudraksha', 'Idols', 'Incense', 'Books'].map((tag, i) => (
+                    <span key={tag} data-reveal="fade" data-delay={String(i + 1)} className="text-xs px-3 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
                   ))}
                 </div>
                 <div data-reveal="up" data-delay="3">
@@ -425,14 +427,14 @@ export default function HomePage() {
                   </Link>
                 </div>
               </div>
-              <div data-reveal="scale" className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {[
                   { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali') },
                   { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala') },
                   { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks') },
                   { name: 'Ganesh Idol', price: '₹2,499', img: getProductImage('brass-ganesha-idol') },
                 ].map((p, i) => (
-                  <div key={p.name} data-reveal="up" data-delay={String(i + 1)} className="rounded-xl overflow-hidden" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                  <div key={p.name} data-reveal="scale-up" data-delay={String(i + 1)} className="rounded-xl overflow-hidden" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                     <div className="aspect-square" style={{ background: 'var(--color-surface-offset)' }}>
                       <img src={p.img} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                     </div>
@@ -464,7 +466,7 @@ export default function HomePage() {
                 { title: 'Daily Horoscope', desc: 'Personalized predictions for all 12 rashis updated daily', href: '/astrology/horoscope' },
                 { title: 'Live Consultation', desc: 'Chat with verified astrologers — first 5 minutes free', href: '/astrology' },
               ].map((card, i) => (
-                <Link key={card.title} href={card.href} data-reveal="up" data-delay={String(i + 1)} className="group text-left p-5 rounded-xl card-hover transition-all" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <Link key={card.title} href={card.href} data-reveal="clip" data-delay={String(i + 1)} className="group text-left p-5 rounded-xl card-hover transition-all" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <h3 className="text-sm font-medium mb-2 group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
                   <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
                   <span className="inline-flex items-center gap-1 text-xs font-medium mt-3 group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
@@ -481,7 +483,7 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-6">
               {/* Gaushala */}
-              <Link href="/gaushala" data-reveal="up" data-delay="1" className="group p-6 rounded-xl card-hover transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+              <Link href="/gaushala" data-reveal="left" className="group p-6 rounded-xl card-hover transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-art-1)' }}>
                     <Heart className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
@@ -500,7 +502,7 @@ export default function HomePage() {
               </Link>
 
               {/* Panchang */}
-              <Link href="/panchang" data-reveal="up" data-delay="2" className="group p-6 rounded-xl card-hover transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+              <Link href="/panchang" data-reveal="right" className="group p-6 rounded-xl card-hover transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-art-3)' }}>
                     <Calendar className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
@@ -524,13 +526,13 @@ export default function HomePage() {
         {/* ═══ ACT 7: FINAL CTA — "Begin Your Journey" ════════════════════ */}
         <section className="py-14 md:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+            <h2 data-reveal="up-far" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Join 50,000+ devotees on Bhaktisetu
             </h2>
             <p data-reveal="up" data-delay="1" className="text-base max-w-md mx-auto mb-10" style={{ color: 'var(--color-text-muted)' }}>
               Begin your spiritual journey today. Live darshan, authentic pujas, AI guidance — all in one place.
             </p>
-            <div data-reveal="up" data-delay="2" className="flex items-center justify-center gap-3">
+            <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3">
               <Link
                 href="/auth/login"
                 className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
