@@ -1,24 +1,18 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import {
-  Flame,
-  Video,
-  ShoppingBag,
   Star,
   Clock,
   Users,
   ArrowRight,
   Play,
   Heart,
-  TrendingUp,
   Moon,
   Sunrise,
   Sunset,
   ChevronRight,
   MapPin,
-  Music,
   Sparkles,
-  Eye,
   MessageCircle,
   Bot,
 } from 'lucide-react';
@@ -288,8 +282,8 @@ async function LiveDarshanSection() {
   }
 
   return (
-    <section className="py-16 md:py-24">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="py-16 md:py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="flex items-center justify-between mb-10">
           <div>
@@ -428,8 +422,8 @@ async function PanchangSection() {
   const formattedDate = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
 
   return (
-    <section className="py-14 md:py-20 bg-white">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="py-16 md:py-20 bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
@@ -583,8 +577,8 @@ async function FeaturedPujasSection() {
   }
 
   return (
-    <section className="py-16 md:py-24">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="py-16 md:py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
@@ -694,8 +688,8 @@ async function TrendingContentSection() {
   }
 
   return (
-    <section className="py-14 md:py-20 bg-white">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="py-16 md:py-20 bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
@@ -753,8 +747,8 @@ function SectionSkeleton({
   count?: number;
 }) {
   return (
-    <section className={`py-20 md:py-28 ${bg}`}>
-      <div className="max-w-6xl mx-auto px-6 animate-pulse">
+    <section className={`py-16 md:py-20 ${bg}`}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
         <div className="h-8 bg-surface-200 rounded-xl w-64 mb-3" />
         <div className="h-4 bg-surface-100 rounded-lg w-96 mb-10" />
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${count} gap-5`}>
@@ -772,62 +766,61 @@ function SectionSkeleton({
 export default function HomePage() {
   return (
     <div className="min-h-screen">
-      {/* ============ HERO SECTION (premium centered) ============ */}
-      <section className="relative overflow-hidden bg-surface-50">
-        {/* Subtle warm gradient background */}
-        {/* Clean bg — content is the hero, not the background */}
+      {/* ============ HERO SECTION ("Sacred Dark" premium) ============ */}
+      <section className="relative bg-surface-900 overflow-hidden">
+        {/* Gradient orbs — purposeful, not generic */}
+        <div className="hero-orb top-0 right-1/4 w-[500px] h-[500px] bg-saffron-600/15" />
+        <div className="hero-orb bottom-0 left-1/4 w-[400px] h-[400px] bg-temple-gold/10 !blur-[100px]" />
 
-        <div className="relative max-w-6xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-32 text-center">
-          {/* Eyebrow badge */}
-          <div className="animate-fade-in inline-flex items-center gap-2 bg-saffron-100/60 backdrop-blur-sm text-saffron-700 text-sm font-medium px-4 py-2 rounded-full mb-8 border border-saffron-200/50">
-            <Sparkles className="w-4 h-4" />
-            Trusted by 10,000+ devotees
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 text-center">
+          {/* Pill badge */}
+          <div className="animate-fade-in inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-surface-700 bg-surface-800/50 text-sm text-surface-300 mb-8">
+            <span className="w-2 h-2 bg-tulsi-green rounded-full animate-pulse" />
+            Live: 12,450+ devotees watching darshan now
           </div>
 
-          {/* Heading */}
-          <h1 className="animate-fade-in animate-fade-in-delay-1 text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-surface-900 leading-[1.1] mb-6 max-w-4xl mx-auto">
-            Connect with{' '}
-            <span className="text-gradient-saffron">the Divine</span>
+          {/* Main heading — large, bold, white */}
+          <h1 className="animate-fade-in animate-fade-in-delay-1 text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mx-auto">
+            Your Bridge to
+            <span className="text-saffron-400"> Sacred Traditions</span>
           </h1>
 
-          {/* Subtitle */}
-          <p className="animate-fade-in animate-fade-in-delay-2 text-lg md:text-xl text-surface-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Experience live darshan from sacred temples, book pujas with verified
-            pandits, explore daily panchang, and immerse in devotional content
-            &mdash; all in one place.
+          <p className="animate-fade-in animate-fade-in-delay-2 mt-6 text-lg text-surface-400 max-w-2xl mx-auto leading-relaxed">
+            Book authentic pujas with verified priests. Watch live darshan from
+            India&rsquo;s most sacred temples. Get AI-powered spiritual guidance.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="animate-fade-in animate-fade-in-delay-3 flex flex-wrap justify-center gap-4">
+          {/* Two buttons — primary solid white + secondary outlined */}
+          <div className="animate-fade-in animate-fade-in-delay-3 mt-10 flex items-center justify-center gap-4">
             <a
-              href="/darshan"
-              className="inline-flex items-center gap-2.5 bg-saffron-600 text-white font-medium px-7 py-3.5 rounded-lg hover:bg-saffron-700 transition-all shadow-lg shadow-saffron-500/20 btn-press"
+              href="/temples"
+              className="px-6 py-3 bg-white text-surface-900 font-medium text-sm rounded-lg hover:bg-surface-100 transition-colors btn-press"
             >
-              <Video className="w-5 h-5" />
-              Watch Live Darshan
+              Explore Temples
             </a>
             <a
               href="/pujas"
-              className="inline-flex items-center gap-2.5 bg-white text-surface-800 font-medium px-7 py-3.5 rounded-lg hover:bg-surface-50 transition-all border border-surface-200 shadow-sm btn-press"
+              className="px-6 py-3 border border-surface-600 text-surface-300 font-medium text-sm rounded-lg hover:bg-surface-800 hover:text-white transition-colors btn-press"
             >
-              <Flame className="w-5 h-5 text-saffron-500" />
               Book a Puja
             </a>
           </div>
 
           {/* Stats row */}
-          <div className="mt-16 flex flex-wrap justify-center gap-12 md:gap-20">
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-surface-900 tracking-tight">500+</div>
-              <div className="text-sm text-surface-500 mt-1">Temples</div>
+          <div className="mt-16 flex items-center justify-center gap-8 sm:gap-12 text-center">
+            <div>
+              <div className="text-2xl font-semibold text-white">200+</div>
+              <div className="text-sm text-surface-500 mt-0.5">Temples</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-surface-900 tracking-tight">50K+</div>
-              <div className="text-sm text-surface-500 mt-1">Pujas Booked</div>
+            <div className="w-px h-8 bg-surface-700" />
+            <div>
+              <div className="text-2xl font-semibold text-white">50K+</div>
+              <div className="text-sm text-surface-500 mt-0.5">Pujas Booked</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-surface-900 tracking-tight">5L+</div>
-              <div className="text-sm text-surface-500 mt-1">Devotees</div>
+            <div className="w-px h-8 bg-surface-700" />
+            <div>
+              <div className="text-2xl font-semibold text-white">4.9&#9733;</div>
+              <div className="text-sm text-surface-500 mt-0.5">User Rating</div>
             </div>
           </div>
         </div>
@@ -841,8 +834,8 @@ export default function HomePage() {
       {/* ============ TODAY'S PANCHANG (dynamic) ============ */}
       <Suspense
         fallback={
-          <section className="py-20 md:py-28">
-            <div className="max-w-6xl mx-auto px-6 animate-pulse">
+          <section className="py-16 md:py-20">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
               <div className="h-8 bg-surface-200 rounded-xl w-64 mb-10" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -873,8 +866,8 @@ export default function HomePage() {
       </Suspense>
 
       {/* ============ ASK PANDIT AI SECTION ============ */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-surface-900 via-surface-800 to-surface-900 p-10 md:p-16 text-center">
             {/* Decorative glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-saffron-500/15 rounded-full blur-3xl" />
@@ -909,8 +902,8 @@ export default function HomePage() {
       </section>
 
       {/* ============ BHAKTI STORE (static) ============ */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
@@ -977,8 +970,8 @@ export default function HomePage() {
       </section>
 
       {/* ============ CTA / APP DOWNLOAD (static) ============ */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-xl gradient-saffron p-10 md:p-16 text-center">
             <div className="absolute inset-0 bg-[url('/images/pattern-mandala.svg')] opacity-10 bg-center bg-cover" />
             <div className="relative">
