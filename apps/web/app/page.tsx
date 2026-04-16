@@ -34,62 +34,93 @@ export default function HomePage() {
       <div style={{ background: 'var(--color-bg)' }}>
 
         {/* ═══ ACT 1: HERO — "The Call" ═══════════════════════════════════ */}
-        <section className="min-h-[80vh] flex flex-col justify-center relative">
+        <section className="min-h-[80vh] flex flex-col justify-center relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
-            <div className="max-w-2xl">
-              {/* Eyebrow badge */}
-              <div
-                data-reveal="blur"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8"
-                style={{ background: 'var(--color-art-2)', color: 'var(--color-text)' }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                12,450+ devotees watching live darshan
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              {/* Left — Copy */}
+              <div>
+                <div
+                  data-reveal="blur"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8"
+                  style={{ background: 'var(--color-art-2)', color: 'var(--color-text)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  12,450+ devotees watching live darshan
+                </div>
+
+                <h1
+                  data-reveal="up-far"
+                  className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.08]"
+                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+                >
+                  Your bridge to{' '}
+                  <span style={{ color: 'var(--color-primary)' }}>sacred traditions</span>
+                </h1>
+
+                <p
+                  data-reveal="up"
+                  data-delay="1"
+                  className="mt-6 text-lg leading-relaxed"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  Watch live temple darshan. Book authentic pujas with verified priests. Get AI-powered spiritual guidance rooted in ancient wisdom.
+                </p>
+
+                <div data-reveal="up" data-delay="2" className="mt-10 flex items-center gap-3 flex-wrap">
+                  <Link
+                    href="/temples"
+                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white transition-all btn-press"
+                    style={{ background: 'var(--color-primary)' }}
+                  >
+                    Explore Temples <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="/pujas"
+                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg transition-all"
+                    style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+                  >
+                    Book a Puja
+                  </Link>
+                </div>
+
+                <div data-reveal="fade" data-delay="3" className="mt-12 flex items-center gap-8 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>200+</span> Temples</div>
+                  <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
+                  <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>50K+</span> Pujas</div>
+                  <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
+                  <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>4.9★</span> Rating</div>
+                </div>
               </div>
 
-              <h1
-                data-reveal="up-far"
-                className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.08]"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
-              >
-                Your bridge to{' '}
-                <span style={{ color: 'var(--color-primary)' }}>sacred traditions</span>
-              </h1>
-
-              <p
-                data-reveal="up"
-                data-delay="1"
-                className="mt-6 text-lg leading-relaxed max-w-lg"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                Watch live temple darshan. Book authentic pujas with verified priests. Get AI-powered spiritual guidance rooted in ancient wisdom.
-              </p>
-
-              {/* CTAs */}
-              <div data-reveal="up" data-delay="2" className="mt-10 flex items-center gap-3 flex-wrap">
-                <Link
-                  href="/temples"
-                  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white transition-all btn-press"
-                  style={{ background: 'var(--color-primary)' }}
-                >
-                  Explore Temples <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/pujas"
-                  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg transition-all"
-                  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
-                >
-                  Book a Puja
-                </Link>
-              </div>
-
-              {/* Stats */}
-              <div data-reveal="fade" data-delay="3" className="mt-14 flex items-center gap-8 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>200+</span> Temples</div>
-                <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
-                <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>50K+</span> Pujas</div>
-                <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
-                <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>4.9★</span> Rating</div>
+              {/* Right — Bento visual */}
+              <div data-reveal="scale-up" data-delay="2" className="hidden md:grid grid-cols-2 gap-3">
+                {/* Live darshan card */}
+                <div className="col-span-2 rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
+                  <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath" className="w-full h-44 object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
+                  </div>
+                  <div className="absolute bottom-3 left-3">
+                    <p className="text-sm font-medium text-white">Kashi Vishwanath</p>
+                    <p className="text-xs text-white/60">Morning Aarti • 12.4K watching</p>
+                  </div>
+                </div>
+                {/* Mini feature cards */}
+                <div className="rounded-xl p-4 flex flex-col justify-between" style={{ background: 'var(--color-art-1)', minHeight: '120px' }}>
+                  <Shield className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                  <div>
+                    <p className="text-xs font-medium mt-2" style={{ color: 'var(--color-text)' }}>Verified Priests</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Aadhaar authenticated</p>
+                  </div>
+                </div>
+                <div className="rounded-xl p-4 flex flex-col justify-between" style={{ background: 'var(--color-art-2)', minHeight: '120px' }}>
+                  <Sparkles className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                  <div>
+                    <p className="text-xs font-medium mt-2" style={{ color: 'var(--color-text)' }}>AI Pandit</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Gita-powered guidance</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -272,38 +303,50 @@ export default function HomePage() {
         {/* ═══ ACT 3: PUJA BOOKING — "Book Your Ritual" ════════════════════ */}
         <section className="py-14 md:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Image */}
-              <div data-reveal="clip" className="rounded-2xl overflow-hidden">
-                <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" className="w-full h-80 object-cover rounded-2xl" />
+            <div className="grid md:grid-cols-5 gap-10 items-center">
+              {/* Left — Stacked images (3 cols) */}
+              <div className="md:col-span-3 grid grid-cols-2 gap-3">
+                <div data-reveal="clip" className="col-span-2 rounded-xl overflow-hidden">
+                  <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" className="w-full h-56 object-cover" />
+                </div>
+                <div data-reveal="scale-up" data-delay="1" className="rounded-xl overflow-hidden">
+                  <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti ceremony" className="w-full h-32 object-cover" />
+                </div>
+                <div data-reveal="scale-up" data-delay="2" className="rounded-xl p-4 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
+                  <p className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>50K+</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Pujas performed with video proof</p>
+                </div>
               </div>
-              {/* Copy */}
-              <div>
+
+              {/* Right — Copy (2 cols) */}
+              <div className="md:col-span-2">
                 <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Puja Booking</p>
                 <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
                   Authentic rituals, verified priests
                 </h2>
-                <p data-reveal="up" data-delay="1" className="text-base mb-8" style={{ color: 'var(--color-text-muted)' }}>
-                  Book pujas at India's most revered temples. Every ritual performed by verified pandits with live video proof.
+                <p data-reveal="up" data-delay="1" className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-text-muted)' }}>
+                  Book pujas at India's most revered temples. Every ritual performed by verified pandits with live video proof and sacred prasad delivery.
                 </p>
 
-                {/* 3 features */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {[
-                    { icon: Shield, text: 'Verified priests with Aadhaar authentication' },
-                    { icon: Video, text: 'Live video proof of every puja performed' },
-                    { icon: Gift, text: 'Sacred prasad delivered to your doorstep' },
+                    { icon: Shield, title: 'Verified Priests', desc: 'Aadhaar authenticated pandits' },
+                    { icon: Video, title: 'Video Proof', desc: 'Watch your puja live or recorded' },
+                    { icon: Gift, title: 'Prasad Delivery', desc: 'Sacred offerings to your doorstep' },
                   ].map((f, i) => (
-                    <div key={f.text} data-reveal="right" data-delay={String(i + 1)} className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--color-primary-highlight)' }}>
+                    <div key={f.title} data-reveal="right" data-delay={String(i + 1)} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'var(--color-primary-highlight)' }}>
                         <f.icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
                       </div>
-                      <span className="text-sm" style={{ color: 'var(--color-text)' }}>{f.text}</span>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{f.title}</p>
+                        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{f.desc}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
 
-                <div data-reveal="up" data-delay="4" className="mt-8">
+                <div data-reveal="up" data-delay="4" className="mt-6">
                   <Link href="/pujas" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
                     Browse Pujas <ArrowRight className="w-4 h-4" />
                   </Link>
