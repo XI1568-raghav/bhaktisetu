@@ -223,20 +223,20 @@ export default function HoroscopePage() {
     virgo: 'from-green-50 to-emerald-50 border-green-200/50',
     libra: 'from-pink-50 to-rose-50 border-pink-200/50',
     scorpio: 'from-red-50 to-rose-50 border-red-200/50',
-    sagittarius: 'from-purple-50 to-violet-50 border-purple-200/50',
+    sagittarius: 'from-saffron-50 to-violet-50 border-saffron-200/50',
     capricorn: 'from-stone-50 to-amber-50 border-stone-200/50',
-    aquarius: 'from-blue-50 to-indigo-50 border-blue-200/50',
+    aquarius: 'from-blue-50 to-saffron-50 border-blue-200/50',
     pisces: 'from-teal-50 to-cyan-50 border-teal-200/50',
   };
 
   return (
     <div className="min-h-screen">
       {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 pb-8">
+      <section className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 pb-8">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6">
           <Link
             href="/astrology"
-            className="inline-flex items-center gap-1.5 text-sm text-purple-300/70 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 text-sm text-saffron-300/70 hover:text-white transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Astrology
@@ -246,13 +246,13 @@ export default function HoroscopePage() {
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
               Daily Horoscope
             </h1>
-            <p className="text-purple-200/70 max-w-xl mx-auto mb-6">
+            <p className="text-saffron-200/70 max-w-xl mx-auto mb-6">
               Read today&apos;s predictions for all 12 rashis. Get insights on career, love, and health.
             </p>
 
             {/* Date Selector */}
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2">
-              <Calendar className="w-4 h-4 text-purple-300" />
+              <Calendar className="w-4 h-4 text-saffron-300" />
               <input
                 type="date"
                 value={selectedDate}
@@ -319,8 +319,8 @@ export default function HoroscopePage() {
                       {/* Career */}
                       <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <Briefcase className="w-3.5 h-3.5 text-purple-600" />
+                          <div className="w-7 h-7 bg-saffron-100 rounded-lg flex items-center justify-center">
+                            <Briefcase className="w-3.5 h-3.5 text-saffron-600" />
                           </div>
                           <h4 className="text-sm font-bold text-surface-800">Career</h4>
                         </div>
@@ -353,7 +353,7 @@ export default function HoroscopePage() {
                     <div className="text-center pt-2">
                       <Link
                         href="/astrology"
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700 transition-colors"
                       >
                         Talk to an Astrologer for Detailed Reading <ArrowRight className="w-4 h-4" />
                       </Link>
@@ -366,12 +366,12 @@ export default function HoroscopePage() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="mt-10 bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 rounded-xl p-8 text-center">
+        <div className="mt-10 bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 rounded-xl p-8 text-center">
           <Sparkles className="w-10 h-10 text-amber-400 mx-auto mb-3" />
           <h3 className="text-xl font-bold text-white mb-2">
             Get Personalized Predictions
           </h3>
-          <p className="text-purple-200/70 max-w-md mx-auto mb-5">
+          <p className="text-saffron-200/70 max-w-md mx-auto mb-5">
             Daily horoscopes are general. For predictions tailored to your birth chart, consult our verified astrologers.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

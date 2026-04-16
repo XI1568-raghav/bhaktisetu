@@ -213,11 +213,11 @@ export default function AstrologerDetailPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* ── Cosmic Header ────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 pb-24">
+      <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 pb-24">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6">
           <Link
             href="/astrology"
-            className="inline-flex items-center gap-1.5 text-sm text-purple-300/70 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 text-sm text-saffron-300/70 hover:text-white transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Astrologers
@@ -240,7 +240,7 @@ export default function AstrologerDetailPage() {
                   />
                   <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${getStatusColor()} rounded-full border-3 border-white shadow-sm`} />
                   {astrologer.verified && (
-                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-saffron-600 rounded-full flex items-center justify-center shadow-sm">
                       <BadgeCheck className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -296,11 +296,11 @@ export default function AstrologerDetailPage() {
                     {/* Meta */}
                     <div className="flex flex-wrap items-center gap-4 text-sm text-surface-500">
                       <span className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-purple-400" />
+                        <Clock className="w-4 h-4 text-saffron-400" />
                         {astrologer.experienceYears} years experience
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <Globe className="w-4 h-4 text-purple-400" />
+                        <Globe className="w-4 h-4 text-saffron-400" />
                         {astrologer.languages.join(', ')}
                       </span>
                     </div>
@@ -331,7 +331,7 @@ export default function AstrologerDetailPage() {
                       <button
                         className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border-2 transition-all duration-200 ${
                           astrologer.isOnline && !astrologer.isBusy
-                            ? 'border-purple-200 text-purple-600 hover:bg-purple-50'
+                            ? 'border-saffron-200 text-saffron-600 hover:bg-saffron-50'
                             : 'border-surface-200 text-surface-400 cursor-not-allowed'
                         }`}
                         disabled={!astrologer.isOnline || astrologer.isBusy}
@@ -360,7 +360,7 @@ export default function AstrologerDetailPage() {
                 {astrologer.specializations.map((spec) => (
                   <span
                     key={spec}
-                    className="px-4 py-2 rounded-xl bg-purple-50 text-purple-700 text-sm font-medium border border-purple-100"
+                    className="px-4 py-2 rounded-xl bg-saffron-50 text-saffron-700 text-sm font-medium border border-saffron-100"
                   >
                     {spec}
                   </span>
@@ -411,8 +411,8 @@ export default function AstrologerDetailPage() {
                   <div key={review.id} className="pb-5 border-b border-surface-100 last:border-0 last:pb-0">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-purple-600">
+                        <div className="w-8 h-8 bg-gradient-to-br from-saffron-100 to-saffron-100 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-saffron-600">
                             {review.userName.charAt(0)}
                           </span>
                         </div>
@@ -438,25 +438,25 @@ export default function AstrologerDetailPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-surface-500 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-purple-400" /> Consultations
+                    <Users className="w-4 h-4 text-saffron-400" /> Consultations
                   </span>
                   <span className="text-sm font-bold text-surface-700">{astrologer.consultationCount.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-surface-500 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-purple-400" /> Experience
+                    <Clock className="w-4 h-4 text-saffron-400" /> Experience
                   </span>
                   <span className="text-sm font-bold text-surface-700">{astrologer.experienceYears} years</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-surface-500 flex items-center gap-2">
-                    <ThumbsUp className="w-4 h-4 text-purple-400" /> Rating
+                    <ThumbsUp className="w-4 h-4 text-saffron-400" /> Rating
                   </span>
                   <span className="text-sm font-bold text-surface-700">{astrologer.rating}/5.0</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-surface-500 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-purple-400" /> Verified
+                    <Shield className="w-4 h-4 text-saffron-400" /> Verified
                   </span>
                   <span className="text-sm font-bold text-emerald-600">Yes</span>
                 </div>
@@ -468,7 +468,7 @@ export default function AstrologerDetailPage() {
               <h3 className="text-base font-bold text-surface-800 mb-3">Languages</h3>
               <div className="flex flex-wrap gap-2">
                 {astrologer.languages.map((lang) => (
-                  <span key={lang} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg border border-indigo-100">
+                  <span key={lang} className="px-3 py-1.5 bg-saffron-50 text-saffron-600 text-xs font-medium rounded-lg border border-saffron-100">
                     {lang}
                   </span>
                 ))}
@@ -483,7 +483,7 @@ export default function AstrologerDetailPage() {
                   <Link
                     key={sa.id}
                     href={`/astrology/${sa.id}`}
-                    className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-purple-50/50 transition-colors"
+                    className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-saffron-50/50 transition-colors"
                   >
                     <img
                       src={sa.photo}
@@ -496,7 +496,7 @@ export default function AstrologerDetailPage() {
                       <div className="flex items-center gap-2 mt-0.5">
                         <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                         <span className="text-xs text-surface-500">{sa.rating}</span>
-                        <span className="text-xs text-purple-600 font-semibold">{'\u20B9'}{sa.perMinuteRate}/min</span>
+                        <span className="text-xs text-saffron-600 font-semibold">{'\u20B9'}{sa.perMinuteRate}/min</span>
                       </div>
                     </div>
                     {sa.isOnline && !sa.isBusy && (
@@ -508,10 +508,10 @@ export default function AstrologerDetailPage() {
             </div>
 
             {/* CTA Card */}
-            <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 rounded-xl p-6 text-center">
+            <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 rounded-xl p-6 text-center">
               <Sparkles className="w-8 h-8 text-amber-400 mx-auto mb-3" />
               <h3 className="text-base font-bold text-white mb-2">Free Kundli Analysis</h3>
-              <p className="text-xs text-purple-200/70 mb-4">
+              <p className="text-xs text-saffron-200/70 mb-4">
                 Get your birth chart generated instantly with our AI tool
               </p>
               <Link

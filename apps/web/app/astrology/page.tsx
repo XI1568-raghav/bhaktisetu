@@ -316,36 +316,22 @@ export default function AstrologyPage() {
   return (
     <div className="min-h-screen">
       {/* ── Hero Section ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900">
-        {/* Cosmic background effects */}
-        <div className="absolute inset-0">
-          <div className="absolute top-10 left-10 w-2 h-2 bg-white rounded-full animate-pulse opacity-60" />
-          <div className="absolute top-32 right-20 w-1.5 h-1.5 bg-amber-300 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.5s' }} />
-          <div className="absolute top-20 left-1/3 w-1 h-1 bg-purple-300 rounded-full animate-pulse opacity-40" style={{ animationDelay: '1s' }} />
-          <div className="absolute bottom-20 right-1/4 w-2 h-2 bg-indigo-300 rounded-full animate-pulse opacity-50" style={{ animationDelay: '1.5s' }} />
-          <div className="absolute top-40 right-1/3 w-1.5 h-1.5 bg-amber-200 rounded-full animate-pulse opacity-30" style={{ animationDelay: '2s' }} />
-          <div className="absolute bottom-32 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.7s' }} />
-          <div className="absolute top-1/2 left-20 w-1.5 h-1.5 bg-purple-200 rounded-full animate-pulse opacity-40" style={{ animationDelay: '1.3s' }} />
-          <div className="absolute bottom-10 right-10 w-1 h-1 bg-amber-400 rounded-full animate-pulse opacity-60" style={{ animationDelay: '0.3s' }} />
-          {/* Subtle gradient overlay */}
-          <div className="absolute top-0 left-0 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-24">
+      <section className="bg-[#ede9e3]">
+        <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-24">
           <div className="text-center">
             {/* Promo badge */}
-            <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-full px-5 py-2 mb-6">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-semibold text-amber-300">First 5 Minutes FREE</span>
+            <div className="inline-flex items-center gap-2 bg-saffron-100 border border-saffron-200 rounded-full px-5 py-2 mb-6">
+              <Sparkles className="w-4 h-4 text-saffron-600" />
+              <span className="text-sm font-semibold text-saffron-700">First 5 Minutes FREE</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-5 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-800 mb-5 leading-tight">
               Connect with India&apos;s<br />
-              <span className="bg-gradient-to-r from-amber-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent">
+              <span className="text-[var(--color-primary)]">
                 Top Astrologers
               </span>
             </h1>
-            <p className="text-lg text-purple-200/80 max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="text-lg text-surface-500 max-w-2xl mx-auto mb-10 leading-relaxed">
               Get accurate predictions, personalized remedies, and spiritual guidance from
               verified astrologers. Available 24/7 via chat, call, or video.
             </p>
@@ -355,30 +341,30 @@ export default function AstrologyPage() {
               {/* AI Astrologer Card */}
               <Link
                 href="/astrology/kundli"
-                className="group relative bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 text-left hover:bg-white/15 transition-all duration-300"
+                className="group relative bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
-                  <Brain className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-saffron-600/15 rounded-xl flex items-center justify-center mb-4">
+                  <Brain className="w-6 h-6 text-saffron-600" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">AI Astrologer</h3>
-                <p className="text-sm text-purple-200/70 mb-3">
+                <h3 className="text-lg font-bold text-surface-800 mb-2">AI Astrologer</h3>
+                <p className="text-sm text-surface-500 mb-3">
                   Instant kundli generation, daily horoscope, compatibility check
                 </p>
-                <div className="inline-flex items-center gap-1 text-sm font-semibold text-amber-300">
+                <div className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600">
                   Free <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
 
               {/* Live Consultation Card */}
-              <div className="group relative bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 text-left hover:bg-white/15 transition-all duration-300 cursor-pointer">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4">
+              <div className="group relative bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 cursor-pointer">
+                <div className="w-12 h-12 bg-saffron-600 rounded-xl flex items-center justify-center mb-4">
                   <MessageCircle className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Live Consultation</h3>
-                <p className="text-sm text-purple-200/70 mb-3">
+                <h3 className="text-lg font-bold text-surface-800 mb-2">Live Consultation</h3>
+                <p className="text-sm text-surface-500 mb-3">
                   Chat with verified astrologers for personalized guidance
                 </p>
-                <div className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-300">
+                <div className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600">
                   From Rs. 10/min <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
@@ -404,14 +390,14 @@ export default function AstrologyPage() {
                 type="checkbox"
                 checked={showOnlineOnly}
                 onChange={(e) => setShowOnlineOnly(e.target.checked)}
-                className="w-4 h-4 rounded border-surface-300 text-purple-600 focus:ring-purple-500"
+                className="w-4 h-4 rounded border-surface-300 text-saffron-600 focus:ring-saffron-400"
               />
               Online only
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm border border-surface-200 rounded-xl px-3 py-2 bg-white text-surface-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="text-sm border border-surface-200 rounded-xl px-3 py-2 bg-white text-surface-700 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400"
             >
               {sortOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -428,8 +414,8 @@ export default function AstrologyPage() {
               onClick={() => setActiveFilter(spec)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeFilter === spec
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
-                  : 'bg-white text-surface-600 border border-surface-200 hover:border-purple-300 hover:text-purple-600'
+                  ? 'bg-saffron-600 text-white shadow-md'
+                  : 'bg-white text-surface-600 border border-surface-200 hover:border-saffron-300 hover:text-saffron-600'
               }`}
             >
               {spec}
@@ -443,7 +429,7 @@ export default function AstrologyPage() {
             <Link
               key={astrologer.id}
               href={`/astrology/${astrologer.id}`}
-              className="group bg-white rounded-xl border border-surface-200/80 overflow-hidden card-hover transition-all duration-300"
+              className="group bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden card-hover transition-all duration-300"
             >
               {/* Card Header */}
               <div className="relative p-4 pb-3">
@@ -466,7 +452,7 @@ export default function AstrologyPage() {
                         {astrologer.name}
                       </h3>
                       {astrologer.verified && (
-                        <BadgeCheck className="w-4 h-4 text-purple-500 shrink-0" />
+                        <BadgeCheck className="w-4 h-4 text-saffron-600 shrink-0" />
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 mb-1">
@@ -502,7 +488,7 @@ export default function AstrologyPage() {
                   {astrologer.specializations.slice(0, 3).map((spec) => (
                     <span
                       key={spec}
-                      className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-purple-50 text-purple-600"
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-saffron-50 text-saffron-600"
                     >
                       {spec}
                     </span>
@@ -519,9 +505,9 @@ export default function AstrologyPage() {
                 <button
                   className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                     astrologer.isOnline && !astrologer.isBusy
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-green-600'
+                      ? 'bg-saffron-600 text-white shadow-sm hover:shadow-md hover:bg-saffron-700'
                       : astrologer.isBusy
-                      ? 'bg-amber-100 text-amber-700 cursor-wait'
+                      ? 'bg-surface-200 text-surface-500 cursor-wait'
                       : 'bg-surface-100 text-surface-400 cursor-not-allowed'
                   }`}
                   onClick={(e) => { if (!astrologer.isOnline || astrologer.isBusy) e.preventDefault(); }}
@@ -539,31 +525,31 @@ export default function AstrologyPage() {
       </section>
 
       {/* ── AI Features Section (Free Tools) ────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 py-12 lg:py-16">
+      <section className="bg-[#ede9e3] py-12 lg:py-16">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-full px-4 py-1.5 mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Free AI Tools</span>
+            <div className="inline-flex items-center gap-2 bg-saffron-100 border border-saffron-200 rounded-full px-4 py-1.5 mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
+              <span className="text-xs font-bold text-saffron-700 uppercase tracking-wider">Free AI Tools</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">
-              Explore Your Cosmic Blueprint
+            <h2 className="text-2xl lg:text-3xl font-bold text-surface-800 mb-2">
+              Explore Your Astrology Blueprint
             </h2>
-            <p className="text-purple-200/70 max-w-xl mx-auto">
+            <p className="text-surface-500 max-w-xl mx-auto">
               Get instant insights with our AI-powered astrology tools. No registration required.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Free Kundli Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
-                  <Sun className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-saffron-600/15 rounded-xl flex items-center justify-center">
+                  <Sun className="w-5 h-5 text-saffron-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Free Kundli</h3>
-                  <p className="text-xs text-purple-300/70">Birth chart analysis</p>
+                  <h3 className="font-bold text-surface-800">Free Kundli</h3>
+                  <p className="text-xs text-surface-500">Birth chart analysis</p>
                 </div>
               </div>
 
@@ -573,38 +559,38 @@ export default function AstrologyPage() {
                   placeholder="Full Name"
                   value={kundliName}
                   onChange={(e) => setKundliName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder:text-purple-300/50 focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 outline-none"
+                  className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
                 />
                 <input
                   type="date"
                   value={kundliDate}
                   onChange={(e) => setKundliDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 outline-none [color-scheme:dark]"
+                  className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
                 />
                 <input
                   type="time"
                   value={kundliTime}
                   onChange={(e) => setKundliTime(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 outline-none [color-scheme:dark]"
+                  className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Birth Place"
                   value={kundliPlace}
                   onChange={(e) => setKundliPlace(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder:text-purple-300/50 focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 outline-none"
+                  className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
                 />
               </div>
 
               {kundliGenerated ? (
-                <div className="bg-white/10 rounded-xl p-4 mb-4">
-                  <p className="text-amber-300 font-semibold text-sm mb-2">Kundli Generated!</p>
-                  <div className="space-y-1 text-xs text-purple-200/80">
-                    <p>Rashi: <span className="text-white font-medium">Simha (Leo)</span></p>
-                    <p>Nakshatra: <span className="text-white font-medium">Magha</span></p>
-                    <p>Ascendant: <span className="text-white font-medium">Mesha (Aries)</span></p>
+                <div className="bg-saffron-50 rounded-xl p-4 mb-4">
+                  <p className="text-saffron-700 font-semibold text-sm mb-2">Kundli Generated!</p>
+                  <div className="space-y-1 text-xs text-surface-500">
+                    <p>Rashi: <span className="text-surface-800 font-medium">Simha (Leo)</span></p>
+                    <p>Nakshatra: <span className="text-surface-800 font-medium">Magha</span></p>
+                    <p>Ascendant: <span className="text-surface-800 font-medium">Mesha (Aries)</span></p>
                   </div>
-                  <Link href="/astrology/kundli" className="inline-flex items-center gap-1 text-xs text-amber-300 font-semibold mt-3 hover:underline">
+                  <Link href="/astrology/kundli" className="inline-flex items-center gap-1 text-xs text-saffron-600 font-semibold mt-3 hover:underline">
                     View Full Kundli <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
@@ -612,7 +598,7 @@ export default function AstrologyPage() {
                 <button
                   onClick={handleGenerateKundli}
                   disabled={!kundliName || !kundliDate || !kundliTime || !kundliPlace}
-                  className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-medium text-sm rounded-lg hover:from-amber-500 hover:to-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Generate Kundli
                 </button>
@@ -620,14 +606,14 @@ export default function AstrologyPage() {
             </div>
 
             {/* Daily Horoscope Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
-                  <Moon className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-saffron-600/15 rounded-xl flex items-center justify-center">
+                  <Moon className="w-5 h-5 text-saffron-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Daily Horoscope</h3>
-                  <p className="text-xs text-purple-300/70">Today&apos;s prediction</p>
+                  <h3 className="font-bold text-surface-800">Daily Horoscope</h3>
+                  <p className="text-xs text-surface-500">Today&apos;s prediction</p>
                 </div>
               </div>
 
@@ -638,18 +624,18 @@ export default function AstrologyPage() {
                     onClick={() => setSelectedRashi(selectedRashi === h.rashi ? null : h.rashi)}
                     className={`flex flex-col items-center py-2 rounded-lg transition-all text-center ${
                       selectedRashi === h.rashi
-                        ? 'bg-purple-500/40 border border-purple-400/50'
-                        : 'bg-white/5 border border-transparent hover:bg-white/10'
+                        ? 'bg-saffron-100 border border-saffron-300'
+                        : 'bg-surface-50 border border-transparent hover:bg-surface-100'
                     }`}
                   >
                     <span className="text-lg leading-none">{h.symbol}</span>
-                    <span className="text-[9px] text-purple-200/70 mt-0.5">{h.rashiHindi}</span>
+                    <span className="text-[9px] text-surface-500 mt-0.5">{h.rashiHindi}</span>
                   </button>
                 ))}
               </div>
 
               {selectedRashi ? (
-                <div className="bg-white/10 rounded-xl p-4">
+                <div className="bg-saffron-50 rounded-xl p-4">
                   {(() => {
                     const h = horoscopes.find((hr) => hr.rashi === selectedRashi);
                     if (!h) return null;
@@ -658,12 +644,12 @@ export default function AstrologyPage() {
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-xl">{h.symbol}</span>
                           <div>
-                            <p className="text-sm font-bold text-white">{h.rashiEnglish}</p>
-                            <p className="text-[10px] text-purple-300/70">{h.rashiHindi}</p>
+                            <p className="text-sm font-bold text-surface-800">{h.rashiEnglish}</p>
+                            <p className="text-[10px] text-surface-500">{h.rashiHindi}</p>
                           </div>
                         </div>
-                        <p className="text-xs text-purple-200/80 leading-relaxed mb-2">{h.prediction}</p>
-                        <div className="flex items-center gap-3 text-[10px] text-purple-300/60">
+                        <p className="text-xs text-surface-600 leading-relaxed mb-2">{h.prediction}</p>
+                        <div className="flex items-center gap-3 text-[10px] text-surface-400">
                           <span>Lucky #{h.luckyNumber}</span>
                           <span>{h.luckyColor}</span>
                         </div>
@@ -672,57 +658,57 @@ export default function AstrologyPage() {
                   })()}
                 </div>
               ) : (
-                <p className="text-xs text-purple-300/50 text-center py-3">
+                <p className="text-xs text-surface-400 text-center py-3">
                   Select your rashi to see today&apos;s prediction
                 </p>
               )}
 
               <Link
                 href="/astrology/horoscope"
-                className="inline-flex items-center gap-1 text-xs text-purple-300 font-semibold mt-3 hover:text-white transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-saffron-600 font-semibold mt-3 hover:text-saffron-700 transition-colors"
               >
                 View All Horoscopes <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
 
             {/* Compatibility Match Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
-                  <Heart className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-saffron-600/15 rounded-xl flex items-center justify-center">
+                  <Heart className="w-5 h-5 text-saffron-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Compatibility Match</h3>
-                  <p className="text-xs text-purple-300/70">Rashi matching</p>
+                  <h3 className="font-bold text-surface-800">Compatibility Match</h3>
+                  <p className="text-xs text-surface-500">Rashi matching</p>
                 </div>
               </div>
 
               <div className="space-y-3 mb-5">
                 <div>
-                  <label className="text-xs text-purple-300/70 mb-1 block">Your Rashi</label>
+                  <label className="text-xs text-surface-500 mb-1 block">Your Rashi</label>
                   <select
                     value={compatRashi1}
                     onChange={(e) => { setCompatRashi1(e.target.value); setCompatScore(null); }}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-pink-400/50 focus:border-pink-400/50 outline-none"
+                    className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
                   >
-                    <option value="" className="text-gray-900">Select Rashi</option>
+                    <option value="">Select Rashi</option>
                     {horoscopes.map((h) => (
-                      <option key={h.rashi} value={h.rashi} className="text-gray-900">
+                      <option key={h.rashi} value={h.rashi}>
                         {h.symbol} {h.rashiEnglish} ({h.rashiHindi})
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-purple-300/70 mb-1 block">Partner&apos;s Rashi</label>
+                  <label className="text-xs text-surface-500 mb-1 block">Partner&apos;s Rashi</label>
                   <select
                     value={compatRashi2}
                     onChange={(e) => { setCompatRashi2(e.target.value); setCompatScore(null); }}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-pink-400/50 focus:border-pink-400/50 outline-none"
+                    className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
                   >
-                    <option value="" className="text-gray-900">Select Rashi</option>
+                    <option value="">Select Rashi</option>
                     {horoscopes.map((h) => (
-                      <option key={h.rashi} value={h.rashi} className="text-gray-900">
+                      <option key={h.rashi} value={h.rashi}>
                         {h.symbol} {h.rashiEnglish} ({h.rashiHindi})
                       </option>
                     ))}
@@ -731,12 +717,12 @@ export default function AstrologyPage() {
               </div>
 
               {compatScore !== null ? (
-                <div className="bg-white/10 rounded-xl p-4 text-center mb-4">
-                  <p className="text-xs text-purple-300/70 mb-1">Compatibility Score</p>
-                  <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">
+                <div className="bg-saffron-50 rounded-xl p-4 text-center mb-4">
+                  <p className="text-xs text-surface-500 mb-1">Compatibility Score</p>
+                  <p className="text-4xl font-bold text-saffron-600">
                     {compatScore}%
                   </p>
-                  <p className="text-xs text-purple-200/70 mt-1">
+                  <p className="text-xs text-surface-500 mt-1">
                     {compatScore > 75 ? 'Highly Compatible!' : compatScore > 60 ? 'Good Match!' : 'Needs Understanding'}
                   </p>
                 </div>
@@ -744,7 +730,7 @@ export default function AstrologyPage() {
                 <button
                   onClick={handleCompatibility}
                   disabled={!compatRashi1 || !compatRashi2}
-                  className="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium text-sm rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Check Compatibility
                 </button>
@@ -770,38 +756,34 @@ export default function AstrologyPage() {
               icon: Search,
               title: 'Choose Astrologer',
               desc: 'Browse profiles, check ratings, specializations, and find the right astrologer for you.',
-              color: 'from-purple-500 to-indigo-600',
             },
             {
               step: 2,
               icon: MessageCircle,
               title: 'Start Chat',
               desc: 'Connect instantly via chat, call, or video. First 5 minutes are free for new users.',
-              color: 'from-emerald-500 to-teal-600',
             },
             {
               step: 3,
               icon: Eye,
               title: 'Get Guidance',
               desc: 'Receive personalized predictions, remedies, and spiritual guidance from the expert.',
-              color: 'from-amber-500 to-orange-600',
             },
             {
               step: 4,
               icon: Star,
               title: 'Rate & Review',
               desc: 'Share your experience to help others find the best astrologers on the platform.',
-              color: 'from-pink-500 to-rose-600',
             },
           ].map((item) => {
             const Icon = item.icon;
             return (
               <div key={item.step} className="relative text-center group">
-                <div className={`w-14 h-14 mx-auto bg-gradient-to-br ${item.color} rounded-xl flex items-center justify-center mb-4`}>
-                  <Icon className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 mx-auto bg-saffron-600/15 rounded-xl flex items-center justify-center mb-4">
+                  <Icon className="w-6 h-6 text-saffron-600" />
                 </div>
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white rounded-full border-2 border-purple-200 flex items-center justify-center">
-                  <span className="text-xs font-bold text-purple-600">{item.step}</span>
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white rounded-full border-2 border-saffron-200 flex items-center justify-center">
+                  <span className="text-xs font-bold text-saffron-600">{item.step}</span>
                 </div>
                 <h3 className="text-base font-bold text-surface-800 mb-1.5">{item.title}</h3>
                 <p className="text-sm text-surface-500 leading-relaxed">{item.desc}</p>
@@ -812,21 +794,21 @@ export default function AstrologyPage() {
       </section>
 
       {/* ── Trust Section ────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-r from-indigo-950 to-purple-900">
+      <section className="bg-[#ede9e3]">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-14">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             {[
-              { icon: Users, value: '41,000+', label: 'Verified Astrologers', color: 'text-amber-400' },
-              { icon: Award, value: '5%', label: 'Acceptance Rate', color: 'text-purple-300' },
-              { icon: Clock, value: '24/7', label: 'Available', color: 'text-emerald-400' },
-              { icon: Lock, value: '100%', label: 'Private & Secure', color: 'text-indigo-300' },
+              { icon: Users, value: '41,000+', label: 'Verified Astrologers', color: 'text-saffron-600' },
+              { icon: Award, value: '5%', label: 'Acceptance Rate', color: 'text-saffron-600' },
+              { icon: Clock, value: '24/7', label: 'Available', color: 'text-saffron-600' },
+              { icon: Lock, value: '100%', label: 'Private & Secure', color: 'text-saffron-600' },
             ].map((stat) => {
               const Icon = stat.icon;
               return (
                 <div key={stat.label}>
                   <Icon className={`w-8 h-8 ${stat.color} mx-auto mb-3`} />
-                  <p className="text-2xl lg:text-3xl font-bold text-white mb-1">{stat.value}</p>
-                  <p className="text-sm text-purple-200/70">{stat.label}</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-surface-800 mb-1">{stat.value}</p>
+                  <p className="text-sm text-surface-500">{stat.label}</p>
                 </div>
               );
             })}

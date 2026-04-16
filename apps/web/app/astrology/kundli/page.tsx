@@ -90,11 +90,11 @@ export default function KundliPage() {
   return (
     <div className="min-h-screen">
       {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 pb-8">
+      <section className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 pb-8">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6">
           <Link
             href="/astrology"
-            className="inline-flex items-center gap-1.5 text-sm text-purple-300/70 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 text-sm text-saffron-300/70 hover:text-white transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Astrology
@@ -108,7 +108,7 @@ export default function KundliPage() {
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
               Free Kundli Generator
             </h1>
-            <p className="text-purple-200/70 max-w-xl mx-auto">
+            <p className="text-saffron-200/70 max-w-xl mx-auto">
               Generate your birth chart (Janam Kundli) instantly. Get insights into your planetary positions,
               rashi, nakshatra, and current dasha period.
             </p>
@@ -134,7 +134,7 @@ export default function KundliPage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-surface-700 mb-1.5">
-                    <User className="w-4 h-4 inline mr-1.5 text-purple-400" />
+                    <User className="w-4 h-4 inline mr-1.5 text-saffron-400" />
                     Full Name
                   </label>
                   <input
@@ -142,42 +142,42 @@ export default function KundliPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter your full name"
-                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 outline-none transition-all"
+                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-surface-700 mb-1.5">
-                    <Calendar className="w-4 h-4 inline mr-1.5 text-purple-400" />
+                    <Calendar className="w-4 h-4 inline mr-1.5 text-saffron-400" />
                     Date of Birth
                   </label>
                   <input
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 outline-none transition-all"
+                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-surface-700 mb-1.5">
-                    <Clock className="w-4 h-4 inline mr-1.5 text-purple-400" />
+                    <Clock className="w-4 h-4 inline mr-1.5 text-saffron-400" />
                     Time of Birth
                   </label>
                   <input
                     type="time"
                     value={formData.time}
                     onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 outline-none transition-all"
+                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-surface-700 mb-1.5">
-                    <MapPin className="w-4 h-4 inline mr-1.5 text-purple-400" />
+                    <MapPin className="w-4 h-4 inline mr-1.5 text-saffron-400" />
                     Place of Birth
                   </label>
                   <input
@@ -185,7 +185,7 @@ export default function KundliPage() {
                     value={formData.place}
                     onChange={(e) => setFormData({ ...formData, place: e.target.value })}
                     placeholder="e.g., New Delhi, India"
-                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 outline-none transition-all"
+                    className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
                     required
                   />
                 </div>
@@ -193,7 +193,7 @@ export default function KundliPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium text-sm rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-gradient-to-r from-saffron-600 to-saffron-600 text-white font-medium text-sm rounded-lg hover:from-saffron-700 hover:to-saffron-700 transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <>
@@ -233,7 +233,7 @@ export default function KundliPage() {
               </div>
               <button
                 onClick={handleReset}
-                className="text-sm text-purple-600 font-semibold hover:text-purple-700 transition-colors"
+                className="text-sm text-saffron-600 font-semibold hover:text-saffron-700 transition-colors"
               >
                 Generate Another
               </button>
@@ -247,15 +247,15 @@ export default function KundliPage() {
                 <p className="text-base font-bold text-surface-800">{sampleKundli.rashi}</p>
                 <p className="text-xs text-surface-500">{sampleKundli.rashiHindi}</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200/50 rounded-xl p-5 text-center">
-                <p className="text-xs text-purple-600 font-semibold uppercase tracking-wider mb-1">Nakshatra</p>
-                <p className="text-2xl mb-0.5"><Star className="w-6 h-6 text-purple-500 mx-auto" /></p>
+              <div className="bg-gradient-to-br from-saffron-50 to-saffron-50 border border-saffron-200/50 rounded-xl p-5 text-center">
+                <p className="text-xs text-saffron-600 font-semibold uppercase tracking-wider mb-1">Nakshatra</p>
+                <p className="text-2xl mb-0.5"><Star className="w-6 h-6 text-saffron-500 mx-auto" /></p>
                 <p className="text-base font-bold text-surface-800">{sampleKundli.nakshatra}</p>
                 <p className="text-xs text-surface-500">{sampleKundli.nakshatraHindi} (Pada {sampleKundli.nakshatraPada})</p>
               </div>
-              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200/50 rounded-xl p-5 text-center">
-                <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider mb-1">Ascendant (Lagna)</p>
-                <p className="text-2xl mb-0.5"><Sun className="w-6 h-6 text-indigo-500 mx-auto" /></p>
+              <div className="bg-gradient-to-br from-saffron-50 to-blue-50 border border-saffron-200/50 rounded-xl p-5 text-center">
+                <p className="text-xs text-saffron-600 font-semibold uppercase tracking-wider mb-1">Ascendant (Lagna)</p>
+                <p className="text-2xl mb-0.5"><Sun className="w-6 h-6 text-saffron-500 mx-auto" /></p>
                 <p className="text-base font-bold text-surface-800">{sampleKundli.ascendant}</p>
                 <p className="text-xs text-surface-500">{sampleKundli.ascendantHindi}</p>
               </div>
@@ -268,22 +268,22 @@ export default function KundliPage() {
             </div>
 
             {/* Current Dasha */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white">
+            <div className="bg-gradient-to-r from-saffron-600 to-saffron-600 rounded-xl p-6 text-white">
               <div className="flex items-center gap-3 mb-2">
                 <Sparkles className="w-5 h-5 text-amber-300" />
                 <h3 className="font-bold text-lg">Current Dasha Period</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                 <div>
-                  <p className="text-xs text-purple-200/70">Mahadasha</p>
+                  <p className="text-xs text-saffron-200/70">Mahadasha</p>
                   <p className="text-lg font-bold">{sampleKundli.currentDasha}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-purple-200/70">Period</p>
+                  <p className="text-xs text-saffron-200/70">Period</p>
                   <p className="text-lg font-bold">{sampleKundli.dashaPeriod}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-purple-200/70">Balance</p>
+                  <p className="text-xs text-saffron-200/70">Balance</p>
                   <p className="text-lg font-bold">{sampleKundli.dashaBalance}</p>
                 </div>
               </div>
@@ -294,70 +294,70 @@ export default function KundliPage() {
               <div className="bg-white rounded-xl border border-surface-200/80 p-6">
                 <h3 className="text-lg font-bold text-surface-800 mb-5">Birth Chart (Lagna Kundli)</h3>
                 {/* Diamond-style Vedic chart represented as a 4x4 grid */}
-                <div className="grid grid-cols-4 gap-px bg-purple-200 border border-purple-200 rounded-xl overflow-hidden">
+                <div className="grid grid-cols-4 gap-px bg-saffron-200 border border-saffron-200 rounded-xl overflow-hidden">
                   {/* Row 1 */}
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">12</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">12</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[11]!.signHindi}</p>
                     {sampleKundli.houses[11]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[11]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[11]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">1</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">1</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[0]!.signHindi}</p>
                     {sampleKundli.houses[0]!.planets.length > 0 && (
                       <p className="text-[10px] font-semibold text-red-600 mt-0.5">{sampleKundli.houses[0]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">2</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">2</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[1]!.signHindi}</p>
                     {sampleKundli.houses[1]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[1]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[1]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">3</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">3</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[2]!.signHindi}</p>
                     {sampleKundli.houses[2]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[2]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[2]!.planets.join(', ')}</p>
                     )}
                   </div>
 
                   {/* Row 2 */}
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">11</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">11</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[10]!.signHindi}</p>
                     {sampleKundli.houses[10]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[10]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[10]!.planets.join(', ')}</p>
                     )}
                   </div>
-                  <div className="bg-purple-50 p-2 col-span-2 row-span-2 flex items-center justify-center min-h-[140px]">
+                  <div className="bg-saffron-50 p-2 col-span-2 row-span-2 flex items-center justify-center min-h-[140px]">
                     <div className="text-center">
-                      <p className="text-lg font-bold text-purple-700">Lagna</p>
-                      <p className="text-sm text-purple-500">{sampleKundli.ascendant}</p>
-                      <p className="text-xs text-purple-400 mt-1">{sampleKundli.ascendantHindi}</p>
+                      <p className="text-lg font-bold text-saffron-700">Lagna</p>
+                      <p className="text-sm text-saffron-500">{sampleKundli.ascendant}</p>
+                      <p className="text-xs text-saffron-400 mt-1">{sampleKundli.ascendantHindi}</p>
                     </div>
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">4</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">4</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[3]!.signHindi}</p>
                     {sampleKundli.houses[3]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[3]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[3]!.planets.join(', ')}</p>
                     )}
                   </div>
 
                   {/* Row 3 */}
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">10</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">10</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[9]!.signHindi}</p>
                     {sampleKundli.houses[9]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[9]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[9]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">5</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">5</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[4]!.signHindi}</p>
                     {sampleKundli.houses[4]!.planets.length > 0 && (
                       <p className="text-[10px] font-semibold text-amber-600 mt-0.5">{sampleKundli.houses[4]!.planets.join(', ')}</p>
@@ -366,31 +366,31 @@ export default function KundliPage() {
 
                   {/* Row 4 */}
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">9</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">9</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[8]!.signHindi}</p>
                     {sampleKundli.houses[8]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[8]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[8]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">8</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">8</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[7]!.signHindi}</p>
                     {sampleKundli.houses[7]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[7]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[7]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">7</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">7</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[6]!.signHindi}</p>
                     {sampleKundli.houses[6]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[6]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[6]!.planets.join(', ')}</p>
                     )}
                   </div>
                   <div className="bg-white p-2 min-h-[70px]">
-                    <p className="text-[9px] font-bold text-purple-400 mb-0.5">6</p>
+                    <p className="text-[9px] font-bold text-saffron-400 mb-0.5">6</p>
                     <p className="text-[9px] text-surface-400">{sampleKundli.houses[5]!.signHindi}</p>
                     {sampleKundli.houses[5]!.planets.length > 0 && (
-                      <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{sampleKundli.houses[5]!.planets.join(', ')}</p>
+                      <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{sampleKundli.houses[5]!.planets.join(', ')}</p>
                     )}
                   </div>
                 </div>
@@ -412,11 +412,11 @@ export default function KundliPage() {
                     </thead>
                     <tbody>
                       {sampleKundli.planetaryPositions.map((p) => (
-                        <tr key={p.planet} className="border-b border-surface-50 hover:bg-purple-50/30 transition-colors">
+                        <tr key={p.planet} className="border-b border-surface-50 hover:bg-saffron-50/30 transition-colors">
                           <td className="py-2.5 px-2 font-medium text-surface-700">{p.planet}</td>
                           <td className="py-2.5 px-2 text-surface-600">{p.sign}</td>
                           <td className="py-2.5 px-2 text-center">
-                            <span className="inline-flex items-center justify-center w-6 h-6 bg-purple-100 text-purple-700 text-xs font-bold rounded-md">
+                            <span className="inline-flex items-center justify-center w-6 h-6 bg-saffron-100 text-saffron-700 text-xs font-bold rounded-md">
                               {p.house}
                             </span>
                           </td>
@@ -443,12 +443,12 @@ export default function KundliPage() {
             </div>
 
             {/* Consult CTA */}
-            <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 rounded-xl p-8 text-center">
+            <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 rounded-xl p-8 text-center">
               <Sparkles className="w-10 h-10 text-amber-400 mx-auto mb-3" />
               <h3 className="text-xl font-bold text-white mb-2">
                 Want a Detailed Analysis?
               </h3>
-              <p className="text-purple-200/70 max-w-md mx-auto mb-5">
+              <p className="text-saffron-200/70 max-w-md mx-auto mb-5">
                 Connect with a verified astrologer for personalized interpretation of your
                 kundli, remedies, and life predictions.
               </p>
