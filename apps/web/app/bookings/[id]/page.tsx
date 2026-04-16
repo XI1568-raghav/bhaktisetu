@@ -160,7 +160,7 @@ function getStatusBadge(status: BookingDetail['status']) {
     delivered: { label: 'Delivered', color: 'text-tulsi-green-dark', bg: 'bg-tulsi-green-light/30' },
     cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
   };
-  return map[status] || { label: status, color: 'text-stone-600', bg: 'bg-stone-100' };
+  return map[status] || { label: status, color: 'text-surface-600', bg: 'bg-surface-100' };
 }
 
 function getPrasadStatusLabel(status: PrasadTracking['status']) {
@@ -259,7 +259,7 @@ function BookingDetailContent() {
       <div className="flex min-h-screen items-center justify-center bg-saffron-50">
         <div className="text-center">
           <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-saffron-500" />
-          <p className="text-sm text-stone-500">Loading booking details...</p>
+          <p className="text-sm text-surface-500">Loading booking details...</p>
         </div>
       </div>
     );
@@ -269,9 +269,9 @@ function BookingDetailContent() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-saffron-50">
         <div className="text-center">
-          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-stone-300" />
-          <h2 className="mb-2 text-xl font-bold text-stone-800">Booking Not Found</h2>
-          <p className="mb-4 text-stone-500">We could not find this booking.</p>
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-surface-300" />
+          <h2 className="mb-2 text-xl font-bold text-surface-700">Booking Not Found</h2>
+          <p className="mb-4 text-surface-500">We could not find this booking.</p>
           <Link
             href="/bookings"
             className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
@@ -298,16 +298,16 @@ function BookingDetailContent() {
       booking.status === 'completed');
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Breadcrumb */}
-      <div className="border-b border-stone-100 bg-white">
+      <div className="border-b border-surface-100 bg-white">
         <div className="mx-auto max-w-4xl px-4 py-3 sm:px-6">
-          <nav className="flex items-center gap-2 text-sm text-stone-500">
+          <nav className="flex items-center gap-2 text-sm text-surface-500">
             <Link href="/" className="hover:text-orange-600">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link href="/bookings" className="hover:text-orange-600">My Bookings</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="font-medium text-stone-800">{booking.bookingNumber}</span>
+            <span className="font-medium text-surface-700">{booking.bookingNumber}</span>
           </nav>
         </div>
       </div>
@@ -317,7 +317,7 @@ function BookingDetailContent() {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-1 flex items-center gap-3">
-              <h1 className="text-xl font-bold text-stone-900 sm:text-2xl">{booking.pujaName}</h1>
+              <h1 className="text-xl font-bold text-surface-800 sm:text-2xl">{booking.pujaName}</h1>
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge.bg} ${statusBadge.color}`}
               >
@@ -325,10 +325,10 @@ function BookingDetailContent() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm text-stone-400">{booking.bookingNumber}</span>
+              <span className="font-mono text-sm text-surface-400">{booking.bookingNumber}</span>
               <button
                 onClick={() => navigator.clipboard?.writeText(booking.bookingNumber)}
-                className="text-stone-400 hover:text-saffron-600"
+                className="text-surface-400 hover:text-saffron-600"
                 title="Copy booking number"
               >
                 <Copy className="h-3.5 w-3.5" />
@@ -337,7 +337,7 @@ function BookingDetailContent() {
           </div>
           <Link
             href="/bookings"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-4 py-2 text-sm font-medium text-surface-600 hover:bg-surface-50"
           >
             <ChevronLeft className="h-4 w-4" />
             All Bookings
@@ -346,8 +346,8 @@ function BookingDetailContent() {
 
         {/* Status Tracker */}
         {booking.status !== 'cancelled' && (
-          <div className="mb-8 rounded-xl border border-stone-100 bg-white p-6">
-            <h2 className="mb-6 text-lg font-bold text-stone-900">Booking Progress</h2>
+          <div className="mb-8 rounded-xl border border-surface-100 bg-white p-6">
+            <h2 className="mb-6 text-lg font-bold text-surface-800">Booking Progress</h2>
             <BookingStatusTracker
               currentStatus={booking.status as BookingStatus}
               timestamps={booking.timestamps}
@@ -373,8 +373,8 @@ function BookingDetailContent() {
           {/* Left Column */}
           <div className="space-y-6 lg:col-span-2">
             {/* Booking Info */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <FileText className="h-5 w-5 text-saffron-500" />
                 Booking Details
               </h2>
@@ -388,7 +388,7 @@ function BookingDetailContent() {
                     >
                       {booking.templeName}
                     </Link>
-                    <p className="text-xs text-stone-400">
+                    <p className="text-xs text-surface-400">
                       {booking.templeCity}, {booking.templeState}
                     </p>
                   </div>
@@ -410,8 +410,8 @@ function BookingDetailContent() {
             </div>
 
             {/* Devotee Info */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <Users className="h-5 w-5 text-saffron-500" />
                 Devotees ({booking.devotees.length})
               </h2>
@@ -419,14 +419,14 @@ function BookingDetailContent() {
                 {booking.devotees.map((devotee, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 rounded-lg border border-stone-100 bg-stone-50/50 p-3"
+                    className="flex items-center gap-3 rounded-lg border border-surface-100 bg-surface-50/50 p-3"
                   >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-saffron-100 text-sm font-bold text-saffron-600">
                       {i + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-stone-800">{devotee.name}</p>
-                      <div className="flex items-center gap-3 text-xs text-stone-500">
+                      <p className="font-medium text-surface-700">{devotee.name}</p>
+                      <div className="flex items-center gap-3 text-xs text-surface-500">
                         {devotee.gotra && <span>Gotra: {devotee.gotra}</span>}
                         {devotee.nakshatra && <span>Nakshatra: {devotee.nakshatra}</span>}
                       </div>
@@ -437,25 +437,25 @@ function BookingDetailContent() {
               {booking.sankalp && (
                 <div className="mt-4 rounded-lg border border-saffron-100 bg-saffron-50/50 p-3">
                   <p className="mb-1 text-xs font-semibold text-saffron-700">Sankalp</p>
-                  <p className="text-sm text-stone-700">{booking.sankalp}</p>
+                  <p className="text-sm text-surface-600">{booking.sankalp}</p>
                 </div>
               )}
               {booking.specialInstructions && (
-                <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50 p-3">
-                  <p className="mb-1 text-xs font-semibold text-stone-600">Special Instructions</p>
-                  <p className="text-sm text-stone-700">{booking.specialInstructions}</p>
+                <div className="mt-3 rounded-lg border border-surface-100 bg-surface-50 p-3">
+                  <p className="mb-1 text-xs font-semibold text-surface-600">Special Instructions</p>
+                  <p className="text-sm text-surface-600">{booking.specialInstructions}</p>
                 </div>
               )}
             </div>
 
             {/* Video Proof Section */}
             {booking.videoUrl && (
-              <div id="video" className="rounded-xl border border-stone-100 bg-white p-6">
-                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+              <div id="video" className="rounded-xl border border-surface-100 bg-white p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                   <Video className="h-5 w-5 text-purple-500" />
                   Your Puja Video Proof
                 </h2>
-                <div className="overflow-hidden rounded-xl bg-stone-900">
+                <div className="overflow-hidden rounded-xl bg-surface-800">
                   {/* Video player placeholder */}
                   <div className="relative flex aspect-video items-center justify-center">
                     <div className="text-center">
@@ -470,7 +470,7 @@ function BookingDetailContent() {
                   </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <p className="text-sm text-stone-500">
+                  <p className="text-sm text-surface-500">
                     Recorded on {formatDate(booking.scheduledDate)}
                   </p>
                   <button className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-100">
@@ -483,32 +483,32 @@ function BookingDetailContent() {
 
             {/* Prasad Tracking */}
             {booking.prasadDelivery && booking.prasadTracking && (
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
-                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                   <Package className="h-5 w-5 text-saffron-500" />
                   Prasad Delivery
                 </h2>
                 <div className="rounded-xl border border-saffron-100 bg-saffron-50/50 p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs font-medium text-stone-500">Tracking ID</p>
-                      <p className="font-mono text-sm font-medium text-stone-800">
+                      <p className="text-xs font-medium text-surface-500">Tracking ID</p>
+                      <p className="font-mono text-sm font-medium text-surface-700">
                         {booking.prasadTracking.trackingId}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-stone-500">Status</p>
+                      <p className="text-xs font-medium text-surface-500">Status</p>
                       <p className="text-sm font-semibold text-saffron-600">
                         {getPrasadStatusLabel(booking.prasadTracking.status)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-stone-500">Carrier</p>
-                      <p className="text-sm text-stone-800">{booking.prasadTracking.carrier}</p>
+                      <p className="text-xs font-medium text-surface-500">Carrier</p>
+                      <p className="text-sm text-surface-700">{booking.prasadTracking.carrier}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-stone-500">Expected Delivery</p>
-                      <p className="text-sm text-stone-800">
+                      <p className="text-xs font-medium text-surface-500">Expected Delivery</p>
+                      <p className="text-sm text-surface-700">
                         {formatDate(booking.prasadTracking.expectedDate)}
                       </p>
                     </div>
@@ -524,14 +524,14 @@ function BookingDetailContent() {
                         <div key={step} className="flex flex-1 items-center gap-1">
                           <div
                             className={`h-2 flex-1 rounded-full ${
-                              isComplete ? 'bg-saffron-500' : 'bg-stone-200'
+                              isComplete ? 'bg-saffron-500' : 'bg-surface-200'
                             }`}
                           />
                         </div>
                       );
                     })}
                   </div>
-                  <div className="mt-1 flex justify-between text-[10px] text-stone-400">
+                  <div className="mt-1 flex justify-between text-[10px] text-surface-400">
                     <span>Preparing</span>
                     <span>Shipped</span>
                     <span>In Transit</span>
@@ -543,15 +543,15 @@ function BookingDetailContent() {
 
             {/* Review Section */}
             {canReview && (
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
-                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                   <MessageSquare className="h-5 w-5 text-saffron-500" />
                   Rate Your Experience
                 </h2>
 
                 {/* Star Rating */}
                 <div className="mb-4">
-                  <p className="mb-2 text-sm text-stone-600">
+                  <p className="mb-2 text-sm text-surface-600">
                     How was your puja experience?
                   </p>
                   <div className="flex items-center gap-1">
@@ -567,13 +567,13 @@ function BookingDetailContent() {
                           className={`h-8 w-8 ${
                             star <= (reviewHover || reviewRating)
                               ? 'fill-amber-500 text-amber-500'
-                              : 'text-stone-300'
+                              : 'text-surface-300'
                           }`}
                         />
                       </button>
                     ))}
                     {reviewRating > 0 && (
-                      <span className="ml-2 text-sm font-medium text-stone-600">
+                      <span className="ml-2 text-sm font-medium text-surface-600">
                         {reviewRating === 5
                           ? 'Excellent!'
                           : reviewRating === 4
@@ -593,7 +593,7 @@ function BookingDetailContent() {
                   onChange={(e) => setReviewText(e.target.value)}
                   rows={3}
                   placeholder="Share your experience... (optional)"
-                  className="mb-4 w-full rounded-xl border border-stone-200 px-4 py-3 text-sm text-stone-800 placeholder:text-stone-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                  className="mb-4 w-full rounded-xl border border-surface-200 px-4 py-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
                 />
 
                 <button
@@ -616,7 +616,7 @@ function BookingDetailContent() {
             {/* Review submitted */}
             {(booking.review || reviewSubmitted) && (
               <div className="rounded-xl border border-tulsi-green-light/50 bg-tulsi-green-light/10 p-6">
-                <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-stone-900">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-surface-800">
                   <MessageSquare className="h-5 w-5 text-tulsi-green" />
                   Your Review
                 </h2>
@@ -627,13 +627,13 @@ function BookingDetailContent() {
                       className={`h-5 w-5 ${
                         star <= (booking.review?.rating || reviewRating)
                           ? 'fill-amber-500 text-amber-500'
-                          : 'text-stone-300'
+                          : 'text-surface-300'
                       }`}
                     />
                   ))}
                 </div>
                 {(booking.review?.text || reviewText) && (
-                  <p className="text-sm text-stone-700">
+                  <p className="text-sm text-surface-600">
                     {booking.review?.text || reviewText}
                   </p>
                 )}
@@ -644,35 +644,35 @@ function BookingDetailContent() {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Price Breakdown */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h3 className="mb-4 flex items-center gap-2 font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h3 className="mb-4 flex items-center gap-2 font-bold text-surface-800">
                 <IndianRupee className="h-5 w-5 text-saffron-500" />
                 Price Breakdown
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-600">Puja Fee</span>
-                  <span className="font-medium text-stone-800">
+                  <span className="text-surface-600">Puja Fee</span>
+                  <span className="font-medium text-surface-700">
                     ₹{booking.priceBreakdown.pujaFee.toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-600">Platform Fee</span>
-                  <span className="font-medium text-stone-800">
+                  <span className="text-surface-600">Platform Fee</span>
+                  <span className="font-medium text-surface-700">
                     ₹{booking.priceBreakdown.platformFee}
                   </span>
                 </div>
                 {booking.priceBreakdown.prasadDelivery > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-600">Prasad Delivery</span>
-                    <span className="font-medium text-stone-800">
+                    <span className="text-surface-600">Prasad Delivery</span>
+                    <span className="font-medium text-surface-700">
                       ₹{booking.priceBreakdown.prasadDelivery}
                     </span>
                   </div>
                 )}
-                <div className="border-t border-stone-100 pt-3">
+                <div className="border-t border-surface-100 pt-3">
                   <div className="flex justify-between">
-                    <span className="font-bold text-stone-900">Total Paid</span>
+                    <span className="font-bold text-surface-800">Total Paid</span>
                     <span className="text-xl font-bold text-saffron-600">
                       ₹{booking.priceBreakdown.total.toLocaleString('en-IN')}
                     </span>
@@ -682,8 +682,8 @@ function BookingDetailContent() {
             </div>
 
             {/* Actions */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h3 className="mb-4 font-bold text-stone-900">Actions</h3>
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h3 className="mb-4 font-bold text-surface-800">Actions</h3>
               <div className="space-y-3">
                 {isCancellable && (
                   <>
@@ -703,7 +703,7 @@ function BookingDetailContent() {
                           </button>
                           <button
                             onClick={() => setShowCancelConfirm(false)}
-                            className="flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-semibold text-stone-600 hover:bg-stone-50"
+                            className="flex-1 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-600 hover:bg-surface-50"
                           >
                             No, Keep
                           </button>
@@ -723,7 +723,7 @@ function BookingDetailContent() {
 
                 <Link
                   href="mailto:support@bhaktisetu.com"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-stone-200 py-2.5 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-surface-200 py-2.5 text-sm font-semibold text-surface-600 transition-colors hover:bg-surface-50"
                 >
                   <Headphones className="h-4 w-4" />
                   Contact Support
@@ -744,7 +744,7 @@ function BookingDetailContent() {
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-saffron-700">
                 Need Help?
               </h4>
-              <p className="text-xs leading-relaxed text-stone-600">
+              <p className="text-xs leading-relaxed text-surface-600">
                 For any queries about your booking, contact our support team at{' '}
                 <a href="mailto:support@bhaktisetu.com" className="font-medium text-saffron-600 hover:underline">
                   support@bhaktisetu.com
@@ -782,8 +782,8 @@ function DetailRow({
         <Icon className="h-4 w-4 text-saffron-500" />
       </div>
       <div>
-        <p className="text-xs font-medium text-stone-500">{label}</p>
-        {value ? <p className="text-sm font-medium text-stone-800">{value}</p> : children}
+        <p className="text-xs font-medium text-surface-500">{label}</p>
+        {value ? <p className="text-sm font-medium text-surface-700">{value}</p> : children}
       </div>
     </div>
   );

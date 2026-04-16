@@ -292,47 +292,47 @@ export default function PujasPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-8">
           <div className="relative">
-            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+            <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
           </div>
 
           <div className="relative">
-            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+            <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
               {deities.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
           </div>
 
           <div className="relative">
-            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+            <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
               {occasions.map((o) => (
                 <option key={o} value={o}>
                   {o}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
           </div>
 
           <div className="relative">
-            <select className="appearance-none bg-white border border-stone-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-stone-700 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
+            <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
               {priceRanges.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
           </div>
 
           <button className="inline-flex items-center gap-2 bg-saffron-50 border border-saffron-200 rounded-lg px-4 py-2.5 text-sm font-medium text-saffron-700 hover:bg-saffron-100 transition-colors">
@@ -342,8 +342,8 @@ export default function PujasPage() {
         </div>
 
         {/* Results */}
-        <p className="text-sm text-stone-500 mb-6">
-          Showing <span className="font-semibold text-stone-700">{pujas.length}</span> pujas
+        <p className="text-sm text-surface-500 mb-6">
+          Showing <span className="font-semibold text-surface-600">{pujas.length}</span> pujas
         </p>
 
         {/* Puja Grid */}
@@ -382,7 +382,7 @@ export default function PujasPage() {
                   className="absolute top-3 right-3 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition-colors"
                   aria-label="Add to wishlist"
                 >
-                  <Heart className="w-4 h-4 text-stone-400" />
+                  <Heart className="w-4 h-4 text-surface-400" />
                 </button>
 
                 {/* Feature badges */}
@@ -403,50 +403,50 @@ export default function PujasPage() {
               </div>
 
               <div className="p-5">
-                <div className="flex items-center gap-1 text-sm text-stone-500 mb-1">
+                <div className="flex items-center gap-1 text-sm text-surface-500 mb-1">
                   <MapPin className="w-3.5 h-3.5" />
                   {puja.temple}
                 </div>
-                <h3 className="text-lg font-semibold text-stone-900 group-hover:text-saffron-600 transition-colors">
+                <h3 className="text-lg font-semibold text-surface-800 group-hover:text-saffron-600 transition-colors">
                   {puja.name}
                 </h3>
-                <p className="text-sm text-stone-500 mt-1 line-clamp-2">
+                <p className="text-sm text-surface-500 mt-1 line-clamp-2">
                   {puja.description}
                 </p>
 
                 <div className="flex items-center gap-3 mt-3 text-sm">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-temple-gold fill-temple-gold" />
-                    <span className="font-semibold text-stone-800">
+                    <span className="font-semibold text-surface-700">
                       {puja.rating}
                     </span>
                   </div>
-                  <span className="text-stone-300">|</span>
-                  <span className="text-stone-500">
+                  <span className="text-surface-300">|</span>
+                  <span className="text-surface-500">
                     {puja.reviews.toLocaleString("en-IN")} reviews
                   </span>
-                  <span className="text-stone-300">|</span>
-                  <span className="text-stone-500 flex items-center gap-1">
+                  <span className="text-surface-300">|</span>
+                  <span className="text-surface-500 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     {puja.duration}
                   </span>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between pt-4 border-t border-stone-50">
+                <div className="mt-4 flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--color-divider)' }}>
                   <div>
-                    <span className="text-2xl font-bold text-saffron-600">
+                    <span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
                       ₹{puja.price.toLocaleString("en-IN")}
                     </span>
-                    <span className="text-sm text-stone-400 ml-1">
+                    <span className="text-xs ml-1" style={{ color: 'var(--color-text-faint)' }}>
                       onwards
                     </span>
                   </div>
                   <a
-                    href="/pujas"
-                    className="inline-flex items-center gap-1 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+                    href={`/pujas/${puja.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+                    style={{ background: 'var(--color-primary)', color: '#fff' }}
                   >
                     Book Now
-                    <ChevronRight className="w-4 h-4" />
                   </a>
                 </div>
               </div>

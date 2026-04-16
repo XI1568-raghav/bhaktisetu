@@ -135,11 +135,11 @@ export default async function DarshanDetailPage({
     stream.temple.images && stream.temple.images.length > 0 ? stream.temple.images[0]!.url : null;
 
   return (
-    <div className="min-h-screen bg-stone-950">
+    <div className="min-h-screen bg-[#2a2520]">
       {/* Breadcrumb */}
-      <div className="border-b border-stone-800">
+      <div className="border-b border-surface-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <nav className="flex items-center gap-1.5 text-sm text-stone-500">
+          <nav className="flex items-center gap-1.5 text-sm text-surface-500">
             <a
               href="/"
               className="hover:text-saffron-400 transition-colors flex items-center gap-1"
@@ -147,15 +147,15 @@ export default async function DarshanDetailPage({
               <Home className="w-3.5 h-3.5" />
               Home
             </a>
-            <ChevronRight className="w-3.5 h-3.5 text-stone-700" />
+            <ChevronRight className="w-3.5 h-3.5 text-surface-600" />
             <a
               href="/darshan"
               className="hover:text-saffron-400 transition-colors"
             >
               Live Darshan
             </a>
-            <ChevronRight className="w-3.5 h-3.5 text-stone-700" />
-            <span className="text-stone-300 font-medium truncate max-w-[200px]">
+            <ChevronRight className="w-3.5 h-3.5 text-surface-600" />
+            <span className="text-surface-300 font-medium truncate max-w-[200px]">
               {stream.temple.name}
             </span>
           </nav>
@@ -182,13 +182,13 @@ export default async function DarshanDetailPage({
             />
 
             {/* Stream info */}
-            <div className="bg-stone-900 rounded-xl p-6 border border-stone-800">
+            <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold text-white">
                     {stream.temple.name}
                   </h1>
-                  <div className="flex items-center gap-3 mt-2 text-sm text-stone-400">
+                  <div className="flex items-center gap-3 mt-2 text-sm text-surface-400">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
                       {stream.temple.city}
@@ -212,9 +212,9 @@ export default async function DarshanDetailPage({
               </div>
 
               {/* Quick stats */}
-              <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-stone-800">
+              <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-surface-700">
                 <div>
-                  <div className="text-xs text-stone-500 font-medium uppercase">
+                  <div className="text-xs text-surface-500 font-medium uppercase">
                     Status
                   </div>
                   <div className="mt-1">
@@ -224,12 +224,12 @@ export default async function DarshanDetailPage({
                         LIVE
                       </span>
                     ) : (
-                      <span className="text-sm text-stone-400">Scheduled</span>
+                      <span className="text-sm text-surface-400">Scheduled</span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-stone-500 font-medium uppercase">
+                  <div className="text-xs text-surface-500 font-medium uppercase">
                     Peak Viewers
                   </div>
                   <div className="text-sm font-semibold text-white mt-1">
@@ -237,7 +237,7 @@ export default async function DarshanDetailPage({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-stone-500 font-medium uppercase">
+                  <div className="text-xs text-surface-500 font-medium uppercase">
                     Quality
                   </div>
                   <div className="text-sm font-semibold text-white mt-1">
@@ -248,7 +248,7 @@ export default async function DarshanDetailPage({
             </div>
 
             {/* Today's Schedule */}
-            <div className="bg-stone-900 rounded-xl p-6 border border-stone-800">
+            <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-saffron-400" />
                 Today&rsquo;s Schedule
@@ -257,9 +257,9 @@ export default async function DarshanDetailPage({
                 {fallbackSchedule.map((item, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-4 py-3 border-b border-stone-800/50 last:border-0"
+                    className="flex items-center gap-4 py-3 border-b border-surface-700/50 last:border-0"
                   >
-                    <span className="text-sm text-stone-400 font-medium w-20 shrink-0">
+                    <span className="text-sm text-surface-400 font-medium w-20 shrink-0">
                       {item.time}
                     </span>
                     <span className="text-sm text-white flex-1">
@@ -272,11 +272,11 @@ export default async function DarshanDetailPage({
                           LIVE
                         </span>
                       ) : item.status === 'completed' ? (
-                        <span className="text-xs text-stone-600">
+                        <span className="text-xs text-surface-600">
                           Completed
                         </span>
                       ) : (
-                        <button className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-saffron-400 transition-colors">
+                        <button className="inline-flex items-center gap-1 text-xs text-surface-500 hover:text-saffron-400 transition-colors">
                           <Bell className="w-3.5 h-3.5" />
                           Remind
                         </button>
@@ -288,14 +288,14 @@ export default async function DarshanDetailPage({
             </div>
 
             {/* Chat / Prayer request placeholder */}
-            <div className="bg-stone-900 rounded-xl p-6 border border-stone-800">
+            <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-saffron-400" />
                 Live Chat & Prayer Requests
               </h2>
-              <div className="bg-stone-800/50 rounded-xl p-8 text-center">
-                <MessageCircle className="w-10 h-10 text-stone-600 mx-auto mb-3" />
-                <p className="text-stone-400 text-sm mb-4">
+              <div className="bg-surface-700/50 rounded-xl p-8 text-center">
+                <MessageCircle className="w-10 h-10 text-surface-600 mx-auto mb-3" />
+                <p className="text-surface-400 text-sm mb-4">
                   Join the community chat and submit prayer requests during live
                   darshan.
                 </p>
@@ -310,11 +310,11 @@ export default async function DarshanDetailPage({
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Temple info card */}
-            <div className="bg-stone-900 rounded-xl p-6 border border-stone-800">
+            <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
               <h3 className="font-bold text-white mb-4">Temple Information</h3>
               <div className="space-y-4">
                 <div>
-                  <div className="text-xs text-stone-500 font-medium uppercase mb-1">
+                  <div className="text-xs text-surface-500 font-medium uppercase mb-1">
                     Name
                   </div>
                   <div className="text-white font-semibold">
@@ -322,18 +322,18 @@ export default async function DarshanDetailPage({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-stone-500 font-medium uppercase mb-1">
+                  <div className="text-xs text-surface-500 font-medium uppercase mb-1">
                     Primary Deity
                   </div>
-                  <div className="text-stone-300">
+                  <div className="text-surface-300">
                     {stream.temple.deityPrimary}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-stone-500 font-medium uppercase mb-1">
+                  <div className="text-xs text-surface-500 font-medium uppercase mb-1">
                     Location
                   </div>
-                  <div className="text-stone-300 flex items-center gap-1">
+                  <div className="text-surface-300 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" />
                     {stream.temple.city}
                   </div>
@@ -349,7 +349,7 @@ export default async function DarshanDetailPage({
             </div>
 
             {/* Related Temples */}
-            <div className="bg-stone-900 rounded-xl p-6 border border-stone-800">
+            <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
               <h3 className="font-bold text-white mb-4">
                 Related Temples
               </h3>
@@ -372,21 +372,21 @@ export default async function DarshanDetailPage({
                   <a
                     key={temple.name}
                     href={`/darshan/${temple.streamId}`}
-                    className="group flex items-start gap-3 pb-4 border-b border-stone-800/50 last:border-0 last:pb-0"
+                    className="group flex items-start gap-3 pb-4 border-b border-surface-700/50 last:border-0 last:pb-0"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-stone-800 flex items-center justify-center shrink-0">
-                      <Video className="w-5 h-5 text-stone-600" />
+                    <div className="w-12 h-12 rounded-lg bg-surface-700 flex items-center justify-center shrink-0">
+                      <Video className="w-5 h-5 text-surface-600" />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-semibold text-white truncate group-hover:text-saffron-400 transition-colors">
                         {temple.name}
                       </h4>
-                      <p className="text-xs text-stone-500 flex items-center gap-1 mt-0.5">
+                      <p className="text-xs text-surface-500 flex items-center gap-1 mt-0.5">
                         <MapPin className="w-3 h-3" />
                         {temple.city}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-stone-600">
+                        <span className="text-xs text-surface-600">
                           {temple.deity}
                         </span>
                         {temple.isLive && (

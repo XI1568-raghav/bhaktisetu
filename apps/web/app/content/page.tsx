@@ -333,7 +333,7 @@ const collections = [
     name: 'Shiva Special',
     count: 40,
     description: 'Stotrams, mantras, and bhajans for Mahadev',
-    gradient: 'from-stone-600 to-stone-800',
+    gradient: 'from-surface-600 to-surface-800',
   },
   {
     name: 'Krishna Bhajans',
@@ -432,7 +432,7 @@ async function DailyContentSection() {
         <Sparkles className="w-5 h-5 text-temple-gold" />
         Today&rsquo;s Featured
       </h2>
-      <p className="text-sm text-stone-500 mb-6">
+      <p className="text-sm text-surface-500 mb-6">
         Curated daily devotional content for your spiritual journey
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -440,7 +440,7 @@ async function DailyContentSection() {
           <a
             key={item.id}
             href={`/content/${item.slug}`}
-            className="group flex gap-5 bg-white rounded-xl p-5 border border-stone-100 hover:shadow-md transition-all"
+            className="group flex gap-5 bg-white rounded-xl p-5 border border-surface-100 hover:shadow-md transition-all"
           >
             <div className="relative w-32 h-32 shrink-0 rounded-xl bg-gradient-to-br from-saffron-200 to-amber-100 flex items-center justify-center overflow-hidden">
               <img
@@ -471,13 +471,13 @@ async function DailyContentSection() {
               <span className="inline-block text-xs font-semibold text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-full mb-2 uppercase">
                 {item.type}
               </span>
-              <h3 className="text-lg font-bold text-stone-900 group-hover:text-saffron-600 transition-colors">
+              <h3 className="text-lg font-bold text-surface-800 group-hover:text-saffron-600 transition-colors">
                 {item.title}
               </h3>
               {item.deity && (
-                <p className="text-sm text-stone-500">{item.deity}</p>
+                <p className="text-sm text-surface-500">{item.deity}</p>
               )}
-              <div className="flex items-center gap-3 mt-3 text-xs text-stone-400">
+              <div className="flex items-center gap-3 mt-3 text-xs text-surface-400">
                 <span className="flex items-center gap-1">
                   <Headphones className="w-3 h-3" />
                   {formatCount(item.viewCount)}
@@ -515,9 +515,9 @@ async function ContentListSection({
         <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6">
           {search ? `Search results for "${search}"` : label}
         </h2>
-        <div className="bg-white rounded-xl p-12 border border-stone-100 text-center">
-          <Music className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-          <p className="text-stone-500">
+        <div className="bg-white rounded-xl p-12 border border-surface-100 text-center">
+          <Music className="w-12 h-12 text-surface-300 mx-auto mb-3" />
+          <p className="text-surface-500">
             No content found.{' '}
             {search
               ? 'Try a different search term.'
@@ -534,13 +534,13 @@ async function ContentListSection({
         <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
           {search ? `Results for "${search}"` : `All ${label}`}
         </h2>
-        <span className="text-sm text-stone-400">
+        <span className="text-sm text-surface-400">
           {items.length} item{items.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* List header */}
-      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-semibold text-stone-400 uppercase tracking-wider border-b border-stone-200">
+      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-semibold text-surface-400 uppercase tracking-wider border-b border-surface-200">
         <div className="col-span-1">#</div>
         <div className="col-span-4">Title</div>
         <div className="col-span-2">Deity</div>
@@ -554,7 +554,7 @@ async function ContentListSection({
       </div>
 
       {/* Content list */}
-      <div className="divide-y divide-stone-100">
+      <div className="divide-y divide-surface-100">
         {items.map((item, i) => (
           <a
             key={item.id}
@@ -563,7 +563,7 @@ async function ContentListSection({
           >
             {/* # / Play button */}
             <div className="hidden md:block col-span-1">
-              <span className="text-sm text-stone-400 group-hover:hidden">
+              <span className="text-sm text-surface-400 group-hover:hidden">
                 {i + 1}
               </span>
               <Play className="w-4 h-4 text-saffron-600 hidden group-hover:block" />
@@ -575,10 +575,10 @@ async function ContentListSection({
                 <Play className="w-4 h-4 text-saffron-500" />
               </div>
               <div className="min-w-0">
-                <div className="font-medium text-stone-900 truncate group-hover:text-saffron-600 transition-colors">
+                <div className="font-medium text-surface-800 truncate group-hover:text-saffron-600 transition-colors">
                   {item.title}
                 </div>
-                <div className="md:hidden text-sm text-stone-500">
+                <div className="md:hidden text-sm text-surface-500">
                   {item.deity ?? item.type} &middot;{' '}
                   {formatDuration(item.durationSeconds)}
                 </div>
@@ -586,7 +586,7 @@ async function ContentListSection({
             </div>
 
             {/* Deity */}
-            <div className="hidden md:block col-span-2 text-sm text-stone-600 truncate">
+            <div className="hidden md:block col-span-2 text-sm text-surface-600 truncate">
               {item.deity ?? '-'}
             </div>
 
@@ -598,24 +598,24 @@ async function ContentListSection({
             </div>
 
             {/* Duration */}
-            <div className="hidden md:block col-span-1 text-sm text-stone-500">
+            <div className="hidden md:block col-span-1 text-sm text-surface-500">
               {formatDuration(item.durationSeconds)}
             </div>
 
             {/* Views */}
-            <div className="hidden md:block col-span-1 text-sm text-stone-500">
+            <div className="hidden md:block col-span-1 text-sm text-surface-500">
               {formatCount(item.viewCount)}
             </div>
 
             {/* Likes */}
-            <div className="hidden md:flex col-span-1 items-center gap-1 text-sm text-stone-600">
+            <div className="hidden md:flex col-span-1 items-center gap-1 text-sm text-surface-600">
               <Heart className="w-3.5 h-3.5 text-lotus-pink" />
               {formatCount(item.likeCount)}
             </div>
 
             {/* Actions */}
             <div className="hidden md:flex col-span-1 items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-stone-400 hover:text-saffron-600">
+              <span className="text-surface-400 hover:text-saffron-600">
                 <Download className="w-4 h-4" />
               </span>
             </div>
@@ -643,15 +643,15 @@ export default async function ContentPage({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-8 border-b border-stone-200">
+        <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-8 border-b border-surface-200">
           {tabs.map((tab) => (
             <a
               key={tab.id}
               href={`/content${tab.id === 'all' ? '' : `?type=${tab.id}`}${search ? `${tab.id === 'all' ? '?' : '&'}search=${encodeURIComponent(search)}` : ''}`}
               className={`shrink-0 px-5 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
                 activeType === tab.id
-                  ? 'text-saffron-600 bg-white border border-stone-200 border-b-white -mb-px'
-                  : 'text-stone-500 hover:text-stone-700 hover:bg-stone-50'
+                  ? 'text-saffron-600 bg-white border border-surface-200 border-b-white -mb-px'
+                  : 'text-surface-500 hover:text-surface-600 hover:bg-surface-50'
               }`}
             >
               {tab.label}
@@ -659,7 +659,7 @@ export default async function ContentPage({
                 className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
                   activeType === tab.id
                     ? 'bg-saffron-100 text-saffron-600'
-                    : 'bg-stone-100 text-stone-400'
+                    : 'bg-surface-100 text-surface-400'
                 }`}
               >
                 {tab.count}
@@ -673,10 +673,10 @@ export default async function ContentPage({
           <Suspense
             fallback={
               <div className="mb-12 animate-pulse">
-                <div className="h-6 bg-stone-200 rounded w-48 mb-6" />
+                <div className="h-6 bg-surface-200 rounded w-48 mb-6" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="h-40 bg-stone-100 rounded-xl" />
-                  <div className="h-40 bg-stone-100 rounded-xl" />
+                  <div className="h-40 bg-surface-100 rounded-xl" />
+                  <div className="h-40 bg-surface-100 rounded-xl" />
                 </div>
               </div>
             }
@@ -737,7 +737,7 @@ export default async function ContentPage({
           fallback={
             <div className="animate-pulse space-y-3">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-14 bg-stone-100 rounded-lg" />
+                <div key={i} className="h-14 bg-surface-100 rounded-lg" />
               ))}
             </div>
           }

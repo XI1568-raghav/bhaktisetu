@@ -229,26 +229,26 @@ export default async function ContentDetailPage({
   return (
     <div className="min-h-screen bg-saffron-50">
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-stone-100">
+      <div className="bg-white border-b border-surface-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <nav className="flex items-center gap-1.5 text-sm text-stone-500">
+          <nav className="flex items-center gap-1.5 text-sm text-surface-500">
             <a href="/" className="hover:text-saffron-600 transition-colors flex items-center gap-1">
               <Home className="w-3.5 h-3.5" />
               Home
             </a>
-            <ChevronRight className="w-3.5 h-3.5 text-stone-300" />
+            <ChevronRight className="w-3.5 h-3.5 text-surface-300" />
             <a href="/content" className="hover:text-saffron-600 transition-colors">
               Content
             </a>
-            <ChevronRight className="w-3.5 h-3.5 text-stone-300" />
+            <ChevronRight className="w-3.5 h-3.5 text-surface-300" />
             <a
               href={`/content?type=${content.type}`}
               className="hover:text-saffron-600 transition-colors capitalize"
             >
               {content.type}
             </a>
-            <ChevronRight className="w-3.5 h-3.5 text-stone-300" />
-            <span className="text-stone-900 font-medium truncate max-w-[200px]">
+            <ChevronRight className="w-3.5 h-3.5 text-surface-300" />
+            <span className="text-surface-800 font-medium truncate max-w-[200px]">
               {content.title}
             </span>
           </nav>
@@ -260,13 +260,13 @@ export default async function ContentDetailPage({
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Header */}
-            <div className="bg-white rounded-xl p-6 border border-stone-100">
+            <div className="bg-white rounded-xl p-6 border border-surface-100">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xs font-bold text-saffron-600 bg-saffron-50 px-2.5 py-1 rounded-full uppercase">
                   {content.type}
                 </span>
                 {content.deity && (
-                  <span className="text-xs text-stone-400 font-medium">
+                  <span className="text-xs text-surface-400 font-medium">
                     {content.deity}
                   </span>
                 )}
@@ -277,17 +277,17 @@ export default async function ContentDetailPage({
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-surface-800 mb-2">
                 {content.title}
               </h1>
               {content.titleLocal && (
-                <p className="text-lg text-stone-500 font-[family-name:var(--font-noto-devanagari)]">
+                <p className="text-lg text-surface-500 font-[family-name:var(--font-noto-devanagari)]">
                   {content.titleLocal}
                 </p>
               )}
 
               {/* Stats row */}
-              <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-stone-500">
+              <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-surface-500">
                 <span className="flex items-center gap-1">
                   <Eye className="w-4 h-4" />
                   {formatCount(content.viewCount)} views
@@ -302,18 +302,18 @@ export default async function ContentDetailPage({
                     {formatDuration(content.durationSeconds)}
                   </span>
                 )}
-                <span className="text-xs bg-stone-100 px-2 py-0.5 rounded-full capitalize">
+                <span className="text-xs bg-surface-100 px-2 py-0.5 rounded-full capitalize">
                   {content.language}
                 </span>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center gap-3 mt-5 pt-5 border-t border-stone-100">
+              <div className="flex items-center gap-3 mt-5 pt-5 border-t border-surface-100">
                 <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-50 text-saffron-600 font-semibold text-sm rounded-lg hover:bg-saffron-100 transition-colors">
                   <Heart className="w-4 h-4" />
                   Like
                 </button>
-                <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-50 text-stone-600 font-semibold text-sm rounded-lg hover:bg-stone-100 transition-colors">
+                <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-50 text-surface-600 font-semibold text-sm rounded-lg hover:bg-surface-100 transition-colors">
                   <Share2 className="w-4 h-4" />
                   Share
                 </button>
@@ -335,8 +335,8 @@ export default async function ContentDetailPage({
 
             {/* Body / Text content */}
             {content.body && (
-              <div className="bg-white rounded-xl p-6 border border-stone-100">
-                <h2 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+              <div className="bg-white rounded-xl p-6 border border-surface-100">
+                <h2 className="text-lg font-bold text-surface-800 mb-4 flex items-center gap-2">
                   {isAudio ? (
                     <>
                       <Music className="w-5 h-5 text-saffron-500" />
@@ -350,7 +350,7 @@ export default async function ContentDetailPage({
                   )}
                 </h2>
                 <div
-                  className="prose prose-stone prose-headings:text-stone-900 prose-headings:font-bold prose-p:text-stone-700 prose-p:leading-relaxed max-w-none"
+                  className="prose prose-stone prose-headings:text-surface-800 prose-headings:font-bold prose-p:text-surface-600 prose-p:leading-relaxed max-w-none"
                   dangerouslySetInnerHTML={{ __html: content.body }}
                 />
               </div>
@@ -358,9 +358,9 @@ export default async function ContentDetailPage({
 
             {/* Tags */}
             {content.tags.length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-stone-100">
-                <h3 className="text-sm font-bold text-stone-900 mb-3 flex items-center gap-1.5">
-                  <Tag className="w-4 h-4 text-stone-400" />
+              <div className="bg-white rounded-xl p-6 border border-surface-100">
+                <h3 className="text-sm font-bold text-surface-800 mb-3 flex items-center gap-1.5">
+                  <Tag className="w-4 h-4 text-surface-400" />
                   Tags
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -368,7 +368,7 @@ export default async function ContentDetailPage({
                     <a
                       key={tag}
                       href={`/content?search=${encodeURIComponent(tag)}`}
-                      className="text-xs font-medium text-stone-500 bg-stone-50 px-3 py-1.5 rounded-full hover:bg-saffron-50 hover:text-saffron-600 transition-colors border border-stone-100"
+                      className="text-xs font-medium text-surface-500 bg-surface-50 px-3 py-1.5 rounded-full hover:bg-saffron-50 hover:text-saffron-600 transition-colors border border-surface-100"
                     >
                       #{tag}
                     </a>
@@ -380,14 +380,14 @@ export default async function ContentDetailPage({
 
           {/* Sidebar — related content */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl p-6 border border-stone-100">
-              <h3 className="font-bold text-stone-900 mb-4">Related Content</h3>
+            <div className="bg-white rounded-xl p-6 border border-surface-100">
+              <h3 className="font-bold text-surface-800 mb-4">Related Content</h3>
               <div className="space-y-4">
                 {related.map((item) => (
                   <a
                     key={item.id}
                     href={`/content/${item.slug}`}
-                    className="group flex items-start gap-3 pb-4 border-b border-stone-50 last:border-0 last:pb-0"
+                    className="group flex items-start gap-3 pb-4 border-b border-surface-50 last:border-0 last:pb-0"
                   >
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-saffron-100 to-amber-50 flex items-center justify-center shrink-0">
                       {audioTypes.includes(item.type.toLowerCase()) ? (
@@ -400,10 +400,10 @@ export default async function ContentDetailPage({
                       <span className="text-xs font-semibold text-saffron-600 uppercase">
                         {item.type}
                       </span>
-                      <h4 className="text-sm font-semibold text-stone-900 truncate group-hover:text-saffron-600 transition-colors">
+                      <h4 className="text-sm font-semibold text-surface-800 truncate group-hover:text-saffron-600 transition-colors">
                         {item.title}
                       </h4>
-                      <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-surface-400 mt-0.5">
                         {item.deity && <span>{item.deity}</span>}
                         {item.durationSeconds && (
                           <span>{formatDuration(item.durationSeconds)}</span>
@@ -417,17 +417,17 @@ export default async function ContentDetailPage({
 
             {/* Quick links */}
             <div className="bg-gradient-to-br from-saffron-50 to-amber-50 rounded-xl p-6 border border-saffron-100">
-              <h3 className="font-bold text-stone-900 mb-3">Browse by Type</h3>
+              <h3 className="font-bold text-surface-800 mb-3">Browse by Type</h3>
               <div className="space-y-2">
                 {['Aarti', 'Chalisa', 'Mantra', 'Bhajan', 'Stories'].map(
                   (t) => (
                     <a
                       key={t}
                       href={`/content?type=${t.toLowerCase()}`}
-                      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white transition-colors text-sm text-stone-700 font-medium"
+                      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white transition-colors text-sm text-surface-600 font-medium"
                     >
                       {t}
-                      <ChevronRight className="w-4 h-4 text-stone-300" />
+                      <ChevronRight className="w-4 h-4 text-surface-300" />
                     </a>
                   )
                 )}

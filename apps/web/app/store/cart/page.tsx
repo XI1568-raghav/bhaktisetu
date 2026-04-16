@@ -40,12 +40,12 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-saffron-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="bg-white rounded-xl border border-stone-100 p-12 text-center">
+          <div className="bg-white rounded-xl border border-surface-100 p-12 text-center">
             <div className="w-24 h-24 bg-saffron-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <ShoppingCart className="w-12 h-12 text-saffron-300" />
             </div>
-            <h1 className="text-2xl font-bold text-stone-900 mb-2">Your Cart is Empty</h1>
-            <p className="text-stone-500 mb-8 max-w-md mx-auto">
+            <h1 className="text-2xl font-bold text-surface-800 mb-2">Your Cart is Empty</h1>
+            <p className="text-surface-500 mb-8 max-w-md mx-auto">
               Explore our collection of authentic puja essentials, handcrafted idols,
               and sacred items sourced from trusted artisans.
             </p>
@@ -69,7 +69,7 @@ export default function CartPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-surface-800">Shopping Cart</h1>
-            <p className="text-stone-500 mt-1">{itemCount} item{itemCount !== 1 ? 's' : ''} in your cart</p>
+            <p className="text-surface-500 mt-1">{itemCount} item{itemCount !== 1 ? 's' : ''} in your cart</p>
           </div>
           <button
             onClick={clearCart}
@@ -85,11 +85,11 @@ export default function CartPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-xl border border-stone-100 p-5 hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex gap-4">
                   {/* Image placeholder */}
-                  <div className="w-28 h-28 bg-gradient-to-br from-stone-50 to-saffron-50 rounded-xl flex items-center justify-center shrink-0">
+                  <div className="w-28 h-28 bg-gradient-to-br from-surface-50 to-saffron-50 rounded-xl flex items-center justify-center shrink-0">
                     <ShoppingBag className="w-10 h-10 text-saffron-200" />
                   </div>
 
@@ -98,15 +98,15 @@ export default function CartPage() {
                       <div>
                         <Link
                           href={`/store/${item.product.handle}`}
-                          className="text-base font-semibold text-stone-900 hover:text-saffron-600 transition-colors line-clamp-2"
+                          className="text-base font-semibold text-surface-800 hover:text-saffron-600 transition-colors line-clamp-2"
                         >
                           {item.product.title}
                         </Link>
-                        <p className="text-xs text-stone-400 mt-0.5">{item.product.category}</p>
+                        <p className="text-xs text-surface-400 mt-0.5">{item.product.category}</p>
                       </div>
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                        className="p-1.5 text-surface-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -114,11 +114,11 @@ export default function CartPage() {
 
                     {/* Price */}
                     <div className="flex items-baseline gap-2 mt-2">
-                      <span className="text-lg font-bold text-stone-900">
+                      <span className="text-lg font-bold text-surface-800">
                         {formatPrice(item.product.price)}
                       </span>
                       {item.product.compareAtPrice && (
-                        <span className="text-sm text-stone-400 line-through">
+                        <span className="text-sm text-surface-400 line-through">
                           {formatPrice(item.product.compareAtPrice)}
                         </span>
                       )}
@@ -130,23 +130,23 @@ export default function CartPage() {
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-10 text-center text-sm font-semibold text-stone-900">
+                        <span className="w-10 text-center text-sm font-semibold text-surface-800">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= 10}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
 
-                      <span className="text-lg font-bold text-stone-900">
+                      <span className="text-lg font-bold text-surface-800">
                         {formatPrice(item.product.price * item.quantity)}
                       </span>
                     </div>
@@ -174,7 +174,7 @@ export default function CartPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-stone-100 p-5 sticky top-24">
+            <div className="bg-white rounded-xl border border-surface-100 p-5 sticky top-24">
               <h2 className="font-semibold text-surface-800 text-lg mb-4">Order Summary</h2>
 
               {/* Free delivery notice */}
@@ -195,23 +195,23 @@ export default function CartPage() {
               {/* Price breakdown */}
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-stone-500">Subtotal ({itemCount} items)</span>
-                  <span className="text-stone-900 font-medium">{formatPrice(subtotal)}</span>
+                  <span className="text-surface-500">Subtotal ({itemCount} items)</span>
+                  <span className="text-surface-800 font-medium">{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-500">Delivery</span>
-                  <span className={deliveryFee === 0 ? 'text-tulsi-green font-semibold' : 'text-stone-900'}>
+                  <span className="text-surface-500">Delivery</span>
+                  <span className={deliveryFee === 0 ? 'text-tulsi-green font-semibold' : 'text-surface-800'}>
                     {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-500">GST (estimated)</span>
-                  <span className="text-stone-900">{formatPrice(tax)}</span>
+                  <span className="text-surface-500">GST (estimated)</span>
+                  <span className="text-surface-800">{formatPrice(tax)}</span>
                 </div>
 
-                <div className="border-t border-stone-100 pt-3 flex justify-between">
-                  <span className="font-bold text-stone-900 text-base">Total</span>
-                  <span className="font-bold text-stone-900 text-xl">{formatPrice(total)}</span>
+                <div className="border-t border-surface-100 pt-3 flex justify-between">
+                  <span className="font-bold text-surface-800 text-base">Total</span>
+                  <span className="font-bold text-surface-800 text-xl">{formatPrice(total)}</span>
                 </div>
 
                 {/* Savings */}
@@ -243,7 +243,7 @@ export default function CartPage() {
               </div>
 
               {/* Trust */}
-              <div className="mt-4 flex items-center gap-2 text-xs text-stone-400 justify-center">
+              <div className="mt-4 flex items-center gap-2 text-xs text-surface-400 justify-center">
                 <Shield className="w-3.5 h-3.5" />
                 Secure checkout with Razorpay
               </div>

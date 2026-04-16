@@ -255,11 +255,11 @@ export default async function PujaDetailPage({
   const puja = await getPujaBySlug(slug);
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Breadcrumb */}
-      <div className="border-b border-stone-100 bg-white">
+      <div className="border-b border-surface-100 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-          <nav className="flex items-center gap-2 text-sm text-stone-500">
+          <nav className="flex items-center gap-2 text-sm text-surface-500">
             <Link href="/" className="hover:text-orange-600">
               Home
             </Link>
@@ -268,7 +268,7 @@ export default async function PujaDetailPage({
               Pujas
             </Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="font-medium text-stone-800">{puja.name}</span>
+            <span className="font-medium text-surface-700">{puja.name}</span>
           </nav>
         </div>
       </div>
@@ -365,7 +365,7 @@ export default async function PujaDetailPage({
       </section>
 
       {/* Trust Badges */}
-      <div className="border-b border-stone-100 bg-white">
+      <div className="border-b border-surface-100 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
@@ -376,14 +376,14 @@ export default async function PujaDetailPage({
             ].map((badge) => (
               <div
                 key={badge.label}
-                className="flex items-center gap-3 rounded-xl border border-stone-100 bg-saffron-50/50 p-3"
+                className="flex items-center gap-3 rounded-xl border border-surface-100 bg-saffron-50/50 p-3"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-saffron-100">
                   <badge.icon className="h-5 w-5 text-saffron-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-stone-800">{badge.label}</p>
-                  <p className="text-xs text-stone-500">{badge.desc}</p>
+                  <p className="text-sm font-semibold text-surface-700">{badge.label}</p>
+                  <p className="text-xs text-surface-500">{badge.desc}</p>
                 </div>
               </div>
             ))}
@@ -397,14 +397,14 @@ export default async function PujaDetailPage({
           {/* Left Column */}
           <div className="space-y-8 lg:col-span-2">
             {/* About the Puja */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
               <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
                 <Sparkles className="h-5 w-5 text-saffron-500" />
                 About This Puja
               </h2>
               <div className="prose prose-stone max-w-none">
                 {puja.longDescription.split('\n\n').map((para, i) => (
-                  <p key={i} className="mb-4 leading-relaxed text-stone-600">
+                  <p key={i} className="mb-4 leading-relaxed text-surface-600">
                     {para}
                   </p>
                 ))}
@@ -413,7 +413,7 @@ export default async function PujaDetailPage({
 
             {/* Benefits */}
             {puja.benefits.length > 0 && (
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
                 <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
                   <CheckCircle2 className="h-5 w-5 text-tulsi-green" />
                   Benefits
@@ -425,7 +425,7 @@ export default async function PujaDetailPage({
                       className="flex items-start gap-2.5 rounded-lg bg-green-50/50 p-3"
                     >
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-tulsi-green" />
-                      <span className="text-sm text-stone-700">{benefit}</span>
+                      <span className="text-sm text-surface-600">{benefit}</span>
                     </div>
                   ))}
                 </div>
@@ -434,22 +434,22 @@ export default async function PujaDetailPage({
 
             {/* Samagri List */}
             {puja.samagriIncluded && puja.samagriList.length > 0 && (
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
                 <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
                   <Package className="h-5 w-5 text-saffron-500" />
                   Samagri (Materials Included)
                 </h2>
-                <p className="mb-4 text-sm text-stone-500">
+                <p className="mb-4 text-sm text-surface-500">
                   All puja materials are arranged by the temple. No need to send anything separately.
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {puja.samagriList.map((item, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 rounded-lg border border-stone-100 bg-amber-50/40 px-3 py-2"
+                      className="flex items-center gap-2 rounded-lg border border-surface-100 bg-amber-50/40 px-3 py-2"
                     >
                       <div className="h-1.5 w-1.5 rounded-full bg-saffron-500" />
-                      <span className="text-sm text-stone-700">{item}</span>
+                      <span className="text-sm text-surface-600">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -457,7 +457,7 @@ export default async function PujaDetailPage({
             )}
 
             {/* Temples Offering This Puja */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
                 <MapPin className="h-5 w-5 text-saffron-500" />
                 Available at {puja.temples.length} Temple{puja.temples.length !== 1 ? 's' : ''}
@@ -468,25 +468,25 @@ export default async function PujaDetailPage({
                   return (
                     <div
                       key={temple.id}
-                      className="flex flex-col gap-4 rounded-xl border border-stone-100 p-4 transition-all hover:border-saffron-200 hover:bg-saffron-50/30 sm:flex-row sm:items-center"
+                      className="flex flex-col gap-4 rounded-xl border border-surface-100 p-4 transition-all hover:border-saffron-200 hover:bg-saffron-50/30 sm:flex-row sm:items-center"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="mb-1 flex items-center gap-2">
-                          <h3 className="font-semibold text-stone-900">{temple.templeName}</h3>
+                          <h3 className="font-semibold text-surface-800">{temple.templeName}</h3>
                           {temple.isVerified && (
                             <BadgeCheck className="h-4 w-4 text-tulsi-green" />
                           )}
                         </div>
-                        <p className="mb-2 flex items-center gap-1 text-sm text-stone-500">
+                        <p className="mb-2 flex items-center gap-1 text-sm text-surface-500">
                           <MapPin className="h-3.5 w-3.5" />
                           {temple.templeCity}, {temple.templeState}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400">
-                          <span className="flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
+                          <span className="flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5">
                             <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                             {(temple.trustScore / 20).toFixed(1)}
                           </span>
-                          <span className="rounded-full bg-stone-100 px-2 py-0.5">
+                          <span className="rounded-full bg-surface-100 px-2 py-0.5">
                             {temple.availableSlots.length} time slots
                           </span>
                         </div>
@@ -514,7 +514,7 @@ export default async function PujaDetailPage({
           <div className="space-y-6">
             {/* Sticky CTA Card */}
             <div className="sticky top-24 space-y-6">
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
                 <h3 className="mb-3 font-semibold text-surface-800">Puja Details</h3>
                 <div className="space-y-4">
                   <SidebarRow icon={Flame} label="Deity" value={puja.deity} />
@@ -559,7 +559,7 @@ export default async function PujaDetailPage({
               </div>
 
               {/* FAQ-style info */}
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
                 <h3 className="mb-3 font-semibold text-surface-800">How It Works</h3>
                 <div className="space-y-3">
                   {[
@@ -573,8 +573,8 @@ export default async function PujaDetailPage({
                         {item.step}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-stone-800">{item.title}</p>
-                        <p className="text-xs text-stone-500">{item.desc}</p>
+                        <p className="text-sm font-semibold text-surface-700">{item.title}</p>
+                        <p className="text-xs text-surface-500">{item.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -603,8 +603,8 @@ function SidebarRow({
         <Icon className="h-4 w-4 text-saffron-500" />
       </div>
       <div>
-        <div className="text-sm font-medium text-stone-800">{label}</div>
-        <div className="text-sm text-stone-500">{value}</div>
+        <div className="text-sm font-medium text-surface-700">{label}</div>
+        <div className="text-sm text-surface-500">{value}</div>
       </div>
     </div>
   );

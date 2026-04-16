@@ -692,7 +692,7 @@ export default function PujaBookingPage() {
       <div className="flex min-h-screen items-center justify-center bg-saffron-50">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-saffron-200 border-t-saffron-600" />
-          <p className="text-sm text-stone-500">Loading puja details...</p>
+          <p className="text-sm text-surface-500">Loading puja details...</p>
         </div>
       </div>
     );
@@ -702,9 +702,9 @@ export default function PujaBookingPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-saffron-50">
         <div className="text-center">
-          <Flame className="mx-auto mb-4 h-12 w-12 text-stone-300" />
-          <h2 className="mb-2 text-xl font-bold text-stone-800">Puja Not Found</h2>
-          <p className="mb-4 text-stone-500">We could not find the puja you are looking for.</p>
+          <Flame className="mx-auto mb-4 h-12 w-12 text-surface-300" />
+          <h2 className="mb-2 text-xl font-bold text-surface-700">Puja Not Found</h2>
+          <p className="mb-4 text-surface-500">We could not find the puja you are looking for.</p>
           <Link
             href="/pujas"
             className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
@@ -730,14 +730,14 @@ export default function PujaBookingPage() {
             </div>
           </div>
 
-          <h1 className="mb-2 text-3xl font-bold text-stone-900">Booking Confirmed!</h1>
-          <p className="mb-6 text-stone-500">
+          <h1 className="mb-2 text-3xl font-bold text-surface-800">Booking Confirmed!</h1>
+          <p className="mb-6 text-surface-500">
             Your puja has been booked successfully. The temple will assign a priest shortly.
           </p>
 
-          <div className="mb-8 rounded-xl border border-stone-100 bg-white p-6 text-left shadow-lg">
+          <div className="mb-8 rounded-xl border border-surface-100 bg-white p-6 text-left shadow-lg">
             <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-stone-500">Booking Number</span>
+              <span className="text-sm text-surface-500">Booking Number</span>
               <button
                 onClick={() => navigator.clipboard?.writeText(bookingNumber)}
                 className="flex items-center gap-1 text-sm font-medium text-saffron-600 hover:text-saffron-700"
@@ -750,27 +750,27 @@ export default function PujaBookingPage() {
               {bookingNumber}
             </p>
 
-            <div className="space-y-3 border-t border-stone-100 pt-4">
+            <div className="space-y-3 border-t border-surface-100 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Puja</span>
-                <span className="font-medium text-stone-800">{puja.name}</span>
+                <span className="text-surface-500">Puja</span>
+                <span className="font-medium text-surface-700">{puja.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Temple</span>
-                <span className="font-medium text-stone-800">{selectedTemple?.templeName}</span>
+                <span className="text-surface-500">Temple</span>
+                <span className="font-medium text-surface-700">{selectedTemple?.templeName}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Date</span>
-                <span className="font-medium text-stone-800">{formatDate(selectedDate)}</span>
+                <span className="text-surface-500">Date</span>
+                <span className="font-medium text-surface-700">{formatDate(selectedDate)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Time</span>
-                <span className="font-medium text-stone-800">
+                <span className="text-surface-500">Time</span>
+                <span className="font-medium text-surface-700">
                   {slotAvailability.find((s) => s.time === selectedSlot)?.label || selectedSlot}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Amount Paid</span>
+                <span className="text-surface-500">Amount Paid</span>
                 <span className="font-bold text-tulsi-green">
                   ₹{totalPrice.toLocaleString('en-IN')}
                 </span>
@@ -781,7 +781,7 @@ export default function PujaBookingPage() {
           <div className="mb-4 rounded-xl border border-saffron-200 bg-saffron-50 p-4">
             <div className="flex items-start gap-3">
               <Video className="mt-0.5 h-5 w-5 shrink-0 text-saffron-600" />
-              <p className="text-sm text-stone-700">
+              <p className="text-sm text-surface-600">
                 You will receive <strong>video proof</strong> after the puja is performed. A
                 notification will be sent to your registered phone number.
               </p>
@@ -805,7 +805,7 @@ export default function PujaBookingPage() {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-stone-600 hover:bg-stone-100"
+              className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-surface-600 hover:bg-surface-100"
             >
               <Home className="h-4 w-4" />
               Go Home
@@ -819,18 +819,18 @@ export default function PujaBookingPage() {
   // ─── Main Booking Form ──────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-surface-50">
       {/* Breadcrumb */}
-      <div className="border-b border-stone-100 bg-white">
+      <div className="border-b border-surface-100 bg-white">
         <div className="mx-auto max-w-4xl px-4 py-3 sm:px-6">
-          <nav className="flex items-center gap-2 text-sm text-stone-500">
+          <nav className="flex items-center gap-2 text-sm text-surface-500">
             <Link href="/" className="hover:text-orange-600">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link href="/pujas" className="hover:text-orange-600">Pujas</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link href={`/pujas/${slug}`} className="hover:text-orange-600">{puja.name}</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="font-medium text-stone-800">Book</span>
+            <span className="font-medium text-surface-700">Book</span>
           </nav>
         </div>
       </div>
@@ -838,10 +838,10 @@ export default function PujaBookingPage() {
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Page title */}
         <div className="mb-8 text-center">
-          <h1 className="mb-1 text-2xl font-bold text-stone-900 md:text-3xl">
+          <h1 className="mb-1 text-2xl font-bold text-surface-800 md:text-3xl">
             Book {puja.name}
           </h1>
-          <p className="text-stone-500">
+          <p className="text-surface-500">
             {puja.deity} &middot; {puja.durationMinutes} min &middot; {puja.category}
           </p>
         </div>
@@ -859,7 +859,7 @@ export default function PujaBookingPage() {
                     {i > 0 && (
                       <div
                         className={`h-0.5 flex-1 ${
-                          i <= currentStep ? 'bg-saffron-500' : 'bg-stone-200'
+                          i <= currentStep ? 'bg-saffron-500' : 'bg-surface-200'
                         }`}
                       />
                     )}
@@ -872,7 +872,7 @@ export default function PujaBookingPage() {
                           ? 'border-tulsi-green bg-tulsi-green text-white'
                           : isCurrent
                             ? 'border-saffron-500 bg-saffron-500 text-white shadow-lg'
-                            : 'border-stone-200 bg-white text-stone-400'
+                            : 'border-surface-200 bg-white text-surface-400'
                       }`}
                     >
                       {isCompleted ? <Check className="h-5 w-5" /> : i + 1}
@@ -882,7 +882,7 @@ export default function PujaBookingPage() {
                     {i < STEP_LABELS.length - 1 && (
                       <div
                         className={`h-0.5 flex-1 ${
-                          i < currentStep ? 'bg-saffron-500' : 'bg-stone-200'
+                          i < currentStep ? 'bg-saffron-500' : 'bg-surface-200'
                         }`}
                       />
                     )}
@@ -890,7 +890,7 @@ export default function PujaBookingPage() {
                   </div>
                   <span
                     className={`mt-2 text-xs font-medium ${
-                      isCurrent ? 'text-saffron-600' : isCompleted ? 'text-tulsi-green' : 'text-stone-400'
+                      isCurrent ? 'text-saffron-600' : isCompleted ? 'text-tulsi-green' : 'text-surface-400'
                     }`}
                   >
                     <span className="hidden sm:inline">{label}</span>
@@ -906,8 +906,8 @@ export default function PujaBookingPage() {
         {currentStep === 0 && (
           <div className="space-y-6">
             {/* Temple Selection */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <MapPin className="h-5 w-5 text-saffron-500" />
                 Select Temple
               </h2>
@@ -927,7 +927,7 @@ export default function PujaBookingPage() {
                       className={`relative rounded-xl border-2 p-4 text-left transition-all ${
                         isSelected
                           ? 'border-saffron-500 bg-saffron-50 shadow-md'
-                          : 'border-stone-100 bg-white hover:border-saffron-200 hover:bg-saffron-50/30'
+                          : 'border-surface-100 bg-white hover:border-saffron-200 hover:bg-saffron-50/30'
                       }`}
                     >
                       {isSelected && (
@@ -936,14 +936,14 @@ export default function PujaBookingPage() {
                         </div>
                       )}
                       <div className="mb-1 flex items-center gap-1.5">
-                        <h3 className="text-sm font-semibold text-stone-900">
+                        <h3 className="text-sm font-semibold text-surface-800">
                           {temple.templeName}
                         </h3>
                         {temple.isVerified && (
                           <BadgeCheck className="h-4 w-4 text-tulsi-green" />
                         )}
                       </div>
-                      <p className="mb-2 flex items-center gap-1 text-xs text-stone-500">
+                      <p className="mb-2 flex items-center gap-1 text-xs text-surface-500">
                         <MapPin className="h-3 w-3" />
                         {temple.templeCity}, {temple.templeState}
                       </p>
@@ -951,7 +951,7 @@ export default function PujaBookingPage() {
                         <span className="text-lg font-bold text-saffron-600">
                           ₹{Number(price).toLocaleString('en-IN')}
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-stone-400">
+                        <span className="flex items-center gap-1 text-xs text-surface-400">
                           <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                           {(temple.trustScore / 20).toFixed(1)}
                         </span>
@@ -963,8 +963,8 @@ export default function PujaBookingPage() {
             </div>
 
             {/* Date Selection */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <Calendar className="h-5 w-5 text-saffron-500" />
                 Select Date
               </h2>
@@ -979,17 +979,17 @@ export default function PujaBookingPage() {
                 min={getTomorrow()}
                 max={getMaxDate()}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full rounded-xl border border-stone-200 px-4 py-3 text-stone-800 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200 sm:max-w-xs"
+                className="w-full rounded-xl border border-surface-200 px-4 py-3 text-surface-700 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200 sm:max-w-xs"
               />
               {selectedDate && (
-                <p className="mt-2 text-sm text-stone-500">{formatDate(selectedDate)}</p>
+                <p className="mt-2 text-sm text-surface-500">{formatDate(selectedDate)}</p>
               )}
             </div>
 
             {/* Time Slot Selection */}
             {selectedTemple && (
-              <div className="rounded-xl border border-stone-100 bg-white p-6">
-                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+              <div className="rounded-xl border border-surface-100 bg-white p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                   <Clock className="h-5 w-5 text-saffron-500" />
                   Select Time Slot
                 </h2>
@@ -1002,7 +1002,7 @@ export default function PujaBookingPage() {
                 {loadingSlots ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-saffron-500" />
-                    <span className="ml-2 text-sm text-stone-500">Checking availability...</span>
+                    <span className="ml-2 text-sm text-surface-500">Checking availability...</span>
                   </div>
                 ) : (
                   <>
@@ -1014,7 +1014,7 @@ export default function PujaBookingPage() {
                       const PeriodIcon = getSlotPeriodIcon(period);
                       return (
                         <div key={period} className="mb-4 last:mb-0">
-                          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium capitalize text-stone-600">
+                          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium capitalize text-surface-600">
                             <PeriodIcon className="h-4 w-4 text-saffron-400" />
                             {period}
                           </h3>
@@ -1029,13 +1029,13 @@ export default function PujaBookingPage() {
                                   onClick={() => setSelectedSlot(slot.time)}
                                   className={`relative rounded-lg border-2 p-3 text-center transition-all ${
                                     isFull
-                                      ? 'cursor-not-allowed border-stone-100 bg-stone-50 opacity-50'
+                                      ? 'cursor-not-allowed border-surface-100 bg-surface-50 opacity-50'
                                       : isSelected
                                         ? 'border-saffron-500 bg-saffron-50 shadow-md'
-                                        : 'border-stone-100 hover:border-saffron-200'
+                                        : 'border-surface-100 hover:border-saffron-200'
                                   }`}
                                 >
-                                  <p className="text-sm font-semibold text-stone-800">
+                                  <p className="text-sm font-semibold text-surface-700">
                                     {slot.label}
                                   </p>
                                   <p
@@ -1084,12 +1084,12 @@ export default function PujaBookingPage() {
         {/* ─── STEP 2: Devotee Details ─────────────────────── */}
         {currentStep === 1 && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <Users className="h-5 w-5 text-saffron-500" />
                 Devotee Details
               </h2>
-              <p className="mb-6 text-sm text-stone-500">
+              <p className="mb-6 text-sm text-surface-500">
                 Add details of the devotees for whom this puja will be performed (1-5 devotees).
               </p>
 
@@ -1097,10 +1097,10 @@ export default function PujaBookingPage() {
                 {devotees.map((devotee, index) => (
                   <div
                     key={devotee.id}
-                    className="rounded-xl border border-stone-100 bg-stone-50/50 p-4"
+                    className="rounded-xl border border-surface-100 bg-surface-50/50 p-4"
                   >
                     <div className="mb-3 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-stone-700">
+                      <span className="text-sm font-semibold text-surface-600">
                         Devotee {index + 1}
                       </span>
                       {devotees.length > 1 && (
@@ -1117,7 +1117,7 @@ export default function PujaBookingPage() {
                     <div className="grid gap-3 sm:grid-cols-3">
                       {/* Name */}
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-stone-600">
+                        <label className="mb-1 block text-xs font-medium text-surface-600">
                           Full Name <span className="text-red-400">*</span>
                         </label>
                         <input
@@ -1125,10 +1125,10 @@ export default function PujaBookingPage() {
                           value={devotee.name}
                           onChange={(e) => updateDevotee(devotee.id, 'name', e.target.value)}
                           placeholder="Enter full name"
-                          className={`w-full rounded-lg border px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
+                          className={`w-full rounded-lg border px-3 py-2 text-sm text-surface-700 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
                             errors[`devotee_${index}_name`]
                               ? 'border-red-300 bg-red-50'
-                              : 'border-stone-200'
+                              : 'border-surface-200'
                           }`}
                         />
                         {errors[`devotee_${index}_name`] && (
@@ -1140,27 +1140,27 @@ export default function PujaBookingPage() {
 
                       {/* Gotra */}
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-stone-600">
-                          Gotra <span className="text-stone-400">(optional)</span>
+                        <label className="mb-1 block text-xs font-medium text-surface-600">
+                          Gotra <span className="text-surface-400">(optional)</span>
                         </label>
                         <input
                           type="text"
                           value={devotee.gotra}
                           onChange={(e) => updateDevotee(devotee.id, 'gotra', e.target.value)}
                           placeholder="e.g., Kashyap"
-                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                          className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
                         />
                       </div>
 
                       {/* Nakshatra */}
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-stone-600">
-                          Nakshatra <span className="text-stone-400">(optional)</span>
+                        <label className="mb-1 block text-xs font-medium text-surface-600">
+                          Nakshatra <span className="text-surface-400">(optional)</span>
                         </label>
                         <select
                           value={devotee.nakshatra}
                           onChange={(e) => updateDevotee(devotee.id, 'nakshatra', e.target.value)}
-                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                          className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-saffron-200"
                         >
                           <option value="">Select nakshatra</option>
                           {NAKSHATRAS.map((n) => (
@@ -1187,8 +1187,8 @@ export default function PujaBookingPage() {
             </div>
 
             {/* Sankalp */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <Flame className="h-5 w-5 text-saffron-500" />
                 Sankalp (Prayer Intention)
               </h2>
@@ -1197,7 +1197,7 @@ export default function PujaBookingPage() {
                 onChange={(e) => setSankalp(e.target.value)}
                 rows={3}
                 placeholder="Describe your prayer intention (e.g., For the good health and prosperity of my family...)"
-                className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm text-stone-800 placeholder:text-stone-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                className="w-full rounded-xl border border-surface-200 px-4 py-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
               />
 
               {/* AI Sankalp Generator */}
@@ -1205,7 +1205,7 @@ export default function PujaBookingPage() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-temple-gold" />
-                    <span className="text-sm font-semibold text-stone-800">AI Sankalp Generator</span>
+                    <span className="text-sm font-semibold text-surface-700">AI Sankalp Generator</span>
                   </div>
                   {!aiSankalpLoading && (
                     <button
@@ -1217,7 +1217,7 @@ export default function PujaBookingPage() {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-stone-500 mb-3">
+                <p className="text-xs text-surface-500 mb-3">
                   Generate a traditional Sanskrit sankalp based on devotee details, puja type, and deity.
                 </p>
 
@@ -1246,23 +1246,23 @@ export default function PujaBookingPage() {
                     {/* Toggle header */}
                     <button
                       onClick={() => setAiSankalpExpanded((prev) => !prev)}
-                      className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-stone-50 transition-colors"
+                      className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-50 transition-colors"
                     >
-                      <span className="text-sm font-semibold text-stone-800">Generated Sankalp</span>
+                      <span className="text-sm font-semibold text-surface-700">Generated Sankalp</span>
                       {aiSankalpExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-stone-400" />
+                        <ChevronUp className="h-4 w-4 text-surface-400" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-stone-400" />
+                        <ChevronDown className="h-4 w-4 text-surface-400" />
                       )}
                     </button>
 
                     {aiSankalpExpanded && (
-                      <div className="border-t border-stone-100 px-4 py-3 space-y-3">
+                      <div className="border-t border-surface-100 px-4 py-3 space-y-3">
                         {/* Sanskrit */}
                         {aiSankalpResult.sanskrit && (
                           <div>
                             <p className="text-xs font-semibold text-saffron-600 mb-1">Sanskrit</p>
-                            <p className="text-sm text-stone-800 font-medium leading-relaxed">
+                            <p className="text-sm text-surface-700 font-medium leading-relaxed">
                               {aiSankalpResult.sanskrit}
                             </p>
                           </div>
@@ -1272,7 +1272,7 @@ export default function PujaBookingPage() {
                         {aiSankalpResult.transliteration && (
                           <div>
                             <p className="text-xs font-semibold text-purple-600 mb-1">Transliteration</p>
-                            <p className="text-sm text-stone-700 italic leading-relaxed">
+                            <p className="text-sm text-surface-600 italic leading-relaxed">
                               {aiSankalpResult.transliteration}
                             </p>
                           </div>
@@ -1282,7 +1282,7 @@ export default function PujaBookingPage() {
                         {aiSankalpResult.englishTranslation && (
                           <div>
                             <p className="text-xs font-semibold text-blue-600 mb-1">English Translation</p>
-                            <p className="text-sm text-stone-600 leading-relaxed">
+                            <p className="text-sm text-surface-600 leading-relaxed">
                               {aiSankalpResult.englishTranslation}
                             </p>
                           </div>
@@ -1292,7 +1292,7 @@ export default function PujaBookingPage() {
                         {aiSankalpResult.hindiTranslation && (
                           <div>
                             <p className="text-xs font-semibold text-green-600 mb-1">Hindi Translation</p>
-                            <p className="text-sm text-stone-600 leading-relaxed">
+                            <p className="text-sm text-surface-600 leading-relaxed">
                               {aiSankalpResult.hindiTranslation}
                             </p>
                           </div>
@@ -1309,7 +1309,7 @@ export default function PujaBookingPage() {
                           </button>
                           <button
                             onClick={generateAiSankalp}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-4 py-2 text-xs font-semibold text-surface-600 hover:bg-surface-50 transition-colors"
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
                             Regenerate
@@ -1323,14 +1323,14 @@ export default function PujaBookingPage() {
             </div>
 
             {/* Special Instructions */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 text-lg font-bold text-stone-900">Special Instructions</h2>
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 text-lg font-bold text-surface-800">Special Instructions</h2>
               <textarea
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}
                 rows={2}
                 placeholder="Any special requests or instructions for the priest (optional)"
-                className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm text-stone-800 placeholder:text-stone-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                className="w-full rounded-xl border border-surface-200 px-4 py-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
               />
             </div>
 
@@ -1338,7 +1338,7 @@ export default function PujaBookingPage() {
             <div className="flex justify-between">
               <button
                 onClick={goBack}
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-stone-200 px-6 py-3 font-semibold text-stone-600 hover:bg-stone-50"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-surface-200 px-6 py-3 font-semibold text-surface-600 hover:bg-surface-50"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back
@@ -1358,8 +1358,8 @@ export default function PujaBookingPage() {
         {currentStep === 2 && (
           <div className="space-y-6">
             {/* Order Summary */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <CheckCircle2 className="h-5 w-5 text-saffron-500" />
                 Order Summary
               </h2>
@@ -1393,9 +1393,9 @@ export default function PujaBookingPage() {
             </div>
 
             {/* Prasad Delivery */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-lg font-bold text-stone-900">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-surface-800">
                   <Gift className="h-5 w-5 text-saffron-500" />
                   Prasad Delivery
                 </h2>
@@ -1406,13 +1406,13 @@ export default function PujaBookingPage() {
                     onChange={(e) => setWantsPrasad(e.target.checked)}
                     className="peer sr-only"
                   />
-                  <div className="h-6 w-11 rounded-full bg-stone-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all after:content-[''] peer-checked:bg-saffron-500 peer-checked:after:translate-x-full peer-focus:ring-2 peer-focus:ring-saffron-200" />
+                  <div className="h-6 w-11 rounded-full bg-surface-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all after:content-[''] peer-checked:bg-saffron-500 peer-checked:after:translate-x-full peer-focus:ring-2 peer-focus:ring-saffron-200" />
                 </label>
               </div>
 
               {wantsPrasad ? (
                 <div>
-                  <p className="mb-4 text-sm text-stone-500">
+                  <p className="mb-4 text-sm text-surface-500">
                     Sacred prasad from the temple will be delivered to your address.
                     <span className="ml-1 font-semibold text-saffron-600">
                       +₹{PRASAD_DELIVERY_FEE}
@@ -1421,7 +1421,7 @@ export default function PujaBookingPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         Full Name <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -1430,7 +1430,7 @@ export default function PujaBookingPage() {
                         onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
                         placeholder="Recipient name"
                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
-                          errors.addr_name ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                          errors.addr_name ? 'border-red-300 bg-red-50' : 'border-surface-200'
                         }`}
                       />
                       {errors.addr_name && (
@@ -1438,7 +1438,7 @@ export default function PujaBookingPage() {
                       )}
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         Phone <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -1447,7 +1447,7 @@ export default function PujaBookingPage() {
                         onChange={(e) => setAddress({ ...address, phone: e.target.value })}
                         placeholder="10-digit number"
                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
-                          errors.addr_phone ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                          errors.addr_phone ? 'border-red-300 bg-red-50' : 'border-surface-200'
                         }`}
                       />
                       {errors.addr_phone && (
@@ -1455,7 +1455,7 @@ export default function PujaBookingPage() {
                       )}
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         Address Line 1 <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -1464,7 +1464,7 @@ export default function PujaBookingPage() {
                         onChange={(e) => setAddress({ ...address, line1: e.target.value })}
                         placeholder="House/Flat No., Street"
                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
-                          errors.addr_line1 ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                          errors.addr_line1 ? 'border-red-300 bg-red-50' : 'border-surface-200'
                         }`}
                       />
                       {errors.addr_line1 && (
@@ -1472,7 +1472,7 @@ export default function PujaBookingPage() {
                       )}
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         Address Line 2
                       </label>
                       <input
@@ -1480,11 +1480,11 @@ export default function PujaBookingPage() {
                         value={address.line2}
                         onChange={(e) => setAddress({ ...address, line2: e.target.value })}
                         placeholder="Area, Landmark (optional)"
-                        className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                        className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         City <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -1493,7 +1493,7 @@ export default function PujaBookingPage() {
                         onChange={(e) => setAddress({ ...address, city: e.target.value })}
                         placeholder="City"
                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
-                          errors.addr_city ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                          errors.addr_city ? 'border-red-300 bg-red-50' : 'border-surface-200'
                         }`}
                       />
                       {errors.addr_city && (
@@ -1501,7 +1501,7 @@ export default function PujaBookingPage() {
                       )}
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         State <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -1510,7 +1510,7 @@ export default function PujaBookingPage() {
                         onChange={(e) => setAddress({ ...address, state: e.target.value })}
                         placeholder="State"
                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
-                          errors.addr_state ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                          errors.addr_state ? 'border-red-300 bg-red-50' : 'border-surface-200'
                         }`}
                       />
                       {errors.addr_state && (
@@ -1518,7 +1518,7 @@ export default function PujaBookingPage() {
                       )}
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-stone-600">
+                      <label className="mb-1 block text-xs font-medium text-surface-600">
                         Pincode <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -1528,7 +1528,7 @@ export default function PujaBookingPage() {
                         placeholder="6-digit pincode"
                         maxLength={6}
                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
-                          errors.addr_pincode ? 'border-red-300 bg-red-50' : 'border-stone-200'
+                          errors.addr_pincode ? 'border-red-300 bg-red-50' : 'border-surface-200'
                         }`}
                       />
                       {errors.addr_pincode && (
@@ -1538,42 +1538,42 @@ export default function PujaBookingPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-surface-500">
                   Toggle the switch to add prasad delivery to your order (+₹{PRASAD_DELIVERY_FEE}).
                 </p>
               )}
             </div>
 
             {/* Price Breakdown */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <IndianRupee className="h-5 w-5 text-saffron-500" />
                 Price Breakdown
               </h2>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-600">Puja Fee</span>
-                  <span className="font-medium text-stone-800">
+                  <span className="text-surface-600">Puja Fee</span>
+                  <span className="font-medium text-surface-700">
                     ₹{basePrice.toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-600">Platform Fee</span>
-                  <span className="font-medium text-stone-800">
+                  <span className="text-surface-600">Platform Fee</span>
+                  <span className="font-medium text-surface-700">
                     ₹{PLATFORM_FEE.toLocaleString('en-IN')}
                   </span>
                 </div>
                 {wantsPrasad && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-600">Prasad Delivery</span>
-                    <span className="font-medium text-stone-800">
+                    <span className="text-surface-600">Prasad Delivery</span>
+                    <span className="font-medium text-surface-700">
                       ₹{PRASAD_DELIVERY_FEE.toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
-                <div className="border-t border-stone-100 pt-3">
+                <div className="border-t border-surface-100 pt-3">
                   <div className="flex justify-between">
-                    <span className="text-base font-bold text-stone-900">Total</span>
+                    <span className="text-base font-bold text-surface-800">Total</span>
                     <span className="text-xl font-bold text-saffron-600">
                       ₹{totalPrice.toLocaleString('en-IN')}
                     </span>
@@ -1583,15 +1583,15 @@ export default function PujaBookingPage() {
             </div>
 
             {/* Terms */}
-            <div className="rounded-xl border border-stone-100 bg-white p-6">
+            <div className="rounded-xl border border-surface-100 bg-white p-6">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={agreedTerms}
                   onChange={(e) => setAgreedTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-stone-300 text-saffron-600 focus:ring-saffron-200"
+                  className="mt-1 h-4 w-4 rounded border-surface-300 text-saffron-600 focus:ring-saffron-200"
                 />
-                <span className="text-sm text-stone-600">
+                <span className="text-sm text-surface-600">
                   I agree to the{' '}
                   <Link href="/terms" className="font-medium text-saffron-600 hover:underline">
                     Terms & Conditions
@@ -1615,7 +1615,7 @@ export default function PujaBookingPage() {
             <div className="flex justify-between">
               <button
                 onClick={goBack}
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-stone-200 px-6 py-3 font-semibold text-stone-600 hover:bg-stone-50"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-surface-200 px-6 py-3 font-semibold text-surface-600 hover:bg-surface-50"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back
@@ -1636,30 +1636,30 @@ export default function PujaBookingPage() {
           <div className="space-y-6">
             {/* Final Summary */}
             <div className="rounded-xl border border-saffron-200 bg-gradient-to-br from-saffron-50 to-amber-50 p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-stone-900">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
                 <CreditCard className="h-5 w-5 text-saffron-500" />
                 Complete Your Payment
               </h2>
               <div className="mb-6 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg bg-white/80 p-3">
-                  <p className="text-xs text-stone-500">Puja</p>
-                  <p className="font-semibold text-stone-800">{puja.name}</p>
+                  <p className="text-xs text-surface-500">Puja</p>
+                  <p className="font-semibold text-surface-700">{puja.name}</p>
                 </div>
                 <div className="rounded-lg bg-white/80 p-3">
-                  <p className="text-xs text-stone-500">Temple</p>
-                  <p className="font-semibold text-stone-800">{selectedTemple?.templeName}</p>
+                  <p className="text-xs text-surface-500">Temple</p>
+                  <p className="font-semibold text-surface-700">{selectedTemple?.templeName}</p>
                 </div>
                 <div className="rounded-lg bg-white/80 p-3">
-                  <p className="text-xs text-stone-500">Date & Time</p>
-                  <p className="font-semibold text-stone-800">
+                  <p className="text-xs text-surface-500">Date & Time</p>
+                  <p className="font-semibold text-surface-700">
                     {formatDate(selectedDate)}
                     <br />
                     {slotAvailability.find((s) => s.time === selectedSlot)?.label || selectedSlot}
                   </p>
                 </div>
                 <div className="rounded-lg bg-white/80 p-3">
-                  <p className="text-xs text-stone-500">Devotees</p>
-                  <p className="font-semibold text-stone-800">
+                  <p className="text-xs text-surface-500">Devotees</p>
+                  <p className="font-semibold text-surface-700">
                     {devotees.map((d) => d.name).join(', ')}
                   </p>
                 </div>
@@ -1668,22 +1668,22 @@ export default function PujaBookingPage() {
               <div className="mb-6 rounded-xl bg-white p-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-600">Puja Fee</span>
-                    <span className="text-stone-800">₹{basePrice.toLocaleString('en-IN')}</span>
+                    <span className="text-surface-600">Puja Fee</span>
+                    <span className="text-surface-700">₹{basePrice.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-600">Platform Fee</span>
-                    <span className="text-stone-800">₹{PLATFORM_FEE}</span>
+                    <span className="text-surface-600">Platform Fee</span>
+                    <span className="text-surface-700">₹{PLATFORM_FEE}</span>
                   </div>
                   {wantsPrasad && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-stone-600">Prasad Delivery</span>
-                      <span className="text-stone-800">₹{PRASAD_DELIVERY_FEE}</span>
+                      <span className="text-surface-600">Prasad Delivery</span>
+                      <span className="text-surface-700">₹{PRASAD_DELIVERY_FEE}</span>
                     </div>
                   )}
-                  <div className="border-t border-stone-100 pt-2">
+                  <div className="border-t border-surface-100 pt-2">
                     <div className="flex justify-between">
-                      <span className="font-bold text-stone-900">Total Amount</span>
+                      <span className="font-bold text-surface-800">Total Amount</span>
                       <span className="text-2xl font-bold text-saffron-600">
                         ₹{totalPrice.toLocaleString('en-IN')}
                       </span>
@@ -1704,15 +1704,15 @@ export default function PujaBookingPage() {
 
               {/* Trust indicators */}
               <div className="mb-6 flex flex-wrap items-center gap-3">
-                <span className="flex items-center gap-1 text-xs text-stone-500">
+                <span className="flex items-center gap-1 text-xs text-surface-500">
                   <Shield className="h-3.5 w-3.5 text-tulsi-green" />
                   Secure Payment
                 </span>
-                <span className="flex items-center gap-1 text-xs text-stone-500">
+                <span className="flex items-center gap-1 text-xs text-surface-500">
                   <Video className="h-3.5 w-3.5 text-saffron-500" />
                   Video Proof Guaranteed
                 </span>
-                <span className="flex items-center gap-1 text-xs text-stone-500">
+                <span className="flex items-center gap-1 text-xs text-surface-500">
                   <CheckCircle2 className="h-3.5 w-3.5 text-ganga-blue" />
                   100% Money-Back
                 </span>
@@ -1743,7 +1743,7 @@ export default function PujaBookingPage() {
                 <button
                   onClick={handleDemoPayment}
                   disabled={paymentLoading}
-                  className="text-xs text-stone-400 underline hover:text-stone-600 disabled:opacity-50"
+                  className="text-xs text-surface-400 underline hover:text-surface-600 disabled:opacity-50"
                 >
                   Demo: Simulate Successful Payment
                 </button>
@@ -1755,7 +1755,7 @@ export default function PujaBookingPage() {
               <button
                 onClick={goBack}
                 disabled={paymentLoading}
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-stone-200 px-6 py-3 font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-surface-200 px-6 py-3 font-semibold text-surface-600 hover:bg-surface-50 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back to Review
@@ -1773,8 +1773,8 @@ export default function PujaBookingPage() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 text-sm">
-      <span className="shrink-0 text-stone-500">{label}</span>
-      <span className="text-right font-medium text-stone-800">{value}</span>
+      <span className="shrink-0 text-surface-500">{label}</span>
+      <span className="text-right font-medium text-surface-700">{value}</span>
     </div>
   );
 }

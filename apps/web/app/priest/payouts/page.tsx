@@ -157,7 +157,7 @@ function getPayoutStatusConfig(status: string) {
     completed: { label: 'Completed', cls: 'bg-tulsi-green-light/30 text-tulsi-green', icon: CheckCircle2 },
     failed: { label: 'Failed', cls: 'bg-red-100 text-red-700', icon: Clock },
   };
-  return map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-600', icon: Clock };
+  return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600', icon: Clock };
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -233,8 +233,8 @@ export default function PriestPayoutsPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-stone-900">Payouts</h1>
-        <p className="text-stone-500 mt-1">Track your earnings and payout history</p>
+        <h1 className="text-2xl font-bold text-surface-800">Payouts</h1>
+        <p className="text-surface-500 mt-1">Track your earnings and payout history</p>
       </div>
 
       {/* Summary Cards */}
@@ -245,17 +245,17 @@ export default function PriestPayoutsPage() {
             return (
               <div
                 key={card.label}
-                className="bg-white rounded-xl border border-stone-100 p-5"
+                className="bg-white rounded-xl border border-surface-100 p-5"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center`}>
                     <Icon className={`w-5 h-5 ${card.color}`} />
                   </div>
-                  <span className="text-sm text-stone-500">{card.label}</span>
+                  <span className="text-sm text-surface-500">{card.label}</span>
                 </div>
-                <p className="text-2xl font-bold text-stone-900">{card.value}</p>
+                <p className="text-2xl font-bold text-surface-800">{card.value}</p>
                 {'subtitle' in card && card.subtitle && (
-                  <p className="text-xs text-stone-400 mt-0.5">{card.subtitle}</p>
+                  <p className="text-xs text-surface-400 mt-0.5">{card.subtitle}</p>
                 )}
               </div>
             );
@@ -265,7 +265,7 @@ export default function PriestPayoutsPage() {
 
       {/* Filter */}
       <div className="flex items-center gap-3">
-        <Filter className="w-4 h-4 text-stone-400" />
+        <Filter className="w-4 h-4 text-surface-400" />
         <div className="flex gap-1 overflow-x-auto">
           {statusFilters.map((sf) => (
             <button
@@ -274,7 +274,7 @@ export default function PriestPayoutsPage() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 filter === sf.key
                   ? 'bg-saffron-600 text-white'
-                  : 'bg-white border border-stone-200 text-stone-600 hover:border-saffron-300'
+                  : 'bg-white border border-surface-200 text-surface-600 hover:border-saffron-300'
               }`}
             >
               {sf.label}
@@ -292,12 +292,12 @@ export default function PriestPayoutsPage() {
 
       {/* Empty */}
       {!loading && filteredPayouts.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-stone-100 bg-white py-16">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-saffron-50">
             <Wallet className="h-8 w-8 text-saffron-400" />
           </div>
-          <h3 className="mb-2 text-lg font-semibold text-stone-800">No payouts found</h3>
-          <p className="text-sm text-stone-500">
+          <h3 className="mb-2 text-lg font-semibold text-surface-700">No payouts found</h3>
+          <p className="text-sm text-surface-500">
             {filter === 'all'
               ? 'You have no payout records yet.'
               : `No payouts with "${filter}" status.`}
@@ -307,9 +307,9 @@ export default function PriestPayoutsPage() {
 
       {/* Payouts List */}
       {!loading && filteredPayouts.length > 0 && (
-        <div className="bg-white rounded-xl border border-stone-100 overflow-hidden">
+        <div className="bg-white rounded-xl border border-surface-100 overflow-hidden">
           {/* Table header - desktop */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-stone-50 text-xs font-semibold text-stone-500 uppercase tracking-wider border-b border-stone-100">
+          <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-surface-50 text-xs font-semibold text-surface-500 uppercase tracking-wider border-b border-surface-100">
             <div className="col-span-4">Booking</div>
             <div className="col-span-2">Amount</div>
             <div className="col-span-2">Status</div>
@@ -317,20 +317,20 @@ export default function PriestPayoutsPage() {
             <div className="col-span-2">Reference</div>
           </div>
 
-          <div className="divide-y divide-stone-50">
+          <div className="divide-y divide-surface-50">
             {filteredPayouts.map((payout) => {
               const statusCfg = getPayoutStatusConfig(payout.status);
               return (
-                <div key={payout.id} className="px-5 py-4 hover:bg-stone-50/50 transition-colors">
+                <div key={payout.id} className="px-5 py-4 hover:bg-surface-50/50 transition-colors">
                   {/* Desktop layout */}
                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-4">
-                      <p className="text-sm font-medium text-stone-900">{payout.booking.pujaType.name}</p>
-                      <p className="text-xs text-stone-500">{payout.booking.temple.name}</p>
-                      <p className="text-xs text-stone-400 font-mono">{payout.booking.bookingNumber}</p>
+                      <p className="text-sm font-medium text-surface-800">{payout.booking.pujaType.name}</p>
+                      <p className="text-xs text-surface-500">{payout.booking.temple.name}</p>
+                      <p className="text-xs text-surface-400 font-mono">{payout.booking.bookingNumber}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm font-bold text-stone-900">{formatCurrency(payout.amount)}</p>
+                      <p className="text-sm font-bold text-surface-800">{formatCurrency(payout.amount)}</p>
                     </div>
                     <div className="col-span-2">
                       <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${statusCfg.cls}`}>
@@ -338,15 +338,15 @@ export default function PriestPayoutsPage() {
                       </span>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-stone-600">
+                      <p className="text-sm text-surface-600">
                         {payout.processedAt ? formatDate(payout.processedAt) : formatDate(payout.createdAt)}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-xs text-stone-500 font-mono truncate">
+                      <p className="text-xs text-surface-500 font-mono truncate">
                         {payout.payoutReference || '-'}
                       </p>
-                      <p className="text-xs text-stone-400 capitalize">
+                      <p className="text-xs text-surface-400 capitalize">
                         {payout.payoutMethod.replace('_', ' ')}
                       </p>
                     </div>
@@ -356,17 +356,17 @@ export default function PriestPayoutsPage() {
                   <div className="md:hidden space-y-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-medium text-stone-900">{payout.booking.pujaType.name}</p>
-                        <p className="text-xs text-stone-500">{payout.booking.temple.name}</p>
+                        <p className="text-sm font-medium text-surface-800">{payout.booking.pujaType.name}</p>
+                        <p className="text-xs text-surface-500">{payout.booking.temple.name}</p>
                       </div>
-                      <p className="text-sm font-bold text-stone-900">{formatCurrency(payout.amount)}</p>
+                      <p className="text-sm font-bold text-surface-800">{formatCurrency(payout.amount)}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.cls}`}>
                         {statusCfg.label}
                       </span>
-                      <span className="text-xs text-stone-400 font-mono">{payout.booking.bookingNumber}</span>
-                      <span className="text-xs text-stone-400">
+                      <span className="text-xs text-surface-400 font-mono">{payout.booking.bookingNumber}</span>
+                      <span className="text-xs text-surface-400">
                         {payout.processedAt ? formatDate(payout.processedAt) : formatDate(payout.createdAt)}
                       </span>
                     </div>
