@@ -19,7 +19,7 @@ import {
   Zap,
   CheckCircle,
 } from 'lucide-react';
-import { getTempleHero, getDeityImage, getContentImage } from '../lib/images';
+import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 
 export const metadata: Metadata = {
@@ -402,40 +402,121 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ═══ ACT 6: MORE FEATURES — "Everything You Need" ════════════════ */}
+        {/* ═══ STORE — "Sacred Essentials" (image right, copy left) ═════════ */}
         <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-10 text-center" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-              Everything for your spiritual journey
-            </h2>
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              <div>
+                <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Bhakti Store</p>
+                <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+                  Everything for your daily worship
+                </h2>
+                <p data-reveal="up" data-delay="1" className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols — all delivered to your doorstep. Free shipping on orders above ₹499.
+                </p>
+                <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-6">
+                  {['Puja Thali Sets', 'Rudraksha', 'Idols', 'Incense', 'Books'].map((tag) => (
+                    <span key={tag} className="text-xs px-3 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
+                  ))}
+                </div>
+                <div data-reveal="up" data-delay="3">
+                  <Link href="/store" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+                    Shop Essentials <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+              <div data-reveal="scale" className="grid grid-cols-2 gap-3">
+                {[
+                  { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali') },
+                  { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala') },
+                  { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks') },
+                  { name: 'Ganesh Idol', price: '₹2,499', img: getProductImage('brass-ganesha-idol') },
+                ].map((p, i) => (
+                  <div key={p.name} data-reveal="up" data-delay={String(i + 1)} className="rounded-xl overflow-hidden" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                    <div className="aspect-square" style={{ background: 'var(--color-surface-offset)' }}>
+                      <img src={p.img} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text)' }}>{p.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-primary)' }}>{p.price}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* ═══ ASTROLOGY — "Know Your Stars" (centered, horizontal cards) ══ */}
+        <section className="py-14 md:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Astrology</p>
+            <h2 data-reveal="up" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+              Consult India's top astrologers
+            </h2>
+            <p data-reveal="up" data-delay="1" className="text-sm max-w-lg mx-auto mb-10" style={{ color: 'var(--color-text-muted)' }}>
+              Free kundli generation, daily horoscope for all 12 rashis, and live consultations with 15+ verified Vedic astrologers starting at ₹15/min.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4 mb-8">
               {[
-                { icon: Calendar, title: 'Daily Panchang', desc: 'Tithi, nakshatra, auspicious timings', href: '/panchang' },
-                { icon: ShoppingBag, title: 'Puja Essentials', desc: 'Thalis, rudraksha, incense & more', href: '/store' },
-                { icon: Heart, title: 'Gau Seva', desc: 'Adopt a cow at a verified gaushala', href: '/gaushala' },
-                { icon: Moon, title: 'Astrology', desc: 'Consult verified astrologers', href: '/astrology' },
-              ].map((f, i) => (
-                <Link
-                  key={f.title}
-                  href={f.href}
-                  data-reveal="up"
-                  data-delay={String(i + 1)}
-                  className="group flex flex-col p-5 rounded-xl transition-all card-hover"
-                  style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
-                >
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: 'var(--color-primary-highlight)' }}>
-                    <f.icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-                  </div>
-                  <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>{f.title}</h3>
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{f.desc}</p>
-                  <div className="mt-auto pt-4">
-                    <span className="text-xs font-medium flex items-center gap-1 group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
-                      Explore <ArrowRight className="w-3 h-3" />
-                    </span>
-                  </div>
+                { title: 'Free Kundli', desc: 'Generate your birth chart instantly with planetary positions', href: '/astrology/kundli' },
+                { title: 'Daily Horoscope', desc: 'Personalized predictions for all 12 rashis updated daily', href: '/astrology/horoscope' },
+                { title: 'Live Consultation', desc: 'Chat with verified astrologers — first 5 minutes free', href: '/astrology' },
+              ].map((card, i) => (
+                <Link key={card.title} href={card.href} data-reveal="up" data-delay={String(i + 1)} className="group text-left p-5 rounded-xl card-hover transition-all" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                  <h3 className="text-sm font-medium mb-2 group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
+                  <span className="inline-flex items-center gap-1 text-xs font-medium mt-3 group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
+                    Try now <ArrowRight className="w-3 h-3" />
+                  </span>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ GAUSHALA + PANCHANG — Compact duo (side by side) ════════════ */}
+        <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Gaushala */}
+              <Link href="/gaushala" data-reveal="up" data-delay="1" className="group p-6 rounded-xl card-hover transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-art-1)' }}>
+                    <Heart className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium" style={{ color: 'var(--color-text)' }}>Gau Seva</h3>
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Cow Adoption Program</p>
+                  </div>
+                </div>
+                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-muted)' }}>
+                  Adopt a cow at a verified gaushala from ₹51/day. Get monthly photo updates, visit anytime. 12 cows across 3 gaushalas waiting for your care.
+                </p>
+                <span className="text-xs font-medium flex items-center gap-1 group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
+                  Adopt a cow <ArrowRight className="w-3 h-3" />
+                </span>
+              </Link>
+
+              {/* Panchang */}
+              <Link href="/panchang" data-reveal="up" data-delay="2" className="group p-6 rounded-xl card-hover transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-art-3)' }}>
+                    <Calendar className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium" style={{ color: 'var(--color-text)' }}>Daily Panchang</h3>
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Hindu Calendar & Timings</p>
+                  </div>
+                </div>
+                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-muted)' }}>
+                  Today's tithi, nakshatra, shubh muhurat, rahu kaal, and upcoming festivals. Navigate by date. Never miss an auspicious moment.
+                </p>
+                <span className="text-xs font-medium flex items-center gap-1 group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
+                  Check today's panchang <ArrowRight className="w-3 h-3" />
+                </span>
+              </Link>
             </div>
           </div>
         </section>
