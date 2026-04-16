@@ -253,7 +253,7 @@ export default function PriestDashboard() {
                 </div>
                 <span className="text-sm text-surface-500">{card.label}</span>
               </div>
-              <p className="text-2xl font-bold text-surface-800">{card.value}</p>
+              <p className="text-lg font-semibold text-surface-800">{card.value}</p>
             </div>
           );
         })}

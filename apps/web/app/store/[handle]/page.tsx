@@ -306,7 +306,7 @@ export default function ProductDetailPage() {
 
             {/* Price */}
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-surface-800">
+              <span className="text-lg font-semibold text-surface-800">
                 {formatPrice(product.price)}
               </span>
               {product.compareAtPrice && (

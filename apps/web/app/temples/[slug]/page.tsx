@@ -483,7 +483,7 @@ export default async function TempleDetailPage({
 
               <div className="mb-6 flex items-center gap-6 rounded-xl bg-surface-100 p-4">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-surface-800">
+                  <div className="text-xl font-semibold text-surface-800">
                     {(temple.trustScore / 20).toFixed(1)}
                   </div>
                   <div className="mt-1 flex items-center justify-center gap-0.5">

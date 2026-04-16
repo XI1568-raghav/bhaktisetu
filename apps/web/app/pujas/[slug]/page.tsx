@@ -328,7 +328,7 @@ export default async function PujaDetailPage({
                   <div className="flex items-baseline gap-3">
                     <div className="flex items-center gap-1">
                       <IndianRupee className="h-6 w-6 text-white" />
-                      <span className="text-4xl font-bold text-white">
+                      <span className="text-xl font-semibold text-white">
                         {Number(puja.basePrice).toLocaleString('en-IN')}
                       </span>
                     </div>

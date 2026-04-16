@@ -356,7 +356,7 @@ export default function GaushalaPage() {
       <section className="py-16 lg:py-20 bg-surface-50">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+            <h2 className="text-2xl font-semibold text-surface-800 mb-3">
               Our Verified Gaushalas
             </h2>
             <p className="text-surface-600 max-w-xl mx-auto">
@@ -437,7 +437,7 @@ export default function GaushalaPage() {
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+              <h2 className="text-2xl font-semibold text-surface-800 mb-3">
                 Cows Available for Adoption
               </h2>
               <p className="text-surface-600">
@@ -495,7 +495,7 @@ export default function GaushalaPage() {
       >
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+            <h2 className="text-2xl font-semibold text-surface-800 mb-3">
               Choose Your Seva Plan
             </h2>
             <p className="text-surface-600 max-w-xl mx-auto">
@@ -530,7 +530,7 @@ export default function GaushalaPage() {
                   </h3>
                 </div>
                 <div className="mb-6">
-                  <span className="text-3xl font-bold text-surface-900">
+                  <span className="text-lg font-semibold text-surface-800">
                     {plan.price}
                   </span>
                   <span className="text-sm text-surface-500 ml-1">
@@ -567,7 +567,7 @@ export default function GaushalaPage() {
       <section className="py-16 lg:py-20 bg-[#2a2520] text-white">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3">
+            <h2 className="text-2xl font-semibold mb-3">
               Our Collective Impact
             </h2>
             <p className="text-surface-400 max-w-xl mx-auto">
@@ -603,7 +603,7 @@ export default function GaushalaPage() {
                 <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                   <stat.icon className="w-7 h-7 text-emerald-400" />
                 </div>
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                <p className="text-xl font-semibold text-white mb-1">
                   {stat.value}
                 </p>
                 <p className="text-sm text-surface-400">{stat.label}</p>
@@ -617,7 +617,7 @@ export default function GaushalaPage() {
       <section className="py-16 lg:py-20 bg-white">
         <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+            <h2 className="text-2xl font-semibold text-surface-800 mb-3">
               Frequently Asked Questions
             </h2>
             <p className="text-surface-600">
@@ -651,7 +651,7 @@ export default function GaushalaPage() {
       {/* ── CTA Banner ──────────────────────────────────────────────────────────── */}
       <section className="py-16 lg:py-20 bg-saffron-700">
         <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-2xl font-semibold text-white mb-4">
             Begin Your Gau Seva Today
           </h2>
           <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">

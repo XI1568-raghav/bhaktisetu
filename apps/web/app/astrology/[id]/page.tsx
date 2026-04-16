@@ -309,7 +309,7 @@ export default function AstrologerDetailPage() {
                   {/* Price & CTA */}
                   <div className="sm:text-right shrink-0">
                     <div className="mb-3">
-                      <span className="text-3xl font-bold text-surface-800">{'\u20B9'}{astrologer.perMinuteRate}</span>
+                      <span className="text-lg font-semibold text-surface-800">{'\u20B9'}{astrologer.perMinuteRate}</span>
                       <span className="text-sm text-surface-400">/min</span>
                     </div>
                     <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/60 rounded-lg px-3 py-1.5 mb-3">
@@ -384,7 +384,7 @@ export default function AstrologerDetailPage() {
               {/* Rating Breakdown */}
               <div className="flex items-start gap-6 mb-6 pb-6 border-b border-surface-100">
                 <div className="text-center shrink-0">
-                  <p className="text-4xl font-bold text-surface-800">{astrologer.rating}</p>
+                  <p className="text-xl font-semibold text-surface-800">{astrologer.rating}</p>
                   <div className="mt-1">{renderStars(astrologer.rating, 'w-3.5 h-3.5')}</div>
                   <p className="text-xs text-surface-400 mt-1">{astrologer.reviewCount.toLocaleString()} reviews</p>
                 </div>

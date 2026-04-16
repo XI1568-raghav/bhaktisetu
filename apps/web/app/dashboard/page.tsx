@@ -122,7 +122,7 @@ function DashboardContent() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-surface-500 text-sm mb-1">{greeting}</p>
-              <h1 className="text-2xl font-semibold text-surface-800">
+              <h1 className="text-lg font-semibold text-surface-800">
                 {displayName === '' ? 'Welcome to Bhaktisetu' : displayName}
               </h1>
               {user?.fullName === '' && (
@@ -166,7 +166,7 @@ function DashboardContent() {
               </div>
               <div>
                 <p className="text-sm text-surface-500">Total Bookings</p>
-                <p className="text-2xl font-semibold text-surface-800">
+                <p className="text-lg font-semibold text-surface-800">
                   {isLoadingData ? '...' : bookingsCount}
                 </p>
               </div>

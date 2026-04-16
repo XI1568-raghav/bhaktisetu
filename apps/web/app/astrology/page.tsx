@@ -532,7 +532,7 @@ export default function AstrologyPage() {
               <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
               <span className="text-xs font-bold text-saffron-700 uppercase tracking-wider">Free AI Tools</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold text-surface-800 mb-2">
+            <h2 className="text-2xl font-semibold text-surface-800 mb-2">
               Explore Your Astrology Blueprint
             </h2>
             <p className="text-surface-500 max-w-xl mx-auto">
@@ -719,7 +719,7 @@ export default function AstrologyPage() {
               {compatScore !== null ? (
                 <div className="bg-saffron-50 rounded-xl p-4 text-center mb-4">
                   <p className="text-xs text-surface-500 mb-1">Compatibility Score</p>
-                  <p className="text-4xl font-bold text-saffron-600">
+                  <p className="text-xl font-semibold text-saffron-600">
                     {compatScore}%
                   </p>
                   <p className="text-xs text-surface-500 mt-1">
@@ -807,7 +807,7 @@ export default function AstrologyPage() {
               return (
                 <div key={stat.label}>
                   <Icon className={`w-8 h-8 ${stat.color} mx-auto mb-3`} />
-                  <p className="text-2xl lg:text-3xl font-bold text-surface-800 mb-1">{stat.value}</p>
+                  <p className="text-lg font-semibold text-surface-800 mb-1">{stat.value}</p>
                   <p className="text-sm text-surface-500">{stat.label}</p>
                 </div>
               );
