@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Navigation & Layout', () => {
   test('home page loads with correct title', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/Bhaktisetu/);
+    await expect(page).toHaveTitle(/Poojly/);
   });
 
   test('nav bar is visible and has logo', async ({ page }) => {

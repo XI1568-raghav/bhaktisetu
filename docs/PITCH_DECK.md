@@ -1,4 +1,4 @@
-# Bhaktisetu Investor Pitch Deck
+# Poojly Investor Pitch Deck
 
 > 10-Slide Seed Round Presentation | April 2026
 
@@ -19,7 +19,7 @@
               Seed Round | 2026
 ```
 
-**Bhaktisetu** (Sanskrit: "Bridge of Devotion") is the first integrated devotional
+**Poojly** (Sanskrit: "Bridge of Devotion") is the first integrated devotional
 technology platform serving 1 billion+ Hindus worldwide.
 
 ---
@@ -49,7 +49,7 @@ technology platform serving 1 billion+ Hindus worldwide.
 
 ## Slide 3: The Solution
 
-### Bhaktisetu: ONE Integrated Super-App for Every Devotional Need
+### Poojly: ONE Integrated Super-App for Every Devotional Need
 
 | Feature | Description |
 |---|---|
@@ -154,7 +154,7 @@ We have not just designed a pitch -- we have **built the product**.
 
 ### No One Has Built the Super-App
 
-| Feature | **Bhaktisetu** | AstroTalk | Sri Mandir | VAMA | Japam |
+| Feature | **Poojly** | AstroTalk | Sri Mandir | VAMA | Japam |
 |---|---|---|---|---|---|
 | **Revenue** | Pre-revenue | ₹1,214 Cr | $12M ARR | ₹19.5 Cr | ₹30 Cr |
 | **Live Darshan** | Yes | No | Yes | Yes | No |
@@ -176,7 +176,7 @@ We have not just designed a pitch -- we have **built the product**.
 | **VAMA** | ₹19.5 Cr | E-puja + e-darshan | Small user base, no content platform |
 | **Japam** | ₹30 Cr | Spiritual e-commerce | No darshan, no booking, no live features |
 
-> **Bhaktisetu = ALL of the above + AI + Gaushala + NRI-first monetization.**
+> **Poojly = ALL of the above + AI + Gaushala + NRI-first monetization.**
 
 ---
 
@@ -359,10 +359,10 @@ We have not just designed a pitch -- we have **built the product**.
 
 ## Contact
 
-**Bhaktisetu Technologies**
+**Poojly Technologies**
 
-- Email: founders@bhaktisetu.com
-- Website: bhaktisetu.com
+- Email: founders@poojly.com
+- Website: poojly.com
 - Demo: Available on request
 
 > *"Your Bridge to the Divine"*

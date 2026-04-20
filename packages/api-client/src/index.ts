@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/api-client — Barrel Export
+// @poojly/api-client — Barrel Export
 // ──────────────────────────────────────────────
 
 export { api, initApiClient, ApiClientError } from "./client.js";

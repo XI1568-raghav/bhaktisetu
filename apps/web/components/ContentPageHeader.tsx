@@ -9,7 +9,7 @@ interface ContentPageHeaderProps {
   currentSearch?: string;
 }
 
-const STORAGE_KEY = 'bhaktisetu_language';
+const STORAGE_KEY = 'poojly_language';
 
 export default function ContentPageHeader({ currentType, currentSearch }: ContentPageHeaderProps) {
   const [language, setLanguage] = useState<SupportedLanguage>('en');
@@ -48,13 +48,13 @@ export default function ContentPageHeader({ currentType, currentSearch }: Conten
           <form action="/content" method="GET">
             {currentType && <input type="hidden" name="type" value={currentType} />}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
               <input
                 type="text"
                 name="search"
                 defaultValue={currentSearch}
                 placeholder={t.searchPlaceholder}
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white text-stone-800 placeholder:text-stone-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white text-surface-800 placeholder:text-surface-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-saffron-300"
               />
             </div>
           </form>

@@ -175,7 +175,7 @@ export default function AstrologerDetailPage() {
   function getStatusColor() {
     if (astrologer.isOnline && !astrologer.isBusy) return 'bg-emerald-400';
     if (astrologer.isOnline && astrologer.isBusy) return 'bg-amber-400';
-    return 'bg-gray-400';
+    return 'bg-surface-400';
   }
 
   function getStatusText() {
@@ -193,7 +193,7 @@ export default function AstrologerDetailPage() {
             className={`${size} ${
               star <= Math.round(rating)
                 ? 'fill-amber-400 text-amber-400'
-                : 'fill-gray-200 text-gray-200'
+                : 'fill-surface-200 text-surface-200'
             }`}
           />
         ))}
@@ -287,7 +287,7 @@ export default function AstrologerDetailPage() {
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
                           : astrologer.isBusy
                           ? 'bg-amber-50 text-amber-700 border border-amber-200/60'
-                          : 'bg-gray-50 text-gray-500 border border-gray-200/60'
+                          : 'bg-surface-50 text-surface-500 border border-surface-200/60'
                       }`}>
                         {getStatusText()}
                       </span>

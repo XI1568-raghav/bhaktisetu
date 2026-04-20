@@ -29,7 +29,7 @@ export default function AuthGuard({ children, fallback }: AuthGuardProps) {
         <div className="min-h-screen flex items-center justify-center bg-saffron-50">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-stone-500 text-sm">Loading...</p>
+            <p className="text-surface-500 text-sm">Loading...</p>
           </div>
         </div>
       )
@@ -42,7 +42,7 @@ export default function AuthGuard({ children, fallback }: AuthGuardProps) {
       <div className="min-h-screen flex items-center justify-center bg-saffron-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-stone-500 text-sm">Redirecting to login...</p>
+          <p className="text-surface-500 text-sm">Redirecting to login...</p>
         </div>
       </div>
     );

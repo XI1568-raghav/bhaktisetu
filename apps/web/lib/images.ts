@@ -1,5 +1,5 @@
 /**
- * Centralized Image Map for Bhaktisetu
+ * Centralized Image Map for Poojly
  * =====================================
  * All Unsplash image URLs used across the application are defined here.
  * Import from this file instead of hardcoding URLs in components.

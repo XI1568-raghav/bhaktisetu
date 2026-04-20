@@ -1,20 +1,18 @@
 {
   "expo": {
-    "name": "Bhaktisetu",
-    "slug": "bhaktisetu",
+    "name": "Poojly",
+    "slug": "poojly",
     "version": "1.0.0",
-    "scheme": "bhaktisetu",
+    "scheme": "poojly",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#EA580C",
-      "resizeMode": "contain"
+      "backgroundColor": "#EA580C"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bhaktisetu.app",
+      "bundleIdentifier": "com.poojly.app",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -23,15 +21,19 @@
       "adaptiveIcon": {
         "backgroundColor": "#EA580C"
       },
-      "package": "com.bhaktisetu.app"
+      "package": "com.poojly.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
     }
   }
 }

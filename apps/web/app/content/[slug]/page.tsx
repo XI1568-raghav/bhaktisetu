@@ -204,10 +204,10 @@ export async function generateMetadata({
   const content = await getContentBySlug(slug);
   return {
     title: content.title,
-    description: `${content.type.charAt(0).toUpperCase() + content.type.slice(1)} - ${content.title}. ${content.deity ? `Dedicated to ${content.deity}.` : ''} Listen and read on Bhaktisetu.`,
+    description: `${content.type.charAt(0).toUpperCase() + content.type.slice(1)} - ${content.title}. ${content.deity ? `Dedicated to ${content.deity}.` : ''} Listen and read on Poojly.`,
     openGraph: {
       title: content.title,
-      description: `${content.type} on Bhaktisetu`,
+      description: `${content.type} on Poojly`,
       images: content.imageUrl ? [content.imageUrl] : [],
     },
   };

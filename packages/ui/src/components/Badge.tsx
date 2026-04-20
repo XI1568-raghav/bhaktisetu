@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../index.js";
 
 // ──────────────────────────────────────────────
-// @bhaktisetu/ui — Badge Component
+// @poojly/ui — Badge Component
 // ──────────────────────────────────────────────
 
 const badgeVariants = cva(

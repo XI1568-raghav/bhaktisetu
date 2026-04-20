@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/api-client — React Query Hooks
+// @poojly/api-client — React Query Hooks
 // ──────────────────────────────────────────────
 
 import {
@@ -34,7 +34,7 @@ import {
   type CreateAddress,
   type UserAddress,
   type BookingReview,
-} from "@bhaktisetu/shared";
+} from "@poojly/shared";
 
 // ─── Query Keys ──────────────────────────────
 

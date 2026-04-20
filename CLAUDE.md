@@ -1,7 +1,7 @@
-# Bhaktisetu — Project Context
+# Poojly — Project Context
 
 ## Overview
-Bhaktisetu is India's devotional super-app — an integrated platform for live darshan, puja booking with video proof, spiritual content, e-commerce, and gaushala seva. Target market: $58.56B Indian religious market growing at 28-35% CAGR in digital.
+Poojly is India's devotional super-app — an integrated platform for live darshan, puja booking with video proof, spiritual content, e-commerce, and gaushala seva. Target market: $58.56B Indian religious market growing at 28-35% CAGR in digital.
 
 ## Tech Stack
 - **Monorepo**: Turborepo + pnpm workspaces

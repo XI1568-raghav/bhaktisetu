@@ -1,8 +1,8 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/api-client — Base HTTP Client
+// @poojly/api-client — Base HTTP Client
 // ──────────────────────────────────────────────
 
-import type { ApiResponse, ApiError } from "@bhaktisetu/shared";
+import type { ApiResponse, ApiError } from "@poojly/shared";
 
 // ─── Types ───────────────────────────────────
 

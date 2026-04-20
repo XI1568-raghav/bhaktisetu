@@ -1,15 +1,15 @@
 {
-  "extends": "@bhaktisetu/tsconfig/nextjs.json",
+  "extends": "@poojly/tsconfig/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ],
-      "@bhaktisetu/ui/*": [
+      "@poojly/ui/*": [
         "../../packages/ui/src/*"
       ],
-      "@bhaktisetu/shared/*": [
+      "@poojly/shared/*": [
         "../../packages/shared/src/*"
       ]
     },

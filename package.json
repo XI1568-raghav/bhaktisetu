@@ -1,8 +1,8 @@
 {
-  "name": "bhaktisetu",
+  "name": "poojly",
   "version": "0.1.0",
   "private": true,
-  "description": "Bhaktisetu — India's devotional super-app platform",
+  "description": "Poojly — India's devotional super-app platform",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",

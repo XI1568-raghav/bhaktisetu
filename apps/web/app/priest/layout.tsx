@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   ChevronRight,
+  Star,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -20,6 +21,8 @@ import { useAuth } from '../../lib/auth-context';
 const sidebarLinks = [
   { href: '/priest', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/priest/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/priest/services', label: 'My Services', icon: Flame },
+  { href: '/priest/reviews', label: 'Reviews', icon: Star },
   { href: '/priest/payouts', label: 'Payouts', icon: Wallet },
   { href: '/priest/profile', label: 'Profile', icon: UserCircle },
 ];
@@ -57,7 +60,7 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <span className="text-white font-bold text-sm">Priest Portal</span>
-            <p className="text-saffron-100 text-xs">Bhaktisetu</p>
+            <p className="text-saffron-100 text-xs">Poojly</p>
           </div>
           <button
             className="lg:hidden ml-auto text-white"

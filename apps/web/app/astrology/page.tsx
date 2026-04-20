@@ -274,7 +274,7 @@ export default function AstrologyPage() {
   function getStatusColor(astrologer: Astrologer) {
     if (astrologer.isOnline && !astrologer.isBusy) return 'bg-emerald-400';
     if (astrologer.isOnline && astrologer.isBusy) return 'bg-amber-400';
-    return 'bg-gray-400';
+    return 'bg-surface-400';
   }
 
   function getStatusText(astrologer: Astrologer) {
@@ -305,7 +305,7 @@ export default function AstrologyPage() {
             className={`w-3.5 h-3.5 ${
               star <= Math.round(rating)
                 ? 'fill-amber-400 text-amber-400'
-                : 'fill-gray-200 text-gray-200'
+                : 'fill-surface-200 text-surface-200'
             }`}
           />
         ))}
@@ -340,7 +340,7 @@ export default function AstrologyPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
               {/* AI Astrologer Card */}
               <Link
-                href="/astrology/kundli"
+                href="/astrology/chat"
                 className="group relative bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
               >
                 <div className="w-12 h-12 bg-saffron-600/15 rounded-xl flex items-center justify-center mb-4">
@@ -348,10 +348,10 @@ export default function AstrologyPage() {
                 </div>
                 <h3 className="text-lg font-bold text-surface-800 mb-2">AI Astrologer</h3>
                 <p className="text-sm text-surface-500 mb-3">
-                  Instant kundli generation, daily horoscope, compatibility check
+                  Free consultation, kundli analysis, remedies, and predictions
                 </p>
                 <div className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600">
-                  Free <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  Free Consultation <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
 
@@ -584,24 +584,21 @@ export default function AstrologyPage() {
 
               {kundliGenerated ? (
                 <div className="bg-saffron-50 rounded-xl p-4 mb-4">
-                  <p className="text-saffron-700 font-semibold text-sm mb-2">Kundli Generated!</p>
-                  <div className="space-y-1 text-xs text-surface-500">
-                    <p>Rashi: <span className="text-surface-800 font-medium">Simha (Leo)</span></p>
-                    <p>Nakshatra: <span className="text-surface-800 font-medium">Magha</span></p>
-                    <p>Ascendant: <span className="text-surface-800 font-medium">Mesha (Aries)</span></p>
-                  </div>
-                  <Link href="/astrology/kundli" className="inline-flex items-center gap-1 text-xs text-saffron-600 font-semibold mt-3 hover:underline">
-                    View Full Kundli <ArrowRight className="w-3 h-3" />
+                  <p className="text-saffron-700 font-semibold text-sm mb-2">Quick Preview Generated!</p>
+                  <p className="text-xs text-surface-500 mb-3">
+                    For full birth chart with planetary positions, dasha periods, and dosha analysis:
+                  </p>
+                  <Link href="/astrology/kundli" className="inline-flex items-center gap-1 text-xs text-saffron-600 font-semibold hover:underline">
+                    Open Full Kundli Generator <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               ) : (
-                <button
-                  onClick={handleGenerateKundli}
-                  disabled={!kundliName || !kundliDate || !kundliTime || !kundliPlace}
-                  className="w-full py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                <Link
+                  href="/astrology/kundli"
+                  className="w-full py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-all text-center block"
                 >
                   Generate Kundli
-                </button>
+                </Link>
               )}
             </div>
 

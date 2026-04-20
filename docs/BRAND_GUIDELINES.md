@@ -1,4 +1,4 @@
-# Bhaktisetu Brand Guidelines
+# Poojly Brand Guidelines
 
 > Version 1.0 | April 2026
 
@@ -7,7 +7,7 @@
 ## 1. Brand Overview
 
 ### Brand Name
-**Bhaktisetu** (Sanskrit: Bhakti = devotion, Setu = bridge)
+**Poojly** (Sanskrit: Bhakti = devotion, Setu = bridge)
 
 ### Tagline
 **"Bridging You to the Divine"**
@@ -16,14 +16,14 @@
 To make authentic spiritual experiences accessible to every devotee, anywhere in the world, through technology that respects and preserves tradition.
 
 ### Brand Essence
-Bhaktisetu stands at the intersection of ancient devotion and modern convenience. We are not replacing the temple visit -- we are extending the temple's reach. Every pixel, every interaction, every feature must honor the sacredness of the traditions we serve.
+Poojly stands at the intersection of ancient devotion and modern convenience. We are not replacing the temple visit -- we are extending the temple's reach. Every pixel, every interaction, every feature must honor the sacredness of the traditions we serve.
 
 ---
 
 ## 2. Logo
 
 ### Primary Logo
-The Bhaktisetu logo consists of two elements:
+The Poojly logo consists of two elements:
 1. **The Bridge Arc (Setu)** -- A clean, upward-curving arc representing the bridge between the devotee and the divine.
 2. **The Diya Flame** -- A traditional oil lamp flame sitting at the apex of the bridge, symbolizing devotion, knowledge, and spiritual light.
 
@@ -158,7 +158,7 @@ Used for Hindi text, mantras, shlokas, and devotional content.
 ## 5. Voice and Tone
 
 ### Brand Voice
-Bhaktisetu speaks with **warmth**, **reverence**, and **clarity**. We are a trusted companion on the spiritual journey, not a salesperson.
+Poojly speaks with **warmth**, **reverence**, and **clarity**. We are a trusted companion on the spiritual journey, not a salesperson.
 
 ### Voice Attributes
 

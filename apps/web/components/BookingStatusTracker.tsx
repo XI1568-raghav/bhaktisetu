@@ -60,7 +60,7 @@ export default function BookingStatusTracker({
       <div className="hidden md:block">
         <div className="relative flex items-start justify-between">
           {/* Background connector line */}
-          <div className="absolute left-0 right-0 top-5 h-0.5 bg-stone-200" />
+          <div className="absolute left-0 right-0 top-5 h-0.5 bg-surface-200" />
           <div
             className="absolute left-0 top-5 h-0.5 bg-gradient-to-r from-tulsi-green to-saffron-500 transition-all duration-700"
             style={{
@@ -89,7 +89,7 @@ export default function BookingStatusTracker({
                       ? 'border-tulsi-green bg-tulsi-green text-white'
                       : isCurrent
                         ? 'border-saffron-500 bg-saffron-500 text-white shadow-lg shadow-saffron-200 animate-pulse'
-                        : 'border-stone-200 bg-white text-stone-400'
+                        : 'border-surface-200 bg-white text-surface-400'
                   }`}
                 >
                   {isCompleted ? (
@@ -104,13 +104,13 @@ export default function BookingStatusTracker({
                       ? 'text-tulsi-green'
                       : isCurrent
                         ? 'text-saffron-600 font-semibold'
-                        : 'text-stone-400'
+                        : 'text-surface-400'
                   }`}
                 >
                   {step.label}
                 </span>
                 {timestamps[step.key] && (
-                  <span className="mt-0.5 text-[10px] text-stone-400">
+                  <span className="mt-0.5 text-[10px] text-surface-400">
                     {formatTimestamp(timestamps[step.key]!)}
                   </span>
                 )}
@@ -135,7 +135,7 @@ export default function BookingStatusTracker({
                 {!isLast && (
                   <div
                     className={`absolute left-[15px] top-8 h-full w-0.5 ${
-                      isCompleted ? 'bg-tulsi-green' : 'bg-stone-200'
+                      isCompleted ? 'bg-tulsi-green' : 'bg-surface-200'
                     }`}
                   />
                 )}
@@ -146,7 +146,7 @@ export default function BookingStatusTracker({
                       ? 'border-tulsi-green bg-tulsi-green text-white'
                       : isCurrent
                         ? 'border-saffron-500 bg-saffron-500 text-white animate-pulse'
-                        : 'border-stone-200 bg-white text-stone-400'
+                        : 'border-surface-200 bg-white text-surface-400'
                   }`}
                 >
                   {isCompleted ? (
@@ -163,13 +163,13 @@ export default function BookingStatusTracker({
                         ? 'text-tulsi-green'
                         : isCurrent
                           ? 'text-saffron-600 font-semibold'
-                          : 'text-stone-400'
+                          : 'text-surface-400'
                     }`}
                   >
                     {step.label}
                   </span>
                   {timestamps[step.key] && (
-                    <p className="text-[11px] text-stone-400">
+                    <p className="text-[11px] text-surface-400">
                       {formatTimestamp(timestamps[step.key]!)}
                     </p>
                   )}

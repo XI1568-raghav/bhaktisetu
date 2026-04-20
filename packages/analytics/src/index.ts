@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/analytics — PostHog Analytics Wrapper
+// @poojly/analytics — PostHog Analytics Wrapper
 // ──────────────────────────────────────────────
 
 import posthog from "posthog-js";

@@ -1,5 +1,5 @@
 {
-  "name": "@bhaktisetu/analytics",
+  "name": "@poojly/analytics",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "posthog-js": "^1.237.0"
   },
   "devDependencies": {
-    "@bhaktisetu/tsconfig": "workspace:*",
+    "@poojly/tsconfig": "workspace:*",
     "typescript": "^5.8.3"
   }
 }

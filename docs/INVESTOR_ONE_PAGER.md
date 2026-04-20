@@ -1,4 +1,4 @@
-# BHAKTISETU -- Investor One-Pager
+# POOJLY -- Investor One-Pager
 
 > **India's Devotional Super App** | "Your Bridge to the Divine" | Seed Round 2026
 
@@ -54,7 +54,7 @@
 | Sri Mandir | $12M ARR | Darshan + offerings | No astrology, no AI, low ARPU |
 | VAMA | ₹19.5 Cr | E-puja + e-darshan | Small base, no content platform |
 | Japam | ₹30 Cr | Spiritual e-commerce | No darshan, no live features |
-| **Bhaktisetu** | **Pre-revenue** | **All of the above + AI + Gaushala** | **First integrated super-app** |
+| **Poojly** | **Pre-revenue** | **All of the above + AI + Gaushala** | **First integrated super-app** |
 
 > 900+ spiritual tech startups exist. Zero super-apps. We are building the category.
 
@@ -74,6 +74,6 @@ Next.js 15 + Fastify + Supabase + Claude AI + React Native (Expo) | Turborepo mo
 
 ---
 
-**Contact:** founders@bhaktisetu.com | bhaktisetu.com | Demo available on request
+**Contact:** founders@poojly.com | poojly.com | Demo available on request
 
 *Confidential -- do not distribute without permission.*

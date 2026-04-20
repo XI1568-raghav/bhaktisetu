@@ -190,6 +190,39 @@ const horoscopes: DailyHoroscope[] = [
   },
 ];
 
+// ─── Date-based rotation for dynamic feel ───────────────────────────────────
+
+function getDateSeed(dateStr: string): number {
+  // Create a deterministic seed from the date string
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function rotateHoroscopes(dateStr: string): DailyHoroscope[] {
+  const seed = getDateSeed(dateStr);
+  return horoscopes.map((h, idx) => {
+    // Rotate lucky number based on date
+    const numOffset = (seed + idx * 7) % 12 + 1;
+    // Rotate rating based on date
+    const ratingOffset = (seed + idx * 3) % 3;
+    const newRating = Math.max(3, Math.min(5, h.overallRating + ratingOffset - 1));
+
+    const colors = ['Red', 'Blue', 'Green', 'Gold', 'White', 'Yellow', 'Pink', 'Orange', 'Purple', 'Silver', 'Maroon', 'Saffron'];
+    const colorIdx = (seed + idx * 5) % colors.length;
+
+    return {
+      ...h,
+      luckyNumber: numOffset,
+      luckyColor: colors[colorIdx]!,
+      overallRating: newRating,
+    };
+  });
+}
+
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function HoroscopePage() {
@@ -205,7 +238,7 @@ export default function HoroscopePage() {
             className={`w-3.5 h-3.5 ${
               star <= rating
                 ? 'fill-amber-400 text-amber-400'
-                : 'fill-gray-200 text-gray-200'
+                : 'fill-surface-200 text-surface-200'
             }`}
           />
         ))}
@@ -218,7 +251,7 @@ export default function HoroscopePage() {
     aries: 'from-red-50 to-orange-50 border-red-200/50',
     taurus: 'from-emerald-50 to-green-50 border-emerald-200/50',
     gemini: 'from-yellow-50 to-amber-50 border-yellow-200/50',
-    cancer: 'from-slate-50 to-gray-50 border-slate-200/50',
+    cancer: 'from-surface-50 to-amber-50/30 border-surface-200/50',
     leo: 'from-amber-50 to-orange-50 border-amber-200/50',
     virgo: 'from-green-50 to-emerald-50 border-green-200/50',
     libra: 'from-pink-50 to-rose-50 border-pink-200/50',
@@ -232,32 +265,32 @@ export default function HoroscopePage() {
   return (
     <div className="min-h-screen">
       {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 pb-8">
-        <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6">
+      <section className="bg-[#ede9e3]">
+        <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6 pb-8">
           <Link
             href="/astrology"
-            className="inline-flex items-center gap-1.5 text-sm text-saffron-300/70 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-surface-800 transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Astrology
           </Link>
 
           <div className="text-center pb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+            <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
               Daily Horoscope
             </h1>
-            <p className="text-saffron-200/70 max-w-xl mx-auto mb-6">
+            <p className="text-surface-500 max-w-xl mx-auto mb-6">
               Read today&apos;s predictions for all 12 rashis. Get insights on career, love, and health.
             </p>
 
             {/* Date Selector */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2">
-              <Calendar className="w-4 h-4 text-saffron-300" />
+            <div className="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-xl px-4 py-2">
+              <Calendar className="w-4 h-4 text-saffron-500" />
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-sm text-white border-none outline-none focus:ring-0 [color-scheme:dark]"
+                className="bg-transparent text-sm text-surface-800 border-none outline-none focus:ring-0"
               />
             </div>
           </div>
@@ -267,12 +300,12 @@ export default function HoroscopePage() {
       {/* ── Rashi Grid ───────────────────────────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-8 lg:py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {horoscopes.map((h) => {
+          {rotateHoroscopes(selectedDate).map((h) => {
             const isExpanded = expandedRashi === h.rashi;
             return (
               <div
                 key={h.rashi}
-                className={`bg-gradient-to-br ${rashiColors[h.rashi] || 'from-gray-50 to-white border-gray-200/50'} border rounded-xl overflow-hidden transition-all duration-300 ${
+                className={`bg-gradient-to-br ${rashiColors[h.rashi] || 'from-surface-50 to-white border-surface-200/50'} border rounded-xl overflow-hidden transition-all duration-300 ${
                   isExpanded ? 'sm:col-span-2 lg:col-span-2 xl:col-span-2 shadow-lg' : 'hover:shadow-md hover:-translate-y-0.5'
                 }`}
               >
@@ -352,10 +385,10 @@ export default function HoroscopePage() {
 
                     <div className="text-center pt-2">
                       <Link
-                        href="/astrology"
+                        href="/astrology/chat"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700 transition-colors"
                       >
-                        Talk to an Astrologer for Detailed Reading <ArrowRight className="w-4 h-4" />
+                        Ask AI Astrologer for Detailed Reading <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </div>
@@ -366,20 +399,20 @@ export default function HoroscopePage() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="mt-10 bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 rounded-xl p-8 text-center">
+        <div className="mt-10 bg-surface-800 rounded-xl p-8 text-center">
           <Sparkles className="w-10 h-10 text-amber-400 mx-auto mb-3" />
           <h3 className="text-xl font-bold text-white mb-2">
             Get Personalized Predictions
           </h3>
-          <p className="text-saffron-200/70 max-w-md mx-auto mb-5">
-            Daily horoscopes are general. For predictions tailored to your birth chart, consult our verified astrologers.
+          <p className="text-surface-400 max-w-md mx-auto mb-5">
+            Daily horoscopes are general. For predictions tailored to your birth chart, try our AI Astrologer or consult a verified astrologer.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href="/astrology"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-medium rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md"
+              href="/astrology/chat"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-all shadow-md"
             >
-              Chat with Astrologer <ArrowRight className="w-4 h-4" />
+              Ask AI Astrologer <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/astrology/kundli"

@@ -535,7 +535,7 @@ export class GaushalaService {
       status: 'active',
       nextRenewalDate: nextRenewal,
       totalPaid: plan.price,
-      certificate: `https://bhaktisetu.com/certificates/${cowId}-${userId}`,
+      certificate: `https://poojly.com/certificates/${cowId}-${userId}`,
     };
 
     const existing = adoptionStore.get(userId) ?? [];

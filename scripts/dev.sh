@@ -35,7 +35,7 @@ cd "$DIR/apps/web" && npx next dev --turbopack --port 3000 &
 WEB_PID=$!
 
 echo ""
-echo "✅ Bhaktisetu running:"
+echo "✅ Poojly running:"
 echo "   API: http://localhost:4000"
 echo "   Web: http://localhost:3000"
 echo ""

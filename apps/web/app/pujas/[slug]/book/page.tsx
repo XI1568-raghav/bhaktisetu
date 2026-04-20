@@ -558,7 +558,7 @@ export default function PujaBookingPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_demo',
         amount,
         currency: 'INR',
-        name: 'Bhaktisetu',
+        name: 'Poojly',
         description: `${puja?.name} at ${selectedTemple?.templeName}`,
         order_id: razorpayOrderId,
         prefill: {

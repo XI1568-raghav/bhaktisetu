@@ -1,5 +1,5 @@
 {
-  "name": "@bhaktisetu/api-client",
+  "name": "@poojly/api-client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,14 +14,14 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@bhaktisetu/shared": "workspace:*",
+    "@poojly/shared": "workspace:*",
     "@tanstack/react-query": "^5.74.4"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@bhaktisetu/tsconfig": "workspace:*",
+    "@poojly/tsconfig": "workspace:*",
     "typescript": "^5.8.3"
   }
 }

@@ -133,11 +133,11 @@ export default function AudioPlayer({
                 </span>
               )}
               {deity && (
-                <span className="text-xs text-stone-400">{deity}</span>
+                <span className="text-xs text-surface-400">{deity}</span>
               )}
             </div>
-            <h3 className="font-bold text-stone-900 truncate">{title}</h3>
-            {artist && <p className="text-sm text-stone-500">{artist}</p>}
+            <h3 className="font-bold text-surface-900 truncate">{title}</h3>
+            {artist && <p className="text-sm text-surface-500">{artist}</p>}
           </div>
         </div>
         <div className="mt-4 flex items-center justify-center gap-2 text-saffron-500 bg-white/60 rounded-xl py-3">
@@ -149,11 +149,11 @@ export default function AudioPlayer({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-surface-100 shadow-sm overflow-hidden">
       {/* Expand/collapse toggle */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-3 hover:bg-surface-50 transition-colors"
         aria-label={isExpanded ? 'Collapse player' : 'Expand player'}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -169,19 +169,19 @@ export default function AudioPlayer({
             )}
           </div>
           <div className="text-left min-w-0">
-            <div className="text-sm font-semibold text-stone-900 truncate">
+            <div className="text-sm font-semibold text-surface-900 truncate">
               {title}
             </div>
-            <div className="text-xs text-stone-500 truncate">
+            <div className="text-xs text-surface-500 truncate">
               {artist}
               {deity ? ` \u00b7 ${deity}` : ''}
             </div>
           </div>
         </div>
         {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-stone-400 shrink-0" />
+          <ChevronDown className="w-4 h-4 text-surface-400 shrink-0" />
         ) : (
-          <ChevronUp className="w-4 h-4 text-stone-400 shrink-0" />
+          <ChevronUp className="w-4 h-4 text-surface-400 shrink-0" />
         )}
       </button>
 
@@ -194,7 +194,7 @@ export default function AudioPlayer({
                 {type}
               </span>
               {deity && (
-                <span className="text-xs text-stone-400">{deity}</span>
+                <span className="text-xs text-surface-400">{deity}</span>
               )}
             </div>
           )}
@@ -210,7 +210,7 @@ export default function AudioPlayer({
                   className={`w-1.5 rounded-full transition-all duration-150 ${
                     isPast
                       ? 'bg-gradient-to-t from-saffron-600 to-saffron-400'
-                      : 'bg-stone-200'
+                      : 'bg-surface-200'
                   } ${isPlaying && isPast ? 'animate-pulse' : ''}`}
                   style={{
                     height: `${h}%`,
@@ -242,7 +242,7 @@ export default function AudioPlayer({
             <div
               ref={progressRef}
               onClick={handleSeek}
-              className="group h-2 bg-stone-100 rounded-full cursor-pointer relative overflow-hidden"
+              className="group h-2 bg-surface-100 rounded-full cursor-pointer relative overflow-hidden"
               role="slider"
               aria-label="Audio progress"
               aria-valuemin={0}
@@ -258,7 +258,7 @@ export default function AudioPlayer({
                 style={{ left: `calc(${progress}% - 7px)` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-stone-400 tabular-nums">
+            <div className="flex justify-between text-xs text-surface-400 tabular-nums">
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(audioDuration)}</span>
             </div>
@@ -268,7 +268,7 @@ export default function AudioPlayer({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMuted(!isMuted)}
-              className="text-stone-400 hover:text-saffron-600 transition-colors"
+              className="text-surface-400 hover:text-saffron-600 transition-colors"
               aria-label={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted || volume === 0 ? (
@@ -311,14 +311,14 @@ export default function AudioPlayer({
           <div
             ref={progressRef}
             onClick={handleSeek}
-            className="flex-1 h-1.5 bg-stone-100 rounded-full cursor-pointer overflow-hidden"
+            className="flex-1 h-1.5 bg-surface-100 rounded-full cursor-pointer overflow-hidden"
           >
             <div
               className="h-full bg-saffron-500 rounded-full transition-[width] duration-100"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-xs text-stone-400 tabular-nums shrink-0">
+          <span className="text-xs text-surface-400 tabular-nums shrink-0">
             {formatTime(currentTime)} / {formatTime(audioDuration)}
           </span>
         </div>

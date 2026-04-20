@@ -18,6 +18,10 @@ import {
   User,
   Settings,
   LogOut,
+  Heart,
+  MessageSquare,
+  ShoppingBag,
+  Eye,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import PujaRecommendationWidget from '../../components/PujaRecommendationWidget';
@@ -123,7 +127,7 @@ function DashboardContent() {
             <div>
               <p className="text-surface-500 text-sm mb-1">{greeting}</p>
               <h1 className="text-lg font-semibold text-surface-800">
-                {displayName === '' ? 'Welcome to Bhaktisetu' : displayName}
+                {displayName === '' ? 'Welcome to Poojly' : displayName}
               </h1>
               {user?.fullName === '' && (
                 <a
@@ -366,6 +370,145 @@ function DashboardContent() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ─── Devotee Activity Sections ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Darshan History */}
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <h2 className="font-semibold text-surface-800 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-red-500" />
+                Darshan History
+              </h2>
+              <a href="/darshan" className="text-sm text-saffron-600 font-medium hover:text-saffron-700 flex items-center gap-1">
+                Watch Live <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            <div className="p-5 space-y-3">
+              {[
+                { temple: 'Kashi Vishwanath', city: 'Varanasi', date: 'Today, 6:15 AM', duration: '12 min' },
+                { temple: 'Somnath Temple', city: 'Gujarat', date: 'Yesterday, 7:00 AM', duration: '8 min' },
+                { temple: 'Tirupati Balaji', city: 'Tirumala', date: 'Apr 13, 5:30 AM', duration: '15 min' },
+              ].map((item) => (
+                <div key={item.temple + item.date} className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center shrink-0">
+                    <Video className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-surface-800 truncate">{item.temple}</p>
+                    <p className="text-xs text-surface-500">{item.city} &middot; {item.date}</p>
+                  </div>
+                  <span className="text-xs text-surface-400 shrink-0">{item.duration}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Saved Temples */}
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <h2 className="font-semibold text-surface-800 flex items-center gap-2">
+                <Heart className="w-4 h-4 text-red-400" />
+                Saved Temples
+              </h2>
+              <a href="/temples" className="text-sm text-saffron-600 font-medium hover:text-saffron-700 flex items-center gap-1">
+                Explore <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            <div className="p-5 space-y-3">
+              {[
+                { name: 'Shri Kashi Vishwanath', city: 'Varanasi, UP', live: true },
+                { name: 'Somnath Jyotirlinga', city: 'Veraval, Gujarat', live: true },
+                { name: 'Meenakshi Amman', city: 'Madurai, TN', live: false },
+                { name: 'Jagannath Temple', city: 'Puri, Odisha', live: false },
+              ].map((temple) => (
+                <div key={temple.name} className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-saffron-50 rounded-lg flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-saffron-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-surface-800 truncate">{temple.name}</p>
+                    <p className="text-xs text-surface-500">{temple.city}</p>
+                  </div>
+                  {temple.live && (
+                    <span className="flex items-center gap-1 text-xs text-red-500 font-medium shrink-0">
+                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Chat History */}
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <h2 className="font-semibold text-surface-800 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-saffron-500" />
+                Chat History
+              </h2>
+              <a href="/ask-pandit" className="text-sm text-saffron-600 font-medium hover:text-saffron-700 flex items-center gap-1">
+                Ask Pandit <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            <div className="p-5 space-y-3">
+              {[
+                { topic: 'Best muhurat for griha pravesh?', date: 'Today', preview: 'Based on your nakshatra, the best dates are...' },
+                { topic: 'Which puja for job promotion?', date: 'Apr 14', preview: 'I recommend Baglamukhi puja or...' },
+                { topic: 'Significance of Akshaya Tritiya', date: 'Apr 10', preview: 'Akshaya Tritiya is considered one of the most...' },
+              ].map((chat) => (
+                <div key={chat.topic} className="flex items-start gap-3">
+                  <div className="w-9 h-9 bg-saffron-50 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                    <MessageSquare className="w-4 h-4 text-saffron-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-surface-800 truncate">{chat.topic}</p>
+                      <span className="text-xs text-surface-400 shrink-0">{chat.date}</span>
+                    </div>
+                    <p className="text-xs text-surface-500 truncate mt-0.5">{chat.preview}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Order History (Store) */}
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <h2 className="font-semibold text-surface-800 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-emerald-500" />
+                Store Orders
+              </h2>
+              <a href="/store" className="text-sm text-saffron-600 font-medium hover:text-saffron-700 flex items-center gap-1">
+                Shop <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            <div className="p-5 space-y-3">
+              {[
+                { item: 'Brass Diya Set + Agarbatti', status: 'Delivered', date: 'Apr 12', amount: 'Rs. 850' },
+                { item: 'Rudraksha Mala (5 mukhi)', status: 'In Transit', date: 'Apr 14', amount: 'Rs. 1,200' },
+                { item: 'Puja Thali Complete Set', status: 'Delivered', date: 'Mar 28', amount: 'Rs. 2,500' },
+              ].map((order) => (
+                <div key={order.item + order.date} className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
+                    <ShoppingBag className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-surface-800 truncate">{order.item}</p>
+                    <p className="text-xs text-surface-500">{order.date} &middot; {order.amount}</p>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                    order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {order.status}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

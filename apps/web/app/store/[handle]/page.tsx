@@ -21,131 +21,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useCart, type CartProduct } from '../../../components/CartContext';
-
-// ─── Fallback product data ──────────────────────────────────────
-
-const PRODUCTS = [
-  {
-    id: 'prod_001',
-    handle: 'premium-brass-puja-thali-set',
-    title: 'Premium Brass Puja Thali Set (7 Piece)',
-    description: 'A beautifully crafted 7-piece brass puja thali set including thali, diya, incense holder, bell, kumkum container, water vessel, and flower plate. Perfect for daily worship and special occasions. Hand-polished to a golden finish.',
-    features: ['Pure brass construction', 'Hand-polished golden finish', '7 essential puja items', 'Gift-ready packaging', 'Durable and tarnish-resistant'],
-    price: 1299,
-    compareAtPrice: 1899,
-    discount: 32,
-    currency: 'INR',
-    category: 'Puja Thali Sets',
-    collection: 'puja-essentials',
-    tag: 'Bestseller',
-    inStock: true,
-    freeDelivery: true,
-    rating: 4.7,
-    reviewCount: 342,
-    weight: '1.2 kg',
-    sku: 'BS-PT-001',
-  },
-  {
-    id: 'prod_002',
-    handle: '5-mukhi-rudraksha-mala',
-    title: '5 Mukhi Natural Rudraksha Mala (108+1 beads)',
-    description: 'Authentic 5 Mukhi Rudraksha mala with 108+1 beads, hand-knotted on silk thread. Each bead is naturally formed and certified. Wearing this mala brings peace of mind, lowers blood pressure, and is believed to please Lord Shiva.',
-    features: ['Certified natural Rudraksha', '108+1 beads', 'Hand-knotted on silk thread', 'Lab-tested authenticity', 'Comes with certificate'],
-    price: 599,
-    compareAtPrice: 999,
-    discount: 40,
-    currency: 'INR',
-    category: 'Rudraksha & Malas',
-    collection: 'rudraksha-malas',
-    tag: 'Certified',
-    inStock: true,
-    freeDelivery: true,
-    rating: 4.8,
-    reviewCount: 567,
-    weight: '50g',
-    sku: 'BS-RM-001',
-  },
-  {
-    id: 'prod_003',
-    handle: 'pure-sandalwood-incense-sticks',
-    title: 'Pure Sandalwood Incense Sticks (100 pack)',
-    description: 'Premium sandalwood agarbatti made from pure chandan powder. Burns evenly for 45 minutes with a rich, calming fragrance. No charcoal or chemical additives. Ideal for daily puja, meditation, and creating a sacred atmosphere.',
-    features: ['100% pure sandalwood', '45-minute burn time', 'No charcoal fillers', 'Chemical-free', '100 sticks per pack'],
-    price: 249,
-    compareAtPrice: 399,
-    discount: 38,
-    currency: 'INR',
-    category: 'Incense & Dhoop',
-    collection: 'puja-essentials',
-    tag: 'Top Rated',
-    inStock: true,
-    freeDelivery: false,
-    rating: 4.6,
-    reviewCount: 891,
-    weight: '200g',
-    sku: 'BS-IS-001',
-  },
-  {
-    id: 'prod_004',
-    handle: 'white-marble-ganesh-murti',
-    title: 'Hand-carved White Marble Ganesh Murti (8 inch)',
-    description: 'Exquisite hand-carved Lord Ganesh murti in pure white Makrana marble. Each piece is unique, crafted by skilled artisans from Rajasthan. The idol features intricate detailing on the crown, trunk, and modak. A centerpiece for your home temple.',
-    features: ['Pure Makrana marble', 'Hand-carved by artisans', '8 inch height', 'Intricate detailing', 'Each piece is unique'],
-    price: 2499,
-    compareAtPrice: 3499,
-    discount: 29,
-    currency: 'INR',
-    category: 'Idols & Murtis',
-    collection: 'idols-murtis',
-    tag: 'Premium',
-    inStock: true,
-    freeDelivery: true,
-    rating: 4.9,
-    reviewCount: 234,
-    weight: '2.5 kg',
-    sku: 'BS-IM-001',
-  },
-  {
-    id: 'prod_005',
-    handle: 'complete-navratri-puja-kit',
-    title: 'Complete Navratri Puja Kit',
-    description: 'Everything you need for a complete Navratri puja. Includes kalash, coconut, red cloth, mala, kumkum, haldi, chandan, rice, flowers, diya, incense sticks, camphor, and a step-by-step guide booklet.',
-    features: ['Complete 9-day puja items', 'Step-by-step guide included', 'Premium quality samagri', 'Eco-friendly packaging', 'Suitable for home puja'],
-    price: 899,
-    compareAtPrice: 1499,
-    discount: 40,
-    currency: 'INR',
-    category: 'Puja Samagri',
-    collection: 'festival-specials',
-    tag: 'Festival Special',
-    inStock: true,
-    freeDelivery: true,
-    rating: 4.7,
-    reviewCount: 156,
-    weight: '1.8 kg',
-    sku: 'BS-PS-001',
-  },
-  {
-    id: 'prod_006',
-    handle: 'brass-krishna-playing-flute',
-    title: 'Pure Brass Krishna Playing Flute (12 inch)',
-    description: 'A stunning 12-inch brass idol of Lord Krishna in the iconic flute-playing pose. Cast using traditional lost-wax method and hand-finished with antique polish.',
-    features: ['Pure brass, hand-cast', 'Lost-wax method', '12 inch height', 'Antique finish', 'Traditional craftsmanship'],
-    price: 3299,
-    compareAtPrice: 4599,
-    discount: 28,
-    currency: 'INR',
-    category: 'Idols & Murtis',
-    collection: 'idols-murtis',
-    tag: 'Handcrafted',
-    inStock: true,
-    freeDelivery: true,
-    rating: 4.9,
-    reviewCount: 189,
-    weight: '3.2 kg',
-    sku: 'BS-IM-002',
-  },
-];
+import { PRODUCTS, getProductByHandle } from '../../../lib/products';
+import { getProductImage } from '../../../lib/images';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -170,8 +47,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<(typeof PRODUCTS)[number] | null>(null);
 
   useEffect(() => {
-    // Try API first, fall back to hardcoded data
-    const found = PRODUCTS.find((p) => p.handle === handle);
+    const found = getProductByHandle(handle);
     setProduct(found ?? null);
   }, [handle]);
 
@@ -183,7 +59,7 @@ export default function ProductDetailPage() {
       title: product.title,
       price: product.price,
       compareAtPrice: product.compareAtPrice,
-      image: null,
+      image: getProductImage(product.imageKey),
       category: product.category,
       inStock: product.inStock,
       freeDelivery: product.freeDelivery,
@@ -238,8 +114,12 @@ export default function ProductDetailPage() {
           {/* Left: Product Image */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-surface-100 overflow-hidden">
-              <div className="aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center relative">
-                <ShoppingBag className="w-24 h-24 text-saffron-200" />
+              <div className="aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center relative overflow-hidden">
+                <img
+                  src={getProductImage(product.imageKey)}
+                  alt={product.title}
+                  className="w-full h-full object-cover"
+                />
 
                 {product.tag && (
                   <div className="absolute top-4 left-4">
@@ -274,11 +154,15 @@ export default function ProductDetailPage() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className={`w-20 h-20 rounded-lg border-2 ${
+                  className={`w-20 h-20 rounded-lg border-2 overflow-hidden ${
                     i === 1 ? 'border-saffron-500' : 'border-surface-200'
-                  } bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center cursor-pointer hover:border-saffron-300 transition-colors`}
+                  } bg-gradient-to-br from-surface-50 to-saffron-50 cursor-pointer hover:border-saffron-300 transition-colors`}
                 >
-                  <ShoppingBag className="w-6 h-6 text-saffron-200" />
+                  <img
+                    src={getProductImage(product.imageKey)}
+                    alt={`${product.title} view ${i}`}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               ))}
             </div>
@@ -443,8 +327,12 @@ export default function ProductDetailPage() {
                   href={`/store/${rp.handle}`}
                   className="group bg-white rounded-xl overflow-hidden border border-surface-100 card-hover transition-all"
                 >
-                  <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center">
-                    <ShoppingBag className="w-12 h-12 text-saffron-200" />
+                  <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 overflow-hidden">
+                    <img
+                      src={getProductImage(rp.imageKey)}
+                      alt={rp.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                     {rp.tag && (
                       <span className="absolute top-3 left-3 bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
                         {rp.tag}

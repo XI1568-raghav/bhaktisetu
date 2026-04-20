@@ -48,7 +48,7 @@ interface CartContextValue {
 
 // ─── Storage key ────────────────────────────────────────────────
 
-const CART_STORAGE_KEY = 'bhaktisetu_cart';
+const CART_STORAGE_KEY = 'poojly_cart';
 
 // ─── Context ────────────────────────────────────────────────────
 

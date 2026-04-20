@@ -1,237 +1,228 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import { authenticateUser, requireRole } from '../middlewares/auth.js';
+import { adminService } from '../services/admin.service.js';
+
+// ─── Zod Schemas ────────────────────────────────────────────────────────────────
+
+const userQuerySchema = z.object({
+  role: z.string().optional(),
+  status: z.string().optional(),
+  search: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+});
+
+const userUpdateSchema = z.object({
+  approved: z.boolean().optional(),
+  blocked: z.boolean().optional(),
+  roles: z.array(z.enum([
+    'DEVOTEE', 'PANDIT', 'STORE_OWNER', 'ASTROLOGER',
+    'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER', 'TEMPLE_MANAGER', 'ADMIN',
+  ])).optional(),
+});
+
+// ─── Routes ─────────────────────────────────────────────────────────────────────
 
 export async function adminRoutes(server: FastifyInstance) {
-  // GET /dashboard - Admin dashboard overview
-  server.get('/dashboard', async (request, reply) => {
-    // TODO: verify admin role, aggregate platform stats
-    return {
-      totalUsers: 0,
-      totalTemples: 0,
-      totalPriests: 0,
-      totalBookings: 0,
-      totalRevenue: 0,
-      activeSubscriptions: 0,
-      recentBookings: [],
-      recentPayments: [],
-    };
+  // All admin routes require authentication + admin role
+  const adminPreHandlers = [authenticateUser, requireRole('admin')];
+
+  // ─── GET /users — List all users with filters ───────────────────────────────
+
+  server.get('/users', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const query = request.query as Record<string, string | undefined>;
+    const parsed = userQuerySchema.safeParse(query);
+
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid query parameters', details: parsed.error.flatten() });
+    }
+
+    const result = await adminService.getUsers({
+      role: parsed.data.role,
+      status: parsed.data.status,
+      search: parsed.data.search,
+      page: parsed.data.page ? Number(parsed.data.page) : undefined,
+      limit: parsed.data.limit ? Number(parsed.data.limit) : undefined,
+    });
+
+    return result;
   });
 
-  // ----- Temples CRUD -----
+  // ─── GET /users/:id — User detail with profile ─────────────────────────────
 
-  // GET /temples - List all temples (admin view)
-  server.get('/temples', async (request, reply) => {
+  server.get('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const user = await adminService.getUserById(id);
+
+    if (!user) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+
+    return { user };
+  });
+
+  // ─── PATCH /users/:id — Update user (approve, block, roles) ────────────────
+
+  server.patch('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = request.body as Record<string, unknown>;
+    const parsed = userUpdateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: parsed.error.flatten() });
+    }
+
+    const result = await adminService.updateUser(id, parsed.data);
+
+    if (!result) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+
+    return result;
+  });
+
+  // ─── GET /dashboard — Platform stats ────────────────────────────────────────
+
+  server.get('/dashboard', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const stats = await adminService.getDashboard();
+    return stats;
+  });
+
+  // ─── GET /revenue — Revenue breakdown ───────────────────────────────────────
+
+  server.get('/revenue', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const revenue = await adminService.getRevenue();
+    return revenue;
+  });
+
+  // ─── GET /pending-approvals — Providers awaiting approval ───────────────────
+
+  server.get('/pending-approvals', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const approvals = await adminService.getPendingApprovals();
+    return { approvals, total: approvals.length };
+  });
+
+  // ─── Existing Temple/Priest/Puja/Content/Booking/Payment CRUD ───────────────
+  // Kept from original admin.ts for backward compatibility
+
+  server.get('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, q } = request.query as {
-      page?: string;
-      limit?: string;
-      status?: string;
-      q?: string;
+      page?: string; limit?: string; status?: string; q?: string;
     };
     return { temples: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
 
-  // POST /temples - Create a new temple
-  server.post('/temples', async (request, reply) => {
+  server.post('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = request.body as Record<string, unknown>;
-    // TODO: validate input, create temple record
     return { message: 'Temple created', temple: body };
   });
 
-  // PATCH /temples/:id - Update a temple
-  server.patch('/temples/:id', async (request, reply) => {
+  server.patch('/temples/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = request.body as Record<string, unknown>;
-    // TODO: update temple record
     return { message: 'Temple updated', templeId: id, updates: body };
   });
 
-  // DELETE /temples/:id - Delete a temple
-  server.delete('/temples/:id', async (request, reply) => {
+  server.delete('/temples/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    // TODO: soft-delete temple
     return { message: 'Temple deleted', templeId: id };
   });
 
-  // ----- Priests CRUD -----
-
-  // GET /priests - List all priests
-  server.get('/priests', async (request, reply) => {
+  server.get('/priests', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, q } = request.query as {
-      page?: string;
-      limit?: string;
-      status?: string;
-      q?: string;
+      page?: string; limit?: string; status?: string; q?: string;
     };
     return { priests: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
 
-  // POST /priests - Add a new priest
-  server.post('/priests', async (request, reply) => {
+  server.post('/priests', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = request.body as Record<string, unknown>;
-    // TODO: create priest record, send invitation
     return { message: 'Priest created', priest: body };
   });
 
-  // PATCH /priests/:id - Update a priest
-  server.patch('/priests/:id', async (request, reply) => {
+  server.patch('/priests/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = request.body as Record<string, unknown>;
-    // TODO: update priest record
     return { message: 'Priest updated', priestId: id, updates: body };
   });
 
-  // DELETE /priests/:id - Remove a priest
-  server.delete('/priests/:id', async (request, reply) => {
+  server.delete('/priests/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    // TODO: soft-delete priest
     return { message: 'Priest deleted', priestId: id };
   });
 
-  // ----- Pujas CRUD -----
-
-  // GET /pujas - List all puja types (admin view)
-  server.get('/pujas', async (request, reply) => {
-    const { page, limit, q } = request.query as {
-      page?: string;
-      limit?: string;
-      q?: string;
-    };
+  server.get('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { page, limit, q } = request.query as { page?: string; limit?: string; q?: string; };
     return { pujas: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
 
-  // POST /pujas - Create a new puja type
-  server.post('/pujas', async (request, reply) => {
+  server.post('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = request.body as Record<string, unknown>;
-    // TODO: validate input, create puja type
     return { message: 'Puja type created', puja: body };
   });
 
-  // PATCH /pujas/:id - Update a puja type
-  server.patch('/pujas/:id', async (request, reply) => {
+  server.patch('/pujas/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = request.body as Record<string, unknown>;
-    // TODO: update puja type
     return { message: 'Puja type updated', pujaId: id, updates: body };
   });
 
-  // DELETE /pujas/:id - Delete a puja type
-  server.delete('/pujas/:id', async (request, reply) => {
+  server.delete('/pujas/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    // TODO: soft-delete puja type
     return { message: 'Puja type deleted', pujaId: id };
   });
 
-  // ----- Content CRUD -----
-
-  // GET /content - List all content (admin view)
-  server.get('/content', async (request, reply) => {
+  server.get('/content', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, type, status, q } = request.query as {
-      page?: string;
-      limit?: string;
-      type?: string;
-      status?: string;
-      q?: string;
+      page?: string; limit?: string; type?: string; status?: string; q?: string;
     };
     return { content: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
 
-  // POST /content - Create new content
-  server.post('/content', async (request, reply) => {
+  server.post('/content', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = request.body as Record<string, unknown>;
-    // TODO: validate input, create content record
     return { message: 'Content created', content: body };
   });
 
-  // PATCH /content/:id - Update content
-  server.patch('/content/:id', async (request, reply) => {
+  server.patch('/content/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = request.body as Record<string, unknown>;
-    // TODO: update content record
     return { message: 'Content updated', contentId: id, updates: body };
   });
 
-  // DELETE /content/:id - Delete content
-  server.delete('/content/:id', async (request, reply) => {
+  server.delete('/content/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    // TODO: soft-delete content
     return { message: 'Content deleted', contentId: id };
   });
 
-  // ----- Bookings (read-only for admin) -----
-
-  // GET /bookings - List all bookings with filters
-  server.get('/bookings', async (request, reply) => {
+  server.get('/bookings', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, templeId, priestId, dateFrom, dateTo } = request.query as {
-      page?: string;
-      limit?: string;
-      status?: string;
-      templeId?: string;
-      priestId?: string;
-      dateFrom?: string;
-      dateTo?: string;
+      page?: string; limit?: string; status?: string; templeId?: string; priestId?: string; dateFrom?: string; dateTo?: string;
     };
-    // TODO: fetch all bookings with admin filters
     return {
-      bookings: [],
-      total: 0,
-      page: Number(page) || 1,
-      limit: Number(limit) || 20,
+      bookings: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20,
       filters: { status, templeId, priestId, dateFrom, dateTo },
     };
   });
 
-  // ----- Payments (read-only for admin) -----
-
-  // GET /payments - List all payments with filters
-  server.get('/payments', async (request, reply) => {
+  server.get('/payments', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, dateFrom, dateTo } = request.query as {
-      page?: string;
-      limit?: string;
-      status?: string;
-      dateFrom?: string;
-      dateTo?: string;
+      page?: string; limit?: string; status?: string; dateFrom?: string; dateTo?: string;
     };
-    // TODO: fetch all payments with admin filters
     return {
-      payments: [],
-      total: 0,
-      page: Number(page) || 1,
-      limit: Number(limit) || 20,
+      payments: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20,
       filters: { status, dateFrom, dateTo },
     };
   });
 
-  // ----- Users CRUD -----
-
-  // GET /users - List all users
-  server.get('/users', async (request, reply) => {
-    const { page, limit, role, q } = request.query as {
-      page?: string;
-      limit?: string;
-      role?: string;
-      q?: string;
-    };
-    return { users: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
-  });
-
-  // POST /users - Create a user (admin-created accounts)
-  server.post('/users', async (request, reply) => {
+  server.post('/users', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = request.body as Record<string, unknown>;
-    // TODO: create user record
     return { message: 'User created', user: body };
   });
 
-  // PATCH /users/:id - Update a user
-  server.patch('/users/:id', async (request, reply) => {
+  server.delete('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as Record<string, unknown>;
-    // TODO: update user record (role, status, etc.)
-    return { message: 'User updated', userId: id, updates: body };
-  });
-
-  // DELETE /users/:id - Delete a user
-  server.delete('/users/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    // TODO: soft-delete user, revoke tokens
     return { message: 'User deleted', userId: id };
   });
 }
