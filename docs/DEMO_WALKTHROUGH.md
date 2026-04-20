@@ -1,6 +1,6 @@
-# Bhaktisetu Demo Walkthrough
+# Poojly Demo Walkthrough
 
-Complete demo guide for showcasing all features of Bhaktisetu -- India's devotional super-app.
+Complete demo guide for showcasing all features of Poojly -- India's devotional super-app.
 
 ---
 
@@ -19,7 +19,7 @@ Complete demo guide for showcasing all features of Bhaktisetu -- India's devotio
 ### 1. Install Dependencies
 
 ```bash
-cd Bhaktisetu
+cd Poojly
 pnpm install
 ```
 
@@ -29,7 +29,7 @@ Create `.env.local` files for the API and web apps:
 
 **apps/api/.env.local**
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/bhaktisetu
+DATABASE_URL=postgresql://user:password@localhost:5432/poojly
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -243,8 +243,8 @@ Scan the QR code with Expo Go on your phone, or press `a` for Android emulator /
   - "Welcome, Devotee" heading
   - Sign In button (saffron) and "Create Account" link
   - Quick Links section: My Bookings, Subscription, Addresses, Settings
-  - More section: Help & Support, About Bhaktisetu, Share App
-  - App version footer "Bhaktisetu -- Version 1.0.0 -- Made with devotion in India"
+  - More section: Help & Support, About Poojly, Share App
+  - App version footer "Poojly -- Version 1.0.0 -- Made with devotion in India"
 
 **Step 10: Navigation Flow**
 - Tap through all 5 tabs quickly
@@ -255,7 +255,7 @@ Scan the QR code with Expo Go on your phone, or press `a` for Android emulator /
 
 ## Test Commands
 
-Run from the project root (`Bhaktisetu/`):
+Run from the project root (`Poojly/`):
 
 ```bash
 # Run all unit tests
@@ -299,6 +299,6 @@ cd packages/shared && pnpm type-check
 
 - **Monorepo:** Turborepo + pnpm workspaces manage all apps and packages
 - **Fallback data:** Web and mobile apps render with static fallback data when the API/database is unavailable, so demos work offline
-- **Shared types:** `@bhaktisetu/shared` provides TypeScript types, Zod validators, and constants used by all apps
+- **Shared types:** `@poojly/shared` provides TypeScript types, Zod validators, and constants used by all apps
 - **Theme consistency:** Saffron (#EA580C) is the primary brand color across web (Tailwind) and mobile (React Native StyleSheet)
 - **API contract:** RESTful API at `/api/v1/` with endpoints for temples, pujas, darshan, content, panchang, bookings, AI, auth, payments, and store

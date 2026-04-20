@@ -1,9 +1,9 @@
 ---
-name: Bhaktisetu Development
-description: Project-specific conventions for the Bhaktisetu devotional super-app. Ensures consistent patterns across all features.
+name: Poojly Development
+description: Project-specific conventions for the Poojly devotional super-app. Ensures consistent patterns across all features.
 ---
 
-# Bhaktisetu Development Conventions
+# Poojly Development Conventions
 
 ## Architecture
 - Monorepo: Turborepo + pnpm workspaces

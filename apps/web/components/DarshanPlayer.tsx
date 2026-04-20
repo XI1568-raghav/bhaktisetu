@@ -55,9 +55,9 @@ export default function DarshanPlayer({
   // Premium lock overlay
   if (isPremium) {
     return (
-      <div className="relative rounded-2xl overflow-hidden bg-stone-900 aspect-video">
+      <div className="relative rounded-2xl overflow-hidden bg-surface-900 aspect-video">
         {/* Background placeholder */}
-        <div className="absolute inset-0 bg-gradient-to-br from-stone-800 to-stone-900">
+        <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900">
           {templeImage && (
             <img
               src={templeImage}
@@ -73,8 +73,8 @@ export default function DarshanPlayer({
             <Lock className="w-8 h-8 text-temple-gold" />
           </div>
           <h3 className="text-white font-bold text-lg mb-1">Premium Darshan</h3>
-          <p className="text-stone-400 text-sm text-center max-w-xs mb-4">
-            Upgrade to Bhaktisetu Premium for exclusive HD darshan from{' '}
+          <p className="text-surface-400 text-sm text-center max-w-xs mb-4">
+            Upgrade to Poojly Premium for exclusive HD darshan from{' '}
             {templeName}
           </p>
           <a
@@ -91,7 +91,7 @@ export default function DarshanPlayer({
             <div>
               <h4 className="text-white font-semibold text-sm">{templeName}</h4>
               {templeCity && (
-                <p className="text-stone-400 text-xs flex items-center gap-1 mt-0.5">
+                <p className="text-surface-400 text-xs flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3 h-3" />
                   {templeCity}
                 </p>
@@ -109,15 +109,15 @@ export default function DarshanPlayer({
   // "Stream starting soon" state
   if (!isLive && scheduledStart) {
     return (
-      <div className="relative rounded-2xl overflow-hidden bg-stone-900 aspect-video">
-        <div className="absolute inset-0 bg-gradient-to-br from-stone-800 to-stone-900" />
+      <div className="relative rounded-2xl overflow-hidden bg-surface-900 aspect-video">
+        <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="w-16 h-16 rounded-full bg-saffron-500/10 flex items-center justify-center mb-4 animate-pulse">
             <Clock className="w-8 h-8 text-saffron-400" />
           </div>
           <h3 className="text-white font-bold text-lg mb-1">Stream Starting Soon</h3>
-          <p className="text-stone-400 text-sm text-center mb-2">
+          <p className="text-surface-400 text-sm text-center mb-2">
             {templeName}
           </p>
           <div className="flex items-center gap-2 text-saffron-400 font-semibold text-sm">
@@ -137,13 +137,13 @@ export default function DarshanPlayer({
             <div>
               <h4 className="text-white font-semibold text-sm">{templeName}</h4>
               {templeCity && (
-                <p className="text-stone-400 text-xs flex items-center gap-1 mt-0.5">
+                <p className="text-surface-400 text-xs flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3 h-3" />
                   {templeCity}
                 </p>
               )}
             </div>
-            <span className="inline-flex items-center gap-1.5 bg-stone-700 text-stone-200 text-xs font-bold px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1.5 bg-surface-700 text-surface-200 text-xs font-bold px-2.5 py-1 rounded-full">
               <Clock className="w-3 h-3" />
               {scheduledStart}
             </span>
@@ -156,12 +156,12 @@ export default function DarshanPlayer({
   // Live / playable state
   return (
     <div
-      className={`relative rounded-2xl overflow-hidden bg-stone-900 ${
+      className={`relative rounded-2xl overflow-hidden bg-surface-900 ${
         isFullscreen ? 'fixed inset-0 z-[100] rounded-none' : 'aspect-video'
       }`}
     >
       {/* Video area placeholder */}
-      <div className="absolute inset-0 bg-gradient-to-br from-stone-800 to-stone-900">
+      <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900">
         {templeImage && (
           <img
             src={templeImage}
@@ -218,13 +218,13 @@ export default function DarshanPlayer({
             <h4 className="text-white font-semibold">{templeName}</h4>
             <div className="flex items-center gap-2 mt-0.5">
               {templeCity && (
-                <p className="text-stone-300 text-xs flex items-center gap-1">
+                <p className="text-surface-300 text-xs flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {templeCity}
                 </p>
               )}
               {templeDeity && (
-                <span className="text-xs text-stone-400">
+                <span className="text-xs text-surface-400">
                   {templeDeity}
                 </span>
               )}
@@ -245,7 +245,7 @@ export default function DarshanPlayer({
                 <ChevronDown className="w-3 h-3" />
               </button>
               {showQualityMenu && (
-                <div className="absolute bottom-full right-0 mb-2 bg-stone-800 rounded-lg border border-stone-700 overflow-hidden shadow-xl min-w-[120px]">
+                <div className="absolute bottom-full right-0 mb-2 bg-surface-800 rounded-lg border border-surface-700 overflow-hidden shadow-xl min-w-[120px]">
                   {QUALITY_OPTIONS.map((q) => (
                     <button
                       key={q}
@@ -256,7 +256,7 @@ export default function DarshanPlayer({
                       className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${
                         selectedQuality === q
                           ? 'text-saffron-400 bg-saffron-500/10'
-                          : 'text-stone-300 hover:text-white hover:bg-stone-700'
+                          : 'text-surface-300 hover:text-white hover:bg-surface-700'
                       }`}
                     >
                       {q}

@@ -10,7 +10,7 @@ export default function NavCartButton() {
     <button
       onClick={toggleCart}
       aria-label={`Cart (${itemCount} items)`}
-      className="relative p-2 text-stone-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors"
+      className="relative p-2 text-surface-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors"
     >
       <ShoppingBag className="w-5 h-5" />
       {itemCount > 0 && (

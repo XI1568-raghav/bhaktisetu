@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../index.js";
 
 // ──────────────────────────────────────────────
-// @bhaktisetu/ui — Button Component
+// @poojly/ui — Button Component
 // ──────────────────────────────────────────────
 
 const buttonVariants = cva(

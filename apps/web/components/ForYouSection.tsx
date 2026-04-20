@@ -207,11 +207,11 @@ export default function ForYouSection() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 flex items-center gap-2">
+            <h2 className="text-2xl sm:text-3xl font-bold text-surface-900 flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-temple-gold" />
               For You Today
             </h2>
-            <p className="text-stone-500 mt-1">
+            <p className="text-surface-500 mt-1">
               Personalized spiritual content curated just for you
             </p>
           </div>
@@ -227,14 +227,14 @@ export default function ForYouSection() {
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="animate-pulse rounded-2xl border border-stone-100 bg-white p-5">
+              <div key={i} className="animate-pulse rounded-2xl border border-surface-100 bg-white p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-6 w-16 rounded-full bg-stone-200" />
+                  <div className="h-6 w-16 rounded-full bg-surface-200" />
                 </div>
-                <div className="aspect-[4/3] rounded-xl bg-stone-100 mb-4" />
-                <div className="h-5 w-3/4 rounded bg-stone-200 mb-2" />
-                <div className="h-4 w-1/2 rounded bg-stone-100 mb-4" />
-                <div className="h-9 w-full rounded-lg bg-stone-100" />
+                <div className="aspect-[4/3] rounded-xl bg-surface-100 mb-4" />
+                <div className="h-5 w-3/4 rounded bg-surface-200 mb-2" />
+                <div className="h-4 w-1/2 rounded bg-surface-100 mb-4" />
+                <div className="h-9 w-full rounded-lg bg-surface-100" />
               </div>
             ))}
           </div>
@@ -260,7 +260,7 @@ export default function ForYouSection() {
                 <a
                   key={item.id}
                   href={`/content/${item.slug}`}
-                  className="group rounded-2xl border border-stone-100 bg-white p-5 hover:shadow-xl hover:shadow-saffron-100/30 hover:border-saffron-200 transition-all duration-300"
+                  className="group rounded-2xl border border-surface-100 bg-white p-5 hover:shadow-xl hover:shadow-saffron-100/30 hover:border-saffron-200 transition-all duration-300"
                 >
                   {/* Type Badge */}
                   <div className="mb-3">
@@ -291,13 +291,13 @@ export default function ForYouSection() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-semibold text-stone-900 group-hover:text-saffron-600 transition-colors text-sm line-clamp-2 mb-1">
+                  <h3 className="font-semibold text-surface-900 group-hover:text-saffron-600 transition-colors text-sm line-clamp-2 mb-1">
                     {item.title}
                   </h3>
 
                   {/* Deity */}
                   {item.deity && (
-                    <p className="text-xs text-stone-500 mb-3">{item.deity}</p>
+                    <p className="text-xs text-surface-500 mb-3">{item.deity}</p>
                   )}
                   {!item.deity && <div className="mb-3" />}
 

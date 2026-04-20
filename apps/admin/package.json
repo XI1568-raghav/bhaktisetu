@@ -1,5 +1,5 @@
 {
-  "name": "@bhaktisetu/admin",
+  "name": "@poojly/admin",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,9 +11,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@bhaktisetu/api-client": "workspace:*",
-    "@bhaktisetu/shared": "workspace:*",
-    "@bhaktisetu/ui": "workspace:*",
+    "@poojly/api-client": "workspace:*",
+    "@poojly/shared": "workspace:*",
+    "@poojly/ui": "workspace:*",
     "@tanstack/react-query": "^5.74.4",
     "next": "^15.3.1",
     "react": "^19.1.0",
@@ -24,7 +24,7 @@
     "recharts": "^2.15.3"
   },
   "devDependencies": {
-    "@bhaktisetu/tsconfig": "workspace:*",
+    "@poojly/tsconfig": "workspace:*",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",

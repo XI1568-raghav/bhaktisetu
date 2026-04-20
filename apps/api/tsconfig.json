@@ -1,5 +1,5 @@
 {
-  "extends": "@bhaktisetu/tsconfig/node.json",
+  "extends": "@poojly/tsconfig/node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

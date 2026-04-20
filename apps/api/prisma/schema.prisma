@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── ENUMS ─────────────────────────────────────────────────────────────────────
@@ -527,4 +528,269 @@ model AiTranslationCache {
   createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("ai_translation_cache")
+}
+
+// ─── MARKETPLACE ENUMS ────────────────────────────────────────────────────────
+
+enum UserRole {
+  DEVOTEE
+  PANDIT
+  STORE_OWNER
+  ASTROLOGER
+  WELLNESS_INSTRUCTOR
+  GAUSHALA_MANAGER
+  TEMPLE_MANAGER
+  ADMIN
+}
+
+enum MarketplacePlan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum MarketplaceSubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+}
+
+enum TransactionType {
+  BOOKING
+  SUBSCRIPTION
+  PAYOUT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ProviderType {
+  PANDIT
+  STORE
+  ASTROLOGER
+  WELLNESS
+  GAUSHALA
+  TEMPLE
+}
+
+// ─── MARKETPLACE MODELS ───────────────────────────────────────────────────────
+
+model UserRoleAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      UserRole
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, role])
+  @@index([userId])
+  @@map("user_role_assignments")
+}
+
+model PanditProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  templeName      String?  @map("temple_name")
+  experience      Int      @default(0)
+  specialties     String[]
+  languages       String[]
+  aadhaarVerified Boolean  @default(false) @map("aadhaar_verified")
+  rating          Float    @default(0)
+  totalPujas      Int      @default(0) @map("total_pujas")
+  pricePerPuja    Decimal  @default(500) @map("price_per_puja") @db.Decimal(10, 2)
+  bio             String?
+  city            String?
+  state           String?
+  availability    Json?
+  approved        Boolean  @default(false)
+  approvedAt      DateTime? @map("approved_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([city])
+  @@index([approved])
+  @@map("pandit_profiles")
+}
+
+model StoreProfile {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  storeName     String   @map("store_name")
+  gstNumber     String?  @map("gst_number")
+  address       String?
+  city          String?
+  state         String?
+  categories    String[]
+  rating        Float    @default(0)
+  totalProducts Int      @default(0) @map("total_products")
+  totalOrders   Int      @default(0) @map("total_orders")
+  approved      Boolean  @default(false)
+  commission    Decimal  @default(0.20) @db.Decimal(5, 4)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([city])
+  @@index([approved])
+  @@map("store_profiles")
+}
+
+model AstrologerProfile {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  displayName        String   @map("display_name")
+  specialties        String[]
+  experience         Int      @default(0)
+  languages          String[]
+  rating             Float    @default(0)
+  pricePerMinute     Decimal  @default(10) @map("price_per_minute") @db.Decimal(10, 2)
+  totalConsultations Int      @default(0) @map("total_consultations")
+  bio                String?
+  approved           Boolean  @default(false)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([approved])
+  @@map("astrologer_profiles")
+}
+
+model WellnessProfile {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  displayName    String   @map("display_name")
+  specialties    String[]
+  certifications String[]
+  experience     Int      @default(0)
+  rating         Float    @default(0)
+  pricePerSession Decimal @default(500) @map("price_per_session") @db.Decimal(10, 2)
+  bio            String?
+  approved       Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([approved])
+  @@map("wellness_profiles")
+}
+
+model GaushalaProfile {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  gaushalaName  String   @map("gaushala_name")
+  address       String?
+  city          String?
+  totalCows     Int      @default(0) @map("total_cows")
+  verified      Boolean  @default(false)
+  description   String?
+  approved      Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([approved])
+  @@map("gaushala_profiles")
+}
+
+model TempleProfile {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  templeName   String   @map("temple_name")
+  deity        String?
+  city         String?
+  state        String?
+  address      String?
+  description  String?
+  verified     Boolean  @default(false)
+  totalStreams  Int      @default(0) @map("total_streams")
+  approved     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([city])
+  @@index([approved])
+  @@map("temple_profiles")
+}
+
+model MarketplaceSubscription {
+  id        String                       @id @default(uuid()) @db.Uuid
+  userId    String                       @map("user_id") @db.Uuid
+  plan      MarketplacePlan
+  role      UserRole
+  startDate DateTime                     @map("start_date")
+  endDate   DateTime                     @map("end_date")
+  amount    Decimal                      @db.Decimal(10, 2)
+  status    MarketplaceSubscriptionStatus @default(ACTIVE)
+  createdAt DateTime                     @default(now()) @map("created_at")
+  updatedAt DateTime                     @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("marketplace_subscriptions")
+}
+
+model Commission {
+  id         String           @id @default(uuid()) @db.Uuid
+  bookingId  String           @map("booking_id")
+  providerId String           @map("provider_id") @db.Uuid
+  amount     Decimal          @db.Decimal(10, 2)
+  percentage Decimal          @db.Decimal(5, 4)
+  status     CommissionStatus @default(PENDING)
+  paidAt     DateTime?        @map("paid_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@index([providerId])
+  @@index([status])
+  @@map("commissions")
+}
+
+model Transaction {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  type      TransactionType
+  amount    Decimal           @db.Decimal(10, 2)
+  status    TransactionStatus @default(PENDING)
+  metadata  Json?
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([type])
+  @@map("transactions")
+}
+
+model Review {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  providerId   String       @map("provider_id") @db.Uuid
+  providerType ProviderType @map("provider_type")
+  rating       Int
+  comment      String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@index([providerId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model OnboardingStep {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      UserRole
+  step      Int
+  completed Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, role, step])
+  @@index([userId])
+  @@map("onboarding_steps")
 }

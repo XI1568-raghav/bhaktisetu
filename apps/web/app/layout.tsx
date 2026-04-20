@@ -21,12 +21,14 @@ import {
   Youtube,
   Sparkles,
   Moon,
+  Leaf,
 } from "lucide-react";
 import { AuthProvider } from "../lib/auth-context";
 import { CartProvider } from "../components/CartContext";
 import CartDrawer from "../components/CartDrawer";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
+import { Logo } from "../components/Logo";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -45,11 +47,11 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
 
 export const metadata: Metadata = {
   title: {
-    default: "Bhaktisetu \u2014 India\u2019s Devotional Super App",
-    template: "%s | Bhaktisetu",
+    default: "Poojly \u2014 India\u2019s Devotional Super App",
+    template: "%s | Poojly",
   },
   description:
-    "Experience live darshan, book pujas, explore panchang, listen to bhajans, and shop for sacred items. Bhaktisetu bridges you to the divine.",
+    "Experience live darshan, book pujas, explore panchang, listen to bhajans, and shop for sacred items. Poojly bridges you to the divine.",
   keywords: [
     "darshan",
     "puja",
@@ -62,9 +64,9 @@ export const metadata: Metadata = {
     "spiritual",
     "mantra",
     "chalisa",
-    "bhaktisetu",
+    "poojly",
   ],
-  authors: [{ name: "Bhaktisetu" }],
+  authors: [{ name: "Poojly" }],
   icons: {
     icon: "/favicon.svg",
     apple: "/favicon.svg",
@@ -73,15 +75,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://bhaktisetu.com",
-    siteName: "Bhaktisetu",
-    title: "Bhaktisetu \u2014 India\u2019s Devotional Super App",
+    url: "https://poojly.com",
+    siteName: "Poojly",
+    title: "Poojly \u2014 India\u2019s Devotional Super App",
     description:
       "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bhaktisetu \u2014 India\u2019s Devotional Super App",
+    title: "Poojly \u2014 India\u2019s Devotional Super App",
     description:
       "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
   },
@@ -111,6 +113,7 @@ const moreLinks = [
   { href: "/panchang", label: "Panchang", icon: Calendar },
   { href: "/gaushala", label: "Gau Seva", icon: Heart },
   { href: "/astrology", label: "Astrology", icon: Moon },
+  { href: "/wellness", label: "Wellness", icon: Leaf },
 ];
 
 // Highlight nav — special styled items
@@ -124,6 +127,7 @@ const footerSections = [
       { href: "/darshan", label: "Live Darshan" },
       { href: "/pujas", label: "Book a Puja" },
       { href: "/panchang", label: "Panchang" },
+      { href: "/wellness", label: "Wellness" },
     ],
   },
   {
@@ -142,6 +146,7 @@ const footerSections = [
       { href: "/careers", label: "Careers" },
       { href: "/blog", label: "Blog" },
       { href: "/contact", label: "Contact" },
+      { href: "/pricing", label: "Pricing" },
     ],
   },
   {
@@ -186,9 +191,9 @@ export default function RootLayout({
           >
             {/* Logo */}
             <a href="/" className="flex items-center gap-2 shrink-0">
-              <img src="/logo.svg" alt="Bhaktisetu" className="w-7 h-7" />
+              <Logo size={28} />
               <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline">
-                Bhakti<span className="text-saffron-600">setu</span>
+                Pooj<span className="text-saffron-600">ly</span>
               </span>
             </a>
 
@@ -276,9 +281,9 @@ export default function RootLayout({
               {/* Brand column */}
               <div className="col-span-2">
                 <div className="flex items-center gap-2.5 mb-5">
-                  <img src="/logo-dark.svg" alt="Bhaktisetu" className="w-9 h-9" />
+                  <Logo size={36} color="#D4A76A" />
                   <span className="text-xl font-semibold text-white tracking-tight">
-                    Bhakti<span className="text-temple-gold">setu</span>
+                    Pooj<span className="text-temple-gold">ly</span>
                   </span>
                 </div>
                 <p className="text-sm text-surface-500 mb-6 max-w-xs leading-relaxed">
@@ -343,17 +348,17 @@ export default function RootLayout({
             <div className="mt-14 pt-8 border-t border-surface-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-6 text-sm text-surface-500">
                 <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> support@bhaktisetu.com
+                  <Mail className="w-3.5 h-3.5" /> support@poojly.com
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5" /> +91 80-BHAKTI-00
+                  <Phone className="w-3.5 h-3.5" /> +91 80-POOJLY-00
                 </span>
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" /> Bengaluru, India
                 </span>
               </div>
               <p className="text-sm text-surface-600">
-                &copy; {new Date().getFullYear()} Bhaktisetu. All rights
+                &copy; {new Date().getFullYear()} Poojly. All rights
                 reserved.
               </p>
             </div>

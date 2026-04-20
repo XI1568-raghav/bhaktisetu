@@ -1,4 +1,4 @@
-# Bhaktisetu: 12-Week Go-to-Market Launch Strategy
+# Poojly: 12-Week Go-to-Market Launch Strategy
 
 > From beta to 10,000 DAU in 12 weeks
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This document outlines a phased 12-week launch strategy that takes Bhaktisetu from internal beta to a publicly available, revenue-generating devotional super-app with real temple partnerships, a growing NRI user base, and validated unit economics.
+This document outlines a phased 12-week launch strategy that takes Poojly from internal beta to a publicly available, revenue-generating devotional super-app with real temple partnerships, a growing NRI user base, and validated unit economics.
 
 **Total Launch Budget:** ₹15-25 Lakhs (pre-Series funding, bootstrapped/angel phase)
 
@@ -21,7 +21,7 @@ Validate core product flows with 500 controlled beta users. Identify and fix cri
 
 | Component | Platform | Details |
 |---|---|---|
-| Web App | Vercel | Next.js 15 SSR deployment, custom domain (bhaktisetu.com) |
+| Web App | Vercel | Next.js 15 SSR deployment, custom domain (poojly.com) |
 | API Server | Railway | Fastify backend with auto-scaling, connected to Supabase |
 | Database | Supabase | PostgreSQL with row-level security, real-time subscriptions enabled |
 | CDN | Cloudflare | Asset caching, DDoS protection, SSL |
@@ -102,7 +102,7 @@ Establish live darshan streams from 5 real temples. Transition from simulated co
 
 **Partnership Pitch to Temples:**
 - Free HD camera and internet setup (we bear the cost)
-- Revenue share on all pujas booked through Bhaktisetu (temple gets 60-80%)
+- Revenue share on all pujas booked through Poojly (temple gets 60-80%)
 - Digital donation channel with transparent reporting
 - Increased visibility to NRI devotees worldwide
 - Monthly analytics dashboard showing viewer counts and engagement
@@ -175,7 +175,7 @@ Launch publicly on App Store, Play Store, and web. Drive 5,000+ downloads in the
 - iOS app submitted to App Store review (allow 5-7 days for approval)
 - Android app submitted to Google Play (allow 2-3 days)
 - App Store Optimization (ASO):
-  - Title: "Bhaktisetu: Live Darshan, Puja Booking & Spiritual Content"
+  - Title: "Poojly: Live Darshan, Puja Booking & Spiritual Content"
   - Keywords: darshan, puja, mandir, aarti, Hindu, temple, spiritual, astrology, prasad
   - 6 screenshots per platform showcasing key features
   - 30-second app preview video
@@ -270,7 +270,7 @@ Accelerate user acquisition to 10,000+ registered users through referral program
 - Bonus: Refer 10 friends, unlock a free puja booking worth ₹500
 
 **Viral Mechanics:**
-- One-tap WhatsApp share with personalized message: "I just booked a puja at [Temple] through Bhaktisetu. Try it: [link]"
+- One-tap WhatsApp share with personalized message: "I just booked a puja at [Temple] through Poojly. Try it: [link]"
 - Post-puja sharing prompt: "Share your puja blessings with family" (auto-generates a shareable card with temple image)
 - Leaderboard: Top 10 referrers each month get featured + bonus rewards
 
@@ -296,7 +296,7 @@ Accelerate user acquisition to 10,000+ registered users through referral program
 | Darshan | "live darshan", "temple live stream" | ₹2,000 | ₹5-10 | 200-400 clicks/day |
 | Puja Booking | "book puja online", "online havan" | ₹2,000 | ₹8-15 | 130-250 clicks/day |
 | Astrology | "talk to astrologer", "kundali online" | ₹1,500 | ₹10-20 | 75-150 clicks/day |
-| Brand | "bhaktisetu", "devotional app" | ₹500 | ₹2-5 | 100-250 clicks/day |
+| Brand | "poojly", "devotional app" | ₹500 | ₹2-5 | 100-250 clicks/day |
 
 **Meta Ads (Facebook + Instagram):**
 
@@ -426,7 +426,7 @@ Launch dedicated NRI monetization with international payments, timezone-optimize
 - Launch NRI subscription tiers
 - Deploy timezone-aware features
 - Begin US Facebook/Instagram ad campaigns
-- Create NRI-specific landing page (bhaktisetu.com/nri)
+- Create NRI-specific landing page (poojly.com/nri)
 
 **Week 10:**
 - Launch UK and UAE campaigns

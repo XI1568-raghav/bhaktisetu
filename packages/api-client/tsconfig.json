@@ -1,5 +1,5 @@
 {
-  "extends": "@bhaktisetu/tsconfig/base.json",
+  "extends": "@poojly/tsconfig/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["dom", "ES2022"]

@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/ui — Design Tokens / Theme
+// @poojly/ui — Design Tokens / Theme
 // Spiritual saffron-based design system
 // ──────────────────────────────────────────────
 

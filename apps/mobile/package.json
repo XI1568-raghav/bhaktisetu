@@ -1,5 +1,5 @@
 {
-  "name": "@bhaktisetu/mobile",
+  "name": "@poojly/mobile",
   "version": "0.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -7,12 +7,21 @@
     "dev": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:android:dev": "eas build --profile development --platform android",
+    "build:android:preview": "eas build --profile preview --platform android",
+    "build:android:prod": "eas build --profile production --platform android",
+    "build:ios:dev": "eas build --profile development --platform ios",
+    "build:ios:prod": "eas build --profile production --platform ios",
+    "build:all": "eas build --profile preview --platform all",
+    "submit:android": "eas submit --platform android",
+    "submit:ios": "eas submit --platform ios",
+    "prebuild": "expo prebuild"
   },
   "dependencies": {
-    "@bhaktisetu/shared": "workspace:*",
     "@expo/metro-runtime": "~4.0.1",
     "@expo/vector-icons": "^14.0.0",
+    "@poojly/shared": "workspace:*",
     "@react-navigation/native": "^7.0.0",
     "expo": "~52.0.0",
     "expo-router": "~4.0.0",
@@ -25,8 +34,9 @@
     "react-native-web": "~0.19.13"
   },
   "devDependencies": {
-    "@bhaktisetu/tsconfig": "workspace:*",
+    "@poojly/tsconfig": "workspace:*",
     "@types/react": "^19.0.0",
+    "eas-cli": "^18.7.0",
     "typescript": "^5.8.3"
   }
 }

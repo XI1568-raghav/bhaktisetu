@@ -70,14 +70,14 @@ export default function CartDrawer() {
         className="fixed top-0 right-0 h-full w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-saffron-600" />
-            <h2 className="font-bold text-stone-900">Cart ({itemCount})</h2>
+            <h2 className="font-bold text-surface-900">Cart ({itemCount})</h2>
           </div>
           <button
             onClick={closeCart}
-            className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-50 transition-colors"
+            className="p-2 text-surface-400 hover:text-surface-600 rounded-lg hover:bg-surface-50 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -89,8 +89,8 @@ export default function CartDrawer() {
             <div className="w-20 h-20 bg-saffron-50 rounded-full flex items-center justify-center mb-4">
               <ShoppingCart className="w-10 h-10 text-saffron-300" />
             </div>
-            <h3 className="text-lg font-semibold text-stone-800 mb-2">Your cart is empty</h3>
-            <p className="text-sm text-stone-500 text-center mb-6">
+            <h3 className="text-lg font-semibold text-surface-800 mb-2">Your cart is empty</h3>
+            <p className="text-sm text-surface-500 text-center mb-6">
               Explore our collection of puja essentials, idols, and sacred items.
             </p>
             <Link
@@ -109,24 +109,24 @@ export default function CartDrawer() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex gap-3 bg-stone-50 rounded-xl p-3"
+                  className="flex gap-3 bg-surface-50 rounded-xl p-3"
                 >
                   {/* Image placeholder */}
-                  <div className="w-20 h-20 bg-gradient-to-br from-stone-100 to-saffron-50 rounded-lg flex items-center justify-center shrink-0">
+                  <div className="w-20 h-20 bg-gradient-to-br from-surface-100 to-saffron-50 rounded-lg flex items-center justify-center shrink-0">
                     <ShoppingBag className="w-8 h-8 text-saffron-200" />
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-stone-900 line-clamp-2">
+                    <h3 className="text-sm font-medium text-surface-900 line-clamp-2">
                       {item.product.title}
                     </h3>
 
                     <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-sm font-bold text-stone-900">
+                      <span className="text-sm font-bold text-surface-900">
                         {formatPrice(item.product.price)}
                       </span>
                       {item.product.compareAtPrice && (
-                        <span className="text-xs text-stone-400 line-through">
+                        <span className="text-xs text-surface-400 line-through">
                           {formatPrice(item.product.compareAtPrice)}
                         </span>
                       )}
@@ -138,29 +138,29 @@ export default function CartDrawer() {
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-8 text-center text-sm font-semibold text-stone-900">
+                        <span className="w-8 text-center text-sm font-semibold text-surface-900">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= 10}
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-stone-900">
+                        <span className="text-sm font-semibold text-surface-900">
                           {formatPrice(item.product.price * item.quantity)}
                         </span>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="p-1 text-stone-400 hover:text-red-500 transition-colors"
+                          className="p-1 text-surface-400 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -172,7 +172,7 @@ export default function CartDrawer() {
             </div>
 
             {/* Footer with totals */}
-            <div className="border-t border-stone-100 px-5 py-4 space-y-3">
+            <div className="border-t border-surface-100 px-5 py-4 space-y-3">
               {/* Free delivery notice */}
               {subtotal < 499 && (
                 <div className="flex items-center gap-2 bg-saffron-50 text-saffron-700 text-xs font-medium px-3 py-2 rounded-lg">
@@ -183,21 +183,21 @@ export default function CartDrawer() {
 
               {/* Price breakdown */}
               <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between text-stone-500">
+                <div className="flex justify-between text-surface-500">
                   <span>Subtotal ({itemCount} items)</span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-stone-500">
+                <div className="flex justify-between text-surface-500">
                   <span>Delivery</span>
                   <span className={deliveryFee === 0 ? 'text-tulsi-green font-medium' : ''}>
                     {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
                   </span>
                 </div>
-                <div className="flex justify-between text-stone-500">
+                <div className="flex justify-between text-surface-500">
                   <span>GST (est.)</span>
                   <span>{formatPrice(tax)}</span>
                 </div>
-                <div className="flex justify-between text-stone-900 font-bold text-base pt-1.5 border-t border-stone-100">
+                <div className="flex justify-between text-surface-900 font-bold text-base pt-1.5 border-t border-surface-100">
                   <span>Total</span>
                   <span>{formatPrice(total)}</span>
                 </div>
@@ -216,7 +216,7 @@ export default function CartDrawer() {
                 <Link
                   href="/store/cart"
                   onClick={closeCart}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-stone-100 text-stone-700 font-medium text-sm rounded-xl hover:bg-stone-200 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface-100 text-surface-700 font-medium text-sm rounded-xl hover:bg-surface-200 transition-colors"
                 >
                   View Full Cart
                 </Link>

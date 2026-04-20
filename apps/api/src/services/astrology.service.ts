@@ -1,3 +1,5 @@
+import { generateText, MODELS, DEMO_MODE } from '../integrations/claude.js';
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface Astrologer {
@@ -822,6 +824,146 @@ class AstrologyService {
         'Balancing social life with private time together',
       ],
     };
+  }
+  // ── AI Astrologer Chat ────────────────────────────────────────────────────
+  async askAstrologer(
+    message: string,
+    birthDetails?: {
+      name?: string;
+      date?: string;
+      time?: string;
+      place?: string;
+    }
+  ): Promise<string> {
+    const birthContext = birthDetails?.date
+      ? `\n\nUser's birth details:\n- Name: ${birthDetails.name || 'Not provided'}\n- Date of Birth: ${birthDetails.date}\n- Time of Birth: ${birthDetails.time || 'Not provided'}\n- Place of Birth: ${birthDetails.place || 'Not provided'}\n\nUse these birth details to provide personalized astrological insights when relevant.`
+      : '';
+
+    const systemPrompt = `You are an expert Vedic Astrologer (Jyotishi) on the Bhaktisetu platform. You provide astrological guidance based on authentic Vedic Jyotish (Hindu astrology) principles.
+
+Guidelines:
+- Use Vedic sidereal zodiac (not Western tropical zodiac)
+- Reference traditional Jyotish concepts: rashis, nakshatras, dashas, yogas, doshas
+- Provide specific planetary analysis when birth details are available
+- Suggest traditional remedies: mantras, gemstones, pujas, donations
+- Include relevant Sanskrit mantras with transliteration when suggesting remedies
+- Be respectful, warm, and encouraging — address the user warmly
+- Keep responses focused and under 500 words
+- When birth details are not available, provide general guidance based on the question
+- For marriage questions: discuss 7th house, Venus, Jupiter transit, relevant dashas
+- For career questions: discuss 10th house, Saturn, Sun, Mercury influences
+- For health questions: discuss 1st, 6th, 8th houses and relevant planet-body correlations
+- Do not provide medical, legal, or financial advice — redirect to professionals
+- Reference Parashari and Jaimini systems of astrology
+- Mention relevant pujas available on Bhaktisetu when appropriate${birthContext}`;
+
+    try {
+      const response = await generateText({
+        systemPrompt,
+        userMessage: message,
+        maxTokens: 1024,
+        model: MODELS.HAIKU,
+      });
+      return response;
+    } catch {
+      return this.getAstrologerFallback(message);
+    }
+  }
+
+  // ── Fallback responses for when API is unavailable ───────────────────────
+  getAstrologerFallback(message: string): string {
+    const lower = message.toLowerCase();
+
+    if (lower.includes('marriage') || lower.includes('vivah') || lower.includes('shaadi') || lower.includes('partner') || lower.includes('love') || lower.includes('relationship')) {
+      return `Based on Vedic astrology principles, marriage timing is primarily determined by:
+
+**Key Indicators:**
+- **7th house** and its lord determine the nature and timing of marriage
+- **Venus** (Shukra) is the primary karaka (significator) for marriage
+- **Jupiter** transit over the 7th house or 7th lord often triggers marriage
+- **Vimshottari Dasha** of 7th lord, Venus, or planets in the 7th house
+
+**General Guidance:**
+- Venus Mahadasha or Antardasha is highly favorable for marriage
+- Jupiter's transit through the 2nd, 7th, or 11th house from Moon sign activates marriage yoga
+- The Navamsa chart (D-9) should be analyzed for marriage compatibility
+
+**Remedies for Marriage Delay:**
+- Worship Lord Shiva and Parvati together on Mondays
+- Chant the Katyayani Mantra: "ॐ कात्यायन्यै नमः" 108 times
+- Perform Vivah Puja at a Shiva temple
+- Donate items related to Venus (white clothes, sweets) on Fridays
+
+For a precise prediction, please share your birth details (date, time, and place of birth).`;
+    }
+
+    if (lower.includes('career') || lower.includes('job') || lower.includes('business') || lower.includes('work') || lower.includes('profession') || lower.includes('money') || lower.includes('finance')) {
+      return `According to Vedic astrology, career success is influenced by several planetary factors:
+
+**Key Houses for Career:**
+- **10th house** (Karma Bhava) — profession and public standing
+- **6th house** — daily work, service, competition
+- **2nd house** — wealth accumulation
+- **11th house** — gains and income
+
+**Important Planets:**
+- **Saturn** (Shani) — karaka for career and hard work
+- **Sun** (Surya) — authority, government positions, leadership
+- **Mercury** (Budh) — communication, business, trade
+- **Jupiter** (Guru) — wisdom, teaching, advisory roles
+
+**Career Remedies:**
+- Chant the Gayatri Mantra at sunrise for mental clarity
+- Worship Lord Ganesha before starting new ventures
+- Donate dark-colored items on Saturdays for Saturn's blessings
+- Wear a blue sapphire (Neelam) only after proper chart analysis
+
+Share your birth details for a personalized career reading.`;
+    }
+
+    if (lower.includes('health') || lower.includes('disease') || lower.includes('illness') || lower.includes('body') || lower.includes('medical')) {
+      return `Vedic astrology views health through planetary positions and their influence:
+
+**Health Houses:**
+- **1st house (Lagna)** — overall vitality and constitution
+- **6th house** — diseases and immunity
+- **8th house** — chronic conditions and longevity
+- **12th house** — hospitalization
+
+**Planet-Body Correlations:**
+- **Sun** — heart, bones, eyesight
+- **Moon** — mind, blood, emotional health
+- **Mars** — blood pressure, muscles, accidents
+- **Mercury** — nervous system, skin
+- **Jupiter** — liver, diabetes, growth
+- **Venus** — kidneys, reproductive system
+- **Saturn** — joints, chronic diseases
+
+**Health Remedies:**
+- Chant Mahamrityunjaya Mantra: "ॐ त्र्यम्बकं यजामहे..."
+- Perform Navagraha Shanti Puja
+- Follow Ayurvedic routine aligned with your chart
+
+Note: Astrology complements medical advice but does not replace it.`;
+    }
+
+    return `Namaste! Thank you for your question.
+
+As an AI astrologer grounded in Vedic Jyotish traditions, I can share some general guidance:
+
+**Key Principles of Vedic Astrology:**
+1. **Karma and Free Will** — Planets show tendencies, not fixed outcomes. Your actions (karma) can modify planetary effects.
+2. **Remedies (Upaya)** — Mantras, gemstones, donations, and pujas can mitigate negative influences.
+3. **Timing (Muhurta)** — Choosing auspicious times for important actions improves outcomes.
+
+**For a personalized reading, you can:**
+- Share your birth details (date, time, place)
+- Ask about specific areas: career, marriage, health, education
+- Inquire about current planetary transits
+
+The Bhagavad Gita (4.39) teaches: "श्रद्धावान् लभते ज्ञानम्" — One who has faith attains wisdom.
+
+How may I guide you further?`;
   }
 }
 

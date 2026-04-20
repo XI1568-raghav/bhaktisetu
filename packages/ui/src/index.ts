@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/ui — Barrel Export & Utilities
+// @poojly/ui — Barrel Export & Utilities
 // ──────────────────────────────────────────────
 
 import { type ClassValue, clsx } from "clsx";

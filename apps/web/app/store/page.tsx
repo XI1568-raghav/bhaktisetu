@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getProductImage } from "../../lib/images";
+import { PRODUCTS } from "../../lib/products";
 import {
   ShoppingBag,
   Star,
@@ -37,188 +38,7 @@ const categories = [
   { name: "Home Decor", count: 20, icon: Star },
 ];
 
-const products = [
-  {
-    id: 1,
-    handle: "premium-brass-puja-thali-set",
-    name: "Premium Brass Puja Thali Set (7 Piece)",
-    price: 1299,
-    originalPrice: 1899,
-    discount: 32,
-    rating: 4.7,
-    reviews: 342,
-    image: "/images/store/puja-thali.jpg",
-    tag: "Bestseller",
-    inStock: true,
-    freeDelivery: true,
-    category: "Puja Thali Sets",
-  },
-  {
-    id: 2,
-    handle: "5-mukhi-rudraksha-mala",
-    name: "5 Mukhi Natural Rudraksha Mala (108+1 beads)",
-    price: 599,
-    originalPrice: 999,
-    discount: 40,
-    rating: 4.8,
-    reviews: 567,
-    image: "/images/store/rudraksha.jpg",
-    tag: "Certified",
-    inStock: true,
-    freeDelivery: true,
-    category: "Rudraksha & Malas",
-  },
-  {
-    id: 3,
-    handle: "pure-sandalwood-incense-sticks",
-    name: "Pure Sandalwood Incense Sticks (100 pack)",
-    price: 249,
-    originalPrice: 399,
-    discount: 38,
-    rating: 4.6,
-    reviews: 891,
-    image: "/images/store/incense.jpg",
-    tag: "Top Rated",
-    inStock: true,
-    freeDelivery: false,
-    category: "Incense & Dhoop",
-  },
-  {
-    id: 4,
-    handle: "white-marble-ganesh-murti",
-    name: "Hand-carved White Marble Ganesh Murti (8 inch)",
-    price: 2499,
-    originalPrice: 3499,
-    discount: 29,
-    rating: 4.9,
-    reviews: 234,
-    image: "/images/store/ganesh-idol.jpg",
-    tag: "Premium",
-    inStock: true,
-    freeDelivery: true,
-    category: "Idols & Murtis",
-  },
-  {
-    id: 5,
-    handle: "complete-navratri-puja-kit",
-    name: "Complete Navratri Puja Kit",
-    price: 899,
-    originalPrice: 1499,
-    discount: 40,
-    rating: 4.7,
-    reviews: 156,
-    image: "/images/store/navratri-kit.jpg",
-    tag: "Festival Special",
-    inStock: true,
-    freeDelivery: true,
-    category: "Puja Samagri",
-  },
-  {
-    id: 6,
-    handle: "brass-krishna-playing-flute",
-    name: "Pure Brass Krishna Playing Flute (12 inch)",
-    price: 3299,
-    originalPrice: 4599,
-    discount: 28,
-    rating: 4.9,
-    reviews: 189,
-    image: "/images/store/krishna-idol.jpg",
-    tag: "Handcrafted",
-    inStock: true,
-    freeDelivery: true,
-    category: "Idols & Murtis",
-  },
-  {
-    id: 7,
-    handle: "organic-camphor-250g",
-    name: "Organic Camphor (Kapur) - 250g",
-    price: 199,
-    originalPrice: 299,
-    discount: 33,
-    rating: 4.5,
-    reviews: 1230,
-    image: "/images/store/camphor.jpg",
-    tag: null,
-    inStock: true,
-    freeDelivery: false,
-    category: "Puja Samagri",
-  },
-  {
-    id: 8,
-    handle: "silk-puja-dhoti-angavastram-set",
-    name: "Silk Puja Dhoti & Angavastram Set",
-    price: 799,
-    originalPrice: 1199,
-    discount: 33,
-    rating: 4.6,
-    reviews: 98,
-    image: "/images/store/dhoti-set.jpg",
-    tag: null,
-    inStock: true,
-    freeDelivery: true,
-    category: "Clothing",
-  },
-  {
-    id: 9,
-    handle: "bhagavad-gita-deluxe-edition",
-    name: "Bhagavad Gita (Hindi-English, Deluxe Edition)",
-    price: 349,
-    originalPrice: 599,
-    discount: 42,
-    rating: 4.9,
-    reviews: 2100,
-    image: "/images/store/gita.jpg",
-    tag: "Bestseller",
-    inStock: true,
-    freeDelivery: false,
-    category: "Books & Texts",
-  },
-  {
-    id: 10,
-    handle: "copper-kalash-coconut-set",
-    name: "Copper Kalash with Coconut Set",
-    price: 449,
-    originalPrice: 699,
-    discount: 36,
-    rating: 4.7,
-    reviews: 324,
-    image: "/images/store/kalash.jpg",
-    tag: null,
-    inStock: true,
-    freeDelivery: false,
-    category: "Puja Samagri",
-  },
-  {
-    id: 11,
-    handle: "tulsi-mala-silver-cap",
-    name: "Tulsi Mala with Silver Cap",
-    price: 399,
-    originalPrice: 649,
-    discount: 39,
-    rating: 4.8,
-    reviews: 456,
-    image: "/images/store/tulsi-mala.jpg",
-    tag: "Popular",
-    inStock: true,
-    freeDelivery: false,
-    category: "Rudraksha & Malas",
-  },
-  {
-    id: 12,
-    handle: "electric-led-diya-set",
-    name: "Electric LED Diya Set (12 pieces, brass finish)",
-    price: 549,
-    originalPrice: 899,
-    discount: 39,
-    rating: 4.5,
-    reviews: 678,
-    image: "/images/store/led-diya.jpg",
-    tag: "New Arrival",
-    inStock: true,
-    freeDelivery: true,
-    category: "Home Decor",
-  },
-];
+const products = PRODUCTS;
 
 export default function StorePage() {
   return (
@@ -368,8 +188,8 @@ export default function StorePage() {
               {/* Product image */}
               <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 overflow-hidden">
                 <img
-                  src={getProductImage(product.handle)}
-                  alt={product.name}
+                  src={getProductImage(product.imageKey)}
+                  alt={product.title}
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -400,7 +220,7 @@ export default function StorePage() {
 
               <div className="p-4">
                 <h3 className="text-sm font-medium text-surface-800 line-clamp-2 min-h-[2.5rem] group-hover:text-saffron-600 transition-colors">
-                  {product.name}
+                  {product.title}
                 </h3>
 
                 <div className="flex items-center gap-1 mt-2">
@@ -411,7 +231,7 @@ export default function StorePage() {
                     </span>
                   </div>
                   <span className="text-xs text-surface-400">
-                    ({product.reviews.toLocaleString("en-IN")})
+                    ({product.reviewCount.toLocaleString("en-IN")})
                   </span>
                 </div>
 
@@ -420,7 +240,7 @@ export default function StorePage() {
                     ₹{product.price.toLocaleString("en-IN")}
                   </span>
                   <span className="text-sm text-surface-400 line-through">
-                    ₹{product.originalPrice.toLocaleString("en-IN")}
+                    ₹{product.compareAtPrice.toLocaleString("en-IN")}
                   </span>
                 </div>
 

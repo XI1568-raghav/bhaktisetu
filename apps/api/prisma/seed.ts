@@ -1,4 +1,4 @@
-import { PrismaClient, Language, Tradition, TempleStatus, PujaCategory, ContentType, ContentStatus, PriestVerificationStatus, PriestStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -27,10 +27,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@shrikashivishwanath.org',
     websiteUrl: 'https://shrikashivishwanath.org',
     images: [
-      'https://images.bhaktisetu.com/temples/kashi-vishwanath/main.jpg',
-      'https://images.bhaktisetu.com/temples/kashi-vishwanath/golden-spire.jpg',
-      'https://images.bhaktisetu.com/temples/kashi-vishwanath/corridor.jpg',
-      'https://images.bhaktisetu.com/temples/kashi-vishwanath/ganga-view.jpg',
+      'https://images.poojly.com/temples/kashi-vishwanath/main.jpg',
+      'https://images.poojly.com/temples/kashi-vishwanath/golden-spire.jpg',
+      'https://images.poojly.com/temples/kashi-vishwanath/corridor.jpg',
+      'https://images.poojly.com/temples/kashi-vishwanath/ganga-view.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -45,7 +45,7 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     },
     trustScore: 4.9,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.bhaktisetu.com/kashi-vishwanath',
+    streamUrl: 'https://stream.poojly.com/kashi-vishwanath',
   },
   {
     name: 'Tirumala Tirupati Devasthanam',
@@ -69,10 +69,10 @@ Millions of devotees visit the temple each year, with the Tirumala Tirupati Deva
     email: 'info@tirumala.org',
     websiteUrl: 'https://www.tirumala.org',
     images: [
-      'https://images.bhaktisetu.com/temples/tirumala-tirupati/main.jpg',
-      'https://images.bhaktisetu.com/temples/tirumala-tirupati/gopuram.jpg',
-      'https://images.bhaktisetu.com/temples/tirumala-tirupati/golden-vimana.jpg',
-      'https://images.bhaktisetu.com/temples/tirumala-tirupati/laddu.jpg',
+      'https://images.poojly.com/temples/tirumala-tirupati/main.jpg',
+      'https://images.poojly.com/temples/tirumala-tirupati/gopuram.jpg',
+      'https://images.poojly.com/temples/tirumala-tirupati/golden-vimana.jpg',
+      'https://images.poojly.com/temples/tirumala-tirupati/laddu.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -87,7 +87,7 @@ Millions of devotees visit the temple each year, with the Tirumala Tirupati Deva
     },
     trustScore: 5.0,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.bhaktisetu.com/tirumala-tirupati',
+    streamUrl: 'https://stream.poojly.com/tirumala-tirupati',
   },
   {
     name: 'Siddhivinayak Temple',
@@ -111,10 +111,10 @@ The temple witnesses especially heavy footfall on Tuesdays, which is considered 
     email: 'info@siddhivinayak.org',
     websiteUrl: 'https://www.siddhivinayak.org',
     images: [
-      'https://images.bhaktisetu.com/temples/siddhivinayak/main.jpg',
-      'https://images.bhaktisetu.com/temples/siddhivinayak/golden-dome.jpg',
-      'https://images.bhaktisetu.com/temples/siddhivinayak/idol.jpg',
-      'https://images.bhaktisetu.com/temples/siddhivinayak/entrance.jpg',
+      'https://images.poojly.com/temples/siddhivinayak/main.jpg',
+      'https://images.poojly.com/temples/siddhivinayak/golden-dome.jpg',
+      'https://images.poojly.com/temples/siddhivinayak/idol.jpg',
+      'https://images.poojly.com/temples/siddhivinayak/entrance.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -129,7 +129,7 @@ The temple witnesses especially heavy footfall on Tuesdays, which is considered 
     },
     trustScore: 4.8,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.bhaktisetu.com/siddhivinayak',
+    streamUrl: 'https://stream.poojly.com/siddhivinayak',
   },
   {
     name: 'Somnath Temple',
@@ -153,10 +153,10 @@ The temple stands majestically by the sea, and a notable feature is the "Baan St
     email: 'info@somnath.org',
     websiteUrl: 'https://somnath.org',
     images: [
-      'https://images.bhaktisetu.com/temples/somnath/main.jpg',
-      'https://images.bhaktisetu.com/temples/somnath/sea-view.jpg',
-      'https://images.bhaktisetu.com/temples/somnath/evening.jpg',
-      'https://images.bhaktisetu.com/temples/somnath/light-show.jpg',
+      'https://images.poojly.com/temples/somnath/main.jpg',
+      'https://images.poojly.com/temples/somnath/sea-view.jpg',
+      'https://images.poojly.com/temples/somnath/evening.jpg',
+      'https://images.poojly.com/temples/somnath/light-show.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -195,10 +195,10 @@ A remarkable feature of the temple is the Nilachakra (Blue Wheel) atop the main 
     email: 'info@jagannath.nic.in',
     websiteUrl: 'https://jagannath.nic.in',
     images: [
-      'https://images.bhaktisetu.com/temples/jagannath-puri/main.jpg',
-      'https://images.bhaktisetu.com/temples/jagannath-puri/rath-yatra.jpg',
-      'https://images.bhaktisetu.com/temples/jagannath-puri/nilachakra.jpg',
-      'https://images.bhaktisetu.com/temples/jagannath-puri/mahaprasad.jpg',
+      'https://images.poojly.com/temples/jagannath-puri/main.jpg',
+      'https://images.poojly.com/temples/jagannath-puri/rath-yatra.jpg',
+      'https://images.poojly.com/temples/jagannath-puri/nilachakra.jpg',
+      'https://images.poojly.com/temples/jagannath-puri/mahaprasad.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -214,7 +214,7 @@ A remarkable feature of the temple is the Nilachakra (Blue Wheel) atop the main 
     },
     trustScore: 4.9,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.bhaktisetu.com/jagannath-puri',
+    streamUrl: 'https://stream.poojly.com/jagannath-puri',
   },
 ];
 
@@ -233,7 +233,7 @@ const pujaTypesData = [
     nriPrice: 2501,
     samagriIncluded: true,
     samagriItems: ['Bel patra', 'Dhatura', 'Milk', 'Honey', 'Curd', 'Ghee', 'Gangajal', 'Rudraksha mala'],
-    images: ['https://images.bhaktisetu.com/pujas/rudrabhishek/main.jpg'],
+    images: ['https://images.poojly.com/pujas/rudrabhishek/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 1,
   },
@@ -249,7 +249,7 @@ const pujaTypesData = [
     nriPrice: 1501,
     samagriIncluded: true,
     samagriItems: ['Modak', 'Durva grass', 'Red flowers', 'Sindoor', 'Coconut', 'Betel leaves', 'Jaggery'],
-    images: ['https://images.bhaktisetu.com/pujas/ganesh-puja/main.jpg'],
+    images: ['https://images.poojly.com/pujas/ganesh-puja/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 2,
   },
@@ -265,7 +265,7 @@ const pujaTypesData = [
     nriPrice: 3001,
     samagriIncluded: true,
     samagriItems: ['Banana', 'Wheat flour', 'Sugar', 'Ghee', 'Tulsi', 'Panchamrit', 'Dry fruits', 'Yellow cloth'],
-    images: ['https://images.bhaktisetu.com/pujas/satyanarayan-katha/main.jpg'],
+    images: ['https://images.poojly.com/pujas/satyanarayan-katha/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 3,
   },
@@ -281,7 +281,7 @@ const pujaTypesData = [
     nriPrice: 5001,
     samagriIncluded: true,
     samagriItems: ['Rudraksha mala', 'Bel patra', 'White flowers', 'Ghee', 'Sesame seeds', 'Havan samagri', 'Camphor'],
-    images: ['https://images.bhaktisetu.com/pujas/maha-mrityunjay/main.jpg'],
+    images: ['https://images.poojly.com/pujas/maha-mrityunjay/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 4,
   },
@@ -297,7 +297,7 @@ const pujaTypesData = [
     nriPrice: 2001,
     samagriIncluded: true,
     samagriItems: ['Lotus flowers', 'Rice', 'Turmeric', 'Kumkum', 'Coins', 'Sweets', 'Red cloth', 'Kalash'],
-    images: ['https://images.bhaktisetu.com/pujas/lakshmi-puja/main.jpg'],
+    images: ['https://images.poojly.com/pujas/lakshmi-puja/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 5,
   },
@@ -313,7 +313,7 @@ const pujaTypesData = [
     nriPrice: 4001,
     samagriIncluded: true,
     samagriItems: ['Nine types of grains', 'Nine colored cloths', 'Havan samagri', 'Ghee', 'Navgraha yantra', 'Specific flowers for each planet'],
-    images: ['https://images.bhaktisetu.com/pujas/navgraha-shanti/main.jpg'],
+    images: ['https://images.poojly.com/pujas/navgraha-shanti/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 6,
   },
@@ -329,7 +329,7 @@ const pujaTypesData = [
     nriPrice: 2001,
     samagriIncluded: true,
     samagriItems: ['Sindoor', 'Jasmine oil', 'Red flowers', 'Bundi laddoo', 'Betel leaves', 'Ramcharitmanas book'],
-    images: ['https://images.bhaktisetu.com/pujas/sunderkand-path/main.jpg'],
+    images: ['https://images.poojly.com/pujas/sunderkand-path/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 7,
   },
@@ -345,7 +345,7 @@ const pujaTypesData = [
     nriPrice: 1001,
     samagriIncluded: true,
     samagriItems: ['Sindoor', 'Jasmine oil', 'Red flowers', 'Bundi laddoo', 'Chola (red cloth)'],
-    images: ['https://images.bhaktisetu.com/pujas/hanuman-chalisa/main.jpg'],
+    images: ['https://images.poojly.com/pujas/hanuman-chalisa/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 8,
   },
@@ -361,7 +361,7 @@ const pujaTypesData = [
     nriPrice: 6001,
     samagriIncluded: true,
     samagriItems: ['Ramcharitmanas book', 'Tulsi mala', 'Yellow flowers', 'Fruits', 'Sweets', 'Ghee diya', 'Havan samagri'],
-    images: ['https://images.bhaktisetu.com/pujas/ram-charit-manas/main.jpg'],
+    images: ['https://images.poojly.com/pujas/ram-charit-manas/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 9,
   },
@@ -377,7 +377,7 @@ const pujaTypesData = [
     nriPrice: 5001,
     samagriIncluded: true,
     samagriItems: ['Black sesame seeds', 'Barley', 'Kusha grass', 'Rice', 'White cloth', 'Ghee', 'Havan samagri', 'Dakshina'],
-    images: ['https://images.bhaktisetu.com/pujas/pitru-dosh-nivaran/main.jpg'],
+    images: ['https://images.poojly.com/pujas/pitru-dosh-nivaran/main.jpg'],
     videoProofMandatory: true,
     sortOrder: 10,
   },
@@ -421,8 +421,8 @@ const contentData = [
     tags: ['aarti', 'vishnu', 'evening', 'universal'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/om-jai-jagdish.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/aartis/om-jai-jagdish-hare.mp3',
+    imageUrl: 'https://images.poojly.com/content/om-jai-jagdish.jpg',
+    audioUrl: 'https://audio.poojly.com/aartis/om-jai-jagdish-hare.mp3',
     sortOrder: 1,
   },
   {
@@ -448,8 +448,8 @@ const contentData = [
     tags: ['aarti', 'krishna', 'evening', 'vrindavan'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/aarti-kunj-bihari.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/aartis/aarti-kunj-bihari.mp3',
+    imageUrl: 'https://images.poojly.com/content/aarti-kunj-bihari.jpg',
+    audioUrl: 'https://audio.poojly.com/aartis/aarti-kunj-bihari.mp3',
     sortOrder: 2,
   },
   {
@@ -477,8 +477,8 @@ const contentData = [
     tags: ['aarti', 'ganesha', 'evening', 'universal'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/ganesh-aarti.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/aartis/jai-ganesh-deva.mp3',
+    imageUrl: 'https://images.poojly.com/content/ganesh-aarti.jpg',
+    audioUrl: 'https://audio.poojly.com/aartis/jai-ganesh-deva.mp3',
     sortOrder: 3,
   },
   {
@@ -503,8 +503,8 @@ const contentData = [
     tags: ['aarti', 'shiva', 'evening', 'mahadev'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/shiv-aarti.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/aartis/om-jai-shiv-omkara.mp3',
+    imageUrl: 'https://images.poojly.com/content/shiv-aarti.jpg',
+    audioUrl: 'https://audio.poojly.com/aartis/om-jai-shiv-omkara.mp3',
     sortOrder: 4,
   },
   {
@@ -529,8 +529,8 @@ const contentData = [
     tags: ['aarti', 'lakshmi', 'evening', 'diwali', 'prosperity'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/lakshmi-aarti.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/aartis/om-jai-lakshmi-mata.mp3',
+    imageUrl: 'https://images.poojly.com/content/lakshmi-aarti.jpg',
+    audioUrl: 'https://audio.poojly.com/aartis/om-jai-lakshmi-mata.mp3',
     sortOrder: 5,
   },
 
@@ -579,8 +579,8 @@ const contentData = [
     tags: ['chalisa', 'hanuman', 'tuesday', 'saturday', 'protection'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/hanuman-chalisa.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/chalisas/hanuman-chalisa.mp3',
+    imageUrl: 'https://images.poojly.com/content/hanuman-chalisa.jpg',
+    audioUrl: 'https://audio.poojly.com/chalisas/hanuman-chalisa.mp3',
     sortOrder: 10,
   },
   {
@@ -613,8 +613,8 @@ const contentData = [
     tags: ['chalisa', 'shiva', 'monday', 'mahadev'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/shiv-chalisa.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/chalisas/shiv-chalisa.mp3',
+    imageUrl: 'https://images.poojly.com/content/shiv-chalisa.jpg',
+    audioUrl: 'https://audio.poojly.com/chalisas/shiv-chalisa.mp3',
     sortOrder: 11,
   },
   {
@@ -647,8 +647,8 @@ const contentData = [
     tags: ['chalisa', 'ganesha', 'wednesday', 'new-beginnings'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/ganesh-chalisa.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/chalisas/ganesh-chalisa.mp3',
+    imageUrl: 'https://images.poojly.com/content/ganesh-chalisa.jpg',
+    audioUrl: 'https://audio.poojly.com/chalisas/ganesh-chalisa.mp3',
     sortOrder: 12,
   },
   {
@@ -681,8 +681,8 @@ const contentData = [
     tags: ['chalisa', 'durga', 'navratri', 'shakti', 'friday'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/durga-chalisa.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/chalisas/durga-chalisa.mp3',
+    imageUrl: 'https://images.poojly.com/content/durga-chalisa.jpg',
+    audioUrl: 'https://audio.poojly.com/chalisas/durga-chalisa.mp3',
     sortOrder: 13,
   },
   {
@@ -715,8 +715,8 @@ const contentData = [
     tags: ['chalisa', 'lakshmi', 'friday', 'diwali', 'prosperity'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/lakshmi-chalisa.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/chalisas/lakshmi-chalisa.mp3',
+    imageUrl: 'https://images.poojly.com/content/lakshmi-chalisa.jpg',
+    audioUrl: 'https://audio.poojly.com/chalisas/lakshmi-chalisa.mp3',
     sortOrder: 14,
   },
 
@@ -750,8 +750,8 @@ Recommended: 108 times daily`,
     tags: ['mantra', 'vedic', 'gayatri', 'daily', 'universal', 'sunrise'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/gayatri-mantra.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/mantras/gayatri-mantra.mp3',
+    imageUrl: 'https://images.poojly.com/content/gayatri-mantra.jpg',
+    audioUrl: 'https://audio.poojly.com/mantras/gayatri-mantra.mp3',
     sortOrder: 20,
   },
   {
@@ -779,8 +779,8 @@ Recommended: 108 times daily or 1,25,000 for complete Jaap`,
     tags: ['mantra', 'shiva', 'health', 'protection', 'longevity'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/mahamrityunjay-mantra.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/mantras/mahamrityunjay-mantra.mp3',
+    imageUrl: 'https://images.poojly.com/content/mahamrityunjay-mantra.jpg',
+    audioUrl: 'https://audio.poojly.com/mantras/mahamrityunjay-mantra.mp3',
     sortOrder: 21,
   },
   {
@@ -806,8 +806,8 @@ Recommended: 108 times on a Rudraksha mala`,
     tags: ['mantra', 'shiva', 'panchakshari', 'daily', 'universal'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/om-namah-shivaya.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/mantras/om-namah-shivaya.mp3',
+    imageUrl: 'https://images.poojly.com/content/om-namah-shivaya.jpg',
+    audioUrl: 'https://audio.poojly.com/mantras/om-namah-shivaya.mp3',
     sortOrder: 22,
   },
   {
@@ -835,8 +835,8 @@ Recommended: 16 rounds on a Tulsi mala (1,728 times daily)`,
     tags: ['mantra', 'krishna', 'rama', 'vaishnava', 'daily', 'iskcon'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/hare-krishna-mantra.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/mantras/hare-krishna-maha-mantra.mp3',
+    imageUrl: 'https://images.poojly.com/content/hare-krishna-mantra.jpg',
+    audioUrl: 'https://audio.poojly.com/mantras/hare-krishna-maha-mantra.mp3',
     sortOrder: 23,
   },
   {
@@ -870,8 +870,8 @@ Recommended: 108 times daily for 21 days for wish fulfillment`,
     tags: ['mantra', 'ganesha', 'beej-mantra', 'new-beginnings', 'wednesday'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/ganesh-mantra.jpg',
-    audioUrl: 'https://audio.bhaktisetu.com/mantras/om-gam-ganapataye.mp3',
+    imageUrl: 'https://images.poojly.com/content/ganesh-mantra.jpg',
+    audioUrl: 'https://audio.poojly.com/mantras/om-gam-ganapataye.mp3',
     sortOrder: 24,
   },
 
@@ -914,7 +914,7 @@ Each Jyotirlinga has a unique legend and significance. Pilgrims traditionally vi
     tags: ['article', 'jyotirlinga', 'shiva', 'pilgrimage', 'guide'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/jyotirlingas-guide.jpg',
+    imageUrl: 'https://images.poojly.com/content/jyotirlingas-guide.jpg',
     audioUrl: null,
     sortOrder: 30,
   },
@@ -948,7 +948,7 @@ Day 6: Green, Day 7: Grey, Day 8: Purple, Day 9: Peacock Green.
     tags: ['article', 'navratri', 'durga', 'festival', 'guide', 'shakti'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/navratri-guide.jpg',
+    imageUrl: 'https://images.poojly.com/content/navratri-guide.jpg',
     audioUrl: null,
     sortOrder: 31,
   },
@@ -983,7 +983,7 @@ Understanding the Panchang helps align our activities with cosmic rhythms, leadi
     tags: ['article', 'panchang', 'guide', 'almanac', 'astrology', 'education'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/panchang-guide.jpg',
+    imageUrl: 'https://images.poojly.com/content/panchang-guide.jpg',
     audioUrl: null,
     sortOrder: 32,
   },
@@ -1014,7 +1014,7 @@ The traditional circuit begins at Puri and moves clockwise — Puri → Rameswar
     tags: ['article', 'char-dham', 'pilgrimage', 'guide', 'badrinath', 'puri', 'rameswaram', 'dwarka'],
     isPremium: false,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/char-dham-guide.jpg',
+    imageUrl: 'https://images.poojly.com/content/char-dham-guide.jpg',
     audioUrl: null,
     sortOrder: 33,
   },
@@ -1051,7 +1051,7 @@ Understanding temple architecture deepens our appreciation of the ancient wisdom
     tags: ['article', 'architecture', 'temple', 'vastu', 'science', 'education'],
     isPremium: true,
     status: 'published' as const,
-    imageUrl: 'https://images.bhaktisetu.com/content/temple-architecture.jpg',
+    imageUrl: 'https://images.poojly.com/content/temple-architecture.jpg',
     audioUrl: null,
     sortOrder: 34,
   },
@@ -1195,396 +1195,636 @@ const panchangData = [
   },
 ];
 
+// ─── DEMO USERS (one per role) ──────────────────────────────────────────────
+
+const demoUsers = [
+  { phone: '+919000000001', email: 'devotee@demo.com',  fullName: 'Demo Devotee',  role: 'DEVOTEE' as const,             locationCity: 'Delhi',     locationState: 'Delhi' },
+  { phone: '+919000000002', email: 'pandit@demo.com',   fullName: 'Demo Pandit',   role: 'PANDIT' as const,              locationCity: 'Varanasi',  locationState: 'Uttar Pradesh' },
+  { phone: '+919000000003', email: 'store@demo.com',    fullName: 'Demo Store',    role: 'STORE_OWNER' as const,         locationCity: 'Jaipur',    locationState: 'Rajasthan' },
+  { phone: '+919000000004', email: 'astrologer@demo.com', fullName: 'Demo Astrologer', role: 'ASTROLOGER' as const,      locationCity: 'Pune',      locationState: 'Maharashtra' },
+  { phone: '+919000000005', email: 'wellness@demo.com', fullName: 'Demo Wellness', role: 'WELLNESS_INSTRUCTOR' as const, locationCity: 'Rishikesh', locationState: 'Uttarakhand' },
+  { phone: '+919000000006', email: 'gaushala@demo.com', fullName: 'Demo Gaushala', role: 'GAUSHALA_MANAGER' as const,    locationCity: 'Mathura',   locationState: 'Uttar Pradesh' },
+  { phone: '+919000000007', email: 'temple@demo.com',   fullName: 'Demo Temple',   role: 'TEMPLE_MANAGER' as const,      locationCity: 'Ayodhya',   locationState: 'Uttar Pradesh' },
+  { phone: '+919000000008', email: 'admin@demo.com',    fullName: 'Demo Admin',    role: 'ADMIN' as const,               locationCity: 'Bengaluru', locationState: 'Karnataka' },
+];
+
+// ─── ASTROLOGERS (Vedic / Tarot / Numerology) ───────────────────────────────
+
+const astrologersData = [
+  {
+    email: 'astro.vedic@poojly.com', phone: '+919811100001', fullName: 'Acharya Vinod Sharma',
+    displayName: 'Acharya Vinod Sharma', specialties: ['Vedic', 'Kundali', 'Muhurat'],
+    experience: 22, languages: ['Hindi', 'Sanskrit', 'English'], pricePerMinute: 25,
+    bio: 'Vedic astrologer with 22 years of experience in Jyotish, Kundali analysis and Muhurat selection.',
+  },
+  {
+    email: 'astro.tarot@poojly.com', phone: '+919811100002', fullName: 'Ritika Menon',
+    displayName: 'Ritika Menon', specialties: ['Tarot', 'Angel Cards', 'Reiki'],
+    experience: 9, languages: ['English', 'Hindi', 'Malayalam'], pricePerMinute: 18,
+    bio: 'Certified Tarot reader and energy healer focused on relationship and career clarity.',
+  },
+  {
+    email: 'astro.numero@poojly.com', phone: '+919811100003', fullName: 'Dr. Mahesh Iyer',
+    displayName: 'Dr. Mahesh Iyer', specialties: ['Numerology', 'Name Correction', 'Lo Shu Grid'],
+    experience: 15, languages: ['English', 'Tamil', 'Hindi'], pricePerMinute: 20,
+    bio: 'Numerology expert specializing in name corrections, business naming and Lo Shu grid analysis.',
+  },
+];
+
+// ─── WELLNESS INSTRUCTORS ───────────────────────────────────────────────────
+
+const wellnessData = [
+  {
+    email: 'wellness.yoga@poojly.com', phone: '+919811200001', fullName: 'Swami Atmananda',
+    displayName: 'Swami Atmananda', specialties: ['Hatha Yoga', 'Pranayama'],
+    certifications: ['RYT-500', 'Sivananda Certified'], experience: 20, pricePerSession: 800,
+    bio: 'Traditional Hatha Yoga teacher from Rishikesh with 20 years of ashram experience.',
+  },
+  {
+    email: 'wellness.meditation@poojly.com', phone: '+919811200002', fullName: 'Ananya Desai',
+    displayName: 'Ananya Desai', specialties: ['Vipassana', 'Mindfulness'],
+    certifications: ['Goenka Vipassana Assistant'], experience: 11, pricePerSession: 600,
+    bio: 'Mindfulness and Vipassana meditation guide with a background in clinical psychology.',
+  },
+  {
+    email: 'wellness.ayurveda@poojly.com', phone: '+919811200003', fullName: 'Dr. Kavita Nair',
+    displayName: 'Dr. Kavita Nair', specialties: ['Ayurveda Consultation', 'Panchakarma'],
+    certifications: ['BAMS', 'MD Ayurveda'], experience: 17, pricePerSession: 1500,
+    bio: 'BAMS doctor specializing in Ayurvedic lifestyle consultations and Panchakarma therapies.',
+  },
+  {
+    email: 'wellness.sound@poojly.com', phone: '+919811200004', fullName: 'Arjun Kapoor',
+    displayName: 'Arjun Kapoor', specialties: ['Sound Healing', 'Mantra Chanting'],
+    certifications: ['Himalayan Singing Bowl Cert.'], experience: 7, pricePerSession: 900,
+    bio: 'Sound healer using Tibetan singing bowls and Sanskrit mantra chanting for therapy.',
+  },
+  {
+    email: 'wellness.breathwork@poojly.com', phone: '+919811200005', fullName: 'Neha Srinivasan',
+    displayName: 'Neha Srinivasan', specialties: ['Breathwork', 'Kriya Yoga'],
+    certifications: ['Isha Hatha Yoga Teacher'], experience: 6, pricePerSession: 550,
+    bio: 'Breathwork and Kriya Yoga instructor trained in the Isha tradition.',
+  },
+];
+
+// ─── GAUSHALAS ──────────────────────────────────────────────────────────────
+
+const gaushalaData = [
+  {
+    email: 'gaushala.mathura@poojly.com', phone: '+919811300001', fullName: 'Shri Krishna Gaushala Trust',
+    gaushalaName: 'Shri Krishna Gaushala', city: 'Mathura', address: 'Vrindavan Road, Mathura',
+    totalCows: 420, description: 'Traditional gaushala near Vrindavan caring for indigenous breed cows, including rescued and abandoned animals.',
+  },
+  {
+    email: 'gaushala.pathmeda@poojly.com', phone: '+919811300002', fullName: 'Pathmeda Gauseva Sansthan',
+    gaushalaName: 'Pathmeda Gauseva Sansthan', city: 'Sanchore', address: 'Pathmeda, Jalore, Rajasthan',
+    totalCows: 2800, description: 'One of India\'s largest gaushalas, home to thousands of desi cows across multiple campuses.',
+  },
+  {
+    email: 'gaushala.hinganghat@poojly.com', phone: '+919811300003', fullName: 'Hinganghat Goseva Samiti',
+    gaushalaName: 'Hinganghat Goseva Samiti', city: 'Wardha', address: 'Hinganghat, Wardha, Maharashtra',
+    totalCows: 310, description: 'Community-run gaushala producing A2 milk and panchagavya products to fund cow care.',
+  },
+];
+
 // ─── MAIN SEED FUNCTION ─────────────────────────────────────────────────────
 
+const nowPlus = (days: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
 async function main() {
-  console.log('🌱 Starting Bhaktisetu database seed...\n');
+  console.log('🌱 Starting Poojly database seed (idempotent)...\n');
 
-  await prisma.$transaction(async (tx) => {
-    // ── Clean existing data in reverse dependency order ──
-    console.log('🧹 Cleaning existing seed data...');
-    await tx.priestPayout.deleteMany();
-    await tx.payment.deleteMany();
-    await tx.pujaBooking.deleteMany();
-    await tx.templePujaOffering.deleteMany();
-    await tx.templePriest.deleteMany();
-    await tx.liveDarshanStream.deleteMany();
-    await tx.pujaType.deleteMany();
-    await tx.priest.deleteMany();
-    await tx.temple.deleteMany();
-    await tx.contentItem.deleteMany();
-    await tx.dailyPanchang.deleteMany();
-    await tx.subscription.deleteMany();
-    await tx.userAddress.deleteMany();
-    await tx.user.deleteMany();
+  // Use upserts (not a destructive deleteMany) so this seed can run repeatedly
+  // against any environment (local, staging, prod) without wiping user data.
 
-    // ── 1. Create Users ──
-    console.log('👤 Creating users...');
+  // ── 1. Demo users (one per role) + role assignments + FREE subscriptions ──
+  console.log('👤 Upserting demo users + role assignments + subscriptions...');
 
-    const domesticUser = await tx.user.create({
-      data: {
-        phone: '+919876543210',
-        email: 'ram.sharma@example.com',
-        fullName: 'Ram Sharma',
+  const userByEmail: Record<string, { id: string }> = {};
+  for (const u of demoUsers) {
+    const user = await prisma.user.upsert({
+      where: { email: u.email },
+      update: { phone: u.phone, fullName: u.fullName, locationCity: u.locationCity, locationState: u.locationState },
+      create: {
+        phone: u.phone,
+        email: u.email,
+        fullName: u.fullName,
         preferredLanguage: 'hi',
-        locationCity: 'Varanasi',
-        locationState: 'Uttar Pradesh',
+        locationCity: u.locationCity,
+        locationState: u.locationState,
         isNri: false,
-        gotra: 'Bharadwaj',
-        nakshatra: 'Pushya',
-        rashi: 'Karka',
-        subscriptionTier: 'bhakti_pass',
+        subscriptionTier: 'free',
       },
     });
+    userByEmail[u.email] = { id: user.id };
 
-    const nriUser = await tx.user.create({
-      data: {
-        phone: '+14155551234',
-        email: 'priya.patel@example.com',
-        fullName: 'Priya Patel',
-        preferredLanguage: 'en',
-        locationCity: 'San Francisco',
-        locationState: 'California',
-        isNri: true,
-        nriCountry: 'USA',
-        gotra: 'Kashyap',
-        nakshatra: 'Rohini',
-        rashi: 'Vrishabha',
-        subscriptionTier: 'premium',
-      },
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_role: { userId: user.id, role: u.role } },
+      update: { isPrimary: true },
+      create: { userId: user.id, role: u.role, isPrimary: true },
     });
 
-    // Create addresses
-    await tx.userAddress.create({
+    // FREE marketplace subscription per role (skip DEVOTEE + ADMIN — not providers)
+    if (u.role !== 'DEVOTEE' && u.role !== 'ADMIN') {
+      // Deterministic lookup key: (userId, role) — use findFirst + create instead of upsert
+      // since MarketplaceSubscription has no composite unique.
+      const existing = await prisma.marketplaceSubscription.findFirst({
+        where: { userId: user.id, role: u.role, plan: 'FREE' },
+      });
+      if (!existing) {
+        await prisma.marketplaceSubscription.create({
+          data: {
+            userId: user.id,
+            plan: 'FREE',
+            role: u.role,
+            startDate: new Date(),
+            endDate: nowPlus(365),
+            amount: 0,
+            status: 'ACTIVE',
+          },
+        });
+      }
+    }
+  }
+  console.log(`  ✅ ${demoUsers.length} demo users ready`);
+
+  // ── 2. Domestic + NRI end-user devotees ──
+  console.log('👤 Upserting sample devotees + addresses...');
+
+  const domesticUser = await prisma.user.upsert({
+    where: { email: 'ram.sharma@example.com' },
+    update: {},
+    create: {
+      phone: '+919876543210',
+      email: 'ram.sharma@example.com',
+      fullName: 'Ram Sharma',
+      preferredLanguage: 'hi',
+      locationCity: 'Varanasi',
+      locationState: 'Uttar Pradesh',
+      isNri: false,
+      gotra: 'Bharadwaj',
+      nakshatra: 'Pushya',
+      rashi: 'Karka',
+      subscriptionTier: 'bhakti_pass',
+    },
+  });
+
+  const nriUser = await prisma.user.upsert({
+    where: { email: 'priya.patel@example.com' },
+    update: {},
+    create: {
+      phone: '+14155551234',
+      email: 'priya.patel@example.com',
+      fullName: 'Priya Patel',
+      preferredLanguage: 'en',
+      locationCity: 'San Francisco',
+      locationState: 'California',
+      isNri: true,
+      nriCountry: 'USA',
+      gotra: 'Kashyap',
+      nakshatra: 'Rohini',
+      rashi: 'Vrishabha',
+      subscriptionTier: 'premium',
+    },
+  });
+
+  const domesticAddr = await prisma.userAddress.findFirst({ where: { userId: domesticUser.id, label: 'home' } });
+  if (!domesticAddr) {
+    await prisma.userAddress.create({
       data: {
         userId: domesticUser.id,
         label: 'home',
         line1: '42, Assi Ghat Road',
         line2: 'Near Tulsi Ghat',
-        city: 'Varanasi',
-        state: 'Uttar Pradesh',
-        pincode: '221005',
-        country: 'India',
-        isDefault: true,
-        lat: 25.2854,
-        lng: 83.0056,
+        city: 'Varanasi', state: 'Uttar Pradesh', pincode: '221005',
+        country: 'India', isDefault: true, lat: 25.2854, lng: 83.0056,
       },
     });
-
-    await tx.userAddress.create({
+  }
+  const nriAddr = await prisma.userAddress.findFirst({ where: { userId: nriUser.id, label: 'home' } });
+  if (!nriAddr) {
+    await prisma.userAddress.create({
       data: {
         userId: nriUser.id,
         label: 'home',
-        line1: '789 Mission Street',
-        line2: 'Apt 12B',
-        city: 'San Francisco',
-        state: 'California',
-        pincode: '94103',
-        country: 'USA',
-        isDefault: true,
-        lat: 37.7857,
-        lng: -122.4011,
+        line1: '789 Mission Street', line2: 'Apt 12B',
+        city: 'San Francisco', state: 'California', pincode: '94103',
+        country: 'USA', isDefault: true, lat: 37.7857, lng: -122.4011,
       },
     });
+  }
 
-    console.log(`  ✅ Created ${domesticUser.fullName} (domestic) and ${nriUser.fullName} (NRI)`);
+  // ── 3. Core Priests (3 approved + verified, incl. demo pandit) ──
+  console.log('🙏 Upserting priests (3 approved + verified)...');
 
-    // ── 2. Create Priests ──
-    console.log('🙏 Creating priests...');
+  const priestSeeds = [
+    {
+      email: 'pandit.shastri@example.com', phone: '+919999888877',
+      fullName: 'Pandit Ramesh Shastri', locationCity: 'Varanasi', locationState: 'Uttar Pradesh',
+      gotra: 'Vasishtha',
+      displayName: 'Pandit Ramesh Shastri',
+      specializations: ['Rudrabhishek', 'Maha Mrityunjay Jaap', 'Navgraha Shanti', 'Satyanarayan Katha'],
+      languages: ['Hindi', 'Sanskrit', 'English'],
+      experienceYears: 25, ratingAvg: 4.9, ratingCount: 347,
+      bio: 'Vedic scholar from Varanasi with 25 years of experience in Shiva rituals.',
+      avatarUrl: 'https://images.poojly.com/priests/pandit-ramesh-shastri.jpg',
+    },
+    {
+      email: 'pandit.trivedi@example.com', phone: '+919999777766',
+      fullName: 'Pandit Suresh Trivedi', locationCity: 'Puri', locationState: 'Odisha',
+      gotra: 'Bharadwaj',
+      displayName: 'Pandit Suresh Trivedi',
+      specializations: ['Satyanarayan Katha', 'Ram Charit Manas Path', 'Sunderkand Path', 'Ganesh Puja'],
+      languages: ['Hindi', 'Odia', 'Sanskrit', 'English'],
+      experienceYears: 18, ratingAvg: 4.8, ratingCount: 213,
+      bio: 'Experienced priest from Puri, specializing in Vaishnava traditions.',
+      avatarUrl: 'https://images.poojly.com/priests/pandit-suresh-trivedi.jpg',
+    },
+    {
+      email: 'pandit@demo.com', phone: '+919000000002',
+      fullName: 'Demo Pandit', locationCity: 'Varanasi', locationState: 'Uttar Pradesh',
+      gotra: 'Kashyap',
+      displayName: 'Demo Pandit',
+      specializations: ['Ganesh Puja', 'Lakshmi Puja', 'Hanuman Chalisa Path'],
+      languages: ['Hindi', 'English'],
+      experienceYears: 8, ratingAvg: 4.6, ratingCount: 42,
+      bio: 'Demo pandit for testing. Performs common pujas in Hindi and English.',
+      avatarUrl: null,
+    },
+  ];
 
-    const priestUser1 = await tx.user.create({
-      data: {
-        phone: '+919999888877',
-        email: 'pandit.shastri@example.com',
-        fullName: 'Pandit Ramesh Shastri',
+  const priests: Array<{ id: string; email: string }> = [];
+  for (const p of priestSeeds) {
+    const u = await prisma.user.upsert({
+      where: { email: p.email },
+      update: { fullName: p.fullName },
+      create: {
+        phone: p.phone,
+        email: p.email,
+        fullName: p.fullName,
         preferredLanguage: 'hi',
-        locationCity: 'Varanasi',
-        locationState: 'Uttar Pradesh',
+        locationCity: p.locationCity,
+        locationState: p.locationState,
         isNri: false,
-        gotra: 'Vasishtha',
+        gotra: p.gotra,
         subscriptionTier: 'free',
       },
     });
 
-    const priestUser2 = await tx.user.create({
-      data: {
-        phone: '+919999777766',
-        email: 'pandit.trivedi@example.com',
-        fullName: 'Pandit Suresh Trivedi',
-        preferredLanguage: 'hi',
-        locationCity: 'Puri',
-        locationState: 'Odisha',
-        isNri: false,
-        gotra: 'Bharadwaj',
-        subscriptionTier: 'free',
-      },
-    });
-
-    const priest1 = await tx.priest.create({
-      data: {
-        userId: priestUser1.id,
-        displayName: 'Pandit Ramesh Shastri',
-        specializations: ['Rudrabhishek', 'Maha Mrityunjay Jaap', 'Navgraha Shanti', 'Satyanarayan Katha'],
-        languages: ['Hindi', 'Sanskrit', 'English'],
-        experienceYears: 25,
-        aadhaarVerified: true,
-        ratingAvg: 4.9,
-        ratingCount: 347,
+    const priest = await prisma.priest.upsert({
+      where: { userId: u.id },
+      update: {
+        displayName: p.displayName,
+        specializations: p.specializations,
+        languages: p.languages,
+        experienceYears: p.experienceYears,
+        ratingAvg: p.ratingAvg,
+        ratingCount: p.ratingCount,
         isVerified: true,
         verificationStatus: 'approved',
-        bio: 'Pandit Ramesh Shastri is a renowned Vedic scholar from Varanasi with over 25 years of experience in performing Shiva-related pujas and Vedic rituals. He is a graduate of Sampurnanand Sanskrit University and has performed thousands of pujas for devotees worldwide.',
-        avatarUrl: 'https://images.bhaktisetu.com/priests/pandit-ramesh-shastri.jpg',
+        bio: p.bio,
+        avatarUrl: p.avatarUrl,
+      },
+      create: {
+        userId: u.id,
+        displayName: p.displayName,
+        specializations: p.specializations,
+        languages: p.languages,
+        experienceYears: p.experienceYears,
+        aadhaarVerified: true,
+        ratingAvg: p.ratingAvg,
+        ratingCount: p.ratingCount,
+        isVerified: true,
+        verificationStatus: 'approved',
+        bio: p.bio,
+        avatarUrl: p.avatarUrl,
         commissionRate: 0.70,
         status: 'active',
       },
     });
+    priests.push({ id: priest.id, email: p.email });
+  }
+  console.log(`  ✅ ${priests.length} priests (approved + verified)`);
 
-    const priest2 = await tx.priest.create({
-      data: {
-        userId: priestUser2.id,
-        displayName: 'Pandit Suresh Trivedi',
-        specializations: ['Satyanarayan Katha', 'Ram Charit Manas Path', 'Sunderkand Path', 'Ganesh Puja'],
-        languages: ['Hindi', 'Odia', 'Sanskrit', 'English'],
-        experienceYears: 18,
+  // ── 3b. PanditProfile marketplace records (approved) ──
+  console.log('🪔 Upserting PanditProfile marketplace records...');
+
+  const panditProfileSeeds = [
+    { userEmail: 'pandit.shastri@example.com', templeName: 'Kashi Vishwanath', experience: 25, specialties: ['Rudrabhishek', 'Maha Mrityunjay'], languages: ['Hindi','Sanskrit','English'], pricePerPuja: 1100, city: 'Varanasi', state: 'Uttar Pradesh' },
+    { userEmail: 'pandit.trivedi@example.com', templeName: 'Jagannath Puri',     experience: 18, specialties: ['Satyanarayan', 'Ram Charit Manas'], languages: ['Hindi','Odia','Sanskrit'], pricePerPuja: 901,  city: 'Puri',     state: 'Odisha' },
+    { userEmail: 'pandit@demo.com',              templeName: null,                experience: 8,  specialties: ['Ganesh Puja','Lakshmi Puja'],    languages: ['Hindi','English'],         pricePerPuja: 501,  city: 'Varanasi', state: 'Uttar Pradesh' },
+  ];
+  for (const p of panditProfileSeeds) {
+    const user = await prisma.user.findUnique({ where: { email: p.userEmail } });
+    if (!user) continue;
+    await prisma.panditProfile.upsert({
+      where: { userId: user.id },
+      update: { approved: true, approvedAt: new Date(), experience: p.experience, specialties: p.specialties, languages: p.languages, pricePerPuja: p.pricePerPuja, city: p.city, state: p.state, templeName: p.templeName ?? undefined },
+      create: {
+        userId: user.id,
+        templeName: p.templeName ?? undefined,
+        experience: p.experience,
+        specialties: p.specialties,
+        languages: p.languages,
         aadhaarVerified: true,
-        ratingAvg: 4.8,
-        ratingCount: 213,
-        isVerified: true,
-        verificationStatus: 'approved',
-        bio: 'Pandit Suresh Trivedi is an experienced priest from Puri, Odisha, specializing in Vaishnava traditions and elaborate katha recitations. He has been serving at the Jagannath Temple and other major temples in eastern India for 18 years.',
-        avatarUrl: 'https://images.bhaktisetu.com/priests/pandit-suresh-trivedi.jpg',
-        commissionRate: 0.70,
+        pricePerPuja: p.pricePerPuja,
+        city: p.city,
+        state: p.state,
+        approved: true,
+        approvedAt: new Date(),
+      },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_role: { userId: user.id, role: 'PANDIT' } },
+      update: {},
+      create: { userId: user.id, role: 'PANDIT' },
+    });
+  }
+  console.log(`  ✅ ${panditProfileSeeds.length} pandit profiles`);
+
+  // ── 4. Temples (5) ──
+  console.log('🛕 Upserting 5 temples...');
+
+  const templeBySlug: Record<string, { id: string }> = {};
+  for (const t of templesData) {
+    const temple = await prisma.temple.upsert({
+      where: { slug: t.slug },
+      update: {
+        name: t.name, nameLocal: t.nameLocal, description: t.description,
+        deityPrimary: t.deityPrimary, deities: t.deities, tradition: t.tradition,
+        addressLine: t.addressLine, city: t.city, state: t.state, pincode: t.pincode,
+        lat: t.lat, lng: t.lng, phone: t.phone, email: t.email, websiteUrl: t.websiteUrl,
+        images: t.images, timingInfo: t.timingInfo,
+        isVerified: true, trustScore: t.trustScore,
+        liveDarshanEnabled: t.liveDarshanEnabled, streamUrl: t.streamUrl,
+        status: 'active',
+      },
+      create: {
+        name: t.name, nameLocal: t.nameLocal, slug: t.slug, description: t.description,
+        deityPrimary: t.deityPrimary, deities: t.deities, tradition: t.tradition,
+        addressLine: t.addressLine, city: t.city, state: t.state, pincode: t.pincode,
+        lat: t.lat, lng: t.lng, phone: t.phone, email: t.email, websiteUrl: t.websiteUrl,
+        images: t.images, timingInfo: t.timingInfo,
+        isVerified: true, verificationDate: new Date('2025-01-15'),
+        trustScore: t.trustScore,
+        liveDarshanEnabled: t.liveDarshanEnabled, streamUrl: t.streamUrl,
         status: 'active',
       },
     });
+    templeBySlug[t.slug] = { id: temple.id };
+  }
+  console.log(`  ✅ ${templesData.length} temples`);
 
-    console.log(`  ✅ Created priests: ${priest1.displayName}, ${priest2.displayName}`);
+  // ── 5. Link priests to temples ──
+  console.log('🔗 Linking priests to temples...');
+  const priestIdByEmail = Object.fromEntries(priests.map(p => [p.email, p.id]));
+  const templeIdBySlug = (slug: string) => templeBySlug[slug]!.id;
 
-    // ── 3. Create Temples ──
-    console.log('🛕 Creating temples...');
+  const priestLinks: Array<{ templeSlug: string; priestEmail: string; isPrimary: boolean }> = [
+    { templeSlug: 'kashi-vishwanath-varanasi', priestEmail: 'pandit.shastri@example.com', isPrimary: true },
+    { templeSlug: 'somnath-gujarat',           priestEmail: 'pandit.shastri@example.com', isPrimary: false },
+    { templeSlug: 'jagannath-puri',            priestEmail: 'pandit.trivedi@example.com', isPrimary: true },
+    { templeSlug: 'tirumala-tirupati',         priestEmail: 'pandit.trivedi@example.com', isPrimary: false },
+    { templeSlug: 'siddhivinayak-mumbai',      priestEmail: 'pandit.shastri@example.com', isPrimary: true },
+    { templeSlug: 'siddhivinayak-mumbai',      priestEmail: 'pandit.trivedi@example.com', isPrimary: false },
+    { templeSlug: 'siddhivinayak-mumbai',      priestEmail: 'pandit@demo.com',             isPrimary: false },
+  ];
+  for (const link of priestLinks) {
+    const templeId = templeIdBySlug(link.templeSlug);
+    const priestId = priestIdByEmail[link.priestEmail]!;
+    await prisma.templePriest.upsert({
+      where: { templeId_priestId: { templeId, priestId } },
+      update: { isPrimary: link.isPrimary },
+      create: { templeId, priestId, isPrimary: link.isPrimary },
+    });
+  }
+  console.log(`  ✅ ${priestLinks.length} temple-priest links`);
 
-    const temples = [];
-    for (const t of templesData) {
-      const temple = await tx.temple.create({
-        data: {
-          name: t.name,
-          nameLocal: t.nameLocal,
-          slug: t.slug,
-          description: t.description,
-          deityPrimary: t.deityPrimary,
-          deities: t.deities,
-          tradition: t.tradition,
-          addressLine: t.addressLine,
-          city: t.city,
-          state: t.state,
-          pincode: t.pincode,
-          lat: t.lat,
-          lng: t.lng,
-          phone: t.phone,
-          email: t.email,
-          websiteUrl: t.websiteUrl,
-          images: t.images,
-          timingInfo: t.timingInfo,
-          isVerified: true,
-          verificationDate: new Date('2025-01-15'),
-          trustScore: t.trustScore,
-          liveDarshanEnabled: t.liveDarshanEnabled,
-          streamUrl: t.streamUrl,
-          status: 'active',
-        },
+  // ── 6. Puja types ──
+  console.log('🙏 Upserting puja types...');
+  const pujaTypeBySlug: Record<string, { id: string }> = {};
+  for (const p of pujaTypesData) {
+    const pt = await prisma.pujaType.upsert({
+      where: { slug: p.slug },
+      update: {
+        name: p.name, nameLocal: p.nameLocal, description: p.description,
+        category: p.category, deity: p.deity, durationMinutes: p.durationMinutes,
+        basePrice: p.basePrice, nriPrice: p.nriPrice,
+        samagriIncluded: p.samagriIncluded, samagriItems: p.samagriItems,
+        images: p.images, videoProofMandatory: p.videoProofMandatory,
+        sortOrder: p.sortOrder, isActive: true,
+      },
+      create: {
+        name: p.name, nameLocal: p.nameLocal, slug: p.slug, description: p.description,
+        category: p.category, deity: p.deity, durationMinutes: p.durationMinutes,
+        basePrice: p.basePrice, nriPrice: p.nriPrice,
+        samagriIncluded: p.samagriIncluded, samagriItems: p.samagriItems,
+        images: p.images, videoProofMandatory: p.videoProofMandatory,
+        sortOrder: p.sortOrder, isActive: true,
+      },
+    });
+    pujaTypeBySlug[p.slug] = { id: pt.id };
+  }
+  console.log(`  ✅ ${pujaTypesData.length} puja types`);
+
+  // ── 7. Temple-puja offerings (5 per temple, matched to tradition) ──
+  console.log('📋 Upserting temple-puja offerings (5 per temple)...');
+
+  const offeringPlan: Record<string, string[]> = {
+    // 5 pujas per temple
+    'kashi-vishwanath-varanasi': ['rudrabhishek', 'maha-mrityunjay-jaap', 'navgraha-shanti-puja', 'sunderkand-path', 'hanuman-chalisa-path'],
+    'tirumala-tirupati':         ['satyanarayan-katha', 'lakshmi-puja', 'ganesh-puja', 'ram-charit-manas-path', 'navgraha-shanti-puja'],
+    'siddhivinayak-mumbai':      ['ganesh-puja', 'lakshmi-puja', 'navgraha-shanti-puja', 'satyanarayan-katha', 'hanuman-chalisa-path'],
+    'somnath-gujarat':           ['rudrabhishek', 'maha-mrityunjay-jaap', 'navgraha-shanti-puja', 'pitru-dosh-nivaran-puja', 'sunderkand-path'],
+    'jagannath-puri':            ['satyanarayan-katha', 'sunderkand-path', 'ram-charit-manas-path', 'hanuman-chalisa-path', 'ganesh-puja'],
+  };
+  const slots = ['06:00', '07:00', '08:00', '12:00', '13:00', '17:00', '18:00'];
+
+  let offeringCount = 0;
+  for (const [templeSlug, pujaSlugs] of Object.entries(offeringPlan)) {
+    const templeId = templeIdBySlug(templeSlug);
+    for (const pujaSlug of pujaSlugs) {
+      const pujaTypeId = pujaTypeBySlug[pujaSlug]!.id;
+      await prisma.templePujaOffering.upsert({
+        where: { templeId_pujaTypeId: { templeId, pujaTypeId } },
+        update: { availableSlots: slots, maxBookingsPerSlot: 5, isActive: true },
+        create: { templeId, pujaTypeId, availableSlots: slots, maxBookingsPerSlot: 5, isActive: true },
       });
-      temples.push(temple);
+      offeringCount++;
     }
+  }
+  console.log(`  ✅ ${offeringCount} temple-puja offerings`);
 
-    console.log(`  ✅ Created ${temples.length} verified temples`);
-
-    // ── 4. Create Temple-Priest Associations ──
-    console.log('🔗 Linking priests to temples...');
-
-    // Priest 1 (Shastri) associated with Kashi Vishwanath and Somnath (Shaiva temples)
-    await tx.templePriest.create({
-      data: { templeId: temples[0]!.id, priestId: priest1.id, isPrimary: true },
+  // ── 8. Content (aartis, chalisas, mantras, bhajans, etc.) ──
+  console.log('📖 Upserting content items...');
+  for (const c of contentData) {
+    await prisma.contentItem.upsert({
+      where: { slug: c.slug },
+      update: {
+        type: c.type, title: c.title, titleLocal: c.titleLocal, body: c.body,
+        deity: c.deity, language: c.language, durationSeconds: c.durationSeconds,
+        tags: c.tags, isPremium: c.isPremium, status: c.status,
+        imageUrl: c.imageUrl, audioUrl: c.audioUrl, sortOrder: c.sortOrder,
+      },
+      create: {
+        type: c.type, title: c.title, titleLocal: c.titleLocal, slug: c.slug, body: c.body,
+        deity: c.deity, language: c.language, durationSeconds: c.durationSeconds,
+        tags: c.tags, isPremium: c.isPremium, status: c.status,
+        imageUrl: c.imageUrl, audioUrl: c.audioUrl,
+        viewCount: 0, likeCount: 0, sortOrder: c.sortOrder,
+        publishedAt: new Date('2025-12-01'),
+      },
     });
-    await tx.templePriest.create({
-      data: { templeId: temples[3]!.id, priestId: priest1.id, isPrimary: false },
-    });
+  }
+  console.log(`  ✅ ${contentData.length} content items`);
 
-    // Priest 2 (Trivedi) associated with Jagannath Puri and Tirumala (Vaishnava temples)
-    await tx.templePriest.create({
-      data: { templeId: temples[4]!.id, priestId: priest2.id, isPrimary: true },
+  // ── 9. Panchang ──
+  console.log('📅 Upserting daily panchang...');
+  for (const p of panchangData) {
+    await prisma.dailyPanchang.upsert({
+      where: { date: p.date },
+      update: {
+        tithi: p.tithi, nakshatra: p.nakshatra, yoga: p.yoga, karana: p.karana,
+        sunrise: p.sunrise, sunset: p.sunset, rahuKaal: p.rahuKaal,
+        shubhMuhurat: p.shubhMuhurat, festivals: p.festivals, vrat: p.vrat,
+        specialInfo: p.specialInfo, locationCity: p.locationCity,
+      },
+      create: {
+        date: p.date,
+        tithi: p.tithi, nakshatra: p.nakshatra, yoga: p.yoga, karana: p.karana,
+        sunrise: p.sunrise, sunset: p.sunset, rahuKaal: p.rahuKaal,
+        shubhMuhurat: p.shubhMuhurat, festivals: p.festivals, vrat: p.vrat,
+        specialInfo: p.specialInfo, locationCity: p.locationCity,
+      },
     });
-    await tx.templePriest.create({
-      data: { templeId: temples[1]!.id, priestId: priest2.id, isPrimary: false },
-    });
+  }
+  console.log(`  ✅ ${panchangData.length} panchang days`);
 
-    // Both priests at Siddhivinayak
-    await tx.templePriest.create({
-      data: { templeId: temples[2]!.id, priestId: priest1.id, isPrimary: true },
-    });
-    await tx.templePriest.create({
-      data: { templeId: temples[2]!.id, priestId: priest2.id, isPrimary: false },
-    });
-
-    console.log('  ✅ Linked priests to temples');
-
-    // ── 5. Create Puja Types ──
-    console.log('🙏 Creating puja types...');
-
-    const pujaTypes = [];
-    for (const p of pujaTypesData) {
-      const pujaType = await tx.pujaType.create({
+  // ── 10. Live darshan streams for enabled temples ──
+  console.log('📹 Upserting live darshan stream configs...');
+  const streamTemples = templesData.filter(t => t.liveDarshanEnabled);
+  let streamCount = 0;
+  for (const t of streamTemples) {
+    const templeId = templeIdBySlug(t.slug);
+    const existing = await prisma.liveDarshanStream.findFirst({ where: { templeId } });
+    if (!existing) {
+      await prisma.liveDarshanStream.create({
         data: {
-          name: p.name,
-          nameLocal: p.nameLocal,
-          slug: p.slug,
-          description: p.description,
-          category: p.category,
-          deity: p.deity,
-          durationMinutes: p.durationMinutes,
-          basePrice: p.basePrice,
-          nriPrice: p.nriPrice,
-          samagriIncluded: p.samagriIncluded,
-          samagriItems: p.samagriItems,
-          images: p.images,
-          videoProofMandatory: p.videoProofMandatory,
-          sortOrder: p.sortOrder,
-          isActive: true,
-        },
-      });
-      pujaTypes.push(pujaType);
-    }
-
-    console.log(`  ✅ Created ${pujaTypes.length} puja types`);
-
-    // ── 6. Create Temple-Puja Offerings ──
-    console.log('📋 Creating temple-puja offerings...');
-
-    const timeSlots = {
-      morning: ['06:00', '07:00', '08:00', '09:00', '10:00'],
-      afternoon: ['12:00', '13:00', '14:00', '15:00'],
-      evening: ['17:00', '18:00', '19:00'],
-    };
-
-    // Mapping: which pujas are offered at which temples
-    // Kashi Vishwanath (Shiva): Rudrabhishek, Maha Mrityunjay, Navgraha, Sunderkand, Hanuman Chalisa
-    const kashiPujas = [0, 3, 5, 6, 7]; // indices into pujaTypes
-    // Tirumala (Venkateswara): Satyanarayan, Lakshmi Puja, Ganesh Puja
-    const tirumalaPujas = [2, 4, 1];
-    // Siddhivinayak (Ganesha): Ganesh Puja, Lakshmi Puja, Navgraha
-    const siddhivinayakPujas = [1, 4, 5];
-    // Somnath (Shiva): Rudrabhishek, Maha Mrityunjay, Navgraha, Pitru Dosh
-    const somnathPujas = [0, 3, 5, 9];
-    // Jagannath (Vaishnava): Satyanarayan, Sunderkand, Ram Charit Manas, Hanuman Chalisa
-    const jagannathPujas = [2, 6, 8, 7];
-
-    const allTempleOfferings = [
-      { templeIndex: 0, pujaIndices: kashiPujas },
-      { templeIndex: 1, pujaIndices: tirumalaPujas },
-      { templeIndex: 2, pujaIndices: siddhivinayakPujas },
-      { templeIndex: 3, pujaIndices: somnathPujas },
-      { templeIndex: 4, pujaIndices: jagannathPujas },
-    ];
-
-    let offeringCount = 0;
-    for (const mapping of allTempleOfferings) {
-      for (const pujaIndex of mapping.pujaIndices) {
-        await tx.templePujaOffering.create({
-          data: {
-            templeId: temples[mapping.templeIndex]!.id,
-            pujaTypeId: pujaTypes[pujaIndex]!.id,
-            availableSlots: [
-              ...timeSlots.morning.slice(0, 3),
-              ...timeSlots.afternoon.slice(0, 2),
-              ...timeSlots.evening.slice(0, 2),
-            ],
-            maxBookingsPerSlot: 5,
-            isActive: true,
-          },
-        });
-        offeringCount++;
-      }
-    }
-
-    console.log(`  ✅ Created ${offeringCount} temple-puja offerings`);
-
-    // ── 7. Create Content ──
-    console.log('📖 Creating content items...');
-
-    for (const c of contentData) {
-      await tx.contentItem.create({
-        data: {
-          type: c.type,
-          title: c.title,
-          titleLocal: c.titleLocal,
-          slug: c.slug,
-          body: c.body,
-          deity: c.deity,
-          language: c.language,
-          durationSeconds: c.durationSeconds,
-          tags: c.tags,
-          isPremium: c.isPremium,
-          status: c.status,
-          imageUrl: c.imageUrl,
-          audioUrl: c.audioUrl,
-          viewCount: Math.floor(Math.random() * 10000) + 500,
-          likeCount: Math.floor(Math.random() * 2000) + 100,
-          sortOrder: c.sortOrder,
-          publishedAt: new Date('2025-12-01'),
-        },
-      });
-    }
-
-    console.log(`  ✅ Created ${contentData.length} content items`);
-
-    // ── 8. Create Panchang Data ──
-    console.log('📅 Creating panchang data...');
-
-    for (const p of panchangData) {
-      await tx.dailyPanchang.create({
-        data: {
-          date: p.date,
-          tithi: p.tithi,
-          nakshatra: p.nakshatra,
-          yoga: p.yoga,
-          karana: p.karana,
-          sunrise: p.sunrise,
-          sunset: p.sunset,
-          rahuKaal: p.rahuKaal,
-          shubhMuhurat: p.shubhMuhurat,
-          festivals: p.festivals,
-          vrat: p.vrat,
-          specialInfo: p.specialInfo,
-          locationCity: p.locationCity,
-        },
-      });
-    }
-
-    console.log(`  ✅ Created ${panchangData.length} days of panchang data`);
-
-    // ── 9. Create Live Darshan Streams for enabled temples ──
-    console.log('📹 Creating live darshan streams...');
-
-    const streamEnabledTemples = temples.filter(t => {
-      const data = templesData.find(td => td.slug === t.slug);
-      return data?.liveDarshanEnabled;
-    });
-
-    for (const temple of streamEnabledTemples) {
-      await tx.liveDarshanStream.create({
-        data: {
-          templeId: temple.id,
-          streamKey: `stream_${temple.slug}_${Date.now()}`,
-          playbackUrl: `https://stream.bhaktisetu.com/${temple.slug}/live.m3u8`,
+          templeId,
+          streamKey: `stream_${t.slug}`,
+          playbackUrl: `https://stream.poojly.com/${t.slug}/live.m3u8`,
           status: 'offline',
           isPremium: false,
         },
       });
+      streamCount++;
     }
+  }
+  console.log(`  ✅ ${streamCount} new live darshan stream configs (${streamTemples.length} total enabled)`);
 
-    console.log(`  ✅ Created ${streamEnabledTemples.length} live darshan stream configs`);
-  });
+  // ── 11. Astrologers (Vedic / Tarot / Numerology) ──
+  console.log('🔮 Upserting astrologers...');
+  for (const a of astrologersData) {
+    const user = await prisma.user.upsert({
+      where: { email: a.email },
+      update: { fullName: a.fullName, phone: a.phone },
+      create: {
+        phone: a.phone, email: a.email, fullName: a.fullName,
+        preferredLanguage: 'hi', isNri: false, subscriptionTier: 'free',
+      },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_role: { userId: user.id, role: 'ASTROLOGER' } },
+      update: {},
+      create: { userId: user.id, role: 'ASTROLOGER' },
+    });
+    await prisma.astrologerProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        displayName: a.displayName, specialties: a.specialties, experience: a.experience,
+        languages: a.languages, pricePerMinute: a.pricePerMinute, bio: a.bio, approved: true,
+      },
+      create: {
+        userId: user.id,
+        displayName: a.displayName, specialties: a.specialties, experience: a.experience,
+        languages: a.languages, pricePerMinute: a.pricePerMinute, bio: a.bio, approved: true,
+      },
+    });
+  }
+  console.log(`  ✅ ${astrologersData.length} astrologers`);
 
-  console.log('\n🎉 Seed completed successfully!');
+  // ── 12. Wellness instructors ──
+  console.log('🧘 Upserting wellness instructors...');
+  for (const w of wellnessData) {
+    const user = await prisma.user.upsert({
+      where: { email: w.email },
+      update: { fullName: w.fullName, phone: w.phone },
+      create: {
+        phone: w.phone, email: w.email, fullName: w.fullName,
+        preferredLanguage: 'hi', isNri: false, subscriptionTier: 'free',
+      },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_role: { userId: user.id, role: 'WELLNESS_INSTRUCTOR' } },
+      update: {},
+      create: { userId: user.id, role: 'WELLNESS_INSTRUCTOR' },
+    });
+    await prisma.wellnessProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        displayName: w.displayName, specialties: w.specialties,
+        certifications: w.certifications, experience: w.experience,
+        pricePerSession: w.pricePerSession, bio: w.bio, approved: true,
+      },
+      create: {
+        userId: user.id,
+        displayName: w.displayName, specialties: w.specialties,
+        certifications: w.certifications, experience: w.experience,
+        pricePerSession: w.pricePerSession, bio: w.bio, approved: true,
+      },
+    });
+  }
+  console.log(`  ✅ ${wellnessData.length} wellness instructors`);
+
+  // ── 13. Gaushalas ──
+  console.log('🐄 Upserting gaushalas...');
+  for (const g of gaushalaData) {
+    const user = await prisma.user.upsert({
+      where: { email: g.email },
+      update: { fullName: g.fullName, phone: g.phone },
+      create: {
+        phone: g.phone, email: g.email, fullName: g.fullName,
+        preferredLanguage: 'hi', isNri: false, subscriptionTier: 'free',
+      },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_role: { userId: user.id, role: 'GAUSHALA_MANAGER' } },
+      update: {},
+      create: { userId: user.id, role: 'GAUSHALA_MANAGER' },
+    });
+    await prisma.gaushalaProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        gaushalaName: g.gaushalaName, address: g.address, city: g.city,
+        totalCows: g.totalCows, description: g.description,
+        verified: true, approved: true,
+      },
+      create: {
+        userId: user.id,
+        gaushalaName: g.gaushalaName, address: g.address, city: g.city,
+        totalCows: g.totalCows, description: g.description,
+        verified: true, approved: true,
+      },
+    });
+  }
+  console.log(`  ✅ ${gaushalaData.length} gaushalas`);
+
+  console.log('\n🎉 Seed completed successfully.');
+  console.log('\nNOTE: Products live in MedusaJS (apps/medusa-store), not in the API Prisma schema.');
+  console.log('      Seed those via MedusaJS admin or the medusa-store seed script.');
 }
 
 main()
@@ -1596,3 +1836,4 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
+

@@ -10,96 +10,89 @@ import {
   X,
   Menu,
   ChevronLeft,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/supabase';
 import AiChat from '../../components/AiChat';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Conversation {
-  id: string;
-  title: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  getAllConversations,
+  deleteConversation,
+  type StoredConversation,
+} from '../../lib/conversation-store';
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function AskPanditPage() {
   const { user, session, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<StoredConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loadingConversations, setLoadingConversations] = useState(false);
+  // Increment to force AiChat remount on "New Conversation"
+  const [chatKey, setChatKey] = useState(0);
 
-  // ─── Load conversations ─────────────────────────────────────────────────
+  // ─── Load conversations from localStorage ──────────────────────────────
 
-  const loadConversations = useCallback(async () => {
-    if (!session?.accessToken) return;
-
-    setLoadingConversations(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/ai/conversations?limit=50`, {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setConversations(data.conversations || []);
-      }
-    } catch {
-      // Failed to load conversations
-    } finally {
-      setLoadingConversations(false);
-    }
-  }, [session?.accessToken]);
+  const refreshConversations = useCallback(() => {
+    setConversations(getAllConversations());
+  }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadConversations();
-    }
-  }, [isAuthenticated, loadConversations]);
+    refreshConversations();
+  }, [refreshConversations]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────
 
   function handleNewConversation() {
     setActiveConversationId(null);
+    setChatKey((k) => k + 1);
     setSidebarOpen(false);
   }
 
   function handleSelectConversation(id: string) {
+    if (id === activeConversationId) return;
     setActiveConversationId(id);
+    setChatKey((k) => k + 1);
     setSidebarOpen(false);
   }
 
-  function handleNewConversationCreated(id: string) {
+  function handleConversationCreated(id: string) {
     setActiveConversationId(id);
-    // Refresh the conversation list
-    loadConversations();
+    refreshConversations();
   }
 
-  async function handleDeleteConversation(id: string, e: React.MouseEvent) {
+  function handleConversationUpdated() {
+    refreshConversations();
+  }
+
+  function handleDeleteConversation(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-
-    if (!session?.accessToken) return;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/ai/conversations/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      });
-
-      if (res.ok) {
-        setConversations((prev) => prev.filter((c) => c.id !== id));
-        if (activeConversationId === id) {
-          setActiveConversationId(null);
-        }
-      }
-    } catch {
-      // Failed to delete
+    deleteConversation(id);
+    if (activeConversationId === id) {
+      setActiveConversationId(null);
+      setChatKey((k) => k + 1);
     }
+    refreshConversations();
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────────
+
+  function formatTimeAgo(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   }
 
   // ─── Auth Guard ─────────────────────────────────────────────────────────
@@ -145,7 +138,7 @@ export default function AskPanditPage() {
   // ─── Main Layout ────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-full overflow-hidden bg-surface-50">
+    <div className="flex h-full overflow-hidden" style={{ background: 'var(--color-bg, #fffbf5)' }}>
       {/* Sidebar overlay (mobile) */}
       {sidebarOpen && (
         <div
@@ -157,22 +150,29 @@ export default function AskPanditPage() {
       {/* Conversation Sidebar */}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-surface-200 flex flex-col
-          transform transition-transform duration-200 ease-in-out
+          fixed md:static inset-y-0 left-0 z-40 w-[280px] flex flex-col
+          border-r transition-transform duration-200 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           md:top-auto
         `}
+        style={{
+          background: 'var(--color-surface, #fff9f0)',
+          borderColor: 'var(--color-border, #e8dcc8)',
+        }}
       >
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-surface-100">
+        <div className="p-4" style={{ borderBottom: '1px solid var(--color-border, #e8dcc8)' }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-surface-800 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-saffron-600" />
-              Ask a Pandit
+            <h2
+              className="text-base font-semibold flex items-center gap-2"
+              style={{ color: 'var(--color-text, #3d2e1f)' }}
+            >
+              <Sparkles className="w-4 h-4 text-saffron-600" />
+              Conversations
             </h2>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="md:hidden p-1 text-surface-400 hover:text-surface-600"
+              className="md:hidden p-1 text-surface-400 hover:text-surface-600 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -180,7 +180,18 @@ export default function AskPanditPage() {
 
           <button
             onClick={handleNewConversation}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 transition-colors text-sm font-medium shadow-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg text-sm font-medium shadow-sm transition-all"
+            style={{
+              background: 'var(--color-primary, #c2410c)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(194,65,12,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+            }}
           >
             <Plus className="w-4 h-4" />
             New Conversation
@@ -189,11 +200,7 @@ export default function AskPanditPage() {
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto p-2">
-          {loadingConversations ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-saffron-300 border-t-saffron-600 rounded-full animate-spin" />
-            </div>
-          ) : conversations.length === 0 ? (
+          {conversations.length === 0 ? (
             <div className="text-center py-8 px-4">
               <MessageSquare className="w-8 h-8 text-surface-300 mx-auto mb-2" />
               <p className="text-sm text-surface-400">
@@ -202,42 +209,77 @@ export default function AskPanditPage() {
             </div>
           ) : (
             <div className="space-y-1">
-              {conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => handleSelectConversation(conv.id)}
-                  className={`
-                    w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left
-                    transition-colors group
-                    ${
-                      activeConversationId === conv.id
-                        ? 'bg-saffron-100 text-saffron-800'
-                        : 'hover:bg-surface-100 text-surface-600'
-                    }
-                  `}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MessageSquare className="w-4 h-4 shrink-0" />
-                    <span className="text-sm truncate">
-                      {conv.title || 'Untitled conversation'}
-                    </span>
-                  </div>
+              {conversations.map((conv) => {
+                const isActive = activeConversationId === conv.id;
+                return (
                   <button
-                    onClick={(e) => handleDeleteConversation(conv.id, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-surface-400 hover:text-red-500 transition-all shrink-0"
-                    title="Delete conversation"
+                    key={conv.id}
+                    onClick={() => handleSelectConversation(conv.id)}
+                    className="w-full flex items-start justify-between gap-2 px-3 py-2.5 rounded-lg text-left transition-all group"
+                    style={{
+                      background: isActive
+                        ? 'var(--color-primary, #c2410c)'
+                        : 'transparent',
+                      color: isActive ? '#fff' : 'var(--color-text, #3d2e1f)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'rgba(194,65,12,0.08)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }
+                    }}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                        <span className="text-sm font-medium truncate">
+                          {conv.title || 'Untitled'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 pl-5">
+                        <Clock className="w-3 h-3 opacity-40" />
+                        <span
+                          className="text-xs truncate"
+                          style={{ opacity: isActive ? 0.8 : 0.5 }}
+                        >
+                          {formatTimeAgo(conv.updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteConversation(conv.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all shrink-0 mt-0.5"
+                      style={{
+                        color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--color-text, #3d2e1f)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = isActive ? '#fff' : '#dc2626';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = isActive
+                          ? 'rgba(255,255,255,0.7)'
+                          : 'var(--color-text, #3d2e1f)';
+                      }}
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </button>
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* User info */}
         {user && (
-          <div className="p-4 border-t border-surface-100">
+          <div className="p-4" style={{ borderTop: '1px solid var(--color-border, #e8dcc8)' }}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-saffron-100 rounded-full flex items-center justify-center text-saffron-700 text-xs font-bold">
                 {user.fullName?.charAt(0) || 'U'}
@@ -256,7 +298,13 @@ export default function AskPanditPage() {
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Chat Header */}
-        <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-surface-200 shadow-sm">
+        <header
+          className="flex items-center justify-between px-4 py-3 shadow-sm"
+          style={{
+            background: 'var(--color-surface, #fff9f0)',
+            borderBottom: '1px solid var(--color-border, #e8dcc8)',
+          }}
+        >
           <div className="flex items-center gap-3">
             {/* Mobile sidebar toggle */}
             <button
@@ -314,8 +362,10 @@ export default function AskPanditPage() {
         {/* Chat Component */}
         <div className="flex-1 overflow-hidden">
           <AiChat
+            key={chatKey}
             conversationId={activeConversationId}
-            onNewConversation={handleNewConversationCreated}
+            onConversationCreated={handleConversationCreated}
+            onConversationUpdated={handleConversationUpdated}
             language={language}
             accessToken={session?.accessToken}
           />

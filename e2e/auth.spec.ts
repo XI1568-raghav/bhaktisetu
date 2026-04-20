@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Authentication', () => {
   test('login page loads with phone input', async ({ page }) => {
     await page.goto('/auth/login');
-    await expect(page.locator('text=Bhaktisetu').first()).toBeVisible();
+    await expect(page.locator('text=Poojly').first()).toBeVisible();
     await expect(page.locator('input[type="tel"]').or(page.locator('input#phone'))).toBeVisible();
     await expect(page.locator('text=Send OTP').first()).toBeVisible();
   });

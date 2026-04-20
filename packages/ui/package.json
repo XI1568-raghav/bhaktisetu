@@ -1,5 +1,5 @@
 {
-  "name": "@bhaktisetu/ui",
+  "name": "@poojly/ui",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -24,7 +24,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@bhaktisetu/tsconfig": "workspace:*",
+    "@poojly/tsconfig": "workspace:*",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "typescript": "^5.8.3"

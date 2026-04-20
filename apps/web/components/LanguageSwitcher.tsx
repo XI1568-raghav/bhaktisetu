@@ -21,7 +21,7 @@ const LANGUAGES: { code: SupportedLanguage; label: string; nativeLabel: string }
   { code: 'hi', label: 'Hindi', nativeLabel: '\u0939\u093F\u0928\u094D\u0926\u0940' },
 ];
 
-const STORAGE_KEY = 'bhaktisetu_language';
+const STORAGE_KEY = 'poojly_language';
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ export default function LanguageSwitcher({
     return (
       <button
         onClick={() => handleSelect(nextLang)}
-        className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-saffron-50 hover:border-saffron-200 hover:text-saffron-700 transition-all"
+        className="inline-flex items-center gap-1 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-surface-700 hover:bg-saffron-50 hover:border-saffron-200 hover:text-saffron-700 transition-all"
         title={`Switch to ${nextLang === 'en' ? 'English' : 'Hindi'}`}
       >
         <Globe className="h-3.5 w-3.5" />
@@ -103,19 +103,19 @@ export default function LanguageSwitcher({
     <div ref={dropdownRef} className="relative inline-block">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-saffron-50 hover:border-saffron-200 hover:text-saffron-700 transition-all shadow-sm"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium text-surface-700 hover:bg-saffron-50 hover:border-saffron-200 hover:text-saffron-700 transition-all shadow-sm"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <Globe className="h-4 w-4 text-stone-500" />
+        <Globe className="h-4 w-4 text-surface-500" />
         <span>{currentLang.nativeLabel}</span>
         <ChevronDown
-          className={`h-3.5 w-3.5 text-stone-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-3.5 w-3.5 text-surface-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-1 w-44 origin-top-right rounded-xl border border-stone-100 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
+        <div className="absolute right-0 z-50 mt-1 w-44 origin-top-right rounded-xl border border-surface-100 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
           {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
@@ -123,7 +123,7 @@ export default function LanguageSwitcher({
               className={`flex w-full items-center justify-between px-3 py-2.5 text-sm transition-colors ${
                 language === lang.code
                   ? 'bg-saffron-50 text-saffron-700 font-semibold'
-                  : 'text-stone-700 hover:bg-stone-50'
+                  : 'text-surface-700 hover:bg-surface-50'
               }`}
               role="option"
               aria-selected={language === lang.code}
@@ -131,7 +131,7 @@ export default function LanguageSwitcher({
               <div className="flex items-center gap-2">
                 <span className="text-base">{lang.nativeLabel}</span>
                 {lang.code !== language && (
-                  <span className="text-xs text-stone-400">({lang.label})</span>
+                  <span className="text-xs text-surface-400">({lang.label})</span>
                 )}
               </div>
               {language === lang.code && (

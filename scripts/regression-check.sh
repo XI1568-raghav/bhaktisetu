@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== BHAKTISETU REGRESSION CHECK ==="
+echo "=== POOJLY REGRESSION CHECK ==="
 echo ""
 
 echo "1. Type checking..."

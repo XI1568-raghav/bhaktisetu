@@ -2,6 +2,8 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 
+export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER' | 'ADMIN';
+
 export interface AuthUser {
   id: string;
   supabaseId: string;
@@ -9,6 +11,7 @@ export interface AuthUser {
   email: string | null;
   fullName: string;
   subscriptionTier: string;
+  roles: MarketplaceRole[];
 }
 
 declare module 'fastify' {
@@ -48,14 +51,34 @@ export async function authenticateUser(
 
   try {
     // Demo mode: accept demo tokens and return a mock user
+    // Supports demo-devotee, demo-pandit, demo-store, demo-astrologer,
+    // demo-wellness, demo-gaushala, demo-temple, demo-admin
     if (isDemoMode && token.startsWith('demo-')) {
+      const roleFromToken = token.replace('demo-', '').toUpperCase();
+      const DEMO_ROLE_MAP: Record<string, MarketplaceRole[]> = {
+        'DEVOTEE': ['DEVOTEE'],
+        'PANDIT': ['PANDIT', 'DEVOTEE'],
+        'STORE': ['STORE_OWNER', 'DEVOTEE'],
+        'STORE_OWNER': ['STORE_OWNER', 'DEVOTEE'],
+        'ASTROLOGER': ['ASTROLOGER', 'DEVOTEE'],
+        'WELLNESS': ['WELLNESS_INSTRUCTOR', 'DEVOTEE'],
+        'WELLNESS_INSTRUCTOR': ['WELLNESS_INSTRUCTOR', 'DEVOTEE'],
+        'GAUSHALA': ['GAUSHALA_MANAGER', 'DEVOTEE'],
+        'GAUSHALA_MANAGER': ['GAUSHALA_MANAGER', 'DEVOTEE'],
+        'TEMPLE': ['TEMPLE_MANAGER', 'DEVOTEE'],
+        'TEMPLE_MANAGER': ['TEMPLE_MANAGER', 'DEVOTEE'],
+        'ADMIN': ['ADMIN', 'DEVOTEE'],
+      };
+      const roles = DEMO_ROLE_MAP[roleFromToken] ?? ['DEVOTEE'];
+
       request.currentUser = {
         id: 'demo-user-001',
         supabaseId: 'demo-supabase-001',
         phone: '+919876543210',
-        email: 'arjun@bhaktisetu.com',
+        email: 'arjun@poojly.com',
         fullName: 'Arjun Sharma',
         subscriptionTier: 'bhakti_pass',
+        roles,
       };
       return;
     }
@@ -86,6 +109,26 @@ export async function authenticateUser(
       return;
     }
 
+    // Fetch user roles
+    let roles: MarketplaceRole[] = ['DEVOTEE'];
+    try {
+      const roleAssignments = await prisma.userRoleAssignment.findMany({
+        where: { userId: dbUser.id },
+      });
+      if (roleAssignments.length > 0) {
+        roles = roleAssignments.map((ra) => ra.role as MarketplaceRole);
+        if (!roles.includes('DEVOTEE')) roles.push('DEVOTEE');
+      }
+    } catch {
+      // Role table may not exist yet; default to DEVOTEE
+    }
+
+    // Check admin email allowlist as fallback
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase());
+    if (dbUser.email && adminEmails.includes(dbUser.email.toLowerCase()) && !roles.includes('ADMIN')) {
+      roles.push('ADMIN');
+    }
+
     // Attach user to request
     request.currentUser = {
       id: dbUser.id,
@@ -94,6 +137,7 @@ export async function authenticateUser(
       email: dbUser.email,
       fullName: dbUser.fullName,
       subscriptionTier: dbUser.subscriptionTier,
+      roles,
     };
   } catch (err) {
     request.log.error(err, 'Auth middleware error');
@@ -106,11 +150,9 @@ export async function authenticateUser(
 
 /**
  * Factory for a preHandler hook that checks if the user has a specific role.
- * Currently supports 'priest' (user has a linked priest record) and 'admin'
- * (based on an admin flag or separate admin table — here we check a simple
- * email allowlist from env for simplicity).
+ * Supports legacy roles ('priest', 'admin') and new marketplace roles.
  */
-export function requireRole(role: 'priest' | 'admin') {
+export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     // authenticateUser must run first
     if (!request.currentUser) {
@@ -121,11 +163,14 @@ export function requireRole(role: 'priest' | 'admin') {
       return;
     }
 
-    const userId = request.currentUser.id;
+    const userRoles = request.currentUser.roles ?? [];
 
+    // Legacy 'priest' role check
     if (role === 'priest') {
+      if (userRoles.includes('PANDIT')) return;
+
       const priest = await prisma.priest.findUnique({
-        where: { userId },
+        where: { userId: request.currentUser.id },
       });
 
       if (!priest || priest.status !== 'active') {
@@ -135,20 +180,59 @@ export function requireRole(role: 'priest' | 'admin') {
         });
         return;
       }
+      return;
     }
 
-    if (role === 'admin') {
-      // Simple admin check via environment-configured email allowlist
+    // Legacy 'admin' check + role-based check
+    if (role === 'admin' || role === 'ADMIN') {
+      if (userRoles.includes('ADMIN')) return;
+
+      // Fallback: email allowlist
       const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase());
       const userEmail = request.currentUser.email?.toLowerCase();
 
-      if (!userEmail || !adminEmails.includes(userEmail)) {
-        reply.code(403).send({
-          error: 'Forbidden',
-          message: 'This route requires admin privileges.',
-        });
-        return;
-      }
+      if (userEmail && adminEmails.includes(userEmail)) return;
+
+      reply.code(403).send({
+        error: 'Forbidden',
+        message: 'This route requires admin privileges.',
+      });
+      return;
+    }
+
+    // Marketplace role check
+    if (!userRoles.includes(role)) {
+      reply.code(403).send({
+        error: 'Forbidden',
+        message: `This route requires the ${role} role.`,
+      });
+      return;
+    }
+  };
+}
+
+/**
+ * Factory for a preHandler hook that checks if the user has ANY of the given roles.
+ */
+export function requireAnyRole(...roles: MarketplaceRole[]) {
+  return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    if (!request.currentUser) {
+      reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Authentication required.',
+      });
+      return;
+    }
+
+    const userRoles = request.currentUser.roles ?? [];
+    const hasRole = roles.some((r) => userRoles.includes(r));
+
+    if (!hasRole) {
+      reply.code(403).send({
+        error: 'Forbidden',
+        message: `This route requires one of: ${roles.join(', ')}`,
+      });
+      return;
     }
   };
 }

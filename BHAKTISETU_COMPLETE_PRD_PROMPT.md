@@ -1,12 +1,12 @@
-# BHAKTISETU — Complete PRD & Implementation Prompt
+# POOJLY — Complete PRD & Implementation Prompt
 
-> **Purpose**: This is a self-contained, end-to-end prompt to build Bhaktisetu from scratch. Give this entire document to Claude Code, Cursor, or any AI coding assistant. It contains market research, competitor analysis, revenue models, feature specifications, tech stack, database schema, API design, UI/UX specs, AI features, testing strategy, and deployment plan — everything needed to build and launch a production-ready devotional super-app.
+> **Purpose**: This is a self-contained, end-to-end prompt to build Poojly from scratch. Give this entire document to Claude Code, Cursor, or any AI coding assistant. It contains market research, competitor analysis, revenue models, feature specifications, tech stack, database schema, API design, UI/UX specs, AI features, testing strategy, and deployment plan — everything needed to build and launch a production-ready devotional super-app.
 
 ---
 
 ## 1. EXECUTIVE SUMMARY
 
-Build **Bhaktisetu** — India's first integrated devotional super-app combining live temple darshan, puja booking with video proof, spiritual content (aartis/mantras/chalisas), AI-powered spiritual guidance, e-commerce, and gaushala seva in one platform.
+Build **Poojly** — India's first integrated devotional super-app combining live temple darshan, puja booking with video proof, spiritual content (aartis/mantras/chalisas), AI-powered spiritual guidance, e-commerce, and gaushala seva in one platform.
 
 **Market**: $58.56B Indian religious market (2023), projected $90-100B by 2032. Digital devotion growing at 28-35% CAGR. 900+ spiritual tech startups. NRI users generate 9-10x ARPU ($81/month vs $7-9 domestic).
 
@@ -81,9 +81,9 @@ Build **Bhaktisetu** — India's first integrated devotional super-app combining
 - **Devaseva**: 10L+ devotees, Agama Vidhi compliance focus
 - **mymandir**: 5M+ users, WhatsApp integration (content only)
 
-### 2.3 White Space Analysis (Bhaktisetu's Opportunity)
+### 2.3 White Space Analysis (Poojly's Opportunity)
 
-| Gap | Competitor Status | Bhaktisetu Solution |
+| Gap | Competitor Status | Poojly Solution |
 |---|---|---|
 | No super-app exists | Everyone is single-vertical | Integrate ALL: darshan + puja + content + commerce + AI |
 | No AI across full journey | AstroTalk has astrology AI only | AI counsel → puja booking → video proof → commerce |
@@ -265,7 +265,7 @@ Build **Bhaktisetu** — India's first integrated devotional super-app combining
 ### 5.1 Architecture: Turborepo Monorepo
 
 ```
-bhaktisetu/
+poojly/
 ├── apps/
 │   ├── web/                    # Next.js 15 (main website, port 3000)
 │   ├── api/                    # Fastify 5 backend (port 4000)
@@ -723,7 +723,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_REGION=ap-south-1
-AWS_S3_BUCKET=bhaktisetu-media
+AWS_S3_BUCKET=poojly-media
 
 # Redis
 REDIS_URL=redis://default:...@redis.upstash.io:6379

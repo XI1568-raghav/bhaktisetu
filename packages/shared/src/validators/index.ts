@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // ──────────────────────────────────────────────
-// @bhaktisetu/shared — Zod Validators
+// @poojly/shared — Zod Validators
 // ──────────────────────────────────────────────
 
 // ─── Common Primitives ───────────────────────

@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/shared — Barrel Export
+// @poojly/shared — Barrel Export
 // ──────────────────────────────────────────────
 
 export * from "./types/index.js";

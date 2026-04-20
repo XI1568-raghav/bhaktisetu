@@ -100,7 +100,7 @@ export default function HomeScreen() {
             <Text style={styles.omSymbol}>{'ॐ'}</Text>
             <View>
               <Text style={styles.namaste}>Namaste</Text>
-              <Text style={styles.welcomeText}>Welcome to Bhaktisetu</Text>
+              <Text style={styles.welcomeText}>Welcome to Poojly</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.notificationBtn}>

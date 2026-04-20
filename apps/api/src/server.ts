@@ -19,6 +19,9 @@ import { storeRoutes } from './routes/store.js';
 import { aiRoutes } from './routes/ai.js';
 import { gaushalaRoutes } from './routes/gaushala.js';
 import { astrologyRoutes } from './routes/astrology.js';
+import { wellnessRoutes } from './routes/wellness.js';
+import { onboardingRoutes } from './routes/onboarding.js';
+import { providerRoutes } from './routes/providers.js';
 
 const server = Fastify({
   logger: {
@@ -35,11 +38,14 @@ async function bootstrap() {
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+    : [
+        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        process.env.ADMIN_URL || 'http://localhost:3001',
+      ];
   await server.register(cors, {
-    origin: [
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-      process.env.ADMIN_URL || 'http://localhost:3001',
-    ],
+    origin: corsOrigins,
     credentials: true,
   });
   await server.register(rateLimit, {
@@ -70,14 +76,17 @@ async function bootstrap() {
   await server.register(aiRoutes, { prefix: '/api/v1/ai' });
   await server.register(gaushalaRoutes, { prefix: '/api/v1/gaushala' });
   await server.register(astrologyRoutes, { prefix: '/api/v1/astrology' });
+  await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
+  await server.register(onboardingRoutes, { prefix: '/api/v1/onboarding' });
+  await server.register(providerRoutes, { prefix: '/api/v1/providers' });
 
   // Start server
-  const port = Number(process.env.API_PORT) || 4000;
+  const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
   const host = process.env.HOST || '0.0.0.0';
 
   try {
     await server.listen({ port, host });
-    server.log.info(`Bhaktisetu API running at http://${host}:${port}`);
+    server.log.info(`Poojly API running at http://${host}:${port}`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

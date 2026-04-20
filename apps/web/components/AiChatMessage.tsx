@@ -49,20 +49,20 @@ function CitationCard({ citation }: { citation: Citation }) {
       {expanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-saffron-200">
           <div className="pt-2">
-            <p className="text-sm font-devanagari font-[family-name:var(--font-noto-devanagari)] text-stone-800 leading-relaxed">
+            <p className="text-sm font-devanagari font-[family-name:var(--font-noto-devanagari)] text-surface-800 leading-relaxed">
               {citation.sanskrit}
             </p>
           </div>
           <div>
-            <p className="text-xs text-stone-500 italic">
+            <p className="text-xs text-surface-500 italic">
               {citation.transliteration}
             </p>
           </div>
           <div>
-            <p className="text-sm text-stone-700">{citation.english}</p>
+            <p className="text-sm text-surface-700">{citation.english}</p>
           </div>
           <div>
-            <p className="text-sm font-devanagari font-[family-name:var(--font-noto-devanagari)] text-stone-600">
+            <p className="text-sm font-devanagari font-[family-name:var(--font-noto-devanagari)] text-surface-600">
               {citation.hindi}
             </p>
           </div>
@@ -82,14 +82,14 @@ function renderMarkdown(text: string): React.ReactNode {
     // Handle headings
     if (paragraph.startsWith('### ')) {
       return (
-        <h3 key={pIdx} className="text-base font-semibold text-stone-800 mt-3 mb-1">
+        <h3 key={pIdx} className="text-base font-semibold text-surface-800 mt-3 mb-1">
           {paragraph.substring(4)}
         </h3>
       );
     }
     if (paragraph.startsWith('## ')) {
       return (
-        <h2 key={pIdx} className="text-lg font-semibold text-stone-800 mt-3 mb-1">
+        <h2 key={pIdx} className="text-lg font-semibold text-surface-800 mt-3 mb-1">
           {paragraph.substring(3)}
         </h2>
       );
@@ -105,7 +105,7 @@ function renderMarkdown(text: string): React.ReactNode {
           {lines
             .filter((line) => line.startsWith('- ') || line.startsWith('* '))
             .map((line, lIdx) => (
-              <li key={lIdx} className="text-sm text-stone-700">
+              <li key={lIdx} className="text-sm text-surface-700">
                 {renderInlineMarkdown(line.substring(2))}
               </li>
             ))}
@@ -124,7 +124,7 @@ function renderMarkdown(text: string): React.ReactNode {
           {lines
             .filter((line) => /^\d+\.\s/.test(line))
             .map((line, lIdx) => (
-              <li key={lIdx} className="text-sm text-stone-700">
+              <li key={lIdx} className="text-sm text-surface-700">
                 {renderInlineMarkdown(line.replace(/^\d+\.\s/, ''))}
               </li>
             ))}
@@ -134,7 +134,7 @@ function renderMarkdown(text: string): React.ReactNode {
 
     // Regular paragraph — may contain line breaks
     return (
-      <p key={pIdx} className="text-sm text-stone-700 my-1.5 leading-relaxed">
+      <p key={pIdx} className="text-sm text-surface-700 my-1.5 leading-relaxed">
         {lines.map((line, lIdx) => (
           <span key={lIdx}>
             {lIdx > 0 && <br />}
@@ -182,13 +182,13 @@ function renderInlineMarkdown(text: string): React.ReactNode {
     // Add the matched element
     if (earliest.type === 'bold') {
       parts.push(
-        <strong key={key++} className="font-semibold text-stone-800">
+        <strong key={key++} className="font-semibold text-surface-800">
           {earliest.match[1]}
         </strong>
       );
     } else if (earliest.type === 'italic') {
       parts.push(
-        <em key={key++} className="italic text-stone-600">
+        <em key={key++} className="italic text-surface-600">
           {earliest.match[1]}
         </em>
       );
@@ -196,7 +196,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
       parts.push(
         <code
           key={key++}
-          className="px-1.5 py-0.5 bg-stone-100 rounded text-xs font-mono text-saffron-800"
+          className="px-1.5 py-0.5 bg-surface-100 rounded text-xs font-mono text-saffron-800"
         >
           {earliest.match[1]}
         </code>
@@ -238,7 +238,7 @@ export default function AiChatMessage({
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
           </div>
           {timestamp && (
-            <p className="text-xs text-stone-400 mt-1 text-right">{timestamp}</p>
+            <p className="text-xs text-surface-400 mt-1 text-right">{timestamp}</p>
           )}
         </div>
       </div>
@@ -256,7 +256,7 @@ export default function AiChatMessage({
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-stone-100">
+            <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-surface-100">
               {/* Message content */}
               <div className="prose prose-sm max-w-none">
                 {renderMarkdown(content)}
@@ -269,10 +269,10 @@ export default function AiChatMessage({
 
               {/* Copy button */}
               {!isStreaming && content.length > 0 && (
-                <div className="flex justify-end mt-2 pt-2 border-t border-stone-50">
+                <div className="flex justify-end mt-2 pt-2 border-t border-surface-50">
                   <button
                     onClick={handleCopy}
-                    className="flex items-center gap-1 text-xs text-stone-400 hover:text-saffron-600 transition-colors"
+                    className="flex items-center gap-1 text-xs text-surface-400 hover:text-saffron-600 transition-colors"
                     title="Copy response"
                   >
                     {copied ? (
@@ -294,7 +294,7 @@ export default function AiChatMessage({
             {/* Scripture citations */}
             {citations && citations.length > 0 && !isStreaming && (
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-stone-500 font-medium ml-1">
+                <p className="text-xs text-surface-500 font-medium ml-1">
                   Scripture References:
                 </p>
                 {citations.map((citation, idx) => (
@@ -304,7 +304,7 @@ export default function AiChatMessage({
             )}
 
             {timestamp && (
-              <p className="text-xs text-stone-400 mt-1 ml-1">{timestamp}</p>
+              <p className="text-xs text-surface-400 mt-1 ml-1">{timestamp}</p>
             )}
           </div>
         </div>

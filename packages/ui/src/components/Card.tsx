@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "../index.js";
 
 // ──────────────────────────────────────────────
-// @bhaktisetu/ui — Card Component
+// @poojly/ui — Card Component
 // ──────────────────────────────────────────────
 
 const Card = React.forwardRef<

@@ -170,4 +170,37 @@ export async function astrologyRoutes(server: FastifyInstance) {
 
     return { compatibility: result };
   });
+
+  // ─── POST /ask ─────────────────────────────────────────────────────────────
+  // AI Astrologer chat — answers astrology questions
+
+  server.post('/ask', async (request, reply) => {
+    const { message, birthDetails } = request.body as {
+      message?: string;
+      birthDetails?: {
+        name?: string;
+        date?: string;
+        time?: string;
+        place?: string;
+      };
+    };
+
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return reply.code(400).send({ error: 'message is required.' });
+    }
+
+    if (message.length > 2000) {
+      return reply.code(400).send({ error: 'Message too long. Maximum 2000 characters.' });
+    }
+
+    try {
+      const response = await astrologyService.askAstrologer(message.trim(), birthDetails);
+      return { response };
+    } catch (error: any) {
+      server.log.error(error, 'AI Astrologer error');
+      // Return fallback response instead of 500
+      const fallback = astrologyService.getAstrologerFallback(message.trim());
+      return { response: fallback };
+    }
+  });
 }

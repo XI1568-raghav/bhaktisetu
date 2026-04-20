@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// @bhaktisetu/shared — Utility Functions
+// @poojly/shared — Utility Functions
 // ──────────────────────────────────────────────
 
 /**

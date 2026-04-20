@@ -37,11 +37,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="temples"
+        name="pujas"
         options={{
-          title: 'Temples',
+          title: 'Pujas',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="location" color={color} size={size} />
+            <TabIcon name="flame" color={color} size={size} />
           ),
         }}
       />
@@ -55,11 +55,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="content"
+        name="store"
         options={{
-          title: 'Content',
+          title: 'Store',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="musical-notes" color={color} size={size} />
+            <TabIcon name="bag-handle" color={color} size={size} />
           ),
         }}
       />
@@ -70,6 +70,35 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="person" color={color} size={size} />
           ),
+        }}
+      />
+      {/* Secondary screens — accessible via navigation, hidden from tab bar */}
+      <Tabs.Screen
+        name="temples"
+        options={{
+          href: null,
+          title: 'Temples',
+        }}
+      />
+      <Tabs.Screen
+        name="content"
+        options={{
+          href: null,
+          title: 'Content',
+        }}
+      />
+      <Tabs.Screen
+        name="astrology"
+        options={{
+          href: null,
+          title: 'Astrology',
+        }}
+      />
+      <Tabs.Screen
+        name="wellness"
+        options={{
+          href: null,
+          title: 'Wellness',
         }}
       />
     </Tabs>

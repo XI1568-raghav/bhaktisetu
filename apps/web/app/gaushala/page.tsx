@@ -21,7 +21,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Gau Seva — Adopt a Cow",
   description:
-    "Adopt a cow at a verified gaushala. Get monthly photo updates, visit anytime, and earn divine blessings. Support cow protection across India with Bhaktisetu.",
+    "Adopt a cow at a verified gaushala. Get monthly photo updates, visit anytime, and earn divine blessings. Support cow protection across India with Poojly.",
 };
 
 /* ── Hardcoded data (matches API) ─────────────────────────────────────────────── */
@@ -571,7 +571,7 @@ export default function GaushalaPage() {
               Our Collective Impact
             </h2>
             <p className="text-surface-400 max-w-xl mx-auto">
-              Together, Bhaktisetu devotees are making a real difference in cow
+              Together, Poojly devotees are making a real difference in cow
               protection across India.
             </p>
           </div>
@@ -621,7 +621,7 @@ export default function GaushalaPage() {
               Frequently Asked Questions
             </h2>
             <p className="text-surface-600">
-              Everything you need to know about cow adoption through Bhaktisetu.
+              Everything you need to know about cow adoption through Poojly.
             </p>
           </div>
 
