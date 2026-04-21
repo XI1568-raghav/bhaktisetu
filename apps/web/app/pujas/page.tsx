@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getDeityImage } from "../../lib/images";
 import {
   Flame,
@@ -6,6 +7,7 @@ import {
   MapPin,
   Clock,
   Heart,
+  Home,
   Search,
   ChevronDown,
   ChevronRight,
@@ -18,6 +20,7 @@ import {
   Gift,
   Calendar,
   Tag,
+  Sparkles,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -287,6 +290,94 @@ export default function PujasPage() {
           </div>
         </div>
       </section>
+
+      {/* At-home services — featured */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-surface-800 tracking-tight">
+              Pandits at your home
+            </h2>
+            <p className="text-sm text-surface-500 mt-1">
+              Book verified pandits for home pujas and marriage ceremonies.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-5">
+          <Link
+            href="/pujas/home-puja"
+            className="group relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-saffron-50 via-sandal-cream/30 to-white p-8 hover:shadow-warm-md transition-all"
+          >
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 bg-saffron-500/10 text-saffron-700 text-xs font-semibold px-3 py-1 rounded-full mb-4 border border-saffron-500/20">
+                <Home className="w-3.5 h-3.5" />
+                Home Puja
+              </div>
+              <h3 className="text-2xl font-bold text-surface-800 tracking-tight">
+                Book a Pandit at Your Home
+              </h3>
+              <p className="mt-2 text-surface-500 text-sm">
+                Griha Pravesh, Satyanarayan Katha, Navratri, Rudrabhishek, and 4 more. Starting ₹1,100.
+              </p>
+              <div className="mt-6 flex items-center gap-4 text-xs text-surface-600">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-tulsi-green" />
+                  Aadhaar verified
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
+                  Samagri included
+                </span>
+              </div>
+              <div className="mt-6 inline-flex items-center gap-1 font-semibold text-saffron-700 group-hover:translate-x-0.5 transition-transform">
+                Explore home pujas
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+            <Home
+              className="absolute -right-6 -bottom-6 w-40 h-40 text-saffron-500/10"
+              strokeWidth={1}
+            />
+          </Link>
+
+          <Link
+            href="/pujas/marriage"
+            className="group relative overflow-hidden rounded-2xl border border-vermillion-500/20 bg-gradient-to-br from-vermillion-500 via-saffron-600 to-saffron-500 p-8 hover:shadow-warm-md transition-all text-white"
+          >
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-4 backdrop-blur-sm">
+                <Heart className="w-3.5 h-3.5" />
+                Marriage Ceremony
+              </div>
+              <h3 className="text-2xl font-bold tracking-tight">
+                Book a Pandit for Your Wedding
+              </h3>
+              <p className="mt-2 text-white/90 text-sm">
+                Sampoorna vivah sanskar with 7 pheras. Hindu, Arya Samaj, South Indian, Sikh blends. Starting ₹11,000.
+              </p>
+              <div className="mt-6 flex items-center gap-4 text-xs text-white/90">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" />
+                  Vedic certified
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  1,500+ weddings
+                </span>
+              </div>
+              <div className="mt-6 inline-flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform">
+                Explore wedding pandits
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+            <Heart
+              className="absolute -right-6 -bottom-6 w-40 h-40 text-white/10"
+              strokeWidth={1}
+            />
+          </Link>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters */}

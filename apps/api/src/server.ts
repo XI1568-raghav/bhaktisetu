@@ -22,6 +22,7 @@ import { astrologyRoutes } from './routes/astrology.js';
 import { wellnessRoutes } from './routes/wellness.js';
 import { onboardingRoutes } from './routes/onboarding.js';
 import { providerRoutes } from './routes/providers.js';
+import { yatraRoutes } from './routes/yatra.js';
 
 const server = Fastify({
   logger: {
@@ -79,6 +80,7 @@ async function bootstrap() {
   await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
   await server.register(onboardingRoutes, { prefix: '/api/v1/onboarding' });
   await server.register(providerRoutes, { prefix: '/api/v1/providers' });
+  await server.register(yatraRoutes, { prefix: '/api/v1/yatra' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
