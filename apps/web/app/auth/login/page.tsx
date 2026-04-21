@@ -456,18 +456,40 @@ export default function LoginPage() {
                   )}
                 </button>
 
-                {/* Demo credentials hint */}
+                {/* Demo accounts — one-click login */}
                 <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs font-semibold text-amber-800 mb-2">Demo Accounts <span className="font-normal">(password: demo123)</span></p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-amber-700">
-                    <span className="font-medium">devotee@demo.com</span><span className="text-amber-500">Devotee</span>
-                    <span className="font-medium">pandit@demo.com</span><span className="text-amber-500">Pandit</span>
-                    <span className="font-medium">store@demo.com</span><span className="text-amber-500">Store Owner</span>
-                    <span className="font-medium">astro@demo.com</span><span className="text-amber-500">Astrologer</span>
-                    <span className="font-medium">wellness@demo.com</span><span className="text-amber-500">Wellness</span>
-                    <span className="font-medium">temple@demo.com</span><span className="text-amber-500">Temple Manager</span>
-                    <span className="font-medium">gaushala@demo.com</span><span className="text-amber-500">Gaushala</span>
-                    <span className="font-medium">admin@demo.com</span><span className="text-amber-500">Admin</span>
+                  <p className="text-xs font-semibold text-amber-800 mb-2">Quick Login — Demo Accounts</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { email: 'devotee@demo.com', role: 'Devotee' },
+                      { email: 'pandit@demo.com', role: 'Pandit' },
+                      { email: 'store@demo.com', role: 'Store Owner' },
+                      { email: 'astro@demo.com', role: 'Astrologer' },
+                      { email: 'wellness@demo.com', role: 'Wellness' },
+                      { email: 'temple@demo.com', role: 'Temple' },
+                      { email: 'gaushala@demo.com', role: 'Gaushala' },
+                      { email: 'admin@demo.com', role: 'Admin' },
+                    ].map((acc) => (
+                      <button
+                        key={acc.email}
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={async () => {
+                          setError('');
+                          setSuccessMessage('');
+                          setEmail(acc.email);
+                          setPassword('demo123');
+                          setIsSubmitting(true);
+                          const result = await signInWithCredentials(acc.email, 'demo123');
+                          setIsSubmitting(false);
+                          if (!result.success) setError(result.message);
+                        }}
+                        className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-white hover:bg-amber-100 border border-amber-200 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed group"
+                      >
+                        <span className="text-[11px] font-medium text-surface-700 truncate">{acc.role}</span>
+                        <span className="text-[10px] font-semibold text-saffron-600 group-hover:text-saffron-700 shrink-0">Sign in →</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
