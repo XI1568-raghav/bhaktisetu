@@ -26,7 +26,7 @@ import {
 import AuthGuard from '../../components/AuthGuard';
 import PujaRecommendationWidget from '../../components/PujaRecommendationWidget';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/supabase';
+import { API_BASE_URL } from '../../lib/api-config';
 
 interface Booking {
   id: string;

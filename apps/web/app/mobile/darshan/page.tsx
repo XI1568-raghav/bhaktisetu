@@ -36,7 +36,7 @@ export default function MobileDarshan() {
           {liveStreams.map((s) => (
             <div key={s.name} className="rounded-2xl overflow-hidden bg-surface-800 border border-surface-700/50">
               <div className="relative aspect-[4/3]">
-                <img src={s.img} alt={s.name} className="w-full h-full object-cover opacity-80" />
+                <img src={s.img} alt={s.name} className="w-full h-full object-cover opacity-80" loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                 <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
                   <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
@@ -67,7 +67,7 @@ export default function MobileDarshan() {
         <div className="space-y-2">
           {upcoming.map((s) => (
             <div key={s.name} className="flex items-center gap-3 bg-surface-800/80 rounded-xl p-3 border border-surface-700/40">
-              <img src={s.img} alt={s.name} className="w-12 h-12 rounded-lg object-cover opacity-70" />
+              <img src={s.img} alt={s.name} className="w-12 h-12 rounded-lg object-cover opacity-70" loading="lazy" decoding="async" />
               <div className="flex-1">
                 <p className="text-xs font-semibold text-white">{s.name}</p>
                 <p className="text-[10px] text-surface-500 flex items-center gap-1 mt-0.5">

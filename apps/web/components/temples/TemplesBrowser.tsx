@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   MapPin,
   Star,
@@ -56,10 +56,19 @@ export function TemplesBrowser({
   total: number;
 }) {
   const [search, setSearch] = useState('');
+  // Debounced mirror of `search` — filter logic reads this, not the raw input.
+  // Avoids re-filtering 200+ temples on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [deityType, setDeityType] = useState<DeityTypeFilter>('All');
   const [state, setState] = useState<string>('All States');
   const [liveOnly, setLiveOnly] = useState(false);
   const [sort, setSort] = useState<SortMode>('popularity');
+
+  // 200ms debounce on search input
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(id);
+  }, [search]);
 
   // Derive state list from data
   const states = useMemo(() => {
@@ -68,7 +77,7 @@ export function TemplesBrowser({
   }, [temples]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     const list = temples.filter((t) => {
       if (deityType !== 'All' && t.deityType !== deityType) return false;
       if (state !== 'All States' && t.state !== state) return false;
@@ -88,13 +97,14 @@ export function TemplesBrowser({
       list.sort((a, b) => b.popularity - a.popularity);
     }
     return list;
-  }, [temples, search, deityType, state, liveOnly, sort]);
+  }, [temples, debouncedSearch, deityType, state, liveOnly, sort]);
 
   const hasActiveFilters =
     search !== '' || deityType !== 'All' || state !== 'All States' || liveOnly;
 
   const resetFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setDeityType('All');
     setState('All States');
     setLiveOnly(false);

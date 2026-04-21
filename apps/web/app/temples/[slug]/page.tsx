@@ -757,7 +757,7 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
       </div>
 
       <section className="relative h-80 overflow-hidden md:h-96">
-        <img src={heroImg} alt={temple.name} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={heroImg} alt={temple.name} className="absolute inset-0 h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-semibold text-white md:text-4xl">{temple.name}</h1>
@@ -813,7 +813,7 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                   {gallery.slice(0, 6).map((img, i) => (
                     <div key={i} className="aspect-[4/3] overflow-hidden rounded-lg">
-                      <img src={img} alt={`${temple.name} photo ${i + 1}`} className="h-full w-full object-cover" />
+                      <img src={img} alt={`${temple.name} photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                     </div>
                   ))}
                 </div>

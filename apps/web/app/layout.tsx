@@ -10,7 +10,6 @@ import {
   Video,
   Search,
   Menu,
-  X,
   ChevronDown,
   Phone,
   Mail,
@@ -26,11 +25,11 @@ import {
 } from "lucide-react";
 import { AuthProvider } from "../lib/auth-context";
 import { CartProvider } from "../components/CartContext";
-import CartDrawer from "../components/CartDrawer";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { Logo } from "../components/Logo";
-import LiveChatWidget from "../components/LiveChatWidget";
+import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
+import { getTempleHero } from "../lib/images";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -178,17 +177,35 @@ export default function RootLayout({
       className={`${notoSans.variable} ${notoSansDevanagari.variable}`}
     >
       <head>
-        {/* Fontshare — Cabinet Grotesk (display) + Satoshi (body) */}
+        {/* Resource hints — warm up connections to third-party origins we hit on nearly every page. */}
         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+
+        {/*
+          Fontshare — Cabinet Grotesk (display) + Satoshi (body).
+          Trimmed to the weights actually used in the UI:
+            - Cabinet Grotesk 500, 700 (headings / display)
+            - Satoshi 400, 500, 700 (body + UI)
+          Dropped: cabinet-grotesk 400 & 800, satoshi 300 — unused in current components.
+        */}
         <link
-          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@300,400,500,700&display=swap"
+          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700&f[]=satoshi@400,500,700&display=swap"
           rel="stylesheet"
+        />
+
+        {/* Preload the home hero — the image is reused on multiple sections and is the LCP element on `/`. */}
+        <link
+          rel="preload"
+          as="image"
+          href={getTempleHero('kashi-vishwanath')}
+          fetchPriority="high"
         />
       </head>
       <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]">
         <AuthProvider>
         <CartProvider>
-        <CartDrawer />
 
         {/* ── Navigation ─────────────────────────────────────────────── */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-surface-200/40">
@@ -371,7 +388,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
-        <LiveChatWidget />
+        <DeferredClientWidgets />
         </CartProvider>
         </AuthProvider>
       </body>

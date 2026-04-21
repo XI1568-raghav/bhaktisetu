@@ -68,13 +68,13 @@ export default function CompanionListingPage() {
               Three simple steps
             </h2>
 
-            <div className="grid md:grid-cols-3 gap-5">
+            <div data-reveal="up" className="grid md:grid-cols-3 gap-5">
               {[
                 { n: '01', icon: Users, title: 'Book with your yatra', desc: 'Add a companion when booking any yatra or browse our companion pool and select by language, specialization and availability.' },
                 { n: '02', icon: MapPin, title: 'Meet at departure', desc: 'Your companion arrives at your pickup city a day before departure for briefing and to meet the family.' },
                 { n: '03', icon: Heart, title: 'They handle everything', desc: 'Mobility assistance, medicine reminders, photos, darshan queue management, family video calls — so you focus on devotion.' },
-              ].map((s, i) => (
-                <div key={s.n} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl p-5" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+              ].map((s) => (
+                <div key={s.n} className="rounded-xl p-5" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-primary-highlight)' }}>
                       <s.icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
@@ -102,12 +102,10 @@ export default function CompanionListingPage() {
               <p className="text-xs hidden sm:block" style={{ color: 'var(--color-text-muted)' }}>All verified · Background checked · First-aid certified</p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {companions.map((c, i) => (
+            <div data-reveal="up" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {companions.map((c) => (
                 <div
                   key={c.id}
-                  data-reveal="cascade"
-                  data-delay={String((i % 4) + 1)}
                   className="rounded-xl p-4 card-hover flex flex-col"
                   style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
                 >
@@ -200,14 +198,14 @@ export default function CompanionListingPage() {
               Family peace-of-mind guaranteed
             </h2>
 
-            <div className="grid md:grid-cols-4 gap-4">
+            <div data-reveal="up" className="grid md:grid-cols-4 gap-4">
               {[
                 { icon: Shield, title: 'Background verified', desc: 'Aadhaar, police verification and reference checks done for every companion.' },
                 { icon: Stethoscope, title: 'First-aid certified', desc: 'Basic nursing, BP monitoring, oximeter handling, CPR — all companions trained.' },
                 { icon: Phone, title: 'Family emergency contact', desc: 'Companion shares daily video calls. Emergency hotline runs 24/7.' },
                 { icon: Navigation, title: 'Real-time GPS tracking', desc: 'Live location shared with up to 3 family members throughout the yatra.' },
-              ].map((t, i) => (
-                <div key={t.title} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl p-5" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+              ].map((t) => (
+                <div key={t.title} className="rounded-xl p-5" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: 'var(--color-primary-highlight)' }}>
                     <t.icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
                   </div>
@@ -227,13 +225,13 @@ export default function CompanionListingPage() {
               Stories from children of elderly yatris
             </h2>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div data-reveal="up" className="grid md:grid-cols-3 gap-4">
               {[
                 { name: 'Anirudh Tiwari', city: 'Mumbai', comment: 'My parents (71 and 68) did Char Dham for the first time. Rajesh ji sent us a video update every evening. My mother said he treated them like his own parents.', yatra: 'Char Dham' },
                 { name: 'Nitya Raman', city: 'Bangalore', comment: 'Sending my 76-year-old mother alone to Tirupati felt impossible until Lakshmi akka joined her. She even accompanied her to the doctor post-yatra.', yatra: 'Tirupati + South' },
                 { name: 'Sameer Khanna', city: 'Delhi', comment: 'Aslam bhai refused to fly my father in bad weather — we lost one day but came home safe. That judgement is priceless.', yatra: 'Amarnath' },
               ].map((t, i) => (
-                <div key={i} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <div key={i} className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <div className="flex items-center gap-1 mb-3">
                     {Array.from({ length: 5 }).map((_, s) => (
                       <Star key={s} className="w-3 h-3" fill="var(--color-primary)" style={{ color: 'var(--color-primary)' }} />
@@ -279,7 +277,7 @@ export default function CompanionListingPage() {
             <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Questions we hear often
             </h2>
-            <div className="space-y-3">
+            <div data-reveal="up" className="space-y-3">
               {[
                 { q: 'Can I choose a specific companion?', a: 'Yes. Browse profiles, pick one who matches your language, regional familiarity and specialization. We confirm availability within 2 hours.' },
                 { q: 'Does the companion need separate hotel booking?', a: 'No. Companion stay is covered in their daily rate. They share accommodation arrangements made by Poojly or stay in adjacent rooms.' },
@@ -288,7 +286,7 @@ export default function CompanionListingPage() {
                 { q: 'Is the companion with us 24/7?', a: 'Yes. The companion shares accommodation with the group or in an adjacent room, and is on call throughout.' },
                 { q: 'Can I extend the companion after the yatra?', a: 'Yes, subject to availability. We offer pre-yatra (1-2 day acclimatization in your city) and post-yatra (return help) extensions.' },
               ].map((f, i) => (
-                <details key={i} data-reveal="up" data-delay={String((i % 5) + 1)} className="group rounded-xl p-4 cursor-pointer" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <details key={i} className="group rounded-xl p-4 cursor-pointer" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <summary className="flex items-center justify-between list-none">
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{f.q}</span>
                     <ChevronRight className="w-4 h-4 group-open:rotate-90 transition-transform" style={{ color: 'var(--color-primary)' }} />

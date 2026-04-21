@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/supabase';
+import { API_BASE_URL } from '../../lib/api-config';
 
 interface ProfileFormData {
   fullName: string;
@@ -252,7 +252,7 @@ function ProfileContent() {
             <div className="relative">
               <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center overflow-hidden">
                 {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <User className="w-10 h-10 text-saffron-400" />
                 )}

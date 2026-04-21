@@ -28,7 +28,7 @@ import {
   Play,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
-import { API_BASE_URL } from '../../../lib/supabase';
+import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 

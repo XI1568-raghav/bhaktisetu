@@ -2,6 +2,16 @@
 
 import { useEffect } from 'react';
 
+/**
+ * Scroll-driven reveal + parallax + counter orchestration.
+ *
+ * Perf notes:
+ * - All observers share a single rAF tick (the "ticking" flag).
+ * - Parallax is gated by a second IntersectionObserver — off-screen elements
+ *   never get transform writes, avoiding layout thrash from getBoundingClientRect.
+ * - Scroll handler is passive + rAF-throttled (one write per frame max).
+ * - We query the DOM once per mount; observers self-unobserve after first reveal.
+ */
 export default function ScrollReveal({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -9,12 +19,12 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
     // ─── 1. Reveal elements on scroll ─────────────────────────────────
     const revealObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        for (const entry of entries) {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
             revealObserver.unobserve(entry.target);
           }
-        });
+        }
       },
       { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
     );
@@ -22,12 +32,12 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
     // ─── 2. Text highlight on scroll ──────────────────────────────────
     const highlightObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        for (const entry of entries) {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
             highlightObserver.unobserve(entry.target);
           }
-        });
+        }
       },
       { threshold: 0.5 }
     );
@@ -35,14 +45,14 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
     // ─── 3. Counter animation — animates numbers on scroll ────────────
     const counterObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        for (const entry of entries) {
           if (entry.isIntersecting) {
             const el = entry.target as HTMLElement;
             const target = el.dataset.counterTarget || el.textContent || '0';
             animateCounter(el, target);
             counterObserver.unobserve(el);
           }
-        });
+        }
       },
       { threshold: 0.3 }
     );
@@ -50,7 +60,6 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
     function animateCounter(el: HTMLElement, target: string) {
       if (prefersReducedMotion) { el.textContent = target; return; }
 
-      // Extract numeric part and suffix (e.g. "50K+" → 50, "K+")
       const match = target.match(/^([₹$]?)(\d+(?:\.\d+)?)(.*)/);
       if (!match) { el.textContent = target; return; }
 
@@ -62,53 +71,73 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
       function tick(now: number) {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        // Ease-out cubic
         const eased = 1 - Math.pow(1 - progress, 3);
         const current = eased * end;
 
         el.textContent = `${prefix}${current % 1 === 0 || progress < 1 ? Math.round(current) : current.toFixed(1)}${suffix}`;
 
         if (progress < 1) requestAnimationFrame(tick);
-        else el.textContent = target; // Ensure exact final value
+        else el.textContent = target;
       }
       requestAnimationFrame(tick);
     }
 
-    // ─── 4. Parallax — scroll-linked Y offset ────────────────────────
-    const parallaxElements: { el: HTMLElement; speed: number }[] = [];
-    document.querySelectorAll<HTMLElement>('[data-parallax]').forEach((el) => {
-      const speed = parseFloat(el.dataset.parallax || '0.15');
-      parallaxElements.push({ el, speed });
-    });
+    // ─── 4. Parallax — scroll-linked Y offset, gated by visibility ───
+    // Only apply transforms to elements currently near the viewport.
+    // Off-screen parallax elements are skipped entirely.
+    type ParallaxEntry = { el: HTMLElement; speed: number; visible: boolean };
+    const parallaxEntries: ParallaxEntry[] = [];
+
+    if (!prefersReducedMotion) {
+      document.querySelectorAll<HTMLElement>('[data-parallax]').forEach((el) => {
+        const speed = parseFloat(el.dataset.parallax || '0.15');
+        parallaxEntries.push({ el, speed, visible: false });
+      });
+    }
+
+    // Toggle visibility when parallax element approaches viewport (200px buffer).
+    const parallaxVisibilityObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const hit = parallaxEntries.find((p) => p.el === entry.target);
+          if (hit) hit.visible = entry.isIntersecting;
+        }
+      },
+      { rootMargin: '200px 0px 200px 0px', threshold: 0 }
+    );
+
+    for (const { el } of parallaxEntries) parallaxVisibilityObserver.observe(el);
 
     let ticking = false;
     function updateParallax() {
-      if (prefersReducedMotion || parallaxElements.length === 0) return;
-      const scrollY = window.scrollY;
-
-      for (const { el, speed } of parallaxElements) {
-        const rect = el.getBoundingClientRect();
-        const centerOffset = rect.top + rect.height / 2 - window.innerHeight / 2;
-        el.style.transform = `translate3d(0, ${centerOffset * speed * -1}px, 0)`;
-      }
-      ticking = false;
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        requestAnimationFrame(updateParallax);
-        ticking = true;
+      const vh = window.innerHeight;
+      for (const entry of parallaxEntries) {
+        if (!entry.visible) continue;
+        const rect = entry.el.getBoundingClientRect();
+        const centerOffset = rect.top + rect.height / 2 - vh / 2;
+        entry.el.style.transform = `translate3d(0, ${centerOffset * entry.speed * -1}px, 0)`;
       }
     }
 
     // ─── 5. Scroll progress bar ──────────────────────────────────────
-    const progressBar = document.querySelector('[data-scroll-progress]') as HTMLElement;
+    const progressBar = document.querySelector('[data-scroll-progress]') as HTMLElement | null;
     function updateProgress() {
       if (!progressBar) return;
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = Math.min(scrollTop / docHeight, 1);
+      const progress = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
       progressBar.style.transform = `scaleX(${progress})`;
+    }
+
+    // ─── Single rAF-throttled scroll tick ────────────────────────────
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        updateParallax();
+        updateProgress();
+        ticking = false;
+      });
     }
 
     // ─── Wire up ──────────────────────────────────────────────────────
@@ -116,15 +145,16 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
     document.querySelectorAll('.text-highlight').forEach((el) => highlightObserver.observe(el));
     document.querySelectorAll('[data-counter]').forEach((el) => counterObserver.observe(el));
 
-    const scrollHandler = () => { onScroll(); updateProgress(); };
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-    updateParallax(); // Initial position
+    window.addEventListener('scroll', onScroll, { passive: true });
+    // Initial positions (wrapped in rAF so it batches with first paint).
+    requestAnimationFrame(() => { updateParallax(); updateProgress(); });
 
     return () => {
       revealObserver.disconnect();
       highlightObserver.disconnect();
       counterObserver.disconnect();
-      window.removeEventListener('scroll', scrollHandler);
+      parallaxVisibilityObserver.disconnect();
+      window.removeEventListener('scroll', onScroll);
     };
   }, []);
 

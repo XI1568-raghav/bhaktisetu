@@ -145,7 +145,7 @@ function BookingCard({ b }: { b: StoredBooking }) {
     <div className="rounded-xl p-4 flex flex-col md:flex-row gap-4 card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
       {yatra && (
         <div className="md:w-40 h-28 rounded-lg overflow-hidden shrink-0">
-          <img src={yatra.heroImage} alt={b.yatraTitle} className="w-full h-full object-cover" />
+          <img src={yatra.heroImage} alt={b.yatraTitle} className="w-full h-full object-cover" loading="lazy" decoding="async" />
         </div>
       )}
       <div className="flex-1 min-w-0">

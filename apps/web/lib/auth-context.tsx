@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { API_BASE_URL } from './supabase';
+import { API_BASE_URL } from './api-config';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

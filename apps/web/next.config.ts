@@ -26,7 +26,28 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'date-fns', '@tanstack/react-query', 'lodash'],
+    webpackBuildWorker: false,
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  productionBrowserSourceMaps: false,
+  reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        // Long-cache static image + font assets served from /public.
+        // These paths are versioned implicitly by filename, so immutable is safe.
+        source: '/:all*\\.(jpg|jpeg|png|webp|avif|svg|ico|woff|woff2)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
   },
 };
 

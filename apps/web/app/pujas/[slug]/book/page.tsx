@@ -40,7 +40,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../../../lib/auth-context';
-import { API_BASE_URL } from '../../../../lib/supabase';
+import { API_BASE_URL } from '../../../../lib/api-config';
 
 // ─── Types ──────────────────────────────────────────────────────
 
