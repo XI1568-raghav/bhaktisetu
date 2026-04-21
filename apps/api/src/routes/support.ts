@@ -66,6 +66,36 @@ Set escalate=false for routine questions with clear answers.
 
 // ─── Fallback knowledge base (used when AI unavailable) ───────────────────────
 const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?: Array<{ label: string; href: string }>; escalate?: boolean }> = [
+  // Greetings — simple hellos get a friendly reply, no escalation
+  {
+    keywords: ['hi', 'hii', 'hello', 'hey', 'namaste', 'pranam', 'ram ram', 'jai shri ram'],
+    message: 'Namaste! Welcome to Poojly. I can help you with puja bookings, live darshan, yatra planning, astrology, home pujas, wellness sessions, and more. What would you like help with today?',
+    actions: [
+      { label: 'Browse Pujas', href: '/pujas' },
+      { label: 'Live Darshan', href: '/darshan' },
+      { label: 'Plan a Yatra', href: '/yatra' },
+    ],
+  },
+  {
+    keywords: ['how are you', 'whats up', "what's up", 'how r u'],
+    message: 'I\'m doing great, thank you for asking! I\'m here to help you with anything on Poojly. Whether you need to book a puja, plan a pilgrimage, or have a question about your order — I\'m ready to help.',
+  },
+  {
+    keywords: ['thank', 'thanks', 'thank you', 'shukriya', 'dhanyavaad'],
+    message: 'You\'re welcome! If there\'s anything else you need, just let me know. May your spiritual journey with Poojly be blessed.',
+  },
+  {
+    keywords: ['bye', 'goodbye', 'see you', 'pranam'],
+    message: 'Namaste! Have a blessed day. Feel free to reach out anytime — I\'m always here to help.',
+  },
+  {
+    keywords: ['help', 'what can you do', 'what do you do'],
+    message: 'I can help with: booking pujas (temple or home), live darshan access, yatra planning, astrology consultations, wellness sessions, store orders, refunds, account issues, and more. What would you like to explore?',
+    actions: [
+      { label: 'Browse Features', href: '/' },
+      { label: 'Help Center', href: '/support' },
+    ],
+  },
   {
     keywords: ['book puja', 'book a puja', 'puja booking'],
     message: 'You can book any puja in 3 steps: pick a temple, choose the ritual, and pay. All pandits are Aadhaar-verified and you get video proof after completion.',
@@ -130,9 +160,22 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
 ];
 
 function findFallback(message: string) {
-  const lower = message.toLowerCase();
+  const lower = message.toLowerCase().trim();
+
+  // Exact match first (handles single-word greetings like "hi", "hello")
   for (const entry of FALLBACK_RESPONSES) {
-    if (entry.keywords.some((k) => lower.includes(k))) {
+    if (entry.keywords.some((k) => lower === k)) return entry;
+  }
+
+  // Word-boundary match for multi-word keywords
+  for (const entry of FALLBACK_RESPONSES) {
+    if (
+      entry.keywords.some((k) => {
+        if (k.includes(' ')) return lower.includes(k);
+        // Single word: match as whole word
+        return new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(lower);
+      })
+    ) {
       return entry;
     }
   }
@@ -168,10 +211,13 @@ export async function supportRoutes(server: FastifyInstance) {
         });
       }
       return reply.send({
-        message: "I'd like to help you more accurately — let me connect you with a human support agent who can dig into this.",
+        message: "I'm not sure I understood that. Could you tell me more? You can ask about booking pujas, live darshan, yatra, refunds, or any other Poojly feature. If you'd prefer a human, just say 'talk to human'.",
         confidence: 'low',
-        escalate: true,
-        suggestedActions: [{ label: 'Create Support Ticket', href: '/support/ticket/new' }],
+        escalate: false,
+        suggestedActions: [
+          { label: 'Book a Puja', href: '/pujas' },
+          { label: 'Help Center', href: '/support' },
+        ],
         source: 'keyword',
       });
     }
