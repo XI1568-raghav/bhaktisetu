@@ -573,6 +573,21 @@ export interface AutoReplyRule {
 
 export const AUTO_REPLY_RULES: AutoReplyRule[] = [
   {
+    keywords: ['hi', 'hii', 'hello', 'hey', 'namaste', 'pranam', 'ram ram', 'jai shri ram'],
+    reply:
+      'Namaste! I can help with puja bookings, live darshan, yatra planning, astrology, home pujas, wellness, and more. What would you like help with?',
+  },
+  {
+    keywords: ['thank', 'thanks', 'thank you', 'shukriya', 'dhanyavaad'],
+    reply:
+      "You're welcome! If there's anything else you need, just let me know. May your spiritual journey with Poojly be blessed.",
+  },
+  {
+    keywords: ['help', 'what can you do', 'what do you do'],
+    reply:
+      'I can help with: booking pujas (temple or home), live darshan, yatra planning, astrology consultations, wellness sessions, store orders, refunds, and account issues. What would you like to explore?',
+  },
+  {
     keywords: ['book', 'puja', 'pooja'],
     reply:
       'I can help you book a puja. Browse 40+ options at /pujas — Rudrabhishek, Mahamrityunjay, Satyanarayan and more. Every booking includes video proof and prasad delivery. Would you like me to share the most popular ones?',

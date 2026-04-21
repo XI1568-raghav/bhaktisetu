@@ -133,7 +133,13 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
     escalate: true,
   },
   {
-    keywords: ['payment', 'failed', 'razorpay', 'card declined'],
+    // Trust/security questions — must appear before the "payment failed" entry
+    // so a benign "Is payment secure?" doesn't get routed to escalation.
+    keywords: ['payment secure', 'is it safe', 'safe to pay', 'payment safe', 'is payment secure', 'secure payment'],
+    message: 'Yes — payments go through Razorpay (India) or Stripe (international), both PCI-DSS Level 1. We never store card details. All pandits are Aadhaar-verified.',
+  },
+  {
+    keywords: ['payment failed', 'payment didn\'t', 'payment didnt', 'razorpay failed', 'card declined', 'money deducted'],
     message: 'If payment was deducted but booking didn\'t appear, we\'ll investigate immediately. Please share your transaction ID.',
     escalate: true,
   },
@@ -156,6 +162,66 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
     keywords: ['gaushala', 'cow', 'adopt'],
     message: 'Adopt a cow from ₹51/day. Monthly photo updates, visit anytime. 12 cows across 3 verified gaushalas.',
     actions: [{ label: 'Gau Seva', href: '/gaushala' }],
+  },
+  {
+    keywords: ['what is poojly', 'about poojly', 'who are you', 'what do you do'],
+    message: "Poojly is India's devotional super-app — live darshan from 200+ temples, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. All Aadhaar-verified priests, all secure payments.",
+    actions: [
+      { label: 'Browse Pujas', href: '/pujas' },
+      { label: 'Live Darshan', href: '/darshan' },
+    ],
+  },
+  {
+    keywords: ['24/7', '24 7', 'always live', 'anytime darshan'],
+    message: 'Most darshan streams run 4am–10pm IST as per temple timings. A few major temples stream 24/7. Each temple page shows its exact schedule.',
+    actions: [{ label: 'Watch Live', href: '/darshan' }],
+  },
+  {
+    keywords: ['how much', 'puja cost', 'pooja cost', 'price of puja', 'rate'],
+    message: 'Pujas start at ₹501, home pujas from ₹1,100, marriage from ₹11,000, yatra from ₹15,000, wellness from ₹299, astrology from ₹15/min. NRI pricing in USD.',
+    actions: [{ label: 'Browse Pujas', href: '/pujas' }],
+  },
+  {
+    keywords: ['prasad arrive', 'prasad delivery', 'when prasad', 'prasad ship'],
+    message: 'Prasad ships within 24 hours of puja completion. India: 3–5 days. NRI: 7–14 days depending on country. Tracking is emailed automatically.',
+    actions: [{ label: 'My Bookings', href: '/bookings' }],
+  },
+  {
+    keywords: ['cancel booking', 'cancel my', 'cancel puja', 'cancel yatra'],
+    message: 'You can cancel any booking up to 24 hours before scheduled time for a full refund. Go to My Bookings, tap the booking, and choose Cancel.',
+    actions: [{ label: 'My Bookings', href: '/bookings' }],
+  },
+  {
+    keywords: ['language', 'hindi', 'tamil', 'telugu', 'marathi', 'bengali'],
+    message: 'Poojly supports English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali. Switch from the language selector in the footer.',
+  },
+  {
+    keywords: ['nri', 'abroad', 'from usa', 'from uk', 'international user', 'outside india'],
+    message: 'Absolutely. NRI devotees can book every puja, darshan, yatra and store item from 40+ countries. Pay in USD via Stripe. Prasad ships worldwide in 7–14 days.',
+    actions: [
+      { label: 'Browse Pujas', href: '/pujas' },
+      { label: 'NRI Gifting', href: '/nri' },
+    ],
+  },
+  {
+    keywords: ['temple in', 'temples in', 'do you have temple'],
+    message: 'We partner with 200+ temples across India — Kashi Vishwanath, Tirumala, Somnath, Vaishno Devi, Shirdi, Siddhivinayak and more. Browse the full list.',
+    actions: [{ label: 'All Temples', href: '/temples' }],
+  },
+  {
+    keywords: ['become pandit', 'become priest', 'pandit onboarding', 'priest register', 'join as priest', 'join as pandit'],
+    message: 'We onboard verified priests and astrologers. Share your credentials at /priest-onboarding — typical verification takes 3–5 days (ID, training, test readings).',
+    actions: [{ label: 'Priest Onboarding', href: '/priest-onboarding' }],
+  },
+  {
+    keywords: ['video proof', 'proof of puja', 'how will i know'],
+    message: 'Every puja booking gets HD video proof from the priest within 2–4 hours of completion. Saved in My Bookings forever. Priests are paid only after upload.',
+    actions: [{ label: 'My Bookings', href: '/bookings' }],
+  },
+  {
+    keywords: ['login', 'sign in', 'otp', 'password'],
+    message: "For login: OTP may take up to 2 min — check spam. Try email OTP instead of SMS, or reset at /auth/forgot. If still stuck, we'll escalate to account recovery.",
+    actions: [{ label: 'Sign In', href: '/auth/signin' }],
   },
 ];
 
@@ -198,6 +264,47 @@ export async function supportRoutes(server: FastifyInstance) {
 
     const { message, history } = parsed.data;
 
+    // Auto-escalate on specific patterns before fallback lookup
+    // (>₹5K refunds, payment-succeeded-but-no-booking, etc.)
+    const lowerMsg = message.toLowerCase();
+    // Match "refund of ₹10000", "refund 20000", "want refund of 15,000 rupees", etc.
+    const refundRegex = /(?:refund|refund of|return|money back)[^₹\d]{0,20}(?:rs\.?|inr|₹|rupees?)?\s*([\d,]+)/;
+    const refundAmountMatch = lowerMsg.match(refundRegex);
+    const refundAmount = refundAmountMatch?.[1]
+      ? parseInt(refundAmountMatch[1].replace(/,/g, ''), 10)
+      : 0;
+    const mentionsRefund = /refund|money back/.test(lowerMsg);
+    if (mentionsRefund && refundAmount > 5000) {
+      return reply.send({
+        message: `I see you're asking about a refund of ₹${refundAmount.toLocaleString('en-IN')}. Because it's above ₹5,000, I'm connecting you with a human agent who'll resolve it within 4 hours. Please keep your transaction ID handy.`,
+        confidence: 'high',
+        escalate: true,
+        suggestedActions: [{ label: 'Create Support Ticket', href: '/support/ticket/new' }],
+        source: 'rule',
+      });
+    }
+
+    // Explicit human-agent request — always escalate (don't rely on AI judgement)
+    const humanRequestPatterns = [
+      /\btalk to (?:a )?(?:human|person|agent|representative)\b/,
+      /\b(?:connect|speak|chat) (?:me )?(?:to|with) (?:a )?(?:human|agent|person|representative|real)\b/,
+      /\b(?:real|live|human) (?:agent|person|support|rep)\b/,
+      /\bhuman agent\b/,
+      /\bcustomer (?:care|service) (?:agent|rep|representative)\b/,
+      /\bescalate (?:this|me|to)\b/,
+      /\bsupervisor\b/,
+    ];
+    if (humanRequestPatterns.some((p) => p.test(lowerMsg))) {
+      return reply.send({
+        message:
+          "Of course — I'm connecting you with a human support agent. They'll reply within 4 hours. You can also create a ticket now and we'll pick it up immediately.",
+        confidence: 'high',
+        escalate: true,
+        suggestedActions: [{ label: 'Create Support Ticket', href: '/support/ticket/new' }],
+        source: 'rule',
+      });
+    }
+
     // Fallback to keyword matching if AI unavailable
     if (DEMO_MODE) {
       const fallback = findFallback(message);
@@ -233,8 +340,8 @@ export async function supportRoutes(server: FastifyInstance) {
         : `User: ${message}\n\nRespond with ONLY valid JSON per the system prompt format.`;
 
       const aiText = await generateText({
-        system: SUPPORT_SYSTEM_PROMPT,
-        prompt,
+        systemPrompt: SUPPORT_SYSTEM_PROMPT,
+        userMessage: prompt,
         maxTokens: 400,
       });
 

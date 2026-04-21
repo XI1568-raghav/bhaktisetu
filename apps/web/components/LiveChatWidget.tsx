@@ -17,7 +17,11 @@ type ChatMessage = {
   escalate?: boolean;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Strip trailing slash and any trailing /api/v{n} so we can append the canonical path
+// without double-prefixing (handles both NEXT_PUBLIC_API_URL=http://localhost:4000 and
+// NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1).
+const RAW_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE = RAW_API_BASE.replace(/\/+$/, '').replace(/\/api\/v\d+$/, '');
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
