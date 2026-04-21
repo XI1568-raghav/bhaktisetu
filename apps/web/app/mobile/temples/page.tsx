@@ -51,7 +51,7 @@ export default function MobileTemples() {
         {temples.map((t) => (
           <div key={t.name} className="bg-white rounded-2xl overflow-hidden border border-surface-200/60 shadow-sm">
             <div className="relative aspect-[2.2/1]">
-              <img src={t.img} alt={t.name} className="w-full h-full object-cover" />
+              <img src={t.img} alt={t.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               {t.live && (
                 <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">

@@ -92,7 +92,7 @@ export default function HomePage() {
               {/* Right — Bento with parallax float */}
               <div data-reveal="zoom-rotate" data-delay="1" className="hidden md:grid grid-cols-2 gap-2.5">
                 <div className="col-span-2 rounded-xl overflow-hidden relative" data-parallax="0.08" style={{ border: '1px solid var(--color-border)' }}>
-                  <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath" className="w-full h-40 object-cover" />
+                  <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath" className="w-full h-40 object-cover" loading="eager" fetchPriority="high" decoding="async" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
@@ -224,7 +224,7 @@ export default function HomePage() {
 
             <div data-reveal="cinematic" className="relative rounded-xl overflow-hidden card-hover" style={{ border: '1px solid var(--color-border)' }}>
               <div className="aspect-[16/7] relative">
-                <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath Temple Live" data-parallax="0.05" className="w-full h-full object-cover" />
+                <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath Temple Live" data-parallax="0.05" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 <div className="absolute top-3 left-3 flex items-center gap-2">
                   <span className="flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
@@ -263,10 +263,10 @@ export default function HomePage() {
                 </p>
                 <div className="grid grid-cols-5 grid-rows-2 gap-2 mb-4" style={{ height: '160px' }}>
                   <div className="col-span-3 row-span-2 rounded-lg overflow-hidden" data-parallax="0.04">
-                    <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" className="w-full h-full object-cover" />
+                    <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                   <div className="col-span-2 rounded-lg overflow-hidden">
-                    <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti" className="w-full h-full object-cover" />
+                    <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                   <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
                     <p data-counter data-counter-target="50K+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>50K+</p>
@@ -341,7 +341,7 @@ export default function HomePage() {
                     { title: 'Daily Horoscope', badge: 'Daily', href: '/astrology/horoscope' },
                     { title: 'Live Consultation', badge: 'From ₹15/min', href: '/astrology' },
                   ].map((card) => (
-                    <Link key={card.title} href={card.href} className="group flex items-center justify-between p-2.5 rounded-lg transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                    <Link key={card.title} href={card.href} prefetch={false} className="group flex items-center justify-between p-2.5 rounded-lg transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                       <div className="flex items-center gap-2">
                         <Moon className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
                         <span className="text-xs font-medium group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</span>
@@ -467,6 +467,7 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
+                  prefetch={false}
                   data-reveal="cascade"
                   data-delay={String(i + 1)}
                   className="group p-3 rounded-xl card-hover transition-all"

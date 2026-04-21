@@ -12,15 +12,27 @@
 
 const UNSPLASH_BASE = 'https://images.unsplash.com';
 
-// Default quality and crop params
-const DEFAULT_PARAMS = 'fit=crop&q=80';
+/**
+ * Pick a quality value based on rendered size. Bigger images tolerate a bit
+ * more aggressive compression before artifacts show; tiny thumbnails should
+ * stay crisp but don't need premium quality either.
+ */
+function qualityFor(w: number, h: number): number {
+  const max = Math.max(w, h);
+  if (max >= 1400) return 85;   // hero / full-bleed
+  if (max >= 700) return 80;    // card
+  if (max >= 300) return 75;    // thumbnail
+  return 70;                    // avatar / icon
+}
 
 function u(photoId: string, w = 800, h = 600): string {
-  return `${UNSPLASH_BASE}/${photoId}?w=${w}&h=${h}&${DEFAULT_PARAMS}`;
+  const q = qualityFor(w, h);
+  // auto=format lets Unsplash serve WebP/AVIF when the browser accepts it.
+  return `${UNSPLASH_BASE}/${photoId}?w=${w}&h=${h}&fit=crop&auto=format&q=${q}`;
 }
 
 function uWide(photoId: string): string {
-  return u(photoId, 1920, 800);
+  return u(photoId, 1600, 700);
 }
 
 function uSquare(photoId: string, size = 400): string {
@@ -29,6 +41,28 @@ function uSquare(photoId: string, size = 400): string {
 
 function uPortrait(photoId: string): string {
   return u(photoId, 600, 900);
+}
+
+/**
+ * Re-size an already-built Unsplash URL by replacing its w/h/q params.
+ * Use this to request a smaller variant on the fly (e.g. a thumbnail of a
+ * hero image that's already in the IMAGES map).
+ */
+export function resizeImage(
+  url: string,
+  preset: 'hero' | 'card' | 'thumb' | 'avatar',
+): string {
+  if (!url.includes('images.unsplash.com')) return url;
+  const dims = {
+    hero:   { w: 1600, h: 900, q: 85 },
+    card:   { w: 800,  h: 600, q: 80 },
+    thumb:  { w: 400,  h: 300, q: 75 },
+    avatar: { w: 160,  h: 160, q: 70 },
+  }[preset];
+  return url
+    .replace(/([?&])w=\d+/, `$1w=${dims.w}`)
+    .replace(/([?&])h=\d+/, `$1h=${dims.h}`)
+    .replace(/([?&])q=\d+/, `$1q=${dims.q}`);
 }
 
 // ────────────────────────────────────────────────────────────

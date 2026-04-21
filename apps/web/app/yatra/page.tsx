@@ -199,13 +199,11 @@ export default function YatraHubPage() {
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>No yatras match your filters. Try broadening the search.</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filtered.map((y, i) => (
+              <div data-reveal="up" className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filtered.map((y) => (
                   <Link
                     key={y.slug}
                     href={`/yatra/${y.slug}`}
-                    data-reveal="cascade"
-                    data-delay={String((i % 6) + 1)}
                     className="group rounded-xl overflow-hidden card-hover flex flex-col"
                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
                   >
@@ -331,7 +329,7 @@ function HeroBento() {
   return (
     <div data-reveal="zoom-rotate" data-delay="1" className="hidden md:grid grid-cols-3 gap-2.5">
       <div className="col-span-2 row-span-2 rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
-        <img src={flagship.heroImage} alt="Char Dham" className="w-full h-full object-cover" />
+        <img src={flagship.heroImage} alt="Char Dham" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-saffron-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
           <Sparkles className="w-2.5 h-2.5" /> FLAGSHIP
@@ -342,7 +340,7 @@ function HeroBento() {
         </div>
       </div>
       <div className="rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
-        <img src={amarnath.heroImage} alt="Amarnath" className="w-full h-full object-cover" />
+        <img src={amarnath.heroImage} alt="Amarnath" className="w-full h-full object-cover" loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-2 left-2 right-2">
           <p className="text-[11px] font-semibold text-white">Amarnath</p>
@@ -350,7 +348,7 @@ function HeroBento() {
         </div>
       </div>
       <div className="rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
-        <img src={tirupati.heroImage} alt="Tirupati" className="w-full h-full object-cover" />
+        <img src={tirupati.heroImage} alt="Tirupati" className="w-full h-full object-cover" loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-2 left-2 right-2">
           <p className="text-[11px] font-semibold text-white">Tirupati</p>

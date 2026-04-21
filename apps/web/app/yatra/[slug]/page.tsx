@@ -57,7 +57,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
         {/* ═══ HERO ═════════════════════════════════════════════ */}
         <section className="relative">
           <div className="absolute inset-0">
-            <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" />
+            <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
           </div>
 
@@ -126,9 +126,9 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
 
               <div className="mt-6">
                 <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text)' }}>Highlights</p>
-                <div className="grid sm:grid-cols-2 gap-2">
+                <div data-reveal="up" className="grid sm:grid-cols-2 gap-2">
                   {yatra.highlights.map((h, i) => (
-                    <div key={i} data-reveal="cascade" data-delay={String((i % 6) + 1)} className="flex items-start gap-2">
+                    <div key={i} className="flex items-start gap-2">
                       <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
                       <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{h}</span>
                     </div>
@@ -177,11 +177,11 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
               Your {yatra.durationDays}-day journey
             </h2>
 
-            <div className="relative">
+            <div data-reveal="up" className="relative">
               <div className="absolute left-5 top-2 bottom-2 w-px" style={{ background: 'var(--color-divider)' }} />
               <div className="space-y-3">
-                {yatra.itinerary.map((d, i) => (
-                  <div key={d.day} data-reveal="cascade" data-delay={String((i % 6) + 1)} className="relative pl-14">
+                {yatra.itinerary.map((d) => (
+                  <div key={d.day} className="relative pl-14">
                     <div className="absolute left-0 top-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--color-primary)', color: '#fff' }}>
                       D{d.day}
                     </div>
@@ -214,9 +214,9 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
             <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Glimpses from the sacred path
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div data-reveal="up" className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {yatra.gallery.slice(0, 6).map((src, i) => (
-                <div key={i} data-reveal="cascade" data-delay={String((i % 6) + 1)} className="aspect-square rounded-xl overflow-hidden card-hover">
+                <div key={i} className="aspect-square rounded-xl overflow-hidden card-hover">
                   <img src={src} alt={`${yatra.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
                 </div>
               ))}
@@ -377,9 +377,9 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
             <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Stories from past devotees
             </h2>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div data-reveal="up" className="grid md:grid-cols-3 gap-4">
               {yatra.reviews.map((r, i) => (
-                <div key={i} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                   <div className="flex items-center gap-1 mb-2">
                     {Array.from({ length: 5 }).map((_, s) => (
                       <Star key={s} className="w-3 h-3" fill={s < r.rating ? 'var(--color-primary)' : 'transparent'} style={{ color: 'var(--color-primary)' }} />
@@ -401,9 +401,9 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
             <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
               Before you travel
             </h2>
-            <div className="space-y-3">
+            <div data-reveal="up" className="space-y-3">
               {yatra.faqs.map((f, i) => (
-                <details key={i} data-reveal="up" data-delay={String((i % 5) + 1)} className="group rounded-xl p-4 cursor-pointer" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <details key={i} className="group rounded-xl p-4 cursor-pointer" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <summary className="flex items-center justify-between list-none">
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{f.q}</span>
                     <ChevronRight className="w-4 h-4 group-open:rotate-90 transition-transform" style={{ color: 'var(--color-primary)' }} />

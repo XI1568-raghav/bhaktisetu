@@ -564,7 +564,7 @@ export default function BookYatraPage() {
           <aside className="md:col-span-1 h-fit sticky top-20">
             <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
               <div className="aspect-[16/10] overflow-hidden">
-                <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" />
+                <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <div className="p-4">
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{yatra.title}</h3>

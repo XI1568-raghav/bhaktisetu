@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import AiChatMessage, { type Citation } from './AiChatMessage';
-import { API_BASE_URL } from '../lib/supabase';
+import { API_BASE_URL } from '../lib/api-config';
 import {
   getConversation,
   createConversation,
