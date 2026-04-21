@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -30,6 +30,23 @@ export default function NewTicketPage() {
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill from chat transcript if user escalated from LiveChatWidget
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') === 'chat') {
+      const transcript = localStorage.getItem('poojly:support:chat-transcript');
+      if (transcript) {
+        setSubject('Escalated from AI chat — needs human support');
+        setDescription(
+          `I was chatting with Asha (AI support) and my issue needs a human agent.\n\n--- Chat transcript ---\n${transcript}\n---`
+        );
+        setPriority('high');
+        localStorage.removeItem('poojly:support:chat-transcript');
+      }
+    }
+  }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
