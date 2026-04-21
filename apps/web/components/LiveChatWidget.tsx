@@ -76,13 +76,17 @@ export function LiveChatWidget() {
         content: m.body,
       }));
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch(`${API_BASE}/api/v1/support/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history }),
-        signal: AbortSignal.timeout(15000),
+        signal: controller.signal,
       });
+      window.clearTimeout(timeoutId);
 
       if (!res.ok) throw new Error('AI support unreachable');
       const data = await res.json();
@@ -112,12 +116,32 @@ export function LiveChatWidget() {
           ]);
         }, 500);
       }
-    } catch {
+    } catch (err) {
+      window.clearTimeout(timeoutId);
       // Network failure fallback — use local keyword matching
+      console.warn('[Poojly Chat] API unreachable, using local fallback', err);
       const auto = findAutoReply(text);
-      const fallbackBody =
-        auto ??
-        "I couldn't reach the AI service right now. Let me connect you with a human agent — they'll respond within 4 hours.";
+      const lower = text.toLowerCase().trim();
+      const isGreeting = ['hi', 'hii', 'hello', 'hey', 'namaste'].some(
+        (g) => lower === g || lower.startsWith(g + ' ') || lower.startsWith(g + '!')
+      );
+      let fallbackBody: string;
+      let actions: QuickAction[] = [];
+      let shouldEscalate = false;
+      if (isGreeting) {
+        fallbackBody =
+          'Namaste! I can help with puja bookings, live darshan, yatra planning, astrology, home pujas, wellness, and more. What would you like help with?';
+        actions = [
+          { label: 'Browse Pujas', href: '/pujas' },
+          { label: 'Live Darshan', href: '/darshan' },
+          { label: 'Plan a Yatra', href: '/yatra' },
+        ];
+      } else if (auto) {
+        fallbackBody = auto;
+      } else {
+        fallbackBody =
+          "I'm not sure I caught that. Try asking about puja booking, darshan, yatra, or refunds. Or say 'talk to human' to connect with an agent.";
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -126,10 +150,11 @@ export function LiveChatWidget() {
           author: 'agent',
           body: fallbackBody,
           createdAt: new Date().toISOString(),
-          escalate: !auto,
+          actions,
+          escalate: shouldEscalate,
         },
       ]);
-      if (!auto) setEscalated(true);
+      if (shouldEscalate) setEscalated(true);
     } finally {
       setTyping(false);
     }
