@@ -1,6 +1,22 @@
 'use client';
 
-import { Mail, Phone, MapPin, Clock, MessageCircle, Send } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, MessageCircle, Send, Globe, Briefcase, Handshake, Scale, Newspaper } from "lucide-react";
+
+const regionalPhones = [
+  { region: "India", flag: "🇮🇳", phone: "+91-80-6900-9000", hours: "8:00 AM – 11:00 PM IST · Daily" },
+  { region: "United States", flag: "🇺🇸", phone: "+1 (408) 900-0900", hours: "9:00 AM – 8:00 PM PT · Mon–Sat" },
+  { region: "United Kingdom", flag: "🇬🇧", phone: "+44 20 4525 9000", hours: "9:00 AM – 7:00 PM GMT · Mon–Sat" },
+  { region: "Canada", flag: "🇨🇦", phone: "+1 (416) 900-0900", hours: "9:00 AM – 8:00 PM ET · Mon–Sat" },
+  { region: "Australia", flag: "🇦🇺", phone: "+61 2 8319 0900", hours: "9:00 AM – 7:00 PM AEST · Mon–Sat" },
+  { region: "UAE", flag: "🇦🇪", phone: "+971 4 556 0900", hours: "9:00 AM – 9:00 PM GST · Sat–Thu" },
+];
+
+const escalationEmails = [
+  { label: "Sales & enterprise", email: "sales@poojly.com", icon: Briefcase },
+  { label: "Temple partnerships", email: "partners@poojly.com", icon: Handshake },
+  { label: "Press & media", email: "press@poojly.com", icon: Newspaper },
+  { label: "Legal & compliance", email: "legal@poojly.com", icon: Scale },
+];
 
 const contactMethods = [
   {
@@ -59,6 +75,118 @@ export default function ContactPage() {
             support, or want to partner with us as a temple, we&apos;d love to
             hear from you.
           </p>
+        </div>
+      </section>
+
+      {/* Global phones + office hours */}
+      <section className="pb-10">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Globe className="w-4 h-4" style={{ color: "var(--color-primary)" }} />
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
+              Global support lines
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {regionalPhones.map((r) => (
+              <div
+                key={r.region}
+                className="rounded-xl p-4"
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{r.flag}</span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
+                    {r.region}
+                  </span>
+                </div>
+                <a
+                  href={`tel:${r.phone.replace(/[^+\d]/g, "")}`}
+                  className="text-sm font-mono block mb-1"
+                  style={{ color: "var(--color-primary)" }}
+                >
+                  {r.phone}
+                </a>
+                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  {r.hours}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Escalation emails + WhatsApp widget */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              className="rounded-xl p-5"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+            >
+              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--color-text)" }}>
+                Specialized inboxes
+              </h3>
+              <ul className="space-y-3">
+                {escalationEmails.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.email} className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: "var(--color-primary-highlight)" }}
+                      >
+                        <Icon className="w-3.5 h-3.5" style={{ color: "var(--color-primary)" }} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium" style={{ color: "var(--color-text)" }}>
+                          {item.label}
+                        </div>
+                        <a
+                          href={`mailto:${item.email}`}
+                          className="text-xs"
+                          style={{ color: "var(--color-primary)" }}
+                        >
+                          {item.email}
+                        </a>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* WhatsApp widget mockup */}
+            <div
+              className="rounded-xl p-5 flex flex-col"
+              style={{
+                background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
+                border: "1px solid rgba(0,0,0,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">WhatsApp Support</div>
+                  <div className="text-xs text-white/80 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    Agent online · avg 2 min reply
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/95 rounded-lg p-3 text-xs text-surface-700 mb-4">
+                <p className="mb-1.5"><span className="font-semibold">Poojly:</span> Namaste! Reply with your ticket ID or tell us what&apos;s wrong.</p>
+                <p className="text-[10px] text-surface-400">Just now</p>
+              </div>
+              <a
+                href="https://wa.me/919876543210"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-green-700 text-sm font-semibold rounded-lg hover:bg-white/90 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Start WhatsApp chat
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 

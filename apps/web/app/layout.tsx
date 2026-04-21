@@ -22,6 +22,7 @@ import {
   Sparkles,
   Moon,
   Leaf,
+  Mountain,
 } from "lucide-react";
 import { AuthProvider } from "../lib/auth-context";
 import { CartProvider } from "../components/CartContext";
@@ -29,6 +30,7 @@ import CartDrawer from "../components/CartDrawer";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { Logo } from "../components/Logo";
+import LiveChatWidget from "../components/LiveChatWidget";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -110,6 +112,7 @@ const primaryLinks = [
 
 // Secondary nav — shown in "More" dropdown on desktop
 const moreLinks = [
+  { href: "/yatra", label: "Yatra", icon: Mountain },
   { href: "/panchang", label: "Panchang", icon: Calendar },
   { href: "/gaushala", label: "Gau Seva", icon: Heart },
   { href: "/astrology", label: "Astrology", icon: Moon },
@@ -126,6 +129,7 @@ const footerSections = [
       { href: "/temples", label: "Temples" },
       { href: "/darshan", label: "Live Darshan" },
       { href: "/pujas", label: "Book a Puja" },
+      { href: "/yatra", label: "Dharmic Yatra" },
       { href: "/panchang", label: "Panchang" },
       { href: "/wellness", label: "Wellness" },
     ],
@@ -152,6 +156,9 @@ const footerSections = [
   {
     title: "Support",
     links: [
+      { href: "/support", label: "Support Center" },
+      { href: "/support/faq", label: "FAQ" },
+      { href: "/support/tickets", label: "My Tickets" },
       { href: "/help", label: "Help Center" },
       { href: "/privacy", label: "Privacy Policy" },
       { href: "/terms", label: "Terms of Service" },
@@ -364,6 +371,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        <LiveChatWidget />
         </CartProvider>
         </AuthProvider>
       </body>

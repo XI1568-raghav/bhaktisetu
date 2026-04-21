@@ -182,6 +182,7 @@ export default function HomePage() {
               {[
                 { title: 'Live Darshan', desc: 'HD streams from 200+ temples', href: '/darshan' },
                 { title: 'Verified Pujas', desc: 'Video proof + prasad delivery', href: '/pujas' },
+                { title: 'Dharmic Yatra', desc: 'Char Dham, 12 Jyotirlingas & more', href: '/yatra' },
                 { title: 'AI Pandit', desc: 'Gita-powered spiritual guidance', href: '/ask-pandit' },
                 { title: 'Sacred Content', desc: '5,000+ aartis, mantras, bhajans', href: '/content' },
                 { title: 'Astrology', desc: 'Free kundli + daily horoscope', href: '/astrology' },
