@@ -30,8 +30,8 @@ cd "$DIR/apps/api" && npx tsx src/server.ts &
 API_PID=$!
 sleep 1.5
 
-# Start Web
-cd "$DIR/apps/web" && npx next dev --turbopack --port 3000 &
+# Start Web (no turbopack — known bug with pnpm workspaces + Next 15.5)
+cd "$DIR/apps/web" && npx next dev --port 3000 &
 WEB_PID=$!
 
 echo ""
