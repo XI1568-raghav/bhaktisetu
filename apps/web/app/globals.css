@@ -241,11 +241,18 @@ img {
   transition:
     opacity var(--duration-slow) var(--ease-enter),
     transform var(--duration-slow) var(--ease-enter);
+  /* Fallback: if IntersectionObserver fails / JS error, reveal after 1.5s */
+  animation: revealFallback 0.5s ease-out 1.5s forwards;
+}
+
+@keyframes revealFallback {
+  to { opacity: 1; transform: translateY(0); filter: blur(0); clip-path: inset(0 0 0 0); }
 }
 
 [data-reveal].is-visible {
   opacity: 1;
   transform: translateY(0);
+  animation: none;
 }
 
 /* Stagger variants */
@@ -297,9 +304,12 @@ img {
   opacity: 1;
   transform: none;
   transition: clip-path 0.8s var(--ease-smooth);
+  /* Fallback override — reveal after 1.5s if IntersectionObserver fails */
+  animation: revealFallback 0.8s ease-out 1.5s forwards;
 }
 [data-reveal="clip"].is-visible {
   clip-path: inset(0 0 0 0);
+  animation: none;
 }
 
 /* Rotate in subtly */
