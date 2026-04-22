@@ -1,8 +1,8 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  # Disabled — replaced by deploy-web.yml (Cloudflare) and Render auto-deploy
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
