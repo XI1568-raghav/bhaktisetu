@@ -41,7 +41,7 @@ jobs:
           NEXT_PUBLIC_API_URL: https://poojly-api.onrender.com
           NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
-        run: npx @cloudflare/next-on-pages@latest
+        run: pnpm exec next-on-pages
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
