@@ -277,7 +277,7 @@ export default function HomePage() {
                   {[
                     { icon: Shield, label: 'Verified' },
                     { icon: Video, label: 'Video Proof' },
-                    { icon: Gift, label: 'Prasad' },
+                    { icon: Gift, label: 'Prasad Delivery' },
                   ].map((f) => (
                     <div key={f.label} className="flex items-center gap-1.5">
                       <f.icon className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
@@ -416,7 +416,7 @@ export default function HomePage() {
               <div>
                 <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Bhakti Store</p>
                 <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-                  Everything for your daily worship
+                  Everything for daily worship
                 </h2>
                 <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
                   Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols — all delivered to your doorstep. Free shipping on orders above ₹499.

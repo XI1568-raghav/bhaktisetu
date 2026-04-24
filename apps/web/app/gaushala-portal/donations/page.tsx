@@ -50,7 +50,22 @@ export default function DonationsPage() {
             Total received: ₹{total.toLocaleString('en-IN')} this month
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors">
+        <button
+          onClick={() => {
+            const header = 'ID,Donor,Amount,Type,Date,Status\n';
+            const rows = donations.map((d) =>
+              `${d.id},"${d.donor}",₹${d.amount},${d.type},${d.date},${d.status}`
+            ).join('\n');
+            const blob = new Blob([header + rows], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'donations.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors"
+        >
           <Download className="w-4 h-4" />
           Export CSV
         </button>

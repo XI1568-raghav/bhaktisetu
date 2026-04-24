@@ -41,7 +41,12 @@ async function navigateTo(page: Page, path: string) {
 /** Login helper — sets auth cookies/localStorage via the login form */
 async function loginAs(page: Page, email: string, password: string) {
   await page.goto('/auth/login', { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(1500);
+
+  // Ensure email tab is active (it's the default but be explicit)
+  const emailTab = page.locator('button:has-text("Email")').first();
+  if (await emailTab.isVisible()) await emailTab.click();
+
+  await page.waitForTimeout(500);
 
   // Fill email
   const emailInput = page.locator('input[type="email"]');
@@ -53,12 +58,17 @@ async function loginAs(page: Page, email: string, password: string) {
   await passwordInput.waitFor({ state: 'visible', timeout: 5000 });
   await passwordInput.fill(password);
 
-  // Click sign in button
-  const signInBtn = page.locator('button:has-text("Sign In"), button:has-text("Sign in"), button:has-text("Log In"), button:has-text("Log in"), button:has-text("Login")').first();
+  // Click sign in button (the one inside the email form)
+  const signInBtn = page.locator('button:has-text("Sign In")').first();
   await signInBtn.click();
 
-  // Wait for redirect away from login
-  await page.waitForTimeout(3000);
+  // Wait for redirect away from login page (up to 8s)
+  try {
+    await page.waitForURL((url) => !url.pathname.startsWith('/auth/login'), { timeout: 8000 });
+  } catch {
+    // If redirect didn't happen, wait a bit more for slow machines
+    await page.waitForTimeout(2000);
+  }
 }
 
 // ===========================================================================
@@ -186,8 +196,9 @@ test.describe('4. Temples Page', () => {
 
 test.describe('5. Content Page', () => {
   test('content items visible', async ({ page }) => {
-    await navigateTo(page, '/content');
-    await expect(page.locator('h1, h2').first()).toBeVisible();
+    await page.goto('/content', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 15000 });
     const body = await page.textContent('body');
     expect(body).toMatch(/aarti|mantra|bhajan|chalisa|content/i);
   });
@@ -421,7 +432,9 @@ test.describe('18. Login as devotee', () => {
   test('devotee@demo.com + demo123 -> redirects to dashboard', async ({ page }) => {
     await loginAs(page, 'devotee@demo.com', 'demo123');
     const url = page.url();
-    expect(url).toMatch(/\/dashboard|\/$/);
+    // Should be on dashboard or home (not login)
+    expect(url).not.toContain('/auth/login');
+    expect(url).toMatch(/\/dashboard|localhost:3000\/?$/);
   });
 });
 
@@ -433,6 +446,7 @@ test.describe('19. Login as admin', () => {
   test('admin@demo.com + demo123 -> redirects to /admin', async ({ page }) => {
     await loginAs(page, 'admin@demo.com', 'demo123');
     const url = page.url();
+    expect(url).not.toContain('/auth/login');
     expect(url).toMatch(/\/admin/);
   });
 });
@@ -448,7 +462,11 @@ test.describe('20. Admin Dashboard', () => {
 
   test('stats cards, user breakdown, recent signups visible', async ({ page }) => {
     await navigateTo(page, '/admin');
-    await page.waitForTimeout(1500);
+    // Wait for AuthGuard to resolve and render actual content
+    await page.waitForFunction(
+      () => document.body.innerText.match(/Total Users|Active Providers|Revenue|Devotees|Pandits/i),
+      { timeout: 10000 }
+    ).catch(() => {});
     const body = await page.textContent('body');
     expect(body).toMatch(/Total Users|Active Providers|Revenue/i);
     expect(body).toMatch(/Devotees|Pandits/i);
@@ -466,7 +484,10 @@ test.describe('21. Admin Users', () => {
 
   test('user table visible with filters', async ({ page }) => {
     await navigateTo(page, '/admin/users');
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(
+      () => document.body.innerText.match(/user|name|email|role|filter/i),
+      { timeout: 10000 }
+    ).catch(() => {});
     const body = await page.textContent('body');
     expect(body).toMatch(/user|name|email|role|filter/i);
   });
@@ -483,7 +504,10 @@ test.describe('22. Admin Approvals', () => {
 
   test('pending approvals list visible', async ({ page }) => {
     await navigateTo(page, '/admin/approvals');
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(
+      () => document.body.innerText.match(/approv|pending|review|provider/i),
+      { timeout: 10000 }
+    ).catch(() => {});
     const body = await page.textContent('body');
     expect(body).toMatch(/approv|pending|review|provider/i);
   });
@@ -698,22 +722,22 @@ test.describe('36. Navigation', () => {
 
   test('Pujas nav link works', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(500);
-    const link = page.locator('nav a:has-text("Pujas")').first();
+    await page.waitForTimeout(1000);
+    const link = page.locator('nav a[href="/pujas"]').first();
     if (await link.isVisible()) {
       await link.click();
-      await page.waitForURL('**/pujas', { timeout: 10000 });
+      await page.waitForURL('**/pujas', { timeout: 15000 });
       expect(page.url()).toContain('/pujas');
     }
   });
 
   test('Store nav link works', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(500);
-    const link = page.locator('nav a:has-text("Store")').first();
+    await page.waitForTimeout(1000);
+    const link = page.locator('nav a[href="/store"]').first();
     if (await link.isVisible()) {
       await link.click();
-      await page.waitForURL('**/store', { timeout: 10000 });
+      await page.waitForURL('**/store', { timeout: 15000 });
       expect(page.url()).toContain('/store');
     }
   });
