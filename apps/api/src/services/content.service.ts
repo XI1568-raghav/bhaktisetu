@@ -61,6 +61,7 @@ export class ContentService {
           title: true,
           titleLocal: true,
           slug: true,
+          body: true,
           deity: true,
           language: true,
           durationSeconds: true,
@@ -71,6 +72,7 @@ export class ContentService {
           imageUrl: true,
           audioUrl: true,
           videoUrl: true,
+          status: true,
           publishedAt: true,
         },
         orderBy: [{ sortOrder: 'asc' }, { viewCount: 'desc' }],
@@ -81,11 +83,13 @@ export class ContentService {
     ]);
 
     return {
-      content,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      data: content,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -170,10 +174,10 @@ export class ContentService {
     return {
       date: dateStr,
       language: language || 'hi',
-      aartiOfTheDay: aarti,
-      mantraOfTheDay: mantra,
-      chalisaOfTheDay: chalisa,
-      articleOfTheDay: article,
+      aarti,
+      mantra,
+      chalisa,
+      article,
     };
   }
 

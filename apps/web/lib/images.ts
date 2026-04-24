@@ -249,27 +249,58 @@ export const IMAGES = {
   },
 
   // ── Store / E-commerce Products ────────────────────────────
+  // Each product maps to a visually distinct, contextually relevant image.
   store: {
-    'brass-puja-thali': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'rudraksha-mala': u('photo-1609766857041-ed402ea8069a', 600, 600),
-    'silver-diya': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'kumkum-set': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'camphor-pack': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'incense-sticks': u('photo-1506905925346-21bda4d32df4', 600, 600),
-    'tulsi-mala': u('photo-1609766857041-ed402ea8069a', 600, 600),
-    'puja-bell': u('photo-1585128993280-9456c19c987d', 600, 600),
-    'brass-ganesha-idol': u('photo-1604948501466-4e9c339b9c24', 600, 600),
-    'shiva-lingam': u('photo-1604948501466-4e9c339b9c24', 600, 600),
-    'conch-shell': u('photo-1585128993280-9456c19c987d', 600, 600),
-    'copper-kalash': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'sandalwood-paste': u('photo-1506905925346-21bda4d32df4', 600, 600),
-    'sacred-thread': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'chandan-tika': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'hanuman-chalisa-book': u('photo-1609766857041-ed402ea8069a', 600, 600),
-    'bhagavad-gita': u('photo-1545468800-85cc9bc6ecf7', 600, 600),
-    'pooja-samagri-kit': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'cotton-wicks': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'ghee-lamp-oil': u('photo-1603228254119-e6a4d095dc59', 600, 600),
+    // Puja Essentials
+    'brass-puja-thali': u('photo-1604608672516-f1b9b1d37076', 600, 600),  // brass puja plate with items
+    'brass-diya': u('photo-1603228254119-e6a4d095dc59', 600, 600),        // brass oil lamp / diya
+    'puja-bell': u('photo-1585128993280-9456c19c987d', 600, 600),         // temple bell
+    'incense-sticks': u('photo-1506905925346-21bda4d32df4', 600, 600),    // incense with smoke
+    'camphor-pack': u('photo-1545468800-85cc9bc6ecf7', 600, 600),         // camphor / aarti flame
+    'kumkum-set': u('photo-1590077428593-a55bb07c4665', 600, 600),        // vermillion / powder
+    'cotton-wicks': u('photo-1544367567-0f2fcb009e0b', 600, 600),         // cotton / natural items
+
+    // Rudraksha & Malas
+    'rudraksha-mala': u('photo-1609766857041-ed402ea8069a', 600, 600),    // prayer beads
+    'tulsi-mala': u('photo-1600093463592-8e36ae95ef56', 600, 600),        // wooden beads / mala
+    'crystal-mala': u('photo-1514222134-b57cbb8ce073', 600, 600),         // crystal / spiritual beads
+
+    // Idols & Murtis
+    'ganesh-murti': u('photo-1604948501466-4e9c339b9c24', 600, 600),      // Ganesh idol
+    'krishna-idol': u('photo-1545468800-85cc9bc6ecf7', 600, 600),         // Krishna / deity idol
+    'shiva-lingam': u('photo-1590077428593-a55bb07c4665', 600, 600),      // Shiva temple items
+    'lakshmi-idol': u('photo-1603228254119-e6a4d095dc59', 600, 600),      // Lakshmi / golden deity
+    'durga-idol': u('photo-1604948501466-4e9c339b9c24', 600, 600),        // Durga idol
+
+    // Puja Samagri
+    'pooja-samagri-kit': u('photo-1604608672516-f1b9b1d37076', 600, 600), // complete puja set
+    'navratri-kit': u('photo-1603228254119-e6a4d095dc59', 600, 600),      // festival puja kit
+    'copper-kalash': u('photo-1548013146-72479768bada', 600, 600),        // copper vessel / kalash
+    'havan-samagri': u('photo-1545468800-85cc9bc6ecf7', 600, 600),        // havan / fire ritual items
+
+    // Books & Scriptures
+    'bhagavad-gita': u('photo-1544367567-0f2fcb009e0b', 600, 600),       // sacred book
+    'hanuman-chalisa-book': u('photo-1609766857041-ed402ea8069a', 600, 600), // devotional book
+    'sunderkand-book': u('photo-1585128993280-9456c19c987d', 600, 600),   // scripture / text
+
+    // Spiritual Jewellery
+    'rudraksha-bracelet': u('photo-1609766857041-ed402ea8069a', 600, 600),// bracelet / wrist beads
+    'om-pendant': u('photo-1506905925346-21bda4d32df4', 600, 600),        // spiritual pendant
+    'sacred-thread': u('photo-1603228254119-e6a4d095dc59', 600, 600),     // sacred thread
+
+    // Organic & Natural
+    'cow-ghee': u('photo-1570042225831-d98fa7577f1e', 600, 600),          // cow / natural product
+    'sandalwood-paste': u('photo-1506905925346-21bda4d32df4', 600, 600),  // sandalwood / natural
+    'ghee-lamp-oil': u('photo-1603228254119-e6a4d095dc59', 600, 600),     // oil / ghee lamp
+
+    // Home Temple & Decor
+    'wooden-mandir': u('photo-1585128993280-9456c19c987d', 600, 600),     // temple / mandir
+    'led-diya-set': u('photo-1604608672516-f1b9b1d37076', 600, 600),     // decorative diyas
+    'brass-hanging-bell': u('photo-1548013146-72479768bada', 600, 600),   // hanging bell / decor
+    'wall-om-decor': u('photo-1500595046743-cd271d694d30', 600, 600),     // wall decor / spiritual
+
+    // Clothing
+    'silk-dhoti-set': u('photo-1514222134-b57cbb8ce073', 600, 600),       // traditional clothing
   },
 
   // ── Gaushala / Cow Seva ────────────────────────────────────

@@ -30,6 +30,250 @@ interface AiChatProps {
   accessToken?: string | null;
 }
 
+// ─── Local Demo Responses (used when API is unreachable) ─────────────────────
+
+interface DemoTopic {
+  keywords: string[];
+  response: string;
+}
+
+const LOCAL_DEMO_TOPICS: DemoTopic[] = [
+  {
+    keywords: ['marriage', 'vivah', 'shaadi', 'wedding', 'partner', 'love', 'relationship', 'marry'],
+    response: `Marriage is one of the 16 sacred samskaras in Hindu tradition.
+
+**Shloka from the Saptapadi:**
+*"धर्मेच अर्थेच कामेच नातिचरामि"*
+*"In dharma, artha, and kama, I shall not transgress."*
+
+**Guidance:**
+- **Worship Shiva-Parvati** together on Mondays for harmony
+- **Chant the Katyayani Mantra** "ॐ कात्यायन्यै नमः" 108 times for those seeking a life partner
+- **Perform Vivah Puja** at a Shiva temple for divine blessings
+- The **Swayamvara Parvati Mantra** removes obstacles in marriage
+
+**Bhagavad Gita (7.11):** *"धर्माविरुद्धो भूतेषु कामोऽस्मि"* — "I am the desire not contrary to dharma."
+
+On Poojly, you can book a **Vivah Puja** or check **rashi compatibility** in the Astrology section.`,
+  },
+  {
+    keywords: ['health', 'healing', 'disease', 'illness', 'sick', 'pain', 'medical'],
+    response: `The body is the instrument of dharma: *"शरीरमाद्यं खलु धर्मसाधनम्"* — Kalidasa
+
+**Mahamrityunjaya Mantra (most powerful healing mantra):**
+*"ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम् |
+उर्वारुकमिव बन्धनान् मृत्योर्मुक्षीय मामृतात् ||"*
+
+**Recommended Practices:**
+- Chant Mahamrityunjaya Mantra 108 times during Brahma Muhurta (4-6 AM)
+- **Dhanvantari Puja** for invoking the divine physician
+- Light a mustard oil diya before Lord Shiva on Mondays
+
+*Note: Spiritual healing complements medical treatment. Always consult doctors.*
+
+Book a **Mahamrityunjaya Japa** or **Dhanvantari Puja** on Poojly for healing blessings.`,
+  },
+  {
+    keywords: ['career', 'job', 'success', 'business', 'work', 'promotion', 'interview', 'exam', 'education', 'study'],
+    response: `*"विद्या ददाति विनयं विनयाद्याति पात्रताम्"*
+*"Knowledge gives humility, from humility comes worthiness, from worthiness comes wealth."*
+
+**Gayatri Mantra:** *"ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि धियो यो नः प्रचोदयात्"*
+
+**Recommended Pujas:**
+1. **Ganesha Puja** — Remover of obstacles, perform before new ventures
+2. **Saraswati Puja** — For wisdom and knowledge
+3. **Lakshmi Puja** — For financial prosperity (Fridays)
+4. **Navagraha Puja** — To mitigate negative planetary influences
+
+**Daily Practices:**
+- Chant Gayatri Mantra 108 times at sunrise
+- Light a diya at your workspace
+- Place a Saraswati idol in the northeast corner of your room
+
+Visit Poojly's **Pujas** section to book with verified priests.`,
+  },
+  {
+    keywords: ['peace', 'shanti', 'mantra', 'calm', 'anxiety', 'stress', 'tension', 'worry', 'fear', 'meditation', 'dhyana'],
+    response: `**Om Shanti Mantra:** *"ॐ शान्तिः शान्तिः शान्तिः"*
+The threefold peace — from divine, environmental, and internal disturbances.
+
+**Gayatri Mantra:** *"ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि धियो यो नः प्रचोदयात्"*
+Illuminates the mind and brings clarity.
+
+**Mahamrityunjaya Mantra:** *"ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम्"*
+Removes fear and anxiety.
+
+**Asatoma Sadgamaya:**
+*"असतो मा सद्गमय | तमसो मा ज्योतिर्गमय | मृत्योर्मामृतं गमय"*
+"Lead me from untruth to truth, from darkness to light."
+
+**Practice tip:** Chant 108 times using a mala during Brahma Muhurta (4-6 AM).
+
+Explore mantras in Poojly's **Content** section. Book a **Shanti Puja** for deep peace.`,
+  },
+  {
+    keywords: ['dharma', 'duty', 'karma', 'purpose', 'righteousness', 'meaning'],
+    response: `**Bhagavad Gita (2.47):**
+*"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"*
+*"You have the right to perform your duty, but not to the fruits of your actions."*
+
+**Dharma encompasses:**
+1. **Sanatana Dharma** — The eternal cosmic order: truth, non-violence, purity
+2. **Svadharma** — Your unique purpose based on your nature
+3. **Yuga Dharma** — Duties appropriate to time and context
+
+**Bhagavad Gita (18.66):**
+*"सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज"*
+"Surrender unto Me alone."
+
+**Mahabharata:** *"धारणाद्धर्ममित्याहुः धर्मो धारयते प्रजाः"*
+"That which sustains and holds together is dharma."
+
+Explore the **Content** section on Poojly for Gita teachings, Upanishads, and more.`,
+  },
+  {
+    keywords: ['festival', 'diwali', 'navratri', 'holi', 'shivratri', 'ganesh', 'janmashtami'],
+    response: `**Bhagavad Gita (4.7):**
+*"यदा यदा हि धर्मस्य ग्लानिर्भवति भारत"*
+*"Whenever there is a decline of dharma, I manifest Myself."*
+
+**Major Festivals:**
+- **Diwali** — Lakshmi-Ganesha Puja, lighting diyas
+- **Navratri** — 9 nights of Durga worship
+- **Maha Shivratri** — Night vigil, Om Namah Shivaya chanting
+- **Ganesh Chaturthi** — Welcome Lord Ganesha, offer modak
+- **Janmashtami** — Krishna's birthday, midnight celebration
+- **Makar Sankranti** — Sun's northward journey, donate til-gur
+
+*"सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः"*
+*"May all beings be happy, may all be free from disease."*
+
+Book **festival-specific pujas** on Poojly. Watch **Live Darshan** for special aartis.`,
+  },
+  {
+    keywords: ['wealth', 'money', 'prosperity', 'lakshmi', 'dhan', 'financial', 'rich'],
+    response: `**Lakshmi Mantra:** *"ॐ श्रीं महालक्ष्म्यै नमः"*
+Chant 108 times on Fridays for prosperity.
+
+**Sri Suktam:**
+*"हिरण्यवर्णां हरिणीं सुवर्णरजतस्रजाम्"*
+
+**Wealth Practices:**
+1. **Lakshmi Puja** every Friday with lotus flowers and sweets
+2. **Sri Suktam Homa** — Fire ritual for financial abundance
+3. Keep **north direction** clean (Kubera's direction)
+4. Place a **Shri Yantra** in your puja room
+5. Donate 10% of income (Dashaamsha)
+6. Never keep broken items or leaking taps
+
+**Katha Upanishad:** *"श्रेयश्च प्रेयश्च मनुष्यमेतस्तौ"*
+"Both the good and pleasant approach a person. The wise choose the good."
+
+Book **Lakshmi Puja** or **Kubera Puja** on Poojly with verified priests.`,
+  },
+  {
+    keywords: ['child', 'baby', 'son', 'daughter', 'pregnancy', 'fertility', 'santan'],
+    response: `**Santana Gopala Mantra:**
+*"ॐ श्रीं ह्रीं क्लीं ग्लौं देवकीसुत गोविन्द वासुदेव जगत्पते |
+देहि मे तनयं कृष्ण त्वामहं शरणं गतः ||"*
+
+**For Child Blessings:**
+- **Santana Gopala Puja** — for the blessing of progeny
+- **Pumsavana Homa** — for a healthy pregnancy
+- **Garbaraksha Puja** — protection during pregnancy
+- Worship **Lord Krishna as Bal Gopal**
+
+**For Children's Education:**
+- **Saraswati Puja** — for wisdom and academic success
+- **Aksharabhyasam** — the traditional learning initiation
+
+Book **Santana Gopala Puja** on Poojly with verified priests across India.`,
+  },
+  {
+    keywords: ['grief', 'death', 'loss', 'passed away', 'departed', 'shradh', 'ancestors', 'pitru'],
+    response: `**Bhagavad Gita (2.22):**
+*"वासांसि जीर्णानि यथा विहाय नवानि गृह्णाति नरोऽपराणि"*
+*"As a person puts on new garments, the soul accepts new bodies."*
+
+**Bhagavad Gita (2.20):**
+*"न जायते म्रियते वा कदाचित्"*
+*"The soul is never born, nor does it ever die."*
+
+**Practices for the Departed:**
+- **Shraddha Ceremony** — annual remembrance
+- **Pind Daan** at Gaya for ancestors' salvation
+- **Narayan Bali Puja** — liberation of the departed soul
+- Light a diya and offer water (tarpan) daily
+
+*"ॐ शान्तिः शान्तिः शान्तिः"*
+
+Book **Shraddha Puja** or **Pind Daan** on Poojly with verified priests.`,
+  },
+  {
+    keywords: ['vastu', 'house', 'home', 'direction', 'flat', 'office', 'construction'],
+    response: `**Vastu Shastra** — The ancient science of spatial harmony.
+
+**Key Directions:**
+- **North (Kubera)** — Wealth. Keep clean and open.
+- **East (Surya)** — Health & growth. Ideal for main entrance.
+- **Northeast (Ishaan)** — Puja room. Most sacred direction.
+- **Southeast (Agni)** — Kitchen. Fire element.
+- **Southwest** — Master bedroom. Stability.
+
+**Quick Vastu Remedies:**
+1. Place a **Vastu Pyramid** in the center
+2. Keep **northeast** clutter-free and well-lit
+3. Fix all **leaking taps** immediately
+4. Avoid **mirrors** facing the bed
+5. Place a **Tulsi plant** at the entrance
+
+Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** on Poojly.`,
+  },
+  {
+    keywords: ['gemstone', 'gem', 'stone', 'ratna', 'neelam', 'ruby', 'pearl', 'emerald', 'diamond', 'sapphire'],
+    response: `**Gemstones in Vedic Astrology:**
+
+1. **Ruby (Manik)** — Sun — Leadership. Ring finger, Sunday.
+2. **Pearl (Moti)** — Moon — Peace. Little finger, Monday.
+3. **Red Coral (Moonga)** — Mars — Courage. Ring finger, Tuesday.
+4. **Emerald (Panna)** — Mercury — Intelligence. Little finger, Wednesday.
+5. **Yellow Sapphire (Pukhraj)** — Jupiter — Wisdom. Index finger, Thursday.
+6. **Diamond (Heera)** — Venus — Love. Ring finger, Friday.
+7. **Blue Sapphire (Neelam)** — Saturn — Career. Middle finger, Saturday.
+
+**Important:** Never wear a gemstone without consulting your birth chart.
+
+Get a **personalized gemstone recommendation** from Poojly's verified astrologers.`,
+  },
+];
+
+function getLocalDemoResponse(message: string): string {
+  const lower = message.toLowerCase();
+  for (const topic of LOCAL_DEMO_TOPICS) {
+    if (topic.keywords.some((kw) => lower.includes(kw))) {
+      return topic.response;
+    }
+  }
+  return `Namaste! Thank you for your question.
+
+**Bhagavad Gita (4.7-8):**
+*"यदा यदा हि धर्मस्य ग्लानिर्भवति भारत"*
+"Whenever there is a decline of dharma, I manifest Myself."
+
+This reminds us that divine guidance is always available to those who seek it sincerely.
+
+**Guidance:**
+- Turn to prayer and meditation for clarity
+- Study the scriptures (Gita, Upanishads, Ramayana) for wisdom
+- Consult with a learned pandit for personalized guidance
+- Practice selfless service (seva) to purify the heart
+
+*"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
+
+Explore Poojly's **Content** section for mantras and spiritual articles, or **Book a Puja** with a verified priest.`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AiChat({
@@ -89,8 +333,8 @@ export default function AiChat({
 
   // ─── Send Message ─────────────────────────────────────────────────────────
 
-  async function handleSend() {
-    const trimmed = input.trim();
+  async function handleSend(overrideText?: string) {
+    const trimmed = (overrideText || input).trim();
     if (!trimmed || isStreaming) return;
 
     const now = new Date();
@@ -264,24 +508,33 @@ export default function AiChat({
         }
       }
     } catch {
-      // Network error — show fallback and persist
-      const fallbackContent =
-        'Namaste! I am unable to connect right now. Please check your connection and try again. In the meantime, you can explore our scripture library and content section for spiritual guidance.';
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsgId
-            ? { ...m, content: fallbackContent }
-            : m
-        )
-      );
+      // Network error or auth failure — use LOCAL demo responses
+      const demoContent = getLocalDemoResponse(trimmed);
+
+      // Simulate typing effect for local demo
+      const words = demoContent.split(' ');
+      let accumulated = '';
+      for (let i = 0; i < words.length; i++) {
+        accumulated += (i === 0 ? '' : ' ') + words[i];
+        const snapshot = accumulated;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId ? { ...m, content: snapshot } : m
+          )
+        );
+        // Small delay for typing effect
+        await new Promise((resolve) => setTimeout(resolve, 12));
+      }
+
+      // Persist to localStorage
       if (convId) {
-        const storedFallbackMsg: StoredMessage = {
+        const storedDemoMsg: StoredMessage = {
           id: assistantMsgId,
           role: 'assistant',
-          content: fallbackContent,
+          content: demoContent,
           timestamp: assistantMsg.timestamp,
         };
-        addMessage(convId, storedFallbackMsg);
+        addMessage(convId, storedDemoMsg);
         onConversationUpdated?.();
       }
     } finally {
@@ -310,7 +563,7 @@ export default function AiChat({
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 ? (
-          <EmptyState onQuestionClick={(q) => { setInput(q); inputRef.current?.focus(); }} />
+          <EmptyState onQuestionClick={(q) => handleSend(q)} />
         ) : (
           <>
             {messages.map((msg, idx) => (
@@ -360,7 +613,7 @@ export default function AiChat({
             />
           </div>
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || isStreaming}
             className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             style={{ background: 'var(--color-primary, #c2410c)' }}
@@ -393,19 +646,35 @@ function EmptyState({
   const suggestions = [
     {
       text: 'What does the Gita say about duty?',
-      emoji: '\uD83D\uDCD6',
+      emoji: '📖',
     },
     {
       text: 'Which mantra for peace of mind?',
-      emoji: '\uD83E\uDDD8',
+      emoji: '🧘',
     },
     {
       text: 'Explain the concept of dharma',
-      emoji: '\u2638\uFE0F',
+      emoji: '☸️',
     },
     {
       text: 'What puja should I do for career success?',
-      emoji: '\uD83D\uDD25',
+      emoji: '🔥',
+    },
+    {
+      text: 'How to deal with grief and loss?',
+      emoji: '🕊️',
+    },
+    {
+      text: 'Marriage guidance from scriptures',
+      emoji: '💍',
+    },
+    {
+      text: 'Daily worship routine at home',
+      emoji: '🪔',
+    },
+    {
+      text: 'Which gemstone should I wear?',
+      emoji: '💎',
     },
   ];
 
@@ -414,7 +683,7 @@ function EmptyState({
       {/* Om symbol */}
       <div className="w-20 h-20 gradient-saffron rounded-full flex items-center justify-center mb-6 shadow-lg animate-float">
         <span className="text-4xl text-white font-bold font-devanagari font-[family-name:var(--font-noto-devanagari)]">
-          {'\u0950'}
+          {'ॐ'}
         </span>
       </div>
 

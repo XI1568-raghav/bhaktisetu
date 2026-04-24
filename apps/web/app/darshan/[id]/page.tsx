@@ -19,13 +19,31 @@ import {
   type DarshanStream,
 } from '../../../lib/api';
 import DarshanPlayer from '../../../components/DarshanPlayer';
+import { getTempleHero } from '../../../lib/images';
+
+// ─── YouTube stream URL lookup for fallback ──────────────────────────────────
+
+const YOUTUBE_STREAMS: Record<string, string> = {
+  'kashi-vishwanath': 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
+  'somnath': 'https://www.youtube.com/embed/live_stream?channel=UC6dqKmIjJiIvHasMJJbmQkA',
+  'tirupati': 'https://www.youtube.com/embed/live_stream?channel=UCHDfKNnEBPsJuvWuHbqPRmQ',
+  'siddhivinayak': 'https://www.youtube.com/embed/live_stream?channel=UCyrJNbN06WL-8R_mbzuEB0A',
+  'mahakaleshwar': 'https://www.youtube.com/embed/live_stream?channel=UCcf8K09z_GXFEFslDvjQ4cQ',
+  'jagannath-puri': 'https://www.youtube.com/embed/live_stream?channel=UCdQpU9tTNQNniXO0LTQsGmg',
+  'golden-temple': 'https://www.youtube.com/embed/live_stream?channel=UCt1dgP67k5GkzJfEmJyhiKg',
+  'kedarnath': 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
+  'badrinath': 'https://www.youtube.com/embed/live_stream?channel=UCHDfKNnEBPsJuvWuHbqPRmQ',
+  'dwarkadhish': 'https://www.youtube.com/embed/live_stream?channel=UC6dqKmIjJiIvHasMJJbmQkA',
+  'iskcon-vrindavan': 'https://www.youtube.com/embed/live_stream?channel=UCfNJsTvf-ygFijU-wqO3Amg',
+  'meenakshi-amman': 'https://www.youtube.com/embed/live_stream?channel=UCVY0rCRUWqxe-JJWPK1h3kA',
+};
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
 const fallbackStream: DarshanStream = {
   id: 'fallback-1',
   templeId: 'temple-kashi',
-  playbackUrl: '',
+  playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
   status: 'live',
   viewerCount: 12450,
   peakViewers: 18200,
@@ -133,7 +151,15 @@ export default async function DarshanDetailPage({
 
   const isLive = stream.status === 'live';
   const templeImage =
-    stream.temple.images && stream.temple.images.length > 0 ? stream.temple.images[0]!.url : null;
+    stream.temple.images && stream.temple.images.length > 0
+      ? stream.temple.images[0]!.url
+      : getTempleHero(stream.temple.slug);
+
+  // Resolve the playback URL: prefer stream data, fall back to YouTube lookup
+  const playbackUrl =
+    stream.playbackUrl ||
+    YOUTUBE_STREAMS[stream.temple.slug] ||
+    null;
 
   return (
     <div className="min-h-screen bg-[#2a2520]">
@@ -169,7 +195,7 @@ export default async function DarshanDetailPage({
           <div className="lg:col-span-2 space-y-6">
             {/* Player */}
             <DarshanPlayer
-              streamUrl={stream.playbackUrl || null}
+              streamUrl={playbackUrl}
               templeName={stream.temple.name}
               templeSlug={stream.temple.slug}
               isLive={isLive}

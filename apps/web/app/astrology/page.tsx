@@ -27,6 +27,7 @@ import {
   BadgeCheck,
   Globe,
   Award,
+  Compass,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -57,6 +58,11 @@ interface DailyHoroscope {
   prediction: string;
   luckyNumber: number;
   luckyColor: string;
+  luckyDirection: string;
+  mantra: string;
+  mantraHindi: string;
+  rulingPlanet: string;
+  element: string;
   overallRating: number;
 }
 
@@ -202,18 +208,18 @@ const fallbackAstrologers: Astrologer[] = [
 ];
 
 const fallbackHoroscopes: DailyHoroscope[] = [
-  { rashi: 'aries', rashiHindi: '\u092E\u0947\u0937', rashiEnglish: 'Aries', symbol: '\u2648', prediction: 'A day of new beginnings and fresh energy. Trust your instincts.', luckyNumber: 9, luckyColor: 'Red', overallRating: 4 },
-  { rashi: 'taurus', rashiHindi: '\u0935\u0943\u0937\u092D', rashiEnglish: 'Taurus', symbol: '\u2649', prediction: 'Financial matters take center stage. Family brings joy.', luckyNumber: 6, luckyColor: 'Green', overallRating: 3 },
-  { rashi: 'gemini', rashiHindi: '\u092E\u093F\u0925\u0941\u0928', rashiEnglish: 'Gemini', symbol: '\u264A', prediction: 'Communication skills peak today. Express yourself freely.', luckyNumber: 5, luckyColor: 'Yellow', overallRating: 4 },
-  { rashi: 'cancer', rashiHindi: '\u0915\u0930\u094D\u0915', rashiEnglish: 'Cancer', symbol: '\u264B', prediction: 'Home and family matters need attention. Creative pursuits shine.', luckyNumber: 2, luckyColor: 'White', overallRating: 3 },
-  { rashi: 'leo', rashiHindi: '\u0938\u093F\u0902\u0939', rashiEnglish: 'Leo', symbol: '\u264C', prediction: 'Leadership qualities shine bright. A celebration brings happiness.', luckyNumber: 1, luckyColor: 'Gold', overallRating: 5 },
-  { rashi: 'virgo', rashiHindi: '\u0915\u0928\u094D\u092F\u093E', rashiEnglish: 'Virgo', symbol: '\u264D', prediction: 'Attention to detail pays off. Health improvements noticed.', luckyNumber: 7, luckyColor: 'Green', overallRating: 4 },
-  { rashi: 'libra', rashiHindi: '\u0924\u0941\u0932\u093E', rashiEnglish: 'Libra', symbol: '\u264E', prediction: 'Balance and harmony define your day. Partnerships flourish.', luckyNumber: 6, luckyColor: 'Pink', overallRating: 4 },
-  { rashi: 'scorpio', rashiHindi: '\u0935\u0943\u0936\u094D\u091A\u093F\u0915', rashiEnglish: 'Scorpio', symbol: '\u264F', prediction: 'Transformation and deep insights. Your intuition is strong.', luckyNumber: 8, luckyColor: 'Maroon', overallRating: 3 },
-  { rashi: 'sagittarius', rashiHindi: '\u0927\u0928\u0941', rashiEnglish: 'Sagittarius', symbol: '\u2650', prediction: 'Adventure and learning highlighted. Foreign connections bring news.', luckyNumber: 3, luckyColor: 'Purple', overallRating: 4 },
-  { rashi: 'capricorn', rashiHindi: '\u092E\u0915\u0930', rashiEnglish: 'Capricorn', symbol: '\u2651', prediction: 'Career ambitions get a major boost. Hard work pays off.', luckyNumber: 10, luckyColor: 'Brown', overallRating: 5 },
-  { rashi: 'aquarius', rashiHindi: '\u0915\u0941\u092E\u094D\u092D', rashiEnglish: 'Aquarius', symbol: '\u2652', prediction: 'Innovation and social connections thrive. A unique idea impresses.', luckyNumber: 11, luckyColor: 'Electric Blue', overallRating: 4 },
-  { rashi: 'pisces', rashiHindi: '\u092E\u0940\u0928', rashiEnglish: 'Pisces', symbol: '\u2653', prediction: 'Spiritual awareness and creativity peak. Dreams carry messages.', luckyNumber: 12, luckyColor: 'Sea Green', overallRating: 4 },
+  { rashi: 'aries', rashiHindi: 'मेष', rashiEnglish: 'Aries', symbol: '♈', prediction: 'A day of new beginnings and fresh energy. Trust your instincts.', luckyNumber: 9, luckyColor: 'Red', luckyDirection: 'East', mantra: 'Om Kraam Kreem Kraum Sah Bhaumaya Namah', mantraHindi: 'ओम क्रां क्रीं क्रौं सः भौमाय नमः', rulingPlanet: 'Mars (Mangal)', element: 'Fire (Agni)', overallRating: 4 },
+  { rashi: 'taurus', rashiHindi: 'वृषभ', rashiEnglish: 'Taurus', symbol: '♉', prediction: 'Financial matters take center stage. Family brings joy.', luckyNumber: 6, luckyColor: 'Green', luckyDirection: 'Southeast', mantra: 'Om Draam Dreem Draum Sah Shukraya Namah', mantraHindi: 'ओम द्रां द्रीं द्रौं सः शुक्राय नमः', rulingPlanet: 'Venus (Shukra)', element: 'Earth (Prithvi)', overallRating: 3 },
+  { rashi: 'gemini', rashiHindi: 'मिथुन', rashiEnglish: 'Gemini', symbol: '♊', prediction: 'Communication skills peak today. Express yourself freely.', luckyNumber: 5, luckyColor: 'Yellow', luckyDirection: 'North', mantra: 'Om Braam Breem Braum Sah Budhaya Namah', mantraHindi: 'ओम ब्रां ब्रीं ब्रौं सः बुधाय नमः', rulingPlanet: 'Mercury (Budh)', element: 'Air (Vayu)', overallRating: 4 },
+  { rashi: 'cancer', rashiHindi: 'कर्क', rashiEnglish: 'Cancer', symbol: '♋', prediction: 'Home and family matters need attention. Creative pursuits shine.', luckyNumber: 2, luckyColor: 'White', luckyDirection: 'Northwest', mantra: 'Om Shraam Shreem Shraum Sah Chandraya Namah', mantraHindi: 'ओम श्रां श्रीं श्रौं सः चंद्राय नमः', rulingPlanet: 'Moon (Chandra)', element: 'Water (Jal)', overallRating: 3 },
+  { rashi: 'leo', rashiHindi: 'सिंह', rashiEnglish: 'Leo', symbol: '♌', prediction: 'Leadership qualities shine bright. A celebration brings happiness.', luckyNumber: 1, luckyColor: 'Gold', luckyDirection: 'East', mantra: 'Om Hraam Hreem Hraum Sah Suryaya Namah', mantraHindi: 'ओम ह्रां ह्रीं ह्रौं सः सूर्याय नमः', rulingPlanet: 'Sun (Surya)', element: 'Fire (Agni)', overallRating: 5 },
+  { rashi: 'virgo', rashiHindi: 'कन्या', rashiEnglish: 'Virgo', symbol: '♍', prediction: 'Attention to detail pays off. Health improvements noticed.', luckyNumber: 7, luckyColor: 'Green', luckyDirection: 'South', mantra: 'Om Braam Breem Braum Sah Budhaya Namah', mantraHindi: 'ओम ब्रां ब्रीं ब्रौं सः बुधाय नमः', rulingPlanet: 'Mercury (Budh)', element: 'Earth (Prithvi)', overallRating: 4 },
+  { rashi: 'libra', rashiHindi: 'तुला', rashiEnglish: 'Libra', symbol: '♎', prediction: 'Balance and harmony define your day. Partnerships flourish.', luckyNumber: 6, luckyColor: 'Pink', luckyDirection: 'West', mantra: 'Om Draam Dreem Draum Sah Shukraya Namah', mantraHindi: 'ओम द्रां द्रीं द्रौं सः शुक्राय नमः', rulingPlanet: 'Venus (Shukra)', element: 'Air (Vayu)', overallRating: 4 },
+  { rashi: 'scorpio', rashiHindi: 'वृश्चिक', rashiEnglish: 'Scorpio', symbol: '♏', prediction: 'Transformation and deep insights. Your intuition is strong.', luckyNumber: 8, luckyColor: 'Maroon', luckyDirection: 'North', mantra: 'Om Kraam Kreem Kraum Sah Bhaumaya Namah', mantraHindi: 'ओम क्रां क्रीं क्रौं सः भौमाय नमः', rulingPlanet: 'Mars (Mangal)', element: 'Water (Jal)', overallRating: 3 },
+  { rashi: 'sagittarius', rashiHindi: 'धनु', rashiEnglish: 'Sagittarius', symbol: '♐', prediction: 'Adventure and learning highlighted. Foreign connections bring news.', luckyNumber: 3, luckyColor: 'Purple', luckyDirection: 'Northeast', mantra: 'Om Graam Greem Graum Sah Gurave Namah', mantraHindi: 'ओम ग्रां ग्रीं ग्रौं सः गुरवे नमः', rulingPlanet: 'Jupiter (Guru)', element: 'Fire (Agni)', overallRating: 4 },
+  { rashi: 'capricorn', rashiHindi: 'मकर', rashiEnglish: 'Capricorn', symbol: '♑', prediction: 'Career ambitions get a major boost. Hard work pays off.', luckyNumber: 10, luckyColor: 'Brown', luckyDirection: 'West', mantra: 'Om Praam Preem Praum Sah Shanaischaraya Namah', mantraHindi: 'ओम प्रां प्रीं प्रौं सः शनैश्चराय नमः', rulingPlanet: 'Saturn (Shani)', element: 'Earth (Prithvi)', overallRating: 5 },
+  { rashi: 'aquarius', rashiHindi: 'कुम्भ', rashiEnglish: 'Aquarius', symbol: '♒', prediction: 'Innovation and social connections thrive. A unique idea impresses.', luckyNumber: 11, luckyColor: 'Electric Blue', luckyDirection: 'Southwest', mantra: 'Om Praam Preem Praum Sah Shanaischaraya Namah', mantraHindi: 'ओम प्रां प्रीं प्रौं सः शनैश्चराय नमः', rulingPlanet: 'Saturn (Shani)', element: 'Air (Vayu)', overallRating: 4 },
+  { rashi: 'pisces', rashiHindi: 'मीन', rashiEnglish: 'Pisces', symbol: '♓', prediction: 'Spiritual awareness and creativity peak. Dreams carry messages.', luckyNumber: 12, luckyColor: 'Sea Green', luckyDirection: 'Northeast', mantra: 'Om Graam Greem Graum Sah Gurave Namah', mantraHindi: 'ओम ग्रां ग्रीं ग्रौं सः गुरवे नमः', rulingPlanet: 'Jupiter (Guru)', element: 'Water (Jal)', overallRating: 4 },
 ];
 
 const specializations = [
@@ -499,7 +505,7 @@ export default function AstrologyPage() {
               {/* Footer */}
               <div className="px-4 pb-4 flex items-center justify-between">
                 <div className="text-sm font-bold text-surface-800">
-                  <span className="text-lg">{'\u20B9'}{astrologer.perMinuteRate}</span>
+                  <span className="text-lg">{'₹'}{astrologer.perMinuteRate}</span>
                   <span className="text-xs font-normal text-surface-400">/min</span>
                 </div>
                 <button
@@ -642,13 +648,23 @@ export default function AstrologyPage() {
                           <span className="text-xl">{h.symbol}</span>
                           <div>
                             <p className="text-sm font-bold text-surface-800">{h.rashiEnglish}</p>
-                            <p className="text-[10px] text-surface-500">{h.rashiHindi}</p>
+                            <p className="text-[10px] text-surface-500">{h.rashiHindi} &middot; {h.rulingPlanet}</p>
                           </div>
                         </div>
                         <p className="text-xs text-surface-600 leading-relaxed mb-2">{h.prediction}</p>
-                        <div className="flex items-center gap-3 text-[10px] text-surface-400">
+                        {/* Mantra */}
+                        <div className="bg-white/60 rounded-lg p-2 mb-2">
+                          <p className="text-[10px] text-surface-400 uppercase tracking-wide mb-0.5">Daily Mantra</p>
+                          <p className="text-[11px] font-medium text-saffron-700">{h.mantraHindi}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-surface-400">
                           <span>Lucky #{h.luckyNumber}</span>
                           <span>{h.luckyColor}</span>
+                          <span className="flex items-center gap-0.5">
+                            <Compass className="w-2.5 h-2.5" />
+                            {h.luckyDirection}
+                          </span>
+                          <span>{h.element}</span>
                         </div>
                       </>
                     );
