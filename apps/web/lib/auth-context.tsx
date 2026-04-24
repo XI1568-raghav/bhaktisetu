@@ -198,13 +198,13 @@ export function getRoleDashboardPath(role: UserRole): string {
     case 'store_owner':
       return '/store-admin';
     case 'astrologer':
-      return '/dashboard';
+      return '/astrologer-portal';
     case 'wellness_instructor':
-      return '/dashboard';
+      return '/wellness-portal';
     case 'gaushala_manager':
-      return '/dashboard';
+      return '/gaushala-portal';
     case 'temple_manager':
-      return '/dashboard';
+      return '/temple-portal';
     case 'admin':
       return '/admin';
     case 'devotee':

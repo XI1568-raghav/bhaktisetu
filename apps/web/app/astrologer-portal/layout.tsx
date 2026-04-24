@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -14,6 +14,8 @@ import {
   LogOut,
   ChevronRight,
 } from 'lucide-react';
+import AuthGuard from '../../components/AuthGuard';
+import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
   { href: '/astrologer-portal', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,23 +26,8 @@ const sidebarLinks = [
 
 function AstrologerPortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userName, setUserName] = useState('Astrologer');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('poojly_auth');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.user?.fullName) setUserName(parsed.user.fullName);
-      }
-    } catch { /* ignore */ }
-
-    const role = localStorage.getItem('poojly_user_role');
-    if (role && role !== 'astrologer' && role !== 'admin') {
-      // Allow access for demo purposes
-    }
-  }, []);
 
   const isActive = (href: string) => {
     if (href === '/astrologer-portal') return pathname === '/astrologer-portal';
@@ -86,7 +73,9 @@ function AstrologerPortalLayout({ children }: { children: React.ReactNode }) {
               <UserCircle className="w-6 h-6 text-purple-300" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{userName}</p>
+              <p className="text-sm font-semibold text-white truncate">
+                {user?.fullName || 'Astrologer'}
+              </p>
               <p className="text-xs text-white/40">Vedic Astrologer</p>
             </div>
           </div>
@@ -126,10 +115,7 @@ function AstrologerPortalLayout({ children }: { children: React.ReactNode }) {
             Back to Main Site
           </Link>
           <button
-            onClick={() => {
-              localStorage.removeItem('poojly_auth');
-              window.location.href = '/';
-            }}
+            onClick={signOut}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
           >
             <LogOut className="w-5 h-5" />
@@ -160,5 +146,9 @@ function AstrologerPortalLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function AstrologerRootLayout({ children }: { children: React.ReactNode }) {
-  return <AstrologerPortalLayout>{children}</AstrologerPortalLayout>;
+  return (
+    <AuthGuard allowedRoles={['astrologer']}>
+      <AstrologerPortalLayout>{children}</AstrologerPortalLayout>
+    </AuthGuard>
+  );
 }
