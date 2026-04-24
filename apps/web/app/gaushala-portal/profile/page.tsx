@@ -1,10 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
-import { Mail, Phone, MapPin, Camera, Building2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Camera, Building2, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function GaushalProfilePage() {
   const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    // Simulate save (demo mode — no live API)
+    await new Promise((r) => setTimeout(r, 900));
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl space-y-6">
@@ -75,12 +88,27 @@ export default function GaushalProfilePage() {
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          <button className="px-5 py-2.5 bg-amber-800 text-white rounded-lg text-sm font-medium hover:bg-amber-900 transition-colors">
-            Save Changes
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2.5 bg-amber-800 text-white rounded-lg text-sm font-medium hover:bg-amber-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+            ) : saved ? (
+              <><CheckCircle2 className="w-4 h-4" /> Saved!</>
+            ) : (
+              'Save Changes'
+            )}
           </button>
           <button className="px-5 py-2.5 border border-amber-200 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors">
             Cancel
           </button>
+          {saved && (
+            <span className="text-sm text-green-600 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" /> Profile updated successfully
+            </span>
+          )}
         </div>
       </div>
 

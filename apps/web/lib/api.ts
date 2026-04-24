@@ -17,13 +17,22 @@ async function serverFetch<T>(
 ): Promise<T> {
   const { revalidate = 60, tags, cache } = options;
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    next: {
-      revalidate: revalidate === false ? undefined : revalidate,
-      tags,
-    },
-    cache: cache ?? (revalidate === false ? 'no-store' : undefined),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      next: {
+        revalidate: revalidate === false ? undefined : revalidate,
+        tags,
+      },
+      cache: cache ?? (revalidate === false ? 'no-store' : undefined),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
     throw new Error(`API error: ${res.status} ${res.statusText}`);

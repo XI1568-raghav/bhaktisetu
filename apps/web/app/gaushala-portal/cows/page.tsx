@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, X, Loader2, CheckCircle2 } from 'lucide-react';
 
 const cows = [
   { id: 'GS-001', name: 'Kamdhenu',   breed: 'Gir',        age: '4y 3m', status: 'Healthy',   weight: '420 kg', milk: '14L/day',  lastCheckup: '2026-04-10' },
@@ -26,6 +26,23 @@ const statuses = ['All', 'Healthy', 'Treatment', 'Pregnant', 'Elderly'];
 export default function CowsPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [newCow, setNewCow] = useState({ name: '', breed: '', age: '', weight: '', status: 'Healthy' });
+
+  const handleRegister = async () => {
+    if (!newCow.name.trim() || !newCow.breed.trim()) return;
+    setRegistering(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setRegistering(false);
+    setRegistered(true);
+    setTimeout(() => {
+      setRegistered(false);
+      setShowModal(false);
+      setNewCow({ name: '', breed: '', age: '', weight: '', status: 'Healthy' });
+    }, 1500);
+  };
 
   const filtered = cows.filter((c) => {
     const matchSearch =
@@ -51,7 +68,10 @@ export default function CowsPage() {
             )}
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors">
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           Register Cow
         </button>
@@ -131,6 +151,69 @@ export default function CowsPage() {
           <p className="col-span-3 text-center text-gray-400 py-8 text-sm">No cows match your search.</p>
         )}
       </div>
+
+      {/* Register Cow Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-amber-900">Register New Cow</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {[
+                { label: 'Cow Name *', field: 'name', placeholder: 'e.g. Gaumata' },
+                { label: 'Breed *', field: 'breed', placeholder: 'e.g. Gir, Sahiwal, Tharparkar' },
+                { label: 'Age', field: 'age', placeholder: 'e.g. 3y 4m' },
+                { label: 'Weight', field: 'weight', placeholder: 'e.g. 380 kg' },
+              ].map(({ label, field, placeholder }) => (
+                <div key={field}>
+                  <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">{label}</label>
+                  <input
+                    value={newCow[field as keyof typeof newCow]}
+                    onChange={(e) => setNewCow((p) => ({ ...p, [field]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">Health Status</label>
+                <select
+                  value={newCow.status}
+                  onChange={(e) => setNewCow((p) => ({ ...p, status: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  {statuses.filter((s) => s !== 'All').map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleRegister}
+                disabled={registering || registered}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-800 text-white rounded-lg text-sm font-medium hover:bg-amber-900 transition-colors disabled:opacity-60"
+              >
+                {registering ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Registering...</>
+                ) : registered ? (
+                  <><CheckCircle2 className="w-4 h-4" /> Registered!</>
+                ) : 'Register Cow'}
+              </button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2.5 border border-amber-200 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
