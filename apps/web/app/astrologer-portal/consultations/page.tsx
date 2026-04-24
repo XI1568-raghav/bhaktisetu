@@ -12,6 +12,7 @@ import {
   Filter,
   IndianRupee,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -83,10 +84,24 @@ function getStatusConfig(status: string) {
 
 export default function AstrologerConsultationsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('upcoming');
+  const [consultations, setConsultations] = useState(mockConsultations);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [joinedId, setJoinedId] = useState<string | null>(null);
 
-  const upcoming = mockConsultations.filter((c) => c.status === 'scheduled' || c.status === 'in_progress');
-  const past = mockConsultations.filter((c) => ['completed', 'cancelled', 'no_show'].includes(c.status));
+  const upcoming = consultations.filter((c) => c.status === 'scheduled' || c.status === 'in_progress');
+  const past = consultations.filter((c) => ['completed', 'cancelled', 'no_show'].includes(c.status));
   const displayed = activeTab === 'upcoming' ? upcoming : past;
+
+  const handleJoin = async (id: string) => {
+    setJoiningId(id);
+    await new Promise((r) => setTimeout(r, 1000));
+    setConsultations((prev) =>
+      prev.map((c) => c.id === id ? { ...c, status: 'in_progress' as const } : c)
+    );
+    setJoiningId(null);
+    setJoinedId(id);
+    setTimeout(() => setJoinedId(null), 3000);
+  };
 
   const tabs = [
     { key: 'upcoming' as TabKey, label: 'Upcoming', count: upcoming.length },
@@ -177,10 +192,27 @@ export default function AstrologerConsultationsPage() {
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-surface-800">{formatCurrency(consultation.rate)}</p>
                     <p className="text-xs text-surface-400">Rate</p>
-                    {consultation.status === 'scheduled' && (
-                      <button className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Join
+                    {(consultation.status === 'scheduled' || consultation.status === 'in_progress') && (
+                      <button
+                        onClick={() => handleJoin(consultation.id)}
+                        disabled={joiningId === consultation.id}
+                        className={`mt-2 inline-flex items-center gap-1 px-3 py-1.5 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-60 ${
+                          joinedId === consultation.id
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : consultation.status === 'in_progress'
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-purple-600 hover:bg-purple-700'
+                        }`}
+                      >
+                        {joiningId === consultation.id ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> Joining...</>
+                        ) : joinedId === consultation.id ? (
+                          <><CheckCircle2 className="w-3 h-3" /> Joined!</>
+                        ) : consultation.status === 'in_progress' ? (
+                          <><Video className="w-3 h-3" /> Rejoin</>
+                        ) : (
+                          <><Video className="w-3 h-3" /> Join</>
+                        )}
                       </button>
                     )}
                   </div>

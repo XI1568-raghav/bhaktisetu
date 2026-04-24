@@ -12,6 +12,8 @@ import {
   MapPin,
   Star,
   Filter,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 
 // ── Mock pending approvals ────────────────────────────────────────────────────
@@ -142,17 +144,24 @@ export default function AdminApprovalsPage() {
   const [approvals, setApprovals] = useState(pendingApprovals);
   const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const filtered = roleFilter === 'all'
     ? approvals
     : approvals.filter((a) => a.role === roleFilter);
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
+    setActionLoading(id + '-approve');
+    await new Promise((r) => setTimeout(r, 700));
     setApprovals((prev) => prev.filter((a) => a.id !== id));
+    setActionLoading(null);
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
+    setActionLoading(id + '-reject');
+    await new Promise((r) => setTimeout(r, 700));
     setApprovals((prev) => prev.filter((a) => a.id !== id));
+    setActionLoading(null);
     setRejectModal(null);
     setRejectReason('');
   };
@@ -241,13 +250,19 @@ export default function AdminApprovalsPage() {
                 <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
                   <button
                     onClick={() => handleApprove(approval.id)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors"
+                    disabled={actionLoading !== null}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60"
                   >
-                    <UserCheck className="w-3.5 h-3.5" /> Approve
+                    {actionLoading === approval.id + '-approve' ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving...</>
+                    ) : (
+                      <><UserCheck className="w-3.5 h-3.5" /> Approve</>
+                    )}
                   </button>
                   <button
                     onClick={() => setRejectModal(approval.id)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
+                    disabled={actionLoading !== null}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors disabled:opacity-60"
                   >
                     <XCircle className="w-3.5 h-3.5" /> Reject
                   </button>
@@ -280,9 +295,12 @@ export default function AdminApprovalsPage() {
                     </button>
                     <button
                       onClick={() => handleReject(approval.id)}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                      disabled={actionLoading === approval.id + '-reject'}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-60"
                     >
-                      Confirm Rejection
+                      {actionLoading === approval.id + '-reject' ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Rejecting...</>
+                      ) : 'Confirm Rejection'}
                     </button>
                   </div>
                 </div>

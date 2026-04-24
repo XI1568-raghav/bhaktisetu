@@ -79,9 +79,10 @@ export default function TempleDonationsPage() {
     return matchSearch && matchPurpose;
   });
 
+  const todayDate = new Date().toISOString().split('T')[0];
   const totalAmount = mockDonations.reduce((sum, d) => sum + d.amount, 0);
   const todayAmount = mockDonations
-    .filter((d) => d.date.startsWith('2026-04-16'))
+    .filter((d) => d.date.startsWith(todayDate!))
     .reduce((sum, d) => sum + d.amount, 0);
   const purposes = ['all', 'Anna Daan', 'Temple Maintenance', 'Gaushala Seva', 'General Donation', 'Festival Fund', 'Priest Dakshina'] as PurposeFilter[];
 
