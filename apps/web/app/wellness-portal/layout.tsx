@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -14,6 +14,8 @@ import {
   LogOut,
   ChevronRight,
 } from 'lucide-react';
+import AuthGuard from '../../components/AuthGuard';
+import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
   { href: '/wellness-portal', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,18 +26,8 @@ const sidebarLinks = [
 
 function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userName, setUserName] = useState('Instructor');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('poojly_auth');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.user?.fullName) setUserName(parsed.user.fullName);
-      }
-    } catch { /* ignore */ }
-  }, []);
 
   const isActive = (href: string) => {
     if (href === '/wellness-portal') return pathname === '/wellness-portal';
@@ -81,7 +73,9 @@ function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
               <UserCircle className="w-6 h-6 text-emerald-300" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{userName}</p>
+              <p className="text-sm font-semibold text-white truncate">
+                {user?.fullName || 'Instructor'}
+              </p>
               <p className="text-xs text-white/40">Wellness Instructor</p>
             </div>
           </div>
@@ -121,10 +115,7 @@ function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
             Back to Main Site
           </Link>
           <button
-            onClick={() => {
-              localStorage.removeItem('poojly_auth');
-              window.location.href = '/';
-            }}
+            onClick={signOut}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
           >
             <LogOut className="w-5 h-5" />
@@ -155,5 +146,9 @@ function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function WellnessRootLayout({ children }: { children: React.ReactNode }) {
-  return <WellnessPortalLayout>{children}</WellnessPortalLayout>;
+  return (
+    <AuthGuard allowedRoles={['wellness_instructor']}>
+      <WellnessPortalLayout>{children}</WellnessPortalLayout>
+    </AuthGuard>
+  );
 }

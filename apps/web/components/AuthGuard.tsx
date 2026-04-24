@@ -1,48 +1,64 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAuth } from '../lib/auth-context';
+import { useAuth, getRoleDashboardPath, type UserRole } from '../lib/auth-context';
 
 interface AuthGuardProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
+  /** If provided, only users with one of these roles can access the page.
+   *  Users with a different role are redirected to their own correct portal. */
+  allowedRoles?: UserRole[];
 }
+
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-saffron-50">
+    <div className="text-center">
+      <div className="w-12 h-12 border-4 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-4" />
+      <p className="text-surface-500 text-sm">Loading...</p>
+    </div>
+  </div>
+);
 
 /**
  * AuthGuard wraps protected pages.
- * Redirects to /auth/login if the user is not authenticated.
- * Shows a loading spinner while checking auth state.
+ * - Redirects unauthenticated users to /auth/login
+ * - When allowedRoles is provided, redirects wrong-role users to their correct portal
  */
-export default function AuthGuard({ children, fallback }: AuthGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function AuthGuard({ children, fallback, allowedRoles }: AuthGuardProps) {
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isLoading) return;
+
+    // Not logged in → send to login with return URL
+    if (!isAuthenticated) {
       const currentPath = window.location.pathname;
       window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      return;
     }
-  }, [isLoading, isAuthenticated]);
+
+    // Wrong role → redirect to their correct dashboard
+    if (user && allowedRoles && !allowedRoles.includes(user.role)) {
+      window.location.href = getRoleDashboardPath(user.role);
+    }
+  }, [isLoading, isAuthenticated, user, allowedRoles]);
 
   if (isLoading) {
-    return (
-      fallback || (
-        <div className="min-h-screen flex items-center justify-center bg-saffron-50">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-surface-500 text-sm">Loading...</p>
-          </div>
-        </div>
-      )
-    );
+    return <>{fallback ?? <Spinner />}</>;
   }
 
   if (!isAuthenticated) {
-    // Will redirect via useEffect — show loading in the meantime
+    return <Spinner />;
+  }
+
+  // Wrong role — show spinner while redirect happens
+  if (user && allowedRoles && !allowedRoles.includes(user.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-saffron-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-surface-500 text-sm">Redirecting to login...</p>
+          <p className="text-surface-500 text-sm">Redirecting to your portal...</p>
         </div>
       </div>
     );

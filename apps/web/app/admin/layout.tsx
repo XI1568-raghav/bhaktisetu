@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,6 +17,7 @@ import {
   Shield,
   LifeBuoy,
 } from 'lucide-react';
+import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
 import { Logo } from '../../components/Logo';
 
@@ -150,30 +151,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 }
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (!isAuthenticated || user?.role !== 'admin') {
-      window.location.href = '/auth/login?redirect=/admin';
-      return;
-    }
-
-    setChecked(true);
-  }, [isLoading, isAuthenticated, user?.role]);
-
-  if (isLoading || !checked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-surface-500 text-sm">Verifying admin access...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <AdminLayoutInner>{children}</AdminLayoutInner>;
+  return (
+    <AuthGuard allowedRoles={['admin']}>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </AuthGuard>
+  );
 }

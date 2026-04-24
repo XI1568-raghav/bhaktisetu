@@ -184,7 +184,9 @@ export default function LoginPage() {
 
     if (result.success) {
       const params = new URLSearchParams(window.location.search);
-      const redirect = result.isNewUser ? '/profile' : (params.get('redirect') || '/dashboard');
+      const redirect = result.isNewUser
+        ? '/profile'
+        : (params.get('redirect') || getRoleDashboardPath(user?.role ?? 'devotee'));
       window.location.href = redirect;
     } else {
       setError(result.message);

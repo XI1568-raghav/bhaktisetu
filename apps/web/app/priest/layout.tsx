@@ -154,7 +154,7 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
 
 export default function PriestLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthGuard>
+    <AuthGuard allowedRoles={['priest']}>
       <PriestPortalLayout>{children}</PriestPortalLayout>
     </AuthGuard>
   );

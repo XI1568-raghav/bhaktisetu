@@ -154,7 +154,7 @@ function StoreAdminLayout({ children }: { children: React.ReactNode }) {
 
 export default function StoreAdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthGuard>
+    <AuthGuard allowedRoles={['store_owner']}>
       <StoreAdminLayout>{children}</StoreAdminLayout>
     </AuthGuard>
   );
