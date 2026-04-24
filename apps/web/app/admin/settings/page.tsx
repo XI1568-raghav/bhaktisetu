@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   UserPlus,
   Trash2,
+  Loader2,
+  X,
 } from 'lucide-react';
 
 // ── Mock Settings Data ────────────────────────────────────────────────────────
@@ -83,13 +85,19 @@ const initialAdmins = [
 export default function AdminSettingsPage() {
   const [commissionRates, setCommissionRates] = useState(initialCommissionRates);
   const [plans, setPlans] = useState(initialPlans);
+  const [admins, setAdmins] = useState(initialAdmins);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [autoApproveDevotees, setAutoApproveDevotees] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'commissions' | 'subscriptions' | 'platform' | 'admins'>('commissions');
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminRole, setNewAdminRole] = useState('Admin');
 
   const handleRateChange = (index: number, newRate: number) => {
     setCommissionRates((prev) => {
@@ -100,9 +108,35 @@ export default function AdminSettingsPage() {
     setSaved(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    await new Promise((r) => setTimeout(r, 700));
+    setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleAddAdmin = () => {
+    if (!newAdminName.trim() || !newAdminEmail.trim()) return;
+    setAdmins((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        name: newAdminName.trim(),
+        email: newAdminEmail.trim(),
+        role: newAdminRole,
+        addedDate: new Date().toISOString().split('T')[0]!,
+      },
+    ]);
+    setNewAdminName('');
+    setNewAdminEmail('');
+    setNewAdminRole('Admin');
+    setShowAddAdmin(false);
+  };
+
+  const handleRemoveAdmin = (id: string) => {
+    setAdmins((prev) => prev.filter((a) => a.id !== id));
   };
 
   const togglePlan = (planId: string) => {
@@ -129,10 +163,16 @@ export default function AdminSettingsPage() {
         </div>
         <button
           onClick={handleSave}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+          disabled={saving}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-60"
         >
-          {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          {saved ? 'Saved!' : 'Save Changes'}
+          {saving ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+          ) : saved ? (
+            <><CheckCircle2 className="w-4 h-4" /> Saved!</>
+          ) : (
+            <><Save className="w-4 h-4" /> Save Changes</>
+          )}
         </button>
       </div>
 
@@ -335,58 +375,127 @@ export default function AdminSettingsPage() {
 
       {/* Admin management */}
       {activeTab === 'admins' && (
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
-            <h2 className="text-sm font-semibold text-surface-800">Admin Accounts</h2>
-            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors">
-              <UserPlus className="w-3.5 h-3.5" /> Add Admin
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--color-border)]">
-                  <th className="text-left py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Name</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Email</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Role</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Added</th>
-                  <th className="text-right py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {initialAdmins.map((admin, i) => (
-                  <tr key={admin.id} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}>
-                    <td className="py-3 px-5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-saffron-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-saffron-700">{admin.name.charAt(0)}</span>
-                        </div>
-                        <span className="font-medium text-surface-800">{admin.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-surface-500">{admin.email}</td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        admin.role === 'Super Admin' ? 'bg-red-50 text-red-700' : admin.role === 'Admin' ? 'bg-blue-50 text-blue-700' : 'bg-surface-100 text-surface-600'
-                      }`}>
-                        {admin.role}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-surface-500">
-                      {new Date(admin.addedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="py-3 px-5 text-right">
-                      {admin.role !== 'Super Admin' && (
-                        <button className="p-1.5 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remove">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </td>
+        <div className="space-y-4">
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <h2 className="text-sm font-semibold text-surface-800">Admin Accounts</h2>
+              <button
+                onClick={() => setShowAddAdmin(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+              >
+                <UserPlus className="w-3.5 h-3.5" /> Add Admin
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)]">
+                    <th className="text-left py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Name</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Email</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Role</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Added</th>
+                    <th className="text-right py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {admins.map((admin, i) => (
+                    <tr key={admin.id} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}>
+                      <td className="py-3 px-5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 bg-saffron-100 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-saffron-700">{admin.name.charAt(0)}</span>
+                          </div>
+                          <span className="font-medium text-surface-800">{admin.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-surface-500">{admin.email}</td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          admin.role === 'Super Admin' ? 'bg-red-50 text-red-700' : admin.role === 'Admin' ? 'bg-blue-50 text-blue-700' : 'bg-surface-100 text-surface-600'
+                        }`}>
+                          {admin.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-surface-500">
+                        {new Date(admin.addedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-3 px-5 text-right">
+                        {admin.role !== 'Super Admin' && (
+                          <button
+                            onClick={() => handleRemoveAdmin(admin.id)}
+                            className="p-1.5 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            title="Remove"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Add Admin Modal */}
+          {showAddAdmin && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-base font-semibold text-surface-800">Add Admin</h3>
+                  <button onClick={() => setShowAddAdmin(false)} className="text-surface-400 hover:text-surface-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-surface-500 uppercase tracking-wide mb-1">Full Name *</label>
+                    <input
+                      value={newAdminName}
+                      onChange={(e) => setNewAdminName(e.target.value)}
+                      className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                      placeholder="e.g. Rahul Verma"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-surface-500 uppercase tracking-wide mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                      placeholder="admin@poojly.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-surface-500 uppercase tracking-wide mb-1">Role</label>
+                    <select
+                      value={newAdminRole}
+                      onChange={(e) => setNewAdminRole(e.target.value)}
+                      className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
+                    >
+                      <option>Admin</option>
+                      <option>Moderator</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleAddAdmin}
+                    className="flex-1 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+                  >
+                    Add Admin
+                  </button>
+                  <button
+                    onClick={() => setShowAddAdmin(false)}
+                    className="px-4 py-2.5 border border-surface-200 text-surface-600 text-sm font-medium rounded-lg hover:bg-surface-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

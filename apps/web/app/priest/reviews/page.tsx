@@ -113,20 +113,28 @@ function formatDate(dateStr: string): string {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function PriestReviewsPage() {
+  const [reviews, setReviews] = useState(mockReviews);
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all');
+  const [helpfulClicked, setHelpfulClicked] = useState<Set<string>>(new Set());
 
-  const filteredReviews = mockReviews.filter((r) => {
+  const filteredReviews = reviews.filter((r) => {
     if (ratingFilter === 'all') return true;
     return r.rating === parseInt(ratingFilter);
   });
 
-  const totalReviews = mockReviews.length;
-  const avgRating = mockReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+  const totalReviews = reviews.length;
+  const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
   const ratingDistribution = [5, 4, 3, 2, 1].map((r) => ({
     stars: r,
-    count: mockReviews.filter((rev) => rev.rating === r).length,
-    percentage: (mockReviews.filter((rev) => rev.rating === r).length / totalReviews) * 100,
+    count: reviews.filter((rev) => rev.rating === r).length,
+    percentage: (reviews.filter((rev) => rev.rating === r).length / totalReviews) * 100,
   }));
+
+  const handleHelpful = (reviewId: string) => {
+    if (helpfulClicked.has(reviewId)) return; // already voted
+    setReviews((prev) => prev.map((r) => r.id === reviewId ? { ...r, helpful: r.helpful + 1 } : r));
+    setHelpfulClicked((prev) => new Set([...prev, reviewId]));
+  };
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -241,10 +249,19 @@ export default function PriestReviewsPage() {
                   </div>
                   <p className="text-sm text-surface-600 leading-relaxed">{review.comment}</p>
                   <div className="flex items-center gap-4 mt-3 text-xs text-surface-400">
-                    <span className="flex items-center gap-1">
-                      <ThumbsUp className="w-3.5 h-3.5" />
+                    <button
+                      onClick={() => handleHelpful(review.id)}
+                      disabled={helpfulClicked.has(review.id)}
+                      className={`flex items-center gap-1 transition-colors ${
+                        helpfulClicked.has(review.id)
+                          ? 'text-saffron-600 cursor-default'
+                          : 'hover:text-saffron-600 cursor-pointer'
+                      }`}
+                      title={helpfulClicked.has(review.id) ? 'You marked this helpful' : 'Mark as helpful'}
+                    >
+                      <ThumbsUp className={`w-3.5 h-3.5 ${helpfulClicked.has(review.id) ? 'fill-saffron-600' : ''}`} />
                       {review.helpful} found helpful
-                    </span>
+                    </button>
                     <span>{review.templeName}</span>
                   </div>
                 </div>

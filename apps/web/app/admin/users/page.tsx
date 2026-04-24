@@ -86,29 +86,52 @@ const statusBadge: Record<string, string> = {
 const PAGE_SIZE = 10;
 
 export default function AdminUsersPage() {
+  const [users, setUsers] = useState(mockUsers);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    return mockUsers.filter((u) => {
+    return users.filter((u) => {
       const matchSearch = search === '' || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
       const matchRole = roleFilter === 'all' || u.role === roleFilter;
       const matchStatus = statusFilter === 'all' || u.status === statusFilter;
       return matchSearch && matchRole && matchStatus;
     });
-  }, [search, roleFilter, statusFilter]);
+  }, [users, search, roleFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const handleDelete = (userId: string) => {
+  const handleApprove = async (userId: string) => {
+    setActionLoading(userId + '-approve');
+    await new Promise((r) => setTimeout(r, 600));
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, status: 'active' as UserStatus } : u));
+    setActionLoading(null);
+  };
+
+  const handleToggleBlock = async (userId: string, currentStatus: UserStatus) => {
+    setActionLoading(userId + '-block');
+    await new Promise((r) => setTimeout(r, 600));
+    setUsers((prev) => prev.map((u) =>
+      u.id === userId
+        ? { ...u, status: (currentStatus === 'blocked' ? 'active' : 'blocked') as UserStatus }
+        : u
+    ));
+    setActionLoading(null);
+  };
+
+  const handleDelete = async (userId: string) => {
     setDeleteConfirm(null);
     setActionMenuOpen(null);
-    // In production: API call to delete user
+    setActionLoading(userId + '-delete');
+    await new Promise((r) => setTimeout(r, 400));
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    setActionLoading(null);
   };
 
   return (
@@ -214,14 +237,22 @@ export default function AdminUsersPage() {
                         </Link>
                         {user.status === 'pending' && (
                           <button
-                            className="p-1.5 text-surface-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                            onClick={() => handleApprove(user.id)}
+                            disabled={actionLoading === user.id + '-approve'}
+                            className="p-1.5 text-surface-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-40"
                             title="Approve"
                           >
-                            <UserCheck className="w-4 h-4" />
+                            <UserCheck className={`w-4 h-4 ${actionLoading === user.id + '-approve' ? 'animate-spin' : ''}`} />
                           </button>
                         )}
                         <button
-                          className="p-1.5 text-surface-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                          onClick={() => handleToggleBlock(user.id, user.status)}
+                          disabled={actionLoading === user.id + '-block'}
+                          className={`p-1.5 rounded-md transition-colors disabled:opacity-40 ${
+                            user.status === 'blocked'
+                              ? 'text-amber-600 hover:text-green-600 hover:bg-green-50'
+                              : 'text-surface-400 hover:text-amber-600 hover:bg-amber-50'
+                          }`}
                           title={user.status === 'blocked' ? 'Unblock' : 'Block'}
                         >
                           <Ban className="w-4 h-4" />

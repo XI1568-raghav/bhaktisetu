@@ -253,6 +253,19 @@ export default function AdminDashboardPage() {
         </Link>
 
         <button
+          onClick={() => {
+            const header = 'Name,Email,Role,Date,Status\n';
+            const rows = recentSignups.map((u) =>
+              `"${u.name}","${u.email}",${u.role},${u.date},${u.status}`
+            ).join('\n');
+            const blob = new Blob([header + rows], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `poojly-users-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
           className="bg-[var(--color-surface)] rounded-xl p-5 border border-[var(--color-border)] hover:border-saffron-200 transition-all group text-left"
         >
           <div className="flex items-center justify-between">

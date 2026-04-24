@@ -92,6 +92,7 @@ function generateId(): string {
 export default function TempleDarshanPage() {
   const [streams, setStreams] = useState<DarshanStream[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formTitle, setFormTitle] = useState('');
   const [formDesc, setFormDesc] = useState('');
@@ -139,9 +140,11 @@ export default function TempleDarshanPage() {
     setShowForm(false);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formTitle.trim()) return;
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 600));
     const newStream: DarshanStream = {
       id: generateId(),
       title: formTitle.trim(),
@@ -153,6 +156,7 @@ export default function TempleDarshanPage() {
       cameraLocation: formCamera.trim() || 'Default Camera',
     };
     persist([...streams, newStream]);
+    setSubmitting(false);
     resetForm();
   }
 
@@ -220,9 +224,13 @@ export default function TempleDarshanPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 pt-2">
-              <button type="submit"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors">
-                <Save className="w-4 h-4" /> Schedule
+              <button type="submit" disabled={submitting}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-60">
+                {submitting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Scheduling...</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Schedule</>
+                )}
               </button>
               <button type="button" onClick={resetForm}
                 className="px-5 py-2.5 text-surface-600 font-medium text-sm rounded-lg hover:bg-surface-100 transition-colors">

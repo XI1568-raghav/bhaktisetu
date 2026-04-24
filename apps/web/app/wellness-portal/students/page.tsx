@@ -174,8 +174,12 @@ export default function WellnessStudentsPage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-surface-500 mb-2">
-                      <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{student.phone}</span>
-                      <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{student.email}</span>
+                      <a href={`tel:${student.phone.replace(/\s/g, '')}`} className="flex items-center gap-1 hover:text-emerald-600 transition-colors">
+                        <Phone className="w-3 h-3" />{student.phone}
+                      </a>
+                      <a href={`mailto:${student.email}`} className="flex items-center gap-1 hover:text-emerald-600 transition-colors">
+                        <Mail className="w-3 h-3" />{student.email}
+                      </a>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {student.enrolledSessions.map((session) => (

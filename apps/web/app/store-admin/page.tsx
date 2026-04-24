@@ -210,8 +210,9 @@ export default function StoreAdminDashboard() {
             {data.recentOrders.map((order) => {
               const badge = getOrderStatusBadge(order.status);
               return (
-                <div
+                <Link
                   key={order.id}
+                  href="/store-admin/orders"
                   className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
@@ -231,7 +232,7 @@ export default function StoreAdminDashboard() {
                       {formatCurrency(order.total)}
                     </p>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
