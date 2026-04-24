@@ -95,7 +95,7 @@ export default function AskPanditPage() {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   }
 
-  // ─── Auth Guard ─────────────────────────────────────────────────────────
+  // ─── Loading state ─────────────────────────────────────────────────────
 
   if (authLoading) {
     return (
@@ -110,30 +110,8 @@ export default function AskPanditPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center max-w-md px-4">
-          <div className="w-20 h-20 gradient-saffron rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <span className="text-4xl text-white font-bold font-devanagari font-[family-name:var(--font-noto-devanagari)]">
-              {'\u0950'}
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-surface-800 mb-3">Ask a Pandit</h1>
-          <p className="text-surface-500 mb-6">
-            Get personalized spiritual guidance rooted in Hindu scriptures.
-            Sign in to start your conversation with Pandit Ji.
-          </p>
-          <a
-            href="/auth"
-            className="inline-flex items-center gap-2 px-6 py-3 gradient-saffron text-white font-medium rounded-lg hover:opacity-90 transition-opacity shadow-md"
-          >
-            Sign In to Continue
-          </a>
-        </div>
-      </div>
-    );
-  }
+  // Allow unauthenticated users — chat works with local demo fallback
+  // No auth gate: anyone can use Ask Pandit for demo purposes
 
   // ─── Main Layout ────────────────────────────────────────────────────────
 
@@ -293,6 +271,16 @@ export default function AskPanditPage() {
             </div>
           </div>
         )}
+        {!user && (
+          <div className="p-4" style={{ borderTop: '1px solid var(--color-border, #e8dcc8)' }}>
+            <a
+              href="/auth"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-saffron-600 border border-saffron-200 rounded-lg hover:bg-saffron-50 transition-colors"
+            >
+              Sign in for full experience
+            </a>
+          </div>
+        )}
       </aside>
 
       {/* Main Chat Area */}
@@ -327,7 +315,7 @@ export default function AskPanditPage() {
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 gradient-saffron rounded-full flex items-center justify-center shadow-sm">
                 <span className="text-white font-bold text-sm font-devanagari font-[family-name:var(--font-noto-devanagari)]">
-                  {'\u0950'}
+                  {'ॐ'}
                 </span>
               </div>
               <div>
@@ -350,7 +338,7 @@ export default function AskPanditPage() {
             >
               <Globe className="w-4 h-4" />
               <span className="hidden sm:inline">
-                {language === 'en' ? 'English' : '\u0939\u093F\u0928\u094D\u0926\u0940'}
+                {language === 'en' ? 'English' : 'हिन्दी'}
               </span>
               <span className="sm:hidden">
                 {language === 'en' ? 'EN' : 'HI'}

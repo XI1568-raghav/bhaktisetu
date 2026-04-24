@@ -94,9 +94,11 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Related products (same category, different product)
+  const productImageUrl = getProductImage(product.imageKey);
+
+  // Related products (same collection, different product)
   const relatedProducts = PRODUCTS.filter(
-    (p) => p.category === product.category && p.id !== product.id
+    (p) => p.collection === product.collection && p.id !== product.id
   ).slice(0, 4);
 
   return (
@@ -116,8 +118,9 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-surface-100 overflow-hidden">
               <div className="aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center relative overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={getProductImage(product.imageKey)}
+                  src={productImageUrl}
                   alt={product.title}
                   className="w-full h-full object-cover"
                 />
@@ -159,8 +162,9 @@ export default function ProductDetailPage() {
                     i === 1 ? 'border-saffron-500' : 'border-surface-200'
                   } bg-gradient-to-br from-surface-50 to-saffron-50 cursor-pointer hover:border-saffron-300 transition-colors`}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={getProductImage(product.imageKey)}
+                    src={productImageUrl}
                     alt={`${product.title} view ${i}`}
                     className="w-full h-full object-cover"
                   />
@@ -329,6 +333,7 @@ export default function ProductDetailPage() {
                   className="group bg-white rounded-xl overflow-hidden border border-surface-100 card-hover transition-all"
                 >
                   <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getProductImage(rp.imageKey)}
                       alt={rp.title}

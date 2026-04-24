@@ -24,7 +24,7 @@ import { getTempleHero } from '../../lib/images';
 export const metadata: Metadata = {
   title: 'Live Darshan',
   description:
-    'Watch live darshan from India\u2019s most sacred temples. Real-time temple ceremonies, aarti, and abhishekam streams from 100+ temples.',
+    'Watch live darshan from India’s most sacred temples. Real-time temple ceremonies, aarti, and abhishekam streams from 100+ temples.',
 };
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-1',
     templeId: 't1',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
     status: 'live',
     viewerCount: 12450,
     peakViewers: 18200,
@@ -50,7 +50,7 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-2',
     templeId: 't2',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCHDfKNnEBPsJuvWuHbqPRmQ',
     status: 'live',
     viewerCount: 28300,
     peakViewers: 35000,
@@ -67,7 +67,7 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-3',
     templeId: 't3',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCyrJNbN06WL-8R_mbzuEB0A',
     status: 'live',
     viewerCount: 8760,
     peakViewers: 12000,
@@ -84,7 +84,7 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-4',
     templeId: 't4',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCcf8K09z_GXFEFslDvjQ4cQ',
     status: 'live',
     viewerCount: 9800,
     peakViewers: 14000,
@@ -101,7 +101,7 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-5',
     templeId: 't5',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC6dqKmIjJiIvHasMJJbmQkA',
     status: 'live',
     viewerCount: 5420,
     peakViewers: 8000,
@@ -118,7 +118,7 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-6',
     templeId: 't6',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCt1dgP67k5GkzJfEmJyhiKg',
     status: 'live',
     viewerCount: 15200,
     peakViewers: 22000,
@@ -135,34 +135,34 @@ const fallbackLiveStreams: DarshanStream[] = [
   {
     id: 'live-7',
     templeId: 't7',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCVY0rCRUWqxe-JJWPK1h3kA',
     status: 'live',
     viewerCount: 7100,
     peakViewers: 10000,
     isPremium: false,
     scheduledStart: null,
     temple: {
-      name: 'Meenakshi Amman Temple',
+      name: 'Shirdi Sai Baba Temple',
       slug: 'meenakshi-amman',
-      city: 'Madurai',
-      deityPrimary: 'Goddess Meenakshi',
+      city: 'Shirdi',
+      deityPrimary: 'Sai Baba',
       images: [],
     },
   },
   {
     id: 'live-8',
     templeId: 't8',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCfNJsTvf-ygFijU-wqO3Amg',
     status: 'live',
     viewerCount: 4320,
     peakViewers: 6500,
     isPremium: false,
     scheduledStart: null,
     temple: {
-      name: 'ISKCON Temple',
+      name: 'Vaishno Devi Temple',
       slug: 'iskcon-vrindavan',
-      city: 'Vrindavan',
-      deityPrimary: 'Lord Krishna',
+      city: 'Katra',
+      deityPrimary: 'Goddess Vaishno Devi',
       images: [],
     },
   },
@@ -172,7 +172,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
   {
     id: 'sched-1',
     templeId: 's1',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCdQpU9tTNQNniXO0LTQsGmg',
     status: 'scheduled',
     viewerCount: 0,
     peakViewers: 0,
@@ -189,7 +189,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
   {
     id: 'sched-2',
     templeId: 's2',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
     status: 'scheduled',
     viewerCount: 0,
     peakViewers: 0,
@@ -206,7 +206,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
   {
     id: 'sched-3',
     templeId: 's3',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCHDfKNnEBPsJuvWuHbqPRmQ',
     status: 'scheduled',
     viewerCount: 0,
     peakViewers: 0,
@@ -223,7 +223,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
   {
     id: 'sched-4',
     templeId: 's4',
-    playbackUrl: '',
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC6dqKmIjJiIvHasMJJbmQkA',
     status: 'scheduled',
     viewerCount: 0,
     peakViewers: 0,

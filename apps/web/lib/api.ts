@@ -234,6 +234,18 @@ export async function getContent(params?: {
   );
 }
 
+/**
+ * Fetch a single content item by slug from the API.
+ * The API returns { content: ContentItem }.
+ */
+export async function getContentBySlugApi(slug: string): Promise<ContentItem> {
+  const res = await serverFetch<{ content: ContentItem }>(`/content/${slug}`, {
+    revalidate: 300,
+    tags: [`content-${slug}`],
+  });
+  return res.content;
+}
+
 export async function getDailyContent(): Promise<{
   aarti: ContentItem | null;
   mantra: ContentItem | null;

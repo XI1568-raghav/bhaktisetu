@@ -12,8 +12,9 @@ import {
   Tag,
   Home,
 } from 'lucide-react';
-import { getContent, type ContentItem } from '../../../lib/api';
+import { getContent, getContentBySlugApi, type ContentItem } from '../../../lib/api';
 import AudioPlayer from '../../../components/AudioPlayer';
+import { renderContentBody } from '../../../lib/markdown';
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
@@ -21,45 +22,118 @@ const fallbackContent: ContentItem = {
   id: 'fallback-1',
   type: 'chalisa',
   title: 'Hanuman Chalisa',
-  titleLocal: null,
+  titleLocal: 'हनुमान चालीसा',
   slug: 'hanuman-chalisa',
-  body: `<h2>Doha</h2>
-<p>Shri Guru Charan Saroj Raj, Nij Man Mukuru Sudhari<br/>
-Barnau Raghubar Bimal Jasu, Jo Dayaku Phal Chari</p>
+  body: `## दोहा (Doha)
 
-<p>Buddhiheen Tanu Janike, Sumirau Pavan Kumar<br/>
-Bal Buddhi Vidya Dehu Mohi, Harahu Kalesh Vikar</p>
+**श्रीगुरु चरन सरोज रज, निज मनु मुकुरु सुधारि ।
+बरनउँ रघुबर बिमल जसु, जो दायकु फल चारि ॥**
 
-<h2>Chaupai</h2>
-<p>Jai Hanuman Gyan Gun Sagar<br/>
-Jai Kapis Tihun Lok Ujagar</p>
+**बुद्धिहीन तनु जानिके, सुमिरौं पवन-कुमार ।
+बल बुद्धि विद्या देहु मोहि, हरहु कलेस बिकार ॥**
 
-<p>Ram Doot Atulit Bal Dhama<br/>
-Anjani Putra Pavan Sut Nama</p>
+### चौपाई (Chaupai)
 
-<p>Mahabir Bikram Bajrangi<br/>
-Kumati Nivar Sumati Ke Sangi</p>
+**जय हनुमान ज्ञान गुन सागर । जय कपीस तिहुँ लोक उजागर ॥१॥**
 
-<p>Kanchan Baran Biraj Subesa<br/>
-Kanan Kundal Kunchit Kesa</p>
+**राम दूत अतुलित बल धामा । अंजनि-पुत्र पवनसुत नामा ॥२॥**
 
-<p>Hath Bajra Aur Dhwaja Biraje<br/>
-Kandhe Moonj Janeu Saje</p>
+**महाबीर बिक्रम बजरंगी । कुमति निवार सुमति के संगी ॥३॥**
 
-<p>Shankar Suvan Kesri Nandan<br/>
-Tej Pratap Maha Jag Bandan</p>
+**कंचन बरन बिराज सुबेसा । कानन कुंडल कुंचित केसा ॥४॥**
 
-<p>Vidyavan Guni Ati Chatur<br/>
-Ram Kaj Karibe Ko Atur</p>
+**हाथ बज्र औ ध्वजा बिराजे । काँधे मूँज जनेऊ साजे ॥५॥**
 
-<p>Prabhu Charitra Sunibe Ko Rasiya<br/>
-Ram Lakhan Sita Man Basiya</p>
+**शंकर सुवन केसरीनंदन । तेज प्रताप महा जग बन्दन ॥६॥**
 
-<p>Sukshma Roop Dhari Siyahi Dikhawa<br/>
-Bikat Roop Dhari Lanka Jarawa</p>
+**विद्यावान गुनी अति चातुर । राम काज करिबे को आतुर ॥७॥**
 
-<p>Bheem Roop Dhari Asur Sanhare<br/>
-Ramchandra Ke Kaj Sanware</p>`,
+**प्रभु चरित्र सुनिबे को रसिया । राम लखन सीता मन बसिया ॥८॥**
+
+**सूक्ष्म रूप धरि सियहिं दिखावा । बिकट रूप धरि लंक जरावा ॥९॥**
+
+**भीम रूप धरि असुर सँहारे । रामचंद्र के काज सँवारे ॥१०॥**
+
+**लाय सजीवन लखन जियाये । श्रीरघुबीर हरषि उर लाये ॥११॥**
+
+**रघुपति कीन्ही बहुत बड़ाई । तुम मम प्रिय भरतहि सम भाई ॥१२॥**
+
+**सहस बदन तुम्हरो जस गावैं । अस कहि श्रीपति कंठ लगावैं ॥१३॥**
+
+**सनकादिक ब्रह्मादि मुनीसा । नारद सारद सहित अहीसा ॥१४॥**
+
+**जम कुबेर दिगपाल जहाँ ते । कवि कोविद कहि सके कहाँ ते ॥१५॥**
+
+**तुम उपकार सुग्रीवहिं कीन्हा । राम मिलाय राजपद दीन्हा ॥१६॥**
+
+**तुम्हरो मंत्र विभीषन माना । लंकेश्वर भए सब जग जाना ॥१७॥**
+
+**जुग सहस्र जोजन पर भानू । लील्यो ताहि मधुर फल जानू ॥१८॥**
+
+**प्रभु मुद्रिका मेलि मुख माहीं । जलधि लाँघि गये अचरज नाहीं ॥१९॥**
+
+**दुर्गम काज जगत के जेते । सुगम अनुग्रह तुम्हरे तेते ॥२०॥**
+
+**राम दुआरे तुम रखवारे । होत न आज्ञा बिनु पैसारे ॥२१॥**
+
+**सब सुख लहै तुम्हारी सरना । तुम रक्षक काहू को डर ना ॥२२॥**
+
+**आपन तेज सम्हारो आपै । तीनों लोक हाँक तें काँपै ॥२३॥**
+
+**भूत पिसाच निकट नहिं आवै । महाबीर जब नाम सुनावै ॥२४॥**
+
+**नासै रोग हरै सब पीरा । जपत निरंतर हनुमत बीरा ॥२५॥**
+
+**संकट तें हनुमान छुड़ावै । मन क्रम बचन ध्यान जो लावै ॥२६॥**
+
+**सब पर राम तपस्वी राजा । तिन के काज सकल तुम साजा ॥२७॥**
+
+**और मनोरथ जो कोई लावै । सोइ अमित जीवन फल पावै ॥२८॥**
+
+**चारों जुग परताप तुम्हारा । है परसिद्ध जगत उजियारा ॥२९॥**
+
+**साधु संत के तुम रखवारे । असुर निकंदन राम दुलारे ॥३०॥**
+
+**अष्ट सिद्धि नौ निधि के दाता । अस बर दीन जानकी माता ॥३१॥**
+
+**राम रसायन तुम्हरे पासा । सदा रहो रघुपति के दासा ॥३२॥**
+
+**तुम्हरे भजन राम को पावै । जनम जनम के दुख बिसरावै ॥३३॥**
+
+**अन्तकाल रघुबर पुर जाई । जहाँ जन्म हरि-भक्त कहाई ॥३४॥**
+
+**और देवता चित्त न धरई । हनुमत सेइ सर्ब सुख करई ॥३५॥**
+
+**संकट कटै मिटै सब पीरा । जो सुमिरै हनुमत बलबीरा ॥३६॥**
+
+**जय जय जय हनुमान गोसाईं । कृपा करहु गुरुदेव की नाईं ॥३७॥**
+
+**जो सत बार पाठ कर कोई । छूटहि बंदि महा सुख होई ॥३८॥**
+
+**जो यह पढ़ै हनुमान चालीसा । होय सिद्धि साखी गौरीसा ॥३९॥**
+
+**तुलसीदास सदा हरि चेरा । कीजै नाथ हृदय मँह डेरा ॥४०॥**
+
+### दोहा (Doha)
+
+**पवनतनय संकट हरन, मंगल मूरति रूप ।
+राम लखन सीता सहित, हृदय बसहु सुर भूप ॥**
+
+---
+
+### Transliteration
+
+Shri Guru Charan Saroj Raj, Nij Manu Mukuru Sudhari,
+Barnau Raghubar Bimal Jasu, Jo Dayaku Phal Chari.
+
+Buddhiheen Tanu Janike, Sumirau Pavan Kumar,
+Bal Buddhi Vidya Dehu Mohi, Harahu Kalesh Vikar.
+
+Jai Hanuman Gyan Gun Sagar, Jai Kapis Tihun Lok Ujagar.
+Ram Doot Atulit Bal Dhama, Anjani Putra Pavansut Nama.
+
+---
+*Composed by Goswami Tulsidas in the 16th century, Hanuman Chalisa consists of 40 chaupais (verses) praising Lord Hanuman.*`,
   audioUrl: null,
   videoUrl: null,
   imageUrl: '/images/content/hanuman-chalisa.jpg',
@@ -154,13 +228,28 @@ const audioTypes = ['aarti', 'mantra', 'bhajan', 'chalisa', 'stotram'];
 
 async function getContentBySlug(slug: string): Promise<ContentItem> {
   try {
-    const res = await getContent();
-    const found = res.data.find((item) => item.slug === slug);
-    if (found) return found;
+    // Use the direct slug endpoint for efficient fetching with full body text
+    const item = await getContentBySlugApi(slug);
+    if (item) return item;
   } catch {
-    // API unavailable
+    // API unavailable — fall back
   }
-  return fallbackContent;
+
+  // Fallback: if the slug matches our fallback, return that
+  if (slug === fallbackContent.slug) {
+    return fallbackContent;
+  }
+
+  // Return a generic fallback with the requested slug
+  return {
+    ...fallbackContent,
+    slug,
+    title: slug
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' '),
+    body: 'Content is loading. Please check back in a moment.',
+  };
 }
 
 async function getRelatedContent(
@@ -226,6 +315,9 @@ export default async function ContentDetailPage({
   const related = await getRelatedContent(content);
 
   const isAudio = audioTypes.includes(content.type.toLowerCase());
+
+  // Convert markdown body to HTML for rendering
+  const bodyHtml = content.body ? renderContentBody(content.body) : '';
 
   return (
     <div className="min-h-screen bg-saffron-50">
@@ -335,7 +427,7 @@ export default async function ContentDetailPage({
             )}
 
             {/* Body / Text content */}
-            {content.body && (
+            {bodyHtml && (
               <div className="bg-white rounded-xl p-6 border border-surface-100">
                 <h2 className="text-lg font-bold text-surface-800 mb-4 flex items-center gap-2">
                   {isAudio ? (
@@ -351,8 +443,8 @@ export default async function ContentDetailPage({
                   )}
                 </h2>
                 <div
-                  className="prose prose-stone prose-headings:text-surface-800 prose-headings:font-bold prose-p:text-surface-600 prose-p:leading-relaxed max-w-none"
-                  dangerouslySetInnerHTML={{ __html: content.body }}
+                  className="prose prose-stone prose-headings:text-surface-800 prose-headings:font-bold prose-p:text-surface-600 prose-p:leading-relaxed max-w-none font-[family-name:var(--font-noto-devanagari)]"
+                  dangerouslySetInnerHTML={{ __html: bodyHtml }}
                 />
               </div>
             )}

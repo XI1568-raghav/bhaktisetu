@@ -399,7 +399,7 @@ export default function HomePage() {
                   <div className="flex justify-start">
                     <div className="px-3 py-2 rounded-2xl rounded-bl-md text-xs max-w-[85%]" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
                       <p className="mb-1.5">The Bhagavad Gita teaches us in Chapter 2, Verse 47:</p>
-                      <p className="italic text-[11px] mb-1" style={{ color: 'var(--color-text-muted)' }}>{"\u0915\u0930\u094D\u092E\u0923\u094D\u092F\u0947\u0935\u093E\u0927\u093F\u0915\u093E\u0930\u0938\u094D\u0924\u0947 \u092E\u093E \u092B\u0932\u0947\u0937\u0941 \u0915\u0926\u093E\u091A\u0928"}</p>
+                      <p className="italic text-[11px] mb-1" style={{ color: 'var(--color-text-muted)' }}>{"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"}</p>
                       <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>&quot;You have the right to perform your duty, but not to the fruits of your actions.&quot;</p>
                     </div>
                   </div>
@@ -422,7 +422,7 @@ export default function HomePage() {
                   Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols — all delivered to your doorstep. Free shipping on orders above ₹499.
                 </p>
                 <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-5">
-                  {['Puja Thali Sets', 'Rudraksha', 'Idols', 'Incense', 'Books'].map((tag) => (
+                  {['Puja Essentials', 'Rudraksha & Malas', 'Idols', 'Books', 'Organic'].map((tag) => (
                     <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
                   ))}
                 </div>
@@ -437,7 +437,7 @@ export default function HomePage() {
                   { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali') },
                   { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala') },
                   { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks') },
-                  { name: 'Ganesh Idol', price: '₹2,499', img: getProductImage('brass-ganesha-idol') },
+                  { name: 'Ganesh Murti', price: '₹2,499', img: getProductImage('ganesh-murti') },
                 ].map((p, i) => (
                   <div key={p.name} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl overflow-hidden card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                     <div className="aspect-square">

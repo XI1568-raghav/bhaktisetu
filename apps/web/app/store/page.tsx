@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getProductImage } from "../../lib/images";
-import { PRODUCTS } from "../../lib/products";
+import { PRODUCTS, CATEGORIES } from "../../lib/products";
 import {
   ShoppingBag,
   Star,
@@ -18,6 +18,11 @@ import {
   Percent,
   ChevronRight,
   BadgeCheck,
+  Flame,
+  BookOpen,
+  Gem,
+  Leaf,
+  Home,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -26,16 +31,25 @@ export const metadata: Metadata = {
     "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits. Free delivery on orders above Rs 499.",
 };
 
+const categoryIcons: Record<string, React.ElementType> = {
+  'puja-essentials': Flame,
+  'rudraksha-malas': Gem,
+  'idols-murtis': Star,
+  'puja-samagri': Package,
+  'books-scriptures': BookOpen,
+  'spiritual-jewellery': Gem,
+  'organic-natural': Leaf,
+  'home-temple-decor': Home,
+};
+
 const categories = [
-  { name: "All Products", count: 520, icon: ShoppingBag },
-  { name: "Puja Thali Sets", count: 45, icon: Package },
-  { name: "Idols & Murtis", count: 120, icon: Star },
-  { name: "Rudraksha & Malas", count: 65, icon: Star },
-  { name: "Incense & Dhoop", count: 80, icon: Star },
-  { name: "Puja Samagri", count: 95, icon: Package },
-  { name: "Books & Texts", count: 55, icon: Star },
-  { name: "Clothing", count: 40, icon: Star },
-  { name: "Home Decor", count: 20, icon: Star },
+  { name: "All Products", count: PRODUCTS.length, slug: 'all', icon: ShoppingBag },
+  ...CATEGORIES.map((cat) => ({
+    name: cat.name,
+    count: cat.count,
+    slug: cat.slug,
+    icon: categoryIcons[cat.slug] ?? Star,
+  })),
 ];
 
 const products = PRODUCTS;
@@ -165,7 +179,7 @@ export default function StorePage() {
             </h3>
             <p className="text-sm text-surface-500 mt-0.5">
               Shop puja essentials, gold-plated idols, and rudraksha malas at
-              unbeatable prices. Offer valid till April 20.
+              unbeatable prices. Offer valid till April 30.
             </p>
           </div>
           <a
@@ -187,6 +201,7 @@ export default function StorePage() {
             >
               {/* Product image */}
               <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getProductImage(product.imageKey)}
                   alt={product.title}
@@ -219,6 +234,7 @@ export default function StorePage() {
               </div>
 
               <div className="p-4">
+                <p className="text-xs text-saffron-600 font-medium mb-1">{product.category}</p>
                 <h3 className="text-sm font-medium text-surface-800 line-clamp-2 min-h-[2.5rem] group-hover:text-saffron-600 transition-colors">
                   {product.title}
                 </h3>

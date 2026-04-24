@@ -81,6 +81,11 @@ export interface DailyHoroscope {
   health: string;
   luckyNumber: number;
   luckyColor: string;
+  luckyDirection: string;
+  mantra: string;
+  mantraHindi: string;
+  rulingPlanet: string;
+  element: string;
   overallRating: number;
 }
 
@@ -428,6 +433,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Good energy levels throughout the day. Avoid spicy food in the evening. A short walk or yoga session will boost your overall wellbeing.',
     luckyNumber: 9,
     luckyColor: 'Red',
+    luckyDirection: 'East',
+    mantra: 'Om Kraam Kreem Kraum Sah Bhaumaya Namah',
+    mantraHindi: 'ओम क्रां क्रीं क्रौं सः भौमाय नमः',
+    rulingPlanet: 'Mars (Mangal)',
+    element: 'Fire (Agni)',
     overallRating: 4,
   },
   {
@@ -442,6 +452,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Watch your diet today. Digestive issues may arise if you overeat. Drink plenty of water and get adequate rest.',
     luckyNumber: 6,
     luckyColor: 'Green',
+    luckyDirection: 'Southeast',
+    mantra: 'Om Draam Dreem Draum Sah Shukraya Namah',
+    mantraHindi: 'ओम द्रां द्रीं द्रौं सः शुक्राय नमः',
+    rulingPlanet: 'Venus (Shukra)',
+    element: 'Earth (Prithvi)',
     overallRating: 3,
   },
   {
@@ -456,6 +471,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Mental energy is high but physical energy may dip. Take breaks between tasks. Avoid screen time before bed for better sleep.',
     luckyNumber: 5,
     luckyColor: 'Yellow',
+    luckyDirection: 'North',
+    mantra: 'Om Braam Breem Braum Sah Budhaya Namah',
+    mantraHindi: 'ओम ब्रां ब्रीं ब्रौं सः बुधाय नमः',
+    rulingPlanet: 'Mercury (Budh)',
+    element: 'Air (Vayu)',
     overallRating: 4,
   },
   {
@@ -470,6 +490,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Chest and stomach area need care. Avoid cold drinks and heavy meals. Evening meditation will bring peace and clarity.',
     luckyNumber: 2,
     luckyColor: 'White',
+    luckyDirection: 'Northwest',
+    mantra: 'Om Shraam Shreem Shraum Sah Chandraya Namah',
+    mantraHindi: 'ओम श्रां श्रीं श्रौं सः चंद्राय नमः',
+    rulingPlanet: 'Moon (Chandra)',
+    element: 'Water (Jal)',
     overallRating: 3,
   },
   {
@@ -484,6 +509,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Heart health is in focus. Avoid excessive stress and anger. Regular exercise and a balanced diet will keep you energized.',
     luckyNumber: 1,
     luckyColor: 'Gold',
+    luckyDirection: 'East',
+    mantra: 'Om Hraam Hreem Hraum Sah Suryaya Namah',
+    mantraHindi: 'ओम ह्रां ह्रीं ह्रौं सः सूर्याय नमः',
+    rulingPlanet: 'Sun (Surya)',
+    element: 'Fire (Agni)',
     overallRating: 5,
   },
   {
@@ -498,6 +528,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Digestive system needs attention. Eat fresh, home-cooked meals. An evening walk in nature will reduce stress significantly.',
     luckyNumber: 7,
     luckyColor: 'Green',
+    luckyDirection: 'South',
+    mantra: 'Om Braam Breem Braum Sah Budhaya Namah',
+    mantraHindi: 'ओम ब्रां ब्रीं ब्रौं सः बुधाय नमः',
+    rulingPlanet: 'Mercury (Budh)',
+    element: 'Earth (Prithvi)',
     overallRating: 4,
   },
   {
@@ -512,6 +547,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Kidney and lower back need care. Stay hydrated and maintain good posture. Yoga will be especially beneficial today.',
     luckyNumber: 6,
     luckyColor: 'Pink',
+    luckyDirection: 'West',
+    mantra: 'Om Draam Dreem Draum Sah Shukraya Namah',
+    mantraHindi: 'ओम द्रां द्रीं द्रौं सः शुक्राय नमः',
+    rulingPlanet: 'Venus (Shukra)',
+    element: 'Air (Vayu)',
     overallRating: 4,
   },
   {
@@ -526,6 +566,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Reproductive health needs attention. Detox your body with herbal teas. Mental health improves through journaling or therapy.',
     luckyNumber: 8,
     luckyColor: 'Maroon',
+    luckyDirection: 'North',
+    mantra: 'Om Kraam Kreem Kraum Sah Bhaumaya Namah',
+    mantraHindi: 'ओम क्रां क्रीं क्रौं सः भौमाय नमः',
+    rulingPlanet: 'Mars (Mangal)',
+    element: 'Water (Jal)',
     overallRating: 3,
   },
   {
@@ -540,6 +585,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Hips and thighs need attention. Stretching exercises are important. Outdoor activities boost both physical and mental health.',
     luckyNumber: 3,
     luckyColor: 'Purple',
+    luckyDirection: 'Northeast',
+    mantra: 'Om Graam Greem Graum Sah Gurave Namah',
+    mantraHindi: 'ओम ग्रां ग्रीं ग्रौं सः गुरवे नमः',
+    rulingPlanet: 'Jupiter (Guru)',
+    element: 'Fire (Agni)',
     overallRating: 4,
   },
   {
@@ -554,6 +604,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Bones and joints need care. Calcium-rich foods and supplements recommended. Avoid overworking — take regular breaks.',
     luckyNumber: 10,
     luckyColor: 'Brown',
+    luckyDirection: 'West',
+    mantra: 'Om Praam Preem Praum Sah Shanaischaraya Namah',
+    mantraHindi: 'ओम प्रां प्रीं प्रौं सः शनैश्चराय नमः',
+    rulingPlanet: 'Saturn (Shani)',
+    element: 'Earth (Prithvi)',
     overallRating: 5,
   },
   {
@@ -568,6 +623,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Ankles and circulation need attention. Regular movement throughout the day is essential. Try a new form of exercise.',
     luckyNumber: 11,
     luckyColor: 'Electric Blue',
+    luckyDirection: 'Southwest',
+    mantra: 'Om Praam Preem Praum Sah Shanaischaraya Namah',
+    mantraHindi: 'ओम प्रां प्रीं प्रौं सः शनैश्चराय नमः',
+    rulingPlanet: 'Saturn (Shani)',
+    element: 'Air (Vayu)',
     overallRating: 4,
   },
   {
@@ -582,6 +642,11 @@ const RASHIS: DailyHoroscope[] = [
     health: 'Feet and immune system need care. Rest is as important as activity today. Meditation and prayer will be deeply rejuvenating.',
     luckyNumber: 12,
     luckyColor: 'Sea Green',
+    luckyDirection: 'Northeast',
+    mantra: 'Om Graam Greem Graum Sah Gurave Namah',
+    mantraHindi: 'ओम ग्रां ग्रीं ग्रौं सः गुरवे नमः',
+    rulingPlanet: 'Jupiter (Guru)',
+    element: 'Water (Jal)',
     overallRating: 4,
   },
 ];
@@ -890,7 +955,7 @@ Guidelines:
 
 **Remedies for Marriage Delay:**
 - Worship Lord Shiva and Parvati together on Mondays
-- Chant the Katyayani Mantra: "ॐ कात्यायन्यै नमः" 108 times
+- Chant the Katyayani Mantra: "ओम कात्यायन्यै नमः" 108 times
 - Perform Vivah Puja at a Shiva temple
 - Donate items related to Venus (white clothes, sweets) on Fridays
 
@@ -940,7 +1005,7 @@ Share your birth details for a personalized career reading.`;
 - **Saturn** — joints, chronic diseases
 
 **Health Remedies:**
-- Chant Mahamrityunjaya Mantra: "ॐ त्र्यम्बकं यजामहे..."
+- Chant Mahamrityunjaya Mantra: "ओम त्र्यम्बकं यजामहे..."
 - Perform Navagraha Shanti Puja
 - Follow Ayurvedic routine aligned with your chart
 
