@@ -51,7 +51,35 @@ async function serverFetch<T>(
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
 
-  return res.json() as Promise<T>;
+  const json = await res.json();
+  return normalizePaginated(json) as T;
+}
+
+/**
+ * The API returns paginated endpoints as
+ *   { <pluralName>: [...], total, page, limit, totalPages }
+ * but the web's `PaginatedResponse<T>` shape is
+ *   { data: [...], pagination: { page, limit, total, totalPages } }
+ * Adapt at the boundary so callers don't have to think about it.
+ */
+function normalizePaginated(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') return payload;
+  const obj = payload as Record<string, unknown>;
+  if ('data' in obj || !('total' in obj && 'page' in obj && 'limit' in obj)) {
+    return payload;
+  }
+  // Find the array key (e.g. "temples", "pujaTypes", "data" already-normalized)
+  const arrayKey = Object.keys(obj).find((k) => Array.isArray(obj[k]));
+  if (!arrayKey) return payload;
+  return {
+    data: obj[arrayKey],
+    pagination: {
+      page: obj.page,
+      limit: obj.limit,
+      total: obj.total,
+      totalPages: obj.totalPages,
+    },
+  };
 }
 
 // ─── Temple API ─────────────────────────────────────────────────
@@ -166,10 +194,12 @@ export async function getTemples(params?: {
 }
 
 export async function getTempleBySlug(slug: string): Promise<TempleDetail> {
-  return serverFetch<TempleDetail>(`/temples/${slug}`, {
+  // API responds with { temple: TempleDetail }
+  const res = await serverFetch<{ temple: TempleDetail }>(`/temples/${slug}`, {
     revalidate: 300,
     tags: [`temple-${slug}`],
   });
+  return res.temple;
 }
 
 export async function getTempleReviews(
