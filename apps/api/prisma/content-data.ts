@@ -110,6 +110,7 @@ Santan ki seva. Om Jai Jagdish Hare.
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/om-jai-jagdish.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=3ucCEjXS9n8',
     sortOrder: 1,
   },
 
@@ -165,6 +166,7 @@ Mor Mukut shir par rahat raje. Aarti Kunj Bihari Ki.
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/aarti-kunj-bihari.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=EMO1AT1UQf0',
     sortOrder: 2,
   },
 
@@ -225,6 +227,7 @@ Kamna ko poorn karo, jag balihari. Jai Ganesh.
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/ganesh-aarti.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=Yuex2EnsGiY',
     sortOrder: 3,
   },
 
@@ -285,6 +288,7 @@ Tripurari Kansari kar mala dhari. Om Jai Shiv Omkara.
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/shiv-aarti.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=BhwOproElxU',
     sortOrder: 4,
   },
 
@@ -348,6 +352,7 @@ Sab sambhav ho jata, man nahin ghabrata. Om Jai Lakshmi Mata.
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/lakshmi-aarti.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=oec7CXRAfeE',
     sortOrder: 5,
   },
 
@@ -515,6 +520,7 @@ Ram Lakhan Sita Sahit, Hriday Basahu Sur Bhoop.*
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/hanuman-chalisa.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=AETFvQonfV8',
     sortOrder: 10,
   },
 
@@ -660,6 +666,7 @@ Tum Meri Manokamna, Poorn Karo Jagdisha.*
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/shiv-chalisa.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=kYFriF5zHMM',
     sortOrder: 11,
   },
 
@@ -756,6 +763,7 @@ Kahat Shivanand Swami, Manvanchit Phal Pave.*
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/durga-chalisa.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=AXvmt88JLWg',
     sortOrder: 13,
   },
 
@@ -827,6 +835,7 @@ The Gayatri Mantra is one of the most universal and oldest mantras from the **Ri
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/gayatri-mantra.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=nwRoHC83wx0',
     sortOrder: 20,
   },
 
@@ -894,6 +903,7 @@ This mantra is from the **Rig Veda (Mandala 7, Sukta 59, Mantra 12)**, attribute
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/mahamrityunjay-mantra.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=BMDLRW1iDpI',
     sortOrder: 21,
   },
 
@@ -1006,6 +1016,7 @@ The Vishnu Sahasranama states that reciting these 1,000 names:
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/vishnu-sahasranamam.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=ATflA6WOy0I',
     sortOrder: 22,
   },
 
@@ -1064,6 +1075,7 @@ Om Namah Shivaya is the **Panchakshari** (five-syllable) mantra dedicated to Lor
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/om-namah-shivaya.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=ccBcAWE_lIY',
     sortOrder: 23,
   },
 
@@ -1117,6 +1129,7 @@ The Hare Krishna Maha Mantra is the **supreme mantra for this age (Kali Yuga)** 
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/hare-krishna-mantra.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=Zdcth9NndEA',
     sortOrder: 24,
   },
 
@@ -1176,6 +1189,7 @@ The Hare Krishna Maha Mantra is the **supreme mantra for this age (Kali Yuga)** 
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/ganesh-mantra.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=AEN5Gx-mLGc',
     sortOrder: 25,
   },
 
@@ -1287,6 +1301,7 @@ Tehi Ke Karaj Sakal Shubh, Siddh Karein Hanuman.*
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/bajrang-baan.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=h1lT6cxwsPw',
     sortOrder: 15,
   },
 
@@ -1332,6 +1347,7 @@ Each Jyotirlinga has a unique legend and significance. Pilgrims traditionally vi
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/jyotirlingas-guide.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=UO39dgB8gYo',
     sortOrder: 30,
   },
 
@@ -1365,6 +1381,7 @@ Each Jyotirlinga has a unique legend and significance. Pilgrims traditionally vi
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/navratri-guide.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=lZtMMNt_Mnk',
     sortOrder: 31,
   },
 
@@ -1461,6 +1478,7 @@ A Hindu temple (Mandir) is designed as a representation of the cosmic being (Pur
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/temple-architecture.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=C7Hr8tKiDRk',
     sortOrder: 34,
   },
 ];
