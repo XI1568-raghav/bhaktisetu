@@ -182,7 +182,15 @@ export const yatras: Yatra[] = [
       { tier: 'premium', name: 'Divya (Luxury + Heli)', price: 149000, tagline: 'SUV + Kedarnath helicopter, boutique stays, dedicated team', includes: ['Private Fortuner/Innova', 'Heritage & boutique stays', 'Kedarnath helicopter return', 'Dedicated guide + cook', 'Special puja arrangements', 'Oxygen cylinder standby'], transport: 'Fortuner + Kedarnath helicopter', stay: 'Heritage resorts & boutique hotels', guide: 'Dedicated guide + cook', helicopterOption: true },
     ],
     heroImage: getTempleHero('kedarnath'),
-    gallery: [getTempleHero('kedarnath'), getTempleHero('badrinath'), getDeityImage('lord-shiva'), getDeityImage('lord-vishnu'), getTempleHero('kashi-vishwanath'), getTempleHero('somnath')],
+    // All four Char Dham sites: Yamunotri, Gangotri, Kedarnath, Badrinath
+    gallery: [
+      getTempleHero('yamunotri'),
+      getTempleHero('gangotri'),
+      getTempleHero('kedarnath'),
+      getTempleHero('badrinath'),
+      getDeityImage('lord-shiva'),
+      getDeityImage('lord-vishnu'),
+    ],
     helicopterAvailable: true,
     tags: ['Himalayas', 'Shiva', 'Vishnu', '11 days', 'Helicopter'],
     reviews: [
@@ -300,7 +308,21 @@ export const yatras: Yatra[] = [
       { tier: 'premium', name: 'Parampara', price: 265000, tagline: 'Business class flights, 5-star stays, dedicated concierge + priest', includes: ['Business class flights (domestic)', '5-star hotels', 'Dedicated guide + accompanying priest', 'Special pujas at each temple', 'All prasad delivered home'], transport: 'Business class flights + luxury SUV', stay: '5-star & heritage hotels', guide: 'Dedicated guide + priest' },
     ],
     heroImage: getTempleHero('somnath'),
-    gallery: [getTempleHero('somnath'), getTempleHero('kashi-vishwanath'), getTempleHero('mahakaleshwar'), getTempleHero('kedarnath'), getDeityImage('lord-shiva'), getTempleHero('meenakshi-temple')],
+    // Show all 12 Jyotirlingas in the gallery — each is a distinct shrine
+    gallery: [
+      getTempleHero('somnath'),
+      getTempleHero('mallikarjuna'),
+      getTempleHero('mahakaleshwar'),
+      getTempleHero('omkareshwar'),
+      getTempleHero('kedarnath'),
+      getTempleHero('bhimashankar'),
+      getTempleHero('kashi-vishwanath'),
+      getTempleHero('trimbakeshwar'),
+      getTempleHero('vaidyanath'),
+      getTempleHero('nageshwar'),
+      getTempleHero('rameshwaram'),
+      getTempleHero('grishneshwar'),
+    ],
     helicopterAvailable: false,
     tags: ['Shiva', '12 Jyotirlingas', '16 days', 'Pan-India'],
     reviews: [
