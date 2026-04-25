@@ -1,33 +1,32 @@
 /**
  * Centralized Image Map for Darshya
  * =====================================
- * All Unsplash image URLs used across the application are defined here.
+ * All image URLs used across the application are defined here.
  * Import from this file instead of hardcoding URLs in components.
  *
+ * Sources:
+ *   - Famous temples, deities, festivals, pujas → Wikimedia Commons (real photos
+ *     of the actual subject; CC-BY-SA / CC-BY / public domain). See /credits.
+ *   - Generic store products, profile photos, abstract backgrounds → Unsplash
+ *     (stock photography, free to use).
+ *
  * Usage:
- *   import { IMAGES, getImage } from '@/lib/images';
- *   <img src={IMAGES.temples['kashi-vishwanath'].hero} />
- *   <img src={getImage('deities', 'lord-shiva', '800x600')} />
+ *   import { IMAGES, getTempleHero } from '@/lib/images';
+ *   <img src={getTempleHero('kashi-vishwanath')} />
  */
 
 const UNSPLASH_BASE = 'https://images.unsplash.com';
 
-/**
- * Pick a quality value based on rendered size. Bigger images tolerate a bit
- * more aggressive compression before artifacts show; tiny thumbnails should
- * stay crisp but don't need premium quality either.
- */
 function qualityFor(w: number, h: number): number {
   const max = Math.max(w, h);
-  if (max >= 1400) return 85;   // hero / full-bleed
-  if (max >= 700) return 80;    // card
-  if (max >= 300) return 75;    // thumbnail
-  return 70;                    // avatar / icon
+  if (max >= 1400) return 85;
+  if (max >= 700) return 80;
+  if (max >= 300) return 75;
+  return 70;
 }
 
 function u(photoId: string, w = 800, h = 600): string {
   const q = qualityFor(w, h);
-  // auto=format lets Unsplash serve WebP/AVIF when the browser accepts it.
   return `${UNSPLASH_BASE}/${photoId}?w=${w}&h=${h}&fit=crop&auto=format&q=${q}`;
 }
 
@@ -44,15 +43,38 @@ function uPortrait(photoId: string): string {
 }
 
 /**
- * Re-size an already-built Unsplash URL by replacing its w/h/q params.
- * Use this to request a smaller variant on the fly (e.g. a thumbnail of a
- * hero image that's already in the IMAGES map).
+ * Pass-through for a Wikimedia Commons URL. Commons serves the original or
+ * a /thumb/ variant; both are stable, permanently hosted, and CDN-cached.
+ */
+function wiki(url: string): string {
+  return url;
+}
+
+/**
+ * Resize a Wikimedia Commons /thumb/ URL to a different width.
+ * For non-thumb URLs (originals), returns as-is.
+ *
+ * Example:
+ *   wikiResize('.../thumb/a/bc/Foo.jpg/1280px-Foo.jpg', 600)
+ *   → '.../thumb/a/bc/Foo.jpg/1280px-Foo.jpg'
+ */
+export function wikiResize(url: string, width: number): string {
+  if (!url.includes('upload.wikimedia.org/wikipedia/commons/thumb/')) return url;
+  return url.replace(/\/(\d+)px-/, `/${width}px-`);
+}
+
+/**
+ * Resize an Unsplash URL by replacing its w/h/q params.
  */
 export function resizeImage(
   url: string,
   preset: 'hero' | 'card' | 'thumb' | 'avatar',
 ): string {
-  if (!url.includes('images.unsplash.com')) return url;
+  if (!url.includes('images.unsplash.com')) {
+    // Wikimedia: pick a thumb width matching the preset
+    const widths = { hero: 1600, card: 800, thumb: 400, avatar: 200 };
+    return wikiResize(url, widths[preset]);
+  }
   const dims = {
     hero:   { w: 1600, h: 900, q: 85 },
     card:   { w: 800,  h: 600, q: 80 },
@@ -69,238 +91,261 @@ export function resizeImage(
 // IMAGES — The single source of truth for all imagery
 // ────────────────────────────────────────────────────────────
 
-// ═══════════════════════════════════════════════════════════════
-// ALL photo IDs below are VERIFIED to return HTTP 200 from Unsplash.
-// Do NOT change a photo ID without testing it first:
-//   curl -s -o /dev/null -w "%{http_code}" "https://images.unsplash.com/PHOTO_ID?w=100"
-// ═══════════════════════════════════════════════════════════════
+// Wikimedia photo URLs are permanent. Each was sourced via the official Commons
+// MediaWiki API and verified HTTP 200. To swap one, find a replacement at
+// https://commons.wikimedia.org and update the URL + the /credits page.
 
 export const IMAGES = {
-  // ── Temples (all verified 200) ─────────────────────────────
+  // ── Temples ────────────────────────────────────────────────
+  // Each entry uses real photos of the actual shrine from Wikimedia Commons.
   temples: {
     'kashi-vishwanath': {
-      hero: u('photo-1548013146-72479768bada', 1200, 800),
-      thumbnail: u('photo-1548013146-72479768bada', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
       gallery: [
-        u('photo-1548013146-72479768bada', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-        u('photo-1585128993280-9456c19c987d', 800, 600),
-        u('photo-1604948501466-4e9c339b9c24', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Gayatri_japa.jpg/1280px-Gayatri_japa.jpg'),
       ],
     },
     'tirumala-tirupati': {
-      hero: u('photo-1600093463592-8e36ae95ef56', 1200, 800),
-      thumbnail: u('photo-1600093463592-8e36ae95ef56', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
       gallery: [
-        u('photo-1600093463592-8e36ae95ef56', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-        u('photo-1585128993280-9456c19c987d', 800, 600),
-        u('photo-1603228254119-e6a4d095dc59', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
       ],
     },
     'siddhivinayak': {
-      hero: u('photo-1604948501466-4e9c339b9c24', 1200, 800),
-      thumbnail: u('photo-1604948501466-4e9c339b9c24', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Shree_Siddhivinayak_Temple_Mumbai.jpg/1280px-Shree_Siddhivinayak_Temple_Mumbai.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Shree_Siddhivinayak_Temple_Mumbai.jpg/1280px-Shree_Siddhivinayak_Temple_Mumbai.jpg'),
       gallery: [
-        u('photo-1604948501466-4e9c339b9c24', 800, 600),
-        u('photo-1603228254119-e6a4d095dc59', 800, 600),
-        u('photo-1585128993280-9456c19c987d', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Shree_Siddhivinayak_Temple_Mumbai.jpg/1280px-Shree_Siddhivinayak_Temple_Mumbai.jpg'),
       ],
     },
     'somnath': {
-      hero: u('photo-1590077428593-a55bb07c4665', 1200, 800),
-      thumbnail: u('photo-1590077428593-a55bb07c4665', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Somanath_mandir_%28cropped%29.jpg/1280px-Somanath_mandir_%28cropped%29.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Somanath_mandir_%28cropped%29.jpg/1280px-Somanath_mandir_%28cropped%29.jpg'),
       gallery: [
-        u('photo-1590077428593-a55bb07c4665', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-        u('photo-1604948501466-4e9c339b9c24', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Somanath_mandir_%28cropped%29.jpg/1280px-Somanath_mandir_%28cropped%29.jpg'),
       ],
     },
     'jagannath-puri': {
-      hero: u('photo-1544367567-0f2fcb009e0b', 1200, 800),
-      thumbnail: u('photo-1544367567-0f2fcb009e0b', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Shri_Jagannath_temple.jpg/1280px-Shri_Jagannath_temple.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Shri_Jagannath_temple.jpg/1280px-Shri_Jagannath_temple.jpg'),
       gallery: [
-        u('photo-1544367567-0f2fcb009e0b', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-        u('photo-1585128993280-9456c19c987d', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Shri_Jagannath_temple.jpg/1280px-Shri_Jagannath_temple.jpg'),
       ],
     },
     'golden-temple': {
-      hero: u('photo-1514222134-b57cbb8ce073', 1200, 800),
-      thumbnail: u('photo-1514222134-b57cbb8ce073', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg'),
       gallery: [
-        u('photo-1514222134-b57cbb8ce073', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg'),
       ],
     },
     'meenakshi-temple': {
-      hero: u('photo-1585128993280-9456c19c987d', 1200, 800),
-      thumbnail: u('photo-1585128993280-9456c19c987d', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg/1280px-An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg/1280px-An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg'),
       gallery: [
-        u('photo-1585128993280-9456c19c987d', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg/1280px-An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg'),
       ],
     },
     'kedarnath': {
-      hero: u('photo-1500595046743-cd271d694d30', 1200, 800),
-      thumbnail: u('photo-1500595046743-cd271d694d30', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kedarnath_Temple_in_Rainy_season.jpg/1280px-Kedarnath_Temple_in_Rainy_season.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kedarnath_Temple_in_Rainy_season.jpg/1280px-Kedarnath_Temple_in_Rainy_season.jpg'),
       gallery: [
-        u('photo-1500595046743-cd271d694d30', 800, 600),
-        u('photo-1590077428593-a55bb07c4665', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kedarnath_Temple_in_Rainy_season.jpg/1280px-Kedarnath_Temple_in_Rainy_season.jpg'),
       ],
     },
     'badrinath': {
-      hero: u('photo-1500595046743-cd271d694d30', 1200, 800),
-      thumbnail: u('photo-1500595046743-cd271d694d30', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Badrinath_Temple_%2C_Uttarakhand.jpg/1280px-Badrinath_Temple_%2C_Uttarakhand.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Badrinath_Temple_%2C_Uttarakhand.jpg/1280px-Badrinath_Temple_%2C_Uttarakhand.jpg'),
       gallery: [
-        u('photo-1500595046743-cd271d694d30', 800, 600),
-        u('photo-1548013146-72479768bada', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Badrinath_Temple_%2C_Uttarakhand.jpg/1280px-Badrinath_Temple_%2C_Uttarakhand.jpg'),
       ],
     },
     'akshardham': {
-      hero: u('photo-1548013146-72479768bada', 1200, 800),
-      thumbnail: u('photo-1548013146-72479768bada', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/e/e9/Swaminarayan_Akshardham%2C_Delhi.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/e/e9/Swaminarayan_Akshardham%2C_Delhi.jpg'),
       gallery: [
-        u('photo-1548013146-72479768bada', 800, 600),
-        u('photo-1585128993280-9456c19c987d', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/e/e9/Swaminarayan_Akshardham%2C_Delhi.jpg'),
       ],
     },
     'mahakaleshwar': {
-      hero: u('photo-1604948501466-4e9c339b9c24', 1200, 800),
-      thumbnail: u('photo-1604948501466-4e9c339b9c24', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Mahakaleshwar_Temple%2C_Ujjain.jpg/1280px-Mahakaleshwar_Temple%2C_Ujjain.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Mahakaleshwar_Temple%2C_Ujjain.jpg/1280px-Mahakaleshwar_Temple%2C_Ujjain.jpg'),
       gallery: [
-        u('photo-1604948501466-4e9c339b9c24', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Mahakaleshwar_Temple%2C_Ujjain.jpg/1280px-Mahakaleshwar_Temple%2C_Ujjain.jpg'),
       ],
     },
     'tirupati': {
-      hero: u('photo-1600093463592-8e36ae95ef56', 1200, 800),
-      thumbnail: u('photo-1600093463592-8e36ae95ef56', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
       gallery: [
-        u('photo-1600093463592-8e36ae95ef56', 800, 600),
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-        u('photo-1585128993280-9456c19c987d', 800, 600),
-        u('photo-1603228254119-e6a4d095dc59', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
       ],
     },
     'iskcon-vrindavan': {
-      hero: u('photo-1545468800-85cc9bc6ecf7', 1200, 800),
-      thumbnail: u('photo-1545468800-85cc9bc6ecf7', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Vrindavan%2C_India_%2821178969102%29.jpg/1280px-Vrindavan%2C_India_%2821178969102%29.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Vrindavan%2C_India_%2821178969102%29.jpg/1280px-Vrindavan%2C_India_%2821178969102%29.jpg'),
       gallery: [
-        u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-        u('photo-1603228254119-e6a4d095dc59', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Vrindavan%2C_India_%2821178969102%29.jpg/1280px-Vrindavan%2C_India_%2821178969102%29.jpg'),
       ],
     },
     'dwarkadhish': {
-      hero: u('photo-1590077428593-a55bb07c4665', 1200, 800),
-      thumbnail: u('photo-1590077428593-a55bb07c4665', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/0/0c/Dwarakadheesh_Temple%2C_2014.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/0/0c/Dwarakadheesh_Temple%2C_2014.jpg'),
       gallery: [
-        u('photo-1590077428593-a55bb07c4665', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/0/0c/Dwarakadheesh_Temple%2C_2014.jpg'),
       ],
     },
     'meenakshi-amman': {
-      hero: u('photo-1585128993280-9456c19c987d', 1200, 800),
-      thumbnail: u('photo-1585128993280-9456c19c987d', 400, 300),
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg/1280px-An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg/1280px-An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg'),
       gallery: [
-        u('photo-1585128993280-9456c19c987d', 800, 600),
+        wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg/1280px-An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg'),
       ],
+    },
+
+    // ── 12 Jyotirlingas (each is a unique Shiva shrine) ──────
+    'mallikarjuna': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/5/53/MKJNTemple.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/5/53/MKJNTemple.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/5/53/MKJNTemple.jpg')],
+    },
+    'omkareshwar': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Omkareswar_Jyotirlinga.jpg/1280px-Omkareswar_Jyotirlinga.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Omkareswar_Jyotirlinga.jpg/1280px-Omkareswar_Jyotirlinga.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Omkareswar_Jyotirlinga.jpg/1280px-Omkareswar_Jyotirlinga.jpg')],
+    },
+    'bhimashankar': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/d/d7/Bhimashankar.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/d/d7/Bhimashankar.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/d/d7/Bhimashankar.jpg')],
+    },
+    'trimbakeshwar': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg/1280px-Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg/1280px-Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg/1280px-Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg')],
+    },
+    'vaidyanath': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg/1280px-Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg/1280px-Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg/1280px-Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg')],
+    },
+    'nageshwar': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Nageshwar.JPG/1280px-Nageshwar.JPG'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Nageshwar.JPG/1280px-Nageshwar.JPG'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Nageshwar.JPG/1280px-Nageshwar.JPG')],
+    },
+    'rameshwaram': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Ramanathaswamy_temple7.JPG/1280px-Ramanathaswamy_temple7.JPG'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Ramanathaswamy_temple7.JPG/1280px-Ramanathaswamy_temple7.JPG'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Ramanathaswamy_temple7.JPG/1280px-Ramanathaswamy_temple7.JPG')],
+    },
+    'grishneshwar': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Grishneshwar_temple_in_Aurangabad_district.jpg/1280px-Grishneshwar_temple_in_Aurangabad_district.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Grishneshwar_temple_in_Aurangabad_district.jpg/1280px-Grishneshwar_temple_in_Aurangabad_district.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Grishneshwar_temple_in_Aurangabad_district.jpg/1280px-Grishneshwar_temple_in_Aurangabad_district.jpg')],
+    },
+
+    // ── Char Dham (Yamunotri, Gangotri — Kedarnath/Badrinath above) ──
+    'yamunotri': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Yamunotri_temple_and_ashram.jpg/1280px-Yamunotri_temple_and_ashram.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Yamunotri_temple_and_ashram.jpg/1280px-Yamunotri_temple_and_ashram.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Yamunotri_temple_and_ashram.jpg/1280px-Yamunotri_temple_and_ashram.jpg')],
+    },
+    'gangotri': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Gangotri_Temple_2.jpg/1280px-Gangotri_Temple_2.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Gangotri_Temple_2.jpg/1280px-Gangotri_Temple_2.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Gangotri_Temple_2.jpg/1280px-Gangotri_Temple_2.jpg')],
     },
   },
 
-  // ── Deities (all verified 200) ─────────────────────────────
+  // ── Deities (real Wikimedia depictions: Ravi Varma paintings, sculptures) ──
   deities: {
-    'lord-shiva': u('photo-1604948501466-4e9c339b9c24', 600, 800),
-    'lord-shiva-square': uSquare('photo-1604948501466-4e9c339b9c24'),
-    'lord-ganesha': u('photo-1604948501466-4e9c339b9c24', 600, 800),
-    'lord-ganesha-square': uSquare('photo-1604948501466-4e9c339b9c24'),
-    'lord-krishna': u('photo-1545468800-85cc9bc6ecf7', 600, 800),
-    'lord-krishna-square': uSquare('photo-1545468800-85cc9bc6ecf7'),
-    'goddess-lakshmi': u('photo-1603228254119-e6a4d095dc59', 600, 800),
-    'goddess-lakshmi-square': uSquare('photo-1603228254119-e6a4d095dc59'),
-    'lord-hanuman': u('photo-1609766857041-ed402ea8069a', 600, 800),
-    'lord-hanuman-square': uSquare('photo-1609766857041-ed402ea8069a'),
-    'lord-vishnu': u('photo-1545468800-85cc9bc6ecf7', 600, 800),
-    'lord-vishnu-square': uSquare('photo-1545468800-85cc9bc6ecf7'),
-    'goddess-durga': u('photo-1603228254119-e6a4d095dc59', 600, 800),
-    'goddess-durga-square': uSquare('photo-1603228254119-e6a4d095dc59'),
-    'lord-rama': u('photo-1585128993280-9456c19c987d', 600, 800),
-    'goddess-saraswati': u('photo-1603228254119-e6a4d095dc59', 600, 800),
-    'lord-surya': u('photo-1506905925346-21bda4d32df4', 600, 800),
+    'lord-shiva': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Bangalore_Shiva.jpg/1280px-Bangalore_Shiva.jpg'),
+    'lord-shiva-square': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Bangalore_Shiva.jpg/1280px-Bangalore_Shiva.jpg'),
+    'lord-ganesha': wiki('https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_***REMOVED***.jpg'),
+    'lord-ganesha-square': wiki('https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_***REMOVED***.jpg'),
+    'lord-krishna': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a9/Krishna_Holds_Up_Mount_Govardhan_%28MET_70694%29_cropped.png'),
+    'lord-krishna-square': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a9/Krishna_Holds_Up_Mount_Govardhan_%28MET_70694%29_cropped.png'),
+    'goddess-lakshmi': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a6/Raja_Ravi_Varma%2C_Goddess_Lakshmi%2C_1896.jpg'),
+    'goddess-lakshmi-square': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a6/Raja_Ravi_Varma%2C_Goddess_Lakshmi%2C_1896.jpg'),
+    'lord-hanuman': wiki('https://upload.wikimedia.org/wikipedia/commons/a/ae/StandingHanumanCholaDynasty11thCentury.jpg'),
+    'lord-hanuman-square': wiki('https://upload.wikimedia.org/wikipedia/commons/a/ae/StandingHanumanCholaDynasty11thCentury.jpg'),
+    'lord-vishnu': wiki('https://upload.wikimedia.org/wikipedia/commons/e/ef/Vishnu_from_Gita_Govinda.jpg'),
+    'lord-vishnu-square': wiki('https://upload.wikimedia.org/wikipedia/commons/e/ef/Vishnu_from_Gita_Govinda.jpg'),
+    'goddess-durga': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Mahishasura-Mardini_Durga.jpg'),
+    'goddess-durga-square': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Mahishasura-Mardini_Durga.jpg'),
+    'lord-rama': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Lord_Rama_with_arrows.jpg/1280px-Lord_Rama_with_arrows.jpg'),
+    'goddess-saraswati': wiki('https://upload.wikimedia.org/wikipedia/commons/1/12/Saraswati.jpg'),
+    'lord-surya': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
   },
 
   // ── Pujas / Rituals ────────────────────────────────────────
   pujas: {
-    'rudrabhishek': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'ganesh-puja': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'satyanarayan-puja': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'navgraha-puja': u('photo-1506905925346-21bda4d32df4', 800, 600),
-    'maha-mrityunjaya': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'lakshmi-puja': u('photo-1603228254119-e6a4d095dc59', 800, 600),
-    'sundarkand-path': u('photo-1609766857041-ed402ea8069a', 800, 600),
-    'kaal-sarp-dosh': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'mangal-dosh': u('photo-1603228254119-e6a4d095dc59', 800, 600),
-    'vivah-puja': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'griha-pravesh': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'navaratri-puja': u('photo-1603228254119-e6a4d095dc59', 800, 600),
-    'havan': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'abhishek': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'vastu-puja': u('photo-1585128993280-9456c19c987d', 800, 600),
-    'pitru-dosh-puja': u('photo-1585128993280-9456c19c987d', 800, 600),
+    'rudrabhishek': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/From_Abhisheka_To_Panchamrutha.jpg/1280px-From_Abhisheka_To_Panchamrutha.jpg'),
+    'abhishek': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/From_Abhisheka_To_Panchamrutha.jpg/1280px-From_Abhisheka_To_Panchamrutha.jpg'),
+    'havan': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Priest_performing_Homa.jpg/1280px-Priest_performing_Homa.jpg'),
+    'ganesh-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_***REMOVED***.jpg'),
+    'satyanarayan-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/e/ef/Vishnu_from_Gita_Govinda.jpg'),
+    'navgraha-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
+    'maha-mrityunjaya': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Bangalore_Shiva.jpg/1280px-Bangalore_Shiva.jpg'),
+    'lakshmi-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a6/Raja_Ravi_Varma%2C_Goddess_Lakshmi%2C_1896.jpg'),
+    'sundarkand-path': wiki('https://upload.wikimedia.org/wikipedia/commons/a/ae/StandingHanumanCholaDynasty11thCentury.jpg'),
+    'kaal-sarp-dosh': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Bangalore_Shiva.jpg/1280px-Bangalore_Shiva.jpg'),
+    'mangal-dosh': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
+    'vivah-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a9/Krishna_Holds_Up_Mount_Govardhan_%28MET_70694%29_cropped.png'),
+    'griha-pravesh': wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
+    'navaratri-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Mahishasura-Mardini_Durga.jpg'),
+    'vastu-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
+    'pitru-dosh-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Priest_performing_Homa.jpg/1280px-Priest_performing_Homa.jpg'),
   },
 
   // ── Store / E-commerce Products ────────────────────────────
-  // Each product maps to a visually distinct, contextually relevant image.
+  // Stock photography for generic merchandise — Unsplash is the right fit here.
   store: {
-    // Puja Essentials
-    'brass-puja-thali': u('photo-1604608672516-f1b9b1d37076', 600, 600),  // brass puja plate with items
-    'brass-diya': u('photo-1603228254119-e6a4d095dc59', 600, 600),        // brass oil lamp / diya
-    'puja-bell': u('photo-1585128993280-9456c19c987d', 600, 600),         // temple bell
-    'incense-sticks': u('photo-1506905925346-21bda4d32df4', 600, 600),    // incense with smoke
-    'camphor-pack': u('photo-1545468800-85cc9bc6ecf7', 600, 600),         // camphor / aarti flame
-    'kumkum-set': u('photo-1590077428593-a55bb07c4665', 600, 600),        // vermillion / powder
-    'cotton-wicks': u('photo-1544367567-0f2fcb009e0b', 600, 600),         // cotton / natural items
+    'brass-puja-thali': u('photo-1604608672516-f1b9b1d37076', 600, 600),
+    'brass-diya': u('photo-1603228254119-e6a4d095dc59', 600, 600),
+    'puja-bell': u('photo-1585128993280-9456c19c987d', 600, 600),
+    'incense-sticks': u('photo-1506905925346-21bda4d32df4', 600, 600),
+    'camphor-pack': u('photo-1545468800-85cc9bc6ecf7', 600, 600),
+    'kumkum-set': u('photo-1590077428593-a55bb07c4665', 600, 600),
+    'cotton-wicks': u('photo-1544367567-0f2fcb009e0b', 600, 600),
 
-    // Rudraksha & Malas
-    'rudraksha-mala': u('photo-1609766857041-ed402ea8069a', 600, 600),    // prayer beads
-    'tulsi-mala': u('photo-1600093463592-8e36ae95ef56', 600, 600),        // wooden beads / mala
-    'crystal-mala': u('photo-1514222134-b57cbb8ce073', 600, 600),         // crystal / spiritual beads
+    'rudraksha-mala': u('photo-1609766857041-ed402ea8069a', 600, 600),
+    'tulsi-mala': u('photo-1600093463592-8e36ae95ef56', 600, 600),
+    'crystal-mala': u('photo-1514222134-b57cbb8ce073', 600, 600),
 
-    // Idols & Murtis
-    'ganesh-murti': u('photo-1604948501466-4e9c339b9c24', 600, 600),      // Ganesh idol
-    'krishna-idol': u('photo-1545468800-85cc9bc6ecf7', 600, 600),         // Krishna / deity idol
-    'shiva-lingam': u('photo-1590077428593-a55bb07c4665', 600, 600),      // Shiva temple items
-    'lakshmi-idol': u('photo-1603228254119-e6a4d095dc59', 600, 600),      // Lakshmi / golden deity
-    'durga-idol': u('photo-1604948501466-4e9c339b9c24', 600, 600),        // Durga idol
+    'ganesh-murti': wiki('https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_***REMOVED***.jpg'),
+    'krishna-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a9/Krishna_Holds_Up_Mount_Govardhan_%28MET_70694%29_cropped.png'),
+    'shiva-lingam': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Bangalore_Shiva.jpg/1280px-Bangalore_Shiva.jpg'),
+    'lakshmi-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a6/Raja_Ravi_Varma%2C_Goddess_Lakshmi%2C_1896.jpg'),
+    'durga-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Mahishasura-Mardini_Durga.jpg'),
 
-    // Puja Samagri
-    'pooja-samagri-kit': u('photo-1604608672516-f1b9b1d37076', 600, 600), // complete puja set
-    'navratri-kit': u('photo-1603228254119-e6a4d095dc59', 600, 600),      // festival puja kit
-    'copper-kalash': u('photo-1548013146-72479768bada', 600, 600),        // copper vessel / kalash
-    'havan-samagri': u('photo-1545468800-85cc9bc6ecf7', 600, 600),        // havan / fire ritual items
+    'pooja-samagri-kit': u('photo-1604608672516-f1b9b1d37076', 600, 600),
+    'navratri-kit': u('photo-1603228254119-e6a4d095dc59', 600, 600),
+    'copper-kalash': u('photo-1548013146-72479768bada', 600, 600),
+    'havan-samagri': u('photo-1545468800-85cc9bc6ecf7', 600, 600),
 
-    // Books & Scriptures
-    'bhagavad-gita': u('photo-1544367567-0f2fcb009e0b', 600, 600),       // sacred book
-    'hanuman-chalisa-book': u('photo-1609766857041-ed402ea8069a', 600, 600), // devotional book
-    'sunderkand-book': u('photo-1585128993280-9456c19c987d', 600, 600),   // scripture / text
+    'bhagavad-gita': u('photo-1544367567-0f2fcb009e0b', 600, 600),
+    'hanuman-chalisa-book': u('photo-1609766857041-ed402ea8069a', 600, 600),
+    'sunderkand-book': u('photo-1585128993280-9456c19c987d', 600, 600),
 
-    // Spiritual Jewellery
-    'rudraksha-bracelet': u('photo-1609766857041-ed402ea8069a', 600, 600),// bracelet / wrist beads
-    'om-pendant': u('photo-1506905925346-21bda4d32df4', 600, 600),        // spiritual pendant
-    'sacred-thread': u('photo-1603228254119-e6a4d095dc59', 600, 600),     // sacred thread
+    'rudraksha-bracelet': u('photo-1609766857041-ed402ea8069a', 600, 600),
+    'om-pendant': u('photo-1506905925346-21bda4d32df4', 600, 600),
+    'sacred-thread': u('photo-1603228254119-e6a4d095dc59', 600, 600),
 
-    // Organic & Natural
-    'cow-ghee': u('photo-1570042225831-d98fa7577f1e', 600, 600),          // cow / natural product
-    'sandalwood-paste': u('photo-1506905925346-21bda4d32df4', 600, 600),  // sandalwood / natural
-    'ghee-lamp-oil': u('photo-1603228254119-e6a4d095dc59', 600, 600),     // oil / ghee lamp
+    'cow-ghee': u('photo-1570042225831-d98fa7577f1e', 600, 600),
+    'sandalwood-paste': u('photo-1506905925346-21bda4d32df4', 600, 600),
+    'ghee-lamp-oil': u('photo-1603228254119-e6a4d095dc59', 600, 600),
 
-    // Home Temple & Decor
-    'wooden-mandir': u('photo-1585128993280-9456c19c987d', 600, 600),     // temple / mandir
-    'led-diya-set': u('photo-1604608672516-f1b9b1d37076', 600, 600),     // decorative diyas
-    'brass-hanging-bell': u('photo-1548013146-72479768bada', 600, 600),   // hanging bell / decor
-    'wall-om-decor': u('photo-1500595046743-cd271d694d30', 600, 600),     // wall decor / spiritual
+    'wooden-mandir': u('photo-1585128993280-9456c19c987d', 600, 600),
+    'led-diya-set': u('photo-1604608672516-f1b9b1d37076', 600, 600),
+    'brass-hanging-bell': u('photo-1548013146-72479768bada', 600, 600),
+    'wall-om-decor': u('photo-1500595046743-cd271d694d30', 600, 600),
 
-    // Clothing
-    'silk-dhoti-set': u('photo-1514222134-b57cbb8ce073', 600, 600),       // traditional clothing
+    'silk-dhoti-set': u('photo-1514222134-b57cbb8ce073', 600, 600),
   },
 
   // ── Gaushala / Cow Seva ────────────────────────────────────
@@ -317,38 +362,38 @@ export const IMAGES = {
     'cow-care': u('photo-1570042225831-d98fa7577f1e', 800, 600),
   },
 
-  // ── Spiritual Content ──────────────────────────────────────
+  // ── Spiritual Content (aartis, chalisas, mantras, bhajans) ──
   content: {
-    'aarti': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'aarti-thumbnail': uSquare('photo-1545468800-85cc9bc6ecf7', 300),
-    'chalisa': u('photo-1609766857041-ed402ea8069a', 800, 600),
-    'chalisa-thumbnail': uSquare('photo-1609766857041-ed402ea8069a', 300),
-    'mantra': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'mantra-thumbnail': uSquare('photo-1604948501466-4e9c339b9c24', 300),
-    'bhajan': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'bhajan-thumbnail': uSquare('photo-1545468800-85cc9bc6ecf7', 300),
-    'stotram': u('photo-1585128993280-9456c19c987d', 800, 600),
-    'stotram-thumbnail': uSquare('photo-1585128993280-9456c19c987d', 300),
-    'spiritual-talk': u('photo-1603228254119-e6a4d095dc59', 800, 600),
-    'meditation': u('photo-1506905925346-21bda4d32df4', 800, 600),
-    'yoga': u('photo-1544367567-0f2fcb009e0b', 800, 600),
+    'aarti': wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
+    'aarti-thumbnail': wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
+    'chalisa': wiki('https://upload.wikimedia.org/wikipedia/commons/a/ae/StandingHanumanCholaDynasty11thCentury.jpg'),
+    'chalisa-thumbnail': wiki('https://upload.wikimedia.org/wikipedia/commons/a/ae/StandingHanumanCholaDynasty11thCentury.jpg'),
+    'mantra': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Gayatri_japa.jpg/1280px-Gayatri_japa.jpg'),
+    'mantra-thumbnail': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Gayatri_japa.jpg/1280px-Gayatri_japa.jpg'),
+    'bhajan': wiki('https://upload.wikimedia.org/wikipedia/commons/0/04/Navaratri_Bajan.jpg'),
+    'bhajan-thumbnail': wiki('https://upload.wikimedia.org/wikipedia/commons/0/04/Navaratri_Bajan.jpg'),
+    'stotram': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Gayatri_japa.jpg/1280px-Gayatri_japa.jpg'),
+    'stotram-thumbnail': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Gayatri_japa.jpg/1280px-Gayatri_japa.jpg'),
+    'spiritual-talk': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/1_Sannyasi_in_yoga_meditation_on_the_Ganges%2C_Rishikesh_cropped.jpg/1280px-1_Sannyasi_in_yoga_meditation_on_the_Ganges%2C_Rishikesh_cropped.jpg'),
+    'meditation': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/1_Sannyasi_in_yoga_meditation_on_the_Ganges%2C_Rishikesh_cropped.jpg/1280px-1_Sannyasi_in_yoga_meditation_on_the_Ganges%2C_Rishikesh_cropped.jpg'),
+    'yoga': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/1_Sannyasi_in_yoga_meditation_on_the_Ganges%2C_Rishikesh_cropped.jpg/1280px-1_Sannyasi_in_yoga_meditation_on_the_Ganges%2C_Rishikesh_cropped.jpg'),
   },
 
   // ── Hero / Banner Images ───────────────────────────────────
   hero: {
-    home: uWide('photo-1548013146-72479768bada'),
-    temples: uWide('photo-1548013146-72479768bada'),
-    darshan: uWide('photo-1545468800-85cc9bc6ecf7'),
-    astrology: uWide('photo-1506905925346-21bda4d32df4'),
-    pujas: uWide('photo-1548013146-72479768bada'),
-    store: uWide('photo-1603228254119-e6a4d095dc59'),
-    content: uWide('photo-1604608672516-f1b9b1d37076'),
-    gaushala: uWide('photo-1500595046743-cd271d694d30'),
-    panchang: uWide('photo-1506905925346-21bda4d32df4'),
-    'ask-pandit': uWide('photo-1585128993280-9456c19c987d'),
+    home: wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
+    temples: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
+    darshan: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Shri_Jagannath_temple.jpg/1280px-Shri_Jagannath_temple.jpg'),
+    astrology: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
+    pujas: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/From_Abhisheka_To_Panchamrutha.jpg/1280px-From_Abhisheka_To_Panchamrutha.jpg'),
+    store: u('photo-1603228254119-e6a4d095dc59', 1600, 700),
+    content: wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
+    gaushala: u('photo-1516467508483-a7212febe31a', 1600, 700),
+    panchang: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
+    'ask-pandit': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Priest_performing_Homa.jpg/1280px-Priest_performing_Homa.jpg'),
   },
 
-  // ── Astrologers / Pandits ──────────────────────────────────
+  // ── Astrologers / Pandits (stock portraits) ────────────────
   astrologers: {
     male: [
       u('photo-1507003211169-0a1dd7228f2d', 400, 400),
@@ -368,7 +413,7 @@ export const IMAGES = {
     ],
   },
 
-  // ── Priests ────────────────────────────────────────────────
+  // ── Priests (stock portraits) ──────────────────────────────
   priests: {
     profiles: [
       u('photo-1507003211169-0a1dd7228f2d', 300, 300),
@@ -381,35 +426,35 @@ export const IMAGES = {
   // ── Backgrounds & Decorative ───────────────────────────────
   backgrounds: {
     'warm-gradient': u('photo-1507400492013-162706c8c05e', 1920, 1080),
-    'temple-interior': u('photo-1585128993280-9456c19c987d', 1920, 1080),
+    'temple-interior': wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
     'sunrise': u('photo-1506905925346-21bda4d32df4', 1920, 1080),
     'diya-light': u('photo-1603228254119-e6a4d095dc59', 1920, 1080),
-    'rangoli': u('photo-1603228254119-e6a4d095dc59', 1920, 1080),
+    'rangoli': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/The_Rangoli_of_Lights.jpg/1280px-The_Rangoli_of_Lights.jpg'),
     'flowers-offering': u('photo-1603228254119-e6a4d095dc59', 1920, 1080),
   },
 
-  // ── Festivals ──────────────────────────────────────────────
+  // ── Festivals (real festival photos from Wikimedia) ────────
   festivals: {
-    'diwali': u('photo-1544367567-0f2fcb009e0b', 800, 600),
-    'holi': u('photo-1522075469751-3a6694fb2f61', 800, 600),
-    'navratri': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'ganesh-chaturthi': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'maha-shivaratri': u('photo-1604948501466-4e9c339b9c24', 800, 600),
-    'ram-navami': u('photo-1585128993280-9456c19c987d', 800, 600),
-    'janmashtami': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
-    'raksha-bandhan': u('photo-1603228254119-e6a4d095dc59', 800, 600),
-    'makar-sankranti': u('photo-1506905925346-21bda4d32df4', 800, 600),
-    'chhath-puja': u('photo-1545468800-85cc9bc6ecf7', 800, 600),
+    'diwali': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/The_Rangoli_of_Lights.jpg/1280px-The_Rangoli_of_Lights.jpg'),
+    'holi': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Holi_Festival_of_Colors.jpg/1280px-Holi_Festival_of_Colors.jpg'),
+    'navratri': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Shardiya_Navratri_Festival_in_Pune_2020.jpg/1280px-Shardiya_Navratri_Festival_in_Pune_2020.jpg'),
+    'ganesh-chaturthi': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Khairathabad_Vinayakudu_2021.jpg/1280px-Khairathabad_Vinayakudu_2021.jpg'),
+    'maha-shivaratri': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/02_Mahashivratree_festival.JPG/1280px-02_Mahashivratree_festival.JPG'),
+    'ram-navami': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Lord_Rama_with_arrows.jpg/1280px-Lord_Rama_with_arrows.jpg'),
+    'janmashtami': wiki('https://upload.wikimedia.org/wikipedia/commons/0/07/Yesoda-krishna.jpg'),
+    'raksha-bandhan': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Rakhi_1.JPG/1280px-Rakhi_1.JPG'),
+    'makar-sankranti': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
+    'chhath-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/JanakpurChhathParvaFestival.jpg/1280px-JanakpurChhathParvaFestival.jpg'),
   },
 
   // ── Misc / Placeholders ────────────────────────────────────
   placeholders: {
     avatar: u('photo-1535713875002-d1d0cf377fde', 200, 200),
-    'temple-card': u('photo-1548013146-72479768bada', 400, 300),
-    'puja-card': u('photo-1545468800-85cc9bc6ecf7', 400, 300),
+    'temple-card': wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
+    'puja-card': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/From_Abhisheka_To_Panchamrutha.jpg/1280px-From_Abhisheka_To_Panchamrutha.jpg'),
     'product-card': u('photo-1603228254119-e6a4d095dc59', 400, 400),
-    'video-thumbnail': u('photo-1548013146-72479768bada', 640, 360),
-    'og-image': u('photo-1548013146-72479768bada', 1200, 630),
+    'video-thumbnail': wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
+    'og-image': wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg'),
   },
 } as const;
 
@@ -432,23 +477,8 @@ export type FestivalKey = keyof typeof IMAGES.festivals;
 // Helper functions
 // ────────────────────────────────────────────────────────────
 
-/** Fallback image when a key is not found */
-const FALLBACK_IMAGE = u('photo-1585128993280-9456c19c987d', 800, 600);
+const FALLBACK_IMAGE = wiki('https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg');
 
-/**
- * Get an image URL by category and key, with optional size override.
- * Returns a fallback image if the key is not found.
- *
- * @param category - Top-level category (e.g. 'temples', 'deities')
- * @param key - Image key within that category (e.g. 'kashi-vishwanath', 'lord-shiva')
- * @param size - Optional 'WIDTHxHEIGHT' string to override dimensions (e.g. '400x300')
- * @returns The Unsplash image URL
- *
- * @example
- *   getImage('deities', 'lord-shiva')
- *   getImage('deities', 'lord-shiva', '400x300')
- *   getImage('temples', 'kashi-vishwanath') // returns hero image for temples
- */
 export function getImage(
   category: string,
   key: string,
@@ -469,8 +499,7 @@ export function getImage(
 
   if (!url) return FALLBACK_IMAGE;
 
-  // Override size if requested
-  if (size) {
+  if (size && url.includes('images.unsplash.com')) {
     const [w, h] = size.split('x').map(Number);
     if (w && h) {
       url = url.replace(/w=\d+/, `w=${w}`).replace(/h=\d+/, `h=${h}`);
@@ -480,78 +509,50 @@ export function getImage(
   return url;
 }
 
-/**
- * Get the temple hero image by slug.
- */
 export function getTempleHero(slug: string): string {
   const temple = IMAGES.temples[slug as TempleSlug];
   return temple?.hero ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get the temple thumbnail by slug.
- */
 export function getTempleThumbnail(slug: string): string {
   const temple = IMAGES.temples[slug as TempleSlug];
   return temple?.thumbnail ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get the temple gallery images by slug.
- */
 export function getTempleGallery(slug: string): readonly string[] {
   const temple = IMAGES.temples[slug as TempleSlug];
   return temple?.gallery ?? [];
 }
 
-/**
- * Get a deity image by slug.
- */
 export function getDeityImage(slug: string, variant: 'portrait' | 'square' = 'portrait'): string {
   const key = variant === 'square' ? `${slug}-square` : slug;
-  return (IMAGES.deities as Record<string, string>)[key] ?? FALLBACK_IMAGE;
+  const deities = IMAGES.deities as Record<string, string>;
+  return deities[key] ?? deities[slug] ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get a puja image by slug.
- */
 export function getPujaImage(slug: string): string {
   return (IMAGES.pujas as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get a store product image by slug.
- */
 export function getProductImage(slug: string): string {
   return (IMAGES.store as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get a hero/banner image by page name.
- */
 export function getHeroImage(page: string): string {
   return (IMAGES.hero as Record<string, string>)[page] ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get a random astrologer profile image.
- */
 export function getAstrologerImage(gender: 'male' | 'female', index: number): string {
   const pool = IMAGES.astrologers[gender];
   return pool[index % pool.length] ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get a festival image by slug.
- */
 export function getFestivalImage(slug: string): string {
   return (IMAGES.festivals as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
 }
 
-/**
- * Get content category image.
- */
 export function getContentImage(type: string, variant: 'full' | 'thumbnail' = 'full'): string {
   const key = variant === 'thumbnail' ? `${type}-thumbnail` : type;
-  return (IMAGES.content as Record<string, string>)[key] ?? FALLBACK_IMAGE;
+  const content = IMAGES.content as Record<string, string>;
+  return content[key] ?? content[type] ?? FALLBACK_IMAGE;
 }
