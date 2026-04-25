@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTemples } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Temple {
@@ -187,13 +189,42 @@ function TempleCard({ temple }: { temple: Temple }) {
 
 export default function TemplesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const templesQuery = useTemples();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredTemples = templesData.filter(
+  // Map API temples (real data) to local UI shape, fall back to mock if empty
+  const apiTemples = templesQuery.data?.data ?? [];
+  const sourceTemples: Temple[] = apiTemples.length > 0
+    ? apiTemples.map((t, i) => {
+        const fb = templesData[i % templesData.length]!;
+        return {
+          id: t.id,
+          name: t.name,
+          city: t.city,
+          state: t.state,
+          deity: t.deity,
+          tradition: String(t.tradition),
+          trustScore: Math.round((t.rating ?? 4.5) * 20),
+          liveDarshanEnabled: t.liveDarshanAvailable ?? fb.liveDarshanEnabled,
+          viewers: fb.viewers,
+          isVerified: t.isVerified ?? true,
+          description: t.shortDescription ?? t.description ?? fb.description,
+        };
+      })
+    : templesData;
+
+  const filteredTemples = sourceTemples.filter(
     (t) =>
       t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.deity.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await templesQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -201,7 +232,7 @@ export default function TemplesScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Sacred Temples</Text>
         <Text style={styles.headerSubtitle}>
-          {templesData.length} verified temples
+          {sourceTemples.length} verified temples
         </Text>
       </View>
 
@@ -231,6 +262,7 @@ export default function TemplesScreen() {
         renderItem={({ item }) => <TempleCard temple={item} />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={48} color={colors.stone[300]} />

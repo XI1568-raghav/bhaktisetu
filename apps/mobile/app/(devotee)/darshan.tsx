@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useDarshan } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -179,6 +181,40 @@ function StreamCard({ stream }: { stream: DarshanStream }) {
 }
 
 export default function DarshanScreen() {
+  const darshanQuery = useDarshan();
+  const [refreshing, setRefreshing] = useState(false);
+  const apiStreams = darshanQuery.data?.data ?? [];
+  const liveFromApi: DarshanStream[] = apiStreams
+    .filter((s) => String(s.status).toLowerCase() === 'live')
+    .map((s, i) => ({
+      id: s.id,
+      templeName: s.temple?.name ?? s.title,
+      city: s.temple?.city ?? '',
+      deity: s.temple?.deity ?? '',
+      status: 'live' as const,
+      viewers: s.viewerCount,
+    }));
+  const scheduledFromApi: DarshanStream[] = apiStreams
+    .filter((s) => String(s.status).toLowerCase() === 'scheduled')
+    .map((s) => ({
+      id: s.id,
+      templeName: s.temple?.name ?? s.title,
+      city: s.temple?.city ?? '',
+      deity: s.temple?.deity ?? '',
+      status: 'scheduled' as const,
+      viewers: 0,
+      scheduledTime: s.scheduledStartTime,
+    }));
+
+  const liveData = liveFromApi.length > 0 ? liveFromApi : liveStreams;
+  const scheduledData = scheduledFromApi.length > 0 ? scheduledFromApi : scheduledStreams;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await darshanQuery.refetch();
+    setRefreshing(false);
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -192,6 +228,7 @@ export default function DarshanScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Live Now Section */}
         <View style={styles.section}>
@@ -201,7 +238,7 @@ export default function DarshanScreen() {
               <Text style={styles.sectionTitle}>Live Now</Text>
             </View>
             <View style={styles.countBadge}>
-              <Text style={styles.countText}>{liveStreams.length}</Text>
+              <Text style={styles.countText}>{liveData.length}</Text>
             </View>
           </View>
 
@@ -220,7 +257,7 @@ export default function DarshanScreen() {
               <Text style={styles.sectionTitle}>Upcoming</Text>
             </View>
             <View style={styles.countBadge}>
-              <Text style={styles.countText}>{scheduledStreams.length}</Text>
+              <Text style={styles.countText}>{scheduledData.length}</Text>
             </View>
           </View>
 

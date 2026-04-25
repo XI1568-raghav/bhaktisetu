@@ -66,3 +66,51 @@ export type {
   RefreshResponse,
   MeResponse,
 } from "./hooks/auth.js";
+
+// ─── Store hooks ─────────────────────────────
+export {
+  useProducts,
+  useProduct,
+  useCollections,
+  useCart,
+  useAddToCart,
+  useUpdateCartItem,
+  useRemoveCartItem,
+  storeQueryKeys,
+} from "./hooks/store.js";
+export type { Product, Collection, CartItem, Cart, Order } from "./hooks/store.js";
+
+// ─── Provider portal hooks ───────────────────
+export {
+  useAstrologers,
+  useAstrologer,
+  useHoroscope,
+  useWellnessInstructors,
+  useWellnessSessions,
+  useWellnessPrograms,
+  useGaushalas,
+  useCows,
+  useAdoptionPlans,
+  usePriestDashboard,
+  usePriestBookings,
+  usePriestPayouts,
+  usePriestProfile,
+  useAdminDashboard,
+  useAdminUsers,
+  useAdminPendingApprovals,
+  useAdminRevenue,
+} from "./hooks/providers.js";
+export type {
+  Astrologer,
+  WellnessInstructor,
+  WellnessSession,
+  WellnessProgram,
+  Gaushala,
+  Cow,
+  AdoptionPlan,
+  PriestDashboard,
+  PriestBooking,
+  PriestPayout,
+  AdminDashboard,
+  AdminUser,
+} from "./hooks/providers.js";

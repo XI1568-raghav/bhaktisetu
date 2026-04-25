@@ -6,9 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { usePujas } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha';
@@ -138,6 +140,16 @@ const pujasData: Puja[] = [
   },
 ];
 
+function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
+  const d = deity.toLowerCase();
+  if (d.includes('shiva')) return 'shiva';
+  if (d.includes('vishnu') || d.includes('ram') || d.includes('krishna') || d.includes('hanuman')) return 'vishnu';
+  if (d.includes('devi') || d.includes('durga') || d.includes('lakshmi') || d.includes('saraswati')) return 'devi';
+  if (d.includes('ganesh') || d.includes('ganesha')) return 'ganesh';
+  if (d.includes('navagraha') || d.includes('graha')) return 'navagraha';
+  return 'shiva';
+}
+
 function PujaCard({ puja }: { puja: Puja }) {
   return (
     <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Alert.alert(puja.name, `${puja.description}\n\nDuration: ${puja.duration}\nPrice: ₹${puja.price.toLocaleString('en-IN')}`)}>
@@ -218,11 +230,44 @@ function PujaCard({ puja }: { puja: Puja }) {
 
 export default function PujasScreen() {
   const [activeCategory, setActiveCategory] = useState<PujaCategory>('all');
+  const pujasQuery = usePujas();
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Merge API pujas (names/deities) with fallback prices/ratings.
+  const apiPujas = pujasQuery.data?.data ?? [];
+  const sourceData: Puja[] = apiPujas.length > 0
+    ? apiPujas.map((p, i) => {
+        const fb = pujasData[i % pujasData.length]!;
+        const cat = inferCategory(p.deity);
+        return {
+          id: p.id,
+          name: p.name,
+          deity: p.deity,
+          category: cat,
+          temple: fb.temple,
+          city: fb.city,
+          price: fb.price,
+          nriPrice: fb.nriPrice,
+          rating: fb.rating,
+          reviews: fb.reviews,
+          duration: `${Math.round((p.durationMinutes ?? 120) / 60)}-${Math.round((p.durationMinutes ?? 120) / 60) + 1} hours`,
+          description: p.shortDescription ?? p.description ?? '',
+          hasVideoProof: true,
+          hasPrasadDelivery: true,
+        };
+      })
+    : pujasData;
 
   const filteredPujas =
     activeCategory === 'all'
-      ? pujasData
-      : pujasData.filter((p) => p.category === activeCategory);
+      ? sourceData
+      : sourceData.filter((p) => p.category === activeCategory);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await pujasQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -274,6 +319,7 @@ export default function PujasScreen() {
         renderItem={({ item }) => <PujaCard puja={item} />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="flame-outline" size={48} color={colors.stone[300]} />

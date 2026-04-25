@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useProducts } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -192,13 +194,50 @@ function ProductCard({ product }: { product: Product }) {
   );
 }
 
+function inferStoreCategory(handle?: string | null, title?: string | null): Exclude<StoreCategory, 'all'> {
+  const h = `${handle ?? ''} ${title ?? ''}`.toLowerCase();
+  if (h.includes('rudraksh')) return 'rudraksha';
+  if (h.includes('idol') || h.includes('murti') || h.includes('statue')) return 'idols';
+  if (h.includes('book') || h.includes('gita') || h.includes('granth')) return 'books';
+  if (h.includes('cloth') || h.includes('dhoti') || h.includes('saree') || h.includes('shawl')) return 'clothing';
+  return 'puja-items';
+}
+
 export default function StoreScreen() {
   const [activeCategory, setActiveCategory] = useState<StoreCategory>('all');
+  const productsQuery = useProducts();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const apiProducts = productsQuery.data?.products ?? [];
+  const sourceProducts: Product[] = apiProducts.length > 0
+    ? apiProducts.map((p, i) => {
+        const fb = productsData[i % productsData.length]!;
+        const price = (p as any).price ?? fb.price;
+        const original = (p as any).originalPrice ?? Math.round(price * 1.4);
+        return {
+          id: p.id,
+          name: p.title ?? fb.name,
+          category: inferStoreCategory(p.handle, p.title),
+          price,
+          originalPrice: original,
+          rating: fb.rating,
+          reviews: fb.reviews,
+          inStock: true,
+          tag: fb.tag,
+        };
+      })
+    : productsData;
 
   const filteredProducts =
     activeCategory === 'all'
-      ? productsData
-      : productsData.filter((p) => p.category === activeCategory);
+      ? sourceProducts
+      : sourceProducts.filter((p) => p.category === activeCategory);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await productsQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -262,6 +301,7 @@ export default function StoreScreen() {
         renderItem={({ item }) => <ProductCard product={item} />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="bag-outline" size={48} color={colors.stone[300]} />

@@ -5,9 +5,11 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useContent } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type ContentType = 'aarti' | 'chalisa' | 'mantra' | 'bhajan';
@@ -209,12 +211,44 @@ function ContentItemRow({
   );
 }
 
+function inferContentType(category?: string | null, title?: string | null): ContentType {
+  const c = `${category ?? ''} ${title ?? ''}`.toLowerCase();
+  if (c.includes('chalisa')) return 'chalisa';
+  if (c.includes('mantra') || c.includes('chant')) return 'mantra';
+  if (c.includes('bhajan')) return 'bhajan';
+  return 'aarti';
+}
+
 export default function ContentScreen() {
   const [activeTab, setActiveTab] = useState<ContentType>('aarti');
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const contentQuery = useContent();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredContent = contentData.filter((item) => item.type === activeTab);
-  const playingItem = contentData.find((item) => item.id === playingId);
+  const apiContent = contentQuery.data?.data ?? [];
+  const sourceContent: ContentItem[] = apiContent.length > 0
+    ? apiContent.map((c, i) => {
+        const fb = contentData[i % contentData.length]!;
+        const t = inferContentType((c as any).category, c.title);
+        return {
+          id: c.id,
+          title: c.title ?? fb.title,
+          type: t,
+          deity: (c as any).deity ?? fb.deity,
+          duration: (c as any).duration ?? fb.duration,
+          isAudio: true,
+        };
+      })
+    : contentData;
+
+  const filteredContent = sourceContent.filter((item) => item.type === activeTab);
+  const playingItem = sourceContent.find((item) => item.id === playingId);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await contentQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -278,6 +312,7 @@ export default function ContentScreen() {
           playingItem ? { paddingBottom: 100 } : undefined,
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons

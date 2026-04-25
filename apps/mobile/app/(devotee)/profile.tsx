@@ -6,9 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useBookings, useUserAddresses } from '@poojly/api-client';
+import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface QuickLink {
@@ -76,9 +80,9 @@ const moreLinks: QuickLink[] = [
   },
 ];
 
-function LinkRow({ link }: { link: QuickLink }) {
+function LinkRow({ link, onPress }: { link: QuickLink; onPress?: () => void }) {
   return (
-    <TouchableOpacity style={styles.linkRow} activeOpacity={0.6} onPress={() => Alert.alert(link.label, 'This feature is coming soon!')}>
+    <TouchableOpacity style={styles.linkRow} activeOpacity={0.6} onPress={onPress ?? (() => Alert.alert(link.label, 'This feature is coming soon!'))}>
       <View style={[styles.linkIcon, { backgroundColor: `${link.color}14` }]}>
         <Ionicons name={link.icon} size={20} color={link.color} />
       </View>
@@ -96,14 +100,72 @@ function LinkRow({ link }: { link: QuickLink }) {
   );
 }
 
+function getInitials(name?: string | null): string {
+  if (!name) return 'D';
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((p) => p.charAt(0).toUpperCase()).join('') || 'D';
+}
+
 export default function ProfileScreen() {
-  const [isAuthenticated] = useState(true);
+  const { user, isAuthenticated, signOut } = useAuth();
+  const bookingsQuery = useBookings();
+  const addressesQuery = useUserAddresses();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const bookingCount = bookingsQuery.data?.data?.length ?? 0;
+  const addressCount = addressesQuery.data?.data?.length ?? 0;
+  const phone = user?.phone ?? '';
+  const displayName = user?.fullName ?? 'Devotee';
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await Promise.all([bookingsQuery.refetch(), addressesQuery.refetch()]);
+    setRefreshing(false);
+  }
+
+  function handleSignOut() {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          router.replace('/(auth)/login' as any);
+        },
+      },
+    ]);
+  }
+
+  function handleSignIn() {
+    router.push('/(auth)/login' as any);
+  }
+
+  function handleQuickLink(id: string) {
+    if (id === 'bookings') {
+      router.push('/(devotee)/bookings' as any);
+      return;
+    }
+    if (id === 'addresses') {
+      Alert.alert('Addresses', `${addressCount} saved address${addressCount === 1 ? '' : 'es'}.`);
+      return;
+    }
+    Alert.alert('Coming Soon', 'This feature is coming soon!');
+  }
+
+  const dynamicQuickLinks: QuickLink[] = quickLinks.map((l) => {
+    if (l.id === 'bookings') {
+      return { ...l, badge: bookingCount > 0 ? String(bookingCount) : undefined };
+    }
+    return l;
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -116,26 +178,22 @@ export default function ProfileScreen() {
             <>
               {/* Avatar with initials */}
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>RK</Text>
+                <Text style={styles.avatarText}>{getInitials(displayName)}</Text>
               </View>
               <View style={styles.userInfo}>
-                <Text style={styles.userName}>Rajesh Kumar</Text>
-                <View style={styles.userMeta}>
-                  <Ionicons
-                    name="call-outline"
-                    size={13}
-                    color={colors.stone[400]}
-                  />
-                  <Text style={styles.userPhone}>+91 98765 43210</Text>
-                </View>
-                <View style={styles.userMeta}>
-                  <Ionicons
-                    name="location-outline"
-                    size={13}
-                    color={colors.stone[400]}
-                  />
-                  <Text style={styles.userCity}>Varanasi, UP</Text>
-                </View>
+                <Text style={styles.userName}>{displayName}</Text>
+                {phone ? (
+                  <View style={styles.userMeta}>
+                    <Ionicons name="call-outline" size={13} color={colors.stone[400]} />
+                    <Text style={styles.userPhone}>{phone}</Text>
+                  </View>
+                ) : null}
+                {user?.email ? (
+                  <View style={styles.userMeta}>
+                    <Ionicons name="mail-outline" size={13} color={colors.stone[400]} />
+                    <Text style={styles.userCity}>{user.email}</Text>
+                  </View>
+                ) : null}
               </View>
               <TouchableOpacity style={styles.editButton} activeOpacity={0.7} onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}>
                 <Ionicons name="create-outline" size={18} color={colors.saffron[600]} />
@@ -151,11 +209,11 @@ export default function ProfileScreen() {
               <Text style={styles.guestSubtitle}>
                 Sign in to book pujas, watch live darshan, and track your spiritual journey.
               </Text>
-              <TouchableOpacity style={styles.signInButton} activeOpacity={0.7} onPress={() => Alert.alert('Sign In', 'Authentication coming soon! Use demo mode to explore the app.')}>
+              <TouchableOpacity style={styles.signInButton} activeOpacity={0.7} onPress={handleSignIn}>
                 <Ionicons name="log-in-outline" size={20} color={colors.white} />
                 <Text style={styles.signInButtonText}>Sign In</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.createAccount} activeOpacity={0.7} onPress={() => Alert.alert('Create Account', 'Account creation coming soon!')}>
+              <TouchableOpacity style={styles.createAccount} activeOpacity={0.7} onPress={() => router.push('/(auth)/signup' as any)}>
                 <Text style={styles.createAccountText}>
                   New user?{' '}
                   <Text style={styles.createAccountLink}>Create Account</Text>
@@ -169,23 +227,18 @@ export default function ProfileScreen() {
         {isAuthenticated && (
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>12</Text>
-              <Text style={styles.statLabel}>Pujas</Text>
+              <Text style={styles.statValue}>{bookingCount}</Text>
+              <Text style={styles.statLabel}>Bookings</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>45h</Text>
-              <Text style={styles.statLabel}>Darshan</Text>
+              <Text style={styles.statValue}>{addressCount}</Text>
+              <Text style={styles.statLabel}>Addresses</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>8</Text>
-              <Text style={styles.statLabel}>Temples</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>28</Text>
-              <Text style={styles.statLabel}>Content</Text>
+              <Text style={styles.statValue}>{user?.role === 'devotee' ? 'Devotee' : (user?.role ?? '—')}</Text>
+              <Text style={styles.statLabel}>Role</Text>
             </View>
           </View>
         )}
@@ -194,10 +247,10 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Links</Text>
           <View style={styles.linksCard}>
-            {quickLinks.map((link, index) => (
+            {dynamicQuickLinks.map((link, index) => (
               <React.Fragment key={link.id}>
-                <LinkRow link={link} />
-                {index < quickLinks.length - 1 && (
+                <LinkRow link={link} onPress={() => handleQuickLink(link.id)} />
+                {index < dynamicQuickLinks.length - 1 && (
                   <View style={styles.divider} />
                 )}
               </React.Fragment>
@@ -211,7 +264,7 @@ export default function ProfileScreen() {
           <View style={styles.linksCard}>
             {moreLinks.map((link, index) => (
               <React.Fragment key={link.id}>
-                <LinkRow link={link} />
+                <LinkRow link={link} onPress={() => handleQuickLink(link.id)} />
                 {index < moreLinks.length - 1 && (
                   <View style={styles.divider} />
                 )}
@@ -222,7 +275,7 @@ export default function ProfileScreen() {
 
         {/* Sign Out (if authenticated) */}
         {isAuthenticated && (
-          <TouchableOpacity style={styles.signOutButton} activeOpacity={0.7} onPress={() => Alert.alert('Sign Out', 'Are you sure you want to sign out?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign Out', style: 'destructive', onPress: () => Alert.alert('Signed Out', 'You have been signed out.') }])}>
+          <TouchableOpacity style={styles.signOutButton} activeOpacity={0.7} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={20} color={colors.red[600]} />
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
