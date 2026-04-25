@@ -163,6 +163,7 @@ const footerSections = [
       { href: "/privacy", label: "Privacy Policy" },
       { href: "/terms", label: "Terms of Service" },
       { href: "/refunds", label: "Refund Policy" },
+      { href: "/credits", label: "Image Credits" },
     ],
   },
 ];
