@@ -277,6 +277,35 @@ export async function authRoutes(server: FastifyInstance) {
   server.get('/me', { preHandler: [authenticateUser] }, async (request, reply) => {
     const currentUser = request.currentUser!;
 
+    // Demo users have synthetic ids like "demo-pandit" that aren't UUIDs;
+    // return the in-memory profile directly without hitting Postgres.
+    if (currentUser.id.startsWith('demo-')) {
+      return reply.code(200).send({
+        success: true,
+        user: {
+          id: currentUser.id,
+          phone: currentUser.phone,
+          email: currentUser.email,
+          fullName: currentUser.fullName,
+          avatarUrl: null,
+          preferredLanguage: 'en',
+          locationCity: null,
+          locationState: null,
+          isNri: false,
+          nriCountry: null,
+          gotra: null,
+          nakshatra: null,
+          rashi: null,
+          subscriptionTier: currentUser.subscriptionTier,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          addresses: [],
+          activeSubscription: null,
+          roles: currentUser.roles,
+        },
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: currentUser.id },
       include: {
