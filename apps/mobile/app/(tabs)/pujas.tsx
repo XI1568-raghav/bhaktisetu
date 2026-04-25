@@ -5,6 +5,7 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -139,7 +140,8 @@ const pujasData: Puja[] = [
 
 function PujaCard({ puja }: { puja: Puja }) {
   return (
-    <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Alert.alert(puja.name, `${puja.description}\n\nDuration: ${puja.duration}\nPrice: ₹${puja.price.toLocaleString('en-IN')}`)}>
+
       {/* Image placeholder */}
       <View style={styles.pujaImageArea}>
         <Ionicons name="flame" size={32} color={colors.saffron[300]} />
@@ -205,7 +207,7 @@ function PujaCard({ puja }: { puja: Puja }) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.bookButton} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.bookButton} activeOpacity={0.7} onPress={() => Alert.alert('Book Puja', `Booking for ${puja.name} is coming soon! Stay tuned.`)}>
           <Ionicons name="calendar-outline" size={16} color={colors.white} />
           <Text style={styles.bookButtonText}>Book Puja</Text>
         </TouchableOpacity>

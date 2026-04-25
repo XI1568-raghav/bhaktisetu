@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -107,6 +108,7 @@ function StreamCard({ stream }: { stream: DarshanStream }) {
     <TouchableOpacity
       style={[styles.streamCard, { width: CARD_WIDTH }]}
       activeOpacity={0.7}
+      onPress={() => Alert.alert(stream.templeName, `${isLive ? '🔴 LIVE NOW' : `Scheduled: ${stream.scheduledTime}`}\n${stream.deity} • ${stream.city}`)}
     >
       {/* Stream preview placeholder */}
       <View style={styles.streamPreview}>
@@ -238,7 +240,7 @@ export default function DarshanScreen() {
               Enable notifications to get alerts when your favorite temples go live.
             </Text>
           </View>
-          <TouchableOpacity style={styles.reminderButton} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.reminderButton} activeOpacity={0.7} onPress={() => Alert.alert('Notifications Enabled', 'You will be notified before your favourite temples go live.')}>
             <Text style={styles.reminderButtonText}>Enable</Text>
           </TouchableOpacity>
         </View>

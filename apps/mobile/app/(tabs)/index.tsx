@@ -6,7 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
@@ -103,14 +105,14 @@ export default function HomeScreen() {
               <Text style={styles.welcomeText}>Welcome to Poojly</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationBtn}>
+          <TouchableOpacity style={styles.notificationBtn} onPress={() => Alert.alert('Notifications', 'No new notifications at this time.')}>
             <Ionicons name="notifications-outline" size={24} color={colors.stone[700]} />
             <View style={styles.notifBadge} />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity style={styles.searchBar} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.searchBar} activeOpacity={0.7} onPress={() => router.push('/(tabs)/pujas')}>
           <Ionicons name="search" size={20} color={colors.stone[400]} />
           <Text style={styles.searchPlaceholder}>
             Search temples, pujas, content...
@@ -124,7 +126,7 @@ export default function HomeScreen() {
               <View style={styles.liveDot} />
               <Text style={styles.sectionTitle}>Live Darshan</Text>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/darshan')}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -134,7 +136,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.horizontalScroll}
           >
             {liveDarshanData.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.darshanCard} activeOpacity={0.8}>
+              <TouchableOpacity key={item.id} style={styles.darshanCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/darshan')}>
                 <View style={styles.darshanImagePlaceholder}>
                   <Ionicons name="videocam" size={32} color={colors.saffron[300]} />
                   <View style={styles.liveBadge}>
@@ -171,7 +173,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Popular Pujas</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/pujas')}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -181,7 +183,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.horizontalScroll}
           >
             {popularPujas.map((puja) => (
-              <TouchableOpacity key={puja.id} style={styles.pujaCard} activeOpacity={0.8}>
+              <TouchableOpacity key={puja.id} style={styles.pujaCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/pujas')}>
                 <View style={styles.pujaIconContainer}>
                   <Ionicons name="flame" size={28} color={colors.saffron[500]} />
                 </View>
@@ -213,7 +215,7 @@ export default function HomeScreen() {
             <View style={styles.panchangHeader}>
               <Ionicons name="sunny" size={20} color={colors.saffron[500]} />
               <Text style={styles.panchangDate}>
-                Wednesday, April 15, 2026
+                {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </Text>
             </View>
             <View style={styles.panchangGrid}>
@@ -254,7 +256,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Ask AI Pandit FAB */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => Alert.alert('AI Pandit', 'Coming soon! Our AI spiritual advisor will be available very soon.')}>
         <Ionicons name="sparkles" size={24} color={colors.white} />
         <Text style={styles.fabText}>Ask AI Pandit</Text>
       </TouchableOpacity>

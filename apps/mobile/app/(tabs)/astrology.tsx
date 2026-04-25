@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -171,6 +172,7 @@ export default function AstrologyScreen() {
                 key={service.id}
                 style={styles.serviceCard}
                 activeOpacity={0.7}
+                onPress={() => Alert.alert(service.name, `${service.description}\n\nDuration: ${service.duration}\nPrice: ₹${service.price}`)}
               >
                 <View style={styles.serviceIconContainer}>
                   <Ionicons name={service.icon} size={22} color={colors.saffron[600]} />
@@ -204,7 +206,7 @@ export default function AstrologyScreen() {
             <Text style={styles.aiCardDescription}>
               Get instant astrological insights powered by AI. Ask about your birth chart, compatibility, muhurat, and more.
             </Text>
-            <TouchableOpacity style={styles.aiButton} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.aiButton} activeOpacity={0.7} onPress={() => Alert.alert('AI Jyotish Assistant', 'Your personal AI astrologer is coming soon!')}>
               <Ionicons name="chatbubble-ellipses" size={16} color={colors.white} />
               <Text style={styles.aiButtonText}>Ask AI Jyotish</Text>
             </TouchableOpacity>

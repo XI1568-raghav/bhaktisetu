@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -208,6 +209,7 @@ function YogaContent() {
             key={session.id}
             style={[styles.sessionCard, { width: CARD_WIDTH }]}
             activeOpacity={0.7}
+            onPress={() => Alert.alert(session.title, `Instructor: ${session.instructor}\nDuration: ${session.duration}\nLevel: ${session.level}`)}
           >
             <View style={styles.sessionImageArea}>
               <Ionicons name="body" size={28} color={colors.saffron[300]} />
@@ -228,9 +230,10 @@ function YogaContent() {
               <Text style={styles.sessionCategory}>{session.category}</Text>
               <View style={styles.sessionMeta}>
                 <Text style={styles.sessionInstructor}>{session.instructor}</Text>
-                <Text style={styles.sessionDuration}>
-                  <Ionicons name="time-outline" size={10} color={colors.stone[400]} /> {session.duration}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="time-outline" size={10} color={colors.stone[400]} />
+                  <Text style={styles.sessionDuration}>{session.duration}</Text>
+                </View>
               </View>
               {session.isLive && (
                 <View style={styles.participantsRow}>
@@ -248,8 +251,7 @@ function YogaContent() {
   );
 }
 
-function MeditationContent() {
-  const [playingId, setPlayingId] = useState<string | null>(null);
+function MeditationContent({ playingId, setPlayingId }: { playingId: string | null; setPlayingId: (id: string | null) => void }) {
 
   return (
     <ScrollView
@@ -261,7 +263,7 @@ function MeditationContent() {
         <Text style={styles.quickStartTitle}>Quick Meditation</Text>
         <View style={styles.quickStartRow}>
           {['5 min', '10 min', '15 min', '20 min'].map((d) => (
-            <TouchableOpacity key={d} style={styles.quickStartButton} activeOpacity={0.7}>
+            <TouchableOpacity key={d} style={styles.quickStartButton} activeOpacity={0.7} onPress={() => Alert.alert('Meditation Started', `Starting ${d} meditation session. Find a quiet place and breathe deeply.`)}>
               <Ionicons name="play" size={14} color={colors.saffron[600]} />
               <Text style={styles.quickStartButtonText}>{d}</Text>
             </TouchableOpacity>
@@ -331,7 +333,7 @@ function AyurvedaContent() {
         <Text style={styles.doshaSubtext}>
           Take a quick quiz to understand your Ayurvedic body type (Vata, Pitta, or Kapha).
         </Text>
-        <TouchableOpacity style={styles.doshaButton} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.doshaButton} activeOpacity={0.7} onPress={() => Alert.alert('Dosha Quiz', 'Discover your Ayurvedic constitution. Quiz coming soon!')}>
           <Ionicons name="clipboard-outline" size={16} color={colors.white} />
           <Text style={styles.doshaButtonText}>Take the Quiz</Text>
         </TouchableOpacity>
@@ -340,7 +342,7 @@ function AyurvedaContent() {
       {/* Tips */}
       <Text style={styles.contentSectionTitle}>Ayurveda Wisdom</Text>
       {ayurvedaTips.map((tip) => (
-        <TouchableOpacity key={tip.id} style={styles.tipCard} activeOpacity={0.7}>
+        <TouchableOpacity key={tip.id} style={styles.tipCard} activeOpacity={0.7} onPress={() => Alert.alert(tip.title, tip.description)}>
           <View style={styles.tipIconContainer}>
             <Ionicons name={tip.icon} size={22} color={colors.green[600]} />
           </View>
@@ -362,6 +364,7 @@ function AyurvedaContent() {
 
 export default function WellnessScreen() {
   const [activeTab, setActiveTab] = useState<WellnessTab>('yoga');
+  const [meditationPlayingId, setMeditationPlayingId] = useState<string | null>(null);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -401,7 +404,7 @@ export default function WellnessScreen() {
 
       {/* Content */}
       {activeTab === 'yoga' && <YogaContent />}
-      {activeTab === 'meditation' && <MeditationContent />}
+      {activeTab === 'meditation' && <MeditationContent playingId={meditationPlayingId} setPlayingId={setMeditationPlayingId} />}
       {activeTab === 'ayurveda' && <AyurvedaContent />}
     </SafeAreaView>
   );

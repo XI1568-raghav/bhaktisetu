@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,7 +78,7 @@ const moreLinks: QuickLink[] = [
 
 function LinkRow({ link }: { link: QuickLink }) {
   return (
-    <TouchableOpacity style={styles.linkRow} activeOpacity={0.6}>
+    <TouchableOpacity style={styles.linkRow} activeOpacity={0.6} onPress={() => Alert.alert(link.label, 'This feature is coming soon!')}>
       <View style={[styles.linkIcon, { backgroundColor: `${link.color}14` }]}>
         <Ionicons name={link.icon} size={20} color={link.color} />
       </View>
@@ -96,7 +97,7 @@ function LinkRow({ link }: { link: QuickLink }) {
 }
 
 export default function ProfileScreen() {
-  const [isAuthenticated] = useState(false);
+  const [isAuthenticated] = useState(true);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -136,7 +137,7 @@ export default function ProfileScreen() {
                   <Text style={styles.userCity}>Varanasi, UP</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.editButton} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.editButton} activeOpacity={0.7} onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}>
                 <Ionicons name="create-outline" size={18} color={colors.saffron[600]} />
               </TouchableOpacity>
             </>
@@ -150,11 +151,11 @@ export default function ProfileScreen() {
               <Text style={styles.guestSubtitle}>
                 Sign in to book pujas, watch live darshan, and track your spiritual journey.
               </Text>
-              <TouchableOpacity style={styles.signInButton} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.signInButton} activeOpacity={0.7} onPress={() => Alert.alert('Sign In', 'Authentication coming soon! Use demo mode to explore the app.')}>
                 <Ionicons name="log-in-outline" size={20} color={colors.white} />
                 <Text style={styles.signInButtonText}>Sign In</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.createAccount} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.createAccount} activeOpacity={0.7} onPress={() => Alert.alert('Create Account', 'Account creation coming soon!')}>
                 <Text style={styles.createAccountText}>
                   New user?{' '}
                   <Text style={styles.createAccountLink}>Create Account</Text>
@@ -221,7 +222,7 @@ export default function ProfileScreen() {
 
         {/* Sign Out (if authenticated) */}
         {isAuthenticated && (
-          <TouchableOpacity style={styles.signOutButton} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.signOutButton} activeOpacity={0.7} onPress={() => Alert.alert('Sign Out', 'Are you sure you want to sign out?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign Out', style: 'destructive', onPress: () => Alert.alert('Signed Out', 'You have been signed out.') }])}>
             <Ionicons name="log-out-outline" size={20} color={colors.red[600]} />
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
