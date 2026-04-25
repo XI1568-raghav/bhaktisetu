@@ -18,10 +18,10 @@ describe('StoreService.getProducts', () => {
     const result = service.getProducts({});
     expect(result.products).toBeInstanceOf(Array);
     expect(result.products.length).toBeGreaterThan(0);
-    expect(result.total).toBe(12); // 12 hardcoded products
+    expect(result.total).toBe(24); // 24 hardcoded products
     expect(result.page).toBe(1);
     expect(result.limit).toBe(20);
-    expect(result.totalPages).toBe(1);
+    expect(result.totalPages).toBe(2);
   });
 
   it('filters by collection', () => {
@@ -40,7 +40,7 @@ describe('StoreService.getProducts', () => {
 
   it('filters by category (case-insensitive)', () => {
     const result = service.getProducts({ category: 'Idols & Murtis' });
-    expect(result.products.length).toBe(2);
+    expect(result.products.length).toBe(3);
     result.products.forEach((p) => {
       expect(p.category.toLowerCase()).toBe('idols & murtis');
     });
@@ -112,7 +112,7 @@ describe('StoreService.getProducts', () => {
   it('sorts by newest (reversed order)', () => {
     const result = service.getProducts({ sort: 'newest' });
     // The last product in the array should come first when sorted by newest
-    expect(result.products[0]!.id).toBe('prod_012');
+    expect(result.products[0]!.id).toBe('prod_024');
   });
 
   it('default sort is by review count (popular)', () => {
@@ -130,14 +130,14 @@ describe('StoreService.getProducts', () => {
 
     expect(page1.products.length).toBe(3);
     expect(page2.products.length).toBe(3);
-    expect(page1.totalPages).toBe(4); // 12 products / 3 per page = 4
+    expect(page1.totalPages).toBe(8); // 24 products / 3 per page = 8
     expect(page1.products[0]!.id).not.toBe(page2.products[0]!.id);
   });
 
   it('returns empty array for page beyond total', () => {
     const result = service.getProducts({ page: 100, limit: 20 });
     expect(result.products).toHaveLength(0);
-    expect(result.total).toBe(12);
+    expect(result.total).toBe(24);
   });
 
   it('combines collection filter with sort', () => {
@@ -191,7 +191,7 @@ describe('StoreService.getCollections', () => {
   it('returns all collections', () => {
     const collections = service.getCollections();
     expect(collections).toBeInstanceOf(Array);
-    expect(collections.length).toBe(7);
+    expect(collections.length).toBe(8);
   });
 
   it('each collection has required fields', () => {
