@@ -445,7 +445,7 @@ export default function SignupPage() {
   const renderRoleSelection = () => (
     <div className="px-6 py-6">
       <h2 className="text-base font-semibold text-surface-800 mb-1">Choose your role</h2>
-      <p className="text-sm text-surface-500 mb-5">Select how you want to use Poojly</p>
+      <p className="text-sm text-surface-500 mb-5">Select how you want to use Darshya</p>
 
       <div className="grid grid-cols-2 gap-3">
         {roleOptions.map((option) => (
@@ -899,7 +899,7 @@ export default function SignupPage() {
         </div>
 
         <h2 className="text-lg font-semibold text-surface-800 mb-2">
-          {isProvider ? 'Account Created!' : 'Welcome to Poojly!'}
+          {isProvider ? 'Account Created!' : 'Welcome to Darshya!'}
         </h2>
 
         {isProvider ? (

@@ -75,7 +75,7 @@ export default function NewTicketPage() {
       orderId: orderId.trim() || undefined,
       attachmentName: attachmentName || undefined,
       userName: 'You',
-      userEmail: 'you@poojly.com',
+      userEmail: 'you@darshya.online',
       messages: [
         {
           id: `m-${Date.now()}`,
@@ -87,7 +87,7 @@ export default function NewTicketPage() {
         {
           id: `m-${Date.now() + 1}`,
           author: 'system',
-          authorName: 'Poojly Support',
+          authorName: 'Darshya Support',
           body: 'Thanks! Expected first response: 4 hours. Ticket assigned to support team.',
           createdAt: now,
         },

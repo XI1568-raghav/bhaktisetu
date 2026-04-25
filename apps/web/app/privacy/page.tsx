@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "Poojly\u2019s privacy policy. Learn how we collect, use, and protect your personal and devotional data.",
+    "Darshya\u2019s privacy policy. Learn how we collect, use, and protect your personal and devotional data.",
 };
 
 export default function PrivacyPage() {
@@ -43,9 +43,9 @@ export default function PrivacyPage() {
           <div className="space-y-10">
             <PolicySection title="1. Introduction">
               <p>
-                Poojly Technologies Private Limited (&quot;Poojly,&quot; &quot;we,&quot;
-                &quot;our,&quot; or &quot;us&quot;) operates the Poojly platform, including the
-                website at poojly.com, mobile applications, and related
+                Darshya Technologies Private Limited (&quot;Darshya,&quot; &quot;we,&quot;
+                &quot;our,&quot; or &quot;us&quot;) operates the Darshya platform, including the
+                website at darshya.online, mobile applications, and related
                 services (collectively, the &quot;Platform&quot;). This Privacy Policy
                 explains how we collect, use, disclose, and protect your
                 information when you use our Platform.
@@ -197,7 +197,7 @@ export default function PrivacyPage() {
                 active. Booking records and transaction history are retained for
                 7 years as required by Indian tax and accounting regulations.
                 You may request deletion of your account and associated data at
-                any time by contacting support@poojly.com. Upon deletion,
+                any time by contacting support@darshya.online. Upon deletion,
                 we remove personal data within 30 days, except where retention
                 is required by law.
               </p>
@@ -226,13 +226,13 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 To exercise any of these rights, email us at
-                privacy@poojly.com with your registered email address.
+                privacy@darshya.online with your registered email address.
               </p>
             </PolicySection>
 
             <PolicySection title="9. Children's Privacy">
               <p>
-                Poojly is not directed at children under the age of 13. We
+                Darshya is not directed at children under the age of 13. We
                 do not knowingly collect personal information from children. If
                 we become aware that a child under 13 has provided us with
                 personal data, we will take steps to delete such information.
@@ -256,9 +256,9 @@ export default function PrivacyPage() {
                 For privacy-related queries or to exercise your data rights:
               </p>
               <ul>
-                <li>Email: privacy@poojly.com</li>
+                <li>Email: privacy@darshya.online</li>
                 <li>
-                  Mail: Poojly Technologies Pvt. Ltd., HSR Layout,
+                  Mail: Darshya Technologies Pvt. Ltd., HSR Layout,
                   Bengaluru &ndash; 560102, Karnataka, India
                 </li>
               </ul>

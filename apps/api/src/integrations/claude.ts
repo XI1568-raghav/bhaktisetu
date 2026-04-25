@@ -41,7 +41,7 @@ const DEMO_TOPICS: DemoTopic[] = [
 
 Love and companionship, when aligned with dharma, are among life's greatest blessings.
 
-💡 **On Poojly:** Book a **Vivah Puja** or **Gauri Shankar Puja** with verified priests at renowned temples. Check your **rashi compatibility** in our Astrology section for astrological guidance.`,
+💡 **On Darshya:** Book a **Vivah Puja** or **Gauri Shankar Puja** with verified priests at renowned temples. Check your **rashi compatibility** in our Astrology section for astrological guidance.`,
   },
 
   // ─── Health & Healing ─────────────────────────────────────────────────
@@ -72,7 +72,7 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 
 ⚕️ *Note: Spiritual healing complements medical treatment. Always consult qualified doctors for health concerns.*
 
-💡 **On Poojly:** Book a **Mahamrityunjaya Japa** (11,000 chants) or **Dhanvantari Puja** for healing blessings. Watch **Live Darshan** for daily peace.`,
+💡 **On Darshya:** Book a **Mahamrityunjaya Japa** (11,000 chants) or **Dhanvantari Puja** for healing blessings. Watch **Live Darshan** for daily peace.`,
   },
 
   // ─── Children & Blessings ─────────────────────────────────────────────
@@ -100,7 +100,7 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - **Saraswati Puja** — for wisdom and academic success
 - **Aksharabhyasam** — the traditional learning initiation ceremony
 
-💡 **On Poojly:** Book **Santana Gopala Puja** or **Naamkaran Sanskar** for newborns with verified priests across India.`,
+💡 **On Darshya:** Book **Santana Gopala Puja** or **Naamkaran Sanskar** for newborns with verified priests across India.`,
   },
 
   // ─── Education & Career ───────────────────────────────────────────────
@@ -129,7 +129,7 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - Light a diya at your workspace or study table
 - Place a Saraswati idol or image in the northeast corner of your room
 
-💡 **On Poojly:** Book **Ganesh Puja**, **Saraswati Puja**, or **Navagraha Puja** with verified priests. Explore our **Content** section for mantras and study guidance.`,
+💡 **On Darshya:** Book **Ganesh Puja**, **Saraswati Puja**, or **Navagraha Puja** with verified priests. Explore our **Content** section for mantras and study guidance.`,
   },
 
   // ─── Grief & Loss ─────────────────────────────────────────────────────
@@ -159,7 +159,7 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 
 The Gita teaches that the soul is eternal, indestructible, and transcendent. Your loved ones live on in the cosmic cycle.
 
-💡 **On Poojly:** Book **Shraddha Puja**, **Pind Daan**, or **Narayan Bali Puja** at verified temples. Our priests perform with full Vedic rites and provide video proof.`,
+💡 **On Darshya:** Book **Shraddha Puja**, **Pind Daan**, or **Narayan Bali Puja** at verified temples. Our priests perform with full Vedic rites and provide video proof.`,
   },
 
   // ─── Festivals & Celebrations ─────────────────────────────────────────
@@ -186,7 +186,7 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 *"सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः"*
 *"May all beings be happy, may all beings be free from disease."*
 
-💡 **On Poojly:** Book **festival-specific pujas** at temples across India. Watch **Live Darshan** during festivals for special aartis and celebrations.`,
+💡 **On Darshya:** Book **festival-specific pujas** at temples across India. Watch **Live Darshan** during festivals for special aartis and celebrations.`,
   },
 
   // ─── Daily Worship / Routine ──────────────────────────────────────────
@@ -224,7 +224,7 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 - Friday: Lakshmi/Santoshi Maa Puja
 - Saturday: Shani Dev Puja, help the needy
 
-💡 **On Poojly:** Explore our **Content** section for mantras, aartis, and chalisa. Watch **Live Darshan** from 50+ temples daily.`,
+💡 **On Darshya:** Explore our **Content** section for mantras, aartis, and chalisa. Watch **Live Darshan** from 50+ temples daily.`,
   },
 
   // ─── Meditation & Yoga ────────────────────────────────────────────────
@@ -260,7 +260,7 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 *"योगश्चित्तवृत्तिनिरोधः"*
 *"Yoga is the cessation of the fluctuations of the mind."*
 
-💡 **On Poojly:** Join **Live Yoga & Meditation** sessions with certified instructors. Explore our **Wellness** section for guided practices.`,
+💡 **On Darshya:** Join **Live Yoga & Meditation** sessions with certified instructors. Explore our **Wellness** section for guided practices.`,
   },
 
   // ─── Dreams & Interpretation ──────────────────────────────────────────
@@ -293,7 +293,7 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 
 Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant and prophetic.
 
-💡 **On Poojly:** Consult an **Astrologer** for detailed dream analysis based on your birth chart. Book a **Navagraha Puja** if recurring disturbing dreams persist.`,
+💡 **On Darshya:** Consult an **Astrologer** for detailed dream analysis based on your birth chart. Book a **Navagraha Puja** if recurring disturbing dreams persist.`,
   },
 
   // ─── Vastu Shastra ────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 4. Avoid **mirrors** in the bedroom facing the bed
 5. Place a **Tulsi plant** at the entrance for positive energy
 
-💡 **On Poojly:** Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** for your new home. Consult our **Vastu expert astrologers** for personalized guidance.`,
+💡 **On Darshya:** Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** for your new home. Consult our **Vastu expert astrologers** for personalized guidance.`,
   },
 
   // ─── Numerology ───────────────────────────────────────────────────────
@@ -356,7 +356,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 - If your number is 4 (Rahu): Worship Lord Ganesha, donate to the needy
 - If your number is 7 (Ketu): Meditate daily, visit spiritual places
 
-💡 **On Poojly:** Consult a **Numerologist** in our Astrology section for detailed analysis. Book a **Navagraha Puja** to strengthen weak planetary numbers.`,
+💡 **On Darshya:** Consult a **Numerologist** in our Astrology section for detailed analysis. Book a **Navagraha Puja** to strengthen weak planetary numbers.`,
   },
 
   // ─── Gemstones ────────────────────────────────────────────────────────
@@ -381,7 +381,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 
 ⚠️ **Important:** Never wear a gemstone without consulting your birth chart. A wrongly chosen gem can have adverse effects.
 
-💡 **On Poojly:** Get a **personalized gemstone recommendation** from our verified astrologers. Each gem is energized with proper Vedic mantras before delivery.`,
+💡 **On Darshya:** Get a **personalized gemstone recommendation** from our verified astrologers. Each gem is energized with proper Vedic mantras before delivery.`,
   },
 
   // ─── Pilgrimage / Yatra ───────────────────────────────────────────────
@@ -411,7 +411,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 - Take a sankalp (sacred intention) before beginning the yatra
 - Offer prayers at each temple, donate to the needy along the way
 
-💡 **On Poojly:** Plan your **Dharmic Yatra** with verified travel companions. Book **temple pujas in advance** for VIP darshan. Watch **Live Darshan** if you can't travel.`,
+💡 **On Darshya:** Plan your **Dharmic Yatra** with verified travel companions. Book **temple pujas in advance** for VIP darshan. Watch **Live Darshan** if you can't travel.`,
   },
 
   // ─── Family Harmony ───────────────────────────────────────────────────
@@ -446,7 +446,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 *"सुहृन्मित्रार्युदासीनमध्यस्थद्वेष्यबन्धुषु"*
 *"The wise see all with equanimity — friends, foes, and family alike."*
 
-💡 **On Poojly:** Book a **Satyanarayan Katha** or **Griha Shanti Puja** for your family. Our verified priests perform pujas with full Vedic rites at your home or temple.`,
+💡 **On Darshya:** Book a **Satyanarayan Katha** or **Griha Shanti Puja** for your family. Our verified priests perform pujas with full Vedic rites at your home or temple.`,
   },
 
   // ─── Wealth & Prosperity ──────────────────────────────────────────────
@@ -479,7 +479,7 @@ Chant 108 times on Fridays for prosperity.
 5. Donate 10% of income (Dashaamsha) — giving opens channels of receiving
 6. Never keep broken mirrors, clocks, or chipped items at home
 
-💡 **On Poojly:** Book **Lakshmi Puja**, **Kubera Puja**, or **Sri Suktam Homa** with verified priests. Visit our **Store** for authentic Shri Yantras and Lakshmi idols.`,
+💡 **On Darshya:** Book **Lakshmi Puja**, **Kubera Puja**, or **Sri Suktam Homa** with verified priests. Visit our **Store** for authentic Shri Yantras and Lakshmi idols.`,
   },
 
   // ─── Duty / Karma ─────────────────────────────────────────────────────
@@ -499,7 +499,7 @@ This verse teaches us that we should focus on doing our best work without being 
 
 The Gita teaches that every person has a unique role (svadharma) and fulfilling it with dedication and detachment is the path to spiritual growth.
 
-💡 **On Poojly:** Explore our **Content** section for the complete Bhagavad Gita with translations. Book a **Gita Path** ceremony with verified priests.`,
+💡 **On Darshya:** Explore our **Content** section for the complete Bhagavad Gita with translations. Book a **Gita Path** ceremony with verified priests.`,
   },
 
   // ─── Peace / Mantras ──────────────────────────────────────────────────
@@ -525,7 +525,7 @@ This powerful Shiva mantra removes fear and anxiety, bringing deep peace.
 
 **Regular practice tip:** Chant any of these mantras 108 times using a mala (prayer beads) during Brahma Muhurta (4:00-6:00 AM) for maximum benefit.
 
-💡 **On Poojly:** Listen to professionally chanted mantras in our **Content** section. Book a **Shanti Puja** for deep peace. Join our **Wellness** sessions for guided meditation.`,
+💡 **On Darshya:** Listen to professionally chanted mantras in our **Content** section. Book a **Shanti Puja** for deep peace. Join our **Wellness** sessions for guided meditation.`,
   },
 
   // ─── Dharma / Purpose ─────────────────────────────────────────────────
@@ -552,7 +552,7 @@ The Mahabharata defines dharma beautifully:
 
 In practice, dharma means doing what is right, fulfilling your responsibilities, and living with integrity and compassion toward all beings.
 
-💡 **On Poojly:** Explore our **Content** section for dharmic teachings from the Gita, Upanishads, and Ramayana. **Ask Pandit Ji** for personalized spiritual guidance.`,
+💡 **On Darshya:** Explore our **Content** section for dharmic teachings from the Gita, Upanishads, and Ramayana. **Ask Pandit Ji** for personalized spiritual guidance.`,
   },
 ];
 
@@ -582,7 +582,7 @@ This reminds us that divine guidance is always available to those who seek it si
 
 *"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
 
-💡 **On Poojly:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a verified priest for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
+💡 **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a verified priest for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
 }
 
 // ─── Streaming Chat ────────────────────────────────────────────────────────────

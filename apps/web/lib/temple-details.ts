@@ -202,7 +202,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
       {
         name: 'Anjali Mishra',
         city: 'Delhi',
-        text: 'Booked Mangala Aarti through Poojly and reached Gate 4 at 2:30 AM. Pandit ji guided us throughout — the sight of Baba at 3 AM was something I will never forget.',
+        text: 'Booked Mangala Aarti through Darshya and reached Gate 4 at 2:30 AM. Pandit ji guided us throughout — the sight of Baba at 3 AM was something I will never forget.',
         rating: 5,
       },
       {
@@ -362,7 +362,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
     testimonials: [
       { name: 'Ketan Patel', city: 'Ahmedabad', text: 'Booked the Light & Sound VIP seating plus next-morning VIP darshan — seamless flow. Prasad delivery reached home in 4 days.', rating: 5 },
       { name: 'Sushma Rao', city: 'Hyderabad', text: 'Laghu Rudra was performed with full vidhi. Eleven priests chanting in unison at the Aadi Jyotirlinga is indescribable.', rating: 5 },
-      { name: 'Ashish Mehra', city: 'Delhi', text: 'Organised a family visit during Kartik Purnima. Booking through Poojly saved us hours.', rating: 4 },
+      { name: 'Ashish Mehra', city: 'Delhi', text: 'Organised a family visit during Kartik Purnima. Booking through Darshya saved us hours.', rating: 4 },
     ],
     faqs: [
       { q: 'Is Somnath open during monsoon?', a: 'Yes, open year-round. Monsoon (June–September) has pleasant weather but can be windy.' },
@@ -658,7 +658,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
     testimonials: [
       { name: 'Jitendra Rana', city: 'Delhi', text: 'Trekked from Gaurikund — 7 hours up. The moment you see the Kedarnath temple against the snow peaks, the fatigue vanishes.', rating: 5 },
       { name: 'Lata Prabhu', city: 'Mumbai', text: 'Booked helicopter and Mahabhishek together. Touched the lingam — tears just flowed. Pure Mahadev.', rating: 5 },
-      { name: 'Ramesh Agarwal', city: 'Kolkata', text: 'Poojly arranged the puja and priests booked in advance. No hassle on ground.', rating: 5 },
+      { name: 'Ramesh Agarwal', city: 'Kolkata', text: 'Darshya arranged the puja and priests booked in advance. No hassle on ground.', rating: 5 },
     ],
     faqs: [
       { q: 'When is Kedarnath open?', a: 'Late April/May (Akshaya Tritiya) to October/November (Bhai Dooj). Exact dates announced yearly.' },
@@ -821,7 +821,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
       'Trimbakeshwar is THE place for Kaal Sarp Dosh Nivaran and Narayan Nagbali pujas — pilgrims come from across India specifically for these. Book priest and accommodation well in advance. Antargruha darshan is only on Mondays.',
     testimonials: [
       { name: 'Anup Khurana', city: 'Delhi', text: 'Did Narayan Nagbali over 3 days — life-changing experience. Priests were patient and explained every step.', rating: 5 },
-      { name: 'Sonali Deshmukh', city: 'Pune', text: 'Kaal Sarp Dosh puja done properly. Booking via Poojly was transparent, no haggling.', rating: 5 },
+      { name: 'Sonali Deshmukh', city: 'Pune', text: 'Kaal Sarp Dosh puja done properly. Booking via Darshya was transparent, no haggling.', rating: 5 },
       { name: 'Rajesh Singh', city: 'Patna', text: 'The Brahmagiri trek to the Godavari source at sunrise was the highlight. Rudrabhishek was peaceful.', rating: 5 },
     ],
     faqs: [
@@ -1047,7 +1047,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
       'No electronics inside (free cloakroom)',
       'Photography prohibited in all sanctum areas',
       'Spathikalinga Darshan requires pre-booking or early arrival',
-      'Hire only authorised priests (Poojly priests or verified temple priests)',
+      'Hire only authorised priests (Darshya priests or verified temple priests)',
     ],
     nearbyAttractions: [
       'Agni Theertham (sea beach adjacent)',

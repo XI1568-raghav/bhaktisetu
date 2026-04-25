@@ -56,7 +56,7 @@ function TemplePortalLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <span className="text-white font-bold text-sm">Temple Portal</span>
-            <p className="text-white/50 text-xs">Poojly</p>
+            <p className="text-white/50 text-xs">Darshya</p>
           </div>
           <button
             className="lg:hidden ml-auto text-white/60"

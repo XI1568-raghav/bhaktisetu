@@ -60,7 +60,7 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <span className="text-white font-bold text-sm">Priest Portal</span>
-            <p className="text-saffron-100 text-xs">Poojly</p>
+            <p className="text-saffron-100 text-xs">Darshya</p>
           </div>
           <button
             className="lg:hidden ml-auto text-white"

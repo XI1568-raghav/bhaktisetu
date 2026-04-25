@@ -4,7 +4,7 @@ import { Calendar, ArrowRight, Tag } from "lucide-react";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Insights on Hindu traditions, temple technology, spiritual practices, and Poojly product updates.",
+    "Insights on Hindu traditions, temple technology, spiritual practices, and Darshya product updates.",
 };
 
 const posts = [
@@ -43,7 +43,7 @@ const posts = [
   {
     title: "Serving the Diaspora: Building for NRI Devotees",
     excerpt:
-      "Millions of Hindus abroad want to stay connected with their family temples. How Poojly designs features for devotees across time zones and currencies.",
+      "Millions of Hindus abroad want to stay connected with their family temples. How Darshya designs features for devotees across time zones and currencies.",
     date: "February 8, 2026",
     category: "Product",
     slug: "#",
@@ -93,7 +93,7 @@ export default function BlogPage() {
           >
             Exploring the intersection of technology and tradition. Product
             updates, spiritual knowledge, and the journey of building
-            Poojly.
+            Darshya.
           </p>
         </div>
       </section>

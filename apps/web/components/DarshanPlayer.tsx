@@ -77,7 +77,7 @@ export default function DarshanPlayer({
           </div>
           <h3 className="text-white font-bold text-lg mb-1">Premium Darshan</h3>
           <p className="text-surface-400 text-sm text-center max-w-xs mb-4">
-            Upgrade to Poojly Premium for exclusive HD darshan from{' '}
+            Upgrade to Darshya Premium for exclusive HD darshan from{' '}
             {templeName}
           </p>
           <a

@@ -44,7 +44,7 @@ function GaushalaSidebar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean
         </div>
         <div>
           <span className="text-white font-bold text-sm">Gaushala Portal</span>
-          <p className="text-amber-300 text-xs">Poojly</p>
+          <p className="text-amber-300 text-xs">Darshya</p>
         </div>
         <button className="lg:hidden ml-auto text-amber-300" onClick={() => setSidebarOpen(false)}>
           <X className="w-5 h-5" />

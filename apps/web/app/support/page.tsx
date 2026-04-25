@@ -13,9 +13,9 @@ import {
 import { SUPPORT_CATEGORIES, POPULAR_ARTICLES } from '../../lib/support';
 
 export const metadata = {
-  title: 'Support Center — Poojly',
+  title: 'Support Center — Darshya',
   description:
-    'Get help with puja bookings, darshan, payments, store orders, and more. Contact Poojly support or raise a ticket.',
+    'Get help with puja bookings, darshan, payments, store orders, and more. Contact Darshya support or raise a ticket.',
 };
 
 export default function SupportPage() {
@@ -26,7 +26,7 @@ export default function SupportPage() {
         <div className="max-w-5xl mx-auto px-6 py-16 lg:py-20 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-saffron-100 text-saffron-800 text-xs font-medium mb-5">
             <LifeBuoy className="w-3.5 h-3.5" />
-            Poojly Support Center
+            Darshya Support Center
           </div>
           <h1 className="text-4xl lg:text-5xl font-[family-name:var(--font-display)] font-bold text-surface-900 tracking-tight mb-4">
             How can we help you today?
@@ -55,11 +55,11 @@ export default function SupportPage() {
               +91-80-6900-9000
             </a>
             <a
-              href="mailto:support@poojly.com"
+              href="mailto:support@darshya.online"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-surface-200 hover:border-saffron-400 hover:shadow-sm transition-all text-sm font-medium text-surface-700"
             >
               <Mail className="w-4 h-4 text-saffron-600" />
-              support@poojly.com
+              support@darshya.online
             </a>
             <a
               href="https://wa.me/919876543210"

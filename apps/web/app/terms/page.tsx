@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Terms of service for using Poojly \u2014 puja bookings, live darshan, store purchases, and all platform services.",
+    "Terms of service for using Darshya \u2014 puja bookings, live darshan, store purchases, and all platform services.",
 };
 
 export default function TermsPage() {
@@ -43,12 +43,12 @@ export default function TermsPage() {
           <div className="space-y-10">
             <TermsSection title="1. Acceptance of Terms">
               <p>
-                By accessing or using the Poojly platform (website at
-                poojly.com, mobile applications, and related services),
+                By accessing or using the Darshya platform (website at
+                darshya.online, mobile applications, and related services),
                 you agree to be bound by these Terms of Service (&quot;Terms&quot;).
                 If you do not agree to these Terms, please do not use the
-                Platform. Poojly Technologies Private Limited
-                (&quot;Poojly,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) reserves the right to
+                Platform. Darshya Technologies Private Limited
+                (&quot;Darshya,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) reserves the right to
                 modify these Terms at any time, with changes effective upon
                 posting to the Platform.
               </p>
@@ -76,7 +76,7 @@ export default function TermsPage() {
                   under your account.
                 </li>
                 <li>
-                  You must notify us immediately at support@poojly.com if
+                  You must notify us immediately at support@darshya.online if
                   you suspect unauthorized access to your account.
                 </li>
                 <li>
@@ -89,7 +89,7 @@ export default function TermsPage() {
             <TermsSection title="4. Puja Booking Services">
               <h4>4.1 Nature of Service</h4>
               <p>
-                Poojly acts as an intermediary platform connecting devotees
+                Darshya acts as an intermediary platform connecting devotees
                 with verified temples and priests for puja bookings. We
                 facilitate the booking, payment processing, and delivery of
                 video proof. The actual ritual is performed by the temple&apos;s
@@ -99,7 +99,7 @@ export default function TermsPage() {
               <h4>4.2 Sankalp Information</h4>
               <p>
                 You are responsible for providing accurate sankalp details
-                (devotee name, gotra, nakshatra, and purpose). Poojly is
+                (devotee name, gotra, nakshatra, and purpose). Darshya is
                 not liable for any errors in the performance of a puja due to
                 incorrect sankalp information provided by you.
               </p>
@@ -136,7 +136,7 @@ export default function TermsPage() {
             <TermsSection title="6. Store & E-Commerce">
               <ul>
                 <li>
-                  Products listed on the Poojly store are sourced from
+                  Products listed on the Darshya store are sourced from
                   verified suppliers. Product descriptions, images, and prices
                   are provided as accurately as possible, but minor variations
                   may occur.
@@ -242,7 +242,7 @@ export default function TermsPage() {
                 All content on the Platform &mdash; including text, images,
                 logos, design elements, audio recordings (bhajans, aartis,
                 mantras), and video streams &mdash; is the property of
-                Poojly or its licensors and is protected by copyright and
+                Darshya or its licensors and is protected by copyright and
                 trademark laws. You may not reproduce, distribute, or create
                 derivative works from our content without prior written
                 consent.
@@ -251,7 +251,7 @@ export default function TermsPage() {
 
             <TermsSection title="11. Limitation of Liability">
               <p>
-                Poojly acts as a technology platform facilitating
+                Darshya acts as a technology platform facilitating
                 devotional services. To the fullest extent permitted by law:
               </p>
               <ul>
@@ -290,9 +290,9 @@ export default function TermsPage() {
                 For questions regarding these Terms of Service, contact us at:
               </p>
               <ul>
-                <li>Email: legal@poojly.com</li>
+                <li>Email: legal@darshya.online</li>
                 <li>
-                  Mail: Poojly Technologies Pvt. Ltd., HSR Layout,
+                  Mail: Darshya Technologies Pvt. Ltd., HSR Layout,
                   Bengaluru &ndash; 560102, Karnataka, India
                 </li>
               </ul>

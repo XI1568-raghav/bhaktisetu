@@ -61,7 +61,7 @@ const MOCK_USERS = [
   {
     id: 'user-001',
     fullName: 'Arjun Sharma',
-    email: 'arjun@poojly.com',
+    email: 'arjun@darshya.online',
     phone: '+919876543210',
     roles: ['DEVOTEE'],
     status: 'active',
@@ -71,7 +71,7 @@ const MOCK_USERS = [
   {
     id: 'user-002',
     fullName: 'Pandit Raghunath',
-    email: 'raghunath@poojly.com',
+    email: 'raghunath@darshya.online',
     phone: '+919876543211',
     roles: ['PANDIT'],
     status: 'active',
@@ -81,7 +81,7 @@ const MOCK_USERS = [
   {
     id: 'user-003',
     fullName: 'Priya Store',
-    email: 'priya@poojly.com',
+    email: 'priya@darshya.online',
     phone: '+919876543212',
     roles: ['STORE_OWNER'],
     status: 'pending_approval',
@@ -91,7 +91,7 @@ const MOCK_USERS = [
   {
     id: 'user-004',
     fullName: 'Jyotish Mehta',
-    email: 'jyotish@poojly.com',
+    email: 'jyotish@darshya.online',
     phone: '+919876543213',
     roles: ['ASTROLOGER'],
     status: 'active',
@@ -101,7 +101,7 @@ const MOCK_USERS = [
   {
     id: 'user-005',
     fullName: 'Yoga Meera',
-    email: 'meera@poojly.com',
+    email: 'meera@darshya.online',
     phone: '+919876543214',
     roles: ['WELLNESS_INSTRUCTOR'],
     status: 'pending_approval',
@@ -111,7 +111,7 @@ const MOCK_USERS = [
   {
     id: 'user-006',
     fullName: 'Gaushala Seva Trust',
-    email: 'gaushala@poojly.com',
+    email: 'gaushala@darshya.online',
     phone: '+919876543215',
     roles: ['GAUSHALA_MANAGER'],
     status: 'active',
@@ -121,7 +121,7 @@ const MOCK_USERS = [
   {
     id: 'user-007',
     fullName: 'Temple Admin',
-    email: 'temple@poojly.com',
+    email: 'temple@darshya.online',
     phone: '+919876543216',
     roles: ['TEMPLE_MANAGER'],
     status: 'active',
@@ -131,7 +131,7 @@ const MOCK_USERS = [
   {
     id: 'admin-001',
     fullName: 'Platform Admin',
-    email: 'admin@poojly.com',
+    email: 'admin@darshya.online',
     phone: '+919876543200',
     roles: ['ADMIN'],
     status: 'active',

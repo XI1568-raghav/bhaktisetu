@@ -6,7 +6,7 @@ test.describe('Asha AI Support chat widget', () => {
     const openBtn = page.locator('button[aria-label="Open live chat"]');
     await expect(openBtn).toBeVisible({ timeout: 20000 });
     // Retry until the chat textarea appears — guards against clicking before React hydration.
-    const textarea = page.locator('textarea[placeholder*="Poojly"]');
+    const textarea = page.locator('textarea[placeholder*="Darshya"]');
     for (let i = 0; i < 5; i++) {
       await openBtn.click().catch(() => {});
       if (await textarea.isVisible().catch(() => false)) break;
@@ -16,7 +16,7 @@ test.describe('Asha AI Support chat widget', () => {
   });
 
   test('widget never shows "couldn\'t reach AI" error for normal messages', async ({ page }) => {
-    await page.locator('textarea[placeholder*="Poojly"]').fill('Hi');
+    await page.locator('textarea[placeholder*="Darshya"]').fill('Hi');
     await page.keyboard.press('Enter');
     await page.waitForTimeout(2500);
     const body = await page.locator('body').textContent();
@@ -24,7 +24,7 @@ test.describe('Asha AI Support chat widget', () => {
   });
 
   test('greeting "Hi" gets a friendly Namaste reply (not escalation)', async ({ page }) => {
-    await page.locator('textarea[placeholder*="Poojly"]').fill('Hi');
+    await page.locator('textarea[placeholder*="Darshya"]').fill('Hi');
     await page.keyboard.press('Enter');
     await expect(page.getByText(/Namaste/i).first()).toBeVisible({ timeout: 5000 });
 
@@ -33,7 +33,7 @@ test.describe('Asha AI Support chat widget', () => {
   });
 
   test('"How do I book a puja?" answers with Browse Pujas action chip', async ({ page }) => {
-    await page.locator('textarea[placeholder*="Poojly"]').fill('How do I book a puja?');
+    await page.locator('textarea[placeholder*="Darshya"]').fill('How do I book a puja?');
     await page.keyboard.press('Enter');
     await page.waitForTimeout(2500);
 
@@ -44,7 +44,7 @@ test.describe('Asha AI Support chat widget', () => {
 
   test('refund request over ₹5,000 triggers escalation with Talk to Human button', async ({ page }) => {
     await page
-      .locator('textarea[placeholder*="Poojly"]')
+      .locator('textarea[placeholder*="Darshya"]')
       .fill('I want a refund of ₹10000 for my cancelled booking');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('button', { name: /Talk to Human Agent/i })).toBeVisible({
@@ -56,7 +56,7 @@ test.describe('Asha AI Support chat widget', () => {
     page,
   }) => {
     await page
-      .locator('textarea[placeholder*="Poojly"]')
+      .locator('textarea[placeholder*="Darshya"]')
       .fill('I need a refund of ₹12000 please');
     await page.keyboard.press('Enter');
 
@@ -78,7 +78,7 @@ test.describe('Asha AI Support chat widget', () => {
   });
 
   test('explicit "talk to human" request escalates', async ({ page }) => {
-    await page.locator('textarea[placeholder*="Poojly"]').fill('Please connect me to a human agent');
+    await page.locator('textarea[placeholder*="Darshya"]').fill('Please connect me to a human agent');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('button', { name: /Talk to Human Agent/i })).toBeVisible({
       timeout: 15000,

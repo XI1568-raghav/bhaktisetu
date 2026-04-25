@@ -1,4 +1,4 @@
-# Poojly API Deployment
+# Darshya API Deployment
 
 Fastify + Prisma require Node.js — deploys to Railway (primary) or Fly.io (alternative).
 
@@ -11,7 +11,7 @@ Fastify + Prisma require Node.js — deploys to Railway (primary) or Fly.io (alt
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
    - `ANTHROPIC_API_KEY`
    - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
-   - `CORS_ORIGIN` (comma-separated list, e.g. `https://poojly.pages.dev,https://admin.poojly.com`)
+   - `CORS_ORIGIN` (comma-separated list, e.g. `https://poojly.pages.dev,https://admin.darshya.online`)
    - `NODE_ENV=production`
    - `PORT=4000`
    - `JWT_SECRET`

@@ -21,7 +21,7 @@ import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '
 import ScrollReveal from '../components/ScrollReveal';
 
 export const metadata: Metadata = {
-  title: "Poojly — India's Devotional Super App",
+  title: "Darshya — India's Devotional Super App",
   description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
 };
 
@@ -133,7 +133,7 @@ export default function HomePage() {
               {[
                 { num: '01', title: 'The Gap', text: 'Millions of Hindus worldwide are disconnected from their spiritual roots and temple traditions.' },
                 { num: '02', title: 'The Market', text: 'A $58B religious market is moving online — yet no single platform serves the full devotional journey.' },
-                { num: '03', title: 'The Bridge', text: 'Poojly brings live darshan, verified pujas, AI guidance, and sacred commerce into one app.' },
+                { num: '03', title: 'The Bridge', text: 'Darshya brings live darshan, verified pujas, AI guidance, and sacred commerce into one app.' },
                 { num: '04', title: 'The Impact', text: '50K+ pujas performed, 200+ temples connected, and a growing community of devoted users.' },
               ].map((ch, i) => (
                 <div key={ch.num} data-reveal="cascade" data-delay={String(i + 1)} className="relative pl-4" style={{ borderLeft: '2px solid var(--color-primary)' }}>
@@ -486,7 +486,7 @@ export default function HomePage() {
         <section className="py-10 md:py-12">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-              Join 50,000+ devotees on Poojly
+              Join 50,000+ devotees on Darshya
             </h2>
             <p data-reveal="up" data-delay="1" className="text-xs max-w-sm mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
               Begin your spiritual journey today. Live darshan, authentic pujas, AI guidance — all in one place.

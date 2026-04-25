@@ -1,6 +1,6 @@
 # Cloudflare Pages Deployment
 
-Cloudflare Pages is a Jamstack hosting platform that runs the Poojly Next.js app on Cloudflare's global edge network (static assets + SSR via Workers with `nodejs_compat`).
+Cloudflare Pages is a Jamstack hosting platform that runs the Darshya Next.js app on Cloudflare's global edge network (static assets + SSR via Workers with `nodejs_compat`).
 
 ## Prerequisites
 - Cloudflare account with Pages enabled
@@ -45,7 +45,7 @@ Defaults live in `wrangler.toml` under `[vars]` (non-secret, `NEXT_PUBLIC_*` onl
 
 1. Cloudflare Dashboard -> Workers & Pages -> `poojly-web` -> Settings -> Environment variables
 2. Add per environment (Production / Preview):
-   - `NEXT_PUBLIC_API_URL` = `https://api.poojly.com` (production) or Railway preview URL
+   - `NEXT_PUBLIC_API_URL` = `https://api.darshya.online` (production) or Railway preview URL
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `NEXT_PUBLIC_RAZORPAY_KEY_ID`
@@ -57,7 +57,7 @@ See `.env.example` for the complete list.
 
 ## Custom domain
 
-In the Cloudflare dashboard, go to your Pages project -> Custom domains -> Set up a custom domain. Enter `poojly.com` (or subdomain like `www.poojly.com`). If the domain is on Cloudflare DNS, Cloudflare auto-configures the CNAME. If hosted elsewhere, add a CNAME record pointing to `<project>.pages.dev`. SSL provisions automatically within a few minutes. For apex domains on Cloudflare DNS, Cloudflare uses CNAME flattening.
+In the Cloudflare dashboard, go to your Pages project -> Custom domains -> Set up a custom domain. Enter `darshya.online` (or subdomain like `www.darshya.online`). If the domain is on Cloudflare DNS, Cloudflare auto-configures the CNAME. If hosted elsewhere, add a CNAME record pointing to `<project>.pages.dev`. SSL provisions automatically within a few minutes. For apex domains on Cloudflare DNS, Cloudflare uses CNAME flattening.
 
 ## Architecture notes
 

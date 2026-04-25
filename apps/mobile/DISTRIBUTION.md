@@ -1,8 +1,8 @@
-# Poojly Mobile App — Distribution Guide
+# Darshya Mobile App — Distribution Guide
 
 ## Overview
 
-The Poojly mobile app (Expo SDK 52, React Native 0.76) supports three distribution channels:
+The Darshya mobile app (Expo SDK 52, React Native 0.76) supports three distribution channels:
 
 | Channel | Platform | Cost | Setup time |
 |---------|----------|------|------------|
@@ -41,7 +41,7 @@ npx eas-cli@latest build --profile preview --platform android
 Send the APK download link. Testers:
 1. Open the link on their Android phone
 2. Allow "Install from unknown sources" if prompted
-3. Install and open Poojly
+3. Install and open Darshya
 
 ### Free tier limits
 - 15 Android builds/month

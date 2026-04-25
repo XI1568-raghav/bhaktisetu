@@ -723,7 +723,7 @@ function BookingDetailContent() {
                 )}
 
                 <Link
-                  href="mailto:support@poojly.com"
+                  href="mailto:support@darshya.online"
                   className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-surface-200 py-2.5 text-sm font-semibold text-surface-600 transition-colors hover:bg-surface-50"
                 >
                   <Headphones className="h-4 w-4" />
@@ -747,8 +747,8 @@ function BookingDetailContent() {
               </h4>
               <p className="text-xs leading-relaxed text-surface-600">
                 For any queries about your booking, contact our support team at{' '}
-                <a href="mailto:support@poojly.com" className="font-medium text-saffron-600 hover:underline">
-                  support@poojly.com
+                <a href="mailto:support@darshya.online" className="font-medium text-saffron-600 hover:underline">
+                  support@darshya.online
                 </a>{' '}
                 or call{' '}
                 <a href="tel:+918000000000" className="font-medium text-saffron-600 hover:underline">

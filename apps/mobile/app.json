@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Poojly",
-    "slug": "poojly",
+    "name": "Darshya",
+    "slug": "darshya",
     "version": "1.0.0",
-    "scheme": "poojly",
+    "scheme": "darshya",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -12,7 +12,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.poojly.app",
+      "bundleIdentifier": "com.darshya.app",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -21,7 +21,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#EA580C"
       },
-      "package": "com.poojly.app"
+      "package": "com.darshya.app"
     },
     "web": {
       "bundler": "metro"

@@ -90,7 +90,7 @@ async function bootstrap() {
 
   try {
     await server.listen({ port, host });
-    server.log.info(`Poojly API running at http://${host}:${port}`);
+    server.log.info(`Darshya API running at http://${host}:${port}`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

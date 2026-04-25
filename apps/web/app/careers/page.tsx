@@ -4,7 +4,7 @@ import { MapPin, Clock, Briefcase, Heart, Zap, Users, BookOpen, Coffee } from "l
 export const metadata: Metadata = {
   title: "Careers",
   description:
-    "Join Poojly and help build India\u2019s devotional super-app. We\u2019re hiring engineers, designers, and operators who care about faith and technology.",
+    "Join Darshya and help build India\u2019s devotional super-app. We\u2019re hiring engineers, designers, and operators who care about faith and technology.",
 };
 
 const benefits = [
@@ -100,7 +100,7 @@ export default function CareersPage() {
             className="text-xs font-semibold uppercase tracking-widest mb-4"
             style={{ color: "var(--color-primary)" }}
           >
-            Careers at Poojly
+            Careers at Darshya
           </p>
           <h1
             className="text-2xl sm:text-3xl font-bold mb-6"
@@ -131,7 +131,7 @@ export default function CareersPage() {
               className="text-xs font-semibold uppercase tracking-widest mb-3"
               style={{ color: "var(--color-primary)" }}
             >
-              Why Poojly
+              Why Darshya
             </p>
             <h2
               className="text-xl sm:text-2xl font-bold"
@@ -271,18 +271,18 @@ export default function CareersPage() {
             style={{ color: "var(--color-text-muted)" }}
           >
             We are always looking for exceptional people who share our mission.
-            Send us your resume and a short note about why Poojly resonates
+            Send us your resume and a short note about why Darshya resonates
             with you.
           </p>
           <a
-            href="mailto:careers@poojly.com"
+            href="mailto:careers@darshya.online"
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
             style={{
               background: "var(--color-primary)",
               color: "var(--color-text-inverse)",
             }}
           >
-            Email careers@poojly.com
+            Email careers@darshya.online
           </a>
         </div>
       </section>

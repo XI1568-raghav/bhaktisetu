@@ -1,5 +1,5 @@
 /**
- * Dharmic Yatra — Pilgrimage data for Poojly
+ * Dharmic Yatra — Pilgrimage data for Darshya
  * Hardcoded, realistic data for 9 yatras, 8 companions, and 30+ sacred sites.
  */
 
@@ -458,7 +458,7 @@ export const yatras: Yatra[] = [
     tags: ['Durga', 'Jammu', '3 days', 'Helicopter', 'Easy'],
     reviews: [
       { name: 'Sunita Agarwal', location: 'Delhi', rating: 5, comment: 'Did it with my 75-year-old mother. Helicopter made it possible. Jai Mata Di!', yatra: 'Vaishno Devi', date: 'Dec 2024' },
-      { name: 'Rajesh Khanna', location: 'Jalandhar', rating: 5, comment: 'Third time doing it with Poojly. They handle everything — we just walk and pray.', yatra: 'Vaishno Devi', date: 'Feb 2025' },
+      { name: 'Rajesh Khanna', location: 'Jalandhar', rating: 5, comment: 'Third time doing it with Darshya. They handle everything — we just walk and pray.', yatra: 'Vaishno Devi', date: 'Feb 2025' },
       { name: 'Geeta Patel', location: 'Ahmedabad', rating: 4, comment: 'VIP darshan pass saved us 4 hours of queue. Worth the upgrade.', yatra: 'Vaishno Devi', date: 'Jan 2025' },
     ],
     faqs: [
@@ -556,7 +556,7 @@ export const yatras: Yatra[] = [
     tags: ['Balaji', 'Meenakshi', 'South India', '9 days'],
     reviews: [
       { name: 'Lakshmipathi Rao', location: 'Hyderabad', rating: 5, comment: 'Tirupati Seeghra darshan was pre-arranged perfectly. No 8-hour wait like before. Worth every rupee.', yatra: 'Tirupati South India', date: 'Jan 2025' },
-      { name: 'Radha Menon', location: 'Kochi', rating: 5, comment: 'Covering 6 major temples in 9 days with comfort — only Poojly managed this.', yatra: 'Tirupati South India', date: 'Feb 2025' },
+      { name: 'Radha Menon', location: 'Kochi', rating: 5, comment: 'Covering 6 major temples in 9 days with comfort — only Darshya managed this.', yatra: 'Tirupati South India', date: 'Feb 2025' },
       { name: 'Vasant Shetty', location: 'Mangalore', rating: 4, comment: 'Udupi + Mookambika combo is a nice touch. Would prefer extra day at Rameswaram.', yatra: 'Tirupati South India', date: 'Dec 2024' },
     ],
     faqs: [
@@ -604,7 +604,7 @@ export const yatras: Yatra[] = [
     helicopterAvailable: false,
     tags: ['Ram', 'Shiva', '6 days', 'Ayodhya', 'Kashi'],
     reviews: [
-      { name: 'Dinesh Mishra', location: 'Patna', rating: 5, comment: 'Ram Lalla darshan — tears rolled down. Poojly handled the pre-booking. No chaotic queues.', yatra: 'Ayodhya Kashi', date: 'Feb 2025' },
+      { name: 'Dinesh Mishra', location: 'Patna', rating: 5, comment: 'Ram Lalla darshan — tears rolled down. Darshya handled the pre-booking. No chaotic queues.', yatra: 'Ayodhya Kashi', date: 'Feb 2025' },
       { name: 'Kamala Devi', location: 'Gwalior', rating: 5, comment: 'Rudrabhishek at Kashi with my son\'s sankalpa was the spiritual peak of my life. Premium package is worth it.', yatra: 'Ayodhya Kashi', date: 'Jan 2025' },
       { name: 'Ravi Shankar', location: 'Kolkata', rating: 5, comment: 'Triveni Sangam tarpan for ancestors was conducted by the tour priest beautifully. Highly recommend.', yatra: 'Ayodhya Kashi', date: 'Dec 2024' },
     ],

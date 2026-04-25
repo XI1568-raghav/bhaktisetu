@@ -318,7 +318,7 @@ export default function TicketDetailPage() {
                 Call support →
               </a>
               <a
-                href="mailto:support@poojly.com"
+                href="mailto:support@darshya.online"
                 className="block text-sm text-saffron-700 hover:text-saffron-800"
               >
                 Email us →

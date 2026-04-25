@@ -1,5 +1,5 @@
 /**
- * Centralized Image Map for Poojly
+ * Centralized Image Map for Darshya
  * =====================================
  * All Unsplash image URLs used across the application are defined here.
  * Import from this file instead of hardcoding URLs in components.

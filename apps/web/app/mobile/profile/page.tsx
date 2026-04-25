@@ -26,7 +26,7 @@ const quickLinks = [
 
 const moreLinks = [
   { icon: HelpCircle, label: 'Help & Support' },
-  { icon: Info, label: 'About Poojly' },
+  { icon: Info, label: 'About Darshya' },
   { icon: Share2, label: 'Share App' },
   { icon: Star, label: 'Rate Us' },
 ];
@@ -132,7 +132,7 @@ export default function MobileProfile() {
 
       {/* Footer */}
       <div className="text-center pb-6">
-        <p className="text-[10px] text-surface-300">Poojly v1.0.0</p>
+        <p className="text-[10px] text-surface-300">Darshya v1.0.0</p>
         <p className="text-[10px] text-surface-300">Made with devotion in India</p>
       </div>
     </div>

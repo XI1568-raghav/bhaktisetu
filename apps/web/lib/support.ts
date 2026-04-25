@@ -537,7 +537,7 @@ export const SAMPLE_ADMIN_TICKETS: Ticket[] = [
 // ─────────────────────────── Mock agent reply generator ──────────────────
 
 export function generateAgentReply(category: TicketCategory, subject: string): string {
-  const base = `Namaste — I'm ${randomAgentName()} from the Poojly support team. I've looked into your ticket "${subject}".`;
+  const base = `Namaste — I'm ${randomAgentName()} from the Darshya support team. I've looked into your ticket "${subject}".`;
   const bodies: Record<TicketCategory, string> = {
     puja:
       'I can see your booking in our system. The puja was performed as scheduled and video proof is uploaded. For the prasad, I\'ve contacted the temple coordinator and courier partner — you should receive a tracking update within 12 hours. If the parcel does not reach you in 3 days, reply on this ticket and we will issue a full refund of the prasad portion.',
@@ -580,7 +580,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
   {
     keywords: ['thank', 'thanks', 'thank you', 'shukriya', 'dhanyavaad'],
     reply:
-      "You're welcome! If there's anything else you need, just let me know. May your spiritual journey with Poojly be blessed.",
+      "You're welcome! If there's anything else you need, just let me know. May your spiritual journey with Darshya be blessed.",
   },
   {
     keywords: ['help', 'what can you do', 'what do you do'],
@@ -630,7 +630,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
   {
     keywords: ['contact', 'phone', 'call'],
     reply:
-      'Reach us at: 📞 +91-80-6900-9000 (8am–11pm IST), ✉️ support@poojly.com, or WhatsApp +91 98765 43210. For urgent booking issues, best to open a ticket at /support.',
+      'Reach us at: 📞 +91-80-6900-9000 (8am–11pm IST), ✉️ support@darshya.online, or WhatsApp +91 98765 43210. For urgent booking issues, best to open a ticket at /support.',
   },
   {
     keywords: ['temple', 'which temple', 'temples'],
@@ -661,9 +661,9 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'gs-1',
     section: 'Getting Started',
-    question: 'What is Poojly?',
+    question: 'What is Darshya?',
     answer:
-      'Poojly is India\'s devotional super-app — live darshan from 50+ temples, online puja booking with video proof, panchang, spiritual content, e-commerce for religious items, astrology consultations, wellness sessions, and yatra tours. All in one place.',
+      'Darshya is India\'s devotional super-app — live darshan from 50+ temples, online puja booking with video proof, panchang, spiritual content, e-commerce for religious items, astrology consultations, wellness sessions, and yatra tours. All in one place.',
   },
   {
     id: 'gs-2',
@@ -675,21 +675,21 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'gs-3',
     section: 'Getting Started',
-    question: 'Is Poojly free to use?',
+    question: 'Is Darshya free to use?',
     answer:
       'Browsing temples, darshan streams, panchang, and spiritual content is completely free. You pay only for bookings — pujas, astrology, wellness, store items, yatra tours.',
   },
   {
     id: 'gs-4',
     section: 'Getting Started',
-    question: 'Does Poojly work outside India?',
+    question: 'Does Darshya work outside India?',
     answer:
       'Yes. NRI users pay in USD and get access to all pujas, darshan, store, and yatra bookings. Prasad and physical goods ship internationally — delivery 7-14 days depending on country.',
   },
   {
     id: 'gs-5',
     section: 'Getting Started',
-    question: 'Which languages does Poojly support?',
+    question: 'Which languages does Darshya support?',
     answer:
       'The app is available in English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali. More languages coming soon. Switch from the language selector in the footer.',
   },
@@ -749,7 +749,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     section: 'Bookings & Payments',
     question: 'Can I get a GST invoice?',
     answer:
-      'Yes. After booking, go to /bookings → tap the booking → "Download Invoice". Invoice includes GST breakup. For business/GSTIN invoices, email support@poojly.com with your GSTIN before booking.',
+      'Yes. After booking, go to /bookings → tap the booking → "Download Invoice". Invoice includes GST breakup. For business/GSTIN invoices, email support@darshya.online with your GSTIN before booking.',
   },
 
   // Live Darshan (4)
@@ -786,7 +786,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'sd-1',
     section: 'Store & Delivery',
-    question: 'What can I buy on the Poojly store?',
+    question: 'What can I buy on the Darshya store?',
     answer:
       'Idols, puja samagri, rudraksha, yantras, incense, lamps, religious books, temple bells, and prasad variety packs. All items are sourced from verified spiritual retailers.',
   },
@@ -802,7 +802,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     section: 'Store & Delivery',
     question: 'Can I return a product?',
     answer:
-      'Yes, within 7 days of delivery if the item is damaged, wrong, or defective. Idols and consecrated items cannot be returned once unpacked (religious reasons). Email support@poojly.com with photos.',
+      'Yes, within 7 days of delivery if the item is damaged, wrong, or defective. Idols and consecrated items cannot be returned once unpacked (religious reasons). Email support@darshya.online with photos.',
   },
   {
     id: 'sd-4',
@@ -846,7 +846,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'yt-1',
     section: 'Yatra & Travel',
-    question: 'Which yatras does Poojly offer?',
+    question: 'Which yatras does Darshya offer?',
     answer:
       'Char Dham (Yamunotri, Gangotri, Kedarnath, Badrinath), 12 Jyotirlinga circuits, Shakti Peetha tour, Vaishno Devi, Tirupati + nearby temples, Golden Triangle spiritual tour, and custom private yatras.',
   },
@@ -919,7 +919,7 @@ export interface HelpArticle {
 export const POPULAR_ARTICLES: HelpArticle[] = [
   {
     id: 'art-1',
-    title: 'How to book your first puja on Poojly',
+    title: 'How to book your first puja on Darshya',
     excerpt: 'A step-by-step walkthrough — from picking the right puja to receiving video proof and prasad at home.',
     category: 'Puja Bookings',
     readTime: '4 min',

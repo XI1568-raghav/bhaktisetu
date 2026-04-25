@@ -257,7 +257,7 @@ function RichTemplePage({
             className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-saffron-600 to-saffron-700 p-6 text-white shadow-warm-md transition-transform hover:-translate-y-0.5"
           >
             <Flame className="mb-3 h-7 w-7 text-amber-200" />
-            <div className="text-lg font-semibold">Book Puja via Poojly</div>
+            <div className="text-lg font-semibold">Book Puja via Darshya</div>
             <p className="mt-1 text-sm text-white/80">
               Verified priests, video proof, prasad delivery to your door
             </p>

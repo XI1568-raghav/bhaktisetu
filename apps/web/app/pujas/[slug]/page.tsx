@@ -163,7 +163,7 @@ function getDefaultFallback(slug: string): PujaDetail {
     nameLocal: null,
     slug,
     description: `Experience the sacred ${name} puja performed by verified pandits at renowned temples across India. Live streaming and prasad delivery available.`,
-    longDescription: `The ${name} puja is one of the revered Vedic rituals in the Hindu tradition. Performed with devotion and proper Vedic chanting, this puja invokes divine blessings for the well-being and prosperity of the devotee and their family.\n\nOur verified pandits perform this puja with complete adherence to Vedic traditions, ensuring that every mantra is chanted correctly and every ritual is performed as prescribed in the scriptures.\n\nBook this puja through Poojly and receive live video streaming of the entire ceremony, followed by video proof and prasad delivery to your doorstep.`,
+    longDescription: `The ${name} puja is one of the revered Vedic rituals in the Hindu tradition. Performed with devotion and proper Vedic chanting, this puja invokes divine blessings for the well-being and prosperity of the devotee and their family.\n\nOur verified pandits perform this puja with complete adherence to Vedic traditions, ensuring that every mantra is chanted correctly and every ritual is performed as prescribed in the scriptures.\n\nBook this puja through Darshya and receive live video streaming of the entire ceremony, followed by video proof and prasad delivery to your doorstep.`,
     category: 'Special Puja',
     deity: 'Lord Shiva',
     durationMinutes: 90,
@@ -241,7 +241,7 @@ export async function generateMetadata({
     title: `${puja.name} - Book Online`,
     description: `Book ${puja.name} online at verified temples. ${puja.description.slice(0, 120)}...`,
     openGraph: {
-      title: `${puja.name} | Poojly`,
+      title: `${puja.name} | Darshya`,
       description: puja.description.slice(0, 160),
     },
   };

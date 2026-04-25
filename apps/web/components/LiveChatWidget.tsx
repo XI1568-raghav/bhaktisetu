@@ -27,7 +27,7 @@ const WELCOME: ChatMessage = {
   id: 'welcome',
   author: 'agent',
   body:
-    "Namaste! I'm Asha, Poojly's AI support assistant. I can help with puja bookings, darshan, refunds, yatra planning, and more. If I can't handle something, I'll connect you with a human agent.",
+    "Namaste! I'm Asha, Darshya's AI support assistant. I can help with puja bookings, darshan, refunds, yatra planning, and more. If I can't handle something, I'll connect you with a human agent.",
   createdAt: new Date().toISOString(),
 };
 
@@ -123,7 +123,7 @@ export function LiveChatWidget() {
     } catch (err) {
       window.clearTimeout(timeoutId);
       // Network failure fallback — use local keyword matching
-      console.warn('[Poojly Chat] API unreachable, using local fallback', err);
+      console.warn('[Darshya Chat] API unreachable, using local fallback', err);
       const auto = findAutoReply(text);
       const lower = text.toLowerCase().trim();
       const isGreeting = ['hi', 'hii', 'hello', 'hey', 'namaste'].some(
@@ -331,7 +331,7 @@ export function LiveChatWidget() {
               }
             }}
             rows={1}
-            placeholder="Ask anything about Poojly..."
+            placeholder="Ask anything about Darshya..."
             className="flex-1 resize-none px-3 py-2 text-sm border border-surface-200 rounded-lg focus:border-saffron-500 focus:ring-2 focus:ring-saffron-500/20 outline-none max-h-28"
           />
           <button
