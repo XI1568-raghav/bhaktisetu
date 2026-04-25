@@ -112,7 +112,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity style={styles.searchBar} activeOpacity={0.7} onPress={() => router.push('/(tabs)/pujas')}>
+        <TouchableOpacity style={styles.searchBar} activeOpacity={0.7} onPress={() => router.push('/(devotee)/pujas' as any)}>
           <Ionicons name="search" size={20} color={colors.stone[400]} />
           <Text style={styles.searchPlaceholder}>
             Search temples, pujas, content...
@@ -126,7 +126,7 @@ export default function HomeScreen() {
               <View style={styles.liveDot} />
               <Text style={styles.sectionTitle}>Live Darshan</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/darshan')}>
+            <TouchableOpacity onPress={() => router.push('/(devotee)/darshan' as any)}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.horizontalScroll}
           >
             {liveDarshanData.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.darshanCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/darshan')}>
+              <TouchableOpacity key={item.id} style={styles.darshanCard} activeOpacity={0.8} onPress={() => router.push('/(devotee)/darshan' as any)}>
                 <View style={styles.darshanImagePlaceholder}>
                   <Ionicons name="videocam" size={32} color={colors.saffron[300]} />
                   <View style={styles.liveBadge}>
@@ -173,7 +173,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Popular Pujas</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/pujas')}>
+            <TouchableOpacity onPress={() => router.push('/(devotee)/pujas' as any)}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -183,7 +183,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.horizontalScroll}
           >
             {popularPujas.map((puja) => (
-              <TouchableOpacity key={puja.id} style={styles.pujaCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/pujas')}>
+              <TouchableOpacity key={puja.id} style={styles.pujaCard} activeOpacity={0.8} onPress={() => router.push('/(devotee)/pujas' as any)}>
                 <View style={styles.pujaIconContainer}>
                   <Ionicons name="flame" size={28} color={colors.saffron[500]} />
                 </View>

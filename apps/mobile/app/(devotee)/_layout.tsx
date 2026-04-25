@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet } from 'react-native';
 import { colors } from '../../lib/theme';
+import { RoleGuard } from '../../lib/role-guard';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -17,6 +18,7 @@ function TabIcon({ name, color, size }: TabIconProps) {
 
 export default function TabLayout() {
   return (
+    <RoleGuard allowedRoles={['devotee']}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -102,6 +104,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </RoleGuard>
   );
 }
 
