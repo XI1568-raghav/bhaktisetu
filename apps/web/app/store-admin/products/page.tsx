@@ -30,7 +30,9 @@ interface Product {
   isActive: boolean;
 }
 
-const STORAGE_KEY = 'poojly_store_products';
+// Bumped to v2 after the image overhaul — forces a refresh of any
+// browsers that cached the old broken Unsplash URLs.
+const STORAGE_KEY = 'darshya_store_products_v2';
 
 const CATEGORIES = [
   'Puja Items', 'Idols & Murtis', 'Rudraksha & Malas',
@@ -38,13 +40,15 @@ const CATEGORIES = [
   'Home Decor', 'Havan Samagri', 'Prasad & Bhog', 'Other',
 ];
 
+import { getProductImage } from '../../../lib/images';
+
 const defaultProducts: Product[] = [
   {
     id: '1',
     name: 'Brass Diya Set (Pack of 6)',
     price: 450,
     description: 'Handcrafted brass diyas with intricate traditional designs. Perfect for daily puja and festivals. Comes with cotton wicks.',
-    imageUrl: 'https://images.unsplash.com/photo-1606293926249-ed22bf21f0f0?w=200',
+    imageUrl: getProductImage('brass-diya'),
     category: 'Puja Items',
     stock: 156,
     sku: 'PJ-DYA-001',
@@ -55,7 +59,7 @@ const defaultProducts: Product[] = [
     name: '5 Mukhi Rudraksha Mala (108+1 Beads)',
     price: 1290,
     description: 'Authentic Nepal origin 5 mukhi Rudraksha mala. Lab tested and certified. Comes with silk thread and certificate of authenticity.',
-    imageUrl: 'https://images.unsplash.com/photo-1583396897939-50cfb1735d25?w=200',
+    imageUrl: getProductImage('rudraksha-mala'),
     category: 'Rudraksha & Malas',
     stock: 89,
     sku: 'RD-MLA-005',
@@ -66,7 +70,7 @@ const defaultProducts: Product[] = [
     name: 'Complete Puja Thali Set',
     price: 1850,
     description: 'German silver puja thali with kalash, diya, bell, incense holder, kumkum box, and spoon. Gift packaging available.',
-    imageUrl: 'https://images.unsplash.com/photo-1567591370504-81e1642e4tried?w=200',
+    imageUrl: getProductImage('brass-puja-thali'),
     category: 'Puja Items',
     stock: 67,
     sku: 'PJ-THI-010',
@@ -77,7 +81,7 @@ const defaultProducts: Product[] = [
     name: 'Premium Agarbatti Box (12 Fragrances)',
     price: 350,
     description: 'Charcoal-free hand-rolled incense sticks in 12 divine fragrances including sandalwood, rose, jasmine, mogra, and gulab.',
-    imageUrl: 'https://images.unsplash.com/photo-1600577574532-30b5742e8a35?w=200',
+    imageUrl: getProductImage('incense-sticks'),
     category: 'Incense & Dhoop',
     stock: 234,
     sku: 'IN-AGB-012',
@@ -88,7 +92,7 @@ const defaultProducts: Product[] = [
     name: 'Silver Plated Ganesh Idol (6 inch)',
     price: 4500,
     description: 'Exquisite silver plated Lord Ganesha idol. Fine detailing with jeweled crown. Perfect for home mandir or gifting.',
-    imageUrl: 'https://images.unsplash.com/photo-1618397746666-63405ce5d015?w=200',
+    imageUrl: getProductImage('ganesh-murti'),
     category: 'Idols & Murtis',
     stock: 23,
     sku: 'ID-GNS-006',
@@ -99,7 +103,7 @@ const defaultProducts: Product[] = [
     name: 'Kumkum & Haldi Gift Set',
     price: 280,
     description: 'Pure organic kumkum and haldi powder set in brass containers. Traditional Rajasthani design packaging.',
-    imageUrl: '',
+    imageUrl: getProductImage('kumkum-set'),
     category: 'Puja Items',
     stock: 0,
     sku: 'PJ-KHG-003',
@@ -110,7 +114,7 @@ const defaultProducts: Product[] = [
     name: 'Camphor Tablets (Pack of 100)',
     price: 199,
     description: 'Pure camphor tablets for aarti and puja. Strong fragrance, burns cleanly without residue.',
-    imageUrl: '',
+    imageUrl: getProductImage('camphor-pack'),
     category: 'Puja Items',
     stock: 450,
     sku: 'PJ-CMP-002',
