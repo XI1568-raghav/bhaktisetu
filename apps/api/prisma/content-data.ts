@@ -1416,6 +1416,7 @@ Each Jyotirlinga has a unique legend and significance. Pilgrims traditionally vi
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/panchang-guide.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=sxDI6ze1ejs',
     sortOrder: 32,
   },
 
@@ -1447,6 +1448,7 @@ Dwarkadhish Temple marks Lord Krishna's ancient kingdom.
     status: 'published' as const,
     imageUrl: 'https://images.darshya.online/content/char-dham-guide.jpg',
     audioUrl: null,
+    videoUrl: 'https://www.youtube.com/watch?v=dR1FV---j2g',
     sortOrder: 33,
   },
 
