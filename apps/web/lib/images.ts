@@ -303,49 +303,50 @@ export const IMAGES = {
   },
 
   // ── Store / E-commerce Products ────────────────────────────
-  // Stock photography for generic merchandise — Unsplash is the right fit here.
+  // Each product maps to an image that actually shows the product.
+  // - Wikimedia Commons for traditional spiritual items where good photos exist
+  // - Unsplash for modern manufactured goods
   store: {
-    'brass-puja-thali': u('photo-1604608672516-f1b9b1d37076', 600, 600),
-    'brass-diya': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'puja-bell': u('photo-1585128993280-9456c19c987d', 600, 600),
-    'incense-sticks': u('photo-1506905925346-21bda4d32df4', 600, 600),
-    'camphor-pack': u('photo-1545468800-85cc9bc6ecf7', 600, 600),
-    'kumkum-set': u('photo-1590077428593-a55bb07c4665', 600, 600),
-    'cotton-wicks': u('photo-1544367567-0f2fcb009e0b', 600, 600),
+    // Puja Essentials
+    'brass-puja-thali': wiki('https://upload.wikimedia.org/wikipedia/commons/7/7b/Hindu_pooja_thali.jpg'),
+    'brass-diya': wiki('https://upload.wikimedia.org/wikipedia/commons/7/7c/Indian_Arati_diya.jpg'),
+    'puja-bell': wiki('https://upload.wikimedia.org/wikipedia/commons/e/e4/GHANTI.jpg'),
+    'incense-sticks': u('photo-1541795083-1b160cf4f3d7', 600, 600),
+    'camphor-pack': u('photo-1551690935-a9e6f0a7e788', 600, 600),
+    'kumkum-set': u('photo-1577563717655-919fc57789b4', 600, 600),
 
-    'rudraksha-mala': u('photo-1609766857041-ed402ea8069a', 600, 600),
-    'tulsi-mala': u('photo-1600093463592-8e36ae95ef56', 600, 600),
-    'crystal-mala': u('photo-1514222134-b57cbb8ce073', 600, 600),
+    // Rudraksha & Malas
+    'rudraksha-mala': wiki('https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg'),
+    'tulsi-mala': wiki('https://upload.wikimedia.org/wikipedia/commons/2/20/Japa_mala_%28prayer_beads%29_of_Tulasi_wood_with_108_beads_-_20040101-01.jpg'),
+    'crystal-mala': u('photo-1601824096525-954268b9eb72', 600, 600),
 
-    'ganesh-murti': wiki('https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_***REMOVED***.jpg'),
-    'krishna-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a9/Krishna_Holds_Up_Mount_Govardhan_%28MET_70694%29_cropped.png'),
-    'shiva-lingam': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Bangalore_Shiva.jpg/1280px-Bangalore_Shiva.jpg'),
-    'lakshmi-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/a/a6/Raja_Ravi_Varma%2C_Goddess_Lakshmi%2C_1896.jpg'),
-    'durga-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Mahishasura-Mardini_Durga.jpg'),
+    // Idols & Murtis (Wikimedia: real photographed/sculpted idols)
+    'ganesh-murti': wiki('https://upload.wikimedia.org/wikipedia/commons/c/c8/Marble_Dagadusheth_Halwai_Ganapati_Statue_from_Maliyas.com_Jaipur_India.jpg'),
+    'krishna-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/3/38/Brass_standing_figure_***REMOVED***._Wellcome_M0012566.jpg'),
+    'lakshmi-idol': wiki('https://upload.wikimedia.org/wikipedia/commons/9/98/The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_%281_of_2%29.jpg'),
 
-    'pooja-samagri-kit': u('photo-1604608672516-f1b9b1d37076', 600, 600),
-    'navratri-kit': u('photo-1603228254119-e6a4d095dc59', 600, 600),
-    'copper-kalash': u('photo-1548013146-72479768bada', 600, 600),
-    'havan-samagri': u('photo-1545468800-85cc9bc6ecf7', 600, 600),
+    // Puja Samagri
+    'pooja-samagri-kit': u('photo-1633368516165-f7b04d6428d1', 600, 600),
+    'navratri-kit': u('photo-1605292356183-a77d0a9c9d1d', 600, 600),
+    'copper-kalash': wiki('https://upload.wikimedia.org/wikipedia/commons/f/f4/Navratri_Kalash_Puja.jpg'),
+    'havan-samagri': wiki('https://upload.wikimedia.org/wikipedia/commons/c/c7/%28A%29_puja_fire%2C_Havanam.jpg'),
 
-    'bhagavad-gita': u('photo-1544367567-0f2fcb009e0b', 600, 600),
-    'hanuman-chalisa-book': u('photo-1609766857041-ed402ea8069a', 600, 600),
-    'sunderkand-book': u('photo-1585128993280-9456c19c987d', 600, 600),
+    // Books & Scriptures
+    'bhagavad-gita': wiki('https://upload.wikimedia.org/wikipedia/commons/3/34/Bhagavad_Gita_book_%28small%29_01.jpg'),
+    'hanuman-chalisa-book': wiki('https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg'),
+    'sunderkand-book': wiki('https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg'),
 
-    'rudraksha-bracelet': u('photo-1609766857041-ed402ea8069a', 600, 600),
-    'om-pendant': u('photo-1506905925346-21bda4d32df4', 600, 600),
-    'sacred-thread': u('photo-1603228254119-e6a4d095dc59', 600, 600),
+    // Spiritual Jewellery
+    'rudraksha-bracelet': u('photo-1622993361118-b6365d859ab6', 600, 600),
+    'om-pendant': u('photo-1747576129956-d8124fab8668', 600, 600),
 
-    'cow-ghee': u('photo-1570042225831-d98fa7577f1e', 600, 600),
-    'sandalwood-paste': u('photo-1506905925346-21bda4d32df4', 600, 600),
-    'ghee-lamp-oil': u('photo-1603228254119-e6a4d095dc59', 600, 600),
+    // Organic & Natural
+    'cow-ghee': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Pure_Ghee-Homemade-Maharashtra.jpg'),
+    'sandalwood-paste': u('photo-1595414902678-862fe51c9f27', 600, 600),
 
-    'wooden-mandir': u('photo-1585128993280-9456c19c987d', 600, 600),
-    'led-diya-set': u('photo-1604608672516-f1b9b1d37076', 600, 600),
-    'brass-hanging-bell': u('photo-1548013146-72479768bada', 600, 600),
-    'wall-om-decor': u('photo-1500595046743-cd271d694d30', 600, 600),
-
-    'silk-dhoti-set': u('photo-1514222134-b57cbb8ce073', 600, 600),
+    // Home Temple & Decor
+    'wooden-mandir': u('photo-1618897033742-4ad61a660b11', 600, 600),
+    'led-diya-set': u('photo-1513625047154-f390b1b0df20', 600, 600),
   },
 
   // ── Gaushala / Cow Seva ────────────────────────────────────

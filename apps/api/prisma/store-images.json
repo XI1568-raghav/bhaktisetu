@@ -1,0 +1,159 @@
+{
+  "brass-puja-thali": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Hindu_pooja_thali.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Hindu_pooja_thali.jpg",
+    "license": "CC0 1.0",
+    "attribution": "Photo: suketdedhia, CC0 1.0 (Public Domain)"
+  },
+  "brass-diya": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Indian_Arati_diya.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Indian_Arati_diya.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "puja-bell": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/GHANTI.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:GHANTI.jpg",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA 4.0"
+  },
+  "rudraksha-mala": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Rudraksha_mala.jpg",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA 4.0"
+  },
+  "tulsi-mala": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Japa_mala_%28prayer_beads%29_of_Tulasi_wood_with_108_beads_-_20040101-01.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Japa_mala_(prayer_beads)_of_Tulasi_wood_with_108_beads_-_20040101-01.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "ganesh-murti": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Marble_Dagadusheth_Halwai_Ganapati_Statue_from_Maliyas.com_Jaipur_India.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Marble_Dagadusheth_Halwai_Ganapati_Statue_from_Maliyas.com_Jaipur_India.jpg",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Photo: Maliyas (Maliyas.com), CC BY-SA 4.0"
+  },
+  "krishna-idol": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/3/38/Brass_standing_figure_***REMOVED***._Wellcome_M0012566.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Brass_standing_figure_***REMOVED***._Wellcome_M0012566.jpg",
+    "license": "CC BY 4.0",
+    "attribution": "Photo: Wellcome Library, London, CC BY 4.0"
+  },
+  "lakshmi-idol": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/9/98/The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_%281_of_2%29.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_(1_of_2).jpg",
+    "license": "Public Domain",
+    "attribution": "Object: LACMA M.87.210; Image: Public Domain (LACMA)"
+  },
+  "copper-kalash": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Navratri_Kalash_Puja.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Navratri_Kalash_Puja.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "bhagavad-gita": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/Bhagavad_Gita_book_%28small%29_01.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Bhagavad_Gita_book_(small)_01.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "hanuman-chalisa-book": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Hanuman_Chalisa_4x3.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "cow-ghee": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/6/65/Pure_Ghee-Homemade-Maharashtra.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Pure_Ghee-Homemade-Maharashtra.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "havan-samagri": {
+    "type": "wikimedia",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/c7/%28A%29_puja_fire%2C_Havanam.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:(A)_puja_fire,_Havanam.jpg",
+    "license": "CC BY-SA",
+    "attribution": "Photo: Wikimedia contributor, CC BY-SA"
+  },
+  "wooden-mandir": {
+    "type": "unsplash",
+    "photoId": "photo-1618897033742-4ad61a660b11",
+    "url": "https://images.unsplash.com/photo-1618897033742-4ad61a660b11?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Wooden carved shrine / temple cabinet"
+  },
+  "incense-sticks": {
+    "type": "unsplash",
+    "photoId": "photo-1541795083-1b160cf4f3d7",
+    "url": "https://images.unsplash.com/photo-1541795083-1b160cf4f3d7?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Lit incense stick with rising smoke"
+  },
+  "camphor-pack": {
+    "type": "unsplash",
+    "photoId": "photo-1551690935-a9e6f0a7e788",
+    "url": "https://images.unsplash.com/photo-1551690935-a9e6f0a7e788?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "White incense / aromatic bowl close-up (camphor-style)"
+  },
+  "kumkum-set": {
+    "type": "unsplash",
+    "photoId": "photo-1577563717655-919fc57789b4",
+    "url": "https://images.unsplash.com/photo-1577563717655-919fc57789b4?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Spoon of red ritual powder (kumkum)"
+  },
+  "crystal-mala": {
+    "type": "unsplash",
+    "photoId": "photo-1601824096525-954268b9eb72",
+    "url": "https://images.unsplash.com/photo-1601824096525-954268b9eb72?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Beaded necklace / mala close-up"
+  },
+  "navratri-kit": {
+    "type": "unsplash",
+    "photoId": "photo-1605292356183-a77d0a9c9d1d",
+    "url": "https://images.unsplash.com/photo-1605292356183-a77d0a9c9d1d?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Lit diya in brass holder, Diwali / Navratri puja setting"
+  },
+  "pooja-samagri-kit": {
+    "type": "unsplash",
+    "photoId": "photo-1633368516165-f7b04d6428d1",
+    "url": "https://images.unsplash.com/photo-1633368516165-f7b04d6428d1?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Lit diya alongside puja items / festive arrangement"
+  },
+  "rudraksha-bracelet": {
+    "type": "unsplash",
+    "photoId": "photo-1622993361118-b6365d859ab6",
+    "url": "https://images.unsplash.com/photo-1622993361118-b6365d859ab6?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Rudraksha-style beaded wrist bracelet on blue surface"
+  },
+  "om-pendant": {
+    "type": "unsplash",
+    "photoId": "photo-1747576129956-d8124fab8668",
+    "url": "https://images.unsplash.com/photo-1747576129956-d8124fab8668?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Golden Om symbol on dark stone background"
+  },
+  "sandalwood-paste": {
+    "type": "unsplash",
+    "photoId": "photo-1595414902678-862fe51c9f27",
+    "url": "https://images.unsplash.com/photo-1595414902678-862fe51c9f27?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Brown powder / paste on white surface (sandalwood / chandan)"
+  },
+  "led-diya-set": {
+    "type": "unsplash",
+    "photoId": "photo-1513625047154-f390b1b0df20",
+    "url": "https://images.unsplash.com/photo-1513625047154-f390b1b0df20?w=600&h=600&fit=crop&auto=format&q=80",
+    "description": "Yellow LED string / fairy lights glowing at night"
+  }
+}
