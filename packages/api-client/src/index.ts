@@ -38,3 +38,31 @@ export {
   useUserAddresses,
   useCreateAddress,
 } from "./hooks/index.js";
+
+// ─── Auth hooks ──────────────────────────────
+export {
+  useSignInWithOtp,
+  useVerifyOtp,
+  useSignInWithCredentials,
+  useSignUp,
+  useLogout,
+  useRefreshToken,
+  useMe,
+} from "./hooks/auth.js";
+
+export type {
+  UserRole,
+  AuthUser,
+  AuthSession,
+  SendOtpRequest,
+  SendOtpResponse,
+  VerifyOtpRequest,
+  VerifyOtpResponse,
+  LoginRequest,
+  LoginResponse,
+  SignupRequest,
+  SignupResponse,
+  RefreshRequest,
+  RefreshResponse,
+  MeResponse,
+} from "./hooks/auth.js";
