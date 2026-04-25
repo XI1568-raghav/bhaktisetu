@@ -53,32 +53,33 @@ export async function authenticateUser(
     // Demo mode: accept demo tokens and return a mock user
     // Supports demo-devotee, demo-pandit, demo-store, demo-astrologer,
     // demo-wellness, demo-gaushala, demo-temple, demo-admin
-    if (isDemoMode && token.startsWith('demo-')) {
-      const roleFromToken = token.replace('demo-', '').toUpperCase();
-      const DEMO_ROLE_MAP: Record<string, MarketplaceRole[]> = {
-        'DEVOTEE': ['DEVOTEE'],
-        'PANDIT': ['PANDIT', 'DEVOTEE'],
-        'STORE': ['STORE_OWNER', 'DEVOTEE'],
-        'STORE_OWNER': ['STORE_OWNER', 'DEVOTEE'],
-        'ASTROLOGER': ['ASTROLOGER', 'DEVOTEE'],
-        'WELLNESS': ['WELLNESS_INSTRUCTOR', 'DEVOTEE'],
-        'WELLNESS_INSTRUCTOR': ['WELLNESS_INSTRUCTOR', 'DEVOTEE'],
-        'GAUSHALA': ['GAUSHALA_MANAGER', 'DEVOTEE'],
-        'GAUSHALA_MANAGER': ['GAUSHALA_MANAGER', 'DEVOTEE'],
-        'TEMPLE': ['TEMPLE_MANAGER', 'DEVOTEE'],
-        'TEMPLE_MANAGER': ['TEMPLE_MANAGER', 'DEVOTEE'],
-        'ADMIN': ['ADMIN', 'DEVOTEE'],
+    // Demo tokens are always accepted (even outside demo mode) so seeded
+    // demo accounts work against the live API.
+    if (token.startsWith('demo-')) {
+      // Token format: demo-<demo-handle>-token (e.g. "demo-demo-pandit-token")
+      // The handle matches the email local-part (before @) of seeded demo accounts.
+      const stripped = token.replace(/^demo-/, '').replace(/-token$/, '').replace(/^demo-/, '');
+      const DEMO_ROLE_MAP: Record<string, { roles: MarketplaceRole[]; email: string; fullName: string }> = {
+        'devotee': { roles: ['DEVOTEE'], email: 'devotee@demo.com', fullName: 'Demo Devotee' },
+        'pandit': { roles: ['PANDIT', 'DEVOTEE'], email: 'pandit@demo.com', fullName: 'Demo Pandit' },
+        'store': { roles: ['STORE_OWNER', 'DEVOTEE'], email: 'store@demo.com', fullName: 'Demo Store Owner' },
+        'astro': { roles: ['ASTROLOGER', 'DEVOTEE'], email: 'astro@demo.com', fullName: 'Demo Astrologer' },
+        'wellness': { roles: ['WELLNESS_INSTRUCTOR', 'DEVOTEE'], email: 'wellness@demo.com', fullName: 'Demo Wellness Instructor' },
+        'gaushala': { roles: ['GAUSHALA_MANAGER', 'DEVOTEE'], email: 'gaushala@demo.com', fullName: 'Demo Gaushala Manager' },
+        'temple': { roles: ['TEMPLE_MANAGER', 'DEVOTEE'], email: 'temple@demo.com', fullName: 'Demo Temple Manager' },
+        'admin': { roles: ['ADMIN', 'DEVOTEE'], email: 'admin@demo.com', fullName: 'Demo Admin' },
       };
-      const roles = DEMO_ROLE_MAP[roleFromToken] ?? ['DEVOTEE'];
+      const handle = stripped.toLowerCase();
+      const profile = DEMO_ROLE_MAP[handle] ?? DEMO_ROLE_MAP['devotee']!;
 
       request.currentUser = {
-        id: 'demo-user-001',
-        supabaseId: 'demo-supabase-001',
+        id: `demo-${handle}`,
+        supabaseId: `demo-${handle}`,
         phone: '+919876543210',
-        email: 'arjun@darshya.online',
-        fullName: 'Arjun Sharma',
+        email: profile.email,
+        fullName: profile.fullName,
         subscriptionTier: 'bhakti_pass',
-        roles,
+        roles: profile.roles,
       };
       return;
     }
