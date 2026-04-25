@@ -28,10 +28,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@shrikashivishwanath.org',
     websiteUrl: 'https://shrikashivishwanath.org',
     images: [
-      'https://images.poojly.com/temples/kashi-vishwanath/main.jpg',
-      'https://images.poojly.com/temples/kashi-vishwanath/golden-spire.jpg',
-      'https://images.poojly.com/temples/kashi-vishwanath/corridor.jpg',
-      'https://images.poojly.com/temples/kashi-vishwanath/ganga-view.jpg',
+      'https://images.darshya.online/temples/kashi-vishwanath/main.jpg',
+      'https://images.darshya.online/temples/kashi-vishwanath/golden-spire.jpg',
+      'https://images.darshya.online/temples/kashi-vishwanath/corridor.jpg',
+      'https://images.darshya.online/temples/kashi-vishwanath/ganga-view.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -46,7 +46,7 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     },
     trustScore: 4.9,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.poojly.com/kashi-vishwanath',
+    streamUrl: 'https://stream.darshya.online/kashi-vishwanath',
   },
   {
     name: 'Tirumala Tirupati Devasthanam',
@@ -66,10 +66,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@tirumala.org',
     websiteUrl: 'https://www.tirumala.org',
     images: [
-      'https://images.poojly.com/temples/tirumala-tirupati/main.jpg',
-      'https://images.poojly.com/temples/tirumala-tirupati/gopuram.jpg',
-      'https://images.poojly.com/temples/tirumala-tirupati/golden-vimana.jpg',
-      'https://images.poojly.com/temples/tirumala-tirupati/laddu.jpg',
+      'https://images.darshya.online/temples/tirumala-tirupati/main.jpg',
+      'https://images.darshya.online/temples/tirumala-tirupati/gopuram.jpg',
+      'https://images.darshya.online/temples/tirumala-tirupati/golden-vimana.jpg',
+      'https://images.darshya.online/temples/tirumala-tirupati/laddu.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -84,7 +84,7 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     },
     trustScore: 5.0,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.poojly.com/tirumala-tirupati',
+    streamUrl: 'https://stream.darshya.online/tirumala-tirupati',
   },
   {
     name: 'Siddhivinayak Temple',
@@ -104,10 +104,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@siddhivinayak.org',
     websiteUrl: 'https://www.siddhivinayak.org',
     images: [
-      'https://images.poojly.com/temples/siddhivinayak/main.jpg',
-      'https://images.poojly.com/temples/siddhivinayak/golden-dome.jpg',
-      'https://images.poojly.com/temples/siddhivinayak/idol.jpg',
-      'https://images.poojly.com/temples/siddhivinayak/entrance.jpg',
+      'https://images.darshya.online/temples/siddhivinayak/main.jpg',
+      'https://images.darshya.online/temples/siddhivinayak/golden-dome.jpg',
+      'https://images.darshya.online/temples/siddhivinayak/idol.jpg',
+      'https://images.darshya.online/temples/siddhivinayak/entrance.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -122,7 +122,7 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     },
     trustScore: 4.8,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.poojly.com/siddhivinayak',
+    streamUrl: 'https://stream.darshya.online/siddhivinayak',
   },
   {
     name: 'Somnath Temple',
@@ -142,10 +142,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@somnath.org',
     websiteUrl: 'https://somnath.org',
     images: [
-      'https://images.poojly.com/temples/somnath/main.jpg',
-      'https://images.poojly.com/temples/somnath/sea-view.jpg',
-      'https://images.poojly.com/temples/somnath/evening.jpg',
-      'https://images.poojly.com/temples/somnath/light-show.jpg',
+      'https://images.darshya.online/temples/somnath/main.jpg',
+      'https://images.darshya.online/temples/somnath/sea-view.jpg',
+      'https://images.darshya.online/temples/somnath/evening.jpg',
+      'https://images.darshya.online/temples/somnath/light-show.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -180,10 +180,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@jagannath.nic.in',
     websiteUrl: 'https://jagannath.nic.in',
     images: [
-      'https://images.poojly.com/temples/jagannath-puri/main.jpg',
-      'https://images.poojly.com/temples/jagannath-puri/rath-yatra.jpg',
-      'https://images.poojly.com/temples/jagannath-puri/nilachakra.jpg',
-      'https://images.poojly.com/temples/jagannath-puri/mahaprasad.jpg',
+      'https://images.darshya.online/temples/jagannath-puri/main.jpg',
+      'https://images.darshya.online/temples/jagannath-puri/rath-yatra.jpg',
+      'https://images.darshya.online/temples/jagannath-puri/nilachakra.jpg',
+      'https://images.darshya.online/temples/jagannath-puri/mahaprasad.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -199,23 +199,23 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     },
     trustScore: 4.9,
     liveDarshanEnabled: true,
-    streamUrl: 'https://stream.poojly.com/jagannath-puri',
+    streamUrl: 'https://stream.darshya.online/jagannath-puri',
   },
 ];
 
 // ─── PUJA TYPES DATA ────────────────────────────────────────────────────────
 
 const pujaTypesData = [
-  { name: 'Rudrabhishek', nameLocal: 'रुद्राभिषेक', slug: 'rudrabhishek', description: 'Rudrabhishek is one of the most powerful Vedic rituals dedicated to Lord Shiva.', category: 'planetary' as const, deity: 'Lord Shiva', durationMinutes: 90, basePrice: 501, nriPrice: 2501, samagriIncluded: true, samagriItems: ['Bel patra', 'Dhatura', 'Milk', 'Honey', 'Curd', 'Ghee', 'Gangajal', 'Rudraksha mala'], images: ['https://images.poojly.com/pujas/rudrabhishek/main.jpg'], videoProofMandatory: true, sortOrder: 1 },
-  { name: 'Ganesh Puja', nameLocal: 'गणेश पूजा', slug: 'ganesh-puja', description: 'Ganesh Puja is performed to invoke the blessings of Lord Ganesha, the remover of obstacles.', category: 'prosperity' as const, deity: 'Lord Ganesha', durationMinutes: 60, basePrice: 351, nriPrice: 1501, samagriIncluded: true, samagriItems: ['Modak', 'Durva grass', 'Red flowers', 'Sindoor', 'Coconut', 'Betel leaves', 'Jaggery'], images: ['https://images.poojly.com/pujas/ganesh-puja/main.jpg'], videoProofMandatory: true, sortOrder: 2 },
-  { name: 'Satyanarayan Katha', nameLocal: 'सत्यनारायण कथा', slug: 'satyanarayan-katha', description: 'Satyanarayan Katha is a devotional ritual performed to seek the blessings of Lord Vishnu.', category: 'special_occasion' as const, deity: 'Lord Vishnu', durationMinutes: 120, basePrice: 751, nriPrice: 3001, samagriIncluded: true, samagriItems: ['Banana', 'Wheat flour', 'Sugar', 'Ghee', 'Tulsi', 'Panchamrit', 'Dry fruits', 'Yellow cloth'], images: ['https://images.poojly.com/pujas/satyanarayan-katha/main.jpg'], videoProofMandatory: true, sortOrder: 3 },
-  { name: 'Maha Mrityunjay Jaap', nameLocal: 'महा मृत्युंजय जाप', slug: 'maha-mrityunjay-jaap', description: 'Maha Mrityunjay Jaap is a powerful chanting ritual dedicated to Lord Shiva as the conqueror of death.', category: 'health' as const, deity: 'Lord Shiva', durationMinutes: 180, basePrice: 1100, nriPrice: 5001, samagriIncluded: true, samagriItems: ['Rudraksha mala', 'Bel patra', 'White flowers', 'Ghee', 'Sesame seeds', 'Havan samagri', 'Camphor'], images: ['https://images.poojly.com/pujas/maha-mrityunjay/main.jpg'], videoProofMandatory: true, sortOrder: 4 },
-  { name: 'Lakshmi Puja', nameLocal: 'लक्ष्मी पूजा', slug: 'lakshmi-puja', description: 'Lakshmi Puja is a sacred ritual dedicated to Goddess Lakshmi for wealth and prosperity.', category: 'prosperity' as const, deity: 'Goddess Lakshmi', durationMinutes: 60, basePrice: 451, nriPrice: 2001, samagriIncluded: true, samagriItems: ['Lotus flowers', 'Rice', 'Turmeric', 'Kumkum', 'Coins', 'Sweets', 'Red cloth', 'Kalash'], images: ['https://images.poojly.com/pujas/lakshmi-puja/main.jpg'], videoProofMandatory: true, sortOrder: 5 },
-  { name: 'Navgraha Shanti Puja', nameLocal: 'नवग्रह शांति पूजा', slug: 'navgraha-shanti-puja', description: 'Navgraha Shanti Puja is performed to pacify the nine planetary deities.', category: 'planetary' as const, deity: 'Navagraha', durationMinutes: 120, basePrice: 901, nriPrice: 4001, samagriIncluded: true, samagriItems: ['Nine types of grains', 'Nine colored cloths', 'Havan samagri', 'Ghee', 'Navgraha yantra'], images: ['https://images.poojly.com/pujas/navgraha-shanti/main.jpg'], videoProofMandatory: true, sortOrder: 6 },
-  { name: 'Sunderkand Path', nameLocal: 'सुंदरकांड पाठ', slug: 'sunderkand-path', description: 'Sunderkand Path is the devotional recitation of the fifth chapter of Ramcharitmanas.', category: 'daily' as const, deity: 'Lord Hanuman', durationMinutes: 150, basePrice: 501, nriPrice: 2001, samagriIncluded: true, samagriItems: ['Sindoor', 'Jasmine oil', 'Red flowers', 'Bundi laddoo', 'Betel leaves', 'Ramcharitmanas book'], images: ['https://images.poojly.com/pujas/sunderkand-path/main.jpg'], videoProofMandatory: true, sortOrder: 7 },
-  { name: 'Hanuman Chalisa Path', nameLocal: 'हनुमान चालीसा पाठ', slug: 'hanuman-chalisa-path', description: 'Hanuman Chalisa Path involves the devotional recitation of the 40 verses by Goswami Tulsidas.', category: 'daily' as const, deity: 'Lord Hanuman', durationMinutes: 45, basePrice: 251, nriPrice: 1001, samagriIncluded: true, samagriItems: ['Sindoor', 'Jasmine oil', 'Red flowers', 'Bundi laddoo', 'Chola (red cloth)'], images: ['https://images.poojly.com/pujas/hanuman-chalisa/main.jpg'], videoProofMandatory: true, sortOrder: 8 },
-  { name: 'Ram Charit Manas Path', nameLocal: 'रामचरित मानस पाठ', slug: 'ram-charit-manas-path', description: 'Ram Charit Manas Path is the complete recitation of the epic poem by Goswami Tulsidas.', category: 'special_occasion' as const, deity: 'Lord Ram', durationMinutes: 240, basePrice: 1501, nriPrice: 6001, samagriIncluded: true, samagriItems: ['Ramcharitmanas book', 'Tulsi mala', 'Yellow flowers', 'Fruits', 'Sweets', 'Ghee diya', 'Havan samagri'], images: ['https://images.poojly.com/pujas/ram-charit-manas/main.jpg'], videoProofMandatory: true, sortOrder: 9 },
-  { name: 'Pitru Dosh Nivaran Puja', nameLocal: 'पितृ दोष निवारण पूजा', slug: 'pitru-dosh-nivaran-puja', description: 'Pitru Dosh Nivaran Puja is performed to alleviate the ancestral curse (Pitru Dosh).', category: 'memorial' as const, deity: 'Ancestors', durationMinutes: 150, basePrice: 1101, nriPrice: 5001, samagriIncluded: true, samagriItems: ['Black sesame seeds', 'Barley', 'Kusha grass', 'Rice', 'White cloth', 'Ghee', 'Havan samagri', 'Dakshina'], images: ['https://images.poojly.com/pujas/pitru-dosh-nivaran/main.jpg'], videoProofMandatory: true, sortOrder: 10 },
+  { name: 'Rudrabhishek', nameLocal: 'रुद्राभिषेक', slug: 'rudrabhishek', description: 'Rudrabhishek is one of the most powerful Vedic rituals dedicated to Lord Shiva.', category: 'planetary' as const, deity: 'Lord Shiva', durationMinutes: 90, basePrice: 501, nriPrice: 2501, samagriIncluded: true, samagriItems: ['Bel patra', 'Dhatura', 'Milk', 'Honey', 'Curd', 'Ghee', 'Gangajal', 'Rudraksha mala'], images: ['https://images.darshya.online/pujas/rudrabhishek/main.jpg'], videoProofMandatory: true, sortOrder: 1 },
+  { name: 'Ganesh Puja', nameLocal: 'गणेश पूजा', slug: 'ganesh-puja', description: 'Ganesh Puja is performed to invoke the blessings of Lord Ganesha, the remover of obstacles.', category: 'prosperity' as const, deity: 'Lord Ganesha', durationMinutes: 60, basePrice: 351, nriPrice: 1501, samagriIncluded: true, samagriItems: ['Modak', 'Durva grass', 'Red flowers', 'Sindoor', 'Coconut', 'Betel leaves', 'Jaggery'], images: ['https://images.darshya.online/pujas/ganesh-puja/main.jpg'], videoProofMandatory: true, sortOrder: 2 },
+  { name: 'Satyanarayan Katha', nameLocal: 'सत्यनारायण कथा', slug: 'satyanarayan-katha', description: 'Satyanarayan Katha is a devotional ritual performed to seek the blessings of Lord Vishnu.', category: 'special_occasion' as const, deity: 'Lord Vishnu', durationMinutes: 120, basePrice: 751, nriPrice: 3001, samagriIncluded: true, samagriItems: ['Banana', 'Wheat flour', 'Sugar', 'Ghee', 'Tulsi', 'Panchamrit', 'Dry fruits', 'Yellow cloth'], images: ['https://images.darshya.online/pujas/satyanarayan-katha/main.jpg'], videoProofMandatory: true, sortOrder: 3 },
+  { name: 'Maha Mrityunjay Jaap', nameLocal: 'महा मृत्युंजय जाप', slug: 'maha-mrityunjay-jaap', description: 'Maha Mrityunjay Jaap is a powerful chanting ritual dedicated to Lord Shiva as the conqueror of death.', category: 'health' as const, deity: 'Lord Shiva', durationMinutes: 180, basePrice: 1100, nriPrice: 5001, samagriIncluded: true, samagriItems: ['Rudraksha mala', 'Bel patra', 'White flowers', 'Ghee', 'Sesame seeds', 'Havan samagri', 'Camphor'], images: ['https://images.darshya.online/pujas/maha-mrityunjay/main.jpg'], videoProofMandatory: true, sortOrder: 4 },
+  { name: 'Lakshmi Puja', nameLocal: 'लक्ष्मी पूजा', slug: 'lakshmi-puja', description: 'Lakshmi Puja is a sacred ritual dedicated to Goddess Lakshmi for wealth and prosperity.', category: 'prosperity' as const, deity: 'Goddess Lakshmi', durationMinutes: 60, basePrice: 451, nriPrice: 2001, samagriIncluded: true, samagriItems: ['Lotus flowers', 'Rice', 'Turmeric', 'Kumkum', 'Coins', 'Sweets', 'Red cloth', 'Kalash'], images: ['https://images.darshya.online/pujas/lakshmi-puja/main.jpg'], videoProofMandatory: true, sortOrder: 5 },
+  { name: 'Navgraha Shanti Puja', nameLocal: 'नवग्रह शांति पूजा', slug: 'navgraha-shanti-puja', description: 'Navgraha Shanti Puja is performed to pacify the nine planetary deities.', category: 'planetary' as const, deity: 'Navagraha', durationMinutes: 120, basePrice: 901, nriPrice: 4001, samagriIncluded: true, samagriItems: ['Nine types of grains', 'Nine colored cloths', 'Havan samagri', 'Ghee', 'Navgraha yantra'], images: ['https://images.darshya.online/pujas/navgraha-shanti/main.jpg'], videoProofMandatory: true, sortOrder: 6 },
+  { name: 'Sunderkand Path', nameLocal: 'सुंदरकांड पाठ', slug: 'sunderkand-path', description: 'Sunderkand Path is the devotional recitation of the fifth chapter of Ramcharitmanas.', category: 'daily' as const, deity: 'Lord Hanuman', durationMinutes: 150, basePrice: 501, nriPrice: 2001, samagriIncluded: true, samagriItems: ['Sindoor', 'Jasmine oil', 'Red flowers', 'Bundi laddoo', 'Betel leaves', 'Ramcharitmanas book'], images: ['https://images.darshya.online/pujas/sunderkand-path/main.jpg'], videoProofMandatory: true, sortOrder: 7 },
+  { name: 'Hanuman Chalisa Path', nameLocal: 'हनुमान चालीसा पाठ', slug: 'hanuman-chalisa-path', description: 'Hanuman Chalisa Path involves the devotional recitation of the 40 verses by Goswami Tulsidas.', category: 'daily' as const, deity: 'Lord Hanuman', durationMinutes: 45, basePrice: 251, nriPrice: 1001, samagriIncluded: true, samagriItems: ['Sindoor', 'Jasmine oil', 'Red flowers', 'Bundi laddoo', 'Chola (red cloth)'], images: ['https://images.darshya.online/pujas/hanuman-chalisa/main.jpg'], videoProofMandatory: true, sortOrder: 8 },
+  { name: 'Ram Charit Manas Path', nameLocal: 'रामचरित मानस पाठ', slug: 'ram-charit-manas-path', description: 'Ram Charit Manas Path is the complete recitation of the epic poem by Goswami Tulsidas.', category: 'special_occasion' as const, deity: 'Lord Ram', durationMinutes: 240, basePrice: 1501, nriPrice: 6001, samagriIncluded: true, samagriItems: ['Ramcharitmanas book', 'Tulsi mala', 'Yellow flowers', 'Fruits', 'Sweets', 'Ghee diya', 'Havan samagri'], images: ['https://images.darshya.online/pujas/ram-charit-manas/main.jpg'], videoProofMandatory: true, sortOrder: 9 },
+  { name: 'Pitru Dosh Nivaran Puja', nameLocal: 'पितृ दोष निवारण पूजा', slug: 'pitru-dosh-nivaran-puja', description: 'Pitru Dosh Nivaran Puja is performed to alleviate the ancestral curse (Pitru Dosh).', category: 'memorial' as const, deity: 'Ancestors', durationMinutes: 150, basePrice: 1101, nriPrice: 5001, samagriIncluded: true, samagriItems: ['Black sesame seeds', 'Barley', 'Kusha grass', 'Rice', 'White cloth', 'Ghee', 'Havan samagri', 'Dakshina'], images: ['https://images.darshya.online/pujas/pitru-dosh-nivaran/main.jpg'], videoProofMandatory: true, sortOrder: 10 },
 ];
 
 // ─── CONTENT DATA is imported from ./content-data.ts ─────────────────────────
@@ -248,27 +248,27 @@ const demoUsers = [
 // ─── ASTROLOGERS (Vedic / Tarot / Numerology) ───────────────────────────────
 
 const astrologersData = [
-  { email: 'astro.vedic@poojly.com', phone: '+919811100001', fullName: 'Acharya Vinod Sharma', displayName: 'Acharya Vinod Sharma', specialties: ['Vedic', 'Kundali', 'Muhurat'], experience: 22, languages: ['Hindi', 'Sanskrit', 'English'], pricePerMinute: 25, bio: 'Vedic astrologer with 22 years of experience.' },
-  { email: 'astro.tarot@poojly.com', phone: '+919811100002', fullName: 'Ritika Menon', displayName: 'Ritika Menon', specialties: ['Tarot', 'Angel Cards', 'Reiki'], experience: 9, languages: ['English', 'Hindi', 'Malayalam'], pricePerMinute: 18, bio: 'Certified Tarot reader and energy healer.' },
-  { email: 'astro.numero@poojly.com', phone: '+919811100003', fullName: 'Dr. Mahesh Iyer', displayName: 'Dr. Mahesh Iyer', specialties: ['Numerology', 'Name Correction', 'Lo Shu Grid'], experience: 15, languages: ['English', 'Tamil', 'Hindi'], pricePerMinute: 20, bio: 'Numerology expert specializing in name corrections.' },
+  { email: 'astro.vedic@darshya.online', phone: '+919811100001', fullName: 'Acharya Vinod Sharma', displayName: 'Acharya Vinod Sharma', specialties: ['Vedic', 'Kundali', 'Muhurat'], experience: 22, languages: ['Hindi', 'Sanskrit', 'English'], pricePerMinute: 25, bio: 'Vedic astrologer with 22 years of experience.' },
+  { email: 'astro.tarot@darshya.online', phone: '+919811100002', fullName: 'Ritika Menon', displayName: 'Ritika Menon', specialties: ['Tarot', 'Angel Cards', 'Reiki'], experience: 9, languages: ['English', 'Hindi', 'Malayalam'], pricePerMinute: 18, bio: 'Certified Tarot reader and energy healer.' },
+  { email: 'astro.numero@darshya.online', phone: '+919811100003', fullName: 'Dr. Mahesh Iyer', displayName: 'Dr. Mahesh Iyer', specialties: ['Numerology', 'Name Correction', 'Lo Shu Grid'], experience: 15, languages: ['English', 'Tamil', 'Hindi'], pricePerMinute: 20, bio: 'Numerology expert specializing in name corrections.' },
 ];
 
 // ─── WELLNESS INSTRUCTORS ───────────────────────────────────────────────────
 
 const wellnessData = [
-  { email: 'wellness.yoga@poojly.com', phone: '+919811200001', fullName: 'Swami Atmananda', displayName: 'Swami Atmananda', specialties: ['Hatha Yoga', 'Pranayama'], certifications: ['RYT-500', 'Sivananda Certified'], experience: 20, pricePerSession: 800, bio: 'Traditional Hatha Yoga teacher from Rishikesh.' },
-  { email: 'wellness.meditation@poojly.com', phone: '+919811200002', fullName: 'Ananya Desai', displayName: 'Ananya Desai', specialties: ['Vipassana', 'Mindfulness'], certifications: ['Goenka Vipassana Assistant'], experience: 11, pricePerSession: 600, bio: 'Mindfulness and Vipassana meditation guide.' },
-  { email: 'wellness.ayurveda@poojly.com', phone: '+919811200003', fullName: 'Dr. Kavita Nair', displayName: 'Dr. Kavita Nair', specialties: ['Ayurveda Consultation', 'Panchakarma'], certifications: ['BAMS', 'MD Ayurveda'], experience: 17, pricePerSession: 1500, bio: 'BAMS doctor specializing in Ayurvedic consultations.' },
-  { email: 'wellness.sound@poojly.com', phone: '+919811200004', fullName: 'Arjun Kapoor', displayName: 'Arjun Kapoor', specialties: ['Sound Healing', 'Mantra Chanting'], certifications: ['Himalayan Singing Bowl Cert.'], experience: 7, pricePerSession: 900, bio: 'Sound healer using Tibetan singing bowls.' },
-  { email: 'wellness.breathwork@poojly.com', phone: '+919811200005', fullName: 'Neha Srinivasan', displayName: 'Neha Srinivasan', specialties: ['Breathwork', 'Kriya Yoga'], certifications: ['Isha Hatha Yoga Teacher'], experience: 6, pricePerSession: 550, bio: 'Breathwork and Kriya Yoga instructor.' },
+  { email: 'wellness.yoga@darshya.online', phone: '+919811200001', fullName: 'Swami Atmananda', displayName: 'Swami Atmananda', specialties: ['Hatha Yoga', 'Pranayama'], certifications: ['RYT-500', 'Sivananda Certified'], experience: 20, pricePerSession: 800, bio: 'Traditional Hatha Yoga teacher from Rishikesh.' },
+  { email: 'wellness.meditation@darshya.online', phone: '+919811200002', fullName: 'Ananya Desai', displayName: 'Ananya Desai', specialties: ['Vipassana', 'Mindfulness'], certifications: ['Goenka Vipassana Assistant'], experience: 11, pricePerSession: 600, bio: 'Mindfulness and Vipassana meditation guide.' },
+  { email: 'wellness.ayurveda@darshya.online', phone: '+919811200003', fullName: 'Dr. Kavita Nair', displayName: 'Dr. Kavita Nair', specialties: ['Ayurveda Consultation', 'Panchakarma'], certifications: ['BAMS', 'MD Ayurveda'], experience: 17, pricePerSession: 1500, bio: 'BAMS doctor specializing in Ayurvedic consultations.' },
+  { email: 'wellness.sound@darshya.online', phone: '+919811200004', fullName: 'Arjun Kapoor', displayName: 'Arjun Kapoor', specialties: ['Sound Healing', 'Mantra Chanting'], certifications: ['Himalayan Singing Bowl Cert.'], experience: 7, pricePerSession: 900, bio: 'Sound healer using Tibetan singing bowls.' },
+  { email: 'wellness.breathwork@darshya.online', phone: '+919811200005', fullName: 'Neha Srinivasan', displayName: 'Neha Srinivasan', specialties: ['Breathwork', 'Kriya Yoga'], certifications: ['Isha Hatha Yoga Teacher'], experience: 6, pricePerSession: 550, bio: 'Breathwork and Kriya Yoga instructor.' },
 ];
 
 // ─── GAUSHALAS ──────────────────────────────────────────────────────────────
 
 const gaushalaData = [
-  { email: 'gaushala.mathura@poojly.com', phone: '+919811300001', fullName: 'Shri Krishna Gaushala Trust', gaushalaName: 'Shri Krishna Gaushala', city: 'Mathura', address: 'Vrindavan Road, Mathura', totalCows: 420, description: 'Traditional gaushala near Vrindavan caring for indigenous breed cows.' },
-  { email: 'gaushala.pathmeda@poojly.com', phone: '+919811300002', fullName: 'Pathmeda Gauseva Sansthan', gaushalaName: 'Pathmeda Gauseva Sansthan', city: 'Sanchore', address: 'Pathmeda, Jalore, Rajasthan', totalCows: 2800, description: 'One of India\'s largest gaushalas.' },
-  { email: 'gaushala.hinganghat@poojly.com', phone: '+919811300003', fullName: 'Hinganghat Goseva Samiti', gaushalaName: 'Hinganghat Goseva Samiti', city: 'Wardha', address: 'Hinganghat, Wardha, Maharashtra', totalCows: 310, description: 'Community-run gaushala producing A2 milk and panchagavya products.' },
+  { email: 'gaushala.mathura@darshya.online', phone: '+919811300001', fullName: 'Shri Krishna Gaushala Trust', gaushalaName: 'Shri Krishna Gaushala', city: 'Mathura', address: 'Vrindavan Road, Mathura', totalCows: 420, description: 'Traditional gaushala near Vrindavan caring for indigenous breed cows.' },
+  { email: 'gaushala.pathmeda@darshya.online', phone: '+919811300002', fullName: 'Pathmeda Gauseva Sansthan', gaushalaName: 'Pathmeda Gauseva Sansthan', city: 'Sanchore', address: 'Pathmeda, Jalore, Rajasthan', totalCows: 2800, description: 'One of India\'s largest gaushalas.' },
+  { email: 'gaushala.hinganghat@darshya.online', phone: '+919811300003', fullName: 'Hinganghat Goseva Samiti', gaushalaName: 'Hinganghat Goseva Samiti', city: 'Wardha', address: 'Hinganghat, Wardha, Maharashtra', totalCows: 310, description: 'Community-run gaushala producing A2 milk and panchagavya products.' },
 ];
 
 // ─── MAIN SEED FUNCTION ─────────────────────────────────────────────────────
@@ -280,7 +280,7 @@ const nowPlus = (days: number) => {
 };
 
 async function main() {
-  console.log('🌱 Starting Poojly database seed (idempotent)...\n');
+  console.log('🌱 Starting Darshya database seed (idempotent)...\n');
 
   // ── 1. Demo users ──
   console.log('👤 Upserting demo users + role assignments + subscriptions...');
@@ -330,8 +330,8 @@ async function main() {
   // ── 3. Priests ──
   console.log('🙏 Upserting priests (3 approved + verified)...');
   const priestSeeds = [
-    { email: 'pandit.shastri@example.com', phone: '+919999888877', fullName: 'Pandit Ramesh Shastri', locationCity: 'Varanasi', locationState: 'Uttar Pradesh', gotra: 'Vasishtha', displayName: 'Pandit Ramesh Shastri', specializations: ['Rudrabhishek', 'Maha Mrityunjay Jaap', 'Navgraha Shanti', 'Satyanarayan Katha'], languages: ['Hindi', 'Sanskrit', 'English'], experienceYears: 25, ratingAvg: 4.9, ratingCount: 347, bio: 'Vedic scholar from Varanasi with 25 years of experience in Shiva rituals.', avatarUrl: 'https://images.poojly.com/priests/pandit-ramesh-shastri.jpg' },
-    { email: 'pandit.trivedi@example.com', phone: '+919999777766', fullName: 'Pandit Suresh Trivedi', locationCity: 'Puri', locationState: 'Odisha', gotra: 'Bharadwaj', displayName: 'Pandit Suresh Trivedi', specializations: ['Satyanarayan Katha', 'Ram Charit Manas Path', 'Sunderkand Path', 'Ganesh Puja'], languages: ['Hindi', 'Odia', 'Sanskrit', 'English'], experienceYears: 18, ratingAvg: 4.8, ratingCount: 213, bio: 'Experienced priest from Puri, specializing in Vaishnava traditions.', avatarUrl: 'https://images.poojly.com/priests/pandit-suresh-trivedi.jpg' },
+    { email: 'pandit.shastri@example.com', phone: '+919999888877', fullName: 'Pandit Ramesh Shastri', locationCity: 'Varanasi', locationState: 'Uttar Pradesh', gotra: 'Vasishtha', displayName: 'Pandit Ramesh Shastri', specializations: ['Rudrabhishek', 'Maha Mrityunjay Jaap', 'Navgraha Shanti', 'Satyanarayan Katha'], languages: ['Hindi', 'Sanskrit', 'English'], experienceYears: 25, ratingAvg: 4.9, ratingCount: 347, bio: 'Vedic scholar from Varanasi with 25 years of experience in Shiva rituals.', avatarUrl: 'https://images.darshya.online/priests/pandit-ramesh-shastri.jpg' },
+    { email: 'pandit.trivedi@example.com', phone: '+919999777766', fullName: 'Pandit Suresh Trivedi', locationCity: 'Puri', locationState: 'Odisha', gotra: 'Bharadwaj', displayName: 'Pandit Suresh Trivedi', specializations: ['Satyanarayan Katha', 'Ram Charit Manas Path', 'Sunderkand Path', 'Ganesh Puja'], languages: ['Hindi', 'Odia', 'Sanskrit', 'English'], experienceYears: 18, ratingAvg: 4.8, ratingCount: 213, bio: 'Experienced priest from Puri, specializing in Vaishnava traditions.', avatarUrl: 'https://images.darshya.online/priests/pandit-suresh-trivedi.jpg' },
     { email: 'pandit@demo.com', phone: '+919000000002', fullName: 'Demo Pandit', locationCity: 'Varanasi', locationState: 'Uttar Pradesh', gotra: 'Kashyap', displayName: 'Demo Pandit', specializations: ['Ganesh Puja', 'Lakshmi Puja', 'Hanuman Chalisa Path'], languages: ['Hindi', 'English'], experienceYears: 8, ratingAvg: 4.6, ratingCount: 42, bio: 'Demo pandit for testing.', avatarUrl: null },
   ];
   const priests: Array<{ id: string; email: string }> = [];
@@ -490,7 +490,7 @@ async function main() {
     const templeId = templeIdBySlug(t.slug);
     const existing = await prisma.liveDarshanStream.findFirst({ where: { templeId } });
     if (!existing) {
-      await prisma.liveDarshanStream.create({ data: { templeId, streamKey: `stream_${t.slug}`, playbackUrl: `https://stream.poojly.com/${t.slug}/live.m3u8`, status: 'offline', isPremium: false } });
+      await prisma.liveDarshanStream.create({ data: { templeId, streamKey: `stream_${t.slug}`, playbackUrl: `https://stream.darshya.online/${t.slug}/live.m3u8`, status: 'offline', isPremium: false } });
       streamCount++;
     }
   }

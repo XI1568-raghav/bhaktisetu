@@ -89,7 +89,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>🕉 Poojly</Text>
+          <Text style={styles.brand}>🕉 Darshya</Text>
           <Text style={styles.tagline}>Your devotional companion</Text>
         </View>
 
@@ -215,7 +215,7 @@ export default function LoginScreen() {
           onPress={() => router.push('/(auth)/signup' as any)}
         >
           <Text style={styles.footerText}>
-            New to Poojly? <Text style={styles.footerTextBold}>Create account</Text>
+            New to Darshya? <Text style={styles.footerTextBold}>Create account</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>

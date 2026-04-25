@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Help Center",
   description:
-    "Find answers to common questions about Poojly \u2014 puja bookings, live darshan, store orders, payments, refunds, and account management.",
+    "Find answers to common questions about Darshya \u2014 puja bookings, live darshan, store orders, payments, refunds, and account management.",
 };
 
 const categories = [
@@ -82,11 +82,11 @@ const categories = [
   {
     icon: HelpCircle,
     title: "General",
-    description: "About Poojly, temple partnerships, content submissions, and feature requests.",
+    description: "About Darshya, temple partnerships, content submissions, and feature requests.",
     articles: [
-      "What is Poojly?",
+      "What is Darshya?",
       "How are temples verified?",
-      "Can my temple join Poojly?",
+      "Can my temple join Darshya?",
       "How do I submit a bhajan or aarti?",
       "Where can I give feedback?",
     ],

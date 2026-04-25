@@ -1,4 +1,4 @@
-# Poojly Database Setup
+# Darshya Database Setup
 
 Postgres-backed via Prisma. `schema.prisma` uses `DATABASE_URL` (pooled) and
 `DIRECT_URL` (unpooled, required for migrations against Supabase / Neon).

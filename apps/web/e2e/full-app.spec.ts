@@ -753,7 +753,7 @@ test.describe('37. Footer Links', () => {
     const footer = page.locator('footer');
     await expect(footer).toBeVisible();
 
-    await expect(footer.locator('text=Poojly').first()).toBeVisible();
+    await expect(footer.locator('text=Darshya').first()).toBeVisible();
     await expect(footer.locator('a:has-text("About Us")').first()).toBeVisible();
     await expect(footer.locator('a:has-text("Privacy Policy")').first()).toBeVisible();
     await expect(footer.locator('a:has-text("Terms of Service")').first()).toBeVisible();

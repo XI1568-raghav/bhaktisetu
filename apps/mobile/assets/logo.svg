@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- Saffron background (matches splash backgroundColor #EA580C) -->
+  <rect width="1024" height="1024" fill="#EA580C" rx="220"/>
+  <!-- Outer shikhara arch -->
+  <path
+    d="M512 128 L768 384 L768 832 L256 832 L256 384 Z"
+    fill="#FFFFFF"
+    fill-opacity="0.12"
+    stroke="#FFFFFF"
+    stroke-width="36"
+    stroke-linejoin="round"
+  />
+  <!-- Inner gateway arch -->
+  <path
+    d="M384 832 L384 576 C384 502 442 448 512 448 C582 448 640 502 640 576 L640 832"
+    stroke="#FFFFFF"
+    stroke-width="32"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- Diya base -->
+  <ellipse cx="512" cy="384" rx="68" ry="22" fill="#FDE68A"/>
+  <path
+    d="M458 384 C458 348 481 320 512 320 C543 320 566 348 566 384"
+    fill="#FDE68A"
+  />
+  <!-- Flame -->
+  <path
+    d="M512 192 C512 192 559 256 559 286 C559 316 538 324 512 324 C486 324 465 316 465 286 C465 256 512 192 512 192 Z"
+    fill="#F59E0B"
+  />
+  <!-- Flame inner highlight -->
+  <path
+    d="M512 234 C512 234 535 266 535 286 C535 300 525 304 512 304 C499 304 489 300 489 286 C489 266 512 234 512 234 Z"
+    fill="#FFFFFF"
+    fill-opacity="0.85"
+  />
+</svg>

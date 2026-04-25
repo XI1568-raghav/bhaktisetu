@@ -245,7 +245,7 @@ export default function StoreScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.headerTitle}>Poojly Store</Text>
+            <Text style={styles.headerTitle}>Darshya Store</Text>
             <Text style={styles.headerSubtitle}>
               Sacred items delivered to your door
             </Text>

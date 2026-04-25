@@ -68,7 +68,7 @@ const instructors = [
     rating: 4.9,
     reviewCount: 512,
     pricePerSession: 799,
-    bio: 'Swami Dhyanananda spent 8 years in silent retreat at Sivananda Ashram, Rishikesh before beginning to teach. His meditation sessions draw from Vedantic traditions — Atma Vichara (self-inquiry), Trataka (candle gazing), and Yoga Nidra (yogic sleep). He is an initiated disciple of the Sivananda lineage and holds a degree from Vedanta Academy, Malavli. Swamiji has guided over 5,000 students into deeper meditation states and his guided audio meditations on the Poojly app have been listened to over 100,000 times. He is known for his profound depth, gentle voice, and ability to create spaces of deep silence.',
+    bio: 'Swami Dhyanananda spent 8 years in silent retreat at Sivananda Ashram, Rishikesh before beginning to teach. His meditation sessions draw from Vedantic traditions — Atma Vichara (self-inquiry), Trataka (candle gazing), and Yoga Nidra (yogic sleep). He is an initiated disciple of the Sivananda lineage and holds a degree from Vedanta Academy, Malavli. Swamiji has guided over 5,000 students into deeper meditation states and his guided audio meditations on the Darshya app have been listened to over 100,000 times. He is known for his profound depth, gentle voice, and ability to create spaces of deep silence.',
     certifications: ['Sivananda Yoga Vedanta', 'Transcendental Meditation Teacher', 'Vedanta Academy Graduate'],
     languages: ['Hindi', 'English', 'Sanskrit'],
     availableSlots: [
@@ -194,7 +194,7 @@ const instructors = [
     rating: 4.5,
     reviewCount: 98,
     pricePerSession: 299,
-    bio: 'Kavya is one of the youngest meditation teachers on the platform. After completing her first Vipassana at age 18, she went on to study Contemplative Psychology at Naropa University. She now guides beginners through their first meditation experiences with warmth, humor, and clarity. Her "21-Day Meditation Kickstart" program on Poojly has helped over 2,000 people establish a daily practice. Kavya also specializes in meditation for anxiety, using a combination of MBCT (Mindfulness-Based Cognitive Therapy) and traditional breath-counting techniques from the Buddhist tradition.',
+    bio: 'Kavya is one of the youngest meditation teachers on the platform. After completing her first Vipassana at age 18, she went on to study Contemplative Psychology at Naropa University. She now guides beginners through their first meditation experiences with warmth, humor, and clarity. Her "21-Day Meditation Kickstart" program on Darshya has helped over 2,000 people establish a daily practice. Kavya also specializes in meditation for anxiety, using a combination of MBCT (Mindfulness-Based Cognitive Therapy) and traditional breath-counting techniques from the Buddhist tradition.',
     certifications: ['Vipassana Meditator (30+ retreats)', 'MBCT Practitioner', 'Contemplative Psychology Certificate (Naropa)', 'Youth Meditation Teacher'],
     languages: ['Hindi', 'English', 'Malayalam'],
     availableSlots: [

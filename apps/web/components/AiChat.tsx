@@ -54,7 +54,7 @@ const LOCAL_DEMO_TOPICS: DemoTopic[] = [
 
 **Bhagavad Gita (7.11):** *"धर्माविरुद्धो भूतेषु कामोऽस्मि"* — "I am the desire not contrary to dharma."
 
-On Poojly, you can book a **Vivah Puja** or check **rashi compatibility** in the Astrology section.`,
+On Darshya, you can book a **Vivah Puja** or check **rashi compatibility** in the Astrology section.`,
   },
   {
     keywords: ['health', 'healing', 'disease', 'illness', 'sick', 'pain', 'medical'],
@@ -71,7 +71,7 @@ On Poojly, you can book a **Vivah Puja** or check **rashi compatibility** in the
 
 *Note: Spiritual healing complements medical treatment. Always consult doctors.*
 
-Book a **Mahamrityunjaya Japa** or **Dhanvantari Puja** on Poojly for healing blessings.`,
+Book a **Mahamrityunjaya Japa** or **Dhanvantari Puja** on Darshya for healing blessings.`,
   },
   {
     keywords: ['career', 'job', 'success', 'business', 'work', 'promotion', 'interview', 'exam', 'education', 'study'],
@@ -91,7 +91,7 @@ Book a **Mahamrityunjaya Japa** or **Dhanvantari Puja** on Poojly for healing bl
 - Light a diya at your workspace
 - Place a Saraswati idol in the northeast corner of your room
 
-Visit Poojly's **Pujas** section to book with verified priests.`,
+Visit Darshya's **Pujas** section to book with verified priests.`,
   },
   {
     keywords: ['peace', 'shanti', 'mantra', 'calm', 'anxiety', 'stress', 'tension', 'worry', 'fear', 'meditation', 'dhyana'],
@@ -110,7 +110,7 @@ Removes fear and anxiety.
 
 **Practice tip:** Chant 108 times using a mala during Brahma Muhurta (4-6 AM).
 
-Explore mantras in Poojly's **Content** section. Book a **Shanti Puja** for deep peace.`,
+Explore mantras in Darshya's **Content** section. Book a **Shanti Puja** for deep peace.`,
   },
   {
     keywords: ['dharma', 'duty', 'karma', 'purpose', 'righteousness', 'meaning'],
@@ -130,7 +130,7 @@ Explore mantras in Poojly's **Content** section. Book a **Shanti Puja** for deep
 **Mahabharata:** *"धारणाद्धर्ममित्याहुः धर्मो धारयते प्रजाः"*
 "That which sustains and holds together is dharma."
 
-Explore the **Content** section on Poojly for Gita teachings, Upanishads, and more.`,
+Explore the **Content** section on Darshya for Gita teachings, Upanishads, and more.`,
   },
   {
     keywords: ['festival', 'diwali', 'navratri', 'holi', 'shivratri', 'ganesh', 'janmashtami'],
@@ -149,7 +149,7 @@ Explore the **Content** section on Poojly for Gita teachings, Upanishads, and mo
 *"सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः"*
 *"May all beings be happy, may all be free from disease."*
 
-Book **festival-specific pujas** on Poojly. Watch **Live Darshan** for special aartis.`,
+Book **festival-specific pujas** on Darshya. Watch **Live Darshan** for special aartis.`,
   },
   {
     keywords: ['wealth', 'money', 'prosperity', 'lakshmi', 'dhan', 'financial', 'rich'],
@@ -170,7 +170,7 @@ Chant 108 times on Fridays for prosperity.
 **Katha Upanishad:** *"श्रेयश्च प्रेयश्च मनुष्यमेतस्तौ"*
 "Both the good and pleasant approach a person. The wise choose the good."
 
-Book **Lakshmi Puja** or **Kubera Puja** on Poojly with verified priests.`,
+Book **Lakshmi Puja** or **Kubera Puja** on Darshya with verified priests.`,
   },
   {
     keywords: ['child', 'baby', 'son', 'daughter', 'pregnancy', 'fertility', 'santan'],
@@ -188,7 +188,7 @@ Book **Lakshmi Puja** or **Kubera Puja** on Poojly with verified priests.`,
 - **Saraswati Puja** — for wisdom and academic success
 - **Aksharabhyasam** — the traditional learning initiation
 
-Book **Santana Gopala Puja** on Poojly with verified priests across India.`,
+Book **Santana Gopala Puja** on Darshya with verified priests across India.`,
   },
   {
     keywords: ['grief', 'death', 'loss', 'passed away', 'departed', 'shradh', 'ancestors', 'pitru'],
@@ -208,7 +208,7 @@ Book **Santana Gopala Puja** on Poojly with verified priests across India.`,
 
 *"ॐ शान्तिः शान्तिः शान्तिः"*
 
-Book **Shraddha Puja** or **Pind Daan** on Poojly with verified priests.`,
+Book **Shraddha Puja** or **Pind Daan** on Darshya with verified priests.`,
   },
   {
     keywords: ['vastu', 'house', 'home', 'direction', 'flat', 'office', 'construction'],
@@ -228,7 +228,7 @@ Book **Shraddha Puja** or **Pind Daan** on Poojly with verified priests.`,
 4. Avoid **mirrors** facing the bed
 5. Place a **Tulsi plant** at the entrance
 
-Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** on Poojly.`,
+Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** on Darshya.`,
   },
   {
     keywords: ['gemstone', 'gem', 'stone', 'ratna', 'neelam', 'ruby', 'pearl', 'emerald', 'diamond', 'sapphire'],
@@ -244,7 +244,7 @@ Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** on Poojly.`,
 
 **Important:** Never wear a gemstone without consulting your birth chart.
 
-Get a **personalized gemstone recommendation** from Poojly's verified astrologers.`,
+Get a **personalized gemstone recommendation** from Darshya's verified astrologers.`,
   },
 ];
 
@@ -271,7 +271,7 @@ This reminds us that divine guidance is always available to those who seek it si
 
 *"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
 
-Explore Poojly's **Content** section for mantras and spiritual articles, or **Book a Puja** with a verified priest.`;
+Explore Darshya's **Content** section for mantras and spiritual articles, or **Book a Puja** with a verified priest.`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────

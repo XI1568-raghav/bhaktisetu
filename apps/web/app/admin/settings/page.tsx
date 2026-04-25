@@ -78,8 +78,8 @@ const initialPlans: SubscriptionPlan[] = [
 
 const initialAdmins = [
   { id: '1', name: 'Admin User', email: 'admin@demo.com', role: 'Super Admin', addedDate: '2025-01-01' },
-  { id: '2', name: 'Rahul Verma', email: 'rahul.v@poojly.com', role: 'Admin', addedDate: '2025-06-15' },
-  { id: '3', name: 'Meena Kapoor', email: 'meena.k@poojly.com', role: 'Moderator', addedDate: '2025-09-20' },
+  { id: '2', name: 'Rahul Verma', email: 'rahul.v@darshya.online', role: 'Admin', addedDate: '2025-06-15' },
+  { id: '3', name: 'Meena Kapoor', email: 'meena.k@darshya.online', role: 'Moderator', addedDate: '2025-09-20' },
 ];
 
 export default function AdminSettingsPage() {
@@ -464,7 +464,7 @@ export default function AdminSettingsPage() {
                       value={newAdminEmail}
                       onChange={(e) => setNewAdminEmail(e.target.value)}
                       className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
-                      placeholder="admin@poojly.com"
+                      placeholder="admin@darshya.online"
                     />
                   </div>
                   <div>

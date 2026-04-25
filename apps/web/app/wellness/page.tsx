@@ -18,7 +18,7 @@ import ScrollReveal from '../../components/ScrollReveal';
 export const metadata: Metadata = {
   title: 'Yoga, Meditation & Vipassana',
   description:
-    'Discover inner peace through guided yoga, meditation, and Vipassana retreats with certified instructors on Poojly.',
+    'Discover inner peace through guided yoga, meditation, and Vipassana retreats with certified instructors on Darshya.',
 };
 
 const categories = [
@@ -362,7 +362,7 @@ export default function WellnessPage() {
               Start your practice today
             </h2>
             <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
-              Join thousands of practitioners on Poojly. Your first guided meditation session is free.
+              Join thousands of practitioners on Darshya. Your first guided meditation session is free.
             </p>
             <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
               <Link

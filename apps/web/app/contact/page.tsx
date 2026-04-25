@@ -12,17 +12,17 @@ const regionalPhones = [
 ];
 
 const escalationEmails = [
-  { label: "Sales & enterprise", email: "sales@poojly.com", icon: Briefcase },
-  { label: "Temple partnerships", email: "partners@poojly.com", icon: Handshake },
-  { label: "Press & media", email: "press@poojly.com", icon: Newspaper },
-  { label: "Legal & compliance", email: "legal@poojly.com", icon: Scale },
+  { label: "Sales & enterprise", email: "sales@darshya.online", icon: Briefcase },
+  { label: "Temple partnerships", email: "partners@darshya.online", icon: Handshake },
+  { label: "Press & media", email: "press@darshya.online", icon: Newspaper },
+  { label: "Legal & compliance", email: "legal@darshya.online", icon: Scale },
 ];
 
 const contactMethods = [
   {
     icon: Mail,
     title: "Email Support",
-    detail: "support@poojly.com",
+    detail: "support@darshya.online",
     description: "For booking queries, account issues, and general help. We respond within 24 hours.",
   },
   {
@@ -41,7 +41,7 @@ const contactMethods = [
     icon: MapPin,
     title: "Office",
     detail: "Bengaluru, Karnataka",
-    description: "Poojly Technologies Pvt. Ltd., HSR Layout, Bengaluru \u2013 560102, India.",
+    description: "Darshya Technologies Pvt. Ltd., HSR Layout, Bengaluru \u2013 560102, India.",
   },
 ];
 
@@ -173,7 +173,7 @@ export default function ContactPage() {
                 </div>
               </div>
               <div className="bg-white/95 rounded-lg p-3 text-xs text-surface-700 mb-4">
-                <p className="mb-1.5"><span className="font-semibold">Poojly:</span> Namaste! Reply with your ticket ID or tell us what&apos;s wrong.</p>
+                <p className="mb-1.5"><span className="font-semibold">Darshya:</span> Namaste! Reply with your ticket ID or tell us what&apos;s wrong.</p>
                 <p className="text-[10px] text-surface-400">Just now</p>
               </div>
               <a

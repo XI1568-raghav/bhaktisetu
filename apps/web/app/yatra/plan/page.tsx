@@ -370,7 +370,7 @@ export default function CustomPlanPage() {
               <div className="rounded-xl p-4 mb-5" style={{ background: 'var(--color-primary-highlight)', border: '1px solid var(--color-primary)' }}>
                 <p className="text-xs" style={{ color: 'var(--color-text)' }}>
                   <Sparkles className="w-3.5 h-3.5 inline mr-1" style={{ color: 'var(--color-primary)' }} />
-                  We use your answers to generate a realistic day-by-day itinerary and ballpark quote. A Poojly advisor will then refine and finalize your trip.
+                  We use your answers to generate a realistic day-by-day itinerary and ballpark quote. A Darshya advisor will then refine and finalize your trip.
                 </p>
               </div>
 

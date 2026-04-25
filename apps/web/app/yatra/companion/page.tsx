@@ -255,7 +255,7 @@ export default function CompanionListingPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>How payment works</p>
               </div>
               <h3 className="text-lg font-semibold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-                Companion is paid upfront by Poojly
+                Companion is paid upfront by Darshya
               </h3>
               <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-muted)' }}>
                 Unlike freelance gigs, our companions are paid in full at the time of your booking. This ensures:
@@ -264,7 +264,7 @@ export default function CompanionListingPage() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} /> Full commitment to your yatra dates</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} /> No last-minute cancellation for better offers</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} /> Family of the companion is financially secure during travel</li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} /> You only deal with Poojly for any issue — single point of accountability</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} /> You only deal with Darshya for any issue — single point of accountability</li>
               </ul>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function CompanionListingPage() {
             <div data-reveal="up" className="space-y-3">
               {[
                 { q: 'Can I choose a specific companion?', a: 'Yes. Browse profiles, pick one who matches your language, regional familiarity and specialization. We confirm availability within 2 hours.' },
-                { q: 'Does the companion need separate hotel booking?', a: 'No. Companion stay is covered in their daily rate. They share accommodation arrangements made by Poojly or stay in adjacent rooms.' },
+                { q: 'Does the companion need separate hotel booking?', a: 'No. Companion stay is covered in their daily rate. They share accommodation arrangements made by Darshya or stay in adjacent rooms.' },
                 { q: 'Can the companion administer medicines?', a: 'They can remind and assist with self-administration of prescribed oral medicines. For injections/IV, a nurse can be booked separately.' },
                 { q: 'What if the companion gets sick?', a: 'We provide a backup companion within 12 hours. You never bear the cost of replacement.' },
                 { q: 'Is the companion with us 24/7?', a: 'Yes. The companion shares accommodation with the group or in an adjacent room, and is on call throughout.' },

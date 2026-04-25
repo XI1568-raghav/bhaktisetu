@@ -22,7 +22,7 @@ import {
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Simple, transparent pricing for devotees and service providers. Browse free or grow your devotional business with Poojly.",
+    "Simple, transparent pricing for devotees and service providers. Browse free or grow your devotional business with Darshya.",
 };
 
 const roleIcons: Record<string, React.ElementType> = {
@@ -540,7 +540,7 @@ export default function PricingPage() {
             className="text-sm mb-6 leading-relaxed"
             style={{ color: "var(--color-text-muted)" }}
           >
-            Join Poojly as a service provider. Start free, upgrade when you are
+            Join Darshya as a service provider. Start free, upgrade when you are
             ready. No lock-in, no hidden fees.
           </p>
           <a

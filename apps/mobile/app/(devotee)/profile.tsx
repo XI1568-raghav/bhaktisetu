@@ -37,7 +37,7 @@ const quickLinks: QuickLink[] = [
     id: 'subscription',
     icon: 'diamond',
     label: 'Subscription',
-    subtitle: 'Manage your Poojly Premium',
+    subtitle: 'Manage your Darshya Premium',
     color: colors.amber[500],
   },
   {
@@ -67,7 +67,7 @@ const moreLinks: QuickLink[] = [
   {
     id: 'about',
     icon: 'information-circle',
-    label: 'About Poojly',
+    label: 'About Darshya',
     subtitle: 'Our mission and story',
     color: colors.saffron[500],
   },
@@ -283,7 +283,7 @@ export default function ProfileScreen() {
 
         {/* App Version */}
         <View style={styles.footer}>
-          <Text style={styles.footerLogo}>{'Poojly \u0950'}</Text>
+          <Text style={styles.footerLogo}>{'Darshya \u0950'}</Text>
           <Text style={styles.footerVersion}>Version 1.0.0</Text>
           <Text style={styles.footerCopyright}>
             Made with devotion in India

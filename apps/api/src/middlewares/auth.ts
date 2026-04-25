@@ -75,7 +75,7 @@ export async function authenticateUser(
         id: 'demo-user-001',
         supabaseId: 'demo-supabase-001',
         phone: '+919876543210',
-        email: 'arjun@poojly.com',
+        email: 'arjun@darshya.online',
         fullName: 'Arjun Sharma',
         subscriptionTier: 'bhakti_pass',
         roles,

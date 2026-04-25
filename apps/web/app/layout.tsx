@@ -49,11 +49,11 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
 
 export const metadata: Metadata = {
   title: {
-    default: "Poojly \u2014 India\u2019s Devotional Super App",
-    template: "%s | Poojly",
+    default: "Darshya \u2014 India\u2019s Devotional Super App",
+    template: "%s | Darshya",
   },
   description:
-    "Experience live darshan, book pujas, explore panchang, listen to bhajans, and shop for sacred items. Poojly bridges you to the divine.",
+    "Experience live darshan, book pujas, explore panchang, listen to bhajans, and shop for sacred items. Darshya brings the divine into daily life.",
   keywords: [
     "darshan",
     "puja",
@@ -66,9 +66,9 @@ export const metadata: Metadata = {
     "spiritual",
     "mantra",
     "chalisa",
-    "poojly",
+    "darshya",
   ],
-  authors: [{ name: "Poojly" }],
+  authors: [{ name: "Darshya" }],
   icons: {
     icon: "/favicon.svg",
     apple: "/favicon.svg",
@@ -77,15 +77,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://poojly.com",
-    siteName: "Poojly",
-    title: "Poojly \u2014 India\u2019s Devotional Super App",
+    url: "https://darshya.online",
+    siteName: "Darshya",
+    title: "Darshya \u2014 India\u2019s Devotional Super App",
     description:
       "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Poojly \u2014 India\u2019s Devotional Super App",
+    title: "Darshya \u2014 India\u2019s Devotional Super App",
     description:
       "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
   },
@@ -222,7 +222,7 @@ export default function RootLayout({
             <a href="/" className="flex items-center gap-2 shrink-0">
               <Logo size={28} />
               <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline">
-                Pooj<span className="text-saffron-600">ly</span>
+                Darsh<span className="text-saffron-600">ya</span>
               </span>
             </a>
 
@@ -312,12 +312,12 @@ export default function RootLayout({
                 <div className="flex items-center gap-2.5 mb-5">
                   <Logo size={36} color="#D4A76A" />
                   <span className="text-xl font-semibold text-white tracking-tight">
-                    Pooj<span className="text-temple-gold">ly</span>
+                    Darsh<span className="text-temple-gold">ya</span>
                   </span>
                 </div>
                 <p className="text-sm text-surface-500 mb-6 max-w-xs leading-relaxed">
-                  Bridging devotees to the divine through technology. Live
-                  darshan, puja booking, spiritual content, and more.
+                  Bringing the divine into daily life. Live darshan, puja
+                  booking, spiritual content, and more.
                 </p>
                 <div className="flex items-center gap-2">
                   <a
@@ -377,17 +377,17 @@ export default function RootLayout({
             <div className="mt-14 pt-8 border-t border-surface-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-6 text-sm text-surface-500">
                 <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> support@poojly.com
+                  <Mail className="w-3.5 h-3.5" /> support@darshya.online
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5" /> +91 80-POOJLY-00
+                  <Phone className="w-3.5 h-3.5" /> +91 80-DARSHYA-00
                 </span>
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" /> Bengaluru, India
                 </span>
               </div>
               <p className="text-sm text-surface-600">
-                &copy; {new Date().getFullYear()} Poojly. All rights
+                &copy; {new Date().getFullYear()} Darshya. All rights
                 reserved.
               </p>
             </div>

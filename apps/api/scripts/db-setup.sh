@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🗄️  Setting up Poojly database..."
+echo "🗄️  Setting up Darshya database..."
 cd "$(dirname "$0")/.."
 
 if [ ! -f .env ]; then

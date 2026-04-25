@@ -736,7 +736,7 @@ function StoreScreen1() {
         <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-200/40 flex items-center gap-3 mb-1">
           <Store className="w-8 h-8 text-emerald-600" />
           <div>
-            <p className="text-xs font-semibold text-surface-900">Sell on Poojly</p>
+            <p className="text-xs font-semibold text-surface-900">Sell on Darshya</p>
             <p className="text-[9px] text-surface-500">Reach millions of devotees</p>
           </div>
         </div>
@@ -927,7 +927,7 @@ function AstrologerScreen1() {
           <Star className="w-8 h-8 text-purple-600" />
           <div>
             <p className="text-xs font-semibold text-surface-900">Share Your Wisdom</p>
-            <p className="text-[9px] text-surface-500">Consult devotees on Poojly</p>
+            <p className="text-[9px] text-surface-500">Consult devotees on Darshya</p>
           </div>
         </div>
         <FormField label="Full Name" placeholder="Acharya Vinod Sharma" />
@@ -1345,7 +1345,7 @@ function TempleScreen1() {
           <Building2 className="w-8 h-8 text-rose-600" />
           <div>
             <p className="text-xs font-semibold text-surface-900">Temple Management</p>
-            <p className="text-[9px] text-surface-500">Bring your temple online on Poojly</p>
+            <p className="text-[9px] text-surface-500">Bring your temple online on Darshya</p>
           </div>
         </div>
         <FormField label="Manager Name" placeholder="Shri Mahant Devnath" />

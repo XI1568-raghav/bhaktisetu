@@ -127,7 +127,7 @@ function DashboardContent() {
             <div>
               <p className="text-surface-500 text-sm mb-1">{greeting}</p>
               <h1 className="text-lg font-semibold text-surface-800">
-                {displayName === '' ? 'Welcome to Poojly' : displayName}
+                {displayName === '' ? 'Welcome to Darshya' : displayName}
               </h1>
               {user?.fullName === '' && (
                 <a

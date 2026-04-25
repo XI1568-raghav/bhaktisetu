@@ -1,4 +1,4 @@
-# Poojly — Production Deployment Guide
+# Darshya — Production Deployment Guide
 
 Step-by-step, all **free tier**. ~15 minutes end-to-end.
 

@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 export const metadata: Metadata = {
   title: "Refund Policy",
   description:
-    "Poojly\u2019s refund policy for puja bookings, store orders, gaushala contributions, and chadhava offerings.",
+    "Darshya\u2019s refund policy for puja bookings, store orders, gaushala contributions, and chadhava offerings.",
 };
 
 export default function RefundsPage() {
@@ -45,7 +45,7 @@ export default function RefundsPage() {
             <RefundSection title="1. Overview">
               <p>
                 We want every devotee to have a positive experience on
-                Poojly. This Refund Policy outlines when and how refunds
+                Darshya. This Refund Policy outlines when and how refunds
                 are processed for various services on our platform. All
                 refunds are processed to the original payment method unless
                 otherwise noted.
@@ -94,7 +94,7 @@ export default function RefundsPage() {
                 <li>
                   Cancellations are processed through your booking history in
                   your account dashboard, or by contacting
-                  support@poojly.com with your booking ID
+                  support@darshya.online with your booking ID
                   (BS-YYYYMMDD-XXXXX format).
                 </li>
                 <li>
@@ -182,7 +182,7 @@ export default function RefundsPage() {
                 </li>
                 <li>
                   <strong>Platform Credits:</strong> Applied instantly to your
-                  Poojly wallet.
+                  Darshya wallet.
                 </li>
               </ul>
             </RefundSection>
@@ -190,7 +190,7 @@ export default function RefundsPage() {
             <RefundSection title="8. How to Request a Refund">
               <ol className="list-decimal pl-5 space-y-2">
                 <li>
-                  Log in to your Poojly account and navigate to your
+                  Log in to your Darshya account and navigate to your
                   booking or order history.
                 </li>
                 <li>
@@ -201,7 +201,7 @@ export default function RefundsPage() {
                   supporting information.
                 </li>
                 <li>
-                  Alternatively, email support@poojly.com with your
+                  Alternatively, email support@darshya.online with your
                   booking/order ID, registered email, and reason for the
                   refund.
                 </li>
@@ -211,7 +211,7 @@ export default function RefundsPage() {
             <RefundSection title="9. Disputes">
               <p>
                 If you believe a refund has been incorrectly denied, you may
-                escalate the matter by emailing grievance@poojly.com. Our
+                escalate the matter by emailing grievance@darshya.online. Our
                 Grievance Officer will review and respond within 15 business
                 days.
               </p>
@@ -220,10 +220,10 @@ export default function RefundsPage() {
             <RefundSection title="10. Contact">
               <p>For refund-related queries:</p>
               <ul>
-                <li>Email: support@poojly.com</li>
+                <li>Email: support@darshya.online</li>
                 <li>Phone: +91 80-BHAKTI-00 (Mon&ndash;Sat, 9 AM &ndash; 6 PM IST)</li>
                 <li>
-                  Mail: Poojly Technologies Pvt. Ltd., HSR Layout,
+                  Mail: Darshya Technologies Pvt. Ltd., HSR Layout,
                   Bengaluru &ndash; 560102, Karnataka, India
                 </li>
               </ul>

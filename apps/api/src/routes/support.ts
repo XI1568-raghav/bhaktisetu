@@ -17,10 +17,10 @@ const chatSchema = z.object({
 });
 
 // ─── Support AI System Prompt ──────────────────────────────────────────────────
-const SUPPORT_SYSTEM_PROMPT = `You are Asha, Poojly's AI customer support assistant. Poojly is India's devotional super-app for live temple darshan, puja booking, spiritual content, astrology, wellness, pilgrimage planning, and more.
+const SUPPORT_SYSTEM_PROMPT = `You are Asha, Darshya's AI customer support assistant. Darshya is India's devotional super-app for live temple darshan, puja booking, spiritual content, astrology, wellness, pilgrimage planning, and more.
 
 ## Your role
-- Answer user queries about Poojly features, bookings, refunds, account issues
+- Answer user queries about Darshya features, bookings, refunds, account issues
 - Be warm, concise (under 120 words per reply), use "Namaste" when greeting
 - When you CAN help, give a direct answer with next steps (e.g. link to /pujas, /yatra)
 - When you CAN'T help (complex refunds >₹5000, account deletion, disputes, legal, medical, bugs, payment failures needing investigation) → explicitly set escalate=true
@@ -61,7 +61,7 @@ Set escalate=false for routine questions with clear answers.
 
 ## Style
 - 1-3 short sentences + 0-2 suggestedActions max
-- Never invent features. If something isn't on Poojly, say so and escalate.
+- Never invent features. If something isn't on Darshya, say so and escalate.
 - No markdown, no bold, no bullet lists. Plain friendly text.`;
 
 // ─── Fallback knowledge base (used when AI unavailable) ───────────────────────
@@ -69,7 +69,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   // Greetings — simple hellos get a friendly reply, no escalation
   {
     keywords: ['hi', 'hii', 'hello', 'hey', 'namaste', 'pranam', 'ram ram', 'jai shri ram'],
-    message: 'Namaste! Welcome to Poojly. I can help you with puja bookings, live darshan, yatra planning, astrology, home pujas, wellness sessions, and more. What would you like help with today?',
+    message: 'Namaste! Welcome to Darshya. I can help you with puja bookings, live darshan, yatra planning, astrology, home pujas, wellness sessions, and more. What would you like help with today?',
     actions: [
       { label: 'Browse Pujas', href: '/pujas' },
       { label: 'Live Darshan', href: '/darshan' },
@@ -78,11 +78,11 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['how are you', 'whats up', "what's up", 'how r u'],
-    message: 'I\'m doing great, thank you for asking! I\'m here to help you with anything on Poojly. Whether you need to book a puja, plan a pilgrimage, or have a question about your order — I\'m ready to help.',
+    message: 'I\'m doing great, thank you for asking! I\'m here to help you with anything on Darshya. Whether you need to book a puja, plan a pilgrimage, or have a question about your order — I\'m ready to help.',
   },
   {
     keywords: ['thank', 'thanks', 'thank you', 'shukriya', 'dhanyavaad'],
-    message: 'You\'re welcome! If there\'s anything else you need, just let me know. May your spiritual journey with Poojly be blessed.',
+    message: 'You\'re welcome! If there\'s anything else you need, just let me know. May your spiritual journey with Darshya be blessed.',
   },
   {
     keywords: ['bye', 'goodbye', 'see you', 'pranam'],
@@ -165,7 +165,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['what is poojly', 'about poojly', 'who are you', 'what do you do'],
-    message: "Poojly is India's devotional super-app — live darshan from 200+ temples, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. All Aadhaar-verified priests, all secure payments.",
+    message: "Darshya is India's devotional super-app — live darshan from 200+ temples, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. All Aadhaar-verified priests, all secure payments.",
     actions: [
       { label: 'Browse Pujas', href: '/pujas' },
       { label: 'Live Darshan', href: '/darshan' },
@@ -193,7 +193,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['language', 'hindi', 'tamil', 'telugu', 'marathi', 'bengali'],
-    message: 'Poojly supports English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali. Switch from the language selector in the footer.',
+    message: 'Darshya supports English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali. Switch from the language selector in the footer.',
   },
   {
     keywords: ['nri', 'abroad', 'from usa', 'from uk', 'international user', 'outside india'],
@@ -318,7 +318,7 @@ export async function supportRoutes(server: FastifyInstance) {
         });
       }
       return reply.send({
-        message: "I'm not sure I understood that. Could you tell me more? You can ask about booking pujas, live darshan, yatra, refunds, or any other Poojly feature. If you'd prefer a human, just say 'talk to human'.",
+        message: "I'm not sure I understood that. Could you tell me more? You can ask about booking pujas, live darshan, yatra, refunds, or any other Darshya feature. If you'd prefer a human, just say 'talk to human'.",
         confidence: 'low',
         escalate: false,
         suggestedActions: [

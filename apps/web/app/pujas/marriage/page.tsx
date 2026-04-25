@@ -25,7 +25,7 @@ import {
 } from '../../../lib/home-pujas';
 
 export const metadata: Metadata = {
-  title: 'Book a Pandit for Your Wedding — Poojly',
+  title: 'Book a Pandit for Your Wedding — Darshya',
   description:
     'Sampoorna vivah sanskar by Vedic-certified pandits. Hindu Vivah, Arya Samaj, South Indian Kalyanam, Anand Karaj. Starting ₹11,000.',
 };
@@ -320,7 +320,7 @@ export default function MarriagePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-surface-800 tracking-tight">
-              Couples who said yes with Poojly
+              Couples who said yes with Darshya
             </h2>
             <p className="mt-2 text-surface-500">Real stories from recent weddings.</p>
           </div>

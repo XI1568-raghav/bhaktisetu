@@ -1,5 +1,5 @@
 /**
- * Poojly Revenue Model — Pricing plans, commission rates, and helpers.
+ * Darshya Revenue Model — Pricing plans, commission rates, and helpers.
  * Single source of truth for all subscription/commission logic.
  */
 

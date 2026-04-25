@@ -96,7 +96,7 @@ export default function SignupScreen() {
         {step === 'role' ? (
           <View>
             <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>What brings you to Poojly?</Text>
+            <Text style={styles.subtitle}>What brings you to Darshya?</Text>
             <View style={styles.roleList}>
               {ROLE_OPTIONS.map((opt) => (
                 <TouchableOpacity

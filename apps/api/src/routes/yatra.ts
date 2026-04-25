@@ -373,6 +373,6 @@ export async function yatraRoutes(server: FastifyInstance) {
     userBookings.push(booking);
     bookings.set(userId, userBookings);
 
-    return { message: 'Companion booked. Payment released in advance per Poojly policy.', booking };
+    return { message: 'Companion booked. Payment released in advance per Darshya policy.', booking };
   });
 }

@@ -4,7 +4,7 @@ import { Heart, Users, Globe, BookOpen, Flame, Shield } from "lucide-react";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Poojly bridges devotees to the divine through technology. Learn about our mission, values, and the team building India\u2019s devotional super-app.",
+    "Darshya bridges devotees to the divine through technology. Learn about our mission, values, and the team building India\u2019s devotional super-app.",
 };
 
 const values = [
@@ -47,7 +47,7 @@ const values = [
 ];
 
 const milestones = [
-  { year: "2023", event: "Poojly founded in Bengaluru" },
+  { year: "2023", event: "Darshya founded in Bengaluru" },
   { year: "2023", event: "First 50 temples onboarded across Karnataka and Tamil Nadu" },
   { year: "2024", event: "Live darshan streaming launched with AWS IVS" },
   { year: "2024", event: "Puja booking with video proof goes live" },
@@ -89,7 +89,7 @@ export default function AboutPage() {
             className="text-sm sm:text-base max-w-2xl mx-auto leading-relaxed"
             style={{ color: "var(--color-text-faint)" }}
           >
-            Poojly was born from a simple observation: millions of devotees
+            Darshya was born from a simple observation: millions of devotees
             across Bharat and the diaspora yearn to stay connected with their
             kuldevta, participate in temple rituals, and experience darshan —
             but distance, time, and accessibility stand in the way. We set out
@@ -155,7 +155,7 @@ export default function AboutPage() {
                 their faith. Whether you are a grandmother in a village seeking
                 her morning aarti, an NRI family wanting to perform pitru
                 tarpan, or a young professional exploring mantra meditation —
-                Poojly will be your companion on the spiritual path.
+                Darshya will be your companion on the spiritual path.
               </p>
             </div>
           </div>

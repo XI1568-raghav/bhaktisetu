@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Sign In',
-  description: 'Sign in to Poojly with your phone number. Access live darshan, book pujas, and manage your spiritual journey.',
+  description: 'Sign in to Darshya with your phone number. Access live darshan, book pujas, and manage your spiritual journey.',
 };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Bottom attribution */}
       <div className="absolute bottom-4 left-0 right-0 text-center">
         <p className="text-saffron-200/60 text-xs">
-          &copy; {new Date().getFullYear()} Poojly. All rights reserved.
+          &copy; {new Date().getFullYear()} Darshya. All rights reserved.
         </p>
       </div>
     </div>

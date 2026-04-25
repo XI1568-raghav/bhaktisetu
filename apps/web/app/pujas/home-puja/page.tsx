@@ -90,7 +90,7 @@ export default function HomePujaHubPage() {
             <div className="absolute -top-3 -right-3 bg-saffron-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
               Trusted by 10,000+ families
             </div>
-            <h3 className="text-xl font-bold text-surface-800 mb-5">Why Poojly Home Puja</h3>
+            <h3 className="text-xl font-bold text-surface-800 mb-5">Why Darshya Home Puja</h3>
             <ul className="space-y-4">
               <li className="flex gap-3">
                 <div className="w-9 h-9 rounded-lg bg-tulsi-green/10 flex items-center justify-center flex-shrink-0">
