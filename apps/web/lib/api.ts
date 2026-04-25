@@ -3,7 +3,20 @@
  * Fetches data from the Fastify backend during SSR.
  */
 
-const API_BASE = process.env.API_URL || 'http://localhost:4000/api/v1';
+// API base URL.
+//   - In a Next.js node SSR context: process.env.API_URL is set
+//   - In Cloudflare Pages (edge runtime): NEXT_PUBLIC_API_URL is what reaches the worker
+//   - Final fallback: the production API on Render
+// The /api/v1 suffix is added when missing so callers don't have to think about it.
+function resolveApiBase(): string {
+  const candidate =
+    process.env.API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'https://api.darshya.online';
+  return candidate.endsWith('/api/v1') ? candidate : `${candidate.replace(/\/$/, '')}/api/v1`;
+}
+
+const API_BASE = resolveApiBase();
 
 interface FetchOptions {
   revalidate?: number | false;
