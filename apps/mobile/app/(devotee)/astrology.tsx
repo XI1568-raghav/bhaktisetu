@@ -6,9 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAstrologers, useHoroscope } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Rashi {
@@ -100,12 +102,28 @@ function RashiCard({ rashi, isSelected, onPress }: { rashi: Rashi; isSelected: b
 export default function AstrologyScreen() {
   const [selectedRashi, setSelectedRashi] = useState<string | null>(null);
   const selected = rashiData.find((r) => r.id === selectedRashi);
+  const astrologersQuery = useAstrologers();
+  const horoscopeQuery = useHoroscope(selected ? selected.name.toLowerCase() : '');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const astrologerCount = astrologersQuery.data?.total ?? astrologersQuery.data?.astrologers?.length ?? 0;
+  const horoscopeRaw = horoscopeQuery.data?.horoscope as { prediction?: string } | undefined;
+  const dailyHoroscope =
+    horoscopeRaw?.prediction ??
+    'Today brings positive energy. Focus on personal growth and spiritual practice. Evening is auspicious for new beginnings.';
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await Promise.all([astrologersQuery.refetch(), selected ? horoscopeQuery.refetch() : Promise.resolve()]);
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -155,9 +173,7 @@ export default function AstrologyScreen() {
               </View>
               <View style={styles.horoscopePreview}>
                 <Ionicons name="sparkles" size={16} color={colors.saffron[500]} />
-                <Text style={styles.horoscopeText}>
-                  Today brings positive energy. Focus on personal growth and spiritual practice. Evening is auspicious for new beginnings.
-                </Text>
+                <Text style={styles.horoscopeText}>{dailyHoroscope}</Text>
               </View>
             </View>
           </View>
@@ -165,7 +181,9 @@ export default function AstrologyScreen() {
 
         {/* Astrology Services */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Astrology Services</Text>
+          <Text style={styles.sectionTitle}>
+            Astrology Services{astrologerCount > 0 ? ` • ${astrologerCount} astrologers online` : ''}
+          </Text>
           <View style={styles.servicesList}>
             {services.map((service) => (
               <TouchableOpacity

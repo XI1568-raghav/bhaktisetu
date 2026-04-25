@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useWellnessSessions } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -174,11 +176,20 @@ const levelColors: Record<YogaSession['level'], string> = {
   Advanced: colors.red[500],
 };
 
-function YogaContent() {
+function YogaContent({
+  sessions,
+  refreshing,
+  onRefresh,
+}: {
+  sessions: YogaSession[];
+  refreshing: boolean;
+  onRefresh: () => void;
+}) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.tabContent}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Daily Challenge */}
       <View style={styles.challengeCard}>
@@ -204,7 +215,7 @@ function YogaContent() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.horizontalScroll}
       >
-        {yogaSessions.map((session) => (
+        {sessions.map((session) => (
           <TouchableOpacity
             key={session.id}
             style={[styles.sessionCard, { width: CARD_WIDTH }]}
@@ -362,9 +373,41 @@ function AyurvedaContent() {
   );
 }
 
+function mapWellnessLevel(level?: string): YogaSession['level'] {
+  const l = (level ?? '').toLowerCase();
+  if (l.includes('advanced')) return 'Advanced';
+  if (l.includes('intermediate')) return 'Intermediate';
+  return 'Beginner';
+}
+
 export default function WellnessScreen() {
   const [activeTab, setActiveTab] = useState<WellnessTab>('yoga');
   const [meditationPlayingId, setMeditationPlayingId] = useState<string | null>(null);
+  const sessionsQuery = useWellnessSessions();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const apiSessions = sessionsQuery.data?.sessions ?? [];
+  const sourceSessions: YogaSession[] = apiSessions.length > 0
+    ? apiSessions.map((s, i) => {
+        const fb = yogaSessions[i % yogaSessions.length]!;
+        return {
+          id: s.id,
+          title: s.title ?? fb.title,
+          instructor: s.instructorName ?? fb.instructor,
+          duration: s.duration ? `${s.duration} min` : fb.duration,
+          level: mapWellnessLevel(s.level),
+          category: s.type ?? fb.category,
+          participants: fb.participants,
+          isLive: !!s.startTime && new Date(s.startTime).getTime() <= Date.now(),
+        };
+      })
+    : yogaSessions;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await sessionsQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -403,7 +446,7 @@ export default function WellnessScreen() {
       </View>
 
       {/* Content */}
-      {activeTab === 'yoga' && <YogaContent />}
+      {activeTab === 'yoga' && <YogaContent sessions={sourceSessions} refreshing={refreshing} onRefresh={onRefresh} />}
       {activeTab === 'meditation' && <MeditationContent playingId={meditationPlayingId} setPlayingId={setMeditationPlayingId} />}
       {activeTab === 'ayurveda' && <AyurvedaContent />}
     </SafeAreaView>

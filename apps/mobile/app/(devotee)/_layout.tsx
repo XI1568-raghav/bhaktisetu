@@ -103,6 +103,13 @@ export default function TabLayout() {
           title: 'Wellness',
         }}
       />
+      <Tabs.Screen
+        name="bookings"
+        options={{
+          href: null,
+          title: 'Bookings',
+        }}
+      />
     </Tabs>
     </RoleGuard>
   );
