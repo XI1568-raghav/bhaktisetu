@@ -17,6 +17,9 @@ importers:
       prettier:
         specifier: ^3.5.3
         version: 3.8.2
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
       turbo:
         specifier: ^2.4.4
         version: 2.9.6
