@@ -28,6 +28,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm --filter @poojly/api exec prisma generate
+
       - name: Lint
         run: pnpm turbo lint
 
@@ -52,6 +55,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm --filter @poojly/api exec prisma generate
+
       - name: Run Tests
         run: pnpm turbo test
 
@@ -72,6 +78,9 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @poojly/api exec prisma generate
 
       - name: Build All
         run: pnpm turbo build
