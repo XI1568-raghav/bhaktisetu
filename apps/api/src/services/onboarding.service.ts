@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -66,7 +67,9 @@ export class OnboardingService {
         });
       }
 
-      return this.getProgress(userId, role);
+      const progress = await this.getProgress(userId, role);
+      if (!progress) throw new Error('Failed to fetch onboarding progress after creation');
+      return progress;
     } catch {
       // Mock fallback
       const progress: OnboardingProgress = {
@@ -138,7 +141,7 @@ export class OnboardingService {
     try {
       await prisma.onboardingStep.update({
         where: { userId_role_step: { userId, role: role as RoleType, step } },
-        data: { completed: true, data: data as Record<string, unknown> },
+        data: { completed: true, data: data as Prisma.InputJsonValue },
       });
 
       const progress = await this.getProgress(userId, role);
