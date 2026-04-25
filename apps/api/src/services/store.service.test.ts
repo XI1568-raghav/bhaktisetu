@@ -85,8 +85,8 @@ describe('StoreService.getProducts', () => {
   it('sorts by price ascending', () => {
     const result = service.getProducts({ sort: 'price_asc' });
     for (let i = 1; i < result.products.length; i++) {
-      expect(result.products[i].price).toBeGreaterThanOrEqual(
-        result.products[i - 1].price
+      expect(result.products[i]!.price).toBeGreaterThanOrEqual(
+        result.products[i - 1]!.price
       );
     }
   });
@@ -94,8 +94,8 @@ describe('StoreService.getProducts', () => {
   it('sorts by price descending', () => {
     const result = service.getProducts({ sort: 'price_desc' });
     for (let i = 1; i < result.products.length; i++) {
-      expect(result.products[i].price).toBeLessThanOrEqual(
-        result.products[i - 1].price
+      expect(result.products[i]!.price).toBeLessThanOrEqual(
+        result.products[i - 1]!.price
       );
     }
   });
@@ -103,8 +103,8 @@ describe('StoreService.getProducts', () => {
   it('sorts by rating', () => {
     const result = service.getProducts({ sort: 'rating' });
     for (let i = 1; i < result.products.length; i++) {
-      expect(result.products[i].rating).toBeLessThanOrEqual(
-        result.products[i - 1].rating
+      expect(result.products[i]!.rating).toBeLessThanOrEqual(
+        result.products[i - 1]!.rating
       );
     }
   });
@@ -112,14 +112,14 @@ describe('StoreService.getProducts', () => {
   it('sorts by newest (reversed order)', () => {
     const result = service.getProducts({ sort: 'newest' });
     // The last product in the array should come first when sorted by newest
-    expect(result.products[0].id).toBe('prod_012');
+    expect(result.products[0]!.id).toBe('prod_012');
   });
 
   it('default sort is by review count (popular)', () => {
     const result = service.getProducts({});
     for (let i = 1; i < result.products.length; i++) {
-      expect(result.products[i].reviewCount).toBeLessThanOrEqual(
-        result.products[i - 1].reviewCount
+      expect(result.products[i]!.reviewCount).toBeLessThanOrEqual(
+        result.products[i - 1]!.reviewCount
       );
     }
   });
@@ -131,7 +131,7 @@ describe('StoreService.getProducts', () => {
     expect(page1.products.length).toBe(3);
     expect(page2.products.length).toBe(3);
     expect(page1.totalPages).toBe(4); // 12 products / 3 per page = 4
-    expect(page1.products[0].id).not.toBe(page2.products[0].id);
+    expect(page1.products[0]!.id).not.toBe(page2.products[0]!.id);
   });
 
   it('returns empty array for page beyond total', () => {
@@ -147,8 +147,8 @@ describe('StoreService.getProducts', () => {
     });
     expect(result.products.length).toBeGreaterThan(1);
     for (let i = 1; i < result.products.length; i++) {
-      expect(result.products[i].price).toBeGreaterThanOrEqual(
-        result.products[i - 1].price
+      expect(result.products[i]!.price).toBeGreaterThanOrEqual(
+        result.products[i - 1]!.price
       );
     }
   });
@@ -230,9 +230,9 @@ describe('StoreService cart operations', () => {
   it('adds a product to the cart', () => {
     const cart = service.createCartItem(userId, 'prod_001', 1);
     expect(cart.items).toHaveLength(1);
-    expect(cart.items[0].productId).toBe('prod_001');
-    expect(cart.items[0].quantity).toBe(1);
-    expect(cart.items[0].subtotal).toBe(1299);
+    expect(cart.items[0]!.productId).toBe('prod_001');
+    expect(cart.items[0]!.quantity).toBe(1);
+    expect(cart.items[0]!.subtotal).toBe(1299);
     expect(cart.itemCount).toBe(1);
   });
 
@@ -304,10 +304,10 @@ describe('StoreService.updateCartItem', () => {
 
   it('updates cart item quantity', () => {
     const addResult = service.createCartItem(userId, 'prod_001', 1);
-    const itemId = addResult.items[0].id;
+    const itemId = addResult.items[0]!.id;
     const cart = service.updateCartItem(userId, itemId, 3);
-    expect(cart.items[0].quantity).toBe(3);
-    expect(cart.items[0].subtotal).toBe(1299 * 3);
+    expect(cart.items[0]!.quantity).toBe(3);
+    expect(cart.items[0]!.subtotal).toBe(1299 * 3);
   });
 
   it('throws for unknown cart item', () => {
@@ -338,7 +338,7 @@ describe('StoreService.removeCartItem', () => {
 
   it('removes a cart item', () => {
     const addResult = service.createCartItem(userId, 'prod_001', 1);
-    const itemId = addResult.items[0].id;
+    const itemId = addResult.items[0]!.id;
     const cart = service.removeCartItem(userId, itemId);
     expect(cart.items).toHaveLength(0);
     expect(cart.subtotal).toBe(0);
@@ -358,6 +358,6 @@ describe('StoreService.removeCartItem', () => {
     const cart = service.removeCartItem(userId, itemToRemove.id);
 
     expect(cart.items).toHaveLength(1);
-    expect(cart.items[0].productId).toBe('prod_002');
+    expect(cart.items[0]!.productId).toBe('prod_002');
   });
 });

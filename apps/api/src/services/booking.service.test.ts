@@ -147,7 +147,7 @@ describe('BookingService.createBooking', () => {
 
     expect(result.currency).toBe('USD');
     expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
-    const createCall = prismaMock.pujaBooking.create.mock.calls[0][0];
+    const createCall = prismaMock.pujaBooking.create.mock.calls[0]![0];
     expect(createCall.data.currency).toBe('USD');
   });
 
@@ -427,7 +427,7 @@ describe('BookingService.getUserBookings', () => {
 
     await service.getUserBookings('user-1', { status: 'confirmed' as any });
 
-    const findManyCall = prismaMock.pujaBooking.findMany.mock.calls[0][0];
+    const findManyCall = prismaMock.pujaBooking.findMany.mock.calls[0]![0];
     expect(findManyCall.where.status).toBe('confirmed');
   });
 
@@ -440,7 +440,7 @@ describe('BookingService.getUserBookings', () => {
       dateTo: '2026-12-31',
     });
 
-    const findManyCall = prismaMock.pujaBooking.findMany.mock.calls[0][0];
+    const findManyCall = prismaMock.pujaBooking.findMany.mock.calls[0]![0];
     expect(findManyCall.where.scheduledDate).toBeDefined();
   });
 
@@ -456,7 +456,7 @@ describe('BookingService.getUserBookings', () => {
     expect(result.page).toBe(3);
     expect(result.limit).toBe(10);
     expect(result.totalPages).toBe(10);
-    const findManyCall = prismaMock.pujaBooking.findMany.mock.calls[0][0];
+    const findManyCall = prismaMock.pujaBooking.findMany.mock.calls[0]![0];
     expect(findManyCall.skip).toBe(20); // (3-1) * 10
     expect(findManyCall.take).toBe(10);
   });
@@ -620,7 +620,7 @@ describe('BookingService.submitReview', () => {
     expect(prismaMock.priest.update).toHaveBeenCalledTimes(1);
 
     // Verify the new average: (4.0 * 10 + 5) / 11 = 45/11 = 4.09...
-    const priestUpdate = prismaMock.priest.update.mock.calls[0][0];
+    const priestUpdate = prismaMock.priest.update.mock.calls[0]![0];
     expect(priestUpdate.data.ratingAvg).toBeCloseTo(4.09, 2);
     expect(priestUpdate.data.ratingCount).toBe(11);
   });
@@ -710,7 +710,7 @@ describe('BookingService.checkSlotAvailability', () => {
     );
 
     expect(result.available).toBe(false);
-    expect(result.slots[0].available).toBe(false);
-    expect(result.slots[0].remaining).toBe(0);
+    expect(result.slots[0]!.available).toBe(false);
+    expect(result.slots[0]!.remaining).toBe(0);
   });
 });

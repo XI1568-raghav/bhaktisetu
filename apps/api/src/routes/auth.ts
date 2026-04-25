@@ -455,15 +455,15 @@ export async function authRoutes(server: FastifyInstance) {
       }
 
       // Create user record in our DB
-      const user = await prisma.user.create({
-        data: {
-          id: authData.user.id,
-          email: emailLower,
-          fullName,
-          phone: phone || null,
-          locationCity: city || null,
-        },
-      });
+      // phone is optional in signup form but required in schema; omit if absent and rely on DB default
+      const createData = {
+        id: authData.user.id,
+        email: emailLower,
+        fullName,
+        locationCity: city || undefined,
+      } as Parameters<typeof prisma.user.create>[0]['data'];
+      if (phone) (createData as Record<string, unknown>)['phone'] = phone;
+      const user = await prisma.user.create({ data: createData });
 
       return reply.code(201).send({
         session: authData.session
