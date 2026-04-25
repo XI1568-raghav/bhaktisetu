@@ -25,6 +25,10 @@ const VIDEO_URLS = {
   'twelve-jyotirlingas-pilgrimage-guide': 'https://www.youtube.com/watch?v=UO39dgB8gYo',
   'navratri-festival-guide': 'https://www.youtube.com/watch?v=lZtMMNt_Mnk',
   'temple-architecture-science-spirituality': 'https://www.youtube.com/watch?v=C7Hr8tKiDRk',
+  'understanding-panchang-hindu-almanac': 'https://www.youtube.com/watch?v=sxDI6ze1ejs',
+  'char-dham-yatra-guide': 'https://www.youtube.com/watch?v=dR1FV---j2g',
+  'ganesh-chalisa': 'https://www.youtube.com/watch?v=WyHFSjN0miU',
+  'lakshmi-chalisa': 'https://www.youtube.com/watch?v=otWnO-2pwuM',
 };
 
 const prisma = new PrismaClient();

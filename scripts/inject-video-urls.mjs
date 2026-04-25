@@ -19,46 +19,50 @@ const VIDEO_URLS = {
   'twelve-jyotirlingas-pilgrimage-guide': 'https://www.youtube.com/watch?v=UO39dgB8gYo',
   'navratri-festival-guide': 'https://www.youtube.com/watch?v=lZtMMNt_Mnk',
   'temple-architecture-science-spirituality': 'https://www.youtube.com/watch?v=C7Hr8tKiDRk',
-  // 'understanding-panchang-hindu-almanac': null,
-  // 'char-dham-yatra-guide': null,
+  'understanding-panchang-hindu-almanac': 'https://www.youtube.com/watch?v=sxDI6ze1ejs',
+  'char-dham-yatra-guide': 'https://www.youtube.com/watch?v=dR1FV---j2g',
+  'ganesh-chalisa': 'https://www.youtube.com/watch?v=WyHFSjN0miU',
+  'lakshmi-chalisa': 'https://www.youtube.com/watch?v=otWnO-2pwuM',
 };
 
 const filePath = 'apps/api/prisma/content-data.ts';
 let content = readFileSync(filePath, 'utf8');
 
-// Find each item by slug, then walk forward to find its `audioUrl: null,` line,
-// and inject `videoUrl: '...',` immediately after.
-let replacements = 0;
+let injected = 0;
+let skipped = 0;
 for (const [slug, videoUrl] of Object.entries(VIDEO_URLS)) {
   const slugIdx = content.indexOf(`slug: '${slug}',`);
   if (slugIdx < 0) {
     console.warn(`! slug not found: ${slug}`);
     continue;
   }
-  // Find the next `audioUrl:` line after the slug
+  // Find end of THIS item: the next closing `},\n  {` after the slug.
+  // For the last item, the end is `},\n];`
+  const itemEndPattern = /\},\s*\n\s*\{|\},\s*\n\s*\];/g;
+  itemEndPattern.lastIndex = slugIdx;
+  const endMatch = itemEndPattern.exec(content);
+  const itemEnd = endMatch ? endMatch.index : content.length;
+  const itemBody = content.slice(slugIdx, itemEnd);
+
+  // If videoUrl already present in this item, skip
+  if (itemBody.includes('videoUrl:')) {
+    skipped += 1;
+    continue;
+  }
+
+  // Insert after the audioUrl line within this item only
   const audioRegex = /audioUrl:\s*null,/g;
   audioRegex.lastIndex = slugIdx;
-  const match = audioRegex.exec(content);
-  if (!match) {
-    console.warn(`! no audioUrl after slug: ${slug}`);
-    continue;
-  }
-  // Verify the `audioUrl` belongs to THIS item, not a later one
-  // (i.e., no other slug appears between slugIdx and match.index)
-  const between = content.slice(slugIdx + 1, match.index);
-  if (between.includes("slug: '")) {
-    console.warn(`! audioUrl not found in item for: ${slug}`);
-    continue;
-  }
-  // Detect if videoUrl already exists for this item
-  if (between.includes('videoUrl:')) {
-    console.log(`. already has videoUrl: ${slug}`);
+  const audioMatch = audioRegex.exec(content);
+  if (!audioMatch || audioMatch.index >= itemEnd) {
+    console.warn(`! no audioUrl in item for: ${slug}`);
     continue;
   }
   const insertion = `audioUrl: null,\n    videoUrl: '${videoUrl}',`;
-  content = content.slice(0, match.index) + insertion + content.slice(match.index + match[0].length);
-  replacements += 1;
+  content = content.slice(0, audioMatch.index) + insertion + content.slice(audioMatch.index + audioMatch[0].length);
+  injected += 1;
+  console.log(`+ ${slug}`);
 }
 
 writeFileSync(filePath, content);
-console.log(`✓ injected videoUrl into ${replacements} items`);
+console.log(`\nInjected ${injected}, skipped ${skipped} (already present).`);
