@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getContent, getContentBySlugApi, type ContentItem } from '../../../lib/api';
 import AudioPlayer from '../../../components/AudioPlayer';
+import { YouTubeEmbed } from '../../../components/YouTubeEmbed';
 import { renderContentBody } from '../../../lib/markdown';
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
@@ -413,8 +414,10 @@ export default async function ContentDetailPage({
               </div>
             </div>
 
-            {/* Audio Player (for audio types) */}
-            {isAudio && (
+            {/* Video / Audio player */}
+            {content.videoUrl ? (
+              <YouTubeEmbed url={content.videoUrl} title={content.title} />
+            ) : isAudio && content.audioUrl ? (
               <AudioPlayer
                 title={content.title}
                 artist={content.deity ?? undefined}
@@ -424,7 +427,7 @@ export default async function ContentDetailPage({
                 deity={content.deity}
                 type={content.type}
               />
-            )}
+            ) : null}
 
             {/* Body / Text content */}
             {bodyHtml && (
