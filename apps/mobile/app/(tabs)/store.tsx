@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -142,6 +143,7 @@ function ProductCard({ product }: { product: Product }) {
     <TouchableOpacity
       style={[styles.productCard, { width: CARD_WIDTH }]}
       activeOpacity={0.7}
+      onPress={() => Alert.alert(product.name, `Price: ₹${product.price.toLocaleString('en-IN')}\nRating: ${product.rating} ⭐ (${product.reviews.toLocaleString('en-IN')} reviews)`)}
     >
       {/* Image placeholder */}
       <View style={styles.productImage}>
@@ -181,7 +183,7 @@ function ProductCard({ product }: { product: Product }) {
             ({product.reviews.toLocaleString('en-IN')})
           </Text>
         </View>
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.addButton} activeOpacity={0.7} onPress={() => Alert.alert('Added to Cart', `${product.name} has been added to your cart.`)}>
           <Ionicons name="cart-outline" size={14} color={colors.white} />
           <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
@@ -209,7 +211,7 @@ export default function StoreScreen() {
               Sacred items delivered to your door
             </Text>
           </View>
-          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7} onPress={() => Alert.alert('Your Cart', '2 items in cart. Checkout coming soon!')}>
             <Ionicons name="cart-outline" size={22} color={colors.stone[700]} />
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>2</Text>

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -118,7 +119,7 @@ function renderStars(trustScore: number) {
 
 function TempleCard({ temple }: { temple: Temple }) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => Alert.alert(temple.name, `${temple.deity} • ${temple.city}, ${temple.state}\n\n${temple.description}`)}>
       {/* Image placeholder */}
       <View style={styles.cardImage}>
         <Ionicons name="business" size={36} color={colors.saffron[300]} />
@@ -175,7 +176,7 @@ function TempleCard({ temple }: { temple: Temple }) {
           )}
         </View>
 
-        <TouchableOpacity style={styles.viewButton} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.viewButton} activeOpacity={0.7} onPress={() => Alert.alert(temple.name, `${temple.deity} • ${temple.city}, ${temple.state}\n\n${temple.description}`)}>
           <Text style={styles.viewButtonText}>View Temple</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.white} />
         </TouchableOpacity>
