@@ -204,8 +204,21 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
     if (role === 'priest') {
       if (userRoles.includes('PANDIT')) return;
 
+      // Synthetic ids (`demo-*`, `anon-*`) are not real UUIDs — Prisma's
+      // uuid validator rejects them, so don't attempt a DB lookup. Fall
+      // back to the role list above. Caught in production by Sentry as
+      // "Inconsistent column data: Error creating UUID, ...".
+      const userId = request.currentUser.id;
+      if (userId.startsWith('demo-') || userId.startsWith('anon-')) {
+        reply.code(403).send({
+          error: 'Forbidden',
+          message: 'This route requires an active priest account.',
+        });
+        return;
+      }
+
       const priest = await prisma.priest.findUnique({
-        where: { userId: request.currentUser.id },
+        where: { userId },
       });
 
       if (!priest || priest.status !== 'active') {
