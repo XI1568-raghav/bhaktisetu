@@ -4,12 +4,12 @@ import Anthropic from '@anthropic-ai/sdk';
 // is present, else fall back to Anthropic. DEMO_MODE only when neither is set.
 const HAS_GROQ = !!process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'demo-key';
 const HAS_ANTHROPIC =
-  !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'demo-key';
+ !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'demo-key';
 const DEMO_MODE = !HAS_GROQ && !HAS_ANTHROPIC;
 
 const anthropic = HAS_ANTHROPIC
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : (null as unknown as Anthropic);
+ ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+ : (null as unknown as Anthropic);
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1';
 
@@ -17,7 +17,7 @@ const GROQ_BASE = 'https://api.groq.com/openai/v1';
 // ai.service.ts) but route them to whichever provider is active.
 //
 // SONNET tier — used for richer answers in /chat and /astrology
-// HAIKU tier  — used for fast/cheap calls (recommendations, summaries)
+// HAIKU tier — used for fast/cheap calls (recommendations, summaries)
 //
 // Llama 3.3 70B (Groq) is the closest free analogue to Sonnet quality;
 // Llama 3.1 8B Instant is the fast/cheap tier.
@@ -27,22 +27,22 @@ const ANTHROPIC_SONNET_MODEL = 'claude-sonnet-4-20250514';
 const ANTHROPIC_HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 
 export const MODELS = {
-  SONNET: HAS_GROQ ? GROQ_SONNET_MODEL : ANTHROPIC_SONNET_MODEL,
-  HAIKU: HAS_GROQ ? GROQ_HAIKU_MODEL : ANTHROPIC_HAIKU_MODEL,
+ SONNET: HAS_GROQ ? GROQ_SONNET_MODEL : ANTHROPIC_SONNET_MODEL,
+ HAIKU: HAS_GROQ ? GROQ_HAIKU_MODEL : ANTHROPIC_HAIKU_MODEL,
 } as const;
 
 // ─── Demo-mode static responses ────────────────────────────────────────────────
 
 interface DemoTopic {
-  keywords: string[];
-  response: string;
+ keywords: string[];
+ response: string;
 }
 
 const DEMO_TOPICS: DemoTopic[] = [
-  // ─── Marriage / Relationships ──────────────────────────────────────────
-  {
-    keywords: ['marriage', 'vivah', 'shaadi', 'wedding', 'wife', 'husband', 'spouse', 'partner', 'relationship', 'love', 'marry', 'rishta', 'match'],
-    response: `Marriage is one of the 16 sacred samskaras (संस्कार) in Hindu tradition. The Vedas describe it as a divine union ordained by the cosmos.
+ // ─── Marriage / Relationships ──────────────────────────────────────────
+ {
+ keywords: ['marriage', 'vivah', 'shaadi', 'wedding', 'wife', 'husband', 'spouse', 'partner', 'relationship', 'love', 'marry', 'rishta', 'match'],
+ response: `Marriage is one of the 16 sacred samskaras (संस्कार) in Hindu tradition. The Vedas describe it as a divine union ordained by the cosmos.
 
 **श्लोक (Shloka):**
 *"धर्मेच अर्थेच कामेच नातिचरामि"*
@@ -61,13 +61,13 @@ const DEMO_TOPICS: DemoTopic[] = [
 
 Love and companionship, when aligned with dharma, are among life's greatest blessings.
 
-💡 **On Darshya:** Book a **Vivah Puja** or **Gauri Shankar Puja** with verified priests at renowned temples. Check your **rashi compatibility** in our Astrology section for astrological guidance.`,
-  },
+ **On Darshya:** Book a **Vivah Puja** or **Gauri Shankar Puja** with verified priests at renowned temples. Check your **rashi compatibility** in our Astrology section for astrological guidance.`,
+ },
 
-  // ─── Health & Healing ─────────────────────────────────────────────────
-  {
-    keywords: ['health', 'healing', 'disease', 'illness', 'sick', 'cure', 'recovery', 'hospital', 'medical', 'pain', 'body', 'swasthya', 'rog'],
-    response: `The ancient tradition recognizes health as the foundation of all spiritual pursuit. Charaka Samhita declares:
+ // ─── Health & Healing ─────────────────────────────────────────────────
+ {
+ keywords: ['health', 'healing', 'disease', 'illness', 'sick', 'cure', 'recovery', 'hospital', 'medical', 'pain', 'body', 'swasthya', 'rog'],
+ response: `The ancient tradition recognizes health as the foundation of all spiritual pursuit. Charaka Samhita declares:
 
 **श्लोक (Shloka):**
 *"शरीरमाद्यं खलु धर्मसाधनम्"*
@@ -90,15 +90,15 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - Donate medicines to the needy on Saturdays for planetary blessings
 - Follow Ayurvedic daily routine (Dinacharya) aligned with your prakriti
 
-⚕️ *Note: Spiritual healing complements medical treatment. Always consult qualified doctors for health concerns.*
+*Note: Spiritual healing complements medical treatment. Always consult qualified doctors for health concerns.*
 
-💡 **On Darshya:** Book a **Mahamrityunjaya Japa** (11,000 chants) or **Dhanvantari Puja** for healing blessings. Watch **Live Darshan** for daily peace.`,
-  },
+ **On Darshya:** Book a **Mahamrityunjaya Japa** (11,000 chants) or **Dhanvantari Puja** for healing blessings. Watch **Live Darshan** for daily peace.`,
+ },
 
-  // ─── Children & Blessings ─────────────────────────────────────────────
-  {
-    keywords: ['child', 'baby', 'son', 'daughter', 'santaan', 'santan', 'pregnancy', 'fertility', 'conceive', 'putra', 'putri', 'newborn', 'childbirth'],
-    response: `Children are regarded as the greatest blessing in Hindu tradition. The scriptures call them the continuation of one's dharmic lineage.
+ // ─── Children & Blessings ─────────────────────────────────────────────
+ {
+ keywords: ['child', 'baby', 'son', 'daughter', 'santaan', 'santan', 'pregnancy', 'fertility', 'conceive', 'putra', 'putri', 'newborn', 'childbirth'],
+ response: `Children are regarded as the greatest blessing in Hindu tradition. The scriptures call them the continuation of one's dharmic lineage.
 
 **श्लोक (Shloka):**
 *"पुत्रत्वे च पितृत्वे च सर्वभूतहिते रतः"*
@@ -120,13 +120,13 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - **Saraswati Puja** — for wisdom and academic success
 - **Aksharabhyasam** — the traditional learning initiation ceremony
 
-💡 **On Darshya:** Book **Santana Gopala Puja** or **Naamkaran Sanskar** for newborns with verified priests across India.`,
-  },
+ **On Darshya:** Book **Santana Gopala Puja** or **Naamkaran Sanskar** for newborns with verified priests across India.`,
+ },
 
-  // ─── Education & Career ───────────────────────────────────────────────
-  {
-    keywords: ['education', 'study', 'exam', 'school', 'college', 'university', 'student', 'learn', 'vidya', 'padhai', 'career', 'job', 'success', 'business', 'puja', 'promotion', 'work', 'interview', 'naukri'],
-    response: `The Vedic tradition places immense value on knowledge (विद्या) and righteous action (कर्म). Both education and career flourish through divine grace and disciplined effort.
+ // ─── Education & Career ───────────────────────────────────────────────
+ {
+ keywords: ['education', 'study', 'exam', 'school', 'college', 'university', 'student', 'learn', 'vidya', 'padhai', 'career', 'job', 'success', 'business', 'puja', 'promotion', 'work', 'interview', 'naukri'],
+ response: `The Vedic tradition places immense value on knowledge (विद्या) and righteous action (कर्म). Both education and career flourish through divine grace and disciplined effort.
 
 **श्लोक (Shloka):**
 *"विद्या ददाति विनयं विनयाद्याति पात्रताम् |
@@ -149,13 +149,13 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - Light a diya at your workspace or study table
 - Place a Saraswati idol or image in the northeast corner of your room
 
-💡 **On Darshya:** Book **Ganesh Puja**, **Saraswati Puja**, or **Navagraha Puja** with verified priests. Explore our **Content** section for mantras and study guidance.`,
-  },
+ **On Darshya:** Book **Ganesh Puja**, **Saraswati Puja**, or **Navagraha Puja** with verified priests. Explore our **Content** section for mantras and study guidance.`,
+ },
 
-  // ─── Grief & Loss ─────────────────────────────────────────────────────
-  {
-    keywords: ['grief', 'loss', 'death', 'die', 'died', 'passed away', 'departed', 'shradh', 'shraddha', 'mourning', 'mrityu', 'pitru', 'ancestors', 'funeral'],
-    response: `Loss and grief are among the deepest human experiences. Hindu philosophy offers profound comfort through the understanding of the eternal soul (आत्मा).
+ // ─── Grief & Loss ─────────────────────────────────────────────────────
+ {
+ keywords: ['grief', 'loss', 'death', 'die', 'died', 'passed away', 'departed', 'shradh', 'shraddha', 'mourning', 'mrityu', 'pitru', 'ancestors', 'funeral'],
+ response: `Loss and grief are among the deepest human experiences. Hindu philosophy offers profound comfort through the understanding of the eternal soul (आत्मा).
 
 **श्लोक from Bhagavad Gita (Chapter 2, Verse 22):**
 *"वासांसि जीर्णानि यथा विहाय नवानि गृह्णाति नरोऽपराणि |
@@ -179,13 +179,13 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 
 The Gita teaches that the soul is eternal, indestructible, and transcendent. Your loved ones live on in the cosmic cycle.
 
-💡 **On Darshya:** Book **Shraddha Puja**, **Pind Daan**, or **Narayan Bali Puja** at verified temples. Our priests perform with full Vedic rites and provide video proof.`,
-  },
+ **On Darshya:** Book **Shraddha Puja**, **Pind Daan**, or **Narayan Bali Puja** at verified temples. Our priests perform with full Vedic rites and provide video proof.`,
+ },
 
-  // ─── Festivals & Celebrations ─────────────────────────────────────────
-  {
-    keywords: ['festival', 'diwali', 'holi', 'navratri', 'dussehra', 'ganesh chaturthi', 'janmashtami', 'maha shivratri', 'ram navami', 'celebration', 'utsav', 'tyohar', 'pongal', 'onam', 'makar sankranti'],
-    response: `Hindu festivals connect us to the cosmic rhythm and remind us of our cultural heritage. Each festival has deep spiritual significance.
+ // ─── Festivals & Celebrations ─────────────────────────────────────────
+ {
+ keywords: ['festival', 'diwali', 'holi', 'navratri', 'dussehra', 'ganesh chaturthi', 'janmashtami', 'maha shivratri', 'ram navami', 'celebration', 'utsav', 'tyohar', 'pongal', 'onam', 'makar sankranti'],
+ response: `Hindu festivals connect us to the cosmic rhythm and remind us of our cultural heritage. Each festival has deep spiritual significance.
 
 **श्लोक (Shloka):**
 *"यदा यदा हि धर्मस्य ग्लानिर्भवति भारत |
@@ -206,13 +206,13 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 *"सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः"*
 *"May all beings be happy, may all beings be free from disease."*
 
-💡 **On Darshya:** Book **festival-specific pujas** at temples across India. Watch **Live Darshan** during festivals for special aartis and celebrations.`,
-  },
+ **On Darshya:** Book **festival-specific pujas** at temples across India. Watch **Live Darshan** during festivals for special aartis and celebrations.`,
+ },
 
-  // ─── Daily Worship / Routine ──────────────────────────────────────────
-  {
-    keywords: ['daily', 'routine', 'worship', 'prayer', 'puja at home', 'aarti', 'archana', 'morning', 'evening', 'nitya', 'nityakarma', 'sandhya', 'pooja'],
-    response: `A daily worship routine (नित्यकर्म) connects you with the divine and brings peace, discipline, and spiritual growth.
+ // ─── Daily Worship / Routine ──────────────────────────────────────────
+ {
+ keywords: ['daily', 'routine', 'worship', 'prayer', 'puja at home', 'aarti', 'archana', 'morning', 'evening', 'nitya', 'nityakarma', 'sandhya', 'pooja'],
+ response: `A daily worship routine (नित्यकर्म) connects you with the divine and brings peace, discipline, and spiritual growth.
 
 **श्लोक (Shloka):**
 *"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन |
@@ -244,13 +244,13 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 - Friday: Lakshmi/Santoshi Maa Puja
 - Saturday: Shani Dev Puja, help the needy
 
-💡 **On Darshya:** Explore our **Content** section for mantras, aartis, and chalisa. Watch **Live Darshan** from 50+ temples daily.`,
-  },
+ **On Darshya:** Explore our **Content** section for mantras, aartis, and chalisa. Watch **Live Darshan** from 50+ temples daily.`,
+ },
 
-  // ─── Meditation & Yoga ────────────────────────────────────────────────
-  {
-    keywords: ['meditation', 'meditate', 'dhyana', 'dhyan', 'yoga', 'pranayama', 'breathing', 'mindfulness', 'inner peace', 'spiritual practice', 'sadhana'],
-    response: `Meditation (ध्यान) is the cornerstone of spiritual practice in Hindu tradition. The Gita describes it as the path to self-realization.
+ // ─── Meditation & Yoga ────────────────────────────────────────────────
+ {
+ keywords: ['meditation', 'meditate', 'dhyana', 'dhyan', 'yoga', 'pranayama', 'breathing', 'mindfulness', 'inner peace', 'spiritual practice', 'sadhana'],
+ response: `Meditation (ध्यान) is the cornerstone of spiritual practice in Hindu tradition. The Gita describes it as the path to self-realization.
 
 **श्लोक from Bhagavad Gita (Chapter 6, Verse 5):**
 *"उद्धरेदात्मनात्मानं नात्मानमवसादयेत् |
@@ -280,13 +280,13 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 *"योगश्चित्तवृत्तिनिरोधः"*
 *"Yoga is the cessation of the fluctuations of the mind."*
 
-💡 **On Darshya:** Join **Live Yoga & Meditation** sessions with certified instructors. Explore our **Wellness** section for guided practices.`,
-  },
+ **On Darshya:** Join **Live Yoga & Meditation** sessions with certified instructors. Explore our **Wellness** section for guided practices.`,
+ },
 
-  // ─── Dreams & Interpretation ──────────────────────────────────────────
-  {
-    keywords: ['dream', 'dreams', 'sapna', 'swapna', 'nightmare', 'vision', 'sleep', 'dreaming'],
-    response: `Dreams (स्वप्न) have been considered spiritually significant in Hindu tradition. The Mandukya Upanishad discusses the four states of consciousness, including the dream state.
+ // ─── Dreams & Interpretation ──────────────────────────────────────────
+ {
+ keywords: ['dream', 'dreams', 'sapna', 'swapna', 'nightmare', 'vision', 'sleep', 'dreaming'],
+ response: `Dreams (स्वप्न) have been considered spiritually significant in Hindu tradition. The Mandukya Upanishad discusses the four states of consciousness, including the dream state.
 
 **श्लोक from Mandukya Upanishad:**
 *"स्वप्नस्थानोऽन्तःप्रज्ञः"*
@@ -313,13 +313,13 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 
 Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant and prophetic.
 
-💡 **On Darshya:** Consult an **Astrologer** for detailed dream analysis based on your birth chart. Book a **Navagraha Puja** if recurring disturbing dreams persist.`,
-  },
+ **On Darshya:** Consult an **Astrologer** for detailed dream analysis based on your birth chart. Book a **Navagraha Puja** if recurring disturbing dreams persist.`,
+ },
 
-  // ─── Vastu Shastra ────────────────────────────────────────────────────
-  {
-    keywords: ['vastu', 'house', 'home', 'direction', 'north', 'south', 'east', 'west', 'construction', 'griha', 'flat', 'apartment', 'office'],
-    response: `Vastu Shastra (वास्तु शास्त्र) is the ancient Indian science of architecture and spatial harmony. It aligns your living space with cosmic energies.
+ // ─── Vastu Shastra ────────────────────────────────────────────────────
+ {
+ keywords: ['vastu', 'house', 'home', 'direction', 'north', 'south', 'east', 'west', 'construction', 'griha', 'flat', 'apartment', 'office'],
+ response: `Vastu Shastra (वास्तु शास्त्र) is the ancient Indian science of architecture and spatial harmony. It aligns your living space with cosmic energies.
 
 **श्लोक (Shloka):**
 *"वास्तु शास्त्रं प्रवक्ष्यामि लोकानां हितकाम्यया"*
@@ -345,13 +345,13 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 4. Avoid **mirrors** in the bedroom facing the bed
 5. Place a **Tulsi plant** at the entrance for positive energy
 
-💡 **On Darshya:** Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** for your new home. Consult our **Vastu expert astrologers** for personalized guidance.`,
-  },
+ **On Darshya:** Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** for your new home. Consult our **Vastu expert astrologers** for personalized guidance.`,
+ },
 
-  // ─── Numerology ───────────────────────────────────────────────────────
-  {
-    keywords: ['numerology', 'number', 'ank', 'ankjyotish', 'lucky number', 'birth number', 'name number'],
-    response: `Numerology (अंकज्योतिष) reveals the hidden meaning behind numbers and their influence on your life. Vedic numerology uses the 9-planet system.
+ // ─── Numerology ───────────────────────────────────────────────────────
+ {
+ keywords: ['numerology', 'number', 'ank', 'ankjyotish', 'lucky number', 'birth number', 'name number'],
+ response: `Numerology (अंकज्योतिष) reveals the hidden meaning behind numbers and their influence on your life. Vedic numerology uses the 9-planet system.
 
 **Key Numbers and Their Planetary Rulers:**
 | Number | Planet | Qualities |
@@ -376,13 +376,13 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 - If your number is 4 (Rahu): Worship Lord Ganesha, donate to the needy
 - If your number is 7 (Ketu): Meditate daily, visit spiritual places
 
-💡 **On Darshya:** Consult a **Numerologist** in our Astrology section for detailed analysis. Book a **Navagraha Puja** to strengthen weak planetary numbers.`,
-  },
+ **On Darshya:** Consult a **Numerologist** in our Astrology section for detailed analysis. Book a **Navagraha Puja** to strengthen weak planetary numbers.`,
+ },
 
-  // ─── Gemstones ────────────────────────────────────────────────────────
-  {
-    keywords: ['gemstone', 'gem', 'stone', 'ratna', 'neelam', 'ruby', 'manik', 'pearl', 'moti', 'emerald', 'panna', 'diamond', 'heera', 'coral', 'moonga', 'sapphire'],
-    response: `Gemstones (रत्न) have been used in Vedic astrology for millennia to channel planetary energies and provide remedial benefits.
+ // ─── Gemstones ────────────────────────────────────────────────────────
+ {
+ keywords: ['gemstone', 'gem', 'stone', 'ratna', 'neelam', 'ruby', 'manik', 'pearl', 'moti', 'emerald', 'panna', 'diamond', 'heera', 'coral', 'moonga', 'sapphire'],
+ response: `Gemstones (रत्न) have been used in Vedic astrology for millennia to channel planetary energies and provide remedial benefits.
 
 **श्लोक (Shloka):**
 *"रत्नानां सर्वेषां मध्ये हीरकं प्रवरं भवेत्"*
@@ -399,15 +399,15 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 8. **Hessonite (Gomed/गोमेद)** — Rahu — Protection from negativity. Wear on middle finger.
 9. **Cat's Eye (Lehsunia/लहसुनिया)** — Ketu — Spiritual growth. Wear on little finger.
 
-⚠️ **Important:** Never wear a gemstone without consulting your birth chart. A wrongly chosen gem can have adverse effects.
+**Important:** Never wear a gemstone without consulting your birth chart. A wrongly chosen gem can have adverse effects.
 
-💡 **On Darshya:** Get a **personalized gemstone recommendation** from our verified astrologers. Each gem is energized with proper Vedic mantras before delivery.`,
-  },
+ **On Darshya:** Get a **personalized gemstone recommendation** from our verified astrologers. Each gem is energized with proper Vedic mantras before delivery.`,
+ },
 
-  // ─── Pilgrimage / Yatra ───────────────────────────────────────────────
-  {
-    keywords: ['pilgrimage', 'yatra', 'tirtha', 'temple', 'travel', 'kashi', 'varanasi', 'haridwar', 'rishikesh', 'tirupati', 'kedarnath', 'badrinath', 'char dham', 'jyotirlinga', 'mandir'],
-    response: `Pilgrimage (तीर्थयात्रा) is one of the most sacred practices in Hindu tradition. The scriptures declare:
+ // ─── Pilgrimage / Yatra ───────────────────────────────────────────────
+ {
+ keywords: ['pilgrimage', 'yatra', 'tirtha', 'temple', 'travel', 'kashi', 'varanasi', 'haridwar', 'rishikesh', 'tirupati', 'kedarnath', 'badrinath', 'char dham', 'jyotirlinga', 'mandir'],
+ response: `Pilgrimage (तीर्थयात्रा) is one of the most sacred practices in Hindu tradition. The scriptures declare:
 
 **श्लोक (Shloka):**
 *"तीर्थस्नानफलं पुण्यं सन्तोषः सर्वसम्पदाम्"*
@@ -431,13 +431,13 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 - Take a sankalp (sacred intention) before beginning the yatra
 - Offer prayers at each temple, donate to the needy along the way
 
-💡 **On Darshya:** Plan your **Dharmic Yatra** with verified travel companions. Book **temple pujas in advance** for VIP darshan. Watch **Live Darshan** if you can't travel.`,
-  },
+ **On Darshya:** Plan your **Dharmic Yatra** with verified travel companions. Book **temple pujas in advance** for VIP darshan. Watch **Live Darshan** if you can't travel.`,
+ },
 
-  // ─── Family Harmony ───────────────────────────────────────────────────
-  {
-    keywords: ['family', 'parivar', 'parents', 'mother', 'father', 'siblings', 'brother', 'sister', 'in-laws', 'joint family', 'harmony', 'conflict', 'fight', 'argument', 'peace at home'],
-    response: `Family is the cornerstone of Hindu dharma. The Vedas teach that serving one's family is equivalent to serving God.
+ // ─── Family Harmony ───────────────────────────────────────────────────
+ {
+ keywords: ['family', 'parivar', 'parents', 'mother', 'father', 'siblings', 'brother', 'sister', 'in-laws', 'joint family', 'harmony', 'conflict', 'fight', 'argument', 'peace at home'],
+ response: `Family is the cornerstone of Hindu dharma. The Vedas teach that serving one's family is equivalent to serving God.
 
 **श्लोक (Shloka):**
 *"मातृदेवो भव | पितृदेवो भव | आचार्यदेवो भव |"*
@@ -466,13 +466,13 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 *"सुहृन्मित्रार्युदासीनमध्यस्थद्वेष्यबन्धुषु"*
 *"The wise see all with equanimity — friends, foes, and family alike."*
 
-💡 **On Darshya:** Book a **Satyanarayan Katha** or **Griha Shanti Puja** for your family. Our verified priests perform pujas with full Vedic rites at your home or temple.`,
-  },
+ **On Darshya:** Book a **Satyanarayan Katha** or **Griha Shanti Puja** for your family. Our verified priests perform pujas with full Vedic rites at your home or temple.`,
+ },
 
-  // ─── Wealth & Prosperity ──────────────────────────────────────────────
-  {
-    keywords: ['wealth', 'money', 'prosperity', 'dhan', 'lakshmi', 'rich', 'financial', 'income', 'samriddhi', 'fortune', 'paisa'],
-    response: `Wealth (धन) is one of the four Purusharthas — the legitimate goals of life. The Vedas teach that prosperity achieved through dharma is divine.
+ // ─── Wealth & Prosperity ──────────────────────────────────────────────
+ {
+ keywords: ['wealth', 'money', 'prosperity', 'dhan', 'lakshmi', 'rich', 'financial', 'income', 'samriddhi', 'fortune', 'paisa'],
+ response: `Wealth (धन) is one of the four Purusharthas — the legitimate goals of life. The Vedas teach that prosperity achieved through dharma is divine.
 
 **श्लोक (Shloka):**
 *"श्रेयश्च प्रेयश्च मनुष्यमेतस्तौ सम्परीत्य विविनक्ति धीरः"*
@@ -499,13 +499,13 @@ Chant 108 times on Fridays for prosperity.
 5. Donate 10% of income (Dashaamsha) — giving opens channels of receiving
 6. Never keep broken mirrors, clocks, or chipped items at home
 
-💡 **On Darshya:** Book **Lakshmi Puja**, **Kubera Puja**, or **Sri Suktam Homa** with verified priests. Visit our **Store** for authentic Shri Yantras and Lakshmi idols.`,
-  },
+ **On Darshya:** Book **Lakshmi Puja**, **Kubera Puja**, or **Sri Suktam Homa** with verified priests. Visit our **Store** for authentic Shri Yantras and Lakshmi idols.`,
+ },
 
-  // ─── Duty / Karma ─────────────────────────────────────────────────────
-  {
-    keywords: ['duty', 'karma', 'karm', 'action', 'deed', 'right', 'wrong'],
-    response: `According to the Bhagavad Gita, duty (Dharma) is one of the most central teachings. In Chapter 2, Verse 47, Lord Krishna tells Arjuna:
+ // ─── Duty / Karma ─────────────────────────────────────────────────────
+ {
+ keywords: ['duty', 'karma', 'karm', 'action', 'deed', 'right', 'wrong'],
+ response: `According to the Bhagavad Gita, duty (Dharma) is one of the most central teachings. In Chapter 2, Verse 47, Lord Krishna tells Arjuna:
 
 **"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"**
 *"You have the right to perform your duty, but you are not entitled to the fruits of your actions."*
@@ -519,13 +519,13 @@ This verse teaches us that we should focus on doing our best work without being 
 
 The Gita teaches that every person has a unique role (svadharma) and fulfilling it with dedication and detachment is the path to spiritual growth.
 
-💡 **On Darshya:** Explore our **Content** section for the complete Bhagavad Gita with translations. Book a **Gita Path** ceremony with verified priests.`,
-  },
+ **On Darshya:** Explore our **Content** section for the complete Bhagavad Gita with translations. Book a **Gita Path** ceremony with verified priests.`,
+ },
 
-  // ─── Peace / Mantras ──────────────────────────────────────────────────
-  {
-    keywords: ['peace', 'shanti', 'mantra', 'calm', 'anxiety', 'stress', 'tension', 'worry', 'fear', 'depression', 'mental health', 'chant'],
-    response: `For peace of mind, the ancient scriptures recommend several powerful mantras:
+ // ─── Peace / Mantras ──────────────────────────────────────────────────
+ {
+ keywords: ['peace', 'shanti', 'mantra', 'calm', 'anxiety', 'stress', 'tension', 'worry', 'fear', 'depression', 'mental health', 'chant'],
+ response: `For peace of mind, the ancient scriptures recommend several powerful mantras:
 
 **1. Om Shanti Mantra (Most Popular)**
 *"ॐ शान्तिः शान्तिः शान्तिः"*
@@ -545,13 +545,13 @@ This powerful Shiva mantra removes fear and anxiety, bringing deep peace.
 
 **Regular practice tip:** Chant any of these mantras 108 times using a mala (prayer beads) during Brahma Muhurta (4:00-6:00 AM) for maximum benefit.
 
-💡 **On Darshya:** Listen to professionally chanted mantras in our **Content** section. Book a **Shanti Puja** for deep peace. Join our **Wellness** sessions for guided meditation.`,
-  },
+ **On Darshya:** Listen to professionally chanted mantras in our **Content** section. Book a **Shanti Puja** for deep peace. Join our **Wellness** sessions for guided meditation.`,
+ },
 
-  // ─── Dharma / Purpose ─────────────────────────────────────────────────
-  {
-    keywords: ['dharma', 'righteousness', 'purpose', 'meaning', 'life purpose', 'truth', 'satya', 'moral'],
-    response: `**Dharma** is one of the most profound concepts in Hindu philosophy. It encompasses:
+ // ─── Dharma / Purpose ─────────────────────────────────────────────────
+ {
+ keywords: ['dharma', 'righteousness', 'purpose', 'meaning', 'life purpose', 'truth', 'satya', 'moral'],
+ response: `**Dharma** is one of the most profound concepts in Hindu philosophy. It encompasses:
 
 **1. Universal Dharma (Sanatana Dharma)**
 The eternal cosmic order that sustains the universe — truthfulness, non-violence, purity, self-control, and compassion.
@@ -572,21 +572,21 @@ The Mahabharata defines dharma beautifully:
 
 In practice, dharma means doing what is right, fulfilling your responsibilities, and living with integrity and compassion toward all beings.
 
-💡 **On Darshya:** Explore our **Content** section for dharmic teachings from the Gita, Upanishads, and Ramayana. **Ask Pandit Ji** for personalized spiritual guidance.`,
-  },
+ **On Darshya:** Explore our **Content** section for dharmic teachings from the Gita, Upanishads, and Ramayana. **Ask Pandit Ji** for personalized spiritual guidance.`,
+ },
 ];
 
 function getDemoResponse(message: string): string {
-  const lower = message.toLowerCase();
+ const lower = message.toLowerCase();
 
-  for (const topic of DEMO_TOPICS) {
-    if (topic.keywords.some((keyword) => lower.includes(keyword))) {
-      return topic.response;
-    }
-  }
+ for (const topic of DEMO_TOPICS) {
+ if (topic.keywords.some((keyword) => lower.includes(keyword))) {
+ return topic.response;
+ }
+ }
 
-  // Default spiritual response
-  return `Namaste! Thank you for your question about "${message.substring(0, 60)}..."
+ // Default spiritual response
+ return `Namaste! Thank you for your question about "${message.substring(0, 60)}..."
 
 The Bhagavad Gita teaches us in Chapter 4, Verse 7-8:
 *"यदा यदा हि धर्मस्य ग्लानिर्भवति भारत"*
@@ -602,7 +602,7 @@ This reminds us that divine guidance is always available to those who seek it si
 
 *"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
 
-💡 **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a verified priest for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
+ **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a verified priest for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
 }
 
 // ─── Helper: stream-shape adapter ─────────────────────────────────────────
@@ -611,157 +611,157 @@ This reminds us that divine guidance is always available to those who seek it si
 // route handler in ai.service.ts/routes/ai.ts doesn't need to branch.
 
 type StreamEvent =
-  | { type: 'content_block_delta'; delta: { type: 'text_delta'; text: string } }
-  | { type: 'message_stop'; delta: undefined };
+ | { type: 'content_block_delta'; delta: { type: 'text_delta'; text: string } }
+ | { type: 'message_stop'; delta: undefined };
 
 function makeWordStream(text: string): AsyncIterable<StreamEvent> {
-  return {
-    async *[Symbol.asyncIterator]() {
-      const words = text.split(' ');
-      for (let i = 0; i < words.length; i++) {
-        const chunk = (i === 0 ? '' : ' ') + words[i];
-        yield { type: 'content_block_delta', delta: { type: 'text_delta', text: chunk } };
-      }
-      yield { type: 'message_stop', delta: undefined };
-    },
-  };
+ return {
+ async *[Symbol.asyncIterator]() {
+ const words = text.split(' ');
+ for (let i = 0; i < words.length; i++) {
+ const chunk = (i === 0 ? '' : ' ') + words[i];
+ yield { type: 'content_block_delta', delta: { type: 'text_delta', text: chunk } };
+ }
+ yield { type: 'message_stop', delta: undefined };
+ },
+ };
 }
 
 async function* groqStreamToEvents(res: Response): AsyncIterable<StreamEvent> {
-  if (!res.body) {
-    yield { type: 'message_stop', delta: undefined };
-    return;
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('data:')) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === '[DONE]') {
-        yield { type: 'message_stop', delta: undefined };
-        return;
-      }
-      try {
-        const j = JSON.parse(payload) as {
-          choices?: { delta?: { content?: string } }[];
-        };
-        const text = j.choices?.[0]?.delta?.content;
-        if (text) {
-          yield { type: 'content_block_delta', delta: { type: 'text_delta', text } };
-        }
-      } catch {
-        // skip malformed chunks
-      }
-    }
-  }
-  yield { type: 'message_stop', delta: undefined };
+ if (!res.body) {
+ yield { type: 'message_stop', delta: undefined };
+ return;
+ }
+ const reader = res.body.getReader();
+ const decoder = new TextDecoder();
+ let buffer = '';
+ while (true) {
+ const { value, done } = await reader.read();
+ if (done) break;
+ buffer += decoder.decode(value, { stream: true });
+ const lines = buffer.split('\n');
+ buffer = lines.pop() ?? '';
+ for (const line of lines) {
+ const trimmed = line.trim();
+ if (!trimmed.startsWith('data:')) continue;
+ const payload = trimmed.slice(5).trim();
+ if (payload === '[DONE]') {
+ yield { type: 'message_stop', delta: undefined };
+ return;
+ }
+ try {
+ const j = JSON.parse(payload) as {
+ choices?: { delta?: { content?: string } }[];
+ };
+ const text = j.choices?.[0]?.delta?.content;
+ if (text) {
+ yield { type: 'content_block_delta', delta: { type: 'text_delta', text } };
+ }
+ } catch {
+ // skip malformed chunks
+ }
+ }
+ }
+ yield { type: 'message_stop', delta: undefined };
 }
 
 // ─── Streaming Chat ────────────────────────────────────────────────────────────
 
 export async function streamChat(params: {
-  systemPrompt: string;
-  messages: { role: 'user' | 'assistant'; content: string }[];
-  maxTokens?: number;
-  model?: string;
+ systemPrompt: string;
+ messages: { role: 'user' | 'assistant'; content: string }[];
+ maxTokens?: number;
+ model?: string;
 }) {
-  const { systemPrompt, messages, maxTokens = 1024, model = MODELS.SONNET } = params;
+ const { systemPrompt, messages, maxTokens = 1024, model = MODELS.SONNET } = params;
 
-  if (DEMO_MODE) {
-    const lastUserMsg = messages.filter((m) => m.role === 'user').pop();
-    return makeWordStream(getDemoResponse(lastUserMsg?.content || ''));
-  }
+ if (DEMO_MODE) {
+ const lastUserMsg = messages.filter((m) => m.role === 'user').pop();
+ return makeWordStream(getDemoResponse(lastUserMsg?.content || ''));
+ }
 
-  if (HAS_GROQ) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        stream: true,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
-    }
-    return { [Symbol.asyncIterator]: () => groqStreamToEvents(res)[Symbol.asyncIterator]() };
-  }
+ if (HAS_GROQ) {
+ const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+ method: 'POST',
+ headers: {
+ Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({
+ model,
+ max_tokens: maxTokens,
+ stream: true,
+ messages: [
+ { role: 'system', content: systemPrompt },
+ ...messages.map((m) => ({ role: m.role, content: m.content })),
+ ],
+ }),
+ });
+ if (!res.ok) {
+ const errText = await res.text().catch(() => '');
+ throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
+ }
+ return { [Symbol.asyncIterator]: () => groqStreamToEvents(res)[Symbol.asyncIterator]() };
+ }
 
-  // Anthropic fallback
-  const stream = anthropic.messages.stream({
-    model,
-    max_tokens: maxTokens,
-    system: systemPrompt,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
-  return stream;
+ // Anthropic fallback
+ const stream = anthropic.messages.stream({
+ model,
+ max_tokens: maxTokens,
+ system: systemPrompt,
+ messages: messages.map((m) => ({ role: m.role, content: m.content })),
+ });
+ return stream;
 }
 
 // ─── Single-shot Text Generation ───────────────────────────────────────────────
 
 export async function generateText(params: {
-  systemPrompt: string;
-  userMessage: string;
-  maxTokens?: number;
-  model?: string;
+ systemPrompt: string;
+ userMessage: string;
+ maxTokens?: number;
+ model?: string;
 }): Promise<string> {
-  const { systemPrompt, userMessage, maxTokens = 1024, model = MODELS.HAIKU } = params;
+ const { systemPrompt, userMessage, maxTokens = 1024, model = MODELS.HAIKU } = params;
 
-  if (DEMO_MODE) {
-    return getDemoResponse(userMessage);
-  }
+ if (DEMO_MODE) {
+ return getDemoResponse(userMessage);
+ }
 
-  if (HAS_GROQ) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
-    }
-    const j = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    return j.choices?.[0]?.message?.content ?? '';
-  }
+ if (HAS_GROQ) {
+ const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+ method: 'POST',
+ headers: {
+ Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({
+ model,
+ max_tokens: maxTokens,
+ messages: [
+ { role: 'system', content: systemPrompt },
+ { role: 'user', content: userMessage },
+ ],
+ }),
+ });
+ if (!res.ok) {
+ const errText = await res.text().catch(() => '');
+ throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
+ }
+ const j = (await res.json()) as {
+ choices?: { message?: { content?: string } }[];
+ };
+ return j.choices?.[0]?.message?.content ?? '';
+ }
 
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: maxTokens,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userMessage }],
-  });
-  const textBlock = response.content.find((block) => block.type === 'text');
-  return textBlock && textBlock.type === 'text' ? textBlock.text : '';
+ const response = await anthropic.messages.create({
+ model,
+ max_tokens: maxTokens,
+ system: systemPrompt,
+ messages: [{ role: 'user', content: userMessage }],
+ });
+ const textBlock = response.content.find((block) => block.type === 'text');
+ return textBlock && textBlock.type === 'text' ? textBlock.text : '';
 }
 
 export { DEMO_MODE };

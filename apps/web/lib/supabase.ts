@@ -10,17 +10,17 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 let browserClient: SupabaseClient | null = null;
 
 export function getSupabaseBrowserClient(): SupabaseClient {
-  if (browserClient) return browserClient;
+ if (browserClient) return browserClient;
 
-  browserClient = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  });
+ browserClient = createClient(supabaseUrl, supabaseAnonKey, {
+ auth: {
+ persistSession: true,
+ autoRefreshToken: true,
+ detectSessionInUrl: true,
+ },
+ });
 
-  return browserClient;
+ return browserClient;
 }
 
 /**
@@ -29,21 +29,21 @@ export function getSupabaseBrowserClient(): SupabaseClient {
  * should not share state across requests.
  */
 export function getSupabaseServerClient(accessToken?: string): SupabaseClient {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-    ...(accessToken
-      ? {
-          global: {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          },
-        }
-      : {}),
-  });
+ return createClient(supabaseUrl, supabaseAnonKey, {
+ auth: {
+ persistSession: false,
+ autoRefreshToken: false,
+ },
+ ...(accessToken
+ ? {
+ global: {
+ headers: {
+ Authorization: `Bearer ${accessToken}`,
+ },
+ },
+ }
+ : {}),
+ });
 }
 
 /**

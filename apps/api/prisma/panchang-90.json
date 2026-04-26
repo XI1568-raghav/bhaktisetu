@@ -1,0 +1,1811 @@
+[
+  {
+    "date": "2026-04-25",
+    "tithi": "Shukla Navami",
+    "nakshatra": "Ashlesha",
+    "yoga": "Ganda",
+    "karana": "Balava",
+    "sunrise": "05:47",
+    "sunset": "18:53",
+    "rahuKaal": "09:04 - 10:42",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "04:11 - 04:59",
+      "vijayMuhurat": "14:05 - 14:57"
+    },
+    "festivals": [
+      "Sita Navami"
+    ],
+    "vrat": [],
+    "specialInfo": "Sita Navami marks the appearance of Goddess Sita."
+  },
+  {
+    "date": "2026-04-26",
+    "tithi": "Shukla Dasami",
+    "nakshatra": "Magha",
+    "yoga": "Vridhi",
+    "karana": "Taitula",
+    "sunrise": "05:46",
+    "sunset": "18:53",
+    "rahuKaal": "17:15 - 18:53",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "04:10 - 04:58",
+      "vijayMuhurat": "14:05 - 14:57"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Dasami tithi during Magha nakshatra. Vridhi yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-04-27",
+    "tithi": "Shukla Ekadasi",
+    "nakshatra": "Purva Phalguni",
+    "yoga": "Dhruva",
+    "karana": "Vanija",
+    "sunrise": "05:45",
+    "sunset": "18:54",
+    "rahuKaal": "07:24 - 09:02",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "04:09 - 04:57",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [
+      "Mohini Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Mohini Ekadashi — fasting frees devotees from delusion."
+  },
+  {
+    "date": "2026-04-28",
+    "tithi": "Shukla Dvadasi",
+    "nakshatra": "Uttara Phalguni",
+    "yoga": "Vyaghata",
+    "karana": "Bawa",
+    "sunrise": "05:44",
+    "sunset": "18:55",
+    "rahuKaal": "15:37 - 17:16",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "04:08 - 04:56",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [
+      "Parashurama Dwadashi"
+    ],
+    "vrat": [],
+    "specialInfo": "Pradosh Vrat may be observed depending on tithi timing."
+  },
+  {
+    "date": "2026-04-29",
+    "tithi": "Shukla Trayodasi",
+    "nakshatra": "Hasta",
+    "yoga": "Harshana",
+    "karana": "Kaulava",
+    "sunrise": "05:43",
+    "sunset": "18:55",
+    "rahuKaal": "12:19 - 13:58",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:07 - 04:55",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [
+      "Pradosh Vrat"
+    ],
+    "vrat": [
+      "Pradosh Vrat"
+    ],
+    "specialInfo": "Pradosh Vrat is observed in honor of Lord Shiva."
+  },
+  {
+    "date": "2026-04-30",
+    "tithi": "Shukla Chaturdasi",
+    "nakshatra": "Chitra",
+    "yoga": "Vajra",
+    "karana": "Garaja",
+    "sunrise": "05:42",
+    "sunset": "18:56",
+    "rahuKaal": "13:58 - 15:38",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:06 - 04:54",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [
+      "Narasimha Jayanti"
+    ],
+    "vrat": [],
+    "specialInfo": "Narasimha Jayanti celebrates the fourth avatar of Vishnu."
+  },
+  {
+    "date": "2026-05-01",
+    "tithi": "Shukla Punnami",
+    "nakshatra": "Swati",
+    "yoga": "Siddhi",
+    "karana": "Vishti",
+    "sunrise": "05:41",
+    "sunset": "18:57",
+    "rahuKaal": "10:40 - 12:19",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:05 - 04:53",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [
+      "Kurma Jayanti",
+      "Buddha Purnima",
+      "Vaishakha Purnima"
+    ],
+    "vrat": [
+      "Purnima Vrat"
+    ],
+    "specialInfo": "Buddha Purnima — birth anniversary of Gautama Buddha."
+  },
+  {
+    "date": "2026-05-02",
+    "tithi": "Krishna Padyami",
+    "nakshatra": "Vishakha",
+    "yoga": "Vyatipata",
+    "karana": "Balava",
+    "sunrise": "05:41",
+    "sunset": "18:57",
+    "rahuKaal": "09:00 - 10:40",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:05 - 04:53",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Padyami tithi during Vishakha nakshatra. Vyatipata yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-05-03",
+    "tithi": "Krishna Vidhiya",
+    "nakshatra": "Vishakha",
+    "yoga": "Variyan",
+    "karana": "Taitula",
+    "sunrise": "05:40",
+    "sunset": "18:58",
+    "rahuKaal": "17:18 - 18:58",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:04 - 04:52",
+      "vijayMuhurat": "14:05 - 14:58"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Vidhiya tithi during Vishakha nakshatra. Variyan yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-05-04",
+    "tithi": "Krishna Thadiya",
+    "nakshatra": "Anuradha",
+    "yoga": "Parigha",
+    "karana": "Vanija",
+    "sunrise": "05:39",
+    "sunset": "18:58",
+    "rahuKaal": "07:19 - 08:59",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:03 - 04:51",
+      "vijayMuhurat": "14:06 - 14:59"
+    },
+    "festivals": [
+      "Sankashti Chaturthi"
+    ],
+    "vrat": [
+      "Sankashti Chaturthi Vrat"
+    ],
+    "specialInfo": "Sankashti Chaturthi is dedicated to Lord Ganesha."
+  },
+  {
+    "date": "2026-05-05",
+    "tithi": "Krishna Chaviti",
+    "nakshatra": "Jyeshtha",
+    "yoga": "Siva",
+    "karana": "Bawa",
+    "sunrise": "05:38",
+    "sunset": "18:59",
+    "rahuKaal": "15:39 - 17:19",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:02 - 04:50",
+      "vijayMuhurat": "14:06 - 14:59"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Chaviti tithi during Jyeshtha nakshatra. Siva yoga prevails with Bawa karana."
+  },
+  {
+    "date": "2026-05-06",
+    "tithi": "Krishna Chaviti",
+    "nakshatra": "Mula",
+    "yoga": "Siddha",
+    "karana": "Balava",
+    "sunrise": "05:38",
+    "sunset": "19:00",
+    "rahuKaal": "12:19 - 13:59",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:02 - 04:50",
+      "vijayMuhurat": "14:06 - 14:59"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Chaviti tithi during Mula nakshatra. Siddha yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-05-07",
+    "tithi": "Krishna Panchami",
+    "nakshatra": "Purva Ashadha",
+    "yoga": "Sadhya",
+    "karana": "Taitula",
+    "sunrise": "05:37",
+    "sunset": "19:00",
+    "rahuKaal": "13:59 - 15:39",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:01 - 04:49",
+      "vijayMuhurat": "14:06 - 15:00"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Panchami tithi during Purva Ashadha nakshatra. Sadhya yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-05-08",
+    "tithi": "Krishna Shasti",
+    "nakshatra": "Uttara Ashadha",
+    "yoga": "Subha",
+    "karana": "Vanija",
+    "sunrise": "05:36",
+    "sunset": "19:01",
+    "rahuKaal": "10:38 - 12:19",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "04:00 - 04:48",
+      "vijayMuhurat": "14:06 - 15:00"
+    },
+    "festivals": [
+      "Kalashtami"
+    ],
+    "vrat": [],
+    "specialInfo": "Kalashtami is observed in honor of Lord Kalabhairava."
+  },
+  {
+    "date": "2026-05-09",
+    "tithi": "Krishna Sapthami",
+    "nakshatra": "Sravana",
+    "yoga": "Sukla",
+    "karana": "Bawa",
+    "sunrise": "05:35",
+    "sunset": "19:02",
+    "rahuKaal": "08:57 - 10:38",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:59 - 04:47",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Sapthami tithi during Sravana nakshatra. Sukla yoga prevails with Bawa karana."
+  },
+  {
+    "date": "2026-05-10",
+    "tithi": "Krishna Ashtami",
+    "nakshatra": "Dhanishta",
+    "yoga": "Bramha",
+    "karana": "Kaulava",
+    "sunrise": "05:35",
+    "sunset": "19:02",
+    "rahuKaal": "17:21 - 19:02",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:59 - 04:47",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Ashtami tithi during Dhanishta nakshatra. Bramha yoga prevails with Kaulava karana."
+  },
+  {
+    "date": "2026-05-11",
+    "tithi": "Krishna Navami",
+    "nakshatra": "Shatabhisha",
+    "yoga": "Indra",
+    "karana": "Garaja",
+    "sunrise": "05:34",
+    "sunset": "19:03",
+    "rahuKaal": "07:15 - 08:56",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:58 - 04:46",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Navami tithi during Shatabhisha nakshatra. Indra yoga prevails with Garaja karana."
+  },
+  {
+    "date": "2026-05-12",
+    "tithi": "Krishna Dasami",
+    "nakshatra": "Purva Bhadrapada",
+    "yoga": "Vaidhruthi",
+    "karana": "Vishti",
+    "sunrise": "05:33",
+    "sunset": "19:03",
+    "rahuKaal": "15:41 - 17:22",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:06 - 12:30",
+      "brahmaMuhurta": "03:57 - 04:45",
+      "vijayMuhurat": "14:06 - 15:00"
+    },
+    "festivals": [
+      "Apara Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Apara Ekadashi grants fame and removes sins."
+  },
+  {
+    "date": "2026-05-13",
+    "tithi": "Krishna Ekadasi",
+    "nakshatra": "Uttara Bhadrapada",
+    "yoga": "Vishkambha",
+    "karana": "Balava",
+    "sunrise": "05:33",
+    "sunset": "19:04",
+    "rahuKaal": "12:19 - 14:00",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:57 - 04:45",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [
+      "Pradosh Vrat"
+    ],
+    "vrat": [
+      "Pradosh Vrat"
+    ],
+    "specialInfo": "Bhauma Pradosh observed today."
+  },
+  {
+    "date": "2026-05-14",
+    "tithi": "Krishna Dvadasi",
+    "nakshatra": "Rebati",
+    "yoga": "Prithi",
+    "karana": "Taitula",
+    "sunrise": "05:32",
+    "sunset": "19:05",
+    "rahuKaal": "14:00 - 15:42",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:56 - 04:44",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [
+      "Masik Shivaratri"
+    ],
+    "vrat": [
+      "Shivaratri Vrat"
+    ],
+    "specialInfo": "Monthly Shivaratri dedicated to Lord Shiva."
+  },
+  {
+    "date": "2026-05-15",
+    "tithi": "Krishna Trayodasi",
+    "nakshatra": "Ashwini",
+    "yoga": "Ayushman",
+    "karana": "Vanija",
+    "sunrise": "05:32",
+    "sunset": "19:05",
+    "rahuKaal": "10:37 - 12:19",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:56 - 04:44",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Trayodasi tithi during Ashwini nakshatra. Ayushman yoga prevails with Vanija karana."
+  },
+  {
+    "date": "2026-05-16",
+    "tithi": "Krishna Amavasya",
+    "nakshatra": "Dwija",
+    "yoga": "Saubhagya",
+    "karana": "Chatushpada",
+    "sunrise": "05:31",
+    "sunset": "19:06",
+    "rahuKaal": "08:55 - 10:37",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:55 - 04:43",
+      "vijayMuhurat": "14:08 - 15:02"
+    },
+    "festivals": [
+      "Vaishakha Amavasya",
+      "Shani Jayanti"
+    ],
+    "vrat": [],
+    "specialInfo": "Shani Jayanti commemorates the birth of Lord Shani."
+  },
+  {
+    "date": "2026-05-17",
+    "tithi": "Shukla Padyami",
+    "nakshatra": "Krittika",
+    "yoga": "Sobhana",
+    "karana": "Kimstughana",
+    "sunrise": "05:30",
+    "sunset": "19:06",
+    "rahuKaal": "17:24 - 19:06",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:06 - 12:30",
+      "brahmaMuhurta": "03:54 - 04:42",
+      "vijayMuhurat": "14:07 - 15:01"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Padyami tithi during Krittika nakshatra. Sobhana yoga prevails with Kimstughana karana."
+  },
+  {
+    "date": "2026-05-18",
+    "tithi": "Shukla Vidhiya",
+    "nakshatra": "Rohini",
+    "yoga": "Sukarman",
+    "karana": "Balava",
+    "sunrise": "05:30",
+    "sunset": "19:07",
+    "rahuKaal": "07:12 - 08:54",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:54 - 04:42",
+      "vijayMuhurat": "14:08 - 15:02"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Vidhiya tithi during Rohini nakshatra. Sukarman yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-05-19",
+    "tithi": "Shukla Thadiya",
+    "nakshatra": "Mrigashirsha",
+    "yoga": "Dhrithi",
+    "karana": "Garaja",
+    "sunrise": "05:29",
+    "sunset": "19:08",
+    "rahuKaal": "15:43 - 17:26",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:53 - 04:41",
+      "vijayMuhurat": "14:08 - 15:03"
+    },
+    "festivals": [
+      "Vinayaka Chaturthi"
+    ],
+    "vrat": [],
+    "specialInfo": "Vinayaka Chaturthi honors Lord Ganesha."
+  },
+  {
+    "date": "2026-05-20",
+    "tithi": "Shukla Chavithi",
+    "nakshatra": "Ardra",
+    "yoga": "Soola",
+    "karana": "Vishti",
+    "sunrise": "05:29",
+    "sunset": "19:08",
+    "rahuKaal": "12:19 - 14:01",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:53 - 04:41",
+      "vijayMuhurat": "14:08 - 15:03"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Chavithi tithi during Ardra nakshatra. Soola yoga prevails with Vishti karana."
+  },
+  {
+    "date": "2026-05-21",
+    "tithi": "Shukla Panchami",
+    "nakshatra": "Pushya",
+    "yoga": "Ganda",
+    "karana": "Balava",
+    "sunrise": "05:28",
+    "sunset": "19:09",
+    "rahuKaal": "14:01 - 15:44",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:52 - 04:40",
+      "vijayMuhurat": "14:08 - 15:03"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Panchami tithi during Pushya nakshatra. Ganda yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-05-22",
+    "tithi": "Shukla Shasti",
+    "nakshatra": "Ashlesha",
+    "yoga": "Vridhi",
+    "karana": "Taitula",
+    "sunrise": "05:28",
+    "sunset": "19:09",
+    "rahuKaal": "10:36 - 12:19",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:52 - 04:40",
+      "vijayMuhurat": "14:08 - 15:03"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Shasti tithi during Ashlesha nakshatra. Vridhi yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-05-23",
+    "tithi": "Shukla Ashtami",
+    "nakshatra": "Magha",
+    "yoga": "Dhruva",
+    "karana": "Vishti",
+    "sunrise": "05:28",
+    "sunset": "19:10",
+    "rahuKaal": "08:54 - 10:36",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:52 - 04:40",
+      "vijayMuhurat": "14:09 - 15:04"
+    },
+    "festivals": [
+      "Skanda Sashti"
+    ],
+    "vrat": [],
+    "specialInfo": "Skanda Sashti is dedicated to Lord Kartikeya."
+  },
+  {
+    "date": "2026-05-24",
+    "tithi": "Shukla Navami",
+    "nakshatra": "Purva Phalguni",
+    "yoga": "Harshana",
+    "karana": "Balava",
+    "sunrise": "05:27",
+    "sunset": "19:11",
+    "rahuKaal": "17:28 - 19:11",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:51 - 04:39",
+      "vijayMuhurat": "14:09 - 15:04"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Navami tithi during Purva Phalguni nakshatra. Harshana yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-05-25",
+    "tithi": "Shukla Dasami",
+    "nakshatra": "Uttara Phalguni",
+    "yoga": "Vajra",
+    "karana": "Taitula",
+    "sunrise": "05:27",
+    "sunset": "19:11",
+    "rahuKaal": "07:10 - 08:53",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:51 - 04:39",
+      "vijayMuhurat": "14:09 - 15:04"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Dasami tithi during Uttara Phalguni nakshatra. Vajra yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-05-26",
+    "tithi": "Shukla Ekadasi",
+    "nakshatra": "Hasta",
+    "yoga": "Siddhi",
+    "karana": "Vanija",
+    "sunrise": "05:26",
+    "sunset": "19:12",
+    "rahuKaal": "15:46 - 17:29",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:09 - 15:04"
+    },
+    "festivals": [
+      "Masik Durgashtami"
+    ],
+    "vrat": [],
+    "specialInfo": "Monthly Durgashtami honors Goddess Durga."
+  },
+  {
+    "date": "2026-05-27",
+    "tithi": "Shukla Ekadasi",
+    "nakshatra": "Chitra",
+    "yoga": "Vyatipata",
+    "karana": "Vishti",
+    "sunrise": "05:26",
+    "sunset": "19:12",
+    "rahuKaal": "12:19 - 14:02",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:09 - 15:04"
+    },
+    "festivals": [
+      "Ganga Saptami"
+    ],
+    "vrat": [],
+    "specialInfo": "Ganga Saptami marks the descent of the Ganga."
+  },
+  {
+    "date": "2026-05-28",
+    "tithi": "Shukla Dvadasi",
+    "nakshatra": "Chitra",
+    "yoga": "Variyan",
+    "karana": "Balava",
+    "sunrise": "05:26",
+    "sunset": "19:13",
+    "rahuKaal": "14:03 - 15:46",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:10 - 15:05"
+    },
+    "festivals": [
+      "Sita Navami"
+    ],
+    "vrat": [],
+    "specialInfo": "Sita Navami — alternate observance."
+  },
+  {
+    "date": "2026-05-29",
+    "tithi": "Shukla Trayodasi",
+    "nakshatra": "Swati",
+    "yoga": "Parigha",
+    "karana": "Taitula",
+    "sunrise": "05:25",
+    "sunset": "19:13",
+    "rahuKaal": "10:36 - 12:19",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:07 - 12:31",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:09 - 15:04"
+    },
+    "festivals": [
+      "Mahesvara Vrat"
+    ],
+    "vrat": [],
+    "specialInfo": "Mahesvara Vrat for Lord Shiva."
+  },
+  {
+    "date": "2026-05-30",
+    "tithi": "Shukla Chaturdasi",
+    "nakshatra": "Vishakha",
+    "yoga": "Siva",
+    "karana": "Vanija",
+    "sunrise": "05:25",
+    "sunset": "19:14",
+    "rahuKaal": "08:52 - 10:36",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:11 - 15:06"
+    },
+    "festivals": [
+      "Ganga Dussehra"
+    ],
+    "vrat": [],
+    "specialInfo": "Ganga Dussehra celebrates the descent of Goddess Ganga to earth."
+  },
+  {
+    "date": "2026-05-31",
+    "tithi": "Shukla Punnami",
+    "nakshatra": "Anuradha",
+    "yoga": "Siddha",
+    "karana": "Bawa",
+    "sunrise": "05:25",
+    "sunset": "19:15",
+    "rahuKaal": "17:31 - 19:15",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:11 - 15:06"
+    },
+    "festivals": [
+      "Gayatri Jayanti",
+      "Nirjala Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Nirjala Ekadashi — most austere Ekadashi observed without water."
+  },
+  {
+    "date": "2026-06-01",
+    "tithi": "Krishna Padyami",
+    "nakshatra": "Jyeshtha",
+    "yoga": "Siddha",
+    "karana": "Kaulava",
+    "sunrise": "05:25",
+    "sunset": "19:15",
+    "rahuKaal": "07:09 - 08:53",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:11 - 15:06"
+    },
+    "festivals": [
+      "Pradosh Vrat"
+    ],
+    "vrat": [
+      "Pradosh Vrat"
+    ],
+    "specialInfo": "Som Pradosh Vrat for Lord Shiva."
+  },
+  {
+    "date": "2026-06-02",
+    "tithi": "Krishna Vidhiya",
+    "nakshatra": "Mula",
+    "yoga": "Sadhya",
+    "karana": "Garaja",
+    "sunrise": "05:25",
+    "sunset": "19:16",
+    "rahuKaal": "15:48 - 17:32",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:09 - 12:33",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:12 - 15:07"
+    },
+    "festivals": [
+      "Vat Purnima Vrat"
+    ],
+    "vrat": [
+      "Vat Purnima Vrat"
+    ],
+    "specialInfo": "Vat Purnima Vrat — observed by married women for husband's longevity."
+  },
+  {
+    "date": "2026-06-03",
+    "tithi": "Krishna Thadiya",
+    "nakshatra": "Purva Ashadha",
+    "yoga": "Subha",
+    "karana": "Vanija",
+    "sunrise": "05:24",
+    "sunset": "19:16",
+    "rahuKaal": "12:20 - 14:04",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:08 - 12:32",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:11 - 15:06"
+    },
+    "festivals": [
+      "Jyeshtha Purnima",
+      "Kabir Jayanti"
+    ],
+    "vrat": [
+      "Purnima Vrat"
+    ],
+    "specialInfo": "Kabir Jayanti commemorates the saint-poet Kabir."
+  },
+  {
+    "date": "2026-06-04",
+    "tithi": "Krishna Chaviti",
+    "nakshatra": "Uttara Ashadha",
+    "yoga": "Sukla",
+    "karana": "Bawa",
+    "sunrise": "05:24",
+    "sunset": "19:17",
+    "rahuKaal": "14:05 - 15:49",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:09 - 12:33",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:12 - 15:08"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Chaviti tithi during Uttara Ashadha nakshatra. Sukla yoga prevails with Bawa karana."
+  },
+  {
+    "date": "2026-06-05",
+    "tithi": "Krishna Panchami",
+    "nakshatra": "Sravana",
+    "yoga": "Bramha",
+    "karana": "Kaulava",
+    "sunrise": "05:24",
+    "sunset": "19:17",
+    "rahuKaal": "10:36 - 12:21",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:09 - 12:33",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:12 - 15:08"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Panchami tithi during Sravana nakshatra. Bramha yoga prevails with Kaulava karana."
+  },
+  {
+    "date": "2026-06-06",
+    "tithi": "Krishna Shasti",
+    "nakshatra": "Sravana",
+    "yoga": "Indra",
+    "karana": "Garaja",
+    "sunrise": "05:24",
+    "sunset": "19:17",
+    "rahuKaal": "08:52 - 10:36",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:09 - 12:33",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:12 - 15:08"
+    },
+    "festivals": [
+      "Sankashti Chaturthi"
+    ],
+    "vrat": [
+      "Sankashti Chaturthi Vrat"
+    ],
+    "specialInfo": "Krishnapingala Sankashti Chaturthi for Lord Ganesha."
+  },
+  {
+    "date": "2026-06-07",
+    "tithi": "Krishna Sapthami",
+    "nakshatra": "Dhanishta",
+    "yoga": "Vaidhruthi",
+    "karana": "Vishti",
+    "sunrise": "05:24",
+    "sunset": "19:18",
+    "rahuKaal": "17:34 - 19:18",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:09 - 12:33",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:12 - 15:08"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Sapthami tithi during Dhanishta nakshatra. Vaidhruthi yoga prevails with Vishti karana."
+  },
+  {
+    "date": "2026-06-08",
+    "tithi": "Krishna Ashtami",
+    "nakshatra": "Shatabhisha",
+    "yoga": "Vishkambha",
+    "karana": "Balava",
+    "sunrise": "05:24",
+    "sunset": "19:18",
+    "rahuKaal": "07:08 - 08:53",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:09 - 12:33",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:12 - 15:08"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Ashtami tithi during Shatabhisha nakshatra. Vishkambha yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-06-09",
+    "tithi": "Krishna Navami",
+    "nakshatra": "Purva Bhadrapada",
+    "yoga": "Prithi",
+    "karana": "Taitula",
+    "sunrise": "05:24",
+    "sunset": "19:19",
+    "rahuKaal": "15:50 - 17:35",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:10 - 12:34",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:13 - 15:09"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Navami tithi during Purva Bhadrapada nakshatra. Prithi yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-06-10",
+    "tithi": "Krishna Dasami",
+    "nakshatra": "Uttara Bhadrapada",
+    "yoga": "Ayushman",
+    "karana": "Vanija",
+    "sunrise": "05:24",
+    "sunset": "19:19",
+    "rahuKaal": "12:22 - 14:06",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:10 - 12:34",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:13 - 15:09"
+    },
+    "festivals": [
+      "Kalashtami"
+    ],
+    "vrat": [],
+    "specialInfo": "Kalashtami for Lord Kalabhairava."
+  },
+  {
+    "date": "2026-06-11",
+    "tithi": "Krishna Ekadasi",
+    "nakshatra": "Rebati",
+    "yoga": "Sobhana",
+    "karana": "Bawa",
+    "sunrise": "05:24",
+    "sunset": "19:20",
+    "rahuKaal": "14:07 - 15:51",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:10 - 12:34",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:13 - 15:09"
+    },
+    "festivals": [
+      "Mahesvara Vrat"
+    ],
+    "vrat": [],
+    "specialInfo": "Mahesvara Vrat for Lord Shiva."
+  },
+  {
+    "date": "2026-06-12",
+    "tithi": "Krishna Dvadasi",
+    "nakshatra": "Ashwini",
+    "yoga": "Atiganda",
+    "karana": "Kaulava",
+    "sunrise": "05:24",
+    "sunset": "19:20",
+    "rahuKaal": "10:38 - 12:22",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:10 - 12:34",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:13 - 15:09"
+    },
+    "festivals": [
+      "Yogini Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Yogini Ekadashi grants liberation from sins."
+  },
+  {
+    "date": "2026-06-13",
+    "tithi": "Krishna Trayodasi",
+    "nakshatra": "Krittika",
+    "yoga": "Sukarman",
+    "karana": "Vanija",
+    "sunrise": "05:24",
+    "sunset": "19:20",
+    "rahuKaal": "08:53 - 10:38",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:10 - 12:34",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:13 - 15:09"
+    },
+    "festivals": [
+      "Pradosh Vrat"
+    ],
+    "vrat": [
+      "Pradosh Vrat"
+    ],
+    "specialInfo": "Pradosh Vrat for Lord Shiva."
+  },
+  {
+    "date": "2026-06-14",
+    "tithi": "Krishna Chaturdasi",
+    "nakshatra": "Rohini",
+    "yoga": "Dhrithi",
+    "karana": "Sakuna",
+    "sunrise": "05:24",
+    "sunset": "19:21",
+    "rahuKaal": "17:36 - 19:21",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [
+      "Masik Shivaratri"
+    ],
+    "vrat": [
+      "Shivaratri Vrat"
+    ],
+    "specialInfo": "Monthly Shivaratri for Lord Shiva."
+  },
+  {
+    "date": "2026-06-15",
+    "tithi": "Krishna Amavasya",
+    "nakshatra": "Mrigashirsha",
+    "yoga": "Soola",
+    "karana": "Nagava",
+    "sunrise": "05:24",
+    "sunset": "19:21",
+    "rahuKaal": "07:09 - 08:53",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [
+      "Ashadha Amavasya",
+      "Halahari Amavasya"
+    ],
+    "vrat": [],
+    "specialInfo": "Ashadha Amavasya — pitru tarpan day."
+  },
+  {
+    "date": "2026-06-16",
+    "tithi": "Shukla Vidhiya",
+    "nakshatra": "Ardra",
+    "yoga": "Vridhi",
+    "karana": "Balava",
+    "sunrise": "05:24",
+    "sunset": "19:21",
+    "rahuKaal": "15:52 - 17:36",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [
+      "Ashadha Gupta Navratri begins"
+    ],
+    "vrat": [],
+    "specialInfo": "Ashadha Gupta Navratri begins — secret nine-night worship of Goddess."
+  },
+  {
+    "date": "2026-06-17",
+    "tithi": "Shukla Thadiya",
+    "nakshatra": "Punarvasu",
+    "yoga": "Dhruva",
+    "karana": "Taitula",
+    "sunrise": "05:24",
+    "sunset": "19:22",
+    "rahuKaal": "12:23 - 14:08",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [
+      "Chandra Darshan"
+    ],
+    "vrat": [],
+    "specialInfo": "First sighting of the moon after Amavasya."
+  },
+  {
+    "date": "2026-06-18",
+    "tithi": "Shukla Chavithi",
+    "nakshatra": "Pushya",
+    "yoga": "Vyaghata",
+    "karana": "Vanija",
+    "sunrise": "05:24",
+    "sunset": "19:22",
+    "rahuKaal": "14:08 - 15:53",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [
+      "Jagannath Rath Yatra"
+    ],
+    "vrat": [],
+    "specialInfo": "Jagannath Rath Yatra at Puri — chariot festival of Lord Jagannath."
+  },
+  {
+    "date": "2026-06-19",
+    "tithi": "Shukla Panchami",
+    "nakshatra": "Ashlesha",
+    "yoga": "Harshana",
+    "karana": "Balava",
+    "sunrise": "05:24",
+    "sunset": "19:22",
+    "rahuKaal": "10:38 - 12:23",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [
+      "Vinayaka Chaturthi"
+    ],
+    "vrat": [],
+    "specialInfo": "Vinayaka Chaturthi for Lord Ganesha."
+  },
+  {
+    "date": "2026-06-20",
+    "tithi": "Shukla Shasti",
+    "nakshatra": "Magha",
+    "yoga": "Vajra",
+    "karana": "Taitula",
+    "sunrise": "05:24",
+    "sunset": "19:22",
+    "rahuKaal": "08:54 - 10:38",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:11 - 12:35",
+      "brahmaMuhurta": "03:48 - 04:36",
+      "vijayMuhurat": "14:15 - 15:11"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Shasti tithi during Magha nakshatra. Vajra yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-06-21",
+    "tithi": "Shukla Sapthami",
+    "nakshatra": "Purva Phalguni",
+    "yoga": "Siddhi",
+    "karana": "Vanija",
+    "sunrise": "05:25",
+    "sunset": "19:23",
+    "rahuKaal": "17:38 - 19:23",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:12 - 12:36",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:16 - 15:12"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Sapthami tithi during Purva Phalguni nakshatra. Siddhi yoga prevails with Vanija karana."
+  },
+  {
+    "date": "2026-06-22",
+    "tithi": "Shukla Ashtami",
+    "nakshatra": "Uttara Phalguni",
+    "yoga": "Vyatipata",
+    "karana": "Bawa",
+    "sunrise": "05:25",
+    "sunset": "19:23",
+    "rahuKaal": "07:10 - 08:55",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:12 - 12:36",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:16 - 15:12"
+    },
+    "festivals": [
+      "Skanda Sashti"
+    ],
+    "vrat": [],
+    "specialInfo": "Skanda Sashti for Lord Kartikeya."
+  },
+  {
+    "date": "2026-06-23",
+    "tithi": "Shukla Navami",
+    "nakshatra": "Hasta",
+    "yoga": "Variyan",
+    "karana": "Kaulava",
+    "sunrise": "05:25",
+    "sunset": "19:23",
+    "rahuKaal": "15:54 - 17:38",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:12 - 12:36",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:16 - 15:12"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Navami tithi during Hasta nakshatra. Variyan yoga prevails with Kaulava karana."
+  },
+  {
+    "date": "2026-06-24",
+    "tithi": "Shukla Dasami",
+    "nakshatra": "Chitra",
+    "yoga": "Parigha",
+    "karana": "Garaja",
+    "sunrise": "05:25",
+    "sunset": "19:23",
+    "rahuKaal": "12:24 - 14:09",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:12 - 12:36",
+      "brahmaMuhurta": "03:49 - 04:37",
+      "vijayMuhurat": "14:16 - 15:12"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Dasami tithi during Chitra nakshatra. Parigha yoga prevails with Garaja karana."
+  },
+  {
+    "date": "2026-06-25",
+    "tithi": "Shukla Ekadasi",
+    "nakshatra": "Swati",
+    "yoga": "Siva",
+    "karana": "Vanija",
+    "sunrise": "05:26",
+    "sunset": "19:23",
+    "rahuKaal": "14:09 - 15:54",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:13 - 12:37",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:17 - 15:13"
+    },
+    "festivals": [
+      "Masik Durgashtami",
+      "Gupta Navratri ends"
+    ],
+    "vrat": [],
+    "specialInfo": "Ashadha Gupta Navratri concludes."
+  },
+  {
+    "date": "2026-06-26",
+    "tithi": "Shukla Dvadasi",
+    "nakshatra": "Vishakha",
+    "yoga": "Siddha",
+    "karana": "Bawa",
+    "sunrise": "05:26",
+    "sunset": "19:23",
+    "rahuKaal": "10:40 - 12:25",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:13 - 12:37",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:17 - 15:13"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Dvadasi tithi during Vishakha nakshatra. Siddha yoga prevails with Bawa karana."
+  },
+  {
+    "date": "2026-06-27",
+    "tithi": "Shukla Trayodasi",
+    "nakshatra": "Anuradha",
+    "yoga": "Sadhya",
+    "karana": "Kaulava",
+    "sunrise": "05:26",
+    "sunset": "19:24",
+    "rahuKaal": "08:56 - 10:40",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:13 - 12:37",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:17 - 15:13"
+    },
+    "festivals": [
+      "Bhadli Navami"
+    ],
+    "vrat": [],
+    "specialInfo": "Bhadli Navami marks an auspicious wedding day."
+  },
+  {
+    "date": "2026-06-28",
+    "tithi": "Shukla Chaturdasi",
+    "nakshatra": "Jyeshtha",
+    "yoga": "Subha",
+    "karana": "Garaja",
+    "sunrise": "05:26",
+    "sunset": "19:24",
+    "rahuKaal": "17:39 - 19:24",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:13 - 12:37",
+      "brahmaMuhurta": "03:50 - 04:38",
+      "vijayMuhurat": "14:17 - 15:13"
+    },
+    "festivals": [
+      "Devshayani Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Devshayani Ekadashi — Lord Vishnu begins his cosmic slumber; Chaturmas begins."
+  },
+  {
+    "date": "2026-06-29",
+    "tithi": "Shukla Punnami",
+    "nakshatra": "Mula",
+    "yoga": "Sukla",
+    "karana": "Vishti",
+    "sunrise": "05:27",
+    "sunset": "19:24",
+    "rahuKaal": "07:12 - 08:56",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:14 - 12:38",
+      "brahmaMuhurta": "03:51 - 04:39",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [
+      "Vasudeva Dwadashi",
+      "Pradosh Vrat"
+    ],
+    "vrat": [
+      "Pradosh Vrat"
+    ],
+    "specialInfo": "Som Pradosh Vrat and start of Chaturmas."
+  },
+  {
+    "date": "2026-06-30",
+    "tithi": "Krishna Padyami",
+    "nakshatra": "Purva Ashadha",
+    "yoga": "Bramha",
+    "karana": "Balava",
+    "sunrise": "05:27",
+    "sunset": "19:24",
+    "rahuKaal": "15:55 - 17:39",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:14 - 12:38",
+      "brahmaMuhurta": "03:51 - 04:39",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Padyami tithi during Purva Ashadha nakshatra. Bramha yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-07-01",
+    "tithi": "Krishna Padyami",
+    "nakshatra": "Purva Ashadha",
+    "yoga": "Indra",
+    "karana": "Kaulava",
+    "sunrise": "05:27",
+    "sunset": "19:24",
+    "rahuKaal": "12:26 - 14:10",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:14 - 12:38",
+      "brahmaMuhurta": "03:51 - 04:39",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [
+      "Guru Purnima",
+      "Ashadha Purnima"
+    ],
+    "vrat": [
+      "Purnima Vrat"
+    ],
+    "specialInfo": "Guru Purnima honors spiritual teachers and Sage Vyasa."
+  },
+  {
+    "date": "2026-07-02",
+    "tithi": "Krishna Vidhiya",
+    "nakshatra": "Uttara Ashadha",
+    "yoga": "Vaidhruthi",
+    "karana": "Garaja",
+    "sunrise": "05:28",
+    "sunset": "19:24",
+    "rahuKaal": "14:11 - 15:55",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:14 - 12:38",
+      "brahmaMuhurta": "03:52 - 04:40",
+      "vijayMuhurat": "14:17 - 15:13"
+    },
+    "festivals": [
+      "Sawan begins"
+    ],
+    "vrat": [],
+    "specialInfo": "Shravana (Sawan) month begins — month of Lord Shiva."
+  },
+  {
+    "date": "2026-07-03",
+    "tithi": "Krishna Thadiya",
+    "nakshatra": "Sravana",
+    "yoga": "Vishkambha",
+    "karana": "Vishti",
+    "sunrise": "05:28",
+    "sunset": "19:24",
+    "rahuKaal": "10:42 - 12:26",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:14 - 12:38",
+      "brahmaMuhurta": "03:52 - 04:40",
+      "vijayMuhurat": "14:17 - 15:13"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Thadiya tithi during Sravana nakshatra. Vishkambha yoga prevails with Vishti karana."
+  },
+  {
+    "date": "2026-07-04",
+    "tithi": "Krishna Chaviti",
+    "nakshatra": "Dhanishta",
+    "yoga": "Prithi",
+    "karana": "Balava",
+    "sunrise": "05:29",
+    "sunset": "19:24",
+    "rahuKaal": "08:58 - 10:42",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:53 - 04:41",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Chaviti tithi during Dhanishta nakshatra. Prithi yoga prevails with Balava karana."
+  },
+  {
+    "date": "2026-07-05",
+    "tithi": "Krishna Panchami",
+    "nakshatra": "Shatabhisha",
+    "yoga": "Ayushman",
+    "karana": "Taitula",
+    "sunrise": "05:29",
+    "sunset": "19:24",
+    "rahuKaal": "17:40 - 19:24",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:53 - 04:41",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Panchami tithi during Shatabhisha nakshatra. Ayushman yoga prevails with Taitula karana."
+  },
+  {
+    "date": "2026-07-06",
+    "tithi": "Krishna Shasti",
+    "nakshatra": "Purva Bhadrapada",
+    "yoga": "Saubhagya",
+    "karana": "Vanija",
+    "sunrise": "05:29",
+    "sunset": "19:24",
+    "rahuKaal": "07:13 - 08:58",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:53 - 04:41",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [
+      "Sankashti Chaturthi",
+      "Gajanana Sankashti",
+      "Sawan Somwar Vrat"
+    ],
+    "vrat": [
+      "Sankashti Chaturthi Vrat",
+      "Somwar Vrat"
+    ],
+    "specialInfo": "Gajanana Sankashti Chaturthi for Lord Ganesha."
+  },
+  {
+    "date": "2026-07-07",
+    "tithi": "Krishna Sapthami",
+    "nakshatra": "Uttara Bhadrapada",
+    "yoga": "Sobhana",
+    "karana": "Bawa",
+    "sunrise": "05:30",
+    "sunset": "19:23",
+    "rahuKaal": "15:55 - 17:39",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:54 - 04:42",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [
+      "Mangala Gauri Vrat"
+    ],
+    "vrat": [
+      "Mangala Gauri Vrat"
+    ],
+    "specialInfo": "Mangala Gauri Vrat — Tuesday fast for Goddess Parvati."
+  },
+  {
+    "date": "2026-07-08",
+    "tithi": "Krishna Ashtami",
+    "nakshatra": "Rebati",
+    "yoga": "Atiganda",
+    "karana": "Kaulava",
+    "sunrise": "05:30",
+    "sunset": "19:23",
+    "rahuKaal": "12:27 - 14:11",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:54 - 04:42",
+      "vijayMuhurat": "14:18 - 15:14"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Ashtami tithi during Rebati nakshatra. Atiganda yoga prevails with Kaulava karana."
+  },
+  {
+    "date": "2026-07-09",
+    "tithi": "Krishna Navami",
+    "nakshatra": "Ashwini",
+    "yoga": "Sukarman",
+    "karana": "Garaja",
+    "sunrise": "05:31",
+    "sunset": "19:23",
+    "rahuKaal": "14:11 - 15:55",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:55 - 04:43",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Kalashtami"
+    ],
+    "vrat": [],
+    "specialInfo": "Kalashtami for Lord Kalabhairava."
+  },
+  {
+    "date": "2026-07-10",
+    "tithi": "Krishna Dasami",
+    "nakshatra": "Dwija",
+    "yoga": "Dhrithi",
+    "karana": "Vishti",
+    "sunrise": "05:31",
+    "sunset": "19:23",
+    "rahuKaal": "10:43 - 12:27",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:15 - 12:39",
+      "brahmaMuhurta": "03:55 - 04:43",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Krishna Dasami tithi during Dwija nakshatra. Dhrithi yoga prevails with Vishti karana."
+  },
+  {
+    "date": "2026-07-11",
+    "tithi": "Krishna Dvadasi",
+    "nakshatra": "Krittika",
+    "yoga": "Ganda",
+    "karana": "Kaulava",
+    "sunrise": "05:32",
+    "sunset": "19:23",
+    "rahuKaal": "09:00 - 10:44",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:56 - 04:44",
+      "vijayMuhurat": "14:19 - 15:14"
+    },
+    "festivals": [
+      "Kamika Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Kamika Ekadashi destroys sins and grants prosperity."
+  },
+  {
+    "date": "2026-07-12",
+    "tithi": "Krishna Trayodasi",
+    "nakshatra": "Rohini",
+    "yoga": "Vridhi",
+    "karana": "Garaja",
+    "sunrise": "05:32",
+    "sunset": "19:23",
+    "rahuKaal": "17:39 - 19:23",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:56 - 04:44",
+      "vijayMuhurat": "14:19 - 15:14"
+    },
+    "festivals": [
+      "Pradosh Vrat"
+    ],
+    "vrat": [
+      "Pradosh Vrat"
+    ],
+    "specialInfo": "Pradosh Vrat for Lord Shiva."
+  },
+  {
+    "date": "2026-07-13",
+    "tithi": "Krishna Chaturdasi",
+    "nakshatra": "Ardra",
+    "yoga": "Dhruva",
+    "karana": "Vishti",
+    "sunrise": "05:33",
+    "sunset": "19:22",
+    "rahuKaal": "07:17 - 09:00",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:57 - 04:45",
+      "vijayMuhurat": "14:19 - 15:14"
+    },
+    "festivals": [
+      "Sawan Shivaratri",
+      "Masik Shivaratri",
+      "Sawan Somwar Vrat"
+    ],
+    "vrat": [
+      "Shivaratri Vrat",
+      "Somwar Vrat"
+    ],
+    "specialInfo": "Sawan Shivaratri — most important Shivaratri of the year for devotees."
+  },
+  {
+    "date": "2026-07-14",
+    "tithi": "Krishna Amavasya",
+    "nakshatra": "Punarvasu",
+    "yoga": "Vyaghata",
+    "karana": "Nagava",
+    "sunrise": "05:33",
+    "sunset": "19:22",
+    "rahuKaal": "15:55 - 17:38",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:57 - 04:45",
+      "vijayMuhurat": "14:19 - 15:14"
+    },
+    "festivals": [
+      "Hariyali Amavasya",
+      "Shravana Amavasya",
+      "Mangala Gauri Vrat"
+    ],
+    "vrat": [
+      "Mangala Gauri Vrat"
+    ],
+    "specialInfo": "Hariyali Amavasya celebrates greenery and tree planting."
+  },
+  {
+    "date": "2026-07-15",
+    "tithi": "Shukla Padyami",
+    "nakshatra": "Pushya",
+    "yoga": "Harshana",
+    "karana": "Bawa",
+    "sunrise": "05:34",
+    "sunset": "19:22",
+    "rahuKaal": "12:28 - 14:12",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:58 - 04:46",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Chandra Darshan"
+    ],
+    "vrat": [],
+    "specialInfo": "First moon sighting after Amavasya."
+  },
+  {
+    "date": "2026-07-16",
+    "tithi": "Shukla Vidhiya",
+    "nakshatra": "Ashlesha",
+    "yoga": "Siddhi",
+    "karana": "Kaulava",
+    "sunrise": "05:34",
+    "sunset": "19:21",
+    "rahuKaal": "14:11 - 15:54",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:58 - 04:46",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Hariyali Teej"
+    ],
+    "vrat": [
+      "Teej Vrat"
+    ],
+    "specialInfo": "Hariyali Teej — celebrated by women for marital bliss."
+  },
+  {
+    "date": "2026-07-17",
+    "tithi": "Shukla Thadiya",
+    "nakshatra": "Magha",
+    "yoga": "Vyatipata",
+    "karana": "Garaja",
+    "sunrise": "05:35",
+    "sunset": "19:21",
+    "rahuKaal": "10:45 - 12:28",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:59 - 04:47",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Vinayaka Chaturthi",
+      "Madhushrava Tritiya"
+    ],
+    "vrat": [],
+    "specialInfo": "Vinayaka Chaturthi for Lord Ganesha."
+  },
+  {
+    "date": "2026-07-18",
+    "tithi": "Shukla Panchami",
+    "nakshatra": "Purva Phalguni",
+    "yoga": "Variyan",
+    "karana": "Bawa",
+    "sunrise": "05:35",
+    "sunset": "19:21",
+    "rahuKaal": "09:02 - 10:45",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "03:59 - 04:47",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Naga Panchami"
+    ],
+    "vrat": [],
+    "specialInfo": "Naga Panchami honors serpent deities."
+  },
+  {
+    "date": "2026-07-19",
+    "tithi": "Shukla Shasti",
+    "nakshatra": "Uttara Phalguni",
+    "yoga": "Parigha",
+    "karana": "Kaulava",
+    "sunrise": "05:36",
+    "sunset": "19:20",
+    "rahuKaal": "17:37 - 19:20",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "04:00 - 04:48",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [],
+    "vrat": [],
+    "specialInfo": "Shukla Shasti tithi during Uttara Phalguni nakshatra. Parigha yoga prevails with Kaulava karana."
+  },
+  {
+    "date": "2026-07-20",
+    "tithi": "Shukla Sapthami",
+    "nakshatra": "Hasta",
+    "yoga": "Siva",
+    "karana": "Garaja",
+    "sunrise": "05:36",
+    "sunset": "19:20",
+    "rahuKaal": "07:19 - 09:02",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "04:00 - 04:48",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Skanda Sashti",
+      "Tulsidas Jayanti",
+      "Sawan Somwar Vrat"
+    ],
+    "vrat": [
+      "Somwar Vrat"
+    ],
+    "specialInfo": "Tulsidas Jayanti commemorates the saint-poet Goswami Tulsidas."
+  },
+  {
+    "date": "2026-07-21",
+    "tithi": "Shukla Ashtami",
+    "nakshatra": "Chitra",
+    "yoga": "Siddha",
+    "karana": "Vishti",
+    "sunrise": "05:37",
+    "sunset": "19:19",
+    "rahuKaal": "15:54 - 17:36",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "04:01 - 04:49",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Mangala Gauri Vrat"
+    ],
+    "vrat": [
+      "Mangala Gauri Vrat"
+    ],
+    "specialInfo": "Mangala Gauri Vrat — Tuesday of Sawan, dedicated to Goddess Parvati."
+  },
+  {
+    "date": "2026-07-22",
+    "tithi": "Shukla Navami",
+    "nakshatra": "Swati",
+    "yoga": "Sadhya",
+    "karana": "Balava",
+    "sunrise": "05:37",
+    "sunset": "19:19",
+    "rahuKaal": "12:28 - 14:11",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:16 - 12:40",
+      "brahmaMuhurta": "04:01 - 04:49",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Masik Durgashtami"
+    ],
+    "vrat": [],
+    "specialInfo": "Monthly Durgashtami for Goddess Durga."
+  },
+  {
+    "date": "2026-07-23",
+    "tithi": "Shukla Navami",
+    "nakshatra": "Vishakha",
+    "yoga": "Subha",
+    "karana": "Kaulava",
+    "sunrise": "05:38",
+    "sunset": "19:19",
+    "rahuKaal": "14:11 - 15:54",
+    "shubhMuhurat": {
+      "abhijitMuhurat": "12:17 - 12:41",
+      "brahmaMuhurta": "04:02 - 04:50",
+      "vijayMuhurat": "14:18 - 15:13"
+    },
+    "festivals": [
+      "Putrada Ekadashi",
+      "Pavitra Ekadashi"
+    ],
+    "vrat": [
+      "Ekadashi Vrat"
+    ],
+    "specialInfo": "Shravana Putrada Ekadashi — observed for progeny."
+  }
+]

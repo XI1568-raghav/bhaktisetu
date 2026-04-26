@@ -5,652 +5,652 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  Calendar,
-  Users,
-  MapPin,
-  Plane,
-  Flame,
-  Heart,
-  Shield,
-  Upload,
-  CreditCard,
-  Loader2,
-  CheckCircle2,
+ ChevronLeft,
+ ChevronRight,
+ Check,
+ Calendar,
+ Users,
+ MapPin,
+ Plane,
+ Flame,
+ Heart,
+ Shield,
+ Upload,
+ CreditCard,
+ Loader2,
+ CheckCircle2,
 } from 'lucide-react';
 import { getYatraBySlug, formatINR } from '../../../../lib/yatra-data';
 
 type Traveler = {
-  name: string;
-  age: string;
-  gender: 'male' | 'female' | 'other';
-  idProof: string;
+ name: string;
+ age: string;
+ gender: 'male' | 'female' | 'other';
+ idProof: string;
 };
 
 type BookingData = {
-  // Step 1
-  startDate: string;
-  pickupCity: string;
-  travelersCount: number;
-  // Step 2
-  packageTier: 'economy' | 'standard' | 'premium';
-  // Step 3
-  addOns: {
-    helicopter: boolean;
-    specialPuja: boolean;
-    companion: boolean;
-    insurance: boolean;
-  };
-  companionDays: number;
-  // Step 4
-  travelers: Traveler[];
+ // Step 1
+ startDate: string;
+ pickupCity: string;
+ travelersCount: number;
+ // Step 2
+ packageTier: 'economy' | 'standard' | 'premium';
+ // Step 3
+ addOns: {
+ helicopter: boolean;
+ specialPuja: boolean;
+ companion: boolean;
+ insurance: boolean;
+ };
+ companionDays: number;
+ // Step 4
+ travelers: Traveler[];
 };
 
 const STEPS = ['Trip', 'Package', 'Add-ons', 'Travelers', 'Review'];
 
 export default function BookYatraPage() {
-  const params = useParams<{ slug: string }>();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const yatra = getYatraBySlug(params.slug);
+ const params = useParams<{ slug: string }>();
+ const searchParams = useSearchParams();
+ const router = useRouter();
+ const yatra = getYatraBySlug(params.slug);
 
-  const [step, setStep] = useState(1);
-  const [data, setData] = useState<BookingData>(() => ({
-    startDate: '',
-    pickupCity: 'Delhi',
-    travelersCount: 2,
-    packageTier: (searchParams.get('tier') as 'economy' | 'standard' | 'premium') || 'standard',
-    addOns: { helicopter: false, specialPuja: false, companion: false, insurance: true },
-    companionDays: yatra?.durationDays ?? 7,
-    travelers: [
-      { name: '', age: '', gender: 'male', idProof: '' },
-      { name: '', age: '', gender: 'female', idProof: '' },
-    ],
-  }));
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+ const [step, setStep] = useState(1);
+ const [data, setData] = useState<BookingData>(() => ({
+ startDate: '',
+ pickupCity: 'Delhi',
+ travelersCount: 2,
+ packageTier: (searchParams.get('tier') as 'economy' | 'standard' | 'premium') || 'standard',
+ addOns: { helicopter: false, specialPuja: false, companion: false, insurance: true },
+ companionDays: yatra?.durationDays ?? 7,
+ travelers: [
+ { name: '', age: '', gender: 'male', idProof: '' },
+ { name: '', age: '', gender: 'female', idProof: '' },
+ ],
+ }));
+ const [submitting, setSubmitting] = useState(false);
+ const [submitted, setSubmitted] = useState(false);
 
-  // Persist to localStorage
-  useEffect(() => {
-    if (!yatra) return;
-    const key = `yatra-booking-${yatra.slug}`;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setData((d) => ({ ...d, ...parsed }));
-      }
-    } catch {}
-  }, [yatra]);
+ // Persist to localStorage
+ useEffect(() => {
+ if (!yatra) return;
+ const key = `yatra-booking-${yatra.slug}`;
+ try {
+ const saved = localStorage.getItem(key);
+ if (saved) {
+ const parsed = JSON.parse(saved);
+ setData((d) => ({ ...d, ...parsed }));
+ }
+ } catch {}
+ }, [yatra]);
 
-  useEffect(() => {
-    if (!yatra) return;
-    try {
-      localStorage.setItem(`yatra-booking-${yatra.slug}`, JSON.stringify(data));
-    } catch {}
-  }, [data, yatra]);
+ useEffect(() => {
+ if (!yatra) return;
+ try {
+ localStorage.setItem(`yatra-booking-${yatra.slug}`, JSON.stringify(data));
+ } catch {}
+ }, [data, yatra]);
 
-  // Sync travelers array with count
-  useEffect(() => {
-    setData((d) => {
-      if (d.travelers.length === d.travelersCount) return d;
-      const nextTravelers = [...d.travelers];
-      while (nextTravelers.length < d.travelersCount) {
-        nextTravelers.push({ name: '', age: '', gender: 'male', idProof: '' });
-      }
-      while (nextTravelers.length > d.travelersCount) nextTravelers.pop();
-      return { ...d, travelers: nextTravelers };
-    });
-  }, [data.travelersCount]);
+ // Sync travelers array with count
+ useEffect(() => {
+ setData((d) => {
+ if (d.travelers.length === d.travelersCount) return d;
+ const nextTravelers = [...d.travelers];
+ while (nextTravelers.length < d.travelersCount) {
+ nextTravelers.push({ name: '', age: '', gender: 'male', idProof: '' });
+ }
+ while (nextTravelers.length > d.travelersCount) nextTravelers.pop();
+ return { ...d, travelers: nextTravelers };
+ });
+ }, [data.travelersCount]);
 
-  const selectedPackage = useMemo(() => yatra?.packages.find((p) => p.tier === data.packageTier), [yatra, data.packageTier]);
+ const selectedPackage = useMemo(() => yatra?.packages.find((p) => p.tier === data.packageTier), [yatra, data.packageTier]);
 
-  const priceBreakdown = useMemo(() => {
-    if (!selectedPackage) return { lines: [], total: 0 };
-    const lines: { label: string; amount: number }[] = [];
-    const base = selectedPackage.price * data.travelersCount;
-    lines.push({ label: `${selectedPackage.name} × ${data.travelersCount} travelers`, amount: base });
-    if (data.addOns.helicopter) {
-      const heli = 8000 * data.travelersCount;
-      lines.push({ label: `Helicopter × ${data.travelersCount}`, amount: heli });
-    }
-    if (data.addOns.specialPuja) {
-      lines.push({ label: 'Special puja at temple', amount: 2100 });
-    }
-    if (data.addOns.companion) {
-      const comp = 3500 * data.companionDays;
-      lines.push({ label: `Travel companion × ${data.companionDays} days`, amount: comp });
-    }
-    if (data.addOns.insurance) {
-      const ins = 500 * data.travelersCount;
-      lines.push({ label: `Travel insurance × ${data.travelersCount}`, amount: ins });
-    }
-    const subtotal = lines.reduce((s, l) => s + l.amount, 0);
-    const gst = Math.round(subtotal * 0.05);
-    lines.push({ label: 'GST (5%)', amount: gst });
-    return { lines, total: subtotal + gst };
-  }, [selectedPackage, data]);
+ const priceBreakdown = useMemo(() => {
+ if (!selectedPackage) return { lines: [], total: 0 };
+ const lines: { label: string; amount: number }[] = [];
+ const base = selectedPackage.price * data.travelersCount;
+ lines.push({ label: `${selectedPackage.name} × ${data.travelersCount} travelers`, amount: base });
+ if (data.addOns.helicopter) {
+ const heli = 8000 * data.travelersCount;
+ lines.push({ label: `Helicopter × ${data.travelersCount}`, amount: heli });
+ }
+ if (data.addOns.specialPuja) {
+ lines.push({ label: 'Special puja at temple', amount: 2100 });
+ }
+ if (data.addOns.companion) {
+ const comp = 3500 * data.companionDays;
+ lines.push({ label: `Travel companion × ${data.companionDays} days`, amount: comp });
+ }
+ if (data.addOns.insurance) {
+ const ins = 500 * data.travelersCount;
+ lines.push({ label: `Travel insurance × ${data.travelersCount}`, amount: ins });
+ }
+ const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+ const gst = Math.round(subtotal * 0.05);
+ lines.push({ label: 'GST (5%)', amount: gst });
+ return { lines, total: subtotal + gst };
+ }, [selectedPackage, data]);
 
-  if (!yatra) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>Yatra not found.</p>
-          <Link href="/yatra" className="text-sm" style={{ color: 'var(--color-primary)' }}>Back to yatras</Link>
-        </div>
-      </div>
-    );
-  }
+ if (!yatra) {
+ return (
+ <div className="min-h-[60vh] flex items-center justify-center">
+ <div className="text-center">
+ <p className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>Yatra not found.</p>
+ <Link href="/yatra" className="text-sm" style={{ color: 'var(--color-primary)' }}>Back to yatras</Link>
+ </div>
+ </div>
+ );
+ }
 
-  const canContinue = (() => {
-    if (step === 1) return data.startDate.length > 0 && data.pickupCity.length > 0 && data.travelersCount > 0;
-    if (step === 2) return !!data.packageTier;
-    if (step === 3) return true;
-    if (step === 4) return data.travelers.every((t) => t.name.length > 1 && Number(t.age) >= 5);
-    return true;
-  })();
+ const canContinue = (() => {
+ if (step === 1) return data.startDate.length > 0 && data.pickupCity.length > 0 && data.travelersCount > 0;
+ if (step === 2) return !!data.packageTier;
+ if (step === 3) return true;
+ if (step === 4) return data.travelers.every((t) => t.name.length > 1 && Number(t.age) >= 5);
+ return true;
+ })();
 
-  function handlePay() {
-    if (!yatra) return;
-    const currentYatra = yatra;
-    setSubmitting(true);
-    // Mock Razorpay
-    setTimeout(() => {
-      const bookingNumber = `BS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 90000 + 10000)}`;
-      try {
-        const existing = JSON.parse(localStorage.getItem('yatra-bookings') || '[]');
-        existing.push({
-          bookingNumber,
-          yatraSlug: currentYatra.slug,
-          yatraTitle: currentYatra.title,
-          startDate: data.startDate,
-          travelers: data.travelersCount,
-          packageTier: data.packageTier,
-          total: priceBreakdown.total,
-          status: 'confirmed',
-          createdAt: new Date().toISOString(),
-        });
-        localStorage.setItem('yatra-bookings', JSON.stringify(existing));
-        localStorage.removeItem(`yatra-booking-${currentYatra.slug}`);
-      } catch {}
-      setSubmitting(false);
-      setSubmitted(true);
-    }, 1500);
-  }
+ function handlePay() {
+ if (!yatra) return;
+ const currentYatra = yatra;
+ setSubmitting(true);
+ // Mock Razorpay
+ setTimeout(() => {
+ const bookingNumber = `BS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 90000 + 10000)}`;
+ try {
+ const existing = JSON.parse(localStorage.getItem('yatra-bookings') || '[]');
+ existing.push({
+ bookingNumber,
+ yatraSlug: currentYatra.slug,
+ yatraTitle: currentYatra.title,
+ startDate: data.startDate,
+ travelers: data.travelersCount,
+ packageTier: data.packageTier,
+ total: priceBreakdown.total,
+ status: 'confirmed',
+ createdAt: new Date().toISOString(),
+ });
+ localStorage.setItem('yatra-bookings', JSON.stringify(existing));
+ localStorage.removeItem(`yatra-booking-${currentYatra.slug}`);
+ } catch {}
+ setSubmitting(false);
+ setSubmitted(true);
+ }, 1500);
+ }
 
-  if (submitted) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4" style={{ background: 'var(--color-bg)' }}>
-        <div className="max-w-md text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--color-primary-highlight)' }}>
-            <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
-          </div>
-          <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Booking confirmed</h1>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-            Your {yatra.title} is booked. Our team will call within 24 hours to confirm documents and finalize your departure plan.
-          </p>
-          <div className="p-4 rounded-xl mb-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Amount paid</p>
-            <p className="text-xl font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</p>
-          </div>
-          <div className="flex items-center justify-center gap-3">
-            <Link href="/profile/yatra-bookings" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
-              View my bookings
-            </Link>
-            <Link href="/yatra" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
-              Browse more
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+ if (submitted) {
+ return (
+ <div className="min-h-[80vh] flex items-center justify-center px-4" style={{ background: 'var(--color-bg)' }}>
+ <div className="max-w-md text-center">
+ <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--color-primary-highlight)' }}>
+ <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
+ </div>
+ <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Booking confirmed</h1>
+ <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
+ Your {yatra.title} is booked. Our team will call within 24 hours to confirm documents and finalize your departure plan.
+ </p>
+ <div className="p-4 rounded-xl mb-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Amount paid</p>
+ <p className="text-xl font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</p>
+ </div>
+ <div className="flex items-center justify-center gap-3">
+ <Link href="/profile/yatra-bookings" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
+ View my bookings
+ </Link>
+ <Link href="/yatra" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
+ Browse more
+ </Link>
+ </div>
+ </div>
+ </div>
+ );
+ }
 
-  return (
-    <div style={{ background: 'var(--color-bg)' }}>
-      {/* Header */}
-      <div className="border-b" style={{ borderColor: 'var(--color-divider)', background: 'var(--color-surface)' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <Link href={`/yatra/${yatra.slug}`} className="inline-flex items-center gap-1.5 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
-            <ChevronLeft className="w-3.5 h-3.5" /> Back to yatra
-          </Link>
-          <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-            Book {yatra.title}
-          </h1>
+ return (
+ <div style={{ background: 'var(--color-bg)' }}>
+ {/* Header */}
+ <div className="border-b" style={{ borderColor: 'var(--color-divider)', background: 'var(--color-surface)' }}>
+ <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+ <Link href={`/yatra/${yatra.slug}`} className="inline-flex items-center gap-1.5 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+ <ChevronLeft className="w-3.5 h-3.5" /> Back to yatra
+ </Link>
+ <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ Book {yatra.title}
+ </h1>
 
-          {/* Stepper */}
-          <div className="mt-5 flex items-center gap-2">
-            {STEPS.map((label, i) => {
-              const n = i + 1;
-              const active = n === step;
-              const done = n < step;
-              return (
-                <div key={label} className="flex items-center gap-2 flex-1">
-                  <div
-                    className="flex items-center gap-1.5 text-[11px] font-medium flex-1"
-                    style={{ color: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-text-faint)' }}
-                  >
-                    <div
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
-                      style={{
-                        background: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-surface-offset)',
-                        color: active || done ? '#fff' : 'var(--color-text-faint)',
-                      }}
-                    >
-                      {done ? <Check className="w-3 h-3" /> : n}
-                    </div>
-                    <span className="hidden sm:inline">{label}</span>
-                  </div>
-                  {i < STEPS.length - 1 && <div className="flex-1 h-px" style={{ background: n < step ? 'var(--color-status-success)' : 'var(--color-divider)' }} />}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+ {/* Stepper */}
+ <div className="mt-5 flex items-center gap-2">
+ {STEPS.map((label, i) => {
+ const n = i + 1;
+ const active = n === step;
+ const done = n < step;
+ return (
+ <div key={label} className="flex items-center gap-2 flex-1">
+ <div
+ className="flex items-center gap-1.5 text-[11px] font-medium flex-1"
+ style={{ color: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-text-faint)' }}
+ >
+ <div
+ className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+ style={{
+ background: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-surface-offset)',
+ color: active || done ? '#fff' : 'var(--color-text-faint)',
+ }}
+ >
+ {done ? <Check className="w-3 h-3" /> : n}
+ </div>
+ <span className="hidden sm:inline">{label}</span>
+ </div>
+ {i < STEPS.length - 1 && <div className="flex-1 h-px" style={{ background: n < step ? 'var(--color-status-success)' : 'var(--color-divider)' }} />}
+ </div>
+ );
+ })}
+ </div>
+ </div>
+ </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Main form column */}
-          <div className="md:col-span-2">
-            {/* ─── Step 1: Trip details ─── */}
-            {step === 1 && (
-              <div className="space-y-5 rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                <div>
-                  <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Trip details</h2>
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>When would you like to travel?</p>
-                </div>
+ <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ <div className="grid md:grid-cols-3 gap-6">
+ {/* Main form column */}
+ <div className="md:col-span-2">
+ {/* ─── Step 1: Trip details ─── */}
+ {step === 1 && (
+ <div className="space-y-5 rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <div>
+ <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Trip details</h2>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>When would you like to travel?</p>
+ </div>
 
-                <div>
-                  <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Start date</label>
-                  <div className="relative">
-                    <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-faint)' }} />
-                    <input
-                      type="date"
-                      value={data.startDate}
-                      onChange={(e) => setData({ ...data, startDate: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2"
-                      style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                    />
-                  </div>
-                  <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>Best time: {yatra.bestTime}</p>
-                </div>
+ <div>
+ <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Start date</label>
+ <div className="relative">
+ <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-faint)' }} />
+ <input
+ type="date"
+ value={data.startDate}
+ onChange={(e) => setData({ ...data, startDate: e.target.value })}
+ className="w-full pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ </div>
+ <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>Best time: {yatra.bestTime}</p>
+ </div>
 
-                <div>
-                  <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Number of travelers</label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setData({ ...data, travelersCount: Math.max(1, data.travelersCount - 1) })}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
-                      style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
-                    >-</button>
-                    <span className="text-sm font-semibold min-w-8 text-center" style={{ color: 'var(--color-text)' }}>{data.travelersCount}</span>
-                    <button
-                      onClick={() => setData({ ...data, travelersCount: Math.min(12, data.travelersCount + 1) })}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
-                      style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
-                    >+</button>
-                    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>(max 12 per booking)</span>
-                  </div>
-                </div>
+ <div>
+ <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Number of travelers</label>
+ <div className="flex items-center gap-3">
+ <button
+ onClick={() => setData({ ...data, travelersCount: Math.max(1, data.travelersCount - 1) })}
+ className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+ style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ >-</button>
+ <span className="text-sm font-semibold min-w-8 text-center" style={{ color: 'var(--color-text)' }}>{data.travelersCount}</span>
+ <button
+ onClick={() => setData({ ...data, travelersCount: Math.min(12, data.travelersCount + 1) })}
+ className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+ style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ >+</button>
+ <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>(max 12 per booking)</span>
+ </div>
+ </div>
 
-                <div>
-                  <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Pickup city</label>
-                  <select
-                    value={data.pickupCity}
-                    onChange={(e) => setData({ ...data, pickupCity: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
-                    style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                  >
-                    {['Delhi', 'Mumbai', 'Bengaluru', 'Chennai', 'Kolkata', 'Hyderabad', 'Ahmedabad', 'Pune', 'Jaipur', 'Lucknow', 'Chandigarh', 'Kochi'].map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
+ <div>
+ <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Pickup city</label>
+ <select
+ value={data.pickupCity}
+ onChange={(e) => setData({ ...data, pickupCity: e.target.value })}
+ className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ >
+ {['Delhi', 'Mumbai', 'Bengaluru', 'Chennai', 'Kolkata', 'Hyderabad', 'Ahmedabad', 'Pune', 'Jaipur', 'Lucknow', 'Chandigarh', 'Kochi'].map((c) => (
+ <option key={c} value={c}>{c}</option>
+ ))}
+ </select>
+ </div>
+ </div>
+ )}
 
-            {/* ─── Step 2: Package selection ─── */}
-            {step === 2 && (
-              <div className="space-y-3">
-                <div className="mb-3">
-                  <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Choose your package</h2>
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>All packages include permits and tour manager.</p>
-                </div>
-                {yatra.packages.map((pkg) => (
-                  <button
-                    key={pkg.tier}
-                    onClick={() => setData({ ...data, packageTier: pkg.tier })}
-                    className="w-full text-left rounded-xl p-4 transition-all"
-                    style={{
-                      background: data.packageTier === pkg.tier ? 'var(--color-primary-highlight)' : 'var(--color-surface)',
-                      border: `2px solid ${data.packageTier === pkg.tier ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{pkg.tier}</p>
-                        <h3 className="text-sm font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>{pkg.name}</h3>
-                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{pkg.tagline}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{formatINR(pkg.price)}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>per person</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+ {/* ─── Step 2: Package selection ─── */}
+ {step === 2 && (
+ <div className="space-y-3">
+ <div className="mb-3">
+ <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Choose your package</h2>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>All packages include permits and tour manager.</p>
+ </div>
+ {yatra.packages.map((pkg) => (
+ <button
+ key={pkg.tier}
+ onClick={() => setData({ ...data, packageTier: pkg.tier })}
+ className="w-full text-left rounded-xl p-4 transition-all"
+ style={{
+ background: data.packageTier === pkg.tier ? 'var(--color-primary-highlight)' : 'var(--color-surface)',
+ border: `2px solid ${data.packageTier === pkg.tier ? 'var(--color-primary)' : 'var(--color-border)'}`,
+ }}
+ >
+ <div className="flex items-start justify-between gap-3">
+ <div>
+ <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{pkg.tier}</p>
+ <h3 className="text-sm font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>{pkg.name}</h3>
+ <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{pkg.tagline}</p>
+ </div>
+ <div className="text-right shrink-0">
+ <p className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{formatINR(pkg.price)}</p>
+ <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>per person</p>
+ </div>
+ </div>
+ </button>
+ ))}
+ </div>
+ )}
 
-            {/* ─── Step 3: Add-ons ─── */}
-            {step === 3 && (
-              <div className="space-y-3">
-                <div className="mb-3">
-                  <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Enhance your journey</h2>
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Optional add-ons to make your yatra smoother.</p>
-                </div>
+ {/* ─── Step 3: Add-ons ─── */}
+ {step === 3 && (
+ <div className="space-y-3">
+ <div className="mb-3">
+ <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Enhance your journey</h2>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Optional add-ons to make your yatra smoother.</p>
+ </div>
 
-                {yatra.helicopterAvailable && (
-                  <AddOnRow
-                    icon={Plane}
-                    title="Helicopter service"
-                    desc="Skip long treks. Applicable for Kedarnath/Vaishno Devi/Amarnath."
-                    price={`+${formatINR(8000)} / person`}
-                    active={data.addOns.helicopter}
-                    onToggle={() => setData({ ...data, addOns: { ...data.addOns, helicopter: !data.addOns.helicopter } })}
-                  />
-                )}
+ {yatra.helicopterAvailable && (
+ <AddOnRow
+ icon={Plane}
+ title="Helicopter service"
+ desc="Skip long treks. Applicable for Kedarnath/Vaishno Devi/Amarnath."
+ price={`+${formatINR(8000)} / person`}
+ active={data.addOns.helicopter}
+ onToggle={() => setData({ ...data, addOns: { ...data.addOns, helicopter: !data.addOns.helicopter } })}
+ />
+ )}
 
-                <AddOnRow
-                  icon={Flame}
-                  title="Special puja at temple"
-                  desc="Sankalpa with your name & gotra by appointed priest."
-                  price={`+${formatINR(2100)}`}
-                  active={data.addOns.specialPuja}
-                  onToggle={() => setData({ ...data, addOns: { ...data.addOns, specialPuja: !data.addOns.specialPuja } })}
-                />
+ <AddOnRow
+ icon={Flame}
+ title="Special puja at temple"
+ desc="Sankalpa with your name & gotra by appointed priest."
+ price={`+${formatINR(2100)}`}
+ active={data.addOns.specialPuja}
+ onToggle={() => setData({ ...data, addOns: { ...data.addOns, specialPuja: !data.addOns.specialPuja } })}
+ />
 
-                <AddOnRow
-                  icon={Heart}
-                  title="Travel companion"
-                  desc="Verified person assists elderly with mobility, medicine, logistics."
-                  price={`+${formatINR(3500)} / day`}
-                  active={data.addOns.companion}
-                  onToggle={() => setData({ ...data, addOns: { ...data.addOns, companion: !data.addOns.companion } })}
-                />
-                {data.addOns.companion && (
-                  <div className="ml-10 rounded-lg p-3" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
-                    <label className="text-[11px] font-medium block mb-1" style={{ color: 'var(--color-text)' }}>Companion required for (days)</label>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => setData({ ...data, companionDays: Math.max(1, data.companionDays - 1) })} className="w-7 h-7 rounded-md text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>-</button>
-                      <span className="text-sm font-semibold min-w-6 text-center" style={{ color: 'var(--color-text)' }}>{data.companionDays}</span>
-                      <button onClick={() => setData({ ...data, companionDays: Math.min(yatra.durationDays, data.companionDays + 1) })} className="w-7 h-7 rounded-md text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>+</button>
-                      <Link href="/yatra/companion" className="text-[11px] ml-auto" style={{ color: 'var(--color-primary)' }}>Choose companion →</Link>
-                    </div>
-                  </div>
-                )}
+ <AddOnRow
+ icon={Heart}
+ title="Travel companion"
+ desc="Verified person assists elderly with mobility, medicine, logistics."
+ price={`+${formatINR(3500)} / day`}
+ active={data.addOns.companion}
+ onToggle={() => setData({ ...data, addOns: { ...data.addOns, companion: !data.addOns.companion } })}
+ />
+ {data.addOns.companion && (
+ <div className="ml-10 rounded-lg p-3" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+ <label className="text-[11px] font-medium block mb-1" style={{ color: 'var(--color-text)' }}>Companion required for (days)</label>
+ <div className="flex items-center gap-3">
+ <button onClick={() => setData({ ...data, companionDays: Math.max(1, data.companionDays - 1) })} className="w-7 h-7 rounded-md text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>-</button>
+ <span className="text-sm font-semibold min-w-6 text-center" style={{ color: 'var(--color-text)' }}>{data.companionDays}</span>
+ <button onClick={() => setData({ ...data, companionDays: Math.min(yatra.durationDays, data.companionDays + 1) })} className="w-7 h-7 rounded-md text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>+</button>
+ <Link href="/yatra/companion" className="text-[11px] ml-auto" style={{ color: 'var(--color-primary)' }}>Choose companion →</Link>
+ </div>
+ </div>
+ )}
 
-                <AddOnRow
-                  icon={Shield}
-                  title="Travel insurance"
-                  desc="Medical + trip cancellation cover."
-                  price={`+${formatINR(500)} / person`}
-                  active={data.addOns.insurance}
-                  onToggle={() => setData({ ...data, addOns: { ...data.addOns, insurance: !data.addOns.insurance } })}
-                />
-              </div>
-            )}
+ <AddOnRow
+ icon={Shield}
+ title="Travel insurance"
+ desc="Medical + trip cancellation cover."
+ price={`+${formatINR(500)} / person`}
+ active={data.addOns.insurance}
+ onToggle={() => setData({ ...data, addOns: { ...data.addOns, insurance: !data.addOns.insurance } })}
+ />
+ </div>
+ )}
 
-            {/* ─── Step 4: Travelers ─── */}
-            {step === 4 && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Traveler details</h2>
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>As per government ID. Required for permits & registration.</p>
-                </div>
-                {data.travelers.map((t, i) => (
-                  <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                    <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text)' }}>Traveler {i + 1}</p>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Full name</label>
-                        <input
-                          value={t.name}
-                          onChange={(e) => {
-                            const next = [...data.travelers];
-                            next[i] = { ...t, name: e.target.value };
-                            setData({ ...data, travelers: next });
-                          }}
-                          className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
-                          placeholder="As per ID"
-                          style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Age</label>
-                        <input
-                          type="number"
-                          value={t.age}
-                          onChange={(e) => {
-                            const next = [...data.travelers];
-                            next[i] = { ...t, age: e.target.value };
-                            setData({ ...data, travelers: next });
-                          }}
-                          className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
-                          style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Gender</label>
-                        <select
-                          value={t.gender}
-                          onChange={(e) => {
-                            const next = [...data.travelers];
-                            next[i] = { ...t, gender: e.target.value as 'male' | 'female' | 'other' };
-                            setData({ ...data, travelers: next });
-                          }}
-                          className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
-                          style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                        >
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>ID proof (Aadhaar/Passport)</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={t.idProof}
-                            onChange={(e) => {
-                              const next = [...data.travelers];
-                              next[i] = { ...t, idProof: e.target.value };
-                              setData({ ...data, travelers: next });
-                            }}
-                            className="flex-1 px-3 py-2 text-xs rounded-lg focus:outline-none"
-                            placeholder="Last 4 digits"
-                            maxLength={12}
-                            style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                          />
-                          <button type="button" className="px-3 py-2 text-[11px] rounded-lg inline-flex items-center gap-1.5" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
-                            <Upload className="w-3 h-3" /> Upload
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+ {/* ─── Step 4: Travelers ─── */}
+ {step === 4 && (
+ <div className="space-y-4">
+ <div>
+ <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Traveler details</h2>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>As per government ID. Required for permits & registration.</p>
+ </div>
+ {data.travelers.map((t, i) => (
+ <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text)' }}>Traveler {i + 1}</p>
+ <div className="grid sm:grid-cols-2 gap-3">
+ <div>
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Full name</label>
+ <input
+ value={t.name}
+ onChange={(e) => {
+ const next = [...data.travelers];
+ next[i] = { ...t, name: e.target.value };
+ setData({ ...data, travelers: next });
+ }}
+ className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
+ placeholder="As per ID"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ </div>
+ <div>
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Age</label>
+ <input
+ type="number"
+ value={t.age}
+ onChange={(e) => {
+ const next = [...data.travelers];
+ next[i] = { ...t, age: e.target.value };
+ setData({ ...data, travelers: next });
+ }}
+ className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ </div>
+ <div>
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Gender</label>
+ <select
+ value={t.gender}
+ onChange={(e) => {
+ const next = [...data.travelers];
+ next[i] = { ...t, gender: e.target.value as 'male' | 'female' | 'other' };
+ setData({ ...data, travelers: next });
+ }}
+ className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ >
+ <option value="male">Male</option>
+ <option value="female">Female</option>
+ <option value="other">Other</option>
+ </select>
+ </div>
+ <div>
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>ID proof (Aadhaar/Passport)</label>
+ <div className="flex items-center gap-2">
+ <input
+ value={t.idProof}
+ onChange={(e) => {
+ const next = [...data.travelers];
+ next[i] = { ...t, idProof: e.target.value };
+ setData({ ...data, travelers: next });
+ }}
+ className="flex-1 px-3 py-2 text-xs rounded-lg focus:outline-none"
+ placeholder="Last 4 digits"
+ maxLength={12}
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ <button type="button" className="px-3 py-2 text-[11px] rounded-lg inline-flex items-center gap-1.5" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
+ <Upload className="w-3 h-3" /> Upload
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
 
-            {/* ─── Step 5: Review & Pay ─── */}
-            {step === 5 && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Review & pay</h2>
-                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Verify details before payment.</p>
-                </div>
-                <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Trip summary</p>
-                  <div className="space-y-2 text-xs">
-                    <Row label="Yatra" value={yatra.title} />
-                    <Row label="Start date" value={data.startDate || '—'} />
-                    <Row label="Travelers" value={`${data.travelersCount} adults`} />
-                    <Row label="Pickup" value={data.pickupCity} />
-                    <Row label="Package" value={selectedPackage?.name ?? '—'} />
-                  </div>
-                </div>
+ {/* ─── Step 5: Review & Pay ─── */}
+ {step === 5 && (
+ <div className="space-y-4">
+ <div>
+ <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Review & pay</h2>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Verify details before payment.</p>
+ </div>
+ <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Trip summary</p>
+ <div className="space-y-2 text-xs">
+ <Row label="Yatra" value={yatra.title} />
+ <Row label="Start date" value={data.startDate || '—'} />
+ <Row label="Travelers" value={`${data.travelersCount} adults`} />
+ <Row label="Pickup" value={data.pickupCity} />
+ <Row label="Package" value={selectedPackage?.name ?? '—'} />
+ </div>
+ </div>
 
-                <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Price breakdown</p>
-                  <div className="space-y-2 text-xs">
-                    {priceBreakdown.lines.map((l, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <span style={{ color: 'var(--color-text-muted)' }}>{l.label}</span>
-                        <span className="font-medium" style={{ color: 'var(--color-text)' }}>{formatINR(l.amount)}</span>
-                      </div>
-                    ))}
-                    <div className="pt-2 mt-2 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
-                      <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Total</span>
-                      <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</span>
-                    </div>
-                  </div>
-                </div>
+ <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Price breakdown</p>
+ <div className="space-y-2 text-xs">
+ {priceBreakdown.lines.map((l, i) => (
+ <div key={i} className="flex items-center justify-between">
+ <span style={{ color: 'var(--color-text-muted)' }}>{l.label}</span>
+ <span className="font-medium" style={{ color: 'var(--color-text)' }}>{formatINR(l.amount)}</span>
+ </div>
+ ))}
+ <div className="pt-2 mt-2 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
+ <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Total</span>
+ <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</span>
+ </div>
+ </div>
+ </div>
 
-                <button
-                  onClick={handlePay}
-                  disabled={submitting}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg text-white btn-press disabled:opacity-60"
-                  style={{ background: 'var(--color-primary)' }}
-                >
-                  {submitting ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Processing payment...</>
-                  ) : (
-                    <><CreditCard className="w-4 h-4" /> Pay {formatINR(priceBreakdown.total)} with Razorpay</>
-                  )}
-                </button>
-                <p className="text-[11px] text-center" style={{ color: 'var(--color-text-faint)' }}>
-                  Secured by Razorpay · UPI / Card / Netbanking · Mock payment for demo
-                </p>
-              </div>
-            )}
+ <button
+ onClick={handlePay}
+ disabled={submitting}
+ className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg text-white btn-press disabled:opacity-60"
+ style={{ background: 'var(--color-primary)' }}
+ >
+ {submitting ? (
+ <><Loader2 className="w-4 h-4 animate-spin" /> Processing payment...</>
+ ) : (
+ <><CreditCard className="w-4 h-4" /> Pay {formatINR(priceBreakdown.total)} with Razorpay</>
+ )}
+ </button>
+ <p className="text-[11px] text-center" style={{ color: 'var(--color-text-faint)' }}>
+ Secured by Razorpay · UPI / Card / Netbanking · Mock payment for demo
+ </p>
+ </div>
+ )}
 
-            {/* Navigation */}
-            <div className="mt-6 flex items-center justify-between">
-              <button
-                onClick={() => setStep(Math.max(1, step - 1))}
-                disabled={step === 1}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg disabled:opacity-40"
-                style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" /> Back
-              </button>
-              {step < 5 && (
-                <button
-                  onClick={() => setStep(step + 1)}
-                  disabled={!canContinue}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white disabled:opacity-40 btn-press"
-                  style={{ background: 'var(--color-primary)' }}
-                >
-                  Continue <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
+ {/* Navigation */}
+ <div className="mt-6 flex items-center justify-between">
+ <button
+ onClick={() => setStep(Math.max(1, step - 1))}
+ disabled={step === 1}
+ className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg disabled:opacity-40"
+ style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ >
+ <ChevronLeft className="w-3.5 h-3.5" /> Back
+ </button>
+ {step < 5 && (
+ <button
+ onClick={() => setStep(step + 1)}
+ disabled={!canContinue}
+ className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white disabled:opacity-40 btn-press"
+ style={{ background: 'var(--color-primary)' }}
+ >
+ Continue <ChevronRight className="w-3.5 h-3.5" />
+ </button>
+ )}
+ </div>
+ </div>
 
-          {/* Sidebar summary */}
-          <aside className="md:col-span-1 h-fit sticky top-20">
-            <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <div className="aspect-[16/10] overflow-hidden">
-                <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-              </div>
-              <div className="p-4">
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{yatra.title}</h3>
-                <div className="flex items-center gap-3 mt-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {yatra.durationDays} days</span>
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {yatra.places.length} stops</span>
-                </div>
+ {/* Sidebar summary */}
+ <aside className="md:col-span-1 h-fit sticky top-20">
+ <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <div className="aspect-[16/10] overflow-hidden">
+ <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ </div>
+ <div className="p-4">
+ <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{yatra.title}</h3>
+ <div className="flex items-center gap-3 mt-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {yatra.durationDays} days</span>
+ <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {yatra.places.length} stops</span>
+ </div>
 
-                {selectedPackage && (
-                  <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--color-divider)' }}>
-                    <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{selectedPackage.tier}</p>
-                    <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{selectedPackage.name}</p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Estimated total</span>
-                      <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</span>
-                    </div>
-                    <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>For {data.travelersCount} travelers, incl. GST</p>
-                  </div>
-                )}
+ {selectedPackage && (
+ <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--color-divider)' }}>
+ <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{selectedPackage.tier}</p>
+ <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{selectedPackage.name}</p>
+ <div className="mt-3 flex items-center justify-between">
+ <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Estimated total</span>
+ <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</span>
+ </div>
+ <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>For {data.travelersCount} travelers, incl. GST</p>
+ </div>
+ )}
 
-                <div className="mt-4 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-                  <Users className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
-                  <span>{data.travelersCount} {data.travelersCount === 1 ? 'traveler' : 'travelers'}</span>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </div>
-    </div>
-  );
+ <div className="mt-4 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <Users className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
+ <span>{data.travelersCount} {data.travelersCount === 1 ? 'traveler' : 'travelers'}</span>
+ </div>
+ </div>
+ </div>
+ </aside>
+ </div>
+ </div>
+ </div>
+ );
 }
 
 function AddOnRow({
-  icon: Icon,
-  title,
-  desc,
-  price,
-  active,
-  onToggle,
+ icon: Icon,
+ title,
+ desc,
+ price,
+ active,
+ onToggle,
 }: {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  title: string;
-  desc: string;
-  price: string;
-  active: boolean;
-  onToggle: () => void;
+ icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+ title: string;
+ desc: string;
+ price: string;
+ active: boolean;
+ onToggle: () => void;
 }) {
-  return (
-    <button
-      onClick={onToggle}
-      className="w-full text-left rounded-xl p-4 flex items-start gap-3 transition-all"
-      style={{
-        background: active ? 'var(--color-primary-highlight)' : 'var(--color-surface)',
-        border: `2px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
-      }}
-    >
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: active ? 'var(--color-primary)' : 'var(--color-surface-offset)' }}>
-        <Icon className="w-4 h-4" style={{ color: active ? '#fff' : 'var(--color-text-muted)' }} />
-      </div>
-      <div className="flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{title}</p>
-          <span className="text-xs font-semibold" style={{ color: 'var(--color-primary)' }}>{price}</span>
-        </div>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{desc}</p>
-      </div>
-      <div
-        className="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
-        style={{
-          background: active ? 'var(--color-primary)' : 'transparent',
-          borderColor: active ? 'var(--color-primary)' : 'var(--color-border)',
-        }}
-      >
-        {active && <Check className="w-3 h-3 text-white" />}
-      </div>
-    </button>
-  );
+ return (
+ <button
+ onClick={onToggle}
+ className="w-full text-left rounded-xl p-4 flex items-start gap-3 transition-all"
+ style={{
+ background: active ? 'var(--color-primary-highlight)' : 'var(--color-surface)',
+ border: `2px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
+ }}
+ >
+ <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: active ? 'var(--color-primary)' : 'var(--color-surface-offset)' }}>
+ <Icon className="w-4 h-4" style={{ color: active ? '#fff' : 'var(--color-text-muted)' }} />
+ </div>
+ <div className="flex-1">
+ <div className="flex items-center justify-between gap-2">
+ <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{title}</p>
+ <span className="text-xs font-semibold" style={{ color: 'var(--color-primary)' }}>{price}</span>
+ </div>
+ <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{desc}</p>
+ </div>
+ <div
+ className="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
+ style={{
+ background: active ? 'var(--color-primary)' : 'transparent',
+ borderColor: active ? 'var(--color-primary)' : 'var(--color-border)',
+ }}
+ >
+ {active && <Check className="w-3 h-3 text-white" />}
+ </div>
+ </button>
+ );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-      <span className="font-medium" style={{ color: 'var(--color-text)' }}>{value}</span>
-    </div>
-  );
+ return (
+ <div className="flex items-center justify-between">
+ <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+ <span className="font-medium" style={{ color: 'var(--color-text)' }}>{value}</span>
+ </div>
+ );
 }

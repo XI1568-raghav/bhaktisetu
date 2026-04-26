@@ -13,20 +13,20 @@ import dynamic from 'next/dynamic';
  * The layout is a Server Component and can't call `ssr: false` directly.
  */
 const CartDrawer = dynamic(() => import('./CartDrawer'), {
-  ssr: false,
-  loading: () => null,
+ ssr: false,
+ loading: () => null,
 });
 
 const LiveChatWidget = dynamic(() => import('./LiveChatWidget'), {
-  ssr: false,
-  loading: () => null,
+ ssr: false,
+ loading: () => null,
 });
 
 export function DeferredClientWidgets() {
-  return (
-    <>
-      <CartDrawer />
-      <LiveChatWidget />
-    </>
-  );
+ return (
+ <>
+ <CartDrawer />
+ <LiveChatWidget />
+ </>
+ );
 }
