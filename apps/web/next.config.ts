@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 // Cloudflare next-on-pages dev platform — hooks up Cloudflare bindings in `next dev`.
 // Only run in development so production builds stay lean.
@@ -79,4 +80,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry plugin — bundles the client config, uploads source maps when
+// SENTRY_AUTH_TOKEN is set, and adds the global error handler. No-op at
+// runtime if NEXT_PUBLIC_SENTRY_DSN is unset, so dev builds stay lean.
+export default withSentryConfig(nextConfig, {
+  // Suppress noisy build-time logs unless we actually want them.
+  silent: true,
+  // Only upload source maps in production, and only if a Sentry auth
+  // token is present. CF Pages env doesn't set this by default, so this
+  // gracefully degrades to "no source map upload" — runtime errors are
+  // still captured, just with minified stack traces.
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Don't fail the build if upload is impossible.
+  errorHandler: (err) => {
+    console.warn('[sentry] source map upload skipped:', err.message);
+  },
+});
