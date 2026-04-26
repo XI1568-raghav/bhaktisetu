@@ -30,9 +30,9 @@ Guidelines:
 SCRIPTURE CONTEXT (use these references when relevant):
 {scriptureContext}`;
 
-const SANKALP_SYSTEM_PROMPT = `You are an expert Sanskrit scholar who generates traditional sankalp (sacred prayer intention) texts for Hindu pujas. Generate the sankalp in proper Sanskrit following traditional format:
+const SANKALP_SYSTEM_PROMPT = `You are an expert Sanskrit scholar who generates traditional sankalp (sacred prayer intention) texts for Hindu pujas.
 
-The sankalp should include:
+The sankalp must include:
 1. Time reference (tithi, nakshatra, masa, samvatsara)
 2. Place reference
 3. Gotra of the devotee
@@ -40,7 +40,15 @@ The sankalp should include:
 5. Purpose of the puja
 6. Deity being worshipped
 
-Provide both Devanagari Sanskrit text and its transliteration. Keep it authentic and traditional.`;
+Reply STRICTLY as a single JSON object with EXACTLY these four string keys, no other keys, no markdown, no commentary:
+{
+  "sanskrit": "<the full sankalp in Devanagari Sanskrit, multi-line>",
+  "transliteration": "<IAST transliteration of the sanskrit, multi-line>",
+  "englishTranslation": "<English translation, 2-4 sentences>",
+  "hindiTranslation": "<हिन्दी translation, 2-4 sentences>"
+}
+
+Do not wrap the JSON in code fences. Do not explain anything outside the JSON.`;
 
 const TRANSLATION_SYSTEM_PROMPT = `You are a precise translator specializing in spiritual and devotional content. Translate the given text accurately while preserving:
 - Spiritual terminology (keep terms like dharma, karma, puja, mantra in original with brief explanation if needed)
@@ -108,12 +116,14 @@ export class AiService {
       dbAvailable = false;
     }
 
-    // Demo users have synthetic ids like "demo-devotee" that aren't UUIDs;
-    // any attempt to write them to the aiConversation.userId UUID column
-    // will throw at Prisma. Skip DB persistence for them — chat still works
-    // perfectly, conversation just isn't saved across reloads.
-    const isDemoUser = typeof userId === 'string' && userId.startsWith('demo-');
-    if (isDemoUser) {
+    // Demo / anonymous users have synthetic ids ("demo-devotee", "anon-xyz")
+    // that aren't UUIDs; any attempt to write them to the aiConversation.userId
+    // UUID column will throw at Prisma. Skip DB persistence for them — chat
+    // still works perfectly, conversation just isn't saved across reloads.
+    const isSyntheticUser =
+      typeof userId === 'string' &&
+      (userId.startsWith('demo-') || userId.startsWith('anon-'));
+    if (isSyntheticUser) {
       dbAvailable = false;
     }
 
@@ -297,21 +307,35 @@ Date: ${dateStr}
 Location: ${city}
 Purpose: ${purpose || 'General well-being and divine blessings'}
 
-Please provide:
-1. Full sankalp text in Devanagari Sanskrit
-2. Transliteration in IAST
-3. English meaning/translation
-4. Brief guidance on how to recite it`;
+Reply with the four-key JSON object only.`;
 
-    const sankalp = await generateText({
+    const raw = await generateText({
       systemPrompt: SANKALP_SYSTEM_PROMPT,
       userMessage: prompt,
-      maxTokens: 800,
+      maxTokens: 1200,
       model: MODELS.SONNET,
     });
 
+    // Try to parse the LLM's JSON. Models occasionally wrap it in code fences
+    // or prose despite instructions; pull out the first {...} block.
+    let parsed: { sanskrit?: string; transliteration?: string; englishTranslation?: string; hindiTranslation?: string } = {};
+    try {
+      const cleaned = raw
+        .replace(/^[\s\S]*?\{/, '{')
+        .replace(/\}[\s\S]*$/, '}');
+      parsed = JSON.parse(cleaned);
+    } catch {
+      // Fallback: keep the whole text in `sanskrit` so the user still sees something
+      parsed = { sanskrit: raw, transliteration: '', englishTranslation: '', hindiTranslation: '' };
+    }
+
     return {
-      sankalp,
+      sanskrit: parsed.sanskrit ?? '',
+      transliteration: parsed.transliteration ?? '',
+      englishTranslation: parsed.englishTranslation ?? '',
+      hindiTranslation: parsed.hindiTranslation ?? '',
+      // Keep these for backwards-compat with anyone reading raw text
+      sankalp: parsed.sanskrit ?? raw,
       devoteeName,
       gotra,
       pujaName,

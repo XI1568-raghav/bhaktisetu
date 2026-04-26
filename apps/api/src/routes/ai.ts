@@ -4,10 +4,24 @@ import { aiService } from '../services/ai.service.js';
 
 export async function aiRoutes(server: FastifyInstance) {
   // ─── POST /chat — Streaming SSE chat response ──────────────────────────────
+  // Auth is optional. Logged-in users get conversation history persisted;
+  // anonymous users (Ask Pandit on the public site) still get full streaming
+  // answers — they just don't accumulate a history.
 
-  server.post('/chat', {
-    preHandler: [authenticateUser],
-  }, async (request, reply) => {
+  server.post('/chat', async (request, reply) => {
+    // Best-effort auth: if a Bearer token is present, populate currentUser
+    // so demo / real users get history. If absent or invalid, fall through
+    // and treat as anonymous (synthetic id `anon-<random>` so DB writes are
+    // bypassed by the demo-/anon- guard in ai.service.ts).
+    const authHeader = request.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        await authenticateUser(request, reply);
+      } catch {
+        // ignore — user remains anonymous
+      }
+    }
+
     const { message, conversationId, language } = request.body as {
       message?: string;
       conversationId?: string;
@@ -22,7 +36,7 @@ export async function aiRoutes(server: FastifyInstance) {
       return reply.status(400).send({ error: 'Message too long. Maximum 2000 characters.' });
     }
 
-    const userId = request.currentUser!.id;
+    const userId = request.currentUser?.id ?? `anon-${Date.now().toString(36)}`;
 
     try {
       const { stream, conversationId: convId, citations, saveConversation } = await aiService.chat({
@@ -194,10 +208,10 @@ export async function aiRoutes(server: FastifyInstance) {
   });
 
   // ─── POST /generate-sankalp — Sankalp generation ───────────────────────────
+  // No auth required — sankalp is stateless content generation, available to
+  // anonymous visitors during the booking flow.
 
-  server.post('/generate-sankalp', {
-    preHandler: [authenticateUser],
-  }, async (request, reply) => {
+  server.post('/generate-sankalp', async (request, reply) => {
     const {
       devoteeName,
       gotra,
