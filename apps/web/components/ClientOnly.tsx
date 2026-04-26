@@ -11,13 +11,13 @@ import { useEffect, useState, type ReactNode } from 'react';
  * Pass a placeholder if you need to reserve layout space.
  */
 export function ClientOnly({
-  children,
-  fallback = null,
+ children,
+ fallback = null,
 }: {
-  children: ReactNode;
-  fallback?: ReactNode;
+ children: ReactNode;
+ fallback?: ReactNode;
 }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  return <>{mounted ? children : fallback}</>;
+ const [mounted, setMounted] = useState(false);
+ useEffect(() => setMounted(true), []);
+ return <>{mounted ? children : fallback}</>;
 }

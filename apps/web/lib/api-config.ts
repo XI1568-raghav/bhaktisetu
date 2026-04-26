@@ -8,10 +8,10 @@
  * write `${API_BASE_URL}/ai/chat` without thinking about the prefix.
  */
 function resolve(): string {
-  const candidate = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
-  return candidate.endsWith('/api/v1')
-    ? candidate
-    : `${candidate.replace(/\/$/, '')}/api/v1`;
+ const candidate = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+ return candidate.endsWith('/api/v1')
+ ? candidate
+ : `${candidate.replace(/\/$/, '')}/api/v1`;
 }
 
 export const API_BASE_URL = resolve();
