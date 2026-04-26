@@ -108,6 +108,15 @@ export class AiService {
       dbAvailable = false;
     }
 
+    // Demo users have synthetic ids like "demo-devotee" that aren't UUIDs;
+    // any attempt to write them to the aiConversation.userId UUID column
+    // will throw at Prisma. Skip DB persistence for them — chat still works
+    // perfectly, conversation just isn't saved across reloads.
+    const isDemoUser = typeof userId === 'string' && userId.startsWith('demo-');
+    if (isDemoUser) {
+      dbAvailable = false;
+    }
+
     if (!dbAvailable) {
       conversation = {
         id: conversationId || `conv-${Date.now()}`,
@@ -372,9 +381,9 @@ Please provide:
       mantraOfMoment = 'Om — The primordial sound for deep peace and restful sleep';
     }
 
-    // User-specific personalization if userId provided
+    // User-specific personalization if userId provided (skip for demo ids)
     let userContext: { nakshatra?: string; rashi?: string; gotra?: string } = {};
-    if (userId) {
+    if (userId && !userId.startsWith('demo-')) {
       try {
         const user = await prisma.user.findUnique({
           where: { id: userId },
@@ -470,6 +479,10 @@ Please provide:
    * List conversations for a user.
    */
   async listConversations(userId: string, page = 1, limit = 20) {
+    // Demo users don't persist conversations — return empty list.
+    if (userId.startsWith('demo-')) {
+      return { conversations: [], total: 0, page, limit };
+    }
     const skip = (page - 1) * limit;
 
     const [conversations, total] = await Promise.all([
@@ -495,6 +508,7 @@ Please provide:
    * Get a single conversation by ID.
    */
   async getConversation(conversationId: string, userId: string) {
+    if (userId.startsWith('demo-')) return null;
     const conversation = await prisma.aiConversation.findFirst({
       where: { id: conversationId, userId },
     });
@@ -514,6 +528,7 @@ Please provide:
    * Delete a conversation.
    */
   async deleteConversation(conversationId: string, userId: string) {
+    if (userId.startsWith('demo-')) return false;
     const conversation = await prisma.aiConversation.findFirst({
       where: { id: conversationId, userId },
     });
