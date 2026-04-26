@@ -119,7 +119,7 @@ export async function astrologyRoutes(server: FastifyInstance) {
         .send({ error: 'birthDate, birthTime, and birthPlace are required.' });
     }
 
-    const kundli = astrologyService.getKundli(birthDate, birthTime, birthPlace, name);
+    const kundli = await astrologyService.getKundliAsync(birthDate, birthTime, birthPlace, name);
     return { kundli };
   });
 

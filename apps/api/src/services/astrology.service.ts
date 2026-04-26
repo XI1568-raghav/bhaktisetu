@@ -781,6 +781,114 @@ class AstrologyService {
     };
   }
 
+  // ── Vedic compute helpers ─────────────────────────────────────────────────
+  // These approximations use the tropical Sun-sign date ranges shifted
+  // ~24 days for Vedic (sidereal) zodiac. Good enough for a kundli summary;
+  // a real ephemeris would refine planet positions to arc-seconds.
+  private rashiFromBirthDate(birthDate: string): { rashi: string; rashiHindi: string; rashiEnglish: string } {
+    const d = new Date(birthDate);
+    if (isNaN(d.getTime())) {
+      return { rashi: 'Mesha', rashiHindi: 'मेष', rashiEnglish: 'Aries' };
+    }
+    const month = d.getUTCMonth() + 1;
+    const day = d.getUTCDate();
+    // Vedic (sidereal) zodiac dates — Lahiri ayanamsa ~24 days behind tropical
+    const ranges: [number, number, number, number, string, string, string][] = [
+      [4, 14, 5, 14, 'Mesha', 'मेष', 'Aries'],
+      [5, 15, 6, 14, 'Vrishabha', 'वृषभ', 'Taurus'],
+      [6, 15, 7, 15, 'Mithuna', 'मिथुन', 'Gemini'],
+      [7, 16, 8, 16, 'Karka', 'कर्क', 'Cancer'],
+      [8, 17, 9, 16, 'Simha', 'सिंह', 'Leo'],
+      [9, 17, 10, 17, 'Kanya', 'कन्या', 'Virgo'],
+      [10, 18, 11, 16, 'Tula', 'तुला', 'Libra'],
+      [11, 17, 12, 15, 'Vrishchika', 'वृश्चिक', 'Scorpio'],
+      [12, 16, 1, 14, 'Dhanu', 'धनु', 'Sagittarius'],
+      [1, 15, 2, 12, 'Makara', 'मकर', 'Capricorn'],
+      [2, 13, 3, 13, 'Kumbha', 'कुंभ', 'Aquarius'],
+      [3, 14, 4, 13, 'Meena', 'मीन', 'Pisces'],
+    ];
+    for (const [m1, d1, m2, d2, rashi, hindi, english] of ranges) {
+      const after = month > m1 || (month === m1 && day >= d1);
+      const before = month < m2 || (month === m2 && day <= d2);
+      // Handle wrap-around (Dhanu: Dec→Jan)
+      const wraps = m1 > m2;
+      if (wraps ? (after || before) : (after && before)) {
+        return { rashi, rashiHindi: hindi, rashiEnglish: english };
+      }
+    }
+    return { rashi: 'Mesha', rashiHindi: 'मेष', rashiEnglish: 'Aries' };
+  }
+
+  /** Approximate nakshatra from birth date — 27 nakshatras across the year */
+  private nakshatraFromBirthDate(birthDate: string): { nakshatra: string; nakshatraHindi: string } {
+    const NAKSHATRAS: [string, string][] = [
+      ['Ashwini', 'अश्विनी'], ['Bharani', 'भरणी'], ['Krittika', 'कृत्तिका'],
+      ['Rohini', 'रोहिणी'], ['Mrigashira', 'मृगशिरा'], ['Ardra', 'आर्द्रा'],
+      ['Punarvasu', 'पुनर्वसु'], ['Pushya', 'पुष्य'], ['Ashlesha', 'आश्लेषा'],
+      ['Magha', 'मघा'], ['Purva Phalguni', 'पूर्व फाल्गुनी'], ['Uttara Phalguni', 'उत्तर फाल्गुनी'],
+      ['Hasta', 'हस्त'], ['Chitra', 'चित्रा'], ['Swati', 'स्वाति'],
+      ['Vishakha', 'विशाखा'], ['Anuradha', 'अनुराधा'], ['Jyeshtha', 'ज्येष्ठा'],
+      ['Mula', 'मूल'], ['Purva Ashadha', 'पूर्वाषाढ़ा'], ['Uttara Ashadha', 'उत्तराषाढ़ा'],
+      ['Shravana', 'श्रवण'], ['Dhanishta', 'धनिष्ठा'], ['Shatabhisha', 'शतभिषा'],
+      ['Purva Bhadrapada', 'पूर्व भाद्रपद'], ['Uttara Bhadrapada', 'उत्तर भाद्रपद'], ['Revati', 'रेवती'],
+    ];
+    const d = new Date(birthDate);
+    const dayOfYear = isNaN(d.getTime())
+      ? 0
+      : Math.floor((d.getTime() - new Date(d.getUTCFullYear(), 0, 0).getTime()) / 86400000);
+    const idx = Math.floor((dayOfYear / 365) * 27) % 27;
+    return { nakshatra: NAKSHATRAS[idx]![0], nakshatraHindi: NAKSHATRAS[idx]![1] };
+  }
+
+  /**
+   * Async kundli — uses Groq (when configured) to write a personalized
+   * reading. Falls back to deterministic hardcoded values if LLM unavailable.
+   */
+  async getKundliAsync(
+    birthDate: string,
+    birthTime: string,
+    birthPlace: string,
+    name?: string,
+  ): Promise<KundliResult & { aiReading?: string }> {
+    const base = this.getKundli(birthDate, birthTime, birthPlace, name);
+    // Replace the hardcoded rashi/nakshatra with date-derived ones
+    const r = this.rashiFromBirthDate(birthDate);
+    const n = this.nakshatraFromBirthDate(birthDate);
+    const enriched: KundliResult & { aiReading?: string } = {
+      ...base,
+      rashi: r.rashi,
+      rashiHindi: r.rashiHindi,
+      nakshatra: n.nakshatra,
+      nakshatraHindi: n.nakshatraHindi,
+      moonSign: `${r.rashi} (${r.rashiEnglish})`,
+    };
+
+    if (DEMO_MODE) return enriched;
+
+    try {
+      const systemPrompt =
+        'You are a Vedic astrologer (jyotishi). Given a birth date, time, place, ' +
+        'rashi (moon sign), and nakshatra, write a brief, respectful Kundli reading ' +
+        'in 4 short paragraphs covering: 1) Personality traits 2) Career & finance ' +
+        '3) Relationships 4) Spiritual guidance. Keep it under 300 words. Use plain ' +
+        'language; sprinkle a few Sanskrit terms with English translation in brackets.';
+      const userMessage =
+        `Name: ${name ?? 'Devotee'}\nBirth date: ${birthDate}\nBirth time: ${birthTime}` +
+        `\nBirth place: ${birthPlace}\nRashi: ${r.rashi} (${r.rashiHindi})` +
+        `\nNakshatra: ${n.nakshatra} (${n.nakshatraHindi})`;
+      const aiReading = await generateText({
+        systemPrompt,
+        userMessage,
+        maxTokens: 600,
+        model: MODELS.SONNET,
+      });
+      enriched.aiReading = aiReading;
+    } catch {
+      // LLM failed — return the chart without an AI reading rather than 500
+    }
+    return enriched;
+  }
+
   // ── Generate Kundli (hardcoded sample) ────────────────────────────────────
   getKundli(
     birthDate: string,
