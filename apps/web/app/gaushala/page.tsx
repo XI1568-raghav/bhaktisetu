@@ -504,28 +504,28 @@ export default function GaushalaPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
             {adoptionPlans.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative bg-white rounded-xl border p-6 flex flex-col transition-all duration-300 hover:shadow-md ${
+                className={`relative bg-white rounded-xl border ${plan.popular ? 'pt-9 pb-6 px-6' : 'p-6'} flex flex-col transition-all duration-300 hover:shadow-md ${
                   plan.popular
                     ? "border-saffron-300 shadow-sm ring-1 ring-saffron-200"
                     : "border-surface-200 hover:border-surface-300"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-4 py-1 bg-saffron-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-full">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="px-3 py-1 bg-saffron-600 text-white text-[10px] font-semibold uppercase tracking-wider rounded-full">
                       Most Popular
                     </span>
                   </div>
                 )}
                 <div className="mb-4">
-                  <p className="text-sm font-medium text-surface-500 mb-1">
+                  <p className="text-sm font-medium text-surface-500 mb-1" style={{ fontFamily: 'var(--font-noto-devanagari)' }}>
                     {plan.nameHindi}
                   </p>
-                  <h3 className="text-xl font-bold text-surface-900">
+                  <h3 className="text-lg font-semibold tracking-tight text-surface-800" style={{ fontFamily: 'var(--font-display)' }}>
                     {plan.name}
                   </h3>
                 </div>
