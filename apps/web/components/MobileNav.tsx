@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Menu,
@@ -60,6 +61,11 @@ const supportLinks = [
  */
 export function MobileNav() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Lock body scroll while drawer is open
   useEffect(() => {
@@ -81,34 +87,30 @@ export function MobileNav() {
     return () => window.removeEventListener('keydown', onEsc);
   }, [open]);
 
-  return (
-    <>
-      <button
-        type="button"
-        aria-label={open ? 'Close menu' : 'Open menu'}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="md:hidden p-2 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
-      >
-        {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+  // Render the drawer + backdrop as a portal at document.body root.
+  // Without this, the drawer is a child of <header> which has z-50 and a
+  // backdrop-blur — that creates a stacking context the drawer can't
+  // escape, so it renders BEHIND main content on some browsers.
+  const drawer =
+    mounted && (
+      <>
+        {/* Backdrop — z-[100] to clear the LiveChatWidget FAB (z-[60]),
+            any in-page sticky elements, and the fixed header (z-50). */}
+        {open && (
+          <div
+            className="md:hidden fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+        )}
 
-      {/* Backdrop */}
-      {open && (
-        <div
-          className="md:hidden fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm transition-opacity"
-          onClick={() => setOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Drawer */}
-      <aside
-        className={`md:hidden fixed top-0 right-0 bottom-0 w-[86%] max-w-[360px] z-[60] bg-[#faf9f6] shadow-2xl transition-transform duration-200 ease-out flex flex-col ${
-          open ? 'translate-x-0' : 'translate-x-full pointer-events-none'
-        }`}
-        aria-hidden={!open}
-      >
+        {/* Drawer */}
+        <aside
+          className={`md:hidden fixed top-0 right-0 bottom-0 w-[86%] max-w-[360px] z-[101] bg-[#faf9f6] shadow-2xl transition-transform duration-200 ease-out flex flex-col ${
+            open ? 'translate-x-0' : 'translate-x-full pointer-events-none'
+          }`}
+          aria-hidden={!open}
+        >
         <div className="flex items-center justify-between px-4 h-14 border-b border-surface-200/60 shrink-0">
           <span className="text-[15px] font-semibold text-surface-800 tracking-tight">
             Menu
@@ -185,6 +187,21 @@ export function MobileNav() {
           </NavSection>
         </div>
       </aside>
+      </>
+    );
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="md:hidden p-2 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
+      >
+        {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+      {drawer && createPortal(drawer, document.body)}
     </>
   );
 }
