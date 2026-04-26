@@ -80,11 +80,18 @@ Once any env var is set, the corresponding code branch activates (existing code 
 
 Full env reference: `docs/env-vars.md`.
 
-## Known blockers (as of latest sweep)
+## Verification gotchas — read before debugging
 
-1. **Cloudflare Pages production branch** — CF Pages is still serving an older build that doesn't include the latest web changes (NotificationPrompt, PostHog wiring, full layout updates). Most likely cause: CF Pages' "Production branch" setting in **Settings → Builds & deployments** is still `main`, not `rebrand/darshya`. Two `git push` triggers (commits `bf8361d` then empty `966fb46`) had no effect on CF Pages, confirming it's not watching this branch. Resolution: set production branch to `rebrand/darshya` in CF Pages dashboard, retry deployment.
+**Don't probe server-rendered HTML for client-only integrations.** The following are intentionally absent from `curl https://darshya.online` because they only run in the browser:
+- `NotificationPrompt` — initial state is `hidden`, returns `null` until `useEffect` decides to render (~4s after paint, signed-in users only)
+- PostHog `posthog-js` — loaded via `posthog.init()` in a `useEffect`
+- Sentry browser SDK — initialized in instrumentation file, runs after hydration
 
-2. **Embeddings backfill** — Cohere key is on Render, pgvector migration applied to Supabase, but backfill script not yet run locally. Until then semantic search returns `mode:"like-fallback"`. Run from `apps/api/` with `pnpm exec tsx scripts/backfill-embeddings.ts`.
+To verify these are live, open the site in a browser and check **DevTools Network tab** for outbound requests to `posthog.com`, `sentry.io`, `cloudflareinsights.com`. Don't grep static HTML.
+
+## Currently in-flight
+
+- **Render redeploy of `3beeb43`** — pushed ~5 min ago, watching for `mode:"vector"` to flip on. If it doesn't appear within 10 min, Render auto-deploy may be broken; manually trigger from dashboard.
 
 ## Day 3 activation status (live values held by user)
 
