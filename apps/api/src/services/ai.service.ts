@@ -319,12 +319,33 @@ Reply with the four-key JSON object only.`;
 
     // Try to parse the LLM's JSON. Models occasionally wrap it in code fences
     // or prose despite instructions; pull out the first {...} block.
+    // Llama 3.3 sometimes double-wraps: {"sanskrit": "<full json as a string>"}.
+    // Unwrap that pathological case before reading fields.
     let parsed: { sanskrit?: string; transliteration?: string; englishTranslation?: string; hindiTranslation?: string } = {};
     try {
       const cleaned = raw
         .replace(/^[\s\S]*?\{/, '{')
         .replace(/\}[\s\S]*$/, '}');
       parsed = JSON.parse(cleaned);
+
+      // Detect double-wrap: the value of a key looks like another full JSON object
+      const possibleNested = parsed.sanskrit ?? '';
+      if (
+        typeof possibleNested === 'string' &&
+        possibleNested.trim().startsWith('{') &&
+        possibleNested.includes('"sanskrit"')
+      ) {
+        try {
+          const inner = JSON.parse(
+            possibleNested
+              .replace(/^[\s\S]*?\{/, '{')
+              .replace(/\}[\s\S]*$/, '}'),
+          );
+          parsed = { ...parsed, ...inner };
+        } catch {
+          // leave as-is
+        }
+      }
     } catch {
       // Fallback: keep the whole text in `sanskrit` so the user still sees something
       parsed = { sanskrit: raw, transliteration: '', englishTranslation: '', hindiTranslation: '' };
