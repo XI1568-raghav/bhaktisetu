@@ -19,11 +19,7 @@ Adding a new integration? Match this contract.
 | `MAGIC_LINK_SECRET` | `routes/magic-link.ts` | required for HMAC; falls back to dev secret with warning |
 | `RESEND_API_KEY` | `lib/email.ts` | `sendEmail` returns `{skipped:true}`; magic-link route returns `devLink` for manual testing |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | `routes/donations.ts` + booking | `isDemoPayment=true`; signature verification skipped, demo orderId returned |
-| `R2_ACCOUNT_ID` | `lib/r2.ts` + `routes/media.ts` | `r2.enabled=false`; upload endpoint returns 503 |
-| `R2_ACCESS_KEY_ID` | same | same |
-| `R2_SECRET_ACCESS_KEY` | same | same |
-| `R2_BUCKET` | same | defaults to `darshya-media` |
-| `R2_PUBLIC_BASE_URL` | same | uploads return key only; presign on demand |
+| `STORAGE_BUCKET` | `lib/r2.ts` (Supabase Storage adapter) | defaults to `darshya-media` if unset; bucket must exist in Supabase Storage |
 | `GROQ_API_KEY` | `services/ai.service.ts` | AI endpoints unavailable |
 | `SUPABASE_URL` | core auth | **required** — auth broken without it |
 | `SUPABASE_SERVICE_ROLE_KEY` | core auth | **required** |

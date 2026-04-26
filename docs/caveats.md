@@ -4,6 +4,14 @@ These look like obvious cleanup targets. They aren't. Each entry has a "why" —
 
 ## Architectural
 
+### `lib/r2.ts` no longer wraps Cloudflare R2
+
+Despite the filename, `apps/api/src/lib/r2.ts` is now a **Supabase Storage** adapter. We swapped at launch because R2 requires a card on file even for the free tier; Supabase Storage is included in the existing project.
+
+**Why kept the name**: every callsite (`uploadToR2`, `presignR2Upload`, `r2.enabled`, etc.) would need a rename. Risk-vs-benefit said no. Treat the `r2` / `R2` naming as historical.
+**Don't**: try to "fix" this by reintroducing the AWS S3 SDK or `@aws-sdk/*` imports — they were removed deliberately.
+**Migration plan**: if R2 ever becomes desirable (e.g., need >1 GB free), the swap is in `lib/r2.ts` only — no callsite changes.
+
 ### Donations are in-memory (`donationStore: Map`)
 
 `apps/api/src/routes/donations.ts` keeps donation state in a process-local `Map`. Survives until process restart.
