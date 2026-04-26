@@ -160,8 +160,13 @@ export default function AstrologerChatPage() {
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLTextAreaElement>(null);
 
- const scrollToBottom = useCallback(() => {
- messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+ // Scroll the messages container only — never the page. Use scrollTop on
+ // the parent so Next.js's window scroll isn't triggered.
+ const messagesScrollRef = useRef<HTMLDivElement>(null);
+ const scrollToBottom = useCallback((smooth = true) => {
+ const el = messagesScrollRef.current;
+ if (!el) return;
+ el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
  }, []);
 
  useEffect(() => {
@@ -447,9 +452,12 @@ How may I guide you today?`,
  }
 
  // ─── Chat Interface ───────────────────────────────────────────────────────
+ // Height: 100dvh minus the global 56px nav bar so the chat fills the
+ // viewport without creating a second outer scrollbar. Inner messages div
+ // is the only scroll context.
 
  return (
- <div className="flex flex-col h-screen">
+ <div className="flex flex-col" style={{ height: 'calc(100dvh - 56px)' }}>
  {/* Header */}
  <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-surface-200 shadow-sm shrink-0">
  <div className="flex items-center gap-3">
@@ -484,7 +492,7 @@ How may I guide you today?`,
  </header>
 
  {/* Messages */}
- <div className="flex-1 overflow-y-auto px-4 py-6 bg-surface-50">
+ <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-6 bg-surface-50 overscroll-contain">
  <div className="max-w-3xl mx-auto space-y-4">
  {messages.map(msg => (
  <div
@@ -542,7 +550,7 @@ How may I guide you today?`,
  placeholder="Ask about marriage, career, health, remedies..."
  rows={1}
  disabled={isStreaming}
- className="w-full resize-none rounded-xl border border-surface-300 px-4 py-3 text-sm text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 disabled:opacity-50 transition-colors"
+ className="w-full resize-none rounded-xl border border-surface-300 px-4 py-3 text-sm text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 disabled:opacity-50 transition-colors [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
  style={{ maxHeight: '120px' }}
  />
  </div>
