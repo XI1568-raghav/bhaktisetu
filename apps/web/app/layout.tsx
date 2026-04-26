@@ -27,6 +27,7 @@ import { AuthProvider } from "../lib/auth-context";
 import { CartProvider } from "../components/CartContext";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
+import { GlobalSearch } from "../components/GlobalSearch";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { getTempleHero } from "../lib/images";
@@ -278,12 +279,7 @@ export default function RootLayout({
 
             {/* Right side */}
             <div className="flex items-center gap-1.5 ml-auto md:ml-0 shrink-0">
-              <button
-                aria-label="Search"
-                className="p-2 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-md transition-colors"
-              >
-                <Search className="w-[18px] h-[18px]" />
-              </button>
+              <GlobalSearch />
               <NavCartButton />
               <div className="hidden sm:block">
                 <NavAuthButton />
@@ -387,7 +383,7 @@ export default function RootLayout({
                   <MapPin className="w-3.5 h-3.5" /> Bengaluru, India
                 </span>
               </div>
-              <p className="text-sm text-surface-600">
+              <p className="text-sm text-surface-600" suppressHydrationWarning>
                 &copy; {new Date().getFullYear()} Darshya. All rights
                 reserved.
               </p>

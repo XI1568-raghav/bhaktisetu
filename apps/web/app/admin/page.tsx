@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
           <h1 className="text-lg font-semibold text-surface-800">Dashboard</h1>
           <p className="text-sm text-surface-500 mt-0.5">Platform overview and key metrics</p>
         </div>
-        <span className="text-xs text-surface-400">
+        <span className="text-xs text-surface-400" suppressHydrationWarning>
           Last updated: {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>

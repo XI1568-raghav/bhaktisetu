@@ -343,11 +343,24 @@ export default function AstrologerDetailPage() {
                             : 'border-surface-200 text-surface-400 cursor-not-allowed'
                         }`}
                         disabled={!astrologer.isOnline || astrologer.isBusy}
-                        onClick={() => {
+                        onClick={async () => {
                           if (!astrologer.isOnline || astrologer.isBusy) return;
-                          alert(
-                            `Voice call with ${astrologer.name} requires the Darshya mobile app — install Expo Go and sign in to start a call. Web call support is coming soon.`,
-                          );
+                          // Generate a deterministic-but-unique room id and
+                          // navigate the user into the Jitsi room. The
+                          // astrologer would receive the same link via
+                          // their dashboard in production.
+                          const roomId =
+                            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                              ? crypto.randomUUID().replace(/-/g, '').slice(0, 24)
+                              : Math.random().toString(36).slice(2, 14) +
+                                Math.random().toString(36).slice(2, 14);
+                          const slug = astrologer.name
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/(^-|-$)/g, '')
+                            .slice(0, 24);
+                          const room = `darshya-astrologer-${slug}-${roomId}`;
+                          window.location.href = `/consultation/${room}?provider=${encodeURIComponent(astrologer.name)}`;
                         }}
                       >
                         <Phone className="w-4 h-4" />
