@@ -28,6 +28,8 @@ import { CartProvider } from "../components/CartContext";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
+import { MobileNav } from "../components/MobileNav";
+import { MoreDropdown } from "../components/MoreDropdown";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { getTempleHero } from "../lib/images";
@@ -245,27 +247,7 @@ export default function RootLayout({
  })}
 
  {/* More dropdown */}
- <div className="relative group">
- <button className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors whitespace-nowrap">
- More
- <ChevronDown className="w-3.5 h-3.5" />
- </button>
- <div className="absolute top-full left-0 mt-1.5 w-48 bg-white rounded-lg border border-surface-200/60 shadow-lg shadow-surface-900/5 py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
- {moreLinks.map((link) => {
- const Icon = link.icon;
- return (
- <Link
- key={link.href}
- href={link.href}
- className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-surface-600 hover:text-surface-900 hover:bg-surface-50 transition-colors"
- >
- <Icon className="w-4 h-4 text-surface-400" />
- {link.label}
- </Link>
- );
- })}
- </div>
- </div>
+ <MoreDropdown />
 
  {/* Ask Pandit — highlighted CTA */}
  <a
@@ -284,12 +266,7 @@ export default function RootLayout({
  <div className="hidden sm:block">
  <NavAuthButton />
  </div>
- <button
- aria-label="Open menu"
- className="md:hidden p-2 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-md transition-colors"
- >
- <Menu className="w-5 h-5" />
- </button>
+ <MobileNav />
  </div>
  </nav>
  </header>

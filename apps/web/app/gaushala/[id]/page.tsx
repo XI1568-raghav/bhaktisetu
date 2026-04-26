@@ -598,14 +598,15 @@ export default async function CowDetailPage({
  </div>
 
  {/* ── Sidebar (right col) ─────────────────────────────────────────── */}
- {/* self-start prevents the column from stretching to match the left
- col's height, which would otherwise let the sticky card cover
- content beneath it once the user scrolls past its natural end.
- max-h on the sticky card ensures it never exceeds viewport. */}
+ {/* Removed lg:sticky on the Adopt card. With sticky, the card stayed
+ pinned while the gaushala-details card scrolled UP behind it,
+ visually overlapping what should have been visible. The page isn't
+ long enough to need a sticky CTA — the sidebar simply scrolls with
+ the rest of the content. */}
  <div className="space-y-6 self-start">
- {/* Quick adopt CTA (sticky on desktop) */}
+ {/* Quick adopt CTA */}
  {!cow.isAdopted && (
- <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl p-6 text-white shadow-lg lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+ <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl p-6 text-white shadow-lg">
  <h3 className="text-lg font-bold mb-2">
  Adopt {cow.name} Today
  </h3>
