@@ -2,12 +2,13 @@
 
 import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
+import { Beef, Heart, IndianRupee, HandHeart, Plus, Settings, Users } from 'lucide-react';
 
 const stats = [
-  { label: 'Total Cows',        value: '247',    change: '+3 this month',   emoji: '🐄', color: 'bg-amber-50 border-amber-200'   },
-  { label: 'Active Donors',     value: '1,842',  change: '+128 this month', emoji: '❤️', color: 'bg-rose-50 border-rose-200'     },
-  { label: 'Monthly Donations', value: '₹3.2L',  change: '+12% vs last',   emoji: '💰', color: 'bg-green-50 border-green-200'   },
-  { label: 'Volunteers Today',  value: '34',     change: '6 new signups',  emoji: '🙏', color: 'bg-blue-50 border-blue-200'     },
+  { label: 'Total Cows',        value: '247',    change: '+3 this month',   Icon: Beef,        iconClass: 'text-amber-600' },
+  { label: 'Active Donors',     value: '1,842',  change: '+128 this month', Icon: Heart,       iconClass: 'text-rose-600'  },
+  { label: 'Monthly Donations', value: '₹3.2L',  change: '+12% vs last',    Icon: IndianRupee, iconClass: 'text-green-600' },
+  { label: 'Volunteers Today',  value: '34',     change: '6 new signups',   Icon: HandHeart,   iconClass: 'text-blue-600'  },
 ];
 
 const recentDonations = [
@@ -38,8 +39,8 @@ export default function GaushalaDashboard() {
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-amber-900">Jai Gau Mata 🐄</h1>
-        <p className="text-amber-700 mt-1 text-sm">
+        <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Jai Gau Mata</h1>
+        <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
           Welcome back, {user?.fullName}. Here&apos;s your gaushala overview.
         </p>
       </div>
@@ -47,15 +48,17 @@ export default function GaushalaDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className={`bg-white rounded-2xl p-5 shadow-sm border ${s.color}`}>
+          <div key={s.label} className="rounded-xl p-5 border" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
             <div className="flex items-start justify-between mb-3">
-              <span className="text-2xl">{s.emoji}</span>
-              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-100">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${s.iconClass}`} style={{ background: 'var(--color-primary-highlight)' }}>
+                <s.Icon className="w-4.5 h-4.5" />
+              </div>
+              <span className="text-xs px-2 py-1 rounded-full" style={{ color: 'var(--color-text-muted)', background: 'var(--color-surface-offset)' }}>
                 {s.change}
               </span>
             </div>
-            <p className="text-2xl font-bold text-amber-900">{s.value}</p>
-            <p className="text-sm text-amber-600 mt-1">{s.label}</p>
+            <p className="text-xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{s.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -111,23 +114,23 @@ export default function GaushalaDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-amber-900 to-amber-800 rounded-2xl p-6 text-white">
-        <h2 className="font-semibold mb-4">Quick Actions</h2>
+      <div className="rounded-xl p-6 border" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+        <h2 className="font-semibold mb-4 text-sm" style={{ color: 'var(--color-text)' }}>Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Record Donation', href: '/gaushala-portal/donations', emoji: '💰' },
-            { label: 'Add New Cow',     href: '/gaushala-portal/cows',      emoji: '🐄' },
-            { label: 'Manage Volunteers', href: '/gaushala-portal/volunteers', emoji: '🙏' },
-            { label: 'Update Profile',  href: '/gaushala-portal/profile',   emoji: '⚙️' },
+            { label: 'Record Donation',   href: '/gaushala-portal/donations',  Icon: IndianRupee },
+            { label: 'Add New Cow',       href: '/gaushala-portal/cows',       Icon: Plus },
+            { label: 'Manage Volunteers', href: '/gaushala-portal/volunteers', Icon: Users },
+            { label: 'Update Profile',    href: '/gaushala-portal/profile',    Icon: Settings },
           ].map((a) => (
             <Link
               key={a.label}
               href={a.href}
-              className="flex flex-col items-center gap-2 p-3 bg-white/10 hover:bg-white/20
-                         rounded-xl text-center transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg text-center transition-colors border"
+              style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)' }}
             >
-              <span className="text-2xl">{a.emoji}</span>
-              <span className="text-xs font-medium text-amber-100">{a.label}</span>
+              <a.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{a.label}</span>
             </Link>
           ))}
         </div>

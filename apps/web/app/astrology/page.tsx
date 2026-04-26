@@ -508,22 +508,21 @@ export default function AstrologyPage() {
                   <span className="text-lg">{'₹'}{astrologer.perMinuteRate}</span>
                   <span className="text-xs font-normal text-surface-400">/min</span>
                 </div>
-                <button
+                <span
                   className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                     astrologer.isOnline && !astrologer.isBusy
-                      ? 'bg-saffron-600 text-white shadow-sm hover:shadow-md hover:bg-saffron-700'
+                      ? 'bg-saffron-600 text-white shadow-sm group-hover:shadow-md group-hover:bg-saffron-700'
                       : astrologer.isBusy
-                      ? 'bg-surface-200 text-surface-500 cursor-wait'
-                      : 'bg-surface-100 text-surface-400 cursor-not-allowed'
+                      ? 'bg-surface-200 text-surface-500'
+                      : 'bg-surface-100 text-surface-400'
                   }`}
-                  onClick={(e) => { if (!astrologer.isOnline || astrologer.isBusy) e.preventDefault(); }}
                 >
                   {astrologer.isOnline && !astrologer.isBusy
                     ? 'Chat Now'
                     : astrologer.isBusy
                     ? 'Busy'
                     : 'Offline'}
-                </button>
+                </span>
               </div>
             </Link>
           ))}

@@ -276,11 +276,12 @@ export default function WellnessPage() {
               {upcomingSessions.map((session, i) => {
                 const badge = getCategoryBadgeColor(session.category);
                 return (
-                  <div
+                  <Link
                     key={session.id}
+                    href={`/wellness/${session.category}`}
                     data-reveal="up"
                     data-delay={String((i % 3) + 1)}
-                    className="p-4 rounded-xl card-hover transition-all"
+                    className="block p-4 rounded-xl card-hover transition-all"
                     style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
                   >
                     <div className="flex items-center justify-between mb-3">
@@ -300,16 +301,20 @@ export default function WellnessPage() {
                     <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
                       {session.instructor}
                     </p>
-                    <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {session.date}
+                    <div className="flex items-center justify-between gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> {session.date}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {session.time}
+                        </span>
+                      </div>
+                      <span className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                        Book →
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {session.time}
-                      </span>
-                      <span>{session.duration}</span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

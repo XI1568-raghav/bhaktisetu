@@ -319,23 +319,36 @@ export default function AstrologerDetailPage() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
                           astrologer.isOnline && !astrologer.isBusy
                             ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-md shadow-emerald-500/25 hover:shadow-lg hover:from-emerald-600 hover:to-green-600'
                             : 'bg-surface-100 text-surface-400 cursor-not-allowed'
                         }`}
                         disabled={!astrologer.isOnline || astrologer.isBusy}
+                        onClick={() => {
+                          if (!astrologer.isOnline || astrologer.isBusy) return;
+                          // Take user to the AI chat surface, pre-filled with this astrologer's name
+                          window.location.href = `/astrology/chat?astrologer=${encodeURIComponent(astrologer.name)}`;
+                        }}
                       >
                         <MessageCircle className="w-4 h-4" />
                         Chat Now
                       </button>
                       <button
+                        type="button"
                         className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border-2 transition-all duration-200 ${
                           astrologer.isOnline && !astrologer.isBusy
                             ? 'border-saffron-200 text-saffron-600 hover:bg-saffron-50'
                             : 'border-surface-200 text-surface-400 cursor-not-allowed'
                         }`}
                         disabled={!astrologer.isOnline || astrologer.isBusy}
+                        onClick={() => {
+                          if (!astrologer.isOnline || astrologer.isBusy) return;
+                          alert(
+                            `Voice call with ${astrologer.name} requires the Darshya mobile app — install Expo Go and sign in to start a call. Web call support is coming soon.`,
+                          );
+                        }}
                       >
                         <Phone className="w-4 h-4" />
                         Call

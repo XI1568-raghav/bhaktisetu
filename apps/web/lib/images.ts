@@ -248,6 +248,24 @@ export const IMAGES = {
       gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Grishneshwar_temple_in_Aurangabad_district.jpg/1280px-Grishneshwar_temple_in_Aurangabad_district.jpg')],
     },
 
+    // ── Aliases for slugs used in temple-details.ts ──
+    // The rich detail file uses different slug names; map them to the right photos.
+    'baidyanath-dham': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg/1280px-Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg/1280px-Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg/1280px-Baidyanath_temple_and_temple_complex%2C_Deoghar_04.jpg')],
+    },
+    'tirupati-balaji': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Tirumala_090615.jpg/1280px-Tirumala_090615.jpg')],
+    },
+    'vaishno-devi': {
+      hero: wiki('https://upload.wikimedia.org/wikipedia/commons/0/09/Vaishno_Devi_Bhawan.jpg'),
+      thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/0/09/Vaishno_Devi_Bhawan.jpg'),
+      gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/0/09/Vaishno_Devi_Bhawan.jpg')],
+    },
+
     // ── Char Dham (Yamunotri, Gangotri — Kedarnath/Badrinath above) ──
     'yamunotri': {
       hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Yamunotri_temple_and_ashram.jpg/1280px-Yamunotri_temple_and_ashram.jpg'),
@@ -350,17 +368,19 @@ export const IMAGES = {
   },
 
   // ── Gaushala / Cow Seva ────────────────────────────────────
+  // Real Wikimedia photos of Indian cows + actual gaushalas. The previous
+  // Unsplash photos showed wrong species (pigs, European cattle).
   gaushala: {
-    'gir-cow': u('photo-1570042225831-d98fa7577f1e', 800, 600),
-    'sahiwal-cow': u('photo-1570042225831-d98fa7577f1e', 800, 600),
-    'tharparkar-cow': u('photo-1516467508483-a7212febe31a', 800, 600),
-    'red-sindhi-cow': u('photo-1570042225831-d98fa7577f1e', 800, 600),
-    'cow-feeding': u('photo-1570042225831-d98fa7577f1e', 800, 600),
-    'cow-shelter': u('photo-1516467508483-a7212febe31a', 800, 600),
-    'calf': u('photo-1570042225831-d98fa7577f1e', 600, 600),
-    'cow-field': uWide('photo-1516467508483-a7212febe31a'),
-    'gaushala-hero': uWide('photo-1516467508483-a7212febe31a'),
-    'cow-care': u('photo-1570042225831-d98fa7577f1e', 800, 600),
+    'gir-cow': wiki('https://upload.wikimedia.org/wikipedia/commons/8/84/Gir_cow.jpg'),
+    'sahiwal-cow': wiki('https://upload.wikimedia.org/wikipedia/commons/5/52/Sahiwala_01.JPG'),
+    'tharparkar-cow': wiki('https://upload.wikimedia.org/wikipedia/commons/d/d5/Tharparkar_01.JPG'),
+    'red-sindhi-cow': wiki('https://upload.wikimedia.org/wikipedia/commons/6/60/Red_Sindhi_Cow_at_Pakistan.jpg'),
+    'cow-feeding': wiki('https://upload.wikimedia.org/wikipedia/commons/3/36/Surabhi_Cow_Vrindavan.jpg'),
+    'cow-shelter': wiki('https://upload.wikimedia.org/wikipedia/commons/3/33/Goshala-ISKCON.jpg'),
+    'calf': wiki('https://upload.wikimedia.org/wikipedia/commons/1/13/A_beautiful_gaze.jpg'),
+    'cow-field': wiki('https://upload.wikimedia.org/wikipedia/commons/2/28/A_beautiful_photo_of_cows_grazing_in_the_field.jpg'),
+    'gaushala-hero': wiki('https://upload.wikimedia.org/wikipedia/commons/3/33/Goshala-ISKCON.jpg'),
+    'cow-care': wiki('https://upload.wikimedia.org/wikipedia/commons/a/ae/ILRI%2C_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan%2C_India.jpg'),
   },
 
   // ── Spiritual Content (aartis, chalisas, mantras, bhajans) ──

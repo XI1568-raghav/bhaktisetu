@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, UserPlus, Phone, Mail, MapPin, Calendar } from 'lucide-react';
+import { Search, UserPlus, Phone, Mail, MapPin, Calendar, HandHeart, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 
 const volunteers = [
   { id: 'V001', name: 'Ramesh Gupta',   role: 'Caretaker',      phone: '+91 98765 11111', location: 'Mathura',   joined: '2023-01-10', status: 'Active',    shifts: 'Mon–Fri, 6am–12pm', tasks: ['Feeding', 'Cleaning'] },
@@ -20,10 +20,10 @@ const roleColors: Record<string, string> = {
 };
 
 const stats = [
-  { label: 'Total Volunteers', value: '34',   emoji: '🙏' },
-  { label: 'Active This Month', value: '28',  emoji: '✅' },
-  { label: 'Hours Contributed', value: '420', emoji: '⏱️' },
-  { label: 'New This Month',    value: '6',   emoji: '🌟' },
+  { label: 'Total Volunteers', value: '34',   Icon: HandHeart },
+  { label: 'Active This Month', value: '28',  Icon: CheckCircle2 },
+  { label: 'Hours Contributed', value: '420', Icon: Clock },
+  { label: 'New This Month',    value: '6',   Icon: Sparkles },
 ];
 
 export default function VolunteersPage() {
@@ -44,12 +44,12 @@ export default function VolunteersPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-amber-900">Volunteers</h1>
-          <p className="text-amber-700 text-sm mt-1">
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Volunteers</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             {volunteers.filter((v) => v.status === 'Active').length} active volunteers serving the gaushala
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors text-white" style={{ background: 'var(--color-primary)' }}>
           <UserPlus className="w-4 h-4" />
           Add Volunteer
         </button>
@@ -58,10 +58,10 @@ export default function VolunteersPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-amber-100">
-            <p className="text-2xl mb-1">{s.emoji}</p>
-            <p className="text-2xl font-bold text-amber-900">{s.value}</p>
-            <p className="text-xs text-amber-600 mt-0.5">{s.label}</p>
+          <div key={s.label} className="rounded-xl p-5 border" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+            <s.Icon className="w-5 h-5 mb-3" style={{ color: 'var(--color-primary)' }} />
+            <p className="text-xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{s.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{s.label}</p>
           </div>
         ))}
       </div>
