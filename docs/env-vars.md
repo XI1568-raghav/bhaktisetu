@@ -47,7 +47,7 @@ Adding a new integration? Match this contract.
 | `NEXT_PUBLIC_SENTRY_DSN` | `sentry.client.config.ts` | client SDK not initialised |
 | `NEXT_PUBLIC_POSTHOG_KEY` | `components/Analytics.tsx` | analytics disabled |
 | `NEXT_PUBLIC_POSTHOG_HOST` | same | defaults to `us.i.posthog.com` |
-| `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | `components/CloudflareAnalytics.tsx` | beacon script not rendered |
+| `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | `components/CloudflareAnalytics.tsx` | manual injection path. **Usually unnecessary** — when `darshya.online` is proxied through Cloudflare (orange cloud), the beacon is auto-injected at the edge with no client-side code needed. Only set this if a page is served outside Cloudflare's proxy. |
 | `NEXT_PUBLIC_API_URL` | `lib/api-config.ts` | defaults to `http://localhost:4000` |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | booking + donation pages | falls back to `rzp_test_demo` |
 

@@ -65,7 +65,7 @@ Once any env var is set, the corresponding code branch activates (existing code 
 |---|---|---|
 | Sign up at sentry.io, create project | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | code ✅ — needs key |
 | Sign up at posthog.com | `NEXT_PUBLIC_POSTHOG_KEY` | code ✅ — needs key |
-| Cloudflare → Web Analytics | `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | code ✅ — needs key |
+| Cloudflare → Web Analytics | (none — auto-injected by Cloudflare proxy) | ✅ already live: site is proxied through Cloudflare so beacon is auto-injected at the edge. Manual env var only needed for non-proxied pages. |
 | Sign up at resend.com + verify darshya.online domain | `RESEND_API_KEY` | code ✅ — needs key |
 | Supabase Storage → create bucket `darshya-media` (public, 25 MB cap) | `STORAGE_BUCKET` (defaults to `darshya-media`) — reuses existing `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | swapped from Cloudflare R2 (R2 needs a card on file). `lib/r2.ts` is now a Supabase Storage adapter — see `docs/caveats.md` |
 | Razorpay KYC (or test mode) | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | code ✅ — needs keys |
@@ -79,6 +79,12 @@ Once any env var is set, the corresponding code branch activates (existing code 
 | Booking push notifications | wired in `services/booking.service.ts` | code ✅ — fires on `confirmed` / `priest_assigned` / `video_uploaded` / `cancelled` transitions; no-op when VAPID unset |
 
 Full env reference: `docs/env-vars.md`.
+
+## Known blockers (as of latest sweep)
+
+1. **Cloudflare Pages production branch** — CF Pages is still serving an older build that doesn't include the latest web changes (NotificationPrompt, PostHog wiring, full layout updates). Most likely cause: CF Pages' "Production branch" setting in **Settings → Builds & deployments** is still `main`, not `rebrand/darshya`. Two `git push` triggers (commits `bf8361d` then empty `966fb46`) had no effect on CF Pages, confirming it's not watching this branch. Resolution: set production branch to `rebrand/darshya` in CF Pages dashboard, retry deployment.
+
+2. **Embeddings backfill** — Cohere key is on Render, pgvector migration applied to Supabase, but backfill script not yet run locally. Until then semantic search returns `mode:"like-fallback"`. Run from `apps/api/` with `pnpm exec tsx scripts/backfill-embeddings.ts`.
 
 ## Day 3 activation status (live values held by user)
 

@@ -19,7 +19,33 @@
  * Time: ~30-60 seconds for the typical seeded dataset.
  */
 
-import 'dotenv/config';
+// Load .env manually (no dotenv dep) — works on Node 22+ which has the
+// --env-file flag, plus a hand-rolled fallback for older Node versions
+// and tsx invocations that don't pass --env-file.
+import { readFileSync } from 'node:fs';
+import { resolve as resolvePath, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
+for (const candidate of ['.env', '.env.local']) {
+  const path = resolvePath(here, '..', candidate);
+  try {
+    const raw = readFileSync(path, 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+      if (!m) continue;
+      const key = m[1];
+      let val = m[2];
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (!process.env[key]) process.env[key] = val;
+    }
+  } catch {
+    // file missing — fine, env vars may already be exported in shell
+  }
+}
+
 import { prisma } from '../src/lib/prisma.js';
 import { generateEmbeddingsBatch, toPgVector, embeddings } from '../src/lib/embeddings.js';
 
@@ -39,6 +65,11 @@ async function backfillTable(
       chunk.map((r) => r.text),
       'search_document',
     );
+    const vecsReturned = vecs.filter((v) => v !== null).length;
+    if (vecsReturned === 0) {
+      console.error(`  ! Cohere returned 0/${chunk.length} embeddings for batch starting at row ${i}.`);
+      console.error(`  ! Likely causes: invalid COHERE_API_KEY, rate limit, network. Run a debug call below.`);
+    }
     for (let j = 0; j < chunk.length; j++) {
       const vec = vecs[j];
       if (!vec) {
@@ -48,14 +79,15 @@ async function backfillTable(
       }
       const lit = toPgVector(vec);
       try {
+        // id columns are uuid; Prisma sends $1 as text, so cast explicitly.
         await prisma.$executeRawUnsafe(
-          `update ${table} set embedding = '${lit}'::vector where id = $1`,
+          `update ${table} set embedding = '${lit}'::vector where id = $1::uuid`,
           chunk[j].id,
         );
         filled++;
       } catch (err) {
         failed++;
-        console.error(`  ! failed for ${table}/${chunk[j].id}:`, (err as Error).message);
+        console.error(`  ! DB update failed for ${table}/${chunk[j].id}:`, (err as Error).message);
       }
     }
     process.stdout.write(`  ${table}: ${Math.min(i + BATCH, rows.length)} / ${rows.length}\r`);
@@ -70,7 +102,33 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('Backfilling embeddings via Cohere embed-multilingual-v3.0 (1024 dims)…\n');
+  // Sanity-check Cohere with one direct call so we surface the real error
+  // (auth/rate-limit/network) instead of a silent count of failures.
+  console.log('Pinging Cohere…');
+  const probe = await fetch('https://api.cohere.com/v1/embed', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.COHERE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'embed-multilingual-v3.0',
+      texts: ['hello'],
+      input_type: 'search_document',
+      embedding_types: ['float'],
+    }),
+  });
+  const probeBody = await probe.text();
+  if (!probe.ok) {
+    console.error(`Cohere probe failed: HTTP ${probe.status}`);
+    console.error(`Response: ${probeBody.slice(0, 500)}`);
+    console.error('\nFix the issue above and re-run. Common fixes:');
+    console.error('  - 401: COHERE_API_KEY is invalid → re-copy from cohere.com dashboard');
+    console.error('  - 404 model: model name changed → check cohere docs');
+    console.error('  - 429: rate-limited → wait 60s and re-run');
+    process.exit(1);
+  }
+  console.log('Cohere OK. Proceeding with backfill…\n');
 
   // ── content_items ─────────────────────────────────────────────────
   // Cast to any for the embedding column since Prisma client doesn't
