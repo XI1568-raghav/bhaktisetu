@@ -80,21 +80,26 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Sentry plugin — bundles the client config, uploads source maps when
-// SENTRY_AUTH_TOKEN is set, and adds the global error handler. No-op at
-// runtime if NEXT_PUBLIC_SENTRY_DSN is unset, so dev builds stay lean.
-export default withSentryConfig(nextConfig, {
-  // Suppress noisy build-time logs unless we actually want them.
-  silent: true,
-  // Only upload source maps in production, and only if a Sentry auth
-  // token is present. CF Pages env doesn't set this by default, so this
-  // gracefully degrades to "no source map upload" — runtime errors are
-  // still captured, just with minified stack traces.
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  // Don't fail the build if upload is impossible.
-  errorHandler: (err) => {
-    console.warn('[sentry] source map upload skipped:', err.message);
-  },
-});
+// Sentry plugin wraps the config only when running outside Cloudflare
+// Pages. The wrapper injects code into every page bundle, which trips
+// @cloudflare/next-on-pages "duplicated identifier" detection during
+// the Vercel-build → Cloudflare adaptation step. The browser-side SDK
+// is initialised through instrumentation-client.ts on every page anyway,
+// so we don't lose runtime monitoring — only the build-time source map
+// upload + automatic route instrumentation, which we don't need yet.
+//
+// Detection: CF Pages sets CF_PAGES=1 in the build env. Locally and on
+// other hosts (Vercel, Render, etc.) the wrapper still runs.
+const isCloudflarePagesBuild = process.env.CF_PAGES === '1';
+
+export default isCloudflarePagesBuild
+  ? nextConfig
+  : withSentryConfig(nextConfig, {
+      silent: true,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      errorHandler: (err) => {
+        console.warn('[sentry] source map upload skipped:', err.message);
+      },
+    });
