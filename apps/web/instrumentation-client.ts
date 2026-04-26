@@ -26,3 +26,7 @@ if (dsn) {
     ],
   });
 }
+
+// Required by Sentry to instrument client-side navigations in App Router.
+// Picked up automatically when this file is named instrumentation-client.ts.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
