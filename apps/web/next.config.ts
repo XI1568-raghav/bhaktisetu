@@ -79,11 +79,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Browser-side Sentry deferred — @sentry/nextjs drags in @sentry/node +
-// OpenTelemetry + @fastify/otel which @cloudflare/next-on-pages can't
-// dedupe across routes ("duplicated identifier" abort). Server-side
-// Sentry on Render API is enough for now (already catching real bugs
-// like the priest-auth UUID crash). When we want browser error capture
-// later, add @sentry/browser as a small dep — that one is tree-shakable
-// and pure-browser.
+// Browser-side Sentry deferred — even just having @sentry/nextjs in
+// dependencies caused Next 15 to auto-bundle @sentry/node + OpenTelemetry
+// into every route, which @cloudflare/next-on-pages can't dedupe across
+// route bundles ("duplicated identifier" abort). The package was removed
+// from apps/web/package.json entirely. Server-side Sentry on the Render
+// API (uses @sentry/node directly) is unaffected and still catching
+// real bugs.
+//
+// Future: when browser error capture is wanted, add @sentry/browser as
+// a small standalone dep — that package is pure-browser and tree-shakes
+// cleanly, no Next plugin involvement.
 export default nextConfig;

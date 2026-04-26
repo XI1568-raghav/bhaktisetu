@@ -1,8 +1,6 @@
 {
   "extends": "@poojly/tsconfig/nextjs.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": [
         "./src/*"
