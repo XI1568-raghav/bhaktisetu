@@ -1,5 +1,6 @@
 import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { notifyUser } from '../routes/notifications.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,37 @@ export interface UserBookingsFilters {
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+function pushMessageFor(
+  status: BookingStatus,
+  pujaName: string,
+  templeName: string,
+): { title: string; body: string } | null {
+  switch (status) {
+    case 'confirmed':
+      return {
+        title: 'Booking confirmed',
+        body: `Your ${pujaName} at ${templeName} is confirmed. We'll send video proof after the puja.`,
+      };
+    case 'priest_assigned':
+      return {
+        title: 'Priest assigned',
+        body: `A priest has been assigned for your ${pujaName} at ${templeName}.`,
+      };
+    case 'video_uploaded':
+      return {
+        title: 'Video proof ready',
+        body: `Your ${pujaName} video is ready to view.`,
+      };
+    case 'cancelled':
+      return {
+        title: 'Booking cancelled',
+        body: `Your ${pujaName} at ${templeName} has been cancelled.`,
+      };
+    default:
+      return null;
+  }
 }
 
 export interface SlotAvailability {
@@ -249,8 +281,20 @@ export class BookingService {
         temple: { select: { id: true, name: true, slug: true } },
         pujaType: { select: { id: true, name: true, slug: true } },
         priest: { select: { id: true, displayName: true } },
+        user: { select: { id: true } },
       },
     });
+
+    // Push notification on key transitions. Fire-and-forget — push failure
+    // must never break booking flow. notifyUser no-ops if VAPID is unset
+    // or the user has no subscriptions.
+    const message = pushMessageFor(newStatus, updated.pujaType.name, updated.temple.name);
+    if (message) {
+      void notifyUser(updated.user.id, {
+        ...message,
+        url: `/dashboard/bookings/${updated.id}`,
+      }).catch(() => undefined);
+    }
 
     return updated;
   }

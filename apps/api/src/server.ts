@@ -1,3 +1,8 @@
+import { initSentry, captureException } from './lib/sentry.js';
+// Initialise Sentry as the very first thing — must come before any
+// imports that might throw, so errors during module load are captured.
+initSentry();
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -26,6 +31,13 @@ import { yatraRoutes } from './routes/yatra.js';
 import { supportRoutes } from './routes/support.js';
 import { searchRoutes } from './routes/search.js';
 import { consultationRoutes } from './routes/consultation.js';
+import { magicLinkRoutes } from './routes/magic-link.js';
+import { donationRoutes } from './routes/donations.js';
+import { mediaRoutes } from './routes/media.js';
+import { whatsappOtpRoutes } from './routes/whatsapp-otp.js';
+import { notificationRoutes } from './routes/notifications.js';
+import { semanticSearchRoutes } from './routes/semantic-search.js';
+import { cronRoutes } from './routes/cron.js';
 
 const server = Fastify({
   logger: {
@@ -87,16 +99,37 @@ async function bootstrap() {
   await server.register(supportRoutes, { prefix: '/api/v1/support' });
   await server.register(searchRoutes, { prefix: '/api/v1/search' });
   await server.register(consultationRoutes, { prefix: '/api/v1/consultation' });
+  await server.register(magicLinkRoutes, { prefix: '/api/v1/auth/magic-link' });
+  await server.register(whatsappOtpRoutes, { prefix: '/api/v1/auth/whatsapp-otp' });
+  await server.register(donationRoutes, { prefix: '/api/v1/donations' });
+  await server.register(mediaRoutes, { prefix: '/api/v1/media' });
+  await server.register(notificationRoutes, { prefix: '/api/v1/notifications' });
+  await server.register(semanticSearchRoutes, { prefix: '/api/v1/semantic-search' });
+  await server.register(cronRoutes, { prefix: '/api/v1/cron' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
   const host = process.env.HOST || '0.0.0.0';
+
+  // Forward uncaught Fastify errors to Sentry (no-op when SENTRY_DSN unset)
+  server.setErrorHandler((err, _req, reply) => {
+    server.log.error(err);
+    captureException(err);
+    if (!reply.sent) {
+      const e = err as { statusCode?: number; name?: string; message?: string };
+      reply.code(e.statusCode ?? 500).send({
+        error: e.name ?? 'InternalServerError',
+        message: e.message ?? 'Something went wrong',
+      });
+    }
+  });
 
   try {
     await server.listen({ port, host });
     server.log.info(`Darshya API running at http://${host}:${port}`);
   } catch (err) {
     server.log.error(err);
+    captureException(err);
     process.exit(1);
   }
 }
