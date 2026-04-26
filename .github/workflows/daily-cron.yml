@@ -1,0 +1,33 @@
+name: Daily cron (panchang refresh + reminders)
+
+# Render free tier has no cron. GitHub Actions does it for free,
+# 2,000 minutes/month included. We only burn ~5 sec/day so this is
+# essentially zero cost.
+
+on:
+  schedule:
+    # 5:30 IST = 00:00 UTC (IST is UTC+5:30). GH cron is UTC.
+    - cron: '0 0 * * *'
+  workflow_dispatch: {} # allow manual run from Actions tab
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hit /api/v1/cron/daily
+        env:
+          CRON_AUTH_TOKEN: ${{ secrets.CRON_AUTH_TOKEN }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: |
+          if [ -z "$CRON_AUTH_TOKEN" ] || [ -z "$API_BASE_URL" ]; then
+            echo "::error::Missing CRON_AUTH_TOKEN or API_BASE_URL secret"
+            exit 1
+          fi
+          # -f makes curl exit non-zero on HTTP 4xx/5xx so the job fails
+          # visibly rather than silently swallowing errors.
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $CRON_AUTH_TOKEN" \
+            -H "Content-Type: application/json" \
+            "$API_BASE_URL/api/v1/cron/daily" \
+            --max-time 240

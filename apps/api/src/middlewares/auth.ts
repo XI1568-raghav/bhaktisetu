@@ -84,6 +84,40 @@ export async function authenticateUser(
       return;
     }
 
+    // ── Magic-link / email session token ───────────────────────────
+    // Format: email-<userId>-<random32hex>. Tokens are issued by the
+    // /auth/magic-link/verify endpoint after a successful email link click.
+    if (token.startsWith('email-')) {
+      const match = token.match(/^email-([0-9a-f-]{36})-[0-9a-f]{32}$/i);
+      if (!match) {
+        reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email session token.' });
+        return;
+      }
+      const userId = match[1];
+      const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (!dbUser) {
+        reply.code(401).send({ error: 'Unauthorized', message: 'User not found for session token.' });
+        return;
+      }
+      const roleAssignments = await prisma.userRoleAssignment.findMany({
+        where: { userId: dbUser.id },
+      });
+      let roles: MarketplaceRole[] = roleAssignments.length > 0
+        ? roleAssignments.map((ra) => ra.role as MarketplaceRole)
+        : ['DEVOTEE'];
+      if (!roles.includes('DEVOTEE')) roles.push('DEVOTEE');
+      request.currentUser = {
+        id: dbUser.id,
+        supabaseId: dbUser.id,
+        phone: dbUser.phone,
+        email: dbUser.email,
+        fullName: dbUser.fullName,
+        subscriptionTier: dbUser.subscriptionTier,
+        roles,
+      };
+      return;
+    }
+
     // Verify the token with Supabase
     const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
 

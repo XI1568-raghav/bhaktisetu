@@ -30,6 +30,9 @@ import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNav } from "../components/MobileNav";
 import { MoreDropdown } from "../components/MoreDropdown";
+import { Analytics } from "../components/Analytics";
+import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
+import { NotificationPrompt } from "../components/NotificationPrompt";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { getTempleHero } from "../lib/images";
@@ -211,6 +214,9 @@ export default function RootLayout({
  href={getTempleHero('kashi-vishwanath')}
  fetchPriority="high"
  />
+
+ {/* Cloudflare Web Analytics — privacy-first, no cookies. No-op when env unset. */}
+ <CloudflareAnalytics />
  </head>
  <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]">
  <AuthProvider>
@@ -368,6 +374,8 @@ export default function RootLayout({
  </div>
  </footer>
  <DeferredClientWidgets />
+ <Analytics />
+ <NotificationPrompt />
  </CartProvider>
  </AuthProvider>
  </body>

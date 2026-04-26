@@ -1,0 +1,142 @@
+import { Resend } from 'resend';
+
+/**
+ * Single source of truth for transactional email.
+ * - Active when RESEND_API_KEY is set; otherwise sendEmail() resolves to
+ *   `{ skipped: true }` and the rest of the app continues normally
+ *   (useful for demo / local without a key).
+ * - FROM_EMAIL defaults to no-reply@darshya.online; change in env if your
+ *   verified Resend domain is different.
+ */
+const apiKey = process.env.RESEND_API_KEY;
+const FROM_EMAIL =
+  process.env.RESEND_FROM_EMAIL ?? 'Darshya <no-reply@darshya.online>';
+const REPLY_TO = process.env.RESEND_REPLY_TO ?? 'support@darshya.online';
+
+const resend = apiKey ? new Resend(apiKey) : null;
+
+interface SendEmailParams {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  attachments?: { filename: string; content: Buffer | string }[];
+}
+
+interface SendEmailResult {
+  ok: boolean;
+  skipped?: boolean;
+  id?: string;
+  error?: string;
+}
+
+export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+  if (!resend) {
+    return { ok: false, skipped: true };
+  }
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+      replyTo: REPLY_TO,
+      attachments: params.attachments,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, id: data?.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// ─── Common templates ──────────────────────────────────────────────────
+
+const baseStyles = `
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: #fbf7f1; color: #3d2e1f; padding: 0; margin: 0; }
+  .container { max-width: 560px; margin: 24px auto; padding: 32px 28px;
+               background: white; border-radius: 12px;
+               box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .brand { font-size: 22px; font-weight: 600; color: #ea580c; margin: 0 0 24px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 16px; }
+  p { font-size: 14px; line-height: 1.6; margin: 0 0 12px; }
+  .btn { display: inline-block; background: #ea580c; color: white !important;
+         padding: 12px 24px; border-radius: 8px; text-decoration: none;
+         font-weight: 500; font-size: 14px; margin: 12px 0; }
+  .footer { font-size: 11px; color: #999; margin-top: 28px;
+            padding-top: 16px; border-top: 1px solid #eee; text-align: center; }
+`;
+
+function shell(content: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container"><div class="brand">Darshya</div>${content}
+<div class="footer">Darshya · India's Devotional Super App<br>https://darshya.online</div>
+</div></body></html>`;
+}
+
+export function magicLinkEmail(linkUrl: string): { subject: string; html: string; text: string } {
+  return {
+    subject: 'Your Darshya sign-in link',
+    html: shell(`
+      <h1>Sign in to Darshya</h1>
+      <p>Click the button below to sign in. The link is valid for 15 minutes and works only once.</p>
+      <a class="btn" href="${linkUrl}">Sign in to Darshya</a>
+      <p style="font-size:12px;color:#999;">If the button doesn't work, paste this URL into your browser:<br>
+      <span style="word-break:break-all;">${linkUrl}</span></p>
+      <p style="font-size:12px;color:#999;">If you didn't request this email, you can safely ignore it.</p>
+    `),
+    text: `Sign in to Darshya\n\nOpen this link to sign in (valid for 15 minutes):\n${linkUrl}\n\nIf you didn't request this email, ignore it.`,
+  };
+}
+
+export function bookingConfirmationEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  scheduledDate: string;
+  scheduledTimeSlot: string;
+  bookingNumber: string;
+  amount: string;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, scheduledDate, scheduledTimeSlot, bookingNumber, amount } = params;
+  return {
+    subject: `Puja booking confirmed: ${pujaName} at ${templeName}`,
+    html: shell(`
+      <h1>Namaste ${devoteeName}, your puja is booked</h1>
+      <p>Your booking has been confirmed. Booking number: <strong>${bookingNumber}</strong></p>
+      <p><strong>Puja:</strong> ${pujaName}<br>
+      <strong>Temple:</strong> ${templeName}<br>
+      <strong>Date:</strong> ${scheduledDate}<br>
+      <strong>Time:</strong> ${scheduledTimeSlot}<br>
+      <strong>Amount paid:</strong> ${amount}</p>
+      <p>The priest will perform the puja and upload a video proof. You'll receive an email when the recording is ready.</p>
+      <a class="btn" href="https://darshya.online/bookings/${bookingNumber}">View booking</a>
+    `),
+    text: `Namaste ${devoteeName}, your puja is booked.\n\nBooking #${bookingNumber}\nPuja: ${pujaName}\nTemple: ${templeName}\nDate: ${scheduledDate} ${scheduledTimeSlot}\nAmount: ${amount}\n\nView at: https://darshya.online/bookings/${bookingNumber}`,
+  };
+}
+
+export function donationReceiptEmail(params: {
+  donorName: string;
+  amount: string;
+  gaushalaName: string;
+  receiptNumber: string;
+  date: string;
+}): { subject: string; html: string; text: string } {
+  const { donorName, amount, gaushalaName, receiptNumber, date } = params;
+  return {
+    subject: `Thank you — donation receipt for ${gaushalaName}`,
+    html: shell(`
+      <h1>Thank you, ${donorName}</h1>
+      <p>Your donation of <strong>${amount}</strong> to ${gaushalaName} has been received.</p>
+      <p><strong>Receipt #:</strong> ${receiptNumber}<br>
+      <strong>Date:</strong> ${date}</p>
+      <p>Your 80G tax receipt PDF is attached to this email. Please retain it for your records.</p>
+      <p>The cows you support will be fed, sheltered, and cared for with your seva.</p>
+      <a class="btn" href="https://darshya.online/gaushala">Visit gaushala</a>
+    `),
+    text: `Thank you ${donorName}!\n\nYour donation of ${amount} to ${gaushalaName} has been received.\nReceipt #${receiptNumber} dated ${date}\n\nYour 80G tax receipt is attached.`,
+  };
+}

@@ -35,7 +35,7 @@ pnpm run build:android:preview
 # Or scan QR on Expo Orbit
 ```
 
-The `preview` profile builds a signed APK (not an AAB) with `EXPO_PUBLIC_API_URL=https://api.darshya.online`. Share the download URL with testers — no Play Store needed.
+The `preview` profile builds a signed APK (not an AAB) with `EXPO_PUBLIC_API_URL=https://bhaktisetu.onrender.com`. Share the download URL with testers — no Play Store needed.
 
 ## Build iOS (requires Apple Developer account $99/yr for TestFlight)
 
@@ -85,12 +85,12 @@ Copy `.env.example` to `.env.local` for local dev:
 cp .env.example .env.local
 ```
 
-Only variables prefixed with `EXPO_PUBLIC_` are embedded in the client bundle. Build profiles in `eas.json` override these for preview/production (pointing at `https://api.darshya.online`).
+Only variables prefixed with `EXPO_PUBLIC_` are embedded in the client bundle. Build profiles in `eas.json` override these for preview/production (pointing at `https://bhaktisetu.onrender.com`).
 
 ## Build profiles summary
 
 | Profile       | Android     | iOS          | API URL                    |
 |---------------|-------------|--------------|----------------------------|
 | `development` | APK (debug) | Simulator    | from local `.env`          |
-| `preview`     | APK         | Device IPA   | `https://api.darshya.online`   |
-| `production`  | AAB         | Device IPA   | `https://api.darshya.online`   |
+| `preview`     | APK         | Device IPA   | `https://bhaktisetu.onrender.com`   |
+| `production`  | AAB         | Device IPA   | `https://bhaktisetu.onrender.com`   |

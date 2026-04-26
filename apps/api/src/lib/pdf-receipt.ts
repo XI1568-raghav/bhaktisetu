@@ -1,0 +1,196 @@
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+
+/**
+ * Generates an 80G tax receipt PDF for gaushala donations. Uses pdf-lib
+ * (pure JS, no native deps, works on Render free tier). Returns a Buffer
+ * suitable for attaching to a Resend email or streaming as a download.
+ *
+ * 80G receipts in India must include:
+ *   - Donee name + 80G registration number + PAN
+ *   - Donor name + PAN (if available) + address
+ *   - Donation amount in figures and words
+ *   - Date of donation
+ *   - Receipt number
+ *   - Mode of payment
+ *   - Authorized signatory line
+ *
+ * For an MVP we render the essentials and leave the signatory blank for
+ * the gaushala admin to sign physically before mailing the original.
+ */
+export interface ReceiptData {
+  donorName: string;
+  donorPan?: string;
+  donorAddress?: string;
+  donorEmail: string;
+  amountInr: number;
+  donationDate: string;
+  receiptNumber: string;
+  paymentMode: 'UPI' | 'Card' | 'NetBanking' | 'Wallet' | 'Other';
+  paymentReference?: string;
+  gaushalaName: string;
+  gaushala80GNumber?: string;
+  gaushalaPan?: string;
+  gaushalaAddress?: string;
+}
+
+const SAFFRON = rgb(0.918, 0.345, 0.047); // matches brand #EA580C
+const TEXT = rgb(0.24, 0.18, 0.12);
+const MUTED = rgb(0.45, 0.4, 0.35);
+
+function amountInWords(amount: number): string {
+  // Indian-system to-words: handle up to lakhs/crores
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  function under1000(n: number): string {
+    if (n < 20) return ones[n] ?? '';
+    if (n < 100) return `${tens[Math.floor(n / 10)]}${n % 10 ? ' ' + ones[n % 10] : ''}`;
+    return `${ones[Math.floor(n / 100)]} Hundred${n % 100 ? ' ' + under1000(n % 100) : ''}`;
+  }
+  const intAmount = Math.round(amount);
+  if (intAmount === 0) return 'Zero Rupees Only';
+  let n = intAmount;
+  const parts: string[] = [];
+  const crore = Math.floor(n / 10000000); n %= 10000000;
+  const lakh = Math.floor(n / 100000); n %= 100000;
+  const thousand = Math.floor(n / 1000); n %= 1000;
+  const remainder = n;
+  if (crore) parts.push(`${under1000(crore)} Crore`);
+  if (lakh) parts.push(`${under1000(lakh)} Lakh`);
+  if (thousand) parts.push(`${under1000(thousand)} Thousand`);
+  if (remainder) parts.push(under1000(remainder));
+  return parts.join(' ').trim() + ' Rupees Only';
+}
+
+export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
+  const pdf = await PDFDocument.create();
+  const page = pdf.addPage([595, 842]); // A4
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  const left = 50;
+  const right = 545;
+  let y = 800;
+
+  // Brand bar
+  page.drawRectangle({ x: 0, y: 822, width: 595, height: 20, color: SAFFRON });
+
+  // Header
+  page.drawText('Darshya', { x: left, y, size: 22, font: fontBold, color: SAFFRON });
+  page.drawText('India’s Devotional Super App', { x: left, y: y - 16, size: 9, font, color: MUTED });
+  page.drawText('https://darshya.online', { x: left, y: y - 28, size: 9, font, color: MUTED });
+
+  y -= 60;
+  page.drawText('OFFICIAL DONATION RECEIPT', { x: left, y, size: 14, font: fontBold, color: TEXT });
+  page.drawText('80G Income Tax Exemption', { x: left, y: y - 14, size: 10, font, color: MUTED });
+
+  // Receipt meta
+  y -= 44;
+  page.drawText(`Receipt No.:  ${data.receiptNumber}`, { x: left, y, size: 10, font, color: TEXT });
+  page.drawText(`Date:  ${data.donationDate}`, { x: 380, y, size: 10, font, color: TEXT });
+
+  // Divider
+  y -= 18;
+  page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.5, color: rgb(0.85, 0.8, 0.7) });
+
+  // Donee section
+  y -= 22;
+  page.drawText('Received from', { x: left, y, size: 9, font, color: MUTED });
+  y -= 14;
+  page.drawText(data.donorName, { x: left, y, size: 12, font: fontBold, color: TEXT });
+  if (data.donorPan) {
+    y -= 14;
+    page.drawText(`PAN: ${data.donorPan}`, { x: left, y, size: 10, font, color: TEXT });
+  }
+  if (data.donorAddress) {
+    y -= 14;
+    const lines = wrap(data.donorAddress, 78);
+    for (const line of lines) {
+      page.drawText(line, { x: left, y, size: 10, font, color: TEXT });
+      y -= 12;
+    }
+  }
+  y -= 4;
+  page.drawText(`Email: ${data.donorEmail}`, { x: left, y, size: 10, font, color: MUTED });
+
+  // Amount
+  y -= 30;
+  page.drawText('Amount donated', { x: left, y, size: 9, font, color: MUTED });
+  y -= 18;
+  page.drawText(`INR ${data.amountInr.toLocaleString('en-IN')}`, { x: left, y, size: 18, font: fontBold, color: SAFFRON });
+  y -= 16;
+  page.drawText(`(${amountInWords(data.amountInr)})`, { x: left, y, size: 10, font, color: TEXT });
+
+  // Payment
+  y -= 22;
+  page.drawText(`Mode: ${data.paymentMode}${data.paymentReference ? `   Ref: ${data.paymentReference}` : ''}`, {
+    x: left, y, size: 10, font, color: TEXT,
+  });
+
+  // Donee section
+  y -= 30;
+  page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.5, color: rgb(0.85, 0.8, 0.7) });
+  y -= 22;
+  page.drawText('Donee organisation', { x: left, y, size: 9, font, color: MUTED });
+  y -= 14;
+  page.drawText(data.gaushalaName, { x: left, y, size: 12, font: fontBold, color: TEXT });
+  if (data.gaushala80GNumber) {
+    y -= 14;
+    page.drawText(`80G Registration: ${data.gaushala80GNumber}`, { x: left, y, size: 10, font, color: TEXT });
+  }
+  if (data.gaushalaPan) {
+    y -= 14;
+    page.drawText(`PAN: ${data.gaushalaPan}`, { x: left, y, size: 10, font, color: TEXT });
+  }
+  if (data.gaushalaAddress) {
+    y -= 14;
+    const lines = wrap(data.gaushalaAddress, 78);
+    for (const line of lines) {
+      page.drawText(line, { x: left, y, size: 10, font, color: TEXT });
+      y -= 12;
+    }
+  }
+
+  // Tax exemption note
+  y -= 26;
+  page.drawText('Eligible for deduction under Section 80G of the Income Tax Act, 1961.', {
+    x: left, y, size: 9, font, color: MUTED,
+  });
+  y -= 12;
+  page.drawText('Please retain this receipt for your tax records.', {
+    x: left, y, size: 9, font, color: MUTED,
+  });
+
+  // Signatory
+  y -= 60;
+  page.drawLine({ start: { x: left, y }, end: { x: left + 160, y }, thickness: 0.5, color: TEXT });
+  y -= 12;
+  page.drawText('Authorized signatory', { x: left, y, size: 9, font, color: MUTED });
+
+  // Footer
+  page.drawText('Computer-generated receipt — valid without signature when issued via Darshya.', {
+    x: left, y: 40, size: 8, font, color: MUTED,
+  });
+  page.drawText('Generated at https://darshya.online   ·   support@darshya.online', {
+    x: left, y: 28, size: 8, font, color: MUTED,
+  });
+
+  const bytes = await pdf.save();
+  return Buffer.from(bytes);
+}
+
+function wrap(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = '';
+  for (const w of words) {
+    if ((line + ' ' + w).trim().length > maxChars) {
+      if (line) lines.push(line.trim());
+      line = w;
+    } else {
+      line = (line + ' ' + w).trim();
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
