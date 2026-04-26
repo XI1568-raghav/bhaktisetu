@@ -19,10 +19,21 @@ const DIMENSIONS = 1024;
 
 type InputType = 'search_document' | 'search_query' | 'classification' | 'clustering';
 
+// Cohere /v1/embed returns one of two shapes depending on whether
+// `embedding_types` was sent in the request:
+//   - Without embedding_types:  { embeddings: number[][] }
+//   - With embedding_types:     { embeddings: { float: number[][] } }
+// We pin embedding_types to ['float'] so we always get the second shape,
+// but parse defensively in case Cohere ever changes their default.
 interface CohereEmbedResponse {
-  embeddings: number[][];
+  embeddings: number[][] | { float?: number[][] };
   id?: string;
   message?: string;
+}
+
+function extractVectors(data: CohereEmbedResponse): number[][] {
+  if (Array.isArray(data.embeddings)) return data.embeddings;
+  return data.embeddings?.float ?? [];
 }
 
 /**
@@ -52,7 +63,7 @@ export async function generateEmbedding(
     });
     if (!res.ok) return null;
     const data = (await res.json()) as CohereEmbedResponse;
-    return data.embeddings?.[0] ?? null;
+    return extractVectors(data)[0] ?? null;
   } catch {
     return null;
   }
@@ -89,9 +100,10 @@ export async function generateEmbeddingsBatch(
     });
     if (!res.ok) return texts.map(() => null);
     const data = (await res.json()) as CohereEmbedResponse;
+    const vectors = extractVectors(data);
     const out: (number[] | null)[] = texts.map(() => null);
     nonEmptyIdx.forEach((origIdx, k) => {
-      out[origIdx] = data.embeddings?.[k] ?? null;
+      out[origIdx] = vectors[k] ?? null;
     });
     return out;
   } catch {
