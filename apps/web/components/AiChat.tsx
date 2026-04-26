@@ -289,12 +289,17 @@ export default function AiChat({
  const [currentConvId, setCurrentConvId] = useState<string | null>(
  conversationId || null
  );
+ const messagesScrollRef = useRef<HTMLDivElement>(null);
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLTextAreaElement>(null);
 
- // Auto-scroll to bottom on new messages
- const scrollToBottom = useCallback(() => {
- messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+ // Auto-scroll only the inner messages container; never scroll the page.
+ // Use scrollTop so Next.js's window scroll context isn't triggered when
+ // the chat is mounted inside a scrollable parent.
+ const scrollToBottom = useCallback((smooth = true) => {
+ const el = messagesScrollRef.current;
+ if (!el) return;
+ el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
  }, []);
 
  useEffect(() => {
@@ -559,9 +564,9 @@ export default function AiChat({
  }
 
  return (
- <div className="flex flex-col h-full">
+ <div className="flex flex-col h-full min-h-0">
  {/* Messages area */}
- <div className="flex-1 overflow-y-auto px-4 py-6">
+ <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-6 overscroll-contain min-h-0">
  {messages.length === 0 ? (
  <EmptyState onQuestionClick={(q) => handleSend(q)} />
  ) : (
@@ -603,7 +608,7 @@ export default function AiChat({
  placeholder="Ask Pandit Ji a question..."
  rows={1}
  disabled={isStreaming}
- className="w-full resize-none rounded-xl border px-4 py-3 pr-12 text-sm placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+ className="w-full resize-none rounded-xl border px-4 py-3 pr-12 text-sm placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
  style={{
  maxHeight: '120px',
  borderColor: 'var(--color-border, #e8dcc8)',
