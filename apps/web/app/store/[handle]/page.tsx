@@ -1,7 +1,7 @@
 'use client';
 export const runtime = 'edge';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -45,12 +45,12 @@ export default function ProductDetailPage() {
 
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const [product, setProduct] = useState<(typeof PRODUCTS)[number] | null>(null);
 
-  useEffect(() => {
-    const found = getProductByHandle(handle);
-    setProduct(found ?? null);
-  }, [handle]);
+  // Synchronous lookup against the in-memory product list — no useEffect
+  // round-trip. A `null` result here means the slug genuinely doesn't exist
+  // (so the "Not Found" UI is correct), instead of just "we haven't loaded
+  // yet" which used to show "Not Found" for a flash on every successful page.
+  const product = getProductByHandle(handle) ?? null;
 
   function handleAddToCart() {
     if (!product) return;
