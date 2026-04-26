@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
-import { presignR2Upload, r2 } from '../lib/r2.js';
+import { presignR2Upload, publicUrlFor, r2 } from '../lib/r2.js';
 import { randomBytes } from 'node:crypto';
 
 /**
@@ -27,7 +27,7 @@ export async function mediaRoutes(server: FastifyInstance) {
     if (!r2.enabled) {
       return reply.code(503).send({
         error: 'Media uploads not configured',
-        message: 'R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY env vars must be set on the API server.',
+        message: 'SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required (storage backed by Supabase).',
       });
     }
 
@@ -41,9 +41,7 @@ export async function mediaRoutes(server: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to generate upload URL' });
     }
 
-    const publicUrl = r2.publicBaseUrl
-      ? `${r2.publicBaseUrl.replace(/\/$/, '')}/${key}`
-      : null;
+    const publicUrl = publicUrlFor(key);
 
     return reply.send({
       uploadUrl: url,

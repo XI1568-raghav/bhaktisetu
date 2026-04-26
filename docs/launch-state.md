@@ -67,7 +67,7 @@ Once any env var is set, the corresponding code branch activates (existing code 
 | Sign up at posthog.com | `NEXT_PUBLIC_POSTHOG_KEY` | code ✅ — needs key |
 | Cloudflare → Web Analytics | `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | code ✅ — needs key |
 | Sign up at resend.com + verify darshya.online domain | `RESEND_API_KEY` | code ✅ — needs key |
-| Cloudflare → R2 → bucket + API token | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` | code ✅ — needs keys |
+| Supabase Storage → create bucket `darshya-media` (public, 25 MB cap) | `STORAGE_BUCKET` (defaults to `darshya-media`) — reuses existing `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | swapped from Cloudflare R2 (R2 needs a card on file). `lib/r2.ts` is now a Supabase Storage adapter — see `docs/caveats.md` |
 | Razorpay KYC (or test mode) | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | code ✅ — needs keys |
 | Magic-link signing secret | `MAGIC_LINK_SECRET` | code ✅ — needs secret (dev fallback OK locally) |
 | Meta Business + WhatsApp Business verification | `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_OTP_TEMPLATE` (default `otp_login`) | 🅿️ **parked** — code ✅, business verification deferred. Endpoint runs in dev mode (returns `devCode` in response) until env vars are set |
