@@ -1,5 +1,4 @@
 import type { NextConfig } from 'next';
-import { withSentryConfig } from '@sentry/nextjs';
 
 // Cloudflare next-on-pages dev platform — hooks up Cloudflare bindings in `next dev`.
 // Only run in development so production builds stay lean.
@@ -80,26 +79,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Sentry plugin wraps the config only when running outside Cloudflare
-// Pages. The wrapper injects code into every page bundle, which trips
-// @cloudflare/next-on-pages "duplicated identifier" detection during
-// the Vercel-build → Cloudflare adaptation step. The browser-side SDK
-// is initialised through instrumentation-client.ts on every page anyway,
-// so we don't lose runtime monitoring — only the build-time source map
-// upload + automatic route instrumentation, which we don't need yet.
-//
-// Detection: CF Pages sets CF_PAGES=1 in the build env. Locally and on
-// other hosts (Vercel, Render, etc.) the wrapper still runs.
-const isCloudflarePagesBuild = process.env.CF_PAGES === '1';
-
-export default isCloudflarePagesBuild
-  ? nextConfig
-  : withSentryConfig(nextConfig, {
-      silent: true,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      errorHandler: (err) => {
-        console.warn('[sentry] source map upload skipped:', err.message);
-      },
-    });
+// Browser-side Sentry deferred — @sentry/nextjs drags in @sentry/node +
+// OpenTelemetry + @fastify/otel which @cloudflare/next-on-pages can't
+// dedupe across routes ("duplicated identifier" abort). Server-side
+// Sentry on Render API is enough for now (already catching real bugs
+// like the priest-auth UUID crash). When we want browser error capture
+// later, add @sentry/browser as a small dep — that one is tree-shakable
+// and pure-browser.
+export default nextConfig;
