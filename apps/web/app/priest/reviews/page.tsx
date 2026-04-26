@@ -149,7 +149,7 @@ export default function PriestReviewsPage() {
         <div className="flex flex-col sm:flex-row gap-8">
           {/* Average Rating */}
           <div className="text-center sm:text-left shrink-0">
-            <div className="text-5xl font-bold text-surface-800">{avgRating.toFixed(1)}</div>
+            <div className="text-3xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{avgRating.toFixed(1)}</div>
             <div className="flex items-center gap-1 justify-center sm:justify-start mt-2">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star

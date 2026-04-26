@@ -43,6 +43,7 @@ const wikimediaCredits: Credit[] = [
   { subject: "Golden Temple, Amritsar", filename: "The_Golden_Temple_of_Amrithsar_7.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:The_Golden_Temple_of_Amrithsar_7.jpg", license: "CC BY-SA 4.0", author: "Shagil Kannur" },
   { subject: "Vrindavan", filename: "Vrindavan,_India_(21178969102).jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Vrindavan,_India_(21178969102).jpg", license: "CC BY-SA 2.0", author: "Aleksandr Zykov" },
   { subject: "Dwarakadheesh Temple", filename: "Dwarakadheesh_Temple,_2014.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Dwarakadheesh_Temple,_2014.jpg", license: "CC BY-SA 4.0", author: "Vishnupranay.k" },
+  { subject: "Mata Vaishno Devi Bhawan", filename: "Vaishno_Devi_Bhawan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Vaishno_Devi_Bhawan.jpg", license: "CC BY-SA 3.0", author: "Raulcaeser" },
 
   // Deities
   { subject: "Lord Shiva (Bangalore)", filename: "Bangalore_Shiva.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Bangalore_Shiva.jpg", license: "CC BY-SA 3.0", author: "Indianhilbilly" },
@@ -73,6 +74,17 @@ const wikimediaCredits: Credit[] = [
   { subject: "Gayatri Japa (Mantra)", filename: "Gayatri_japa.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Gayatri_japa.jpg", license: "Public domain", author: "Mrs. S. C. Belnos" },
   { subject: "Navaratri Bhajan", filename: "Navaratri_Bajan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Navaratri_Bajan.jpg", license: "CC BY-SA 3.0", author: "Bootervijay" },
   { subject: "Sannyasi in yoga meditation, Rishikesh", filename: "1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg", license: "CC BY-SA 2.0", author: "Ken Wieland" },
+
+  // Gaushala / cows
+  { subject: "Gir breed cow", filename: "Gir_cow.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Gir_cow.jpg", license: "CC BY-SA 4.0", author: "Jayan.thanal" },
+  { subject: "Sahiwal breed cow", filename: "Sahiwala_01.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Sahiwala_01.JPG", license: "CC BY-SA 3.0", author: "Pavanaja" },
+  { subject: "Tharparkar breed cow", filename: "Tharparkar_01.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Tharparkar_01.JPG", license: "CC BY-SA 3.0", author: "Pavanaja" },
+  { subject: "Red Sindhi cow", filename: "Red_Sindhi_Cow_at_Pakistan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Red_Sindhi_Cow_at_Pakistan.jpg", license: "CC BY-SA 4.0", author: "LunaticFringe97" },
+  { subject: "Surabhi cow, Vrindavan", filename: "Surabhi_Cow_Vrindavan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Surabhi_Cow_Vrindavan.jpg", license: "Public domain", author: "GourangaUK" },
+  { subject: "Goshala at ISKCON Mayapur", filename: "Goshala-ISKCON.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Goshala-ISKCON.jpg", license: "CC0", author: "Lakshmikanta Manna" },
+  { subject: "Calf in Tripura", filename: "A_beautiful_gaze.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:A_beautiful_gaze.jpg", license: "CC BY-SA 4.0", author: "Cosmicsilverfox" },
+  { subject: "Cows grazing in a field", filename: "A_beautiful_photo_of_cows_grazing_in_the_field.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:A_beautiful_photo_of_cows_grazing_in_the_field.jpg", license: "CC0", author: "Samir8609" },
+  { subject: "Women washing a cow at a river in Rajasthan", filename: "ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg", license: "CC BY 2.0", author: "ILRI / Stevie Mann" },
 ];
 
 export default function CreditsPage() {

@@ -326,7 +326,20 @@ export interface Panchang {
 }
 
 export async function getTodayPanchang(): Promise<Panchang> {
-  return serverFetch<Panchang>('/panchang/today', { revalidate: 3600, tags: ['panchang'] });
+  // The API stores shubhMuhurat as a labeled object; the web typed it as
+  // an array of { name, start, end }. Adapt at the boundary.
+  const raw = await serverFetch<Omit<Panchang, 'shubhMuhurat'> & {
+    shubhMuhurat: Record<string, string> | { name: string; start: string; end: string }[];
+  }>('/panchang/today', { revalidate: 3600, tags: ['panchang'] });
+  const sm = raw.shubhMuhurat;
+  const shubhMuhurat: { name: string; start: string; end: string }[] = Array.isArray(sm)
+    ? sm
+    : Object.entries(sm ?? {}).map(([key, range]) => {
+        const m = (range as string).match(/^([\d:]+)\s*-\s*([\d:]+)$/);
+        const pretty = key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
+        return { name: pretty, start: m?.[1] ?? range as string, end: m?.[2] ?? '' };
+      });
+  return { ...raw, shubhMuhurat };
 }
 
 export async function getUpcomingFestivals(): Promise<{

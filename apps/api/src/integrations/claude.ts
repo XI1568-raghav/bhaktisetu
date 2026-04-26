@@ -1,14 +1,34 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const DEMO_MODE = !process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'demo-key';
+// Provider selection: prefer Groq (OpenAI-compatible, free tier) when its key
+// is present, else fall back to Anthropic. DEMO_MODE only when neither is set.
+const HAS_GROQ = !!process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'demo-key';
+const HAS_ANTHROPIC =
+  !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'demo-key';
+const DEMO_MODE = !HAS_GROQ && !HAS_ANTHROPIC;
 
-const anthropic = DEMO_MODE
-  ? (null as unknown as Anthropic)
-  : new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = HAS_ANTHROPIC
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : (null as unknown as Anthropic);
+
+const GROQ_BASE = 'https://api.groq.com/openai/v1';
+
+// Model aliases. We keep the SONNET/HAIKU names (used by callers in
+// ai.service.ts) but route them to whichever provider is active.
+//
+// SONNET tier — used for richer answers in /chat and /astrology
+// HAIKU tier  — used for fast/cheap calls (recommendations, summaries)
+//
+// Llama 3.3 70B (Groq) is the closest free analogue to Sonnet quality;
+// Llama 3.1 8B Instant is the fast/cheap tier.
+const GROQ_SONNET_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_HAIKU_MODEL = 'llama-3.1-8b-instant';
+const ANTHROPIC_SONNET_MODEL = 'claude-sonnet-4-20250514';
+const ANTHROPIC_HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 
 export const MODELS = {
-  SONNET: 'claude-sonnet-4-20250514',
-  HAIKU: 'claude-haiku-4-5-20251001',
+  SONNET: HAS_GROQ ? GROQ_SONNET_MODEL : ANTHROPIC_SONNET_MODEL,
+  HAIKU: HAS_GROQ ? GROQ_HAIKU_MODEL : ANTHROPIC_HAIKU_MODEL,
 } as const;
 
 // ─── Demo-mode static responses ────────────────────────────────────────────────
@@ -585,6 +605,66 @@ This reminds us that divine guidance is always available to those who seek it si
 💡 **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a verified priest for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
 }
 
+// ─── Helper: stream-shape adapter ─────────────────────────────────────────
+// Both providers stream text but in different formats. We expose a single
+// async iterable that yields Anthropic-shaped events { type, delta } so the
+// route handler in ai.service.ts/routes/ai.ts doesn't need to branch.
+
+type StreamEvent =
+  | { type: 'content_block_delta'; delta: { type: 'text_delta'; text: string } }
+  | { type: 'message_stop'; delta: undefined };
+
+function makeWordStream(text: string): AsyncIterable<StreamEvent> {
+  return {
+    async *[Symbol.asyncIterator]() {
+      const words = text.split(' ');
+      for (let i = 0; i < words.length; i++) {
+        const chunk = (i === 0 ? '' : ' ') + words[i];
+        yield { type: 'content_block_delta', delta: { type: 'text_delta', text: chunk } };
+      }
+      yield { type: 'message_stop', delta: undefined };
+    },
+  };
+}
+
+async function* groqStreamToEvents(res: Response): AsyncIterable<StreamEvent> {
+  if (!res.body) {
+    yield { type: 'message_stop', delta: undefined };
+    return;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === '[DONE]') {
+        yield { type: 'message_stop', delta: undefined };
+        return;
+      }
+      try {
+        const j = JSON.parse(payload) as {
+          choices?: { delta?: { content?: string } }[];
+        };
+        const text = j.choices?.[0]?.delta?.content;
+        if (text) {
+          yield { type: 'content_block_delta', delta: { type: 'text_delta', text } };
+        }
+      } catch {
+        // skip malformed chunks
+      }
+    }
+  }
+  yield { type: 'message_stop', delta: undefined };
+}
+
 // ─── Streaming Chat ────────────────────────────────────────────────────────────
 
 export async function streamChat(params: {
@@ -596,40 +676,41 @@ export async function streamChat(params: {
   const { systemPrompt, messages, maxTokens = 1024, model = MODELS.SONNET } = params;
 
   if (DEMO_MODE) {
-    // Return a mock async iterator for demo mode
     const lastUserMsg = messages.filter((m) => m.role === 'user').pop();
-    const response = getDemoResponse(lastUserMsg?.content || '');
-    return {
-      async *[Symbol.asyncIterator]() {
-        // Simulate streaming by yielding word chunks
-        const words = response.split(' ');
-        for (let i = 0; i < words.length; i++) {
-          const chunk = (i === 0 ? '' : ' ') + words[i];
-          yield {
-            type: 'content_block_delta' as const,
-            delta: { type: 'text_delta' as const, text: chunk },
-          };
-          // Small delay simulated in the route handler, not here
-        }
-        yield {
-          type: 'message_stop' as const,
-          delta: undefined,
-        };
-      },
-    };
+    return makeWordStream(getDemoResponse(lastUserMsg?.content || ''));
   }
 
-  // Real Anthropic streaming
+  if (HAS_GROQ) {
+    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        stream: true,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
+    }
+    return { [Symbol.asyncIterator]: () => groqStreamToEvents(res)[Symbol.asyncIterator]() };
+  }
+
+  // Anthropic fallback
   const stream = anthropic.messages.stream({
     model,
     max_tokens: maxTokens,
     system: systemPrompt,
-    messages: messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
   });
-
   return stream;
 }
 
@@ -647,14 +728,38 @@ export async function generateText(params: {
     return getDemoResponse(userMessage);
   }
 
+  if (HAS_GROQ) {
+    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
+    }
+    const j = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    return j.choices?.[0]?.message?.content ?? '';
+  }
+
   const response = await anthropic.messages.create({
     model,
     max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
   });
-
-  // Extract text from the response
   const textBlock = response.content.find((block) => block.type === 'text');
   return textBlock && textBlock.type === 'text' ? textBlock.text : '';
 }

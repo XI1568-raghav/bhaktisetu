@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Plus, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, X, Loader2, CheckCircle2, Beef } from 'lucide-react';
 
 const cows = [
   { id: 'GS-001', name: 'Kamdhenu',   breed: 'Gir',        age: '4y 3m', status: 'Healthy',   weight: '420 kg', milk: '14L/day',  lastCheckup: '2026-04-10' },
@@ -114,8 +114,8 @@ export default function CowsPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-amber-100 rounded-full flex items-center justify-center text-2xl">
-                    🐄
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary-highlight)' }}>
+                    <Beef className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{c.name}</p>
