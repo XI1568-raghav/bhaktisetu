@@ -1,4 +1,5 @@
 'use client';
+import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
 import Link from 'next/link';
 import {
@@ -115,6 +116,8 @@ export default function WellnessDashboard() {
  </span>
  </p>
  </div>
+
+ <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />
 
  {/* Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
