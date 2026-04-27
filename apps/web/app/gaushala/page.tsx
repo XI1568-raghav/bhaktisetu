@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IMAGES } from "../../lib/images";
+import { ApprovedProvidersStrip } from "../../components/ApprovedProvidersStrip";
 import {
  Heart,
  Shield,
@@ -667,6 +668,13 @@ export default function GaushalaPage() {
  </a>
  </div>
  </section>
+
+ <ApprovedProvidersStrip
+ type="gaushala"
+ heading="Verified gaushalas on Darshya"
+ subheading="Approved gaushalas you can support directly. Each one is reviewed before being listed."
+ limit={8}
+ />
  </div>
  );
 }
