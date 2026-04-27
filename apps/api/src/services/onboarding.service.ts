@@ -195,6 +195,54 @@ export class OnboardingService {
     }
   }
 
+  // ─── Single-shot provider submit (used by /auth/signup) ──────────────────
+  //
+  // Idempotent: upserts user_role_assignments AND the role-specific
+  // *_profiles row in sequence. Profile defaults to approved=false (schema
+  // @default), so it lands in /admin/approvals immediately. Re-posting
+  // overwrites editable fields without flipping approval state.
+
+  async upsertProviderProfile(
+    userId: string,
+    role: RoleType,
+    data: Record<string, unknown>,
+  ): Promise<{ role: string; profileId?: string }> {
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_role: { userId, role } },
+      update: {},
+      create: { userId, role, isPrimary: false },
+    });
+
+    await this.createProviderProfile(userId, role, data);
+
+    const profileId = await this.fetchProfileId(userId, role);
+    return { role, profileId };
+  }
+
+  async getProviderProfile(userId: string, role: RoleType): Promise<Record<string, unknown> | null> {
+    switch (role) {
+      case 'PANDIT':
+        return prisma.panditProfile.findUnique({ where: { userId } }) as Promise<Record<string, unknown> | null>;
+      case 'STORE_OWNER':
+        return prisma.storeProfile.findUnique({ where: { userId } }) as Promise<Record<string, unknown> | null>;
+      case 'ASTROLOGER':
+        return prisma.astrologerProfile.findUnique({ where: { userId } }) as Promise<Record<string, unknown> | null>;
+      case 'WELLNESS_INSTRUCTOR':
+        return prisma.wellnessProfile.findUnique({ where: { userId } }) as Promise<Record<string, unknown> | null>;
+      case 'GAUSHALA_MANAGER':
+        return prisma.gaushalaProfile.findUnique({ where: { userId } }) as Promise<Record<string, unknown> | null>;
+      case 'TEMPLE_MANAGER':
+        return prisma.templeProfile.findUnique({ where: { userId } }) as Promise<Record<string, unknown> | null>;
+      default:
+        return null;
+    }
+  }
+
+  private async fetchProfileId(userId: string, role: RoleType): Promise<string | undefined> {
+    const profile = await this.getProviderProfile(userId, role);
+    return (profile as { id?: string } | null)?.id;
+  }
+
   private async createProviderProfile(userId: string, role: RoleType, data: Record<string, unknown>): Promise<void> {
     switch (role) {
       case 'PANDIT':
