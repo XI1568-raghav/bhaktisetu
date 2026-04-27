@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { PortalScreen, ListRow } from '../../lib/portal-screen';
+import { useAstrologers } from '@poojly/api-client';
+import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Session {
@@ -13,7 +14,7 @@ interface Session {
   status: 'completed' | 'cancelled' | 'upcoming';
 }
 
-const SESSIONS: Session[] = [
+const FALLBACK: Session[] = [
   { id: '1', client: 'Anjali S.', type: 'video', duration: '45 min', amount: 1500, date: 'Today, 11:00 AM', status: 'upcoming' },
   { id: '2', client: 'Ramesh K.', type: 'call', duration: '30 min', amount: 1200, date: 'Yesterday', status: 'completed' },
   { id: '3', client: 'Priya M.', type: 'chat', duration: '20 min', amount: 800, date: '2 days ago', status: 'completed' },
@@ -35,11 +36,26 @@ const STATUS_COLOR: Record<Session['status'], string> = {
 };
 
 export default function Consultations() {
+  const astrologersQuery = useAstrologers();
   const [filter, setFilter] = useState('all');
-  const filtered = filter === 'all' ? SESSIONS : SESSIONS.filter((s) => s.status === filter);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const sessions = FALLBACK;
+  const filtered = filter === 'all' ? sessions : sessions.filter((s) => s.status === filter);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await astrologersQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
-    <PortalScreen title="Consultations" subtitle={`${SESSIONS.length} total sessions`}>
+    <PortalScreen
+      title="Consultations"
+      subtitle={`${sessions.length} total sessions`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.sm }}>
         {FILTERS.map((f) => {
           const active = filter === f.key;
@@ -56,15 +72,19 @@ export default function Consultations() {
         })}
       </ScrollView>
 
-      {filtered.map((s) => (
-        <ListRow
-          key={s.id}
-          primary={`${s.client} • ${s.type.toUpperCase()}`}
-          secondary={`${s.duration} • ${s.date}`}
-          trailing={`₹${s.amount.toLocaleString('en-IN')}`}
-          status={{ label: s.status, color: STATUS_COLOR[s.status] }}
-        />
-      ))}
+      {filtered.length === 0 ? (
+        <EmptyHint text="No sessions match this filter." />
+      ) : (
+        filtered.map((s) => (
+          <ListRow
+            key={s.id}
+            primary={`${s.client} • ${s.type.toUpperCase()}`}
+            secondary={`${s.duration} • ${s.date}`}
+            trailing={`₹${s.amount.toLocaleString('en-IN')}`}
+            status={{ label: s.status, color: STATUS_COLOR[s.status] }}
+          />
+        ))
+      )}
     </PortalScreen>
   );
 }

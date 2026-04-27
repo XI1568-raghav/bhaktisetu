@@ -1,15 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAstrologers } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
-import { PortalScreen, Section } from '../../lib/portal-screen';
+import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-const SPECIALIZATIONS = ['Vedic', 'Numerology', 'Tarot', 'Vastu'];
+const FALLBACK_RATES = [
+  { label: 'Chat', value: '₹40 / min' },
+  { label: 'Voice Call', value: '₹60 / min' },
+  { label: 'Video Call', value: '₹100 / min' },
+];
+
+const FALLBACK_SPECIALIZATIONS = ['Vedic', 'Numerology', 'Tarot', 'Vastu'];
 
 export default function AstrologerProfile() {
   const { user, signOut } = useAuth();
+  const astrologersQuery = useAstrologers();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const me = astrologersQuery.data?.astrologers?.find(
+    (a) => a.name === user?.fullName || (user?.email && (a as { email?: string }).email === user.email),
+  );
+
+  const specializations = me?.specializations ?? FALLBACK_SPECIALIZATIONS;
+  const rates = me?.pricePerMinute
+    ? [
+        { label: 'Chat', value: `₹${Math.round(me.pricePerMinute * 0.8)} / min` },
+        { label: 'Voice Call', value: `₹${me.pricePerMinute} / min` },
+        { label: 'Video Call', value: `₹${Math.round(me.pricePerMinute * 1.6)} / min` },
+      ]
+    : FALLBACK_RATES;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await astrologersQuery.refetch();
+    setRefreshing(false);
+  }
 
   function handleSignOut() {
     Alert.alert('Sign Out', 'Are you sure?', [
@@ -26,40 +54,59 @@ export default function AstrologerProfile() {
   }
 
   return (
-    <PortalScreen title="Profile" subtitle="Your astrologer details">
+    <PortalScreen
+      title="Profile"
+      subtitle="Your astrologer details"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={styles.userCard}>
         <View style={styles.avatar}>
           <Ionicons name="star" size={28} color={colors.saffron[700]} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{user?.fullName ?? 'Astrologer'}</Text>
+          <Text style={styles.name}>{me?.name ?? user?.fullName ?? 'Astrologer'}</Text>
           {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
+          {me?.experienceYears ? (
+            <Text style={styles.email}>{me.experienceYears} years experience</Text>
+          ) : null}
+          {me?.rating ? (
+            <Text style={styles.email}>
+              ⭐ {me.rating.toFixed(1)} ({me.ratingCount ?? 0} reviews)
+            </Text>
+          ) : null}
         </View>
       </View>
 
+      {me?.bio ? (
+        <Section title="About">
+          <View style={styles.bioCard}>
+            <Text style={styles.bio}>{me.bio}</Text>
+          </View>
+        </Section>
+      ) : null}
+
       <Section title="Rates">
-        <View style={styles.rateRow}>
-          <Text style={styles.rateLabel}>Chat</Text>
-          <Text style={styles.rateValue}>₹40 / min</Text>
-        </View>
-        <View style={styles.rateRow}>
-          <Text style={styles.rateLabel}>Voice Call</Text>
-          <Text style={styles.rateValue}>₹60 / min</Text>
-        </View>
-        <View style={styles.rateRow}>
-          <Text style={styles.rateLabel}>Video Call</Text>
-          <Text style={styles.rateValue}>₹100 / min</Text>
-        </View>
+        {rates.map((r) => (
+          <View key={r.label} style={styles.rateRow}>
+            <Text style={styles.rateLabel}>{r.label}</Text>
+            <Text style={styles.rateValue}>{r.value}</Text>
+          </View>
+        ))}
       </Section>
 
       <Section title="Specializations">
-        <View style={styles.tagRow}>
-          {SPECIALIZATIONS.map((s) => (
-            <View key={s} style={styles.tag}>
-              <Text style={styles.tagText}>{s}</Text>
-            </View>
-          ))}
-        </View>
+        {specializations.length === 0 ? (
+          <EmptyHint text="No specializations on file." />
+        ) : (
+          <View style={styles.tagRow}>
+            {specializations.map((s) => (
+              <View key={s} style={styles.tag}>
+                <Text style={styles.tagText}>{s}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </Section>
 
       <TouchableOpacity style={styles.signOut} activeOpacity={0.7} onPress={handleSignOut}>
@@ -88,6 +135,14 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: fontSize.xl, fontWeight: '700', color: colors.stone[900] },
   email: { fontSize: fontSize.sm, color: colors.stone[500], marginTop: 2 },
+  bioCard: {
+    backgroundColor: colors.white,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+  },
+  bio: { fontSize: fontSize.sm, color: colors.stone[700], lineHeight: 20 },
   rateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

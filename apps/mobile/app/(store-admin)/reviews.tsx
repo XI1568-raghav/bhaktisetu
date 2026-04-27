@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PortalScreen, Section } from '../../lib/portal-screen';
+import { useProducts } from '@poojly/api-client';
+import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface PendingReview {
@@ -13,7 +14,7 @@ interface PendingReview {
   flagged?: string;
 }
 
-const PENDING: PendingReview[] = [
+const FALLBACK: PendingReview[] = [
   {
     id: '1',
     product: 'Premium Rudraksha Mala',
@@ -49,52 +50,70 @@ function Stars({ count }: { count: number }) {
 }
 
 export default function StoreReviews() {
-  const [items, setItems] = useState<PendingReview[]>(PENDING);
+  const productsQuery = useProducts();
+  const [items, setItems] = useState<PendingReview[]>(FALLBACK);
+  const [refreshing, setRefreshing] = useState(false);
 
   function act(id: string, action: 'approve' | 'reject') {
     Alert.alert(action === 'approve' ? 'Approved' : 'Rejected', `Review #${id} ${action}d.`);
     setItems((s) => s.filter((it) => it.id !== id));
   }
 
+  async function onRefresh() {
+    setRefreshing(true);
+    await productsQuery.refetch();
+    setItems(FALLBACK);
+    setRefreshing(false);
+  }
+
   return (
-    <PortalScreen title="Review Queue" subtitle={`${items.length} pending moderation`}>
+    <PortalScreen
+      title="Review Queue"
+      subtitle={`${items.length} pending moderation`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <Section title="Pending Approval">
-        {items.map((r) => (
-          <View key={r.id} style={styles.card}>
-            <View style={styles.head}>
-              <View>
-                <Text style={styles.product}>{r.product}</Text>
-                <Text style={styles.author}>{r.author}</Text>
+        {items.length === 0 ? (
+          <EmptyHint text="Queue is empty. Pull to refresh." />
+        ) : (
+          items.map((r) => (
+            <View key={r.id} style={styles.card}>
+              <View style={styles.head}>
+                <View>
+                  <Text style={styles.product}>{r.product}</Text>
+                  <Text style={styles.author}>{r.author}</Text>
+                </View>
+                <Stars count={r.rating} />
               </View>
-              <Stars count={r.rating} />
-            </View>
-            <Text style={styles.comment}>{r.comment}</Text>
-            {r.flagged ? (
-              <View style={styles.flagPill}>
-                <Ionicons name="warning" size={11} color={colors.red[600]} />
-                <Text style={styles.flagText}>{r.flagged}</Text>
+              <Text style={styles.comment}>{r.comment}</Text>
+              {r.flagged ? (
+                <View style={styles.flagPill}>
+                  <Ionicons name="warning" size={11} color={colors.red[600]} />
+                  <Text style={styles.flagText}>{r.flagged}</Text>
+                </View>
+              ) : null}
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  onPress={() => act(r.id, 'approve')}
+                  style={[styles.btn, { backgroundColor: colors.green[600] }]}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="checkmark" size={14} color={colors.white} />
+                  <Text style={styles.btnText}>Approve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => act(r.id, 'reject')}
+                  style={[styles.btn, { backgroundColor: colors.red[600] }]}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={14} color={colors.white} />
+                  <Text style={styles.btnText}>Reject</Text>
+                </TouchableOpacity>
               </View>
-            ) : null}
-            <View style={styles.actions}>
-              <TouchableOpacity
-                onPress={() => act(r.id, 'approve')}
-                style={[styles.btn, { backgroundColor: colors.green[600] }]}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="checkmark" size={14} color={colors.white} />
-                <Text style={styles.btnText}>Approve</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => act(r.id, 'reject')}
-                style={[styles.btn, { backgroundColor: colors.red[600] }]}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={14} color={colors.white} />
-                <Text style={styles.btnText}>Reject</Text>
-              </TouchableOpacity>
             </View>
-          </View>
-        ))}
+          ))
+        )}
       </Section>
     </PortalScreen>
   );

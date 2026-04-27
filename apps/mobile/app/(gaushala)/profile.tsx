@@ -1,13 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useGaushalas } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 export default function GaushalaProfile() {
   const { user, signOut } = useAuth();
+  const gaushalasQuery = useGaushalas();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const me = gaushalasQuery.data?.gaushalas?.find(
+    (g) => g.name === user?.fullName || (user?.email && (g as { email?: string }).email === user.email),
+  );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await gaushalasQuery.refetch();
+    setRefreshing(false);
+  }
 
   function handleSignOut() {
     Alert.alert('Sign Out', 'Are you sure?', [
@@ -24,16 +37,33 @@ export default function GaushalaProfile() {
   }
 
   return (
-    <PortalScreen title="Profile" subtitle="Gaushala details">
+    <PortalScreen
+      title="Profile"
+      subtitle="Gaushala details"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={styles.userCard}>
         <View style={styles.avatar}>
           <Ionicons name="paw" size={28} color="#92400E" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{user?.fullName ?? 'Manager'}</Text>
+          <Text style={styles.name}>{me?.name ?? user?.fullName ?? 'Manager'}</Text>
           {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
+          {me?.location ? <Text style={styles.email}>{me.location}</Text> : null}
+          {typeof me?.cowCount === 'number' ? (
+            <Text style={styles.email}>{me.cowCount} cows in care</Text>
+          ) : null}
         </View>
       </View>
+
+      {me?.description ? (
+        <Section title="About">
+          <View style={styles.bioCard}>
+            <Text style={styles.bio}>{me.description}</Text>
+          </View>
+        </Section>
+      ) : null}
 
       <Section title="Registration">
         <View style={styles.row}>
@@ -68,6 +98,11 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: fontSize.xl, fontWeight: '700', color: colors.stone[900] },
   email: { fontSize: fontSize.sm, color: colors.stone[500], marginTop: 2 },
+  bioCard: {
+    backgroundColor: colors.white, padding: spacing.md,
+    borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.stone[100],
+  },
+  bio: { fontSize: fontSize.sm, color: colors.stone[700], lineHeight: 20 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: colors.white, padding: spacing.md, borderRadius: borderRadius.md,

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PortalScreen, Section, StatCard } from '../../lib/portal-screen';
+import { usePriestDashboard, usePriestBookings } from '@poojly/api-client';
+import { PortalScreen, Section, StatCard, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Review {
@@ -13,9 +14,9 @@ interface Review {
   date: string;
 }
 
-const REVIEWS: Review[] = [
+const FALLBACK_REVIEWS: Review[] = [
   {
-    id: '1',
+    id: 'sample-1',
     devotee: 'Anjali S.',
     rating: 5,
     comment: 'Beautiful Rudrabhishek. Felt every mantra. Video proof was very clear.',
@@ -23,7 +24,7 @@ const REVIEWS: Review[] = [
     date: '3 days ago',
   },
   {
-    id: '2',
+    id: 'sample-2',
     devotee: 'Ramesh K.',
     rating: 5,
     comment: 'Pandit ji explained every step. Prasad arrived on time.',
@@ -31,7 +32,7 @@ const REVIEWS: Review[] = [
     date: '1 week ago',
   },
   {
-    id: '3',
+    id: 'sample-3',
     devotee: 'Priya M.',
     rating: 4,
     comment: 'Very devotional. Slight delay in prasad delivery but the puja was excellent.',
@@ -56,11 +57,46 @@ function Stars({ count }: { count: number }) {
 }
 
 export default function PriestReviews() {
-  const total = REVIEWS.length;
-  const average = total > 0 ? REVIEWS.reduce((a, r) => a + r.rating, 0) / total : 0;
+  const dashboardQuery = usePriestDashboard();
+  const bookingsQuery = usePriestBookings();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const dash = dashboardQuery.data;
+  const completed = (bookingsQuery.data?.bookings ?? []).filter((b) =>
+    b.status.toLowerCase().includes('complet'),
+  );
+
+  const reviews: Review[] = completed.length > 0
+    ? completed.slice(0, 10).map((b) => ({
+        id: b.id,
+        devotee: b.devoteeName,
+        rating: 5,
+        comment: 'Devotee feedback will appear once submitted.',
+        pujaName: b.pujaName,
+        date: b.scheduledDate,
+      }))
+    : FALLBACK_REVIEWS;
+
+  const total = dash?.ratingCount ?? reviews.length;
+  const average = dash?.rating ?? (
+    reviews.length > 0
+      ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length
+      : 0
+  );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await Promise.all([dashboardQuery.refetch(), bookingsQuery.refetch()]);
+    setRefreshing(false);
+  }
 
   return (
-    <PortalScreen title="Reviews" subtitle={`${total} from devotees`}>
+    <PortalScreen
+      title="Reviews"
+      subtitle={`${total} from devotees`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={{ flexDirection: 'row' }}>
         <StatCard
           label="Average"
@@ -73,18 +109,22 @@ export default function PriestReviews() {
       </View>
 
       <Section title="Recent Reviews">
-        {REVIEWS.map((r) => (
-          <View key={r.id} style={styles.card}>
-            <View style={styles.cardHead}>
-              <Text style={styles.author}>{r.devotee}</Text>
-              <Stars count={r.rating} />
+        {reviews.length === 0 ? (
+          <EmptyHint text="No reviews yet. Complete a booking to start collecting feedback." />
+        ) : (
+          reviews.map((r) => (
+            <View key={r.id} style={styles.card}>
+              <View style={styles.cardHead}>
+                <Text style={styles.author}>{r.devotee}</Text>
+                <Stars count={r.rating} />
+              </View>
+              <Text style={styles.puja}>
+                {r.pujaName} • {r.date}
+              </Text>
+              <Text style={styles.comment}>{r.comment}</Text>
             </View>
-            <Text style={styles.puja}>
-              {r.pujaName} • {r.date}
-            </Text>
-            <Text style={styles.comment}>{r.comment}</Text>
-          </View>
-        ))}
+          ))
+        )}
       </Section>
     </PortalScreen>
   );

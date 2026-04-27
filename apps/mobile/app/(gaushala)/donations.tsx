@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
+import { useGaushalas } from '@poojly/api-client';
 import {
   PortalScreen,
   Section,
   StatCard,
   ListRow,
+  EmptyHint,
 } from '../../lib/portal-screen';
 import { colors, spacing } from '../../lib/theme';
 
@@ -17,7 +19,7 @@ interface Donation {
   recurring?: boolean;
 }
 
-const DONATIONS: Donation[] = [
+const FALLBACK: Donation[] = [
   { id: '1', donor: 'Anjali S.', type: 'adoption', amount: 1100, date: 'Today', recurring: true },
   { id: '2', donor: 'Ramesh K.', type: 'feeding', amount: 251, date: 'Today' },
   { id: '3', donor: 'Priya M.', type: 'general', amount: 5000, date: 'Yesterday' },
@@ -34,11 +36,26 @@ const TYPE_COLOR: Record<Donation['type'], string> = {
 };
 
 export default function GaushalaDonations() {
-  const total = DONATIONS.reduce((a, d) => a + d.amount, 0);
-  const recurring = DONATIONS.filter((d) => d.recurring).length;
+  const gaushalasQuery = useGaushalas();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const donations = FALLBACK;
+  const total = donations.reduce((a, d) => a + d.amount, 0);
+  const recurring = donations.filter((d) => d.recurring).length;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await gaushalasQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
-    <PortalScreen title="Donations" subtitle={`${DONATIONS.length} entries`}>
+    <PortalScreen
+      title="Donations"
+      subtitle={`${donations.length} entries`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={{ flexDirection: 'row' }}>
         <StatCard label="This Month" value={`₹${total.toLocaleString('en-IN')}`} accent={colors.green[600]} />
         <View style={{ width: spacing.sm }} />
@@ -46,15 +63,19 @@ export default function GaushalaDonations() {
       </View>
 
       <Section title="Recent Donations">
-        {DONATIONS.map((d) => (
-          <ListRow
-            key={d.id}
-            primary={`${d.donor}${d.recurring ? ' (recurring)' : ''}`}
-            secondary={`${d.type.toUpperCase()} • ${d.date}`}
-            trailing={`₹${d.amount.toLocaleString('en-IN')}`}
-            status={{ label: d.type, color: TYPE_COLOR[d.type] }}
-          />
-        ))}
+        {donations.length === 0 ? (
+          <EmptyHint text="No donations recorded yet." />
+        ) : (
+          donations.map((d) => (
+            <ListRow
+              key={d.id}
+              primary={`${d.donor}${d.recurring ? ' (recurring)' : ''}`}
+              secondary={`${d.type.toUpperCase()} • ${d.date}`}
+              trailing={`₹${d.amount.toLocaleString('en-IN')}`}
+              status={{ label: d.type, color: TYPE_COLOR[d.type] }}
+            />
+          ))
+        )}
       </Section>
     </PortalScreen>
   );
