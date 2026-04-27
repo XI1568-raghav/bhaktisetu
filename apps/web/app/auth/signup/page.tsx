@@ -202,7 +202,6 @@ interface WellnessFormData extends BaseFormData {
 
 interface GauSevaFormData extends BaseFormData {
  organizationName: string;
- organizationType: string;
 }
 
 type FormData = BaseFormData & Partial<PanditFormData & StoreFormData & AstrologerFormData & WellnessFormData & GauSevaFormData>;
@@ -220,7 +219,6 @@ const STORE_CATEGORIES = [
 const ASTROLOGY_SPECIALTIES = ['Vedic Astrology', 'Tarot Reading', 'Numerology', 'Palmistry', 'Vastu Shastra'];
 const ASTROLOGY_LANGUAGES = ['Hindi', 'English', 'Sanskrit', 'Tamil', 'Telugu', 'Bengali', 'Marathi', 'Gujarati'];
 const WELLNESS_TYPES = ['Yoga', 'Meditation', 'Vipassana', 'Pranayama', 'Ayurveda Wellness'];
-const ORG_TYPES = ['Gaushala', 'Temple'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -380,7 +378,6 @@ export default function SignupPage() {
  wellnessType: [],
  certifications: '',
  organizationName: '',
- organizationType: 'Temple',
  });
  const [showPassword, setShowPassword] = useState(false);
  const [acceptTerms, setAcceptTerms] = useState(false);
@@ -788,8 +785,8 @@ export default function SignupPage() {
  <>
  <FormInput
  id="organizationName"
- label="Organization Name"
- placeholder="e.g. Shri Gau Seva Sansthan"
+ label={selectedRole === 'gaushala_manager' ? 'Gaushala Name' : 'Temple Name'}
+ placeholder={selectedRole === 'gaushala_manager' ? 'e.g. Shri Gau Seva Sansthan' : 'e.g. Shri Kashi Vishwanath Mandir'}
  value={formData.organizationName || ''}
  onChange={(v) => updateField('organizationName', v)}
  icon={Building2}
@@ -797,32 +794,11 @@ export default function SignupPage() {
  <FormInput
  id="city"
  label="City"
- placeholder="e.g. Mathura"
+ placeholder={selectedRole === 'gaushala_manager' ? 'e.g. Mathura' : 'e.g. Varanasi'}
  value={formData.city || ''}
  onChange={(v) => updateField('city', v)}
  icon={MapPin}
  />
- <div className="mb-4">
- <label className="block text-sm font-medium text-surface-700 mb-2">
- Organization Type
- </label>
- <div className="flex gap-3">
- {ORG_TYPES.map((t) => (
- <button
- key={t}
- type="button"
- onClick={() => updateField('organizationType', t)}
- className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${
- formData.organizationType === t
- ? 'bg-saffron-100 border-saffron-400 text-saffron-700'
- : 'bg-white border-surface-200 text-surface-600 hover:border-surface-300'
- }`}
- >
- {t}
- </button>
- ))}
- </div>
- </div>
  </>
  );
 
