@@ -1089,7 +1089,7 @@ export default function SignupPage() {
  <Flame className="w-4 h-4 text-saffron-600" />
  </div>
  <span className="text-xl font-semibold text-surface-800 tracking-tight">
- Bhakti<span className="text-saffron-600">setu</span>
+ Darsh<span className="text-saffron-600">ya</span>
  </span>
  </div>
  <p className="text-surface-500 text-sm">
