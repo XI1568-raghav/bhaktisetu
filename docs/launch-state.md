@@ -1,7 +1,8 @@
 # Launch state
 
 > High-churn doc. Update this when phases progress, files are added, or open items resolve.
-> Last refreshed: 2026-04-27.
+> Last refreshed: 2026-04-27 (post chat-security pass).
+> **Next session: read `docs/session-handoff.md` first** — it captures the live state of the in-flight 12-item list and what was deferred.
 
 ## 🎉 LAUNCH STATUS: ALL DAYS GREEN
 
