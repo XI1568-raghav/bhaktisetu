@@ -149,9 +149,22 @@ export async function onboardingRoutes(server: FastifyInstance) {
 
     const userId = request.currentUser!.id;
 
-    // Demo users (id starts with `demo-`) are not real DB rows; skip the
-    // write so we don't FK-violate the user_role_assignments.user_id ref.
-    if (userId.startsWith('demo-')) {
+    // Refuse to persist provider profiles for any demo session.
+    //
+    // Two cases the middleware can hand us:
+    //   (a) userId itself starts with "demo-" — pre-DB-seed fallback id.
+    //   (b) auth middleware mapped a "demo-..." access token to a real
+    //       seeded demo user (e.g. devotee@demo.com), giving us a real
+    //       UUID. Without this guard a smoke-test signup that demo-mode
+    //       fell through to would write a pandit_profiles row attached
+    //       to the devotee demo user — contaminating /admin/approvals.
+    //
+    // The access-token check covers (b); the id-prefix check covers (a).
+    const authHeader = request.headers.authorization ?? '';
+    const accessToken = authHeader.replace(/^Bearer\s+/i, '');
+    const isDemoSession = userId.startsWith('demo-') || accessToken.startsWith('demo-');
+
+    if (isDemoSession) {
       return reply.code(202).send({
         message: 'Demo session — profile not persisted. Sign up with a real email to submit for approval.',
         demoMode: true,
@@ -190,7 +203,9 @@ export async function onboardingRoutes(server: FastifyInstance) {
       });
     }
 
-    if (userId.startsWith('demo-')) {
+    const authHeader = request.headers.authorization ?? '';
+    const accessToken = authHeader.replace(/^Bearer\s+/i, '');
+    if (userId.startsWith('demo-') || accessToken.startsWith('demo-')) {
       return reply.send({ profile: null, demoMode: true });
     }
 
