@@ -164,6 +164,10 @@ export class TempleService {
    * Uses raw SQL for the geospatial computation.
    */
   async findNearby(lat: number, lng: number, radiusKm: number = 25) {
+    // Postgres rejects HAVING without GROUP BY, so the distance filter
+    // lives on an outer SELECT over a subquery that exposes the computed
+    // distance_km. Also clamps to non-null lat/lng — temples without
+    // coordinates can't be ranked geographically and would crash acos().
     const temples = await prisma.$queryRaw<
       Array<{
         id: string;
@@ -183,20 +187,26 @@ export class TempleService {
         distance_km: number;
       }>
     >`
-      SELECT
-        id, name, name_local, slug, deity_primary, tradition,
-        city, state, lat, lng, images, is_verified, trust_score,
-        live_darshan_enabled,
-        (
-          6371 * acos(
-            cos(radians(${lat})) * cos(radians(lat))
-            * cos(radians(lng) - radians(${lng}))
-            + sin(radians(${lat})) * sin(radians(lat))
-          )
-        ) AS distance_km
-      FROM temples
-      WHERE status = 'active'
-      HAVING distance_km <= ${radiusKm}
+      SELECT * FROM (
+        SELECT
+          id, name, name_local, slug, deity_primary, tradition,
+          city, state, lat, lng, images, is_verified, trust_score,
+          live_darshan_enabled,
+          (
+            6371 * acos(
+              LEAST(1.0, GREATEST(-1.0,
+                cos(radians(${lat})) * cos(radians(lat))
+                * cos(radians(lng) - radians(${lng}))
+                + sin(radians(${lat})) * sin(radians(lat))
+              ))
+            )
+          ) AS distance_km
+        FROM temples
+        WHERE status = 'active'
+          AND lat IS NOT NULL
+          AND lng IS NOT NULL
+      ) AS t
+      WHERE distance_km <= ${radiusKm}
       ORDER BY distance_km ASC
       LIMIT 50
     `;
