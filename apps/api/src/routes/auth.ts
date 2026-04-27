@@ -34,6 +34,12 @@ const logoutSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required'),
 });
 
+const googleSyncSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+  refreshToken: z.string().min(1, 'Refresh token is required'),
+  expiresAt: z.number().nullable().optional(),
+});
+
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -620,4 +626,113 @@ export async function authRoutes(server: FastifyInstance) {
 
   server.post('/signup', signupHandler);
   server.post('/register', signupHandler);
+
+  /**
+   * POST /auth/google/sync
+   * Web finishes the Google OAuth dance with Supabase client-side. The
+   * Supabase access_token it receives is already valid for our Supabase
+   * project; we use it to identify the user, then upsert the matching
+   * Prisma row keyed on email. Returns the same {session, user} shape as
+   * /auth/login so the web auth-context can store it identically.
+   */
+  server.post('/google/sync', async (request, reply) => {
+    const parseResult = googleSyncSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      return reply.code(400).send({
+        error: 'ValidationError',
+        message: parseResult.error.errors[0]?.message || 'Invalid request body',
+      });
+    }
+
+    const { accessToken, refreshToken, expiresAt } = parseResult.data;
+
+    const supabase = createSupabaseClient(accessToken);
+    const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
+
+    if (authError || !authData.user) {
+      return reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Invalid Google session',
+      });
+    }
+
+    const supaUser = authData.user;
+    const email = supaUser.email?.toLowerCase();
+    if (!email) {
+      return reply.code(400).send({
+        error: 'BadRequest',
+        message: 'Google account did not return an email address',
+      });
+    }
+
+    // Block colliding with reserved demo accounts (same guard as /signup).
+    if (DEMO_ACCOUNTS[email]) {
+      return reply.code(409).send({
+        error: 'Conflict',
+        message: 'This email is reserved for demo accounts.',
+      });
+    }
+
+    // Pull a display name from Google metadata; fall back to the email local-part.
+    const meta = (supaUser.user_metadata || {}) as Record<string, unknown>;
+    const fullName =
+      (typeof meta.full_name === 'string' && meta.full_name) ||
+      (typeof meta.name === 'string' && meta.name) ||
+      email.split('@')[0] ||
+      'New user';
+    const avatarUrl =
+      (typeof meta.avatar_url === 'string' && meta.avatar_url) ||
+      (typeof meta.picture === 'string' && meta.picture) ||
+      null;
+
+    try {
+      const dbUser = await prisma.user.upsert({
+        where: { email },
+        update: {
+          // Refresh display fields on every login so a Google avatar/name change reflects.
+          fullName,
+          avatarUrl,
+        },
+        // phone is nullable after the 20260428_phone_nullable migration; the
+        // `as any` shields us from a stale generated client that still types
+        // it as required (regen happens on next deploy).
+        create: ({
+          id: supaUser.id,
+          email,
+          fullName,
+          avatarUrl,
+          phone: null,
+          preferredLanguage: 'hi',
+        } as any),
+        include: { subscription: { where: { status: 'active' }, take: 1 } },
+      }) as any;
+
+      return reply.send({
+        session: {
+          accessToken,
+          refreshToken,
+          expiresAt: expiresAt ?? null,
+        },
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          phone: dbUser.phone,
+          fullName: dbUser.fullName,
+          role: (dbUser as any).role || 'devotee',
+          avatarUrl: dbUser.avatarUrl,
+          preferredLanguage: dbUser.preferredLanguage,
+          subscriptionTier: dbUser.subscriptionTier,
+          createdAt: dbUser.createdAt,
+          activeSubscription: dbUser.subscription[0] || null,
+          isNewUser: dbUser.fullName === fullName && Date.now() - new Date(dbUser.createdAt).getTime() < 5000,
+        },
+      });
+    } catch (err) {
+      request.log.error({ err, email }, 'Google sync — DB upsert failed');
+      return reply.code(500).send({
+        error: 'DatabaseError',
+        message: 'Failed to sync user account. Please try again.',
+      });
+    }
+  });
 }
