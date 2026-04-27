@@ -32,27 +32,42 @@ interface SearchHit {
   url: string;
 }
 
+// Different tables have different column names — content_items uses
+// (title, body); temples and puja_types use (name, description).
+// Map each whitelisted table to its display columns.
+const TABLE_COLS: Record<
+  'content_items' | 'temples' | 'puja_types',
+  { titleCol: string; snippetCol: string }
+> = {
+  content_items: { titleCol: 'title', snippetCol: 'body' },
+  temples:       { titleCol: 'name',  snippetCol: 'description' },
+  puja_types:    { titleCol: 'name',  snippetCol: 'description' },
+};
+
 async function vectorSearch(
   table: 'content_items' | 'temples' | 'puja_types',
   embedding: number[],
   limit: number,
 ): Promise<Array<{ id: string; title: string; snippet: string; score: number }>> {
   const lit = toPgVector(embedding);
-  // Use $queryRawUnsafe — table name is whitelisted above so no injection risk
+  const { titleCol, snippetCol } = TABLE_COLS[table];
+  const lim = Math.max(1, Math.min(50, limit));
+  // table + column names are whitelisted (not from user input) so safe to interpolate.
   try {
-    const rows = await prisma.$queryRawUnsafe<
+    return await prisma.$queryRawUnsafe<
       Array<{ id: string; title: string; snippet: string; score: number }>
     >(
-      `select id, title,
-              coalesce(left(description, 240), '') as snippet,
+      `select id,
+              ${titleCol} as title,
+              coalesce(left(${snippetCol}, 240), '') as snippet,
               1 - (embedding <=> '${lit}'::vector) as score
-       from ${table}
-       where embedding is not null
-       order by embedding <=> '${lit}'::vector
-       limit ${Math.max(1, Math.min(50, limit))}`,
+         from ${table}
+        where embedding is not null
+        order by embedding <=> '${lit}'::vector
+        limit ${lim}`,
     );
-    return rows;
-  } catch {
+  } catch (err) {
+    console.warn(`[semantic-search] ${table} vector query failed:`, (err as Error).message);
     return [];
   }
 }
