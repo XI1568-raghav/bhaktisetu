@@ -88,6 +88,29 @@ function normalizePhone(phone: string): string {
 // ─── Routes ────────────────────────────────────────────────────────────────────
 
 export async function authRoutes(server: FastifyInstance) {
+  // Log every auth-route hit with the Cloudflare-provided country code so
+  // we can answer "is auth working from country X?" by reading prod logs
+  // instead of round-tripping a VPN. cf-ipcountry is set by Cloudflare on
+  // every request that traverses the proxy; missing means the request
+  // came in directly (e.g. local dev or a debugging curl). We don't log
+  // PII — just route, country, status, and (for failures) the response
+  // code, which is enough to spot a geo-block pattern.
+  server.addHook('onResponse', async (request, reply) => {
+    const country = request.headers['cf-ipcountry'];
+    if (typeof country === 'string' && country.length > 0) {
+      request.log.info(
+        {
+          authEvent: true,
+          route: request.routeOptions.url ?? request.url,
+          method: request.method,
+          country,
+          status: reply.statusCode,
+        },
+        'auth.geo',
+      );
+    }
+  });
+
   /**
    * POST /send-otp
    * Sends a one-time password to the given phone number via Supabase Auth (SMS).
