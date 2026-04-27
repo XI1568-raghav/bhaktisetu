@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/mcp.json",
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${env:DATABASE_URL}"
+      ],
+      "comment": "Read/write access to the Supabase Postgres prod DB. The connection string lives in apps/api/.env as DATABASE_URL. Only loads when DATABASE_URL is exported in the shell that started Claude. For triage of live data without writing throwaway scripts."
+    },
+    "sentry": {
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server@latest"],
+      "env": {
+        "SENTRY_AUTH_TOKEN": "${env:SENTRY_AUTH_TOKEN}",
+        "SENTRY_ORG": "${env:SENTRY_ORG}",
+        "SENTRY_PROJECT": "${env:SENTRY_PROJECT}"
+      },
+      "comment": "Read prod errors from Sentry. Needs SENTRY_AUTH_TOKEN (User Auth Token from Sentry → Settings → Account → API → Auth Tokens, scope project:read), SENTRY_ORG (your org slug), SENTRY_PROJECT (project slug)."
+    },
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${env:FIRECRAWL_API_KEY}"
+      },
+      "comment": "Web scraping for competitor research / SEO content gaps. Free tier 500 pages/mo at firecrawl.dev. Set FIRECRAWL_API_KEY in your shell env before starting Claude."
+    }
+  }
+}
