@@ -1087,7 +1087,7 @@ export default function OnboardingPage() {
  <div className="max-w-2xl mx-auto flex items-center justify-between">
  <div className="flex items-center gap-2">
  <span className="text-lg font-semibold text-surface-800 tracking-tight">
- Bhakti<span className="text-saffron-600">setu</span>
+ Darsh<span className="text-saffron-600">ya</span>
  </span>
  </div>
  <span className="text-xs text-surface-400">
