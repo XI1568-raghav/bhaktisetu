@@ -560,16 +560,31 @@ export async function authRoutes(server: FastifyInstance) {
         });
       }
 
-      // Create user record in our DB
-      // phone is optional in signup form but required in DB schema; use type assertion to allow omission
-      const user = await prisma.user.create({
-        data: {
+      // Upsert user in our DB. We use the Supabase auth.users.id as our
+      // primary key so foreign keys line up; upsert (instead of create)
+      // makes signup idempotent if Supabase succeeded on a prior attempt
+      // but our DB write didn't.
+      // `phone` is optional in the signup form but the schema column is
+      // unique. Send a real value when provided; pass null otherwise so
+      // the multi-NULL unique-index path handles it cleanly.
+      const phoneValue = phone && phone.trim() ? phone.trim() : null;
+      const user = await prisma.user.upsert({
+        where: { id: authData.user.id },
+        update: {
+          email: emailLower,
+          fullName,
+          // Only overwrite phone if the user supplied one this time;
+          // never wipe a previously-set phone with null.
+          ...(phoneValue ? { phone: phoneValue } : {}),
+          locationCity: city || undefined,
+        },
+        create: ({
           id: authData.user.id,
           email: emailLower,
           fullName,
-          phone: (phone as string),
+          phone: phoneValue,
           locationCity: city || undefined,
-        },
+        } as any),
       });
 
       return reply.code(201).send({
@@ -592,17 +607,28 @@ export async function authRoutes(server: FastifyInstance) {
           : 'Account created. Your profile is pending approval.',
       });
     } catch (err: any) {
-      request.log.warn({ err: err?.message, email: emailLower }, 'Signup DB/Supabase unavailable — using demo mode');
+      request.log.error({ err: err?.message, code: err?.code, email: emailLower }, 'Signup failed');
 
-      // Handle duplicate email
+      // Handle duplicate email/phone
       if (err?.code === 'P2002') {
-        return reply.code(409).send({
-          error: 'Conflict',
-          message: 'An account with this email already exists',
+        const target = Array.isArray(err?.meta?.target) ? err.meta.target.join(',') : String(err?.meta?.target ?? '');
+        const friendly = target.includes('phone')
+          ? 'An account with this phone number already exists'
+          : 'An account with this email already exists';
+        return reply.code(409).send({ error: 'Conflict', message: friendly });
+      }
+
+      // In dev (Supabase NOT configured), fall back to a demo session so the
+      // local signup flow still works without a live backend. In prod, surface
+      // the real error so we can fix it instead of silently masking it.
+      const supabaseConfigured = !!process.env.SUPABASE_URL && process.env.SUPABASE_URL !== 'https://demo.supabase.co';
+      if (supabaseConfigured) {
+        return reply.code(500).send({
+          error: 'SignupFailed',
+          message: err?.message || 'Could not create account. Please try again.',
         });
       }
 
-      // DB/Supabase unavailable — return demo session so signup still works in dev
       const demoId = `demo-${emailLower.split('@')[0]}-${Date.now()}`;
       return reply.code(201).send({
         session: {

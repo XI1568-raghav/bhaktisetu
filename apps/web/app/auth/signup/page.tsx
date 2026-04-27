@@ -18,7 +18,13 @@ import {
  ShoppingBag,
  FileText,
  Award,
+ HeartHandshake,
+ Store,
+ Sparkles,
+ Leaf,
+ Heart,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 
@@ -104,7 +110,7 @@ interface RoleOption {
  value: UserRole;
  label: string;
  description: string;
- icon: string;
+ icon: LucideIcon;
  isProvider: boolean;
 }
 
@@ -113,42 +119,49 @@ const roleOptions: RoleOption[] = [
  value: 'devotee',
  label: 'Devotee',
  description: 'Book pujas, watch darshan, explore spiritual content',
- icon: '\u{1F64F}',
+ icon: HeartHandshake,
  isProvider: false,
  },
  {
  value: 'priest',
  label: 'Pandit',
  description: 'Perform pujas, manage bookings, receive payouts',
- icon: '\u{1FA94}',
+ icon: Flame,
  isProvider: true,
  },
  {
  value: 'store_owner',
  label: 'Store Owner',
  description: 'Sell puja items, prasad, and devotional products',
- icon: '\u{1F3EA}',
+ icon: Store,
  isProvider: true,
  },
  {
  value: 'astrologer',
  label: 'Astrologer',
  description: 'Provide consultations, horoscope readings, and guidance',
- icon: '\u{1F52E}',
+ icon: Sparkles,
  isProvider: true,
  },
  {
  value: 'wellness_instructor',
  label: 'Wellness Instructor',
  description: 'Teach yoga, meditation, and vipassana sessions',
- icon: '\u{1F9D8}',
+ icon: Leaf,
  isProvider: true,
  },
  {
  value: 'gaushala_manager',
- label: 'Gau Seva / Temple Manager',
- description: 'Manage gaushala, temple services, and darshan streaming',
- icon: '\u{1F3DB}\uFE0F',
+ label: 'Gau Seva',
+ description: 'Manage gaushala operations, donations, and volunteers',
+ icon: Heart,
+ isProvider: true,
+ },
+ {
+ value: 'temple_manager',
+ label: 'Temple Manager',
+ description: 'Manage temple services, darshan streaming, and pujas',
+ icon: Building2,
  isProvider: true,
  },
 ];
@@ -554,7 +567,9 @@ export default function SignupPage() {
  <p className="text-sm text-surface-500 mb-5">Select how you want to use Darshya</p>
 
  <div className="grid grid-cols-2 gap-3">
- {roleOptions.map((option) => (
+ {roleOptions.map((option) => {
+ const Icon = option.icon;
+ return (
  <button
  key={option.value}
  onClick={() => setSelectedRole(option.value)}
@@ -564,7 +579,11 @@ export default function SignupPage() {
  : 'border-surface-200 hover:border-surface-300 hover:bg-surface-50'
  }`}
  >
- <span className="text-2xl leading-none">{option.icon}</span>
+ <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${
+ selectedRole === option.value ? 'bg-saffron-100 text-saffron-700' : 'bg-surface-100 text-surface-500'
+ }`}>
+ <Icon className="w-5 h-5" />
+ </span>
  <div className="min-w-0">
  <p className={`text-sm font-semibold ${
  selectedRole === option.value ? 'text-saffron-700' : 'text-surface-700'
@@ -581,7 +600,8 @@ export default function SignupPage() {
  </span>
  )}
  </button>
- ))}
+ );
+ })}
  </div>
 
  <button
@@ -829,7 +849,14 @@ export default function SignupPage() {
  <StepIndicator current={1} total={3} />
 
  <div className="flex items-center gap-2 mb-4">
- <span className="text-xl">{currentRoleOption?.icon}</span>
+ {currentRoleOption?.icon ? (() => {
+ const Icon = currentRoleOption.icon;
+ return (
+ <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-saffron-100 text-saffron-700">
+ <Icon className="w-5 h-5" />
+ </span>
+ );
+ })() : null}
  <div>
  <h2 className="text-base font-semibold text-surface-800">
  Sign up as {currentRoleOption?.label}
