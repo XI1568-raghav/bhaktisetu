@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { MapPin, Star, Award, Languages, ArrowRight } from 'lucide-react';
 import { getApprovedProviders, type ApprovedProvider } from '../../lib/api';
 
+export const runtime = 'edge';
+
 export const metadata: Metadata = {
  title: 'Verified Pandits on Darshya',
  description:
