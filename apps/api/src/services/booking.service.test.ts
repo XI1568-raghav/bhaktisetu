@@ -198,6 +198,10 @@ describe('BookingService.updateBookingStatus', () => {
     prismaMock.pujaBooking.update.mockResolvedValue({
       id: 'booking-1',
       status: 'confirmed',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: null,
     });
 
     const result = await service.updateBookingStatus('booking-1', 'confirmed' as any);
@@ -212,6 +216,10 @@ describe('BookingService.updateBookingStatus', () => {
     prismaMock.pujaBooking.update.mockResolvedValue({
       id: 'booking-1',
       status: 'priest_assigned',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
     });
 
     const result = await service.updateBookingStatus(
