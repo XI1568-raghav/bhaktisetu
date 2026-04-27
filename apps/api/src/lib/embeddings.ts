@@ -44,7 +44,10 @@ export async function generateEmbedding(
   text: string,
   inputType: InputType = 'search_document',
 ): Promise<number[] | null> {
-  if (!enabled) return null;
+  if (!enabled) {
+    console.warn('[embeddings] disabled — COHERE_API_KEY not set on this server');
+    return null;
+  }
   const trimmed = text.replace(/\s+/g, ' ').trim().slice(0, 2048);
   if (!trimmed) return null;
   try {
@@ -61,10 +64,19 @@ export async function generateEmbedding(
         embedding_types: ['float'],
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => '<read failed>');
+      console.warn(`[embeddings] Cohere ${res.status}: ${body.slice(0, 200)}`);
+      return null;
+    }
     const data = (await res.json()) as CohereEmbedResponse;
-    return extractVectors(data)[0] ?? null;
-  } catch {
+    const vec = extractVectors(data)[0];
+    if (!vec) {
+      console.warn('[embeddings] Cohere 200 but no vector in response shape');
+    }
+    return vec ?? null;
+  } catch (err) {
+    console.warn('[embeddings] Cohere fetch threw:', (err as Error).message);
     return null;
   }
 }
