@@ -1,6 +1,6 @@
 'use client';
 
-import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon, MessageSquare } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth, getRoleLabel, getRoleDashboardPath } from '../lib/auth-context';
 
@@ -102,6 +102,14 @@ export default function NavAuthButton() {
  >
  <LayoutDashboard className="w-4 h-4" />
  Dashboard
+ </a>
+
+ <a
+ href="/messages"
+ className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors"
+ >
+ <MessageSquare className="w-4 h-4" />
+ Messages
  </a>
 
  {/* Devotee-specific links */}

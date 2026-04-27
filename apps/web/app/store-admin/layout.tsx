@@ -15,12 +15,14 @@ import {
  ChevronRight,
  UserCircle,
  Star,
+ MessageSquare,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
  { href: '/store-admin', label: 'Dashboard', icon: LayoutDashboard },
+ { href: '/store-admin/messages', label: 'Messages', icon: MessageSquare },
  { href: '/store-admin/products', label: 'Products', icon: Package },
  { href: '/store-admin/orders', label: 'Orders', icon: ShoppingCart },
  { href: '/store-admin/reviews', label: 'Reviews', icon: Star },

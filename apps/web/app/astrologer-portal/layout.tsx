@@ -19,7 +19,8 @@ import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
  { href: '/astrologer-portal', label: 'Dashboard', icon: LayoutDashboard },
- { href: '/astrologer-portal/consultations', label: 'Consultations', icon: MessageSquare },
+ { href: '/astrologer-portal/messages', label: 'Messages', icon: MessageSquare },
+ { href: '/astrologer-portal/consultations', label: 'Consultations', icon: CalendarClock },
  { href: '/astrologer-portal/availability', label: 'Availability', icon: CalendarClock },
  { href: '/astrologer-portal/profile', label: 'Profile', icon: UserCircle },
 ];

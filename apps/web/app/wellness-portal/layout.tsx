@@ -13,12 +13,14 @@ import {
  X,
  LogOut,
  ChevronRight,
+ MessageSquare,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
  { href: '/wellness-portal', label: 'Dashboard', icon: LayoutDashboard },
+ { href: '/wellness-portal/messages', label: 'Messages', icon: MessageSquare },
  { href: '/wellness-portal/sessions', label: 'Sessions', icon: CalendarDays },
  { href: '/wellness-portal/students', label: 'Students', icon: Users },
  { href: '/wellness-portal/profile', label: 'Profile', icon: UserCircle },

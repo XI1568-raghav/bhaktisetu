@@ -50,34 +50,54 @@ export async function authenticateUser(
   }
 
   try {
-    // Demo mode: accept demo tokens and return a mock user
-    // Supports demo-devotee, demo-pandit, demo-store, demo-astrologer,
-    // demo-wellness, demo-gaushala, demo-temple, demo-admin
-    // Demo tokens are always accepted (even outside demo mode) so seeded
-    // demo accounts work against the live API.
+    // Demo tokens (`demo-<handle>-...`). After the chat seed migration we map
+    // the handle to a REAL DB user by email so request.currentUser.id is a
+    // real UUID — needed for any route that writes Prisma rows linked to the
+    // user (conversations, messages, bookings, etc).
+    //
+    // Token format: `demo-<handle>-...` where handle is the email local-part
+    // (devotee, pandit, priest, store, astro, wellness, gaushala, temple,
+    // admin). Handles `pandit` and `priest` both map to pandit@demo.com.
     if (token.startsWith('demo-')) {
-      // Token format: demo-<demo-handle>-token (e.g. "demo-demo-pandit-token")
-      // The handle matches the email local-part (before @) of seeded demo accounts.
       const stripped = token.replace(/^demo-/, '').replace(/-token$/, '').replace(/^demo-/, '');
-      const DEMO_ROLE_MAP: Record<string, { roles: MarketplaceRole[]; email: string; fullName: string }> = {
-        'devotee': { roles: ['DEVOTEE'], email: 'devotee@demo.com', fullName: 'Demo Devotee' },
-        'pandit': { roles: ['PANDIT', 'DEVOTEE'], email: 'pandit@demo.com', fullName: 'Demo Pandit' },
-        'store': { roles: ['STORE_OWNER', 'DEVOTEE'], email: 'store@demo.com', fullName: 'Demo Store Owner' },
-        'astro': { roles: ['ASTROLOGER', 'DEVOTEE'], email: 'astro@demo.com', fullName: 'Demo Astrologer' },
-        'wellness': { roles: ['WELLNESS_INSTRUCTOR', 'DEVOTEE'], email: 'wellness@demo.com', fullName: 'Demo Wellness Instructor' },
-        'gaushala': { roles: ['GAUSHALA_MANAGER', 'DEVOTEE'], email: 'gaushala@demo.com', fullName: 'Demo Gaushala Manager' },
-        'temple': { roles: ['TEMPLE_MANAGER', 'DEVOTEE'], email: 'temple@demo.com', fullName: 'Demo Temple Manager' },
-        'admin': { roles: ['ADMIN', 'DEVOTEE'], email: 'admin@demo.com', fullName: 'Demo Admin' },
+      const DEMO_ROLE_MAP: Record<string, { roles: MarketplaceRole[]; email: string }> = {
+        'devotee':  { roles: ['DEVOTEE'],                      email: 'devotee@demo.com' },
+        'pandit':   { roles: ['PANDIT', 'DEVOTEE'],            email: 'pandit@demo.com' },
+        'priest':   { roles: ['PANDIT', 'DEVOTEE'],            email: 'pandit@demo.com' },
+        'store':    { roles: ['STORE_OWNER', 'DEVOTEE'],       email: 'store@demo.com' },
+        'astro':    { roles: ['ASTROLOGER', 'DEVOTEE'],        email: 'astro@demo.com' },
+        'wellness': { roles: ['WELLNESS_INSTRUCTOR', 'DEVOTEE'], email: 'wellness@demo.com' },
+        'gaushala': { roles: ['GAUSHALA_MANAGER', 'DEVOTEE'],  email: 'gaushala@demo.com' },
+        'temple':   { roles: ['TEMPLE_MANAGER', 'DEVOTEE'],    email: 'temple@demo.com' },
+        'admin':    { roles: ['ADMIN', 'DEVOTEE'],             email: 'admin@demo.com' },
       };
       const handle = stripped.toLowerCase();
       const profile = DEMO_ROLE_MAP[handle] ?? DEMO_ROLE_MAP['devotee']!;
 
+      // Look up the seeded demo user. If the seed hasn't run yet, fall back
+      // to the synthetic-id behaviour so non-DB routes (e.g. /consultation/start
+      // before the Phase A migration) keep working.
+      const dbUser = await prisma.user.findUnique({ where: { email: profile.email } });
+      if (dbUser) {
+        request.currentUser = {
+          id: dbUser.id,
+          supabaseId: dbUser.id,
+          phone: dbUser.phone,
+          email: dbUser.email,
+          fullName: dbUser.fullName,
+          subscriptionTier: dbUser.subscriptionTier,
+          roles: profile.roles,
+        };
+        return;
+      }
+
+      // Fallback (pre-seed) — synthetic id, DB-bound routes will reject these.
       request.currentUser = {
         id: `demo-${handle}`,
         supabaseId: `demo-${handle}`,
         phone: '+919876543210',
         email: profile.email,
-        fullName: profile.fullName,
+        fullName: handle.charAt(0).toUpperCase() + handle.slice(1),
         subscriptionTier: 'bhakti_pass',
         roles: profile.roles,
       };
