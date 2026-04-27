@@ -60,6 +60,46 @@ function sendRateOk(userId: string, convId: string): boolean {
   return true;
 }
 
+// Conversation kinds that require the devotee to have a paid booking with
+// the provider before chat is allowed. `support` is always open (it's the
+// help-desk path). `store_order` opens after the order exists; we leave
+// it ungated for now because store orders aren't yet routed through chat.
+// Per-kind booking models for astrology / wellness / temple / gaushala
+// don't exist yet, so they stay open until the corresponding booking
+// model + payment lifecycle ships. This keeps the gate honest: only gate
+// where we can actually verify a paid relationship.
+const PAID_BOOKING_REQUIRED: ReadonlySet<string> = new Set(['puja_booking']);
+
+async function devoteeHasPaidRelationship(
+  kind: string,
+  devoteeId: string,
+  providerId: string,
+): Promise<boolean> {
+  if (!PAID_BOOKING_REQUIRED.has(kind)) return true;
+
+  if (kind === 'puja_booking') {
+    // Provider here is the priest's *user* id, not the priest row id —
+    // resolve to priestId, then check for a non-pending booking.
+    const priest = await prisma.priest.findUnique({
+      where: { userId: providerId },
+      select: { id: true },
+    });
+    if (!priest) return false;
+
+    const booking = await prisma.pujaBooking.findFirst({
+      where: {
+        userId: devoteeId,
+        priestId: priest.id,
+        status: { notIn: ['pending_payment', 'cancelled', 'refunded'] },
+      },
+      select: { id: true },
+    });
+    return !!booking;
+  }
+
+  return false;
+}
+
 export async function conversationRoutes(server: FastifyInstance) {
   server.addHook('preHandler', authenticateUser);
 
@@ -125,6 +165,17 @@ export async function conversationRoutes(server: FastifyInstance) {
     const provider = await prisma.user.findUnique({ where: { id: providerId } });
     if (!provider) {
       return reply.code(404).send({ error: 'NotFound', message: 'Provider not found.' });
+    }
+
+    // Gate kinds that require a paid booking. `support` and currently-
+    // ungated kinds pass through unchanged.
+    const allowed = await devoteeHasPaidRelationship(kind, userId, providerId);
+    if (!allowed) {
+      return reply.code(402).send({
+        error: 'PaymentRequired',
+        message: 'You can chat with this provider once the booking is paid and confirmed.',
+        kind,
+      });
     }
 
     const existing = await prisma.chatConversation.findFirst({
