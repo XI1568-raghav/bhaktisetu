@@ -31,7 +31,7 @@ end-to-end by the user on `darshya.online`.
 Both prod environments need an explicit flag to make the gates above bite.
 Without these, the code is correct but the gates default-open in some configs.
 
-### Render → bhaktisetu-api → Environment
+### Render → darshya-api → Environment
 
 ```
 ENABLE_DEMO_PAY = false
@@ -65,7 +65,6 @@ The map and lookup logic live in `apps/api/src/middlewares/auth.ts` (demo branch
 ```bash
 # API
 curl -s -o /dev/null -w "%{http_code}\n" https://api.darshya.online/health         # → 200
-curl -s -o /dev/null -w "%{http_code}\n" https://bhaktisetu.onrender.com/health   # → 200
 
 # Web
 curl -s -o /dev/null -w "%{http_code}\n" https://darshya.online/auth/login        # → 200

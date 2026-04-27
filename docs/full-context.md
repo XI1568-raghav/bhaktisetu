@@ -10,7 +10,7 @@
 
 - **Product**: Darshya — India's devotional super-app (live darshan, puja booking with video proof, content library, gaushala seva, e-commerce, astrology, wellness)
 - **Domain**: https://darshya.online
-- **API**: https://bhaktisetu.onrender.com (will alias to `api.darshya.online`)
+- **API**: https://api.darshya.online
 - **Repo path**: `E:\NewClaude\bhaktisetu` (folder name is legacy)
 - **Prior names**: Poojly → BhaktiSetu → Darshya. Storage keys still `poojly_*` for backwards compat — DO NOT rename without migration
 - **Budget**: $0. Every integration must work on free tier or no-op when env vars are absent
@@ -139,7 +139,7 @@ Three token formats accepted by `apps/api/src/middlewares/auth.ts`:
 | VAPID private | `6othV1r-QJuZkfjb18BeC1_9cE-TbRaMfjscUNRbYY8` |
 | Cron auth token | `e1b34c4e64633802ad1db56073f388b67b44833200fd09d556bfc5dc280613f6` |
 | Cohere key (partial, rotate) | `je2iFdD6W6Oja2aHgbrxYFSJmzEG6AkXQpZxkfT5` |
-| Render API URL | `https://bhaktisetu.onrender.com` |
+| Render API URL | `https://api.darshya.online` |
 
 ## 9. Last deploy state (2026-04-27)
 
@@ -152,7 +152,7 @@ Three token formats accepted by `apps/api/src/middlewares/auth.ts`:
 
 | Action | Env vars |
 |---|---|
-| GitHub repo Settings → Secrets paste | `CRON_AUTH_TOKEN`, `API_BASE_URL=https://bhaktisetu.onrender.com` |
+| GitHub repo Settings → Secrets paste | `CRON_AUTH_TOKEN`, `API_BASE_URL=https://api.darshya.online` |
 | Sentry account + project | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` (NEXT_PUBLIC_ unused now — browser SDK removed) |
 | PostHog account | `NEXT_PUBLIC_POSTHOG_KEY` |
 | Razorpay KYC or test mode | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` |

@@ -4,4 +4,4 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [vars]
-NEXT_PUBLIC_API_URL = "https://bhaktisetu.onrender.com"
+NEXT_PUBLIC_API_URL = "https://api.darshya.online"
