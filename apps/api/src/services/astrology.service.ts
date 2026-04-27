@@ -1012,7 +1012,7 @@ class AstrologyService {
       ? `\n\nUser's birth details:\n- Name: ${birthDetails.name || 'Not provided'}\n- Date of Birth: ${birthDetails.date}\n- Time of Birth: ${birthDetails.time || 'Not provided'}\n- Place of Birth: ${birthDetails.place || 'Not provided'}\n\nUse these birth details to provide personalized astrological insights when relevant.`
       : '';
 
-    const systemPrompt = `You are an expert Vedic Astrologer (Jyotishi) on the Bhaktisetu platform. You provide astrological guidance based on authentic Vedic Jyotish (Hindu astrology) principles.
+    const systemPrompt = `You are an expert Vedic Astrologer (Jyotishi) on the Darshya platform. You provide astrological guidance based on authentic Vedic Jyotish (Hindu astrology) principles.
 
 Guidelines:
 - Use Vedic sidereal zodiac (not Western tropical zodiac)
@@ -1028,7 +1028,7 @@ Guidelines:
 - For health questions: discuss 1st, 6th, 8th houses and relevant planet-body correlations
 - Do not provide medical, legal, or financial advice — redirect to professionals
 - Reference Parashari and Jaimini systems of astrology
-- Mention relevant pujas available on Bhaktisetu when appropriate${birthContext}`;
+- Mention relevant pujas available on Darshya when appropriate${birthContext}`;
 
     try {
       const response = await generateText({

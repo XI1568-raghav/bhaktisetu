@@ -6,7 +6,7 @@ Solo founder, $0 budget, pre-revenue. Everything below is reconciled against `ap
 
 | Service | Tier | Verified usage | What pushes it off free | Cost today |
 |---|---|---|---|---|
-| Render (API) | Free web service | 1 service (`bhaktisetu.onrender.com`) | 750 instance-hrs/mo (one always-on service = 720h, fits). Service spins down after 15 min idle. Bandwidth 100GB/mo soft. | $0 |
+| Render (API) | Free web service | 1 service (`api.darshya.online`) | 750 instance-hrs/mo (one always-on service = 720h, fits). Service spins down after 15 min idle. Bandwidth 100GB/mo soft. | $0 |
 | Cloudflare Pages (web) | Free | `darshya.online` static + ISR | 500 builds/mo, unlimited requests/bandwidth | $0 |
 | Supabase (Postgres + Storage + Auth) | Free | DB + `darshya-media` bucket (R2 swap, see `docs/launch-state.md`) | 500MB DB / 1GB Storage / 2GB egress / 50K MAU. Project pauses after 7 days inactivity. | $0 |
 | Resend (email) | Free | magic-link, booking, donation receipts | 3,000 emails/mo, 100/day. Above: $20/mo Pro (50K) | $0 |

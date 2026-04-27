@@ -10,8 +10,7 @@
 Single Turborepo monorepo (`pnpm-workspace.yaml`, `turbo.json`). The web
 front end (`apps/web`, Next.js 15 / React 19) is deployed to Cloudflare
 Pages and serves `darshya.online`. The API (`apps/api`, Fastify 5) is
-deployed to Render free tier at `bhaktisetu.onrender.com` (custom domain
-`api.darshya.online`); it boots through `apps/api/src/server.ts:55`,
+deployed to Render free tier at `api.darshya.online`; it boots through `apps/api/src/server.ts:55`,
 registering 31 route groups under `/api/v1/*`, with helmet (CSP off,
 `server.ts:57-60`), CORS allowlist from `CORS_ORIGIN` (`server.ts:61-70`),
 global rate-limit 100/min (`server.ts:71-74`), and per-route `rawBody`

@@ -75,7 +75,7 @@ shown in the Razorpay dashboard for *that* webhook.
 
 Once test-mode passes:
 
-1. Render → bhaktisetu-api → Environment → add
+1. Render → darshya-api → Environment → add
    `RAZORPAY_VERIFY_RAW=true`. Save → service restarts.
 2. Wait for next live payment (or a real webhook retry from a recent
    payment) and confirm the same logs in prod.

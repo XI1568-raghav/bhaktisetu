@@ -5,7 +5,7 @@ Fastify + Prisma require Node.js — deploys to Railway (primary) or Fly.io (alt
 ## Railway (primary)
 
 1. Go to [railway.app](https://railway.app) -> New Project -> Deploy from GitHub repo.
-2. Select the `Bhaktisetu` repo, set root to repo root (not `apps/api`). Railway reads `apps/api/railway.json`.
+2. Select the `bhaktisetu` repo, set root to repo root (not `apps/api`). Railway reads `apps/api/railway.json`.
 3. Add environment variables from `apps/api/.env.example` (fill real values):
    - `DATABASE_URL`, `DIRECT_URL` (Supabase pooled + direct)
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`

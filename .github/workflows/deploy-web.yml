@@ -38,7 +38,7 @@ jobs:
       - name: Build for Cloudflare Pages
         working-directory: apps/web
         env:
-          NEXT_PUBLIC_API_URL: https://bhaktisetu.onrender.com
+          NEXT_PUBLIC_API_URL: https://api.darshya.online
           NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
         run: pnpm exec next-on-pages
