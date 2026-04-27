@@ -1,4 +1,5 @@
 'use client';
+import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
 import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
@@ -44,6 +45,8 @@ export default function GaushalaDashboard() {
  Welcome back, {user?.fullName}. Here&apos;s your gaushala overview.
  </p>
  </div>
+
+ <MyProviderProfileCard role="GAUSHALA_MANAGER" onboardingSlug="gaushala_manager" publicListingType="gaushala" />
 
  {/* Stats */}
  <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

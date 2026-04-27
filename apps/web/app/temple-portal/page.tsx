@@ -1,4 +1,5 @@
 'use client';
+import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
 import Link from 'next/link';
 import {
@@ -131,6 +132,8 @@ export default function TempleDashboard() {
  {data.temple.city}, {data.temple.state} &middot; Temple management dashboard
  </p>
  </div>
+
+ <MyProviderProfileCard role="TEMPLE_MANAGER" onboardingSlug="temple_manager" publicListingType="temple" />
 
  {/* Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

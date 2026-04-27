@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import {
  IndianRupee,
  TrendingUp,
@@ -151,6 +152,8 @@ export default function StoreAdminDashboard() {
  Manage your products, orders, and revenue.
  </p>
  </div>
+
+ <MyProviderProfileCard role="STORE_OWNER" onboardingSlug="store_owner" publicListingType={null} />
 
  {/* Revenue Cards */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

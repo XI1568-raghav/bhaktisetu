@@ -1,4 +1,5 @@
 'use client';
+import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -237,6 +238,8 @@ export default function PriestDashboard() {
  Here is your dashboard overview for today.
  </p>
  </div>
+
+ <MyProviderProfileCard role="PANDIT" onboardingSlug="priest" publicListingType="pandit" />
 
  {/* Earnings Cards */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

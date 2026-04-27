@@ -1,4 +1,5 @@
 'use client';
+import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -144,6 +145,8 @@ export default function AstrologerDashboard() {
  </h1>
  <p className="text-surface-500 mt-1">Your astrology practice at a glance.</p>
  </div>
+
+ <MyProviderProfileCard role="ASTROLOGER" onboardingSlug="astrologer" publicListingType="astrologer" />
 
  {/* Earnings */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
