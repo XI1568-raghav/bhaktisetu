@@ -122,14 +122,19 @@ export async function paymentRoutes(server: FastifyInstance) {
           });
         }
 
-        const useRaw = process.env.RAZORPAY_VERIFY_RAW === 'true';
+        // Raw-body HMAC is the correct verification path per Razorpay
+        // docs (HMAC over the bytes Razorpay sent, not over our JSON
+        // re-stringification). Defaults to ON. Set RAZORPAY_VERIFY_RAW=false
+        // to fall back to the legacy JSON.stringify path while
+        // troubleshooting a specific webhook outage.
+        const useRaw = process.env.RAZORPAY_VERIFY_RAW !== 'false';
         const rawBody = (request as unknown as { rawBody?: string }).rawBody;
 
         const payload = request.body as Record<string, any>;
 
         if (useRaw) {
           if (!rawBody) {
-            server.log.error('RAZORPAY_VERIFY_RAW=true but rawBody is missing — fastify-raw-body did not run for this route');
+            server.log.error('RAZORPAY_VERIFY_RAW (default true) requires fastify-raw-body — rawBody missing for this route');
             return reply.status(500).send({ error: 'Webhook configuration error' });
           }
           const result = await paymentService.handleWebhookRaw(rawBody, payload, signature);
