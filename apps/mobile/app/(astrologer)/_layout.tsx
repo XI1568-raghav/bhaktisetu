@@ -26,6 +26,7 @@ export default function AstrologerLayout() {
         <Tabs.Screen name="consultations" options={{ title: 'Sessions', tabBarIcon: ({ color, size }) => <TabIcon name="chatbubbles" color={color} size={size} /> }} />
         <Tabs.Screen name="availability" options={{ title: 'Schedule', tabBarIcon: ({ color, size }) => <TabIcon name="calendar" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
+        <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>
   );

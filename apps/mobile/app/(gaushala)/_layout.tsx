@@ -27,6 +27,7 @@ export default function GaushalaLayout() {
         <Tabs.Screen name="donations" options={{ title: 'Donations', tabBarIcon: ({ color, size }) => <TabIcon name="heart" color={color} size={size} /> }} />
         <Tabs.Screen name="volunteers" options={{ title: 'Team', tabBarIcon: ({ color, size }) => <TabIcon name="people" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
+        <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>
   );

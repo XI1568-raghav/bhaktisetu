@@ -43,6 +43,7 @@ export default function PriestLayout() {
           options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }}
         />
         <Tabs.Screen name="reviews" options={{ href: null, title: 'Reviews' }} />
+        <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>
   );

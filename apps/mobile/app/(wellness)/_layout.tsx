@@ -26,6 +26,7 @@ export default function WellnessLayout() {
         <Tabs.Screen name="sessions" options={{ title: 'Sessions', tabBarIcon: ({ color, size }) => <TabIcon name="leaf" color={color} size={size} /> }} />
         <Tabs.Screen name="students" options={{ title: 'Students', tabBarIcon: ({ color, size }) => <TabIcon name="people" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
+        <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>
   );

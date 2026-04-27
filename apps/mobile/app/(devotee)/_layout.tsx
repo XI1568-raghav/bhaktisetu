@@ -74,6 +74,13 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          href: null,
+          title: 'Messages',
+        }}
+      />
       {/* Secondary screens — accessible via navigation, hidden from tab bar */}
       <Tabs.Screen
         name="temples"

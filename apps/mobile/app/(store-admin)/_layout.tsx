@@ -27,6 +27,7 @@ export default function StoreAdminLayout() {
         <Tabs.Screen name="orders" options={{ title: 'Orders', tabBarIcon: ({ color, size }) => <TabIcon name="bag-handle" color={color} size={size} /> }} />
         <Tabs.Screen name="revenue" options={{ title: 'Revenue', tabBarIcon: ({ color, size }) => <TabIcon name="trending-up" color={color} size={size} /> }} />
         <Tabs.Screen name="reviews" options={{ title: 'Reviews', tabBarIcon: ({ color, size }) => <TabIcon name="star" color={color} size={size} /> }} />
+        <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>
   );
