@@ -34,6 +34,13 @@ const quickLinks: QuickLink[] = [
     badge: '3',
   },
   {
+    id: 'messages',
+    icon: 'chatbubble-ellipses',
+    label: 'Messages',
+    subtitle: 'Chat with priests, astrologers, and providers',
+    color: colors.saffron[500],
+  },
+  {
     id: 'subscription',
     icon: 'diamond',
     label: 'Subscription',
@@ -144,6 +151,10 @@ export default function ProfileScreen() {
   function handleQuickLink(id: string) {
     if (id === 'bookings') {
       router.push('/(devotee)/bookings' as any);
+      return;
+    }
+    if (id === 'messages') {
+      router.push('/(devotee)/messages' as any);
       return;
     }
     if (id === 'addresses') {
