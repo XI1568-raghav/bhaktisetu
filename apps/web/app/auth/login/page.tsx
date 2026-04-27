@@ -21,6 +21,14 @@ function GoogleIcon({ className }: { className?: string }) {
 export default function LoginPage() {
  const { signInWithOtp, verifyOtp, signInWithCredentials, isAuthenticated, user } = useAuth();
 
+ // Demo chips are hidden by default in production. Pass ?demo=1 to enable
+ // them for our own QA / showing the app to investors. Real users never
+ // see "demo accounts" cluttering the login screen.
+ const showDemoChips =
+   typeof window !== 'undefined' &&
+   (process.env.NEXT_PUBLIC_SHOW_DEMO === 'true' ||
+     new URLSearchParams(window.location.search).get('demo') === '1');
+
  const [activeTab, setActiveTab] = useState<AuthTab>('email');
  const [step, setStep] = useState<Step>('input');
 
@@ -458,7 +466,8 @@ export default function LoginPage() {
  )}
  </button>
 
- {/* Demo accounts — one-click login */}
+ {/* Demo accounts — one-click login. Hidden by default; pass ?demo=1 to show. */}
+ {showDemoChips && (
  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
  <p className="text-xs font-semibold text-amber-800 mb-2">Quick Login — Demo Accounts</p>
  <div className="grid grid-cols-2 gap-2">
@@ -494,6 +503,7 @@ export default function LoginPage() {
  ))}
  </div>
  </div>
+ )}
  </div>
  )}
 

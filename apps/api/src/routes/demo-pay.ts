@@ -28,19 +28,52 @@ const bodySchema = z.object({
   scheduledTimeSlot: z.string().optional(),
 }).optional();
 
+// Demo flow is gated on (a) the env flag — must be explicitly opted in, and
+// (b) every demo-pay endpoint shares a tight per-user rate limit so the
+// "free booking" cannot be turned into a DoS or DB-fill attack.
+function demoEnabled(): boolean {
+  if (process.env.NODE_ENV !== 'production') return true;
+  return process.env.ENABLE_DEMO_PAY === 'true';
+}
+
+// In-memory token bucket — per user. Keeps the demo flow available for
+// genuine smoke testing while preventing scripted abuse. 10 demo actions
+// per user per 10 minutes is plenty for a real demo, way too low for any
+// automated attack to be worthwhile.
+const DEMO_RATE_WINDOW_MS = 10 * 60 * 1000;
+const DEMO_RATE_MAX = 10;
+const demoBuckets = new Map<string, { count: number; windowStart: number }>();
+function rateLimitOk(userId: string): boolean {
+  const now = Date.now();
+  const b = demoBuckets.get(userId);
+  if (!b || now - b.windowStart > DEMO_RATE_WINDOW_MS) {
+    demoBuckets.set(userId, { count: 1, windowStart: now });
+    return true;
+  }
+  if (b.count >= DEMO_RATE_MAX) return false;
+  b.count += 1;
+  return true;
+}
+
 export async function demoPayRoutes(server: FastifyInstance) {
   server.addHook('preHandler', authenticateUser);
-
-  server.post('/puja', async (request, reply) => {
-    const isProd = process.env.NODE_ENV === 'production';
-    const enabled = process.env.ENABLE_DEMO_PAY === 'true';
-    if (isProd && !enabled) {
+  server.addHook('preHandler', async (request, reply) => {
+    if (!demoEnabled()) {
       return reply.code(403).send({
         error: 'Forbidden',
-        message: 'Demo pay is disabled in production. Set ENABLE_DEMO_PAY=true to enable.',
+        message: 'Demo flow is disabled.',
       });
     }
+    const userId = request.currentUser?.id;
+    if (userId && !rateLimitOk(userId)) {
+      return reply.code(429).send({
+        error: 'TooManyRequests',
+        message: 'Demo rate limit reached. Try again in a few minutes.',
+      });
+    }
+  });
 
+  server.post('/puja', async (request, reply) => {
     const userId = request.currentUser!.id;
     const parsed = bodySchema.safeParse(request.body ?? {});
     if (!parsed.success) {
