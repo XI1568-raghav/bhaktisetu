@@ -8,6 +8,17 @@ import { providerService } from '../services/provider.service.js';
 const PROVIDER_TYPES = ['pandit', 'store', 'astrologer', 'wellness', 'gaushala', 'temple'] as const;
 type ProviderTypeKey = typeof PROVIDER_TYPES[number];
 
+// Frontend signup uses the longer role-enum names (store_owner,
+// wellness_instructor, gaushala_manager, temple_manager). Map those to
+// the canonical short keys above so the listing endpoint accepts both.
+const PROVIDER_TYPE_ALIASES: Record<string, ProviderTypeKey> = {
+  store_owner: 'store',
+  wellness_instructor: 'wellness',
+  gaushala_manager: 'gaushala',
+  temple_manager: 'temple',
+  priest: 'pandit',
+};
+
 const providerQuerySchema = z.object({
   city: z.string().optional(),
   specialty: z.string().optional(),
@@ -36,6 +47,11 @@ function isValidProviderType(type: string): type is ProviderTypeKey {
   return PROVIDER_TYPES.includes(type as ProviderTypeKey);
 }
 
+function normaliseProviderType(type: string): ProviderTypeKey | null {
+  if (isValidProviderType(type)) return type;
+  return PROVIDER_TYPE_ALIASES[type] ?? null;
+}
+
 // ─── Routes ─────────────────────────────────────────────────────────────────────
 
 export async function providerRoutes(server: FastifyInstance) {
@@ -45,7 +61,8 @@ export async function providerRoutes(server: FastifyInstance) {
   server.get('/:type', async (request, reply) => {
     const { type } = request.params as { type: string };
 
-    if (!isValidProviderType(type)) {
+    const canonicalType = normaliseProviderType(type);
+    if (!canonicalType) {
       return reply.code(400).send({
         error: `Invalid provider type: ${type}`,
         validTypes: PROVIDER_TYPES,
@@ -59,7 +76,7 @@ export async function providerRoutes(server: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid query parameters', details: parsed.error.flatten() });
     }
 
-    const result = await providerService.getProviders(type, {
+    const result = await providerService.getProviders(canonicalType, {
       city: parsed.data.city,
       specialty: parsed.data.specialty,
       minRating: parsed.data.minRating ? Number(parsed.data.minRating) : undefined,
@@ -77,17 +94,18 @@ export async function providerRoutes(server: FastifyInstance) {
   server.get('/:type/:id', async (request, reply) => {
     const { type, id } = request.params as { type: string; id: string };
 
-    if (!isValidProviderType(type)) {
+    const canonicalType = normaliseProviderType(type);
+    if (!canonicalType) {
       return reply.code(400).send({
         error: `Invalid provider type: ${type}`,
         validTypes: PROVIDER_TYPES,
       });
     }
 
-    const provider = await providerService.getProviderById(type, id);
+    const provider = await providerService.getProviderById(canonicalType, id);
 
     if (!provider) {
-      return reply.code(404).send({ error: `${type} provider not found` });
+      return reply.code(404).send({ error: `${canonicalType} provider not found` });
     }
 
     return { provider };
@@ -106,7 +124,8 @@ export async function providerRoutes(server: FastifyInstance) {
     async (request, reply) => {
       const { type, id } = request.params as { type: string; id: string };
 
-      if (!isValidProviderType(type)) {
+      const canonicalType = normaliseProviderType(type);
+      if (!canonicalType) {
         return reply.code(400).send({
           error: `Invalid provider type: ${type}`,
           validTypes: PROVIDER_TYPES,
@@ -115,18 +134,18 @@ export async function providerRoutes(server: FastifyInstance) {
 
       const userId = request.currentUser!.id;
       const userRoles = request.currentUser!.roles;
-      const requiredRole = PROVIDER_ROLE_MAP[type];
+      const requiredRole = PROVIDER_ROLE_MAP[canonicalType];
 
       // Must own this provider type or be admin
       if (!userRoles.includes(requiredRole as typeof userRoles[number]) && !userRoles.includes('ADMIN')) {
         return reply.code(403).send({
           error: 'Forbidden',
-          message: `You need the ${requiredRole} role to update a ${type} profile`,
+          message: `You need the ${requiredRole} role to update a ${canonicalType} profile`,
         });
       }
 
       const body = request.body as Record<string, unknown>;
-      const result = await providerService.updateProvider(type, id, userId, body);
+      const result = await providerService.updateProvider(canonicalType, id, userId, body);
 
       if (!result) {
         return reply.code(404).send({ error: 'Provider not found or you do not own this profile' });
@@ -144,7 +163,8 @@ export async function providerRoutes(server: FastifyInstance) {
     async (request, reply) => {
       const { type, id } = request.params as { type: string; id: string };
 
-      if (!isValidProviderType(type)) {
+      const canonicalType = normaliseProviderType(type);
+      if (!canonicalType) {
         return reply.code(400).send({
           error: `Invalid provider type: ${type}`,
           validTypes: PROVIDER_TYPES,
@@ -162,7 +182,7 @@ export async function providerRoutes(server: FastifyInstance) {
       }
 
       const userId = request.currentUser!.id;
-      const providerType = PROVIDER_ROLE_MAP[type].replace('_OWNER', '').replace('_INSTRUCTOR', '').replace('_MANAGER', '');
+      const providerType = PROVIDER_ROLE_MAP[canonicalType].replace('_OWNER', '').replace('_INSTRUCTOR', '').replace('_MANAGER', '');
 
       const result = await providerService.addReview({
         userId,
