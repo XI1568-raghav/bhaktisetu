@@ -90,6 +90,7 @@ Superpowers: Brainstorm → Plan → TDD → Execute → Review → Verify.
 | `docs/glossary.md` | Domain terms (darshan, puja, sankalp, 80G, etc.) |
 | `docs/caveats.md` | "Do not touch unless asked" gotchas — read before refactoring |
 | `docs/mobile-plan.md` | Mobile parity multi-phase plan |
+| `docs/skill-workflow-map.md` | Which Claude Code skill to invoke for each business-ops workflow (marketing, content, eng-ops, product, finance, HR, legal). Read when picking how to do a task. |
 
 ## How future sessions should use this
 
