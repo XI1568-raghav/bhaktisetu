@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
-import { PortalScreen, Section } from '../../lib/portal-screen';
+import { usePujas } from '@poojly/api-client';
+import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface ServiceOffer {
@@ -11,7 +12,7 @@ interface ServiceOffer {
   enabled: boolean;
 }
 
-const INITIAL: ServiceOffer[] = [
+const FALLBACK: ServiceOffer[] = [
   { id: '1', name: 'Rudrabhishek', deity: 'Lord Shiva', basePrice: 1100, enabled: true },
   { id: '2', name: 'Satyanarayan Katha', deity: 'Lord Vishnu', basePrice: 2100, enabled: true },
   { id: '3', name: 'Ganesh Atharvashirsha', deity: 'Lord Ganesha', basePrice: 751, enabled: true },
@@ -21,10 +22,35 @@ const INITIAL: ServiceOffer[] = [
 ];
 
 export default function PriestServices() {
-  const [services, setServices] = useState<ServiceOffer[]>(INITIAL);
+  const pujasQuery = usePujas({ limit: 20 } as never);
+  const [refreshing, setRefreshing] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+
+  const services = useMemo<ServiceOffer[]>(() => {
+    const apiPujas = (pujasQuery.data as { data?: { id: string; name?: string; title?: string; deity?: string; basePrice?: number; basePriceInr?: number }[] } | undefined)?.data;
+    if (apiPujas && apiPujas.length > 0) {
+      return apiPujas.map((p, i) => ({
+        id: p.id,
+        name: p.name ?? p.title ?? `Puja ${i + 1}`,
+        deity: p.deity ?? 'All deities',
+        basePrice: p.basePrice ?? p.basePriceInr ?? 0,
+        enabled: overrides[p.id] ?? true,
+      }));
+    }
+    return FALLBACK.map((s) => ({ ...s, enabled: overrides[s.id] ?? s.enabled }));
+  }, [pujasQuery.data, overrides]);
 
   function toggle(id: string) {
-    setServices((s) => s.map((it) => (it.id === id ? { ...it, enabled: !it.enabled } : it)));
+    setOverrides((prev) => {
+      const current = services.find((s) => s.id === id)?.enabled ?? true;
+      return { ...prev, [id]: !current };
+    });
+  }
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await pujasQuery.refetch();
+    setRefreshing(false);
   }
 
   const enabledCount = services.filter((s) => s.enabled).length;
@@ -33,24 +59,31 @@ export default function PriestServices() {
     <PortalScreen
       title="My Services"
       subtitle={`${enabledCount} of ${services.length} active`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     >
       <Section title="Puja Offerings">
-        {services.map((s) => (
-          <View key={s.id} style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{s.name}</Text>
-              <Text style={styles.meta}>
-                {s.deity} • ₹{s.basePrice.toLocaleString('en-IN')}
-              </Text>
+        {services.length === 0 ? (
+          <EmptyHint text="No puja types available yet." />
+        ) : (
+          services.map((s) => (
+            <View key={s.id} style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{s.name}</Text>
+                <Text style={styles.meta}>
+                  {s.deity}
+                  {s.basePrice > 0 ? ` • ₹${s.basePrice.toLocaleString('en-IN')}` : ''}
+                </Text>
+              </View>
+              <Switch
+                value={s.enabled}
+                onValueChange={() => toggle(s.id)}
+                trackColor={{ false: colors.stone[200], true: colors.saffron[400] }}
+                thumbColor={s.enabled ? colors.saffron[600] : colors.stone[400]}
+              />
             </View>
-            <Switch
-              value={s.enabled}
-              onValueChange={() => toggle(s.id)}
-              trackColor={{ false: colors.stone[200], true: colors.saffron[400] }}
-              thumbColor={s.enabled ? colors.saffron[600] : colors.stone[400]}
-            />
-          </View>
-        ))}
+          ))
+        )}
       </Section>
     </PortalScreen>
   );

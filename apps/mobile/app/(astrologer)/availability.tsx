@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
+import { useAstrologers } from '@poojly/api-client';
 import { PortalScreen, Section } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -27,14 +28,39 @@ const SLOT_LABELS = [
 ] as const;
 
 export default function Availability() {
+  const astrologersQuery = useAstrologers();
   const [slots, setSlots] = useState<Slot[]>(INITIAL);
+  const [refreshing, setRefreshing] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   function toggle(day: string, key: 'morning' | 'afternoon' | 'evening') {
     setSlots((s) => s.map((it) => (it.day === day ? { ...it, [key]: !it[key] } : it)));
+    setDirty(true);
   }
 
+  function save() {
+    Alert.alert('Saved', 'Availability updated. Sync with backend coming soon.');
+    setDirty(false);
+  }
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await astrologersQuery.refetch();
+    setRefreshing(false);
+  }
+
+  const activeCount = slots.reduce(
+    (acc, s) => acc + Number(s.morning) + Number(s.afternoon) + Number(s.evening),
+    0,
+  );
+
   return (
-    <PortalScreen title="Availability" subtitle="Set your weekly schedule">
+    <PortalScreen
+      title="Availability"
+      subtitle={`${activeCount} active slots this week`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <Section title="This Week">
         {slots.map((slot) => (
           <View key={slot.day} style={styles.dayCard}>
@@ -58,6 +84,12 @@ export default function Availability() {
           </View>
         ))}
       </Section>
+
+      {dirty ? (
+        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={save}>
+          <Text style={styles.saveText}>Save Changes</Text>
+        </TouchableOpacity>
+      ) : null}
     </PortalScreen>
   );
 }
@@ -86,4 +118,12 @@ const styles = StyleSheet.create({
   },
   slotName: { fontSize: fontSize.base, fontWeight: '600', color: colors.stone[800] },
   slotRange: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
+  saveBtn: {
+    marginTop: spacing.lg,
+    paddingVertical: 14,
+    backgroundColor: colors.saffron[600],
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+  },
+  saveText: { color: colors.white, fontSize: fontSize.base, fontWeight: '700' },
 });

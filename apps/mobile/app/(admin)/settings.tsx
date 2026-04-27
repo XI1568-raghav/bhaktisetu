@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAdminDashboard } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
@@ -17,6 +18,8 @@ const FLAGS = [
 
 export default function AdminSettings() {
   const { user, signOut } = useAuth();
+  const dashboardQuery = useAdminDashboard();
+  const [refreshing, setRefreshing] = useState(false);
   const [state, setState] = useState<Record<string, boolean>>({
     video_proof_required: true,
     nri_pricing: true,
@@ -28,6 +31,12 @@ export default function AdminSettings() {
 
   function toggle(id: string) {
     setState((s) => ({ ...s, [id]: !s[id] }));
+  }
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await dashboardQuery.refetch();
+    setRefreshing(false);
   }
 
   function handleSignOut() {
@@ -45,7 +54,12 @@ export default function AdminSettings() {
   }
 
   return (
-    <PortalScreen title="Settings" subtitle="Platform configuration">
+    <PortalScreen
+      title="Settings"
+      subtitle="Platform configuration"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={styles.userCard}>
         <View style={styles.avatar}>
           <Ionicons name="shield-checkmark" size={28} color={colors.stone[900]} />
@@ -53,6 +67,11 @@ export default function AdminSettings() {
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{user?.fullName ?? 'Admin'}</Text>
           {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
+          {dashboardQuery.data?.totalUsers ? (
+            <Text style={styles.email}>
+              {dashboardQuery.data.totalUsers.toLocaleString('en-IN')} users on platform
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -73,6 +92,15 @@ export default function AdminSettings() {
         >
           <Ionicons name="document-text" size={20} color={colors.saffron[600]} />
           <Text style={styles.linkText}>Exportable Reports</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.stone[300]} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.linkRow}
+          activeOpacity={0.7}
+          onPress={() => router.push('/(admin)/approvals' as any)}
+        >
+          <Ionicons name="checkmark-circle" size={20} color={colors.saffron[600]} />
+          <Text style={styles.linkText}>Pending Approvals</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.stone[300]} />
         </TouchableOpacity>
       </Section>

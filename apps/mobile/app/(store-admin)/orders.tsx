@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useProducts } from '@poojly/api-client';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -13,7 +14,7 @@ interface Order {
   createdAt: string;
 }
 
-const ORDERS: Order[] = [
+const FALLBACK: Order[] = [
   { id: '1', number: 'ORD-2026-0001', customer: 'Priya M.', items: 3, amount: 1697, status: 'pending', createdAt: 'Today, 10:23 AM' },
   { id: '2', number: 'ORD-2026-0002', customer: 'Ramesh K.', items: 1, amount: 2499, status: 'packed', createdAt: 'Today, 09:15 AM' },
   { id: '3', number: 'ORD-2026-0003', customer: 'Anjali S.', items: 2, amount: 998, status: 'shipped', createdAt: 'Yesterday' },
@@ -37,11 +38,28 @@ const STATUS_COLOR: Record<Order['status'], string> = {
 };
 
 export default function StoreOrders() {
+  const productsQuery = useProducts();
   const [filter, setFilter] = useState<string>('all');
-  const filtered = filter === 'all' ? ORDERS : ORDERS.filter((o) => o.status === filter);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Real orders endpoint not yet exposed via api-client; use products refetch
+  // as a freshness signal and surface FALLBACK orders for layout demo.
+  const orders = useMemo(() => FALLBACK, []);
+  const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await productsQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
-    <PortalScreen title="Orders" subtitle={`${ORDERS.length} total • ${ORDERS.filter((o) => o.status === 'pending').length} pending`}>
+    <PortalScreen
+      title="Orders"
+      subtitle={`${orders.length} total • ${orders.filter((o) => o.status === 'pending').length} pending`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.sm }}>
         {FILTERS.map((f) => {
           const active = filter === f.key;

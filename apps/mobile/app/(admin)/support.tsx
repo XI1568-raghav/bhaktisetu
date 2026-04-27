@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { PortalScreen, Section, ListRow } from '../../lib/portal-screen';
+import { useAdminPendingApprovals } from '@poojly/api-client';
+import { PortalScreen, Section, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Ticket {
@@ -12,7 +13,7 @@ interface Ticket {
   createdAt: string;
 }
 
-const TICKETS: Ticket[] = [
+const FALLBACK: Ticket[] = [
   { id: 'T-1041', subject: 'Booking refund not received', user: 'Anjali S.', priority: 'high', status: 'open', createdAt: '2h ago' },
   { id: 'T-1040', subject: 'Cannot upload Aadhaar (priest)', user: 'Pandit Sharma', priority: 'medium', status: 'in_progress', createdAt: '4h ago' },
   { id: 'T-1039', subject: 'NRI payment failed for puja', user: 'Ramesh K. (US)', priority: 'high', status: 'open', createdAt: '6h ago' },
@@ -34,11 +35,27 @@ const STATUS_COLOR: Record<Ticket['status'], string> = {
 };
 
 export default function AdminSupport() {
+  const approvalsQuery = useAdminPendingApprovals();
   const [filter, setFilter] = useState('all');
-  const filtered = filter === 'all' ? TICKETS : TICKETS.filter((t) => t.status === filter);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const tickets = FALLBACK;
+  const filtered = filter === 'all' ? tickets : tickets.filter((t) => t.status === filter);
+  const pendingApprovals = approvalsQuery.data?.total ?? 0;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await approvalsQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
-    <PortalScreen title="Support" subtitle={`${TICKETS.filter((t) => t.status !== 'resolved').length} unresolved`}>
+    <PortalScreen
+      title="Support"
+      subtitle={`${tickets.filter((t) => t.status !== 'resolved').length} unresolved • ${pendingApprovals} provider approvals pending`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.sm }}>
         {FILTERS.map((f) => {
           const active = filter === f.key;
@@ -56,14 +73,18 @@ export default function AdminSupport() {
       </ScrollView>
 
       <Section title="Tickets">
-        {filtered.map((t) => (
-          <ListRow
-            key={t.id}
-            primary={`${t.id} • ${t.subject}`}
-            secondary={`${t.user} • ${t.createdAt}`}
-            status={{ label: t.status.replace('_', ' '), color: STATUS_COLOR[t.status] }}
-          />
-        ))}
+        {filtered.length === 0 ? (
+          <EmptyHint text="No tickets match this filter." />
+        ) : (
+          filtered.map((t) => (
+            <ListRow
+              key={t.id}
+              primary={`${t.id} • ${t.subject}`}
+              secondary={`${t.user} • ${t.createdAt}`}
+              status={{ label: t.status.replace('_', ' '), color: STATUS_COLOR[t.status] }}
+            />
+          ))
+        )}
       </Section>
     </PortalScreen>
   );

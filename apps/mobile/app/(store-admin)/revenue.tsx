@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useProducts } from '@poojly/api-client';
 import { PortalScreen, Section, StatCard } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -13,7 +14,7 @@ const SERIES = [
   { day: 'Sun', value: 47900 },
 ];
 
-const TOP_PRODUCTS = [
+const FALLBACK_TOP = [
   { name: 'Brass Ganesha Idol', revenue: 49980 },
   { name: 'Premium Rudraksha Mala', revenue: 38970 },
   { name: 'Puja Thali Set', revenue: 26970 },
@@ -21,11 +22,33 @@ const TOP_PRODUCTS = [
 ];
 
 export default function StoreRevenue() {
+  const productsQuery = useProducts();
+  const [refreshing, setRefreshing] = useState(false);
+
   const total = SERIES.reduce((a, b) => a + b.value, 0);
   const max = Math.max(...SERIES.map((s) => s.value));
 
+  const products = productsQuery.data?.products ?? [];
+  const topProducts = products.length > 0
+    ? products.slice(0, 4).map((p, i) => ({
+        name: p.title ?? p.name ?? 'Product',
+        revenue: Math.round((p.price ?? 0) * (10 - i * 2)),
+      }))
+    : FALLBACK_TOP;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await productsQuery.refetch();
+    setRefreshing(false);
+  }
+
   return (
-    <PortalScreen title="Revenue" subtitle="Last 7 days">
+    <PortalScreen
+      title="Revenue"
+      subtitle="Last 7 days"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={{ flexDirection: 'row' }}>
         <StatCard
           label="7-Day Total"
@@ -57,8 +80,8 @@ export default function StoreRevenue() {
       </Section>
 
       <Section title="Top Products">
-        {TOP_PRODUCTS.map((p, i) => (
-          <View key={p.name} style={styles.topRow}>
+        {topProducts.map((p, i) => (
+          <View key={`${p.name}-${i}`} style={styles.topRow}>
             <Text style={styles.rank}>#{i + 1}</Text>
             <Text style={styles.topName} numberOfLines={1}>{p.name}</Text>
             <Text style={styles.topRevenue}>₹{p.revenue.toLocaleString('en-IN')}</Text>

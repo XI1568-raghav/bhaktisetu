@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PortalScreen, Section } from '../../lib/portal-screen';
+import { useAdminDashboard } from '@poojly/api-client';
+import { PortalScreen, Section, StatCard } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Report {
@@ -22,15 +23,55 @@ const REPORTS: Report[] = [
 ];
 
 export default function AdminReports() {
+  const dashboardQuery = useAdminDashboard();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const dash = dashboardQuery.data;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await dashboardQuery.refetch();
+    setRefreshing(false);
+  }
+
   function exportReport(r: Report) {
-    Alert.alert(`Generate ${r.title}?`, `Format: ${r.format}\n\nThe export will be emailed to your admin address.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Generate', onPress: () => Alert.alert('Queued', 'Your report is being generated. You will receive an email shortly.') },
-    ]);
+    Alert.alert(
+      `Generate ${r.title}?`,
+      `Format: ${r.format}\n\nThe export will be emailed to your admin address.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Generate',
+          onPress: () =>
+            Alert.alert('Queued', 'Your report is being generated. You will receive an email shortly.'),
+        },
+      ],
+    );
   }
 
   return (
-    <PortalScreen title="Reports" subtitle="Exportable analytics">
+    <PortalScreen
+      title="Reports"
+      subtitle="Exportable analytics"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
+      {dash ? (
+        <View style={{ flexDirection: 'row' }}>
+          <StatCard
+            label="Total Bookings"
+            value={dash.totalBookings.toLocaleString('en-IN')}
+            accent={colors.saffron[700]}
+          />
+          <View style={{ width: spacing.sm }} />
+          <StatCard
+            label="Total Revenue"
+            value={`₹${dash.totalRevenue.toLocaleString('en-IN')}`}
+            accent={colors.green[600]}
+          />
+        </View>
+      ) : null}
+
       <Section title="Available Reports">
         {REPORTS.map((r) => (
           <TouchableOpacity

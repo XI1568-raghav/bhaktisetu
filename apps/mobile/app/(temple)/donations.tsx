@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
+import { useTemples } from '@poojly/api-client';
 import {
   PortalScreen,
   Section,
   StatCard,
   ListRow,
+  EmptyHint,
 } from '../../lib/portal-screen';
 import { colors, spacing } from '../../lib/theme';
 
@@ -17,7 +19,7 @@ interface Donation {
   note?: string;
 }
 
-const DONATIONS: Donation[] = [
+const FALLBACK: Donation[] = [
   { id: '1', donor: 'Anonymous', type: 'cash', amount: 5100, date: 'Today, 9:42 AM' },
   { id: '2', donor: 'Anjali S.', type: 'chadhava', amount: 251, date: 'Today, 8:15 AM', note: 'Flowers + diya' },
   { id: '3', donor: 'Ramesh K.', type: 'annadan', amount: 1100, date: 'Yesterday', note: '50 plates' },
@@ -34,11 +36,26 @@ const TYPE_COLOR: Record<Donation['type'], string> = {
 };
 
 export default function TempleDonations() {
-  const total = DONATIONS.reduce((a, d) => a + d.amount, 0);
-  const today = DONATIONS.filter((d) => d.date.startsWith('Today')).reduce((a, d) => a + d.amount, 0);
+  const templesQuery = useTemples();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const donations = FALLBACK;
+  const total = donations.reduce((a, d) => a + d.amount, 0);
+  const today = donations.filter((d) => d.date.startsWith('Today')).reduce((a, d) => a + d.amount, 0);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await templesQuery.refetch();
+    setRefreshing(false);
+  }
 
   return (
-    <PortalScreen title="Donations" subtitle={`₹${total.toLocaleString('en-IN')} this month`}>
+    <PortalScreen
+      title="Donations"
+      subtitle={`₹${total.toLocaleString('en-IN')} this month`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <View style={{ flexDirection: 'row' }}>
         <StatCard label="Today" value={`₹${today.toLocaleString('en-IN')}`} accent={colors.green[600]} />
         <View style={{ width: spacing.sm }} />
@@ -46,15 +63,19 @@ export default function TempleDonations() {
       </View>
 
       <Section title="Recent Donations">
-        {DONATIONS.map((d) => (
-          <ListRow
-            key={d.id}
-            primary={`${d.donor} • ${d.type.toUpperCase()}`}
-            secondary={`${d.date}${d.note ? ` • ${d.note}` : ''}`}
-            trailing={`₹${d.amount.toLocaleString('en-IN')}`}
-            status={{ label: d.type, color: TYPE_COLOR[d.type] }}
-          />
-        ))}
+        {donations.length === 0 ? (
+          <EmptyHint text="No donations recorded yet." />
+        ) : (
+          donations.map((d) => (
+            <ListRow
+              key={d.id}
+              primary={`${d.donor} • ${d.type.toUpperCase()}`}
+              secondary={`${d.date}${d.note ? ` • ${d.note}` : ''}`}
+              trailing={`₹${d.amount.toLocaleString('en-IN')}`}
+              status={{ label: d.type, color: TYPE_COLOR[d.type] }}
+            />
+          ))
+        )}
       </Section>
     </PortalScreen>
   );
