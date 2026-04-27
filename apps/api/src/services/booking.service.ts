@@ -1,6 +1,7 @@
 import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
+import { ensureConversationForBooking } from './conversation.service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -294,6 +295,27 @@ export class BookingService {
         ...message,
         url: `/dashboard/bookings/${updated.id}`,
       }).catch(() => undefined);
+    }
+
+    // Auto-create the chat thread between devotee and assigned priest the
+    // moment the priest is assigned. This is the post-payment service-delivery
+    // handoff: devotee gets an inbox thread, priest sees it in their portal.
+    if (newStatus === 'priest_assigned' && updated.priest) {
+      const priestUser = await prisma.priest.findUnique({
+        where: { id: updated.priest.id },
+        select: { userId: true, displayName: true },
+      });
+      if (priestUser) {
+        void ensureConversationForBooking({
+          bookingId: updated.id,
+          devoteeId: updated.user.id,
+          providerId: priestUser.userId,
+          kind: 'puja_booking',
+          systemMessage: `Namaste! I'm ${priestUser.displayName}. I'll be performing your ${updated.pujaType.name} at ${updated.temple.name}. Feel free to share any sankalp details or questions here.`,
+        }).catch((err) => {
+          console.warn('[booking.service] ensureConversationForBooking failed:', err);
+        });
+      }
     }
 
     return updated;

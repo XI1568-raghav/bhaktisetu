@@ -159,12 +159,19 @@ model User {
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  addresses     UserAddress[]
-  bookings      PujaBooking[]
-  payments      Payment[]
-  subscription  Subscription[]
-  priest        Priest?
-  conversations AiConversation[]
+  addresses      UserAddress[]
+  bookings       PujaBooking[]
+  payments       Payment[]
+  subscription   Subscription[]
+  priest         Priest?
+  conversations  AiConversation[]
+  // Human-to-human chat (devotee ↔ provider) — see ChatConversation below.
+  // Two relations because a conversation has two distinct participant slots
+  // (devotee + provider); Prisma needs named relations to disambiguate.
+  chatAsDevotee  ChatConversation[] @relation("DevoteeChats")
+  chatAsProvider ChatConversation[] @relation("ProviderChats")
+  chatMessages   ChatMessage[]
+  chatCallStarts ChatCallSession[]
 
   @@map("users")
 }
@@ -303,16 +310,16 @@ model PujaType {
 }
 
 model TemplePujaOffering {
-  id                 String  @id @default(uuid()) @db.Uuid
-  templeId           String  @map("temple_id") @db.Uuid
-  pujaTypeId         String  @map("puja_type_id") @db.Uuid
+  id                 String   @id @default(uuid()) @db.Uuid
+  templeId           String   @map("temple_id") @db.Uuid
+  pujaTypeId         String   @map("puja_type_id") @db.Uuid
   priceOverride      Decimal? @map("price_override") @db.Decimal(10, 2)
-  availableSlots     Json    @default("[]") @map("available_slots")
-  maxBookingsPerSlot Int     @default(5) @map("max_bookings_per_slot")
-  isActive           Boolean @default(true) @map("is_active")
+  availableSlots     Json     @default("[]") @map("available_slots")
+  maxBookingsPerSlot Int      @default(5) @map("max_bookings_per_slot")
+  isActive           Boolean  @default(true) @map("is_active")
 
-  temple   Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
-  pujaType PujaType @relation(fields: [pujaTypeId], references: [id], onDelete: Cascade)
+  temple   Temple        @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  pujaType PujaType      @relation(fields: [pujaTypeId], references: [id], onDelete: Cascade)
   bookings PujaBooking[]
 
   @@unique([templeId, pujaTypeId])
@@ -349,14 +356,14 @@ model PujaBooking {
   createdAt               DateTime      @default(now()) @map("created_at")
   updatedAt               DateTime      @updatedAt @map("updated_at")
 
-  user              User               @relation(fields: [userId], references: [id])
-  temple            Temple             @relation(fields: [templeId], references: [id])
-  pujaType          PujaType           @relation(fields: [pujaTypeId], references: [id])
-  priest            Priest?            @relation(fields: [priestId], references: [id])
+  user               User               @relation(fields: [userId], references: [id])
+  temple             Temple             @relation(fields: [templeId], references: [id])
+  pujaType           PujaType           @relation(fields: [pujaTypeId], references: [id])
+  priest             Priest?            @relation(fields: [priestId], references: [id])
   templePujaOffering TemplePujaOffering @relation(fields: [templePujaOfferingId], references: [id])
-  prasadAddress     UserAddress?       @relation(fields: [prasadDeliveryAddressId], references: [id])
-  payments          Payment[]
-  priestPayouts     PriestPayout[]
+  prasadAddress      UserAddress?       @relation(fields: [prasadDeliveryAddressId], references: [id])
+  payments           Payment[]
+  priestPayouts      PriestPayout[]
 
   @@index([userId])
   @@index([templeId])
@@ -482,18 +489,18 @@ model LiveDarshanStream {
 }
 
 model Subscription {
-  id                   String             @id @default(uuid()) @db.Uuid
-  userId               String             @map("user_id") @db.Uuid
-  plan                 SubscriptionPlan
-  price                Decimal            @db.Decimal(10, 2)
-  currency             String             @default("INR")
-  status               SubscriptionStatus @default(active)
-  currentPeriodStart   DateTime           @map("current_period_start")
-  currentPeriodEnd     DateTime           @map("current_period_end")
-  gatewaySubscriptionId String?           @map("gateway_subscription_id")
-  autoRenew            Boolean            @default(true) @map("auto_renew")
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @map("user_id") @db.Uuid
+  plan                  SubscriptionPlan
+  price                 Decimal            @db.Decimal(10, 2)
+  currency              String             @default("INR")
+  status                SubscriptionStatus @default(active)
+  currentPeriodStart    DateTime           @map("current_period_start")
+  currentPeriodEnd      DateTime           @map("current_period_end")
+  gatewaySubscriptionId String?            @map("gateway_subscription_id")
+  autoRenew             Boolean            @default(true) @map("auto_renew")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id])
 
@@ -599,24 +606,24 @@ model UserRoleAssignment {
 }
 
 model PanditProfile {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @unique @map("user_id") @db.Uuid
-  templeName      String?  @map("temple_name")
-  experience      Int      @default(0)
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @unique @map("user_id") @db.Uuid
+  templeName      String?   @map("temple_name")
+  experience      Int       @default(0)
   specialties     String[]
   languages       String[]
-  aadhaarVerified Boolean  @default(false) @map("aadhaar_verified")
-  rating          Float    @default(0)
-  totalPujas      Int      @default(0) @map("total_pujas")
-  pricePerPuja    Decimal  @default(500) @map("price_per_puja") @db.Decimal(10, 2)
+  aadhaarVerified Boolean   @default(false) @map("aadhaar_verified")
+  rating          Float     @default(0)
+  totalPujas      Int       @default(0) @map("total_pujas")
+  pricePerPuja    Decimal   @default(500) @map("price_per_puja") @db.Decimal(10, 2)
   bio             String?
   city            String?
   state           String?
   availability    Json?
-  approved        Boolean  @default(false)
+  approved        Boolean   @default(false)
   approvedAt      DateTime? @map("approved_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@index([city])
   @@index([approved])
@@ -665,35 +672,35 @@ model AstrologerProfile {
 }
 
 model WellnessProfile {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @unique @map("user_id") @db.Uuid
-  displayName    String   @map("display_name")
-  specialties    String[]
-  certifications String[]
-  experience     Int      @default(0)
-  rating         Float    @default(0)
-  pricePerSession Decimal @default(500) @map("price_per_session") @db.Decimal(10, 2)
-  bio            String?
-  approved       Boolean  @default(false)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  displayName     String   @map("display_name")
+  specialties     String[]
+  certifications  String[]
+  experience      Int      @default(0)
+  rating          Float    @default(0)
+  pricePerSession Decimal  @default(500) @map("price_per_session") @db.Decimal(10, 2)
+  bio             String?
+  approved        Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@index([approved])
   @@map("wellness_profiles")
 }
 
 model GaushalaProfile {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @unique @map("user_id") @db.Uuid
-  gaushalaName  String   @map("gaushala_name")
-  address       String?
-  city          String?
-  totalCows     Int      @default(0) @map("total_cows")
-  verified      Boolean  @default(false)
-  description   String?
-  approved      Boolean  @default(false)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  gaushalaName String   @map("gaushala_name")
+  address      String?
+  city         String?
+  totalCows    Int      @default(0) @map("total_cows")
+  verified     Boolean  @default(false)
+  description  String?
+  approved     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([approved])
   @@map("gaushala_profiles")
@@ -709,7 +716,7 @@ model TempleProfile {
   address      String?
   description  String?
   verified     Boolean  @default(false)
-  totalStreams  Int      @default(0) @map("total_streams")
+  totalStreams Int      @default(0) @map("total_streams")
   approved     Boolean  @default(false)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -720,16 +727,16 @@ model TempleProfile {
 }
 
 model MarketplaceSubscription {
-  id        String                       @id @default(uuid()) @db.Uuid
-  userId    String                       @map("user_id") @db.Uuid
+  id        String                        @id @default(uuid()) @db.Uuid
+  userId    String                        @map("user_id") @db.Uuid
   plan      MarketplacePlan
   role      UserRole
-  startDate DateTime                     @map("start_date")
-  endDate   DateTime                     @map("end_date")
-  amount    Decimal                      @db.Decimal(10, 2)
+  startDate DateTime                      @map("start_date")
+  endDate   DateTime                      @map("end_date")
+  amount    Decimal                       @db.Decimal(10, 2)
   status    MarketplaceSubscriptionStatus @default(ACTIVE)
-  createdAt DateTime                     @default(now()) @map("created_at")
-  updatedAt DateTime                     @updatedAt @map("updated_at")
+  createdAt DateTime                      @default(now()) @map("created_at")
+  updatedAt DateTime                      @updatedAt @map("updated_at")
 
   @@index([userId])
   @@index([status])
@@ -793,4 +800,93 @@ model OnboardingStep {
   @@unique([userId, role, step])
   @@index([userId])
   @@map("onboarding_steps")
+}
+
+// ─── Human-to-human chat (devotee ↔ provider) ────────────────────────────
+// Backs the post-payment service-delivery flow: priest, astrologer, wellness
+// instructor, temple manager, gaushala manager, store owner each get an inbox
+// where they message and video-call devotees who paid for their service.
+
+enum ChatConversationKind {
+  puja_booking
+  astrology
+  wellness
+  temple
+  gaushala
+  store_order
+  support
+}
+
+enum ChatConversationStatus {
+  open
+  closed
+}
+
+enum ChatMessageKind {
+  text
+  system
+  call_link
+}
+
+model ChatConversation {
+  id              String                 @id @default(uuid()) @db.Uuid
+  kind            ChatConversationKind
+  status          ChatConversationStatus @default(open)
+  devoteeId       String                 @map("devotee_id") @db.Uuid
+  providerId      String                 @map("provider_id") @db.Uuid
+  // Optional links — a chat may exist independent of a booking (e.g. support).
+  linkedBookingId String?                @map("linked_booking_id") @db.Uuid
+  subject         String?
+  lastMessageAt   DateTime               @default(now()) @map("last_message_at")
+  // Per-side unread counts — incremented on send, zeroed on read.
+  devoteeUnread   Int                    @default(0) @map("devotee_unread")
+  providerUnread  Int                    @default(0) @map("provider_unread")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  devotee  User              @relation("DevoteeChats", fields: [devoteeId], references: [id], onDelete: Cascade)
+  provider User              @relation("ProviderChats", fields: [providerId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  calls    ChatCallSession[]
+
+  @@index([devoteeId, lastMessageAt])
+  @@index([providerId, lastMessageAt])
+  @@index([linkedBookingId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String          @id @default(uuid()) @db.Uuid
+  conversationId String          @map("conversation_id") @db.Uuid
+  senderId       String          @map("sender_id") @db.Uuid
+  kind           ChatMessageKind @default(text)
+  body           String
+  // Free-form metadata: { jitsiUrl?, callSessionId?, bookingNumber?, ... }
+  metadata       Json?
+  readAt         DateTime?       @map("read_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}
+
+model ChatCallSession {
+  id              String    @id @default(uuid()) @db.Uuid
+  conversationId  String    @map("conversation_id") @db.Uuid
+  // Random 32-char unguessable Jitsi room name.
+  roomName        String    @unique @map("room_name")
+  jitsiUrl        String    @map("jitsi_url")
+  startedById     String    @map("started_by_id") @db.Uuid
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  durationSeconds Int?      @map("duration_seconds")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  startedBy    User             @relation(fields: [startedById], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, startedAt])
+  @@map("chat_call_sessions")
 }

@@ -177,10 +177,30 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
  },
 };
 
-function makeDemoSession(): AuthSession {
+// The handle in the token (`demo-<handle>-token`) tells the API which seeded
+// demo user this session is for. Generic `demo-access-token-poojly` would
+// always resolve to the devotee — so role-specific surfaces (priest inbox,
+// astrologer consultations) would show the WRONG side's data.
+function handleForEmail(email: string): string {
+ const map: Record<string, string> = {
+ 'devotee@demo.com': 'devotee',
+ 'pandit@demo.com': 'pandit',
+ 'priest@demo.com': 'pandit',
+ 'store@demo.com': 'store',
+ 'astro@demo.com': 'astro',
+ 'wellness@demo.com': 'wellness',
+ 'gaushala@demo.com': 'gaushala',
+ 'temple@demo.com': 'temple',
+ 'admin@demo.com': 'admin',
+ };
+ return map[email.toLowerCase()] ?? 'devotee';
+}
+
+function makeDemoSession(email = 'devotee@demo.com'): AuthSession {
+ const handle = handleForEmail(email);
  return {
- accessToken: 'demo-access-token-poojly',
- refreshToken: 'demo-refresh-token-poojly',
+ accessToken: `demo-${handle}-token`,
+ refreshToken: `demo-${handle}-refresh`,
  expiresIn: 86400,
  expiresAt: Math.floor(Date.now() / 1000) + 86400,
  };
@@ -431,7 +451,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // Check demo accounts
  const demoAccount = DEMO_ACCOUNTS[emailLower];
  if (demoAccount && demoAccount.password === password) {
- const demoSession = makeDemoSession();
+ const demoSession = makeDemoSession(emailLower);
  setSession(demoSession);
  setUser(demoAccount.user);
  persistSession(demoSession, demoAccount.user);
@@ -502,7 +522,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  return { success: true, message: 'Account created successfully' };
  } catch {
  // Demo fallback — create local session
- const demoSession = makeDemoSession();
+ const demoSession = makeDemoSession(data.email);
  const newUser: AuthUser = {
  id: `user-${Date.now()}`,
  phone: data.phone ? `+91${data.phone.replace(/\D/g, '')}` : '',
@@ -547,7 +567,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  * Demo sign-in — instantly logs in with the default devotee demo user.
  */
  const demoSignIn = useCallback(() => {
- const demoSession = makeDemoSession();
+ const demoSession = makeDemoSession(DEMO_USER.email ?? 'devotee@demo.com');
  setSession(demoSession);
  setUser(DEMO_USER);
  persistSession(demoSession, DEMO_USER);

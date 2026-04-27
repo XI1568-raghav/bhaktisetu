@@ -12,12 +12,14 @@ import {
  X,
  LogOut,
  ChevronRight,
+ MessageSquare,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
  { href: '/gaushala-portal', icon: LayoutDashboard, label: 'Overview' },
+ { href: '/gaushala-portal/messages', icon: MessageSquare, label: 'Messages' },
  { href: '/gaushala-portal/donations', icon: Heart, label: 'Donations' },
  { href: '/gaushala-portal/cows', icon: () => <span className="text-base leading-none"></span>, label: 'Cows' },
  { href: '/gaushala-portal/volunteers', icon: Users, label: 'Volunteers' },

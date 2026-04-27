@@ -14,12 +14,14 @@ import {
  LogOut,
  ChevronRight,
  Star,
+ MessageSquare,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
 
 const sidebarLinks = [
  { href: '/priest', label: 'Dashboard', icon: LayoutDashboard },
+ { href: '/priest/messages', label: 'Messages', icon: MessageSquare },
  { href: '/priest/bookings', label: 'Bookings', icon: Calendar },
  { href: '/priest/services', label: 'My Services', icon: Flame },
  { href: '/priest/reviews', label: 'Reviews', icon: Star },
