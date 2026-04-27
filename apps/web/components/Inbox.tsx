@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Send, Video, Phone, ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Video, Phone, ArrowLeft, Loader2, MessageSquare, Star } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
 
@@ -155,6 +155,7 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
             onBack={() => setActiveId(null)}
             onMessagesChanged={fetchConvs}
             counterpartyName={conversations.find((c) => c.id === activeId)?.counterparty.fullName ?? ''}
+            side={conversations.find((c) => c.id === activeId)?.side ?? 'devotee'}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-surface-400 text-sm">
@@ -172,15 +173,42 @@ interface ThreadProps {
   onBack: () => void;
   onMessagesChanged: () => void;
   counterpartyName: string;
+  side: 'devotee' | 'provider';
 }
 
-function Thread({ conversationId, token, onBack, onMessagesChanged, counterpartyName }: ThreadProps) {
+interface ExistingRating { stars: number; body: string | null }
+
+function Thread({ conversationId, token, onBack, onMessagesChanged, counterpartyName, side }: ThreadProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [activeCall, setActiveCall] = useState<{ jitsiUrl: string; callId: string } | null>(null);
+  const [rating, setRating] = useState<ExistingRating | null>(null);
+  const [ratingLoaded, setRatingLoaded] = useState(false);
   const sinceRef = useRef<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Load any existing rating once per conversation switch. We only need
+  // to know whether one exists (to suppress the prompt) and what the
+  // stars/body were (so the devotee sees their prior submission rather
+  // than a blank form).
+  useEffect(() => {
+    setRating(null);
+    setRatingLoaded(false);
+    fetch(`${API_BASE_URL}/ratings/${conversationId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : { rating: null }))
+      .then((d) => {
+        if (d?.rating) setRating({ stars: d.rating.stars, body: d.rating.body });
+      })
+      .catch(() => undefined)
+      .finally(() => setRatingLoaded(true));
+  }, [conversationId, token]);
+
+  const callEnded = messages.some(
+    (m) => m.kind === 'system' && /Call ended/i.test(m.body),
+  );
 
   const fetchMessages = useCallback(async (reset = false) => {
     const url = `${API_BASE_URL}/conversations/${conversationId}/messages${
@@ -362,6 +390,22 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
         )}
       </div>
 
+      {/* Rating prompt — devotee only, after a call has ended */}
+      {side === 'devotee' && callEnded && ratingLoaded && (
+        <RatingBar
+          existing={rating}
+          counterpartyName={counterpartyName}
+          onSubmit={async (stars, body) => {
+            const res = await fetch(`${API_BASE_URL}/ratings`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ conversationId, stars, body: body || undefined }),
+            });
+            if (res.ok) setRating({ stars, body: body || null });
+          }}
+        />
+      )}
+
       {/* Composer */}
       <div className="border-t border-surface-100 px-3 py-2 flex items-end gap-2 bg-white">
         <textarea
@@ -387,5 +431,75 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
         </button>
       </div>
     </>
+  );
+}
+
+interface RatingBarProps {
+  existing: ExistingRating | null;
+  counterpartyName: string;
+  onSubmit: (stars: number, body: string) => Promise<void>;
+}
+
+function RatingBar({ existing, counterpartyName, onSubmit }: RatingBarProps) {
+  const [stars, setStars] = useState(existing?.stars ?? 0);
+  const [body, setBody] = useState(existing?.body ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (existing && collapsed) return null;
+
+  return (
+    <div className="border-t border-saffron-100 bg-saffron-50/60 px-4 py-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-saffron-800">
+          {existing ? 'Your rating' : `Rate your service with ${counterpartyName}`}
+        </p>
+        {existing && (
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            className="text-[10px] text-saffron-700 hover:underline"
+          >
+            Hide
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-1 mb-2">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setStars(n)}
+            aria-label={`${n} star${n === 1 ? '' : 's'}`}
+            className="p-0.5"
+          >
+            <Star
+              className={`w-5 h-5 ${n <= stars ? 'fill-saffron-500 text-saffron-500' : 'text-saffron-300'}`}
+            />
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Optional: a few words about the service"
+        rows={1}
+        maxLength={1000}
+        className="w-full resize-none bg-white border border-saffron-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-saffron-300"
+      />
+      <div className="flex justify-end mt-2">
+        <button
+          type="button"
+          disabled={stars === 0 || submitting}
+          onClick={async () => {
+            setSubmitting(true);
+            try { await onSubmit(stars, body); } finally { setSubmitting(false); }
+          }}
+          className="bg-saffron-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-saffron-700 disabled:opacity-40 transition-colors"
+        >
+          {submitting ? 'Saving...' : existing ? 'Update rating' : 'Submit rating'}
+        </button>
+      </div>
+    </div>
   );
 }

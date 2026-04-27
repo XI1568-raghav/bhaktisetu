@@ -40,6 +40,7 @@ import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { demoPayRoutes } from './routes/demo-pay.js';
+import { ratingRoutes } from './routes/ratings.js';
 
 const server = Fastify({
   logger: {
@@ -110,6 +111,7 @@ async function bootstrap() {
   await server.register(cronRoutes, { prefix: '/api/v1/cron' });
   await server.register(conversationRoutes, { prefix: '/api/v1/conversations' });
   await server.register(demoPayRoutes, { prefix: '/api/v1/demo-pay' });
+  await server.register(ratingRoutes, { prefix: '/api/v1/ratings' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
