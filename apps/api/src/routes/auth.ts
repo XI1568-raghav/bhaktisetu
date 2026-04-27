@@ -41,7 +41,14 @@ const loginSchema = z.object({
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  // 8 chars minimum + at least one letter and one digit. Long enough to
+  // resist trivial brute force, simple enough to remember without a
+  // password manager. Special-character requirements are skipped on
+  // purpose: NIST 800-63B says they don't help and harm UX.
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
+    .regex(/[0-9]/, 'Password must contain at least one digit'),
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().optional(),
   role: z.enum(['devotee', 'pandit', 'store_owner', 'astrologer', 'wellness_instructor', 'gaushala_manager', 'temple_manager']).optional().default('devotee'),
@@ -85,6 +92,34 @@ function normalizePhone(phone: string): string {
   return `+${cleaned}`;
 }
 
+// ─── Per-identity rate limits ──────────────────────────────────────────────────
+// Tighter than the 100/min global @fastify/rate-limit. Keyed on the *target*
+// of the auth event (phone for OTP, email for login) — not the source IP —
+// so an attacker rotating IPs through CF still hits the same bucket and we
+// protect the actual victim's account.
+//
+// SMS pump (Twilio bills us per SMS; Supabase forwards to Twilio): cap OTP
+// sends per phone at 5 per 15-min window. Real users typo at most once.
+// Credential stuffing on /login: cap to 10 attempts per email per 15-min
+// window. Fits manual flow; blocks scripted lists.
+const AUTH_RATE_WINDOW_MS = 15 * 60 * 1000;
+const OTP_RATE_MAX = 5;
+const LOGIN_RATE_MAX = 10;
+type Bucket = { count: number; windowStart: number };
+const otpBuckets = new Map<string, Bucket>();
+const loginBuckets = new Map<string, Bucket>();
+function bucketOk(map: Map<string, Bucket>, key: string, max: number): boolean {
+  const now = Date.now();
+  const b = map.get(key);
+  if (!b || now - b.windowStart > AUTH_RATE_WINDOW_MS) {
+    map.set(key, { count: 1, windowStart: now });
+    return true;
+  }
+  if (b.count >= max) return false;
+  b.count += 1;
+  return true;
+}
+
 // ─── Routes ────────────────────────────────────────────────────────────────────
 
 export async function authRoutes(server: FastifyInstance) {
@@ -126,6 +161,12 @@ export async function authRoutes(server: FastifyInstance) {
     }
 
     const phone = normalizePhone(parseResult.data.phone);
+    if (!bucketOk(otpBuckets, phone, OTP_RATE_MAX)) {
+      return reply.code(429).send({
+        error: 'TooManyRequests',
+        message: 'Too many OTP requests for this number. Try again in 15 minutes.',
+      });
+    }
     const supabase = createSupabaseClient();
 
     const { error } = await supabase.auth.signInWithOtp({ phone });
@@ -388,6 +429,13 @@ export async function authRoutes(server: FastifyInstance) {
 
     const { email, password } = parseResult.data;
     const emailLower = email.toLowerCase();
+
+    if (!bucketOk(loginBuckets, emailLower, LOGIN_RATE_MAX)) {
+      return reply.code(429).send({
+        error: 'TooManyRequests',
+        message: 'Too many login attempts for this email. Try again in 15 minutes.',
+      });
+    }
 
     // Check demo accounts first
     const demo = DEMO_ACCOUNTS[emailLower];
