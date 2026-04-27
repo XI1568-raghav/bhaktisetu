@@ -20,6 +20,83 @@ import {
  Award,
 } from 'lucide-react';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
+
+// Map signup form's lowercase role keys to backend MarketplaceRole enum.
+// devotee never reaches submitProviderProfile (early-returned), so it's
+// excluded here.
+const PROVIDER_ROLE_MAP: Record<Exclude<UserRole, 'devotee' | 'admin'>, string> = {
+ priest: 'PANDIT',
+ store_owner: 'STORE_OWNER',
+ astrologer: 'ASTROLOGER',
+ wellness_instructor: 'WELLNESS_INSTRUCTOR',
+ gaushala_manager: 'GAUSHALA_MANAGER',
+ temple_manager: 'TEMPLE_MANAGER',
+};
+
+// Translate the form's per-role field shape to the backend profile schema.
+// Field names diverge between the form (UX-named: storeName, organization)
+// and Prisma models (templeName, displayName, gaushalaName) — this is the
+// one place where the mapping is centralised.
+function buildProviderPayload(role: UserRole, form: Record<string, unknown>): Record<string, unknown> | null {
+ const fullName = (form.fullName as string) || 'Unnamed';
+ switch (role) {
+ case 'priest':
+ return {
+ templeName: form.organization || null,
+ experience: Number(form.experienceYears) || 0,
+ specialties: form.specialties || [],
+ languages: [],
+ city: form.city || null,
+ bio: null,
+ };
+ case 'store_owner':
+ return {
+ storeName: form.storeName || 'Unnamed Store',
+ gstNumber: form.gstNumber || null,
+ city: form.city || null,
+ categories: form.productCategories || [],
+ };
+ case 'astrologer':
+ return {
+ displayName: fullName,
+ specialties: form.specialties || [],
+ experience: Number(form.experienceYears) || 0,
+ languages: form.languages || [],
+ };
+ case 'wellness_instructor':
+ // Form collects `wellnessType[]` (Yoga/Meditation/etc.) and a free-text
+ // `certifications` string. Profile model has `specialties[]` +
+ // `certifications[]` — so we promote the wellness type to specialties
+ // and split the cert string on commas.
+ return {
+ displayName: fullName,
+ specialties: form.wellnessType || [],
+ certifications: form.certifications
+ ? String(form.certifications).split(',').map((s) => s.trim()).filter(Boolean)
+ : [],
+ experience: Number(form.experienceYears) || 0,
+ };
+ case 'gaushala_manager':
+ // The signup card is shared with temple_manager; the role chosen at
+ // step 0 already disambiguated to gaushala_manager here.
+ return {
+ gaushalaName: form.organizationName || 'Unnamed Gaushala',
+ city: form.city || null,
+ totalCows: 0,
+ description: null,
+ };
+ case 'temple_manager':
+ return {
+ templeName: form.organizationName || 'Unnamed Temple',
+ city: form.city || null,
+ deity: null,
+ description: null,
+ };
+ default:
+ return null;
+ }
+}
 
 // ─── Role definitions ─────────────────────────────────────────────────────────
 
@@ -428,13 +505,42 @@ export default function SignupPage() {
  role: selectedRole,
  });
 
- setIsSubmitting(false);
-
  if (!result.success) {
+ setIsSubmitting(false);
  setError(result.message);
  return;
  }
 
+ // For provider roles, immediately submit the role-specific profile so
+ // an admin can review it. Demo-mode tokens are accepted by the API but
+ // it returns 202 + demoMode:true and skips the DB write — that's fine,
+ // signup still completes and the user reaches the confirmation screen.
+ if (isProvider && result.accessToken) {
+ const backendRole = PROVIDER_ROLE_MAP[selectedRole as Exclude<UserRole, 'devotee' | 'admin'>];
+ const payload = buildProviderPayload(selectedRole, formData as unknown as Record<string, unknown>);
+ if (backendRole && payload) {
+ try {
+ const onboardRes = await fetch(`${API_BASE_URL}/onboarding/provider`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${result.accessToken}`,
+ },
+ body: JSON.stringify({ role: backendRole, data: payload }),
+ });
+ if (!onboardRes.ok) {
+ // Account exists; profile didn't persist. Tell the user but
+ // let them through — they can finish via /onboarding/[role].
+ const txt = await onboardRes.text().catch(() => '');
+ console.warn('[signup] onboarding/provider non-OK', onboardRes.status, txt);
+ }
+ } catch (err) {
+ console.warn('[signup] onboarding/provider failed', err);
+ }
+ }
+ }
+
+ setIsSubmitting(false);
  clearStorage();
  setSignupComplete(true);
  setStep(2);

@@ -41,7 +41,7 @@ interface AuthContextValue {
  signInWithOtp: (phone: string) => Promise<{ success: boolean; message: string }>;
  verifyOtp: (phone: string, token: string) => Promise<{ success: boolean; message: string; isNewUser?: boolean }>;
  signInWithCredentials: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
- signUpWithCredentials: (data: SignUpData) => Promise<{ success: boolean; message: string }>;
+ signUpWithCredentials: (data: SignUpData) => Promise<{ success: boolean; message: string; accessToken?: string; userId?: string }>;
  signOut: () => Promise<void>;
  refreshUser: () => Promise<void>;
  demoSignIn: () => void;
@@ -519,7 +519,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  setUser(newUser);
  persistSession(newSession, newUser);
 
- return { success: true, message: 'Account created successfully' };
+ return {
+ success: true,
+ message: 'Account created successfully',
+ accessToken: newSession?.accessToken,
+ userId: newUser.id,
+ };
  } catch {
  // Demo fallback — create local session
  const demoSession = makeDemoSession(data.email);
@@ -538,7 +543,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  setUser(newUser);
  persistSession(demoSession, newUser);
 
- return { success: true, message: 'Account created successfully (demo mode)' };
+ return {
+ success: true,
+ message: 'Account created successfully (demo mode)',
+ accessToken: demoSession.accessToken,
+ userId: newUser.id,
+ };
  }
  }, [persistSession]);
 

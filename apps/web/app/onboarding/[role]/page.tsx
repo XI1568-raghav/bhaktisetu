@@ -24,7 +24,90 @@ import {
  Truck,
  Shield,
 } from 'lucide-react';
-import { type UserRole, getRoleDashboardPath, getRoleLabel } from '../../../lib/auth-context';
+import { type UserRole, getRoleDashboardPath, getRoleLabel, useAuth } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
+
+// Maps the URL role slug to the backend MarketplaceRole enum.
+const BACKEND_ROLE: Record<string, string> = {
+ priest: 'PANDIT',
+ store_owner: 'STORE_OWNER',
+ astrologer: 'ASTROLOGER',
+ wellness_instructor: 'WELLNESS_INSTRUCTOR',
+ gaushala_manager: 'GAUSHALA_MANAGER',
+ temple_manager: 'TEMPLE_MANAGER',
+};
+
+// Project the multi-step page's free-form `data` Record into the backend
+// profile shape. Field names diverge from the form; this is the only
+// place where the mapping lives.
+function projectOnboardingData(role: string, d: Record<string, unknown>): Record<string, unknown> {
+ const num = (v: unknown, fallback = 0) => Number(v) || fallback;
+ const arr = (v: unknown): string[] => Array.isArray(v) ? (v as string[]) : [];
+ const str = (v: unknown): string | null => typeof v === 'string' && v.length > 0 ? v : null;
+ switch (role) {
+ case 'priest':
+ return {
+ templeName: str(d.templeName) ?? str(d.organization),
+ experience: num(d.experience ?? d.experienceYears),
+ specialties: arr(d.specialties),
+ languages: arr(d.languages),
+ city: str(d.city),
+ state: str(d.state),
+ bio: str(d.bio),
+ pricePerPuja: num(d.pricePerPuja, 500),
+ };
+ case 'store_owner':
+ return {
+ storeName: str(d.storeName) ?? 'Unnamed Store',
+ gstNumber: str(d.gstNumber),
+ address: str(d.address),
+ city: str(d.city),
+ state: str(d.state),
+ categories: arr(d.categories ?? d.productCategories),
+ };
+ case 'astrologer':
+ return {
+ displayName: str(d.displayName) ?? str(d.fullName) ?? 'Unnamed',
+ specialties: arr(d.specialties),
+ experience: num(d.experience ?? d.experienceYears),
+ languages: arr(d.languages),
+ bio: str(d.bio),
+ pricePerMinute: num(d.pricePerMinute, 10),
+ };
+ case 'wellness_instructor':
+ return {
+ displayName: str(d.displayName) ?? str(d.fullName) ?? 'Unnamed',
+ specialties: arr(d.specialties ?? d.wellnessType),
+ certifications: Array.isArray(d.certifications)
+ ? (d.certifications as string[])
+ : (typeof d.certifications === 'string'
+ ? d.certifications.split(',').map((s) => s.trim()).filter(Boolean)
+ : []),
+ experience: num(d.experience ?? d.experienceYears),
+ bio: str(d.bio),
+ pricePerSession: num(d.pricePerSession, 500),
+ };
+ case 'gaushala_manager':
+ return {
+ gaushalaName: str(d.gaushalaName) ?? str(d.organizationName) ?? 'Unnamed Gaushala',
+ address: str(d.address),
+ city: str(d.city),
+ totalCows: num(d.totalCows),
+ description: str(d.description),
+ };
+ case 'temple_manager':
+ return {
+ templeName: str(d.templeName) ?? str(d.organizationName) ?? 'Unnamed Temple',
+ deity: str(d.deity),
+ city: str(d.city),
+ state: str(d.state),
+ address: str(d.address),
+ description: str(d.description),
+ };
+ default:
+ return {};
+ }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -406,10 +489,12 @@ export default function OnboardingPage() {
  const steps = role ? ROLE_STEPS[role] : [];
  const totalSteps = steps.length;
 
+ const { session } = useAuth();
  const [currentStep, setCurrentStep] = useState(0);
  const [data, setData] = useState<Record<string, unknown>>({});
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [isSubmitted, setIsSubmitted] = useState(false);
+ const [submitError, setSubmitError] = useState<string | null>(null);
 
  // Load saved data
  useEffect(() => {
@@ -444,22 +529,52 @@ export default function OnboardingPage() {
  };
 
  const handleSubmit = async () => {
+ if (!role) return;
  setIsSubmitting(true);
- // Simulate API submission
- await new Promise((resolve) => setTimeout(resolve, 1500));
+ setSubmitError(null);
 
+ const backendRole = BACKEND_ROLE[role];
+ const payload = projectOnboardingData(role, data);
+ const token = session?.accessToken;
+
+ if (!token) {
+ setIsSubmitting(false);
+ setSubmitError('You must be signed in to submit. Please sign in and try again.');
+ return;
+ }
+
+ try {
+ const res = await fetch(`${API_BASE_URL}/onboarding/provider`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${token}`,
+ },
+ body: JSON.stringify({ role: backendRole, data: payload }),
+ });
+ if (!res.ok) {
+ const txt = await res.text().catch(() => '');
+ throw new Error(`Submission failed (${res.status}). ${txt}`);
+ }
+
+ // Cache the submitted snapshot for the local "Submitted" state and
+ // clear the in-progress draft so revisits show a clean form.
  try {
  localStorage.setItem(
  `poojly_onboarding_${role}_submitted`,
- JSON.stringify({ ...data, submittedAt: new Date().toISOString(), status: 'pending_review' })
+ JSON.stringify({ ...data, submittedAt: new Date().toISOString(), status: 'pending_review' }),
  );
- localStorage.removeItem(getStorageKey(role!));
+ localStorage.removeItem(getStorageKey(role));
  } catch {
  // storage unavailable
  }
 
- setIsSubmitting(false);
  setIsSubmitted(true);
+ } catch (err) {
+ setSubmitError(err instanceof Error ? err.message : 'Submission failed');
+ } finally {
+ setIsSubmitting(false);
+ }
  };
 
  // ─── Invalid role ─────────────────────────────────────────────────────────
@@ -1001,6 +1116,12 @@ export default function OnboardingPage() {
  <div className="px-6 pb-6">
  {renderCurrentStep()}
  </div>
+
+ {submitError && (
+ <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+ {submitError}
+ </div>
+ )}
 
  {/* Navigation */}
  <div className="px-6 pb-6 flex gap-3">
