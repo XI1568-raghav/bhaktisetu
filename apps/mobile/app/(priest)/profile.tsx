@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePriestProfile } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface PriestProfileShape {
@@ -103,6 +104,10 @@ export default function PriestProfile() {
           </View>
         </Section>
       ) : null}
+
+      <Section title="Messages">
+        <MessagesEntry roleGroup="priest" />
+      </Section>
 
       <Section title="Verification">
         <View style={styles.verifyRow}>

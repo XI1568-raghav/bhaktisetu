@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useWellnessInstructors } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const FALLBACK_SPECIALIZATIONS = ['Hatha', 'Ashtanga', 'Pranayama', 'Meditation', 'Restorative'];
@@ -65,6 +66,10 @@ export default function WellnessProfile() {
           ) : null}
         </View>
       </View>
+
+      <Section title="Messages">
+        <MessagesEntry roleGroup="wellness" />
+      </Section>
 
       {me?.bio ? (
         <Section title="About">

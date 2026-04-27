@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAstrologers } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const FALLBACK_RATES = [
@@ -77,6 +78,10 @@ export default function AstrologerProfile() {
           ) : null}
         </View>
       </View>
+
+      <Section title="Messages">
+        <MessagesEntry roleGroup="astrologer" />
+      </Section>
 
       {me?.bio ? (
         <Section title="About">
