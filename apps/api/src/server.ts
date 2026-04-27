@@ -28,6 +28,7 @@ import { astrologyRoutes } from './routes/astrology.js';
 import { wellnessRoutes } from './routes/wellness.js';
 import { onboardingRoutes } from './routes/onboarding.js';
 import { providerRoutes } from './routes/providers.js';
+import { providerKycRoutes } from './routes/provider-kyc.js';
 import { yatraRoutes } from './routes/yatra.js';
 import { supportRoutes } from './routes/support.js';
 import { searchRoutes } from './routes/search.js';
@@ -110,6 +111,7 @@ async function bootstrap() {
   await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
   await server.register(onboardingRoutes, { prefix: '/api/v1/onboarding' });
   await server.register(providerRoutes, { prefix: '/api/v1/providers' });
+  await server.register(providerKycRoutes, { prefix: '/api/v1/provider-kyc' });
   await server.register(yatraRoutes, { prefix: '/api/v1/yatra' });
   await server.register(supportRoutes, { prefix: '/api/v1/support' });
   await server.register(searchRoutes, { prefix: '/api/v1/search' });
