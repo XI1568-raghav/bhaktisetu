@@ -8,6 +8,7 @@ import {
   ListRow,
   EmptyHint,
 } from '../../lib/portal-screen';
+import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing } from '../../lib/theme';
 
 export default function TempleDashboard() {
@@ -42,6 +43,10 @@ export default function TempleDashboard() {
         <View style={{ width: spacing.sm }} />
         <StatCard label="Donations (Mo)" value="₹1,84,500" accent={colors.green[600]} />
       </View>
+
+      <Section title="Messages">
+        <MessagesEntry roleGroup="temple" />
+      </Section>
 
       <Section title="Live Darshan Streams">
         {live.length === 0 ? (

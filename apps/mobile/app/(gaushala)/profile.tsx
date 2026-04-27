@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGaushalas } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section } from '../../lib/portal-screen';
+import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 export default function GaushalaProfile() {
@@ -56,6 +57,10 @@ export default function GaushalaProfile() {
           ) : null}
         </View>
       </View>
+
+      <Section title="Messages">
+        <MessagesEntry roleGroup="gaushala" />
+      </Section>
 
       {me?.description ? (
         <Section title="About">

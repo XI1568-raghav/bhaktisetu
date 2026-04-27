@@ -8,6 +8,7 @@ import {
   ListRow,
   EmptyHint,
 } from '../../lib/portal-screen';
+import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing } from '../../lib/theme';
 
 const FALLBACK_STATS = {
@@ -59,6 +60,10 @@ export default function StoreDashboard() {
           accent={colors.red[600]}
         />
       </View>
+
+      <Section title="Messages">
+        <MessagesEntry roleGroup="store-admin" />
+      </Section>
 
       <Section title="Catalogue Snapshot">
         {productCount === 0 ? (

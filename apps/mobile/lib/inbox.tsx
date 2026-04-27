@@ -10,12 +10,102 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { api } from '@poojly/api-client';
 import { useAuth } from './auth-context';
 import { colors, spacing, fontSize, borderRadius } from './theme';
+
+// Compact tap row used inside a portal profile/dashboard to navigate
+// the user to their /(role)/messages screen. Polls the conversation
+// count every 30s so the badge stays roughly fresh while the user is
+// on a profile screen.
+export function MessagesEntry({ roleGroup }: { roleGroup: 'priest' | 'astrologer' | 'wellness' | 'temple' | 'gaushala' | 'store-admin' }) {
+  const { isAuthenticated } = useAuth();
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await api.get<{ conversations: Array<{ unread: number }> }>(
+          '/api/v1/conversations?role=provider',
+        );
+        if (cancelled) return;
+        const total = (data.conversations ?? []).reduce((acc, c) => acc + (c.unread || 0), 0);
+        setUnread(total);
+      } catch {
+        // ignore — keep prior count
+      }
+    }
+    load();
+    const i = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(i);
+    };
+  }, [isAuthenticated]);
+
+  return (
+    <TouchableOpacity
+      style={messagesEntryStyles.row}
+      activeOpacity={0.7}
+      onPress={() => router.push(`/(${roleGroup})/messages` as any)}
+    >
+      <View style={messagesEntryStyles.icon}>
+        <Ionicons name="chatbubble-ellipses" size={20} color={colors.saffron[700]} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={messagesEntryStyles.label}>Messages</Text>
+        <Text style={messagesEntryStyles.subtitle}>Chat with devotees about bookings</Text>
+      </View>
+      {unread > 0 ? (
+        <View style={messagesEntryStyles.badge}>
+          <Text style={messagesEntryStyles.badgeText}>{unread}</Text>
+        </View>
+      ) : null}
+      <Ionicons name="chevron-forward" size={18} color={colors.stone[300]} />
+    </TouchableOpacity>
+  );
+}
+
+const messagesEntryStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+    gap: spacing.sm,
+  },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.saffron[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: { fontSize: fontSize.base, fontWeight: '600', color: colors.stone[800] },
+  subtitle: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
+  badge: {
+    backgroundColor: colors.saffron[600],
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { color: colors.white, fontSize: 11, fontWeight: '700' },
+});
 
 // Mirror of apps/web/components/Inbox.tsx — same endpoints, same 3s poll
 // cadence, same since-cursor pattern. Calls + ratings are intentionally
@@ -108,6 +198,7 @@ export function Inbox({ role }: { role: 'devotee' | 'provider' }) {
       <Thread
         conversationId={activeId}
         counterpartyName={active?.counterparty.fullName ?? 'Conversation'}
+        side={active?.side ?? (role === 'devotee' ? 'devotee' : 'provider')}
         onBack={() => setActiveId(null)}
         onMessagesChanged={fetchConvs}
       />
@@ -199,16 +290,45 @@ function ConversationRow({ conv, onPress }: { conv: ConversationSummary; onPress
 interface ThreadProps {
   conversationId: string;
   counterpartyName: string;
+  side: 'devotee' | 'provider';
   onBack: () => void;
   onMessagesChanged: () => void;
 }
 
-function Thread({ conversationId, counterpartyName, onBack, onMessagesChanged }: ThreadProps) {
+interface ExistingRating { stars: number; body: string | null }
+
+function Thread({ conversationId, counterpartyName, side, onBack, onMessagesChanged }: ThreadProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [startingCall, setStartingCall] = useState(false);
+  const [rating, setRating] = useState<ExistingRating | null>(null);
+  const [ratingLoaded, setRatingLoaded] = useState(false);
   const sinceRef = useRef<string | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
+
+  // Load any existing rating once per conversation switch — devotee-only.
+  useEffect(() => {
+    if (side !== 'devotee') {
+      setRatingLoaded(true);
+      return;
+    }
+    setRating(null);
+    setRatingLoaded(false);
+    api
+      .get<{ rating: { stars: number; body: string | null } | null }>(
+        `/api/v1/ratings/${conversationId}`,
+      )
+      .then((d) => {
+        if (d?.rating) setRating({ stars: d.rating.stars, body: d.rating.body });
+      })
+      .catch(() => undefined)
+      .finally(() => setRatingLoaded(true));
+  }, [conversationId, side]);
+
+  const callEnded = messages.some(
+    (m) => m.kind === 'system' && /Call ended/i.test(m.body),
+  );
 
   const fetchMessages = useCallback(
     async (reset = false) => {
@@ -266,6 +386,45 @@ function Thread({ conversationId, counterpartyName, onBack, onMessagesChanged }:
     }
   }
 
+  async function startCall() {
+    if (startingCall) return;
+    setStartingCall(true);
+    try {
+      const data = await api.post<{ jitsiUrl: string; callId: string }>(
+        `/api/v1/conversations/${conversationId}/start-call`,
+        {},
+      );
+      // Refresh messages so the new system + call_link message appears.
+      await fetchMessages(false);
+      onMessagesChanged();
+      // Open the Jitsi room in the system browser. (When react-native-webview
+      // is added in a future build we can switch to an in-app modal sheet.)
+      const supported = await Linking.canOpenURL(data.jitsiUrl);
+      if (supported) {
+        await Linking.openURL(data.jitsiUrl);
+      } else {
+        Alert.alert('Could not open call', `Open this link in your browser:\n${data.jitsiUrl}`);
+      }
+    } catch {
+      Alert.alert('Could not start call', 'Please try again in a moment.');
+    } finally {
+      setStartingCall(false);
+    }
+  }
+
+  async function submitRating(stars: number, body: string) {
+    try {
+      await api.post('/api/v1/ratings', {
+        conversationId,
+        stars,
+        body: body.trim() || undefined,
+      });
+      setRating({ stars, body: body.trim() || null });
+    } catch {
+      Alert.alert('Could not submit rating', 'Please try again later.');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.threadHeader}>
@@ -275,7 +434,13 @@ function Thread({ conversationId, counterpartyName, onBack, onMessagesChanged }:
         <Text style={styles.threadTitle} numberOfLines={1}>
           {counterpartyName}
         </Text>
-        <View style={{ width: 26 }} />
+        <TouchableOpacity onPress={startCall} hitSlop={10} disabled={startingCall}>
+          {startingCall ? (
+            <ActivityIndicator color={colors.saffron[600]} />
+          ) : (
+            <Ionicons name="videocam" size={22} color={colors.saffron[600]} />
+          )}
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
@@ -290,6 +455,13 @@ function Thread({ conversationId, counterpartyName, onBack, onMessagesChanged }:
           contentContainerStyle={styles.threadList}
           renderItem={({ item }) => <MessageBubble msg={item} />}
         />
+        {side === 'devotee' && callEnded && ratingLoaded ? (
+          <RatingBar
+            existing={rating}
+            counterpartyName={counterpartyName}
+            onSubmit={submitRating}
+          />
+        ) : null}
         <View style={styles.composer}>
           <TextInput
             value={draft}
@@ -325,6 +497,34 @@ function MessageBubble({ msg }: { msg: Message }) {
       </View>
     );
   }
+  if (msg.kind === 'call_link') {
+    const meta = (msg.metadata ?? {}) as { jitsiUrl?: string; roomName?: string };
+    const url = meta.jitsiUrl;
+    return (
+      <View style={styles.callCardRow}>
+        <View style={styles.callCard}>
+          <View style={styles.callCardHead}>
+            <Ionicons name="videocam" size={16} color={colors.saffron[700]} />
+            <Text style={styles.callCardTitle}>Video call</Text>
+          </View>
+          <Text style={styles.callCardBody}>{msg.body}</Text>
+          {url ? (
+            <TouchableOpacity
+              style={styles.callJoinButton}
+              onPress={async () => {
+                const ok = await Linking.canOpenURL(url);
+                if (ok) Linking.openURL(url);
+                else Alert.alert('Could not open call', `Open this link:\n${url}`);
+              }}
+            >
+              <Text style={styles.callJoinText}>Join call</Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.saffron[700]} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={[styles.bubbleRow, msg.mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
       <View style={[styles.bubble, msg.mine ? styles.bubbleMine : styles.bubbleTheirs]}>
@@ -335,6 +535,86 @@ function MessageBubble({ msg }: { msg: Message }) {
           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
       </View>
+    </View>
+  );
+}
+
+interface RatingBarProps {
+  existing: ExistingRating | null;
+  counterpartyName: string;
+  onSubmit: (stars: number, body: string) => Promise<void>;
+}
+
+function RatingBar({ existing, counterpartyName, onSubmit }: RatingBarProps) {
+  const [stars, setStars] = useState(existing?.stars ?? 0);
+  const [body, setBody] = useState(existing?.body ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (existing && collapsed) return null;
+
+  return (
+    <View style={styles.ratingBar}>
+      <View style={styles.ratingHeadRow}>
+        <Text style={styles.ratingHead}>
+          {existing ? 'Your rating' : `Rate your service with ${counterpartyName}`}
+        </Text>
+        {existing ? (
+          <TouchableOpacity onPress={() => setCollapsed(true)} hitSlop={6}>
+            <Text style={styles.ratingHide}>Hide</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      <View style={styles.ratingStarsRow}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <TouchableOpacity
+            key={n}
+            onPress={() => setStars(n)}
+            hitSlop={6}
+            disabled={!!existing}
+          >
+            <Ionicons
+              name={n <= stars ? 'star' : 'star-outline'}
+              size={22}
+              color={n <= stars ? colors.saffron[500] : colors.saffron[300]}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+      {!existing ? (
+        <>
+          <TextInput
+            value={body}
+            onChangeText={setBody}
+            placeholder="Add a short note (optional)"
+            placeholderTextColor={colors.stone[400]}
+            style={styles.ratingInput}
+            multiline
+            maxLength={500}
+            editable={!submitting}
+          />
+          <TouchableOpacity
+            style={[styles.ratingSubmit, (stars === 0 || submitting) ? styles.ratingSubmitDisabled : null]}
+            disabled={stars === 0 || submitting}
+            onPress={async () => {
+              setSubmitting(true);
+              try {
+                await onSubmit(stars, body);
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            {submitting ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Text style={styles.ratingSubmitText}>Submit rating</Text>
+            )}
+          </TouchableOpacity>
+        </>
+      ) : existing.body ? (
+        <Text style={styles.ratingExistingBody}>{existing.body}</Text>
+      ) : null}
     </View>
   );
 }
@@ -458,4 +738,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendDisabled: { backgroundColor: colors.stone[300] },
+
+  callCardRow: { alignItems: 'center', marginVertical: spacing.xs },
+  callCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    maxWidth: '80%',
+  },
+  callCardHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  callCardTitle: { fontSize: fontSize.xs, fontWeight: '600', color: colors.saffron[700] },
+  callCardBody: { fontSize: fontSize.xs, color: colors.stone[600], marginBottom: spacing.sm },
+  callJoinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  callJoinText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.saffron[700] },
+
+  ratingBar: {
+    backgroundColor: colors.saffron[50],
+    borderTopWidth: 1,
+    borderTopColor: colors.saffron[100],
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  ratingHeadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  ratingHead: { fontSize: fontSize.xs, fontWeight: '600', color: colors.saffron[800] },
+  ratingHide: { fontSize: 10, color: colors.saffron[700] },
+  ratingStarsRow: { flexDirection: 'row', gap: 4, marginBottom: spacing.sm },
+  ratingInput: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+    minHeight: 40,
+    maxHeight: 100,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.stone[800],
+    marginBottom: spacing.sm,
+  },
+  ratingSubmit: {
+    backgroundColor: colors.saffron[600],
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  ratingSubmitDisabled: { backgroundColor: colors.stone[300] },
+  ratingSubmitText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  ratingExistingBody: { fontSize: fontSize.xs, color: colors.stone[600], marginTop: 4 },
 });
