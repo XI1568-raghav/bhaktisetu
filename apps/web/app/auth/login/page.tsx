@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Flame, Phone, Mail, ArrowRight, Loader2, CheckCircle2, ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
+import { getSupabaseBrowserClient } from '../../../lib/supabase';
 
 type AuthTab = 'email' | 'phone';
 type Step = 'input' | 'otp';
@@ -355,9 +356,21 @@ export default function LoginPage() {
  <div>
  {/* Google Sign-In */}
  <button
- onClick={() => {
- // In demo, sign in as devotee
- setError('Google Sign-In is not available in demo mode. Use email login below.');
+ onClick={async () => {
+ setError('');
+ try {
+ const supabase = getSupabaseBrowserClient();
+ const params = new URLSearchParams(window.location.search);
+ const redirect = params.get('redirect');
+ const callbackUrl = `${window.location.origin}/auth/callback${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
+ const { error: oauthError } = await supabase.auth.signInWithOAuth({
+ provider: 'google',
+ options: { redirectTo: callbackUrl },
+ });
+ if (oauthError) setError(oauthError.message || 'Could not start Google sign-in');
+ } catch (err) {
+ setError(err instanceof Error ? err.message : 'Could not start Google sign-in');
+ }
  }}
  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-surface-200 rounded-lg text-sm font-medium text-surface-700 hover:bg-surface-50 hover:-translate-y-0.5 hover:shadow-md transition-all"
  >

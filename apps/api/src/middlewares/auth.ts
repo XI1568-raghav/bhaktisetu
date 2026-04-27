@@ -7,7 +7,7 @@ export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER
 export interface AuthUser {
   id: string;
   supabaseId: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   fullName: string;
   subscriptionTier: string;
