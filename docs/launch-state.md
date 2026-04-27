@@ -1,7 +1,20 @@
 # Launch state
 
 > High-churn doc. Update this when phases progress, files are added, or open items resolve.
-> Last refreshed: 2026-04-26.
+> Last refreshed: 2026-04-27.
+
+## 🎉 LAUNCH STATUS: ALL DAYS GREEN
+
+Day 1-3 fully shipped, deployed, and verified end-to-end on 2026-04-27.
+
+| Day | What | Status |
+|---|---|---|
+| Day 1 | Sentry + PostHog + CF Analytics + Resend + magic-link auth | ✅ live |
+| Day 2 | Supabase Storage (R2 swap) + Razorpay + 80G PDF receipts | ✅ live |
+| Day 3 | Web push + Cohere semantic search + GH cron + WhatsApp (parked) | ✅ live |
+
+Last deploy commit: `adade66` (semantic-search column fix).
+Live URLs: https://darshya.online · https://bhaktisetu.onrender.com
 
 ## 3-day launch plan status
 
