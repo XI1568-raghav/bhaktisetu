@@ -24,7 +24,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://bhaktisetu.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://api.darshya.online"
       }
     },
     "production": {
@@ -36,7 +36,7 @@
       },
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://bhaktisetu.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://api.darshya.online"
       }
     }
   },

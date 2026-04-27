@@ -281,10 +281,10 @@ export const API_ENDPOINTS = {
   TEMPLE_DARSHAN: (templeId: string) =>
     `/api/v1/temples/${templeId}/darshan` as const,
 
-  // Pujas
-  PUJAS: "/api/v1/pujas",
-  PUJA_BY_SLUG: (slug: string) => `/api/v1/pujas/${slug}` as const,
-  PUJA_CATEGORIES: "/api/v1/pujas/categories",
+  // Pujas — server exposes these under /pujas/types/*
+  PUJAS: "/api/v1/pujas/types",
+  PUJA_BY_SLUG: (slug: string) => `/api/v1/pujas/types/${slug}` as const,
+  PUJA_CATEGORIES: "/api/v1/pujas/types/popular",
 
   // Bookings
   BOOKINGS: "/api/v1/bookings",
@@ -301,7 +301,7 @@ export const API_ENDPOINTS = {
   // Content
   CONTENT: "/api/v1/content",
   CONTENT_BY_SLUG: (slug: string) => `/api/v1/content/${slug}` as const,
-  CONTENT_FEATURED: "/api/v1/content/featured",
+  CONTENT_FEATURED: "/api/v1/content/daily",
 
   // Panchang
   PANCHANG_TODAY: "/api/v1/panchang/today",
