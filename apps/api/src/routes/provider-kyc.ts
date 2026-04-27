@@ -62,8 +62,9 @@ export async function providerKycRoutes(server: FastifyInstance) {
   // ── GET /providers/kyc — current redacted KYC for the signed-in user ──
   server.get('/', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
+    const accessToken = (request.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
 
-    if (userId.startsWith('demo-')) {
+    if (userId.startsWith('demo-') || accessToken.startsWith('demo-')) {
       return reply.send({ kyc: null, demoMode: true });
     }
 
@@ -105,7 +106,8 @@ export async function providerKycRoutes(server: FastifyInstance) {
       });
     }
     const userId = request.currentUser!.id;
-    if (userId.startsWith('demo-')) {
+    const accessToken = (request.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
+    if (userId.startsWith('demo-') || accessToken.startsWith('demo-')) {
       return reply.code(202).send({
         message: 'Demo session — KYC not persisted. Sign up with a real account to submit KYC.',
         demoMode: true,
