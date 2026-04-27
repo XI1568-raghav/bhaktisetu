@@ -98,7 +98,17 @@ export async function paymentRoutes(server: FastifyInstance) {
     }
   );
 
-  // POST /webhook - Razorpay webhook handler (no auth — uses webhook signature)
+  // POST /webhook - Razorpay webhook handler (no auth — uses webhook signature).
+  //
+  // Two verification modes coexist behind RAZORPAY_VERIFY_RAW:
+  //   - false (default): legacy JSON.stringify(body) compare. What we've
+  //     shipped to date. Works because Razorpay's compact JSON tends to
+  //     round-trip through Node, but it is *not* a real HMAC over the
+  //     bytes Razorpay signed.
+  //   - true: HMAC over request.rawBody, which is what Razorpay actually
+  //     signed. This is the correct path. Stays opt-in so we can verify
+  //     end-to-end against a Razorpay test-mode webhook before flipping
+  //     prod. Procedure: see docs/security-pass-2026-04-27.md task #143.
   server.post(
     '/webhook',
     { config: { rawBody: true } },
@@ -112,10 +122,21 @@ export async function paymentRoutes(server: FastifyInstance) {
           });
         }
 
+        const useRaw = process.env.RAZORPAY_VERIFY_RAW === 'true';
+        const rawBody = (request as unknown as { rawBody?: string }).rawBody;
+
         const payload = request.body as Record<string, any>;
 
-        const result = await paymentService.handleWebhook(payload, signature);
+        if (useRaw) {
+          if (!rawBody) {
+            server.log.error('RAZORPAY_VERIFY_RAW=true but rawBody is missing — fastify-raw-body did not run for this route');
+            return reply.status(500).send({ error: 'Webhook configuration error' });
+          }
+          const result = await paymentService.handleWebhookRaw(rawBody, payload, signature);
+          return reply.status(200).send(result);
+        }
 
+        const result = await paymentService.handleWebhook(payload, signature);
         return reply.status(200).send(result);
       } catch (error: any) {
         if (error.message?.includes('signature verification failed')) {

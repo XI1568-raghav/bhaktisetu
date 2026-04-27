@@ -7,6 +7,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import fastifyRawBody from 'fastify-raw-body';
 import { registerAuthDecorators } from './middlewares/auth.js';
 import { templeRoutes } from './routes/temples.js';
 import { pujaRoutes } from './routes/pujas.js';
@@ -70,6 +71,17 @@ async function bootstrap() {
   await server.register(rateLimit, {
     max: 100,
     timeWindow: '1 minute',
+  });
+  // Per-route raw body access. Opt-in only — routes that need it pass
+  // `{ config: { rawBody: true } }` (e.g. payment webhooks where the
+  // signature must be verified against the bytes Razorpay actually
+  // sent, not what JSON.stringify reproduces). global:false avoids
+  // double-buffering every request.
+  await server.register(fastifyRawBody, {
+    field: 'rawBody',
+    global: false,
+    encoding: 'utf8',
+    runFirst: true,
   });
 
   // Register auth decorators (must be before routes)

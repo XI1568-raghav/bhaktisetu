@@ -229,6 +229,46 @@ export class PaymentService {
       throw new Error('Webhook signature verification failed.');
     }
 
+    return this.processWebhookEvent(payload);
+  }
+
+  /**
+   * Like handleWebhook, but verifies the HMAC against the literal bytes
+   * Razorpay sent rather than a re-serialised JSON. This is the correct
+   * verification path; gated on RAZORPAY_VERIFY_RAW so it can be tested
+   * against Razorpay's test-mode webhook before flipping prod over.
+   */
+  async handleWebhookRaw(
+    rawBody: string,
+    payload: Record<string, any>,
+    signature: string
+  ): Promise<WebhookResult> {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET!;
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
+
+    // Use timing-safe compare to defeat any timing-oracle attacks on the
+    // HMAC equality check. Both sides are hex strings of the same length;
+    // if not, force a mismatch.
+    const a = Buffer.from(expectedSignature, 'utf8');
+    const b = Buffer.from(signature, 'utf8');
+    const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+    if (!ok) {
+      throw new Error('Webhook signature verification failed.');
+    }
+
+    return this.processWebhookEvent(payload);
+  }
+
+  /**
+   * Private: dispatch the verified webhook payload to the right
+   * downstream Prisma updates. Both verification paths converge here.
+   */
+  private async processWebhookEvent(
+    payload: Record<string, any>
+  ): Promise<WebhookResult> {
     const event = payload.event as string;
     const paymentEntity = payload.payload?.payment?.entity;
 
