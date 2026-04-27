@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Star, Languages, Award, Calendar, IndianRupee } from 'lucide-react';
 
+export const runtime = 'edge';
+
 interface PageProps {
  params: Promise<{ id: string }>;
 }
