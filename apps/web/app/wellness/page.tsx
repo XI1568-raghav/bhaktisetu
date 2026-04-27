@@ -14,6 +14,7 @@ import {
  Sparkles,
 } from 'lucide-react';
 import ScrollReveal from '../../components/ScrollReveal';
+import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip';
 
 export const metadata: Metadata = {
  title: 'Yoga, Meditation & Vipassana',
@@ -387,6 +388,13 @@ export default function WellnessPage() {
  </div>
  </div>
  </section>
+
+ <ApprovedProvidersStrip
+ type="wellness"
+ heading="Verified instructors on Darshya"
+ subheading="Approved yoga, meditation and pranayama instructors. Each profile is reviewed before going live."
+ limit={8}
+ />
 
  </div>
  </ScrollReveal>

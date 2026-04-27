@@ -375,3 +375,77 @@ export async function getLiveDarshan(): Promise<{ streams: DarshanStream[] }> {
 export async function getScheduledDarshan(): Promise<{ streams: DarshanStream[] }> {
  return serverFetch('/darshan/scheduled', { revalidate: 60, tags: ['darshan-scheduled'] });
 }
+
+// ─── Approved Providers (public listings) ─────────────────────────
+
+export type ProviderListingType = 'pandit' | 'store' | 'astrologer' | 'wellness' | 'gaushala' | 'temple';
+
+export interface ApprovedProvider {
+ id: string;
+ userId: string;
+ city?: string | null;
+ state?: string | null;
+ rating?: number;
+ experience?: number;
+ specialties?: string[];
+ languages?: string[];
+ bio?: string | null;
+ // Per-type display fields
+ templeName?: string | null;
+ displayName?: string | null;
+ storeName?: string | null;
+ gaushalaName?: string | null;
+ deity?: string | null;
+ description?: string | null;
+ totalCows?: number;
+ categories?: string[];
+ certifications?: string[];
+ pricePerPuja?: number | string;
+ pricePerMinute?: number | string;
+ pricePerSession?: number | string;
+}
+
+export async function getApprovedProviders(
+ type: ProviderListingType,
+ params?: { city?: string; specialty?: string; sort?: string; page?: number; limit?: number },
+): Promise<{ providers: ApprovedProvider[]; total: number; page: number; limit: number }> {
+ const sp = new URLSearchParams();
+ if (params?.city) sp.set('city', params.city);
+ if (params?.specialty) sp.set('specialty', params.specialty);
+ if (params?.sort) sp.set('sort', params.sort);
+ if (params?.page) sp.set('page', String(params.page));
+ if (params?.limit) sp.set('limit', String(params.limit));
+ const query = sp.toString();
+
+ try {
+ const raw = await serverFetch<unknown>(
+ `/providers/${type}${query ? `?${query}` : ''}`,
+ { revalidate: 60, tags: [`providers-${type}`] },
+ );
+ // The provider service returns { providers, total, page, limit } directly,
+ // not the {data, pagination} envelope normalizePaginated wraps for listing
+ // routes that name their array key e.g. "temples". Handle both shapes.
+ const r = raw as Record<string, unknown>;
+ if (Array.isArray(r.providers)) {
+ return {
+ providers: r.providers as ApprovedProvider[],
+ total: Number(r.total) || 0,
+ page: Number(r.page) || 1,
+ limit: Number(r.limit) || 12,
+ };
+ }
+ if (Array.isArray(r.data)) {
+ const pag = (r.pagination as Record<string, unknown>) ?? {};
+ return {
+ providers: r.data as ApprovedProvider[],
+ total: Number(pag.total) || 0,
+ page: Number(pag.page) || 1,
+ limit: Number(pag.limit) || 12,
+ };
+ }
+ return { providers: [], total: 0, page: 1, limit: 12 };
+ } catch {
+ // API offline; return empty so the strip can render its empty state.
+ return { providers: [], total: 0, page: 1, limit: 12 };
+ }
+}
