@@ -118,6 +118,57 @@ export function bookingConfirmationEmail(params: {
   };
 }
 
+export function providerApprovedEmail(params: {
+  providerName: string;
+  roleLabel: string;
+  publicProfileUrl?: string;
+  dashboardUrl: string;
+}): { subject: string; html: string; text: string } {
+  const { providerName, roleLabel, publicProfileUrl, dashboardUrl } = params;
+  const profileLink = publicProfileUrl
+    ? `<p>Your public profile is now live: <a href="${publicProfileUrl}">${publicProfileUrl}</a></p>`
+    : '';
+  return {
+    subject: `Your ${roleLabel} profile is approved on Darshya`,
+    html: shell(`
+      <h1>Welcome to Darshya, ${providerName}</h1>
+      <p>Your ${roleLabel} profile has been reviewed and approved by our team.
+      You can now receive bookings, consultations and donations from devotees.</p>
+      ${profileLink}
+      <a class="btn" href="${dashboardUrl}">Open your dashboard</a>
+      <p style="font-size:12px;color:#999;">
+      Need help getting started? Reply to this email or visit our help centre.</p>
+    `),
+    text: `Welcome to Darshya, ${providerName}!\n\nYour ${roleLabel} profile is now approved and live. You can receive bookings starting today.\n\nDashboard: ${dashboardUrl}${publicProfileUrl ? `\nPublic profile: ${publicProfileUrl}` : ''}`,
+  };
+}
+
+export function providerRejectedEmail(params: {
+  providerName: string;
+  roleLabel: string;
+  reason?: string;
+  reapplyUrl: string;
+}): { subject: string; html: string; text: string } {
+  const { providerName, roleLabel, reason, reapplyUrl } = params;
+  const reasonBlock = reason
+    ? `<p><strong>Reviewer note:</strong> ${reason}</p>`
+    : '';
+  return {
+    subject: `Update on your ${roleLabel} application`,
+    html: shell(`
+      <h1>Hello ${providerName}</h1>
+      <p>Thank you for applying to list your ${roleLabel} profile on Darshya.
+      After review, we are unable to approve your application at this time.</p>
+      ${reasonBlock}
+      <p>You're welcome to update your details and submit again.</p>
+      <a class="btn" href="${reapplyUrl}">Update and resubmit</a>
+      <p style="font-size:12px;color:#999;">
+      If you have questions, reply to this email and our team will help.</p>
+    `),
+    text: `Hello ${providerName},\n\nWe were unable to approve your ${roleLabel} application at this time.${reason ? `\n\nReviewer note: ${reason}` : ''}\n\nYou can update your details and resubmit at: ${reapplyUrl}`,
+  };
+}
+
 export function donationReceiptEmail(params: {
   donorName: string;
   amount: string;

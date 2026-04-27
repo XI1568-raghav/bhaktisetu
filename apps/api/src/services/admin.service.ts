@@ -1,4 +1,9 @@
 import { prisma } from '../lib/prisma.js';
+import {
+  sendEmail,
+  providerApprovedEmail,
+  providerRejectedEmail,
+} from '../lib/email.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -318,6 +323,12 @@ export class AdminService {
               break;
           }
         }
+
+        // Best-effort approval/rejection email. Wrapped in try/catch so a
+        // Resend outage doesn't roll back the approval. sendEmail() itself
+        // no-ops when RESEND_API_KEY is unset, so dev/demo stays silent
+        // without errors.
+        await this.sendApprovalEmail(id, updates.approved, roleAssignments).catch(() => undefined);
       }
 
       return { message: 'User updated', userId: id };
@@ -521,6 +532,91 @@ export class AdminService {
       return MOCK_PENDING_APPROVALS;
     }
   }
+
+  // ─── Provider approval email helper ──────────────────────────────────────
+  //
+  // Picks the first non-DEVOTEE role assignment as "the" provider role for
+  // the email subject and dashboard URL. When a provider holds multiple
+  // roles (rare), the first wins; subsequent emails are not sent to avoid
+  // a flood of identical messages on a single approval click.
+
+  private async sendApprovalEmail(
+    userId: string,
+    approved: boolean,
+    roleAssignments: Array<{ role: string }>,
+  ): Promise<void> {
+    const providerRole = roleAssignments.find((ra) => ra.role !== 'DEVOTEE')?.role;
+    if (!providerRole) return;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.email) return;
+
+    const baseUrl = process.env.WEB_URL ?? 'https://darshya.online';
+    const meta = ROLE_EMAIL_META[providerRole as keyof typeof ROLE_EMAIL_META];
+    if (!meta) return;
+
+    let publicProfileId: string | undefined;
+    if (approved) {
+      // Resolve the public profile ID for the listing URL. Best-effort —
+      // if the profile was just deleted between the update and this email
+      // we still send a useful approval message without the link.
+      publicProfileId = await this.resolvePublicProfileId(userId, providerRole);
+    }
+
+    const providerName = user.fullName || meta.fallbackName;
+    const dashboardUrl = `${baseUrl}${meta.dashboardPath}`;
+
+    const tpl = approved
+      ? providerApprovedEmail({
+          providerName,
+          roleLabel: meta.label,
+          publicProfileUrl:
+            publicProfileId && meta.publicListingType
+              ? `${baseUrl}/${meta.publicListingType === 'pandit' ? 'pandits' : meta.publicListingType}/${publicProfileId}`
+              : undefined,
+          dashboardUrl,
+        })
+      : providerRejectedEmail({
+          providerName,
+          roleLabel: meta.label,
+          reapplyUrl: `${baseUrl}/onboarding/${meta.onboardingSlug}`,
+        });
+
+    await sendEmail({
+      to: user.email,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+    });
+  }
+
+  private async resolvePublicProfileId(userId: string, role: string): Promise<string | undefined> {
+    try {
+      switch (role) {
+        case 'PANDIT': return (await prisma.panditProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
+        case 'STORE_OWNER': return (await prisma.storeProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
+        case 'ASTROLOGER': return (await prisma.astrologerProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
+        case 'WELLNESS_INSTRUCTOR': return (await prisma.wellnessProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
+        case 'GAUSHALA_MANAGER': return (await prisma.gaushalaProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
+        case 'TEMPLE_MANAGER': return (await prisma.templeProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
+        default: return undefined;
+      }
+    } catch {
+      return undefined;
+    }
+  }
 }
+
+// Metadata table keeping email subject/body in sync with the dashboard URL.
+// Centralised so changing a slug in one place fixes both the email link and
+// the approval CTA.
+const ROLE_EMAIL_META = {
+  PANDIT: { label: 'Pandit', fallbackName: 'Panditji', dashboardPath: '/priest', onboardingSlug: 'priest', publicListingType: 'pandit' as const },
+  STORE_OWNER: { label: 'Store', fallbackName: 'Store Owner', dashboardPath: '/store-admin', onboardingSlug: 'store_owner', publicListingType: null },
+  ASTROLOGER: { label: 'Astrologer', fallbackName: 'Astrologer', dashboardPath: '/astrologer-portal', onboardingSlug: 'astrologer', publicListingType: 'astrologer' as const },
+  WELLNESS_INSTRUCTOR: { label: 'Wellness Instructor', fallbackName: 'Instructor', dashboardPath: '/wellness-portal', onboardingSlug: 'wellness_instructor', publicListingType: 'wellness' as const },
+  GAUSHALA_MANAGER: { label: 'Gaushala Manager', fallbackName: 'Sevak', dashboardPath: '/gaushala-portal', onboardingSlug: 'gaushala_manager', publicListingType: 'gaushala' as const },
+  TEMPLE_MANAGER: { label: 'Temple Manager', fallbackName: 'Manager', dashboardPath: '/temple-portal', onboardingSlug: 'temple_manager', publicListingType: 'temple' as const },
+} as const;
 
 export const adminService = new AdminService();
