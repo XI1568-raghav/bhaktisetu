@@ -168,10 +168,12 @@ model User {
   // Human-to-human chat (devotee ↔ provider) — see ChatConversation below.
   // Two relations because a conversation has two distinct participant slots
   // (devotee + provider); Prisma needs named relations to disambiguate.
-  chatAsDevotee  ChatConversation[] @relation("DevoteeChats")
-  chatAsProvider ChatConversation[] @relation("ProviderChats")
-  chatMessages   ChatMessage[]
-  chatCallStarts ChatCallSession[]
+  chatAsDevotee   ChatConversation[] @relation("DevoteeChats")
+  chatAsProvider  ChatConversation[] @relation("ProviderChats")
+  chatMessages    ChatMessage[]
+  chatCallStarts  ChatCallSession[]
+  ratingsGiven    ServiceRating[]    @relation("DevoteeRatings")
+  ratingsReceived ServiceRating[]    @relation("ProviderRatings")
 
   @@map("users")
 }
@@ -848,6 +850,7 @@ model ChatConversation {
   provider User              @relation("ProviderChats", fields: [providerId], references: [id], onDelete: Cascade)
   messages ChatMessage[]
   calls    ChatCallSession[]
+  ratings  ServiceRating[]
 
   @@index([devoteeId, lastMessageAt])
   @@index([providerId, lastMessageAt])
@@ -889,4 +892,28 @@ model ChatCallSession {
 
   @@index([conversationId, startedAt])
   @@map("chat_call_sessions")
+}
+
+model ServiceRating {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  devoteeId      String   @map("devotee_id") @db.Uuid
+  providerId     String   @map("provider_id") @db.Uuid
+  // 1..5 inclusive. Validated at the route boundary; DB has no CHECK
+  // because Prisma can't express it cleanly across providers, but the
+  // Zod schema in routes/ratings.ts is the gate.
+  stars          Int
+  body           String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  devotee      User             @relation("DevoteeRatings", fields: [devoteeId],  references: [id], onDelete: Cascade)
+  provider     User             @relation("ProviderRatings", fields: [providerId], references: [id], onDelete: Cascade)
+
+  // One rating per devotee per conversation. A devotee can rate the
+  // same provider again only via a different conversation (e.g. a new
+  // booking → new conversation).
+  @@unique([conversationId, devoteeId])
+  @@index([providerId, createdAt])
+  @@map("service_ratings")
 }
