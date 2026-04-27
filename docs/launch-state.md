@@ -130,6 +130,27 @@ To verify these are live, open the site in a browser and check **DevTools Networ
 - **Triple scrollbar on chat pages**: `calc(100dvh - 56px)` container + scoped `el.scrollTo` instead of `scrollIntoView` (which bubbled to window).
 - **Suspense for `useSearchParams`**: `Analytics.tsx` Suspense-wrapped to avoid forcing dynamic rendering.
 
+## Strategy tripwires (from `docs/strategy/appsforbharat-steelman.md`, 2026-04-27)
+
+The steelman concluded "modify, do not pivot" with a 12-month NRI-prepay window before AppsForBharat ships a USD-priced premium tier. These tripwires define when to fold the multi-vertical super-app framing and narrow to NRI-only puja booking + video proof + 80G.
+
+**Check these every Friday during launch weeks.** If two or more fire in the same week, escalate — do not absorb silently.
+
+| Tripwire | Threshold | Source of truth | Action if fires |
+|---|---|---|---|
+| NRI Day-30 retention | < 25% (target 40%) by week 8 | PostHog cohort analysis on geo-tagged signups | Fold to NRI-only SKU; drop wellness, e-commerce, astrology marketplace |
+| Blended NRI CAC | > $40 against monthly-sub LTV by week 8 | Ad spend ÷ NRI paid conversions, weekly | Fold to NRI-only SKU; pause paid acquisition until LTV math closes |
+| NRI annual:per-puja revenue ratio | < 1:3 (one annual sub per three transactional bookings) by week 12 | Stripe + Razorpay reports, monthly | Prepay thesis broken — re-frame as per-puja business; pull revenue projection in pitch deck |
+| Sri Mandir launches USD premium tier | Any time | Manual competitor watch (Firecrawl weekly when MCP wired) | Window closed — execute the pivot you already chose, do not negotiate |
+
+### Pulled-forward changes (informed by the steelman, not yet committed)
+
+These are decisions the steelman recommends but that have not been applied to product or pitch:
+
+1. **Compress launch SKU**: drop wellness, gaushala-as-revenue-driver, and the e-commerce store from launch-critical. Keep gaushala only as the 80G donation surface (low-cost content vertical). Decision-owner: founder. Status: not yet committed.
+2. **Re-anchor Phase 2 temple shortlist** on NRI ancestral concentration (Kashi, Trimbakeshwar, Tirupati or comparable South Indian heritage, one Gujarat/Rajasthan kuldevta destination) instead of metro coverage. Update `LAUNCH_STRATEGY.md` Phase 2 table. Decision-owner: founder. Status: not yet committed.
+3. **Pull daily-trigger habit surface into Phase 1** (panchang push, sunrise aarti notification, mantra-of-the-day in-app). Currently implicit in Phase 5; the steelman flags this as the single most important rebuttal. Engineering: ~1 sprint. Status: not yet scoped.
+
 ## Active multi-session plans
 
 - `C:\Users\DELL\.claude\plans\iridescent-gathering-blum.md` — Mobile App full parity (5 phases, 25-35h). Out of scope: real video, real payments, native push, iOS native build. See `docs/mobile-plan.md` for the readable summary.
