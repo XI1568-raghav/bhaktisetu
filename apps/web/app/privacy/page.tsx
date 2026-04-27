@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { COMPANY, operatedByLine, postalContactLine } from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Privacy Policy",
@@ -43,9 +44,8 @@ export default function PrivacyPage() {
  <div className="space-y-10">
  <PolicySection title="1. Introduction">
  <p>
- Darshya Technologies Private Limited (&quot;Darshya,&quot; &quot;we,&quot;
- &quot;our,&quot; or &quot;us&quot;) operates the Darshya platform, including the
- website at darshya.online, mobile applications, and related
+ {operatedByLine()} The Platform includes the
+ website at {COMPANY.domain}, mobile applications, and related
  services (collectively, the &quot;Platform&quot;). This Privacy Policy
  explains how we collect, use, disclose, and protect your
  information when you use our Platform.
@@ -256,11 +256,8 @@ export default function PrivacyPage() {
  For privacy-related queries or to exercise your data rights:
  </p>
  <ul>
- <li>Email: privacy@darshya.online</li>
- <li>
- Mail: Darshya Technologies Pvt. Ltd., HSR Layout,
- Bengaluru &ndash; 560102, Karnataka, India
- </li>
+ <li>Email: {COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}</li>
+ {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
  </PolicySection>
  </div>

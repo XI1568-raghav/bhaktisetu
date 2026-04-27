@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { COMPANY, operatedByLine, postalContactLine } from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Terms of Service",
@@ -47,8 +48,7 @@ export default function TermsPage() {
  darshya.online, mobile applications, and related services),
  you agree to be bound by these Terms of Service (&quot;Terms&quot;).
  If you do not agree to these Terms, please do not use the
- Platform. Darshya Technologies Private Limited
- (&quot;Darshya,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) reserves the right to
+ Platform. {operatedByLine()} The platform operator reserves the right to
  modify these Terms at any time, with changes effective upon
  posting to the Platform.
  </p>
@@ -290,11 +290,8 @@ export default function TermsPage() {
  For questions regarding these Terms of Service, contact us at:
  </p>
  <ul>
- <li>Email: legal@darshya.online</li>
- <li>
- Mail: Darshya Technologies Pvt. Ltd., HSR Layout,
- Bengaluru &ndash; 560102, Karnataka, India
- </li>
+ <li>Email: {COMPANY.specialtyEmails.legal ?? COMPANY.supportEmail}</li>
+ {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
  </TermsSection>
  </div>
