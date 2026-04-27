@@ -40,6 +40,26 @@ const sendSchema = z.object({
   body: z.string().min(1).max(4000),
 });
 
+// Per-user, per-conversation send rate limit. 60 messages / minute is plenty
+// for a fast typer; well below any realistic abuse threshold. Prevents an
+// authed user from filling a conversation with millions of rows or driving
+// up the recipient's push-notification budget.
+const SEND_RATE_WINDOW_MS = 60 * 1000;
+const SEND_RATE_MAX = 60;
+const sendBuckets = new Map<string, { count: number; windowStart: number }>();
+function sendRateOk(userId: string, convId: string): boolean {
+  const key = `${userId}:${convId}`;
+  const now = Date.now();
+  const b = sendBuckets.get(key);
+  if (!b || now - b.windowStart > SEND_RATE_WINDOW_MS) {
+    sendBuckets.set(key, { count: 1, windowStart: now });
+    return true;
+  }
+  if (b.count >= SEND_RATE_MAX) return false;
+  b.count += 1;
+  return true;
+}
+
 export async function conversationRoutes(server: FastifyInstance) {
   server.addHook('preHandler', authenticateUser);
 
@@ -234,6 +254,13 @@ export async function conversationRoutes(server: FastifyInstance) {
     const parsed = sendSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ error: 'BadRequest', issues: parsed.error.issues });
+    }
+
+    if (!sendRateOk(userId, id)) {
+      return reply.code(429).send({
+        error: 'TooManyRequests',
+        message: 'Slow down — too many messages in a short window.',
+      });
     }
 
     const conv = await prisma.chatConversation.findUnique({ where: { id } });

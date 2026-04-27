@@ -193,7 +193,15 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
     if (reset) {
       setMessages(data.messages);
     } else if (data.messages.length > 0) {
-      setMessages((prev) => [...prev, ...data.messages]);
+      // Dedupe by id. Two overlapping fetches (manual after-send + scheduled
+      // 3s poll) can return the same row twice if they fire in the same tick
+      // before either updates sinceRef — without dedupe the message appears
+      // twice in the thread.
+      setMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        const fresh = data.messages.filter((m: Message) => !seen.has(m.id));
+        return fresh.length === 0 ? prev : [...prev, ...fresh];
+      });
     }
   }, [conversationId, token]);
 
