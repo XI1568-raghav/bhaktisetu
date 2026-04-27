@@ -508,12 +508,15 @@ export default function PujaBookingPage() {
  setPaymentError('');
 
  try {
- // Step 1: Create order on backend
+ // Step 1: Create order on backend. If this fails (network, 4xx, 5xx,
+ // malformed body) we surface the error and abort. The previous
+ // synthetic-orderId fallback was a money bug: it sent the user to
+ // Razorpay with a fake order_id, which would either fail late or —
+ // worse — bind to someone else's order on the gateway side.
  let orderId: string;
  let razorpayOrderId: string;
  let amount: number;
 
- try {
  const res = await fetch(`${API_BASE_URL}/bookings/create-order`, {
  method: 'POST',
  headers: {
@@ -535,22 +538,26 @@ export default function PujaBookingPage() {
  prasadDelivery: wantsPrasad,
  deliveryAddress: wantsPrasad ? address : undefined,
  }),
- });
+ }).catch(() => null);
 
- if (res.ok) {
- const data = await res.json();
+ if (!res || !res.ok) {
+ const message = res
+ ? `Could not create your booking (${res.status}). Please try again or contact support at ${'support@darshya.online'}.`
+ : 'Network error reaching the booking service. Check your connection and try again.';
+ setPaymentError(message);
+ setPaymentLoading(false);
+ return;
+ }
+
+ const data = await res.json().catch(() => null);
+ if (!data?.orderId || !data?.razorpayOrderId || !data?.amount) {
+ setPaymentError('Booking service returned an unexpected response. Please try again.');
+ setPaymentLoading(false);
+ return;
+ }
  orderId = data.orderId;
  razorpayOrderId = data.razorpayOrderId;
  amount = data.amount;
- } else {
- throw new Error('API unavailable');
- }
- } catch {
- // Mock order for demo
- orderId = generateId();
- razorpayOrderId = 'order_' + generateId();
- amount = totalPrice * 100; // paise
- }
 
  // Step 2: Open Razorpay checkout
  const Razorpay = await loadRazorpay();
@@ -571,9 +578,13 @@ export default function PujaBookingPage() {
  color: '#ea580c',
  },
  handler: async (response: any) => {
- // Step 3: Verify payment
- try {
- await fetch(`${API_BASE_URL}/bookings/verify-payment`, {
+ // Step 3: Verify payment server-side. Razorpay's client-side handler
+ // fires even on signature-mismatch attacks; the backend's HMAC check
+ // is the source of truth. If verify-payment returns non-200, do NOT
+ // show booking success — surface a "payment received but verification
+ // pending" message and prompt the user to contact support with the
+ // razorpay_payment_id so we can reconcile manually.
+ const verifyRes = await fetch(`${API_BASE_URL}/bookings/verify-payment`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',
@@ -585,12 +596,19 @@ export default function PujaBookingPage() {
  razorpayOrderId: response.razorpay_order_id,
  razorpaySignature: response.razorpay_signature,
  }),
- });
- } catch {
- // Verification may fail in demo mode
+ }).catch(() => null);
+
+ if (!verifyRes || !verifyRes.ok) {
+ setPaymentError(
+ `Payment received (id: ${response.razorpay_payment_id}) but we could not confirm your booking. ` +
+ `Please email support@darshya.online with this payment ID and we'll reconcile within 24 hours.`,
+ );
+ setPaymentLoading(false);
+ return;
  }
 
- const bkNum = generateBookingNumber();
+ const verifyData = await verifyRes.json().catch(() => null);
+ const bkNum = verifyData?.bookingNumber ?? generateBookingNumber();
  setBookingNumber(bkNum);
  setBookingSuccess(true);
  setPaymentLoading(false);

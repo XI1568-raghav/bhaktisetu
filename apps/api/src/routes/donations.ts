@@ -31,19 +31,22 @@ const razorpay = isDemoPayment
   ? null
   : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
 
-interface DonationStore {
+// Donations live in the `donations` table. Raw SQL is used because the
+// generated Prisma client may lag schema changes when the dll is locked
+// on Windows; the migration's CHECK constraints + this module's narrow
+// surface are the integrity gates.
+type DonationRow = {
   id: string;
-  userId: string;
-  gaushalaId: string;
-  amountInr: number;
-  razorpayOrderId: string;
+  user_id: string;
+  gaushala_id: string;
+  amount_inr: string; // numeric → string in Prisma raw queries
+  razorpay_order_id: string;
+  razorpay_payment_id: string | null;
+  receipt_number: string | null;
   status: 'created' | 'paid' | 'failed';
-  createdAt: Date;
-}
-
-// In-memory store; for production this should be a `donations` Prisma table.
-// Schema is identical fields → easy migration later.
-const donationStore = new Map<string, DonationStore>();
+  created_at: Date;
+  paid_at: Date | null;
+};
 
 function nextReceiptNumber(): string {
   const d = new Date();
@@ -81,15 +84,15 @@ export async function donationRoutes(server: FastifyInstance) {
       razorpayOrderId = `order_demo_${Date.now()}`;
     }
 
-    donationStore.set(donationId, {
-      id: donationId,
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status)
+       VALUES ($1, $2::uuid, $3, $4, $5, 'created')`,
+      donationId,
       userId,
-      gaushalaId: body.gaushalaId,
-      amountInr: amount,
+      body.gaushalaId,
+      amount,
       razorpayOrderId,
-      status: 'created',
-      createdAt: new Date(),
-    });
+    );
 
     return reply.send({
       donationId,
@@ -112,10 +115,19 @@ export async function donationRoutes(server: FastifyInstance) {
     if (!body.donationId) {
       return reply.code(400).send({ error: 'donationId required' });
     }
-    const donation = donationStore.get(body.donationId);
+    const rows = await prisma.$queryRawUnsafe<DonationRow[]>(
+      `SELECT id, user_id, gaushala_id, amount_inr, razorpay_order_id,
+              razorpay_payment_id, receipt_number, status, created_at, paid_at
+         FROM donations
+        WHERE id = $1
+        LIMIT 1`,
+      body.donationId,
+    );
+    const donation = rows[0];
     if (!donation) {
       return reply.code(404).send({ error: 'Donation not found' });
     }
+    const amountInr = Number(donation.amount_inr);
 
     // Verify Razorpay signature (skip in demo mode)
     if (!isDemoPayment) {
@@ -127,17 +139,18 @@ export async function donationRoutes(server: FastifyInstance) {
         .update(`${body.razorpay_order_id}|${body.razorpay_payment_id}`)
         .digest('hex');
       if (expected !== body.razorpay_signature) {
-        donation.status = 'failed';
+        await prisma.$executeRawUnsafe(
+          `UPDATE donations SET status = 'failed' WHERE id = $1`,
+          donation.id,
+        );
         return reply.code(400).send({ error: 'Invalid payment signature' });
       }
     }
 
-    donation.status = 'paid';
-
     // Lookup user + gaushala for receipt
-    const user = await prisma.user.findUnique({ where: { id: donation.userId } });
+    const user = await prisma.user.findUnique({ where: { id: donation.user_id } });
     const gaushalaProfile = await prisma.gaushalaProfile.findFirst({
-      where: { userId: donation.gaushalaId },
+      where: { userId: donation.gaushala_id },
     }).catch(() => null);
 
     const receiptNumber = nextReceiptNumber();
@@ -145,13 +158,25 @@ export async function donationRoutes(server: FastifyInstance) {
       day: '2-digit', month: 'long', year: 'numeric',
     });
 
+    await prisma.$executeRawUnsafe(
+      `UPDATE donations
+          SET status = 'paid',
+              paid_at = now(),
+              razorpay_payment_id = $2,
+              receipt_number = $3
+        WHERE id = $1`,
+      donation.id,
+      body.razorpay_payment_id ?? null,
+      receiptNumber,
+    );
+
     // Generate 80G PDF
     let pdfBuffer: Buffer | null = null;
     try {
       pdfBuffer = await generate80GReceipt({
         donorName: user?.fullName ?? 'Devotee',
         donorEmail: user?.email ?? '',
-        amountInr: donation.amountInr,
+        amountInr,
         donationDate,
         receiptNumber,
         paymentMode: isDemoPayment ? 'Other' : 'UPI',
@@ -169,7 +194,7 @@ export async function donationRoutes(server: FastifyInstance) {
     if (user?.email && pdfBuffer) {
       const tpl = donationReceiptEmail({
         donorName: user.fullName ?? 'Devotee',
-        amount: `₹${donation.amountInr.toLocaleString('en-IN')}`,
+        amount: `₹${amountInr.toLocaleString('en-IN')}`,
         gaushalaName: gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network',
         receiptNumber,
         date: donationDate,
@@ -189,7 +214,7 @@ export async function donationRoutes(server: FastifyInstance) {
       ok: true,
       donationId: donation.id,
       receiptNumber,
-      amount: donation.amountInr,
+      amount: amountInr,
       status: 'paid',
     });
   });

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
+import { COMPANY, postalContactLine } from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Refund Policy",
@@ -220,12 +221,9 @@ export default function RefundsPage() {
  <RefundSection title="10. Contact">
  <p>For refund-related queries:</p>
  <ul>
- <li>Email: support@darshya.online</li>
- <li>Phone: +91 80-BHAKTI-00 (Mon&ndash;Sat, 9 AM &ndash; 6 PM IST)</li>
- <li>
- Mail: Darshya Technologies Pvt. Ltd., HSR Layout,
- Bengaluru &ndash; 560102, Karnataka, India
- </li>
+ <li>Email: {COMPANY.supportEmail}</li>
+ <li>Response window: {COMPANY.supportHours}</li>
+ {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
  </RefundSection>
  </div>
