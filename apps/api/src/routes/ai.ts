@@ -1,6 +1,20 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
 import { aiService } from '../services/ai.service.js';
+
+// AI chat hits Groq (paid). A logged-out attacker hammering this endpoint
+// at the global 100/min would burn Groq quota fast. 20/min/IP allows a
+// real user to ask several questions per minute while choking abuse.
+const aiChatRateLimit = {
+  config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+};
+
+const chatBodySchema = z.object({
+  message: z.string().trim().min(1, 'Message is required').max(2000, 'Message too long. Maximum 2000 characters.'),
+  conversationId: z.string().optional(),
+  language: z.string().min(2).max(10).optional(),
+});
 
 export async function aiRoutes(server: FastifyInstance) {
   // ─── POST /chat — Streaming SSE chat response ──────────────────────────────
@@ -8,7 +22,7 @@ export async function aiRoutes(server: FastifyInstance) {
   // anonymous users (Ask Pandit on the public site) still get full streaming
   // answers — they just don't accumulate a history.
 
-  server.post('/chat', async (request, reply) => {
+  server.post('/chat', aiChatRateLimit, async (request, reply) => {
     // Best-effort auth: if a Bearer token is present, populate currentUser
     // so demo / real users get history. If absent or invalid, fall through
     // and treat as anonymous (synthetic id `anon-<random>` so DB writes are
@@ -22,19 +36,14 @@ export async function aiRoutes(server: FastifyInstance) {
       }
     }
 
-    const { message, conversationId, language } = request.body as {
-      message?: string;
-      conversationId?: string;
-      language?: string;
-    };
-
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return reply.status(400).send({ error: 'Message is required' });
+    const parsed = chatBodySchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Invalid request body',
+        details: parsed.error.flatten(),
+      });
     }
-
-    if (message.length > 2000) {
-      return reply.status(400).send({ error: 'Message too long. Maximum 2000 characters.' });
-    }
+    const { message, conversationId, language } = parsed.data;
 
     const userId = request.currentUser?.id ?? `anon-${Date.now().toString(36)}`;
 
@@ -42,7 +51,7 @@ export async function aiRoutes(server: FastifyInstance) {
       const { stream, conversationId: convId, citations, saveConversation } = await aiService.chat({
         userId,
         conversationId,
-        message: message.trim(),
+        message,
         language,
       });
 
