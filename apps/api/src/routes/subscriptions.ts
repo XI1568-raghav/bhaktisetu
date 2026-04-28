@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import crypto from 'node:crypto';
 import { authenticateUser } from '../middlewares/auth.js';
 import { subscriptionService } from '../services/subscription.service.js';
 
@@ -76,12 +77,48 @@ export async function subscriptionRoutes(server: FastifyInstance) {
     return result;
   });
 
-  // ─── POST /webhook — Subscription webhook from payment gateway ──────────────
+  // ─── POST /webhook — Subscription webhook from Razorpay ─────────────────────
+  // Mirrors apps/api/src/routes/payments.ts: HMAC over the literal request
+  // bytes (rawBody), timing-safe compare, fail closed if secret missing.
+  // Downstream subscription-event handling is still a stub — what this route
+  // guarantees today is that no unsigned/forged event is ever acknowledged.
 
-  server.post('/webhook', async (request, reply) => {
-    const payload = request.body as Record<string, unknown>;
-    const signature = request.headers['x-razorpay-signature'] as string;
-    // TODO: verify webhook signature, handle subscription events
-    return { received: true };
-  });
+  server.post(
+    '/webhook',
+    { config: { rawBody: true } },
+    async (request, reply) => {
+      const signature = request.headers['x-razorpay-signature'] as string | undefined;
+      if (!signature) {
+        return reply.code(400).send({ error: 'Missing x-razorpay-signature header.' });
+      }
+
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        server.log.error('RAZORPAY_WEBHOOK_SECRET not configured — refusing to accept webhook');
+        return reply.code(500).send({ error: 'Webhook configuration error' });
+      }
+
+      const rawBody = (request as unknown as { rawBody?: string }).rawBody;
+      if (!rawBody) {
+        server.log.error('rawBody missing on /subscriptions/webhook — fastify-raw-body misconfigured');
+        return reply.code(500).send({ error: 'Webhook configuration error' });
+      }
+
+      const expected = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+      const a = Buffer.from(expected, 'utf8');
+      const b = Buffer.from(signature, 'utf8');
+      const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+      if (!ok) {
+        server.log.warn('Subscription webhook signature mismatch');
+        return reply.code(400).send({ error: 'Webhook signature verification failed.' });
+      }
+
+      const payload = request.body as Record<string, unknown>;
+      const event = typeof payload.event === 'string' ? payload.event : 'unknown';
+      server.log.info({ event }, 'Subscription webhook verified');
+      // Downstream event dispatch is intentionally deferred until subscription
+      // state is wired to the DB. Today: ack the verified event and move on.
+      return { received: true, event };
+    }
+  );
 }
