@@ -4,6 +4,14 @@ import { createSupabaseClient } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
+// Tighter rate limit for unauthenticated credential/OTP endpoints — the
+// global 100/min is too generous for OTP-spam and credential-stuffing.
+// 10 requests per minute per IP is comfortable for a real user retrying
+// once or twice; trivially blocks scripted brute-force.
+const sensitiveAuthRateLimit = {
+  config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+};
+
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
 const sendOtpSchema = z.object({
@@ -156,7 +164,7 @@ export async function authRoutes(server: FastifyInstance) {
    * POST /send-otp
    * Sends a one-time password to the given phone number via Supabase Auth (SMS).
    */
-  server.post('/send-otp', async (request, reply) => {
+  server.post('/send-otp', sensitiveAuthRateLimit, async (request, reply) => {
     const parseResult = sendOtpSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send({
@@ -197,7 +205,7 @@ export async function authRoutes(server: FastifyInstance) {
    * Verifies the OTP, creates/updates the Supabase session, and upserts
    * the user in the Prisma `users` table on first login.
    */
-  server.post('/verify-otp', async (request, reply) => {
+  server.post('/verify-otp', sensitiveAuthRateLimit, async (request, reply) => {
     const parseResult = verifyOtpSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send({
@@ -424,7 +432,7 @@ export async function authRoutes(server: FastifyInstance) {
    * POST /login
    * Email + password login. Checks demo accounts first, then falls through to DB.
    */
-  server.post('/login', async (request, reply) => {
+  server.post('/login', sensitiveAuthRateLimit, async (request, reply) => {
     const parseResult = loginSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send({
@@ -650,8 +658,8 @@ export async function authRoutes(server: FastifyInstance) {
     }
   };
 
-  server.post('/signup', signupHandler);
-  server.post('/register', signupHandler);
+  server.post('/signup', sensitiveAuthRateLimit, signupHandler);
+  server.post('/register', sensitiveAuthRateLimit, signupHandler);
 
   /**
    * POST /auth/google/sync

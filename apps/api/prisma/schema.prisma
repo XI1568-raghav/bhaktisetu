@@ -159,12 +159,12 @@ model User {
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  addresses      UserAddress[]
-  bookings       PujaBooking[]
-  payments       Payment[]
-  subscription   Subscription[]
-  priest         Priest?
-  conversations  AiConversation[]
+  addresses       UserAddress[]
+  bookings        PujaBooking[]
+  payments        Payment[]
+  subscription    Subscription[]
+  priest          Priest?
+  conversations   AiConversation[]
   // Human-to-human chat (devotee ↔ provider) — see ChatConversation below.
   // Two relations because a conversation has two distinct participant slots
   // (devotee + provider); Prisma needs named relations to disambiguate.
@@ -239,6 +239,7 @@ model Temple {
   @@index([city])
   @@index([state])
   @@index([isVerified])
+  @@index([city, state, status])
   @@map("temples")
 }
 
@@ -309,6 +310,7 @@ model PujaType {
 
   @@index([slug])
   @@index([category])
+  @@index([isActive])
   @@map("puja_types")
 }
 
@@ -448,6 +450,7 @@ model ContentItem {
   @@index([type])
   @@index([deity])
   @@index([language])
+  @@index([status])
   @@map("content_items")
 }
 
@@ -467,6 +470,7 @@ model DailyPanchang {
   specialInfo  String?  @map("special_info")
   locationCity String   @default("Delhi") @map("location_city")
 
+  @@index([date, locationCity])
   @@map("daily_panchang")
 }
 
@@ -908,7 +912,7 @@ model ServiceRating {
   createdAt      DateTime @default(now()) @map("created_at")
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  devotee      User             @relation("DevoteeRatings", fields: [devoteeId],  references: [id], onDelete: Cascade)
+  devotee      User             @relation("DevoteeRatings", fields: [devoteeId], references: [id], onDelete: Cascade)
   provider     User             @relation("ProviderRatings", fields: [providerId], references: [id], onDelete: Cascade)
 
   // One rating per devotee per conversation. A devotee can rate the
@@ -926,20 +930,20 @@ enum DonationStatus {
 }
 
 model Donation {
-  id              String         @id
-  userId          String         @map("user_id") @db.Uuid
+  id                String         @id
+  userId            String         @map("user_id") @db.Uuid
   // Gaushala identifier provided by the client. Stored as a string to
   // accommodate gaushala_profiles.user_id (a UUID) without forcing a
   // hard FK — gaushalas may be deleted while donation history must
   // remain for tax-receipt traceability.
-  gaushalaId      String         @map("gaushala_id")
-  amountInr       Decimal        @map("amount_inr") @db.Decimal(10, 2)
-  razorpayOrderId String         @unique @map("razorpay_order_id")
-  razorpayPaymentId String?      @map("razorpay_payment_id")
-  receiptNumber   String?        @unique @map("receipt_number")
-  status          DonationStatus @default(created)
-  createdAt       DateTime       @default(now()) @map("created_at")
-  paidAt          DateTime?      @map("paid_at")
+  gaushalaId        String         @map("gaushala_id")
+  amountInr         Decimal        @map("amount_inr") @db.Decimal(10, 2)
+  razorpayOrderId   String         @unique @map("razorpay_order_id")
+  razorpayPaymentId String?        @map("razorpay_payment_id")
+  receiptNumber     String?        @unique @map("receipt_number")
+  status            DonationStatus @default(created)
+  createdAt         DateTime       @default(now()) @map("created_at")
+  paidAt            DateTime?      @map("paid_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
