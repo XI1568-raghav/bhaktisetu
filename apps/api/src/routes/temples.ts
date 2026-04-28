@@ -79,13 +79,17 @@ export async function templeRoutes(server: FastifyInstance) {
     }
 
     try {
-      const radiusKm = Math.min(Number(radius) || 25, 200);
+      const MAX_RADIUS_KM = 200;
+      const requestedRadiusKm = Number(radius) || 25;
+      const radiusKm = Math.min(requestedRadiusKm, MAX_RADIUS_KM);
       const temples = await templeService.findNearby(latNum, lngNum, radiusKm);
 
       return {
         temples,
         location: { lat: latNum, lng: lngNum },
         radiusKm,
+        maxRadiusKm: MAX_RADIUS_KM,
+        radiusCapped: requestedRadiusKm > MAX_RADIUS_KM,
         total: temples.length,
       };
     } catch (error) {
