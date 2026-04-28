@@ -58,7 +58,15 @@ export async function authenticateUser(
     // Token format: `demo-<handle>-...` where handle is the email local-part
     // (devotee, pandit, priest, store, astro, wellness, gaushala, temple,
     // admin). Handles `pandit` and `priest` both map to pandit@demo.com.
-    if (token.startsWith('demo-')) {
+    //
+    // Demo-token bypass is disabled in production unless ALLOW_DEMO_TOKENS
+    // is explicitly set. Why: demo accounts map to real DB users with full
+    // role privileges (including ADMIN), so anyone with the token format
+    // gets that user's session. Investor demos can flip the flag temporarily;
+    // default-deny is the safe default.
+    const demoAllowed =
+      process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEMO_TOKENS === 'true';
+    if (token.startsWith('demo-') && demoAllowed) {
       const stripped = token.replace(/^demo-/, '').replace(/-token$/, '').replace(/^demo-/, '');
       const DEMO_ROLE_MAP: Record<string, { roles: MarketplaceRole[]; email: string }> = {
         'devotee':  { roles: ['DEVOTEE'],                      email: 'devotee@demo.com' },

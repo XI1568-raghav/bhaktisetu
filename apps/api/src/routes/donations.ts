@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendEmail, donationReceiptEmail } from '../lib/email.js';
@@ -55,18 +56,37 @@ function nextReceiptNumber(): string {
   return `DR-${ymd}-${rand}`;
 }
 
+// Floor: ₹101. Below ₹100 is below the 80G receipt threshold and ₹1
+// donations are an obvious fraud/dust vector. Cap: ₹10,00,000 per single
+// transaction — a misclick safety rail; large donors should call us.
+const createOrderSchema = z.object({
+  gaushalaId: z.string().min(1, 'gaushalaId is required'),
+  amountInr: z.number({ invalid_type_error: 'amountInr must be a number' })
+    .int('amountInr must be a whole number of rupees')
+    .min(101, 'Minimum donation is ₹101')
+    .max(1000000, 'Maximum single donation via this endpoint is ₹10,00,000'),
+  planId: z.string().optional(),
+});
+
+const verifyDonationSchema = z.object({
+  donationId: z.string().min(1, 'donationId is required'),
+  razorpay_order_id: z.string().optional(),
+  razorpay_payment_id: z.string().optional(),
+  razorpay_signature: z.string().optional(),
+});
+
 export async function donationRoutes(server: FastifyInstance) {
   // ── Create order ─────────────────────────────────────────────────────
   server.post('/create-order', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const body = (request.body ?? {}) as {
-      gaushalaId?: string;
-      amountInr?: number;
-      planId?: string;
-    };
-    const amount = Number(body.amountInr);
-    if (!body.gaushalaId || !amount || amount < 1) {
-      return reply.code(400).send({ error: 'gaushalaId and amountInr (>=1) required' });
+    const parsed = createOrderSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'Invalid request body',
+        details: parsed.error.flatten(),
+      });
     }
+    const { gaushalaId, amountInr, planId } = parsed.data;
+    const amount = amountInr;
 
     const userId = request.currentUser!.id;
     const donationId = `don_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
@@ -77,7 +97,7 @@ export async function donationRoutes(server: FastifyInstance) {
         amount: Math.round(amount * 100), // paise
         currency: 'INR',
         receipt: donationId,
-        notes: { gaushalaId: body.gaushalaId, planId: body.planId ?? '', userId },
+        notes: { gaushalaId, planId: planId ?? '', userId },
       });
       razorpayOrderId = order.id;
     } else {
@@ -89,7 +109,7 @@ export async function donationRoutes(server: FastifyInstance) {
        VALUES ($1, $2::uuid, $3, $4, $5, 'created')`,
       donationId,
       userId,
-      body.gaushalaId,
+      gaushalaId,
       amount,
       razorpayOrderId,
     );
@@ -106,15 +126,14 @@ export async function donationRoutes(server: FastifyInstance) {
 
   // ── Verify payment ──────────────────────────────────────────────────
   server.post('/verify', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const body = (request.body ?? {}) as {
-      donationId?: string;
-      razorpay_order_id?: string;
-      razorpay_payment_id?: string;
-      razorpay_signature?: string;
-    };
-    if (!body.donationId) {
-      return reply.code(400).send({ error: 'donationId required' });
+    const parsed = verifyDonationSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'Invalid request body',
+        details: parsed.error.flatten(),
+      });
     }
+    const body = parsed.data;
     const rows = await prisma.$queryRawUnsafe<DonationRow[]>(
       `SELECT id, user_id, gaushala_id, amount_inr, razorpay_order_id,
               razorpay_payment_id, receipt_number, status, created_at, paid_at
