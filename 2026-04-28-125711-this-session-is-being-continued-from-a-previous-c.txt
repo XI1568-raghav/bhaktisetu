@@ -1,0 +1,160 @@
+ ▐▛███▜▌   Claude Code v2.1.119
+▝▜█████▛▘  Opus 4 · API Usage Billing
+  ▘▘ ▝▝    E:\NewClaude\bhaktisetu
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+❯ /compact                                                                      
+  ⎿  Compacted (ctrl+o to see full summary)
+  ⎿  Read apps\web\app\sitemap.ts (45 lines)
+  ⎿  Read C:\Users\DELL\.claude\projects\E--NewClaude\memory\project_darshya.md (35 lines)
+  ⎿  Read C:\Users\DELL\.claude\projects\E--NewClaude\memory\reference_google_oauth_new_ui.md (27 lines)
+  ⎿  Read CLAUDE.md (103 lines)
+  ⎿  Read apps\mobile\app\(wellness)\profile.tsx (175 lines)
+  ⎿  Plan file referenced (C:\Users\DELL\.claude\plans\iridescent-gathering-blum.md)
+
+❯ Unknown command: /contex. Did you mean /context?                              
+
+● Args from unknown skill: status
+
+❯ Unknown command: /contex. Did you mean /context?                              
+
+❯ /context                                                                      
+  ⎿  Context Usage
+     ⛁ ⛁ ⛁ ⛀ ⛁ ⛀ ⛁ ⛁ ⛁ ⛁   Opus 4
+     ⛁ ⛁ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   blackboxai/anthropic/claude-opus-4.7
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   21.1k/200k tokens (11%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ 
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   Estimated usage by category
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System prompt: 5.6k tokens (2.8%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 210 tokens (0.1%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Skills: 3.1k tokens (1.5%)
+     ⛶ ⛶ ⛶ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝   ⛁ Messages: 12.1k tokens (6.1%)
+     ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝   ⛶ Free space: 145.9k (73.0%)
+                           ⛝ Autocompact buffer: 33k tokens (16.5%)
+
+     MCP tools · /mcp
+     ├ mcp__ide__executeCode: 0 tokens
+     └ mcp__ide__getDiagnostics: 0 tokens
+
+     Memory files · /memory
+     └ C:\Users\DELL.claude\projects\E--NewClaude\memory\MEMORY.md: 210 tokens
+
+     Skills · /skills
+
+     Project
+     └ Poojly Development: 32 tokens
+
+     User
+     ├ amazon-competitor-analyzer: 32 tokens
+     ├ web-artifacts-builder: 31 tokens
+     ├ brand-guidelines: 29 tokens
+     ├ framer-parallax-section: 29 tokens
+     ├ frontend-design: 29 tokens
+     ├ marketing-skills: 29 tokens
+     ├ google-news-skill: 28 tokens
+     ├ notebooklm: 28 tokens
+     ├ youtube-extractor: 28 tokens
+     ├ claude-seo: 27 tokens
+     ├ openclaw: 27 tokens
+     ├ portfolio-rebalance-analyzer: 27 tokens
+     ├ product-strategy-critic: 27 tokens
+     ├ steelman-analysis: 27 tokens
+     ├ systematic-debugging: 27 tokens
+     ├ account-research: 26 tokens
+     ├ doc-coauthoring: 26 tokens
+     ├ mutual-fund-comparison: 26 tokens
+     ├ skill-creator: 26 tokens
+     ├ winback-campaign-generator: 26 tokens
+     ├ earnings-brief: 25 tokens
+     ├ financial-model-reviewer: 25 tokens
+     ├ gsap-pin-sequence: 25 tokens
+     ├ meeting-synthesizer: 25 tokens
+     ├ sales-enablement-asset: 25 tokens
+     ├ scroll-image-sequence: 25 tokens
+     ├ sector-trend-synthesizer: 25 tokens
+     ├ stakeholder-simulator: 25 tokens
+     ├ content-research-writer: 24 tokens
+     ├ feature-prioritization: 24 tokens
+     ├ gsap-horizontal-scroll: 24 tokens
+     ├ obsidian-skills: 24 tokens
+     ├ onboarding-rewriter: 24 tokens
+     ├ stakeholder-update: 24 tokens
+     ├ user-interview-analyzer: 24 tokens
+     ├ browser-act: 23 tokens
+     ├ component-scaffold: 23 tokens
+     ├ cold-email-personalizer: 22 tokens
+     ├ lenis-smooth-scroll-setup: 22 tokens
+     ├ NPS-survey-clusterer: 22 tokens
+     ├ snap-section-layout: 22 tokens
+     ├ stock-research-template: 22 tokens
+     ├ test-data-builder: 22 tokens
+     ├ api-client: 21 tokens
+     ├ code-review: 21 tokens
+     ├ commit-message: 21 tokens
+     ├ competitive-teardown: 21 tokens
+     ├ epub-pdf-analyzer: 21 tokens
+     ├ fade-on-scroll: 21 tokens
+     ├ git-blame-summary: 21 tokens
+     ├ market-research: 21 tokens
+     ├ merge-conflict-resolve: 21 tokens
+     ├ opportunity-sizing: 21 tokens
+     ├ pdf: 21 tokens
+     ├ pptx: 21 tokens
+     ├ superpowers: 21 tokens
+     ├ user-story-writer: 21 tokens
+     ├ xlsx: 21 tokens
+     ├ churn-analyzer: 20 tokens
+     ├ dependency-audit: 20 tokens
+     ├ ICP-builder: 20 tokens
+     ├ monitoring-query: 20 tokens
+     ├ performance-audit: 20 tokens
+     ├ roadmap-builder: 20 tokens
+     ├ spotlight-hover: 20 tokens
+     ├ storybook-story: 20 tokens
+     ├ test-refactor: 20 tokens
+     ├ 3D-tilt-card: 19 tokens
+     ├ branch-name: 19 tokens
+     ├ changelog-entry: 19 tokens
+     ├ competitive-matrix: 19 tokens
+     ├ deprecation-path: 19 tokens
+     ├ experiment-interpreter: 19 tokens
+     ├ pr-description: 19 tokens
+     ├ refactor-function: 19 tokens
+     ├ regression-test: 19 tokens
+     ├ SWOT-builder: 19 tokens
+     ├ write-tests: 19 tokens
+     ├ accessibility-audit: 18 tokens
+     ├ code-comment: 18 tokens
+     ├ onboarding-doc: 18 tokens
+     ├ PRD-generator: 18 tokens
+     ├ property-test: 18 tokens
+     ├ readme-section: 18 tokens
+     ├ runbook: 18 tokens
+     ├ write-migration: 18 tokens
+     ├ api-docs: 17 tokens
+     ├ dockerfile: 17 tokens
+     ├ env-vars: 17 tokens
+     ├ error-handling: 17 tokens
+     ├ github-action: 17 tokens
+     ├ glassmorphism-card: 17 tokens
+     ├ jsdoc: 17 tokens
+     ├ k8s-manifest: 17 tokens
+     ├ mock-server: 17 tokens
+     ├ release-notes: 17 tokens
+     ├ terraform-module: 17 tokens
+     ├ alert-rule: 16 tokens
+     ├ contract-test: 16 tokens
+     ├ feature-flag: 16 tokens
+     ├ seed-data: 16 tokens
+     ├ add-types: 15 tokens
+     ├ api-endpoint: 15 tokens
+     ├ cost-estimate: 15 tokens
+     ├ coverage-gap: 15 tokens
+     ├ security-audit: 15 tokens
+     ├ snapshot-test: 15 tokens
+     ├ cicd-debug: 14 tokens
+     ├ e2e-test: 14 tokens
+     ├ adr: 12 tokens
+     └ load-test: 12 tokens
