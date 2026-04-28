@@ -59,12 +59,20 @@ async function bootstrap() {
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
-  const corsOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
-    : [
-        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        process.env.ADMIN_URL || 'http://localhost:3001',
-      ];
+  // CORS: production requires CORS_ORIGIN to be set explicitly. Local dev
+  // falls back to localhost-only — no LAN IPs, no wildcards. The previous
+  // default included a LAN address (192.168.x.x) which leaked into the
+  // production allowlist via committed env scaffolding.
+  const isProd = process.env.NODE_ENV === 'production';
+  const corsOriginEnv = process.env.CORS_ORIGIN;
+  const corsOrigins = corsOriginEnv
+    ? corsOriginEnv.split(',').map((o) => o.trim()).filter(Boolean)
+    : isProd
+      ? (() => {
+          // Explicit fail in prod — refuse to start with a wide-open default.
+          throw new Error('CORS_ORIGIN env var is required in production. Set it to the comma-separated list of allowed origins.');
+        })()
+      : ['http://localhost:3000', 'http://localhost:3001'];
   await server.register(cors, {
     origin: corsOrigins,
     credentials: true,
@@ -131,17 +139,28 @@ async function bootstrap() {
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
   const host = process.env.HOST || '0.0.0.0';
 
-  // Forward uncaught Fastify errors to Sentry (no-op when SENTRY_DSN unset)
+  // Forward uncaught Fastify errors to Sentry (no-op when SENTRY_DSN unset).
+  // In production, never echo `err.message` back to the client — Prisma
+  // errors carry table/column/constraint names and query fragments that
+  // leak schema details. Surface a generic message; the full error is in
+  // the server logs and Sentry. Validation errors (4xx) and rate-limit
+  // errors are exempt — those messages are intentionally user-facing.
   server.setErrorHandler((err, _req, reply) => {
     server.log.error(err);
     captureException(err);
-    if (!reply.sent) {
-      const e = err as { statusCode?: number; name?: string; message?: string };
-      reply.code(e.statusCode ?? 500).send({
-        error: e.name ?? 'InternalServerError',
-        message: e.message ?? 'Something went wrong',
-      });
-    }
+    if (reply.sent) return;
+
+    const e = err as { statusCode?: number; name?: string; message?: string; code?: string };
+    const status = e.statusCode ?? 500;
+    const isClientError = status >= 400 && status < 500;
+    const safeToEcho = !isProd || isClientError || e.code === 'FST_ERR_VALIDATION';
+
+    reply.code(status).send({
+      error: e.name ?? 'InternalServerError',
+      message: safeToEcho
+        ? (e.message ?? 'Something went wrong')
+        : 'Internal server error',
+    });
   });
 
   try {
