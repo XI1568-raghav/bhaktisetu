@@ -122,12 +122,71 @@ export default async function TempleDetailPage({
 
  if (!rich && !apiTemple) notFound();
 
+ // JSON-LD structured data for Google rich snippets. PlaceOfWorship is
+ // Schema.org's canonical type for temples/mosques/churches; Google
+ // surfaces it with map cards, hours, ratings.
+ const ldName = rich?.name ?? apiTemple?.name ?? '';
+ const ldDesc = rich?.significance ?? apiTemple?.description ?? '';
+ const apiImages = apiTemple?.images;
+ const firstApiImage = Array.isArray(apiImages)
+  ? (typeof apiImages[0] === 'string'
+     ? (apiImages[0] as string)
+     : (apiImages[0] as { url?: string } | undefined)?.url)
+  : undefined;
+ const ldImage = (rich && getTempleHero(slug)) || firstApiImage;
+ const ldCity = rich?.location ?? apiTemple?.city ?? '';
+ const ldState = rich?.state ?? apiTemple?.state ?? '';
+ const ldRating = apiTemple?.trustScore;
+ const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'PlaceOfWorship',
+  name: ldName,
+  description: ldDesc.slice(0, 500),
+  url: `https://darshya.online/temples/${slug}`,
+  ...(ldImage ? { image: ldImage } : {}),
+  address: {
+   '@type': 'PostalAddress',
+   addressLocality: ldCity,
+   addressRegion: ldState,
+   addressCountry: 'IN',
+  },
+  ...(typeof apiTemple?.lat === 'number' && typeof apiTemple?.lng === 'number'
+   ? { geo: { '@type': 'GeoCoordinates', latitude: apiTemple.lat, longitude: apiTemple.lng } }
+   : {}),
+  ...(typeof ldRating === 'number' && ldRating > 0
+   ? {
+      aggregateRating: {
+       '@type': 'AggregateRating',
+       ratingValue: ldRating,
+       bestRating: 5,
+       ratingCount: 1,
+      },
+     }
+   : {}),
+ };
+ const ldScript = (
+  <script
+   type="application/ld+json"
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+  />
+ );
+
  if (rich) {
- return <RichTemplePage slug={slug} rich={rich} apiTemple={apiTemple} />;
+ return (
+  <>
+   {ldScript}
+   <RichTemplePage slug={slug} rich={rich} apiTemple={apiTemple} />
+  </>
+ );
  }
 
  // Fallback: simpler layout with basic API data
- return <SimpleTemplePage slug={slug} temple={apiTemple!} />;
+ return (
+  <>
+   {ldScript}
+   <SimpleTemplePage slug={slug} temple={apiTemple!} />
+  </>
+ );
 }
 
 // ══════════════════════════════════════════════════════════════
