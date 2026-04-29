@@ -37,7 +37,23 @@ export default function PitchPage() {
           <Link href="https://darshya.online" target="_blank" className="pitch-cta">
             Open the live product →
           </Link>
+          <a href="#demo-reel" className="pitch-cta-ghost">Watch 2-min demo ↓</a>
           <a href="#04-product" className="pitch-cta-ghost">See it work ↓</a>
+        </div>
+        <div id="demo-reel" style={{ marginTop: 48 }}>
+          <video
+            className="pitch-media"
+            src="/pitch/video/darshya-demo-reel.mp4"
+            controls
+            playsInline
+            preload="metadata"
+            poster="/pitch/img/01-home-hero.png"
+            style={{ width: '100%', maxHeight: '70vh', borderRadius: 12 }}
+          />
+          <p style={{ marginTop: 12, fontSize: 13, opacity: 0.7 }}>
+            2-minute reel · 12 product surfaces · captured live from{' '}
+            <a href="https://darshya.online" style={{ textDecoration: 'underline' }}>darshya.online</a>
+          </p>
         </div>
       </Slide>
 
