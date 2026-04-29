@@ -52,6 +52,7 @@ export const prismaMock = {
     findUnique: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    count: vi.fn(),
   },
   priestPayout: {
     findFirst: vi.fn(),
