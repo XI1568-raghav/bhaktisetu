@@ -176,6 +176,18 @@ model User {
   ratingsReceived ServiceRating[]    @relation("ProviderRatings")
   donations       Donation[]
 
+  // Support tickets
+  supportTickets         SupportTicket[]        @relation("SupportTicketUser")
+  supportTicketsAssigned SupportTicket[]        @relation("SupportTicketAssignee")
+  supportTicketMessages  SupportTicketMessage[]
+
+  // Store orders
+  storeOrders StoreOrder[]
+
+  // Wellness sessions
+  wellnessSessionsHosted WellnessSession[]    @relation("WellnessInstructor")
+  wellnessEnrollments    WellnessEnrollment[]
+
   @@map("users")
 }
 
@@ -201,34 +213,35 @@ model UserAddress {
 }
 
 model Temple {
-  id                 String       @id @default(uuid()) @db.Uuid
+  id                 String                       @id @default(uuid()) @db.Uuid
   name               String
-  nameLocal          String?      @map("name_local")
-  slug               String       @unique
+  nameLocal          String?                      @map("name_local")
+  slug               String                       @unique
   description        String
-  deityPrimary       String       @map("deity_primary")
+  deityPrimary       String                       @map("deity_primary")
   deities            String[]
-  tradition          Tradition    @default(other)
-  addressLine        String       @map("address_line")
+  tradition          Tradition                    @default(other)
+  addressLine        String                       @map("address_line")
   city               String
   state              String
   pincode            String
-  country            String       @default("India")
+  country            String                       @default("India")
   lat                Float
   lng                Float
   phone              String?
   email              String?
-  websiteUrl         String?      @map("website_url")
-  images             Json         @default("[]")
-  timingInfo         Json?        @map("timing_info")
-  isVerified         Boolean      @default(false) @map("is_verified")
-  verificationDate   DateTime?    @map("verification_date")
-  trustScore         Float        @default(0) @map("trust_score")
-  liveDarshanEnabled Boolean      @default(false) @map("live_darshan_enabled")
-  streamUrl          String?      @map("stream_url")
-  status             TempleStatus @default(pending_review)
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
+  websiteUrl         String?                      @map("website_url")
+  images             Json                         @default("[]")
+  timingInfo         Json?                        @map("timing_info")
+  isVerified         Boolean                      @default(false) @map("is_verified")
+  verificationDate   DateTime?                    @map("verification_date")
+  trustScore         Float                        @default(0) @map("trust_score")
+  liveDarshanEnabled Boolean                      @default(false) @map("live_darshan_enabled")
+  streamUrl          String?                      @map("stream_url")
+  status             TempleStatus                 @default(pending_review)
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @updatedAt @map("updated_at")
+  embedding          Unsupported("vector(1024)")?
 
   priests       TemplePriest[]
   pujaOfferings TemplePujaOffering[]
@@ -286,24 +299,25 @@ model TemplePriest {
 }
 
 model PujaType {
-  id                  String       @id @default(uuid()) @db.Uuid
+  id                  String                       @id @default(uuid()) @db.Uuid
   name                String
-  nameLocal           String?      @map("name_local")
-  slug                String       @unique
+  nameLocal           String?                      @map("name_local")
+  slug                String                       @unique
   description         String
   category            PujaCategory
   deity               String
-  durationMinutes     Int          @map("duration_minutes")
-  basePrice           Decimal      @map("base_price") @db.Decimal(10, 2)
-  nriPrice            Decimal      @map("nri_price") @db.Decimal(10, 2)
-  samagriIncluded     Boolean      @default(true) @map("samagri_included")
-  samagriItems        Json?        @map("samagri_items")
-  images              Json         @default("[]")
-  videoProofMandatory Boolean      @default(true) @map("video_proof_mandatory")
-  isActive            Boolean      @default(true) @map("is_active")
-  sortOrder           Int          @default(0) @map("sort_order")
-  createdAt           DateTime     @default(now()) @map("created_at")
-  updatedAt           DateTime     @updatedAt @map("updated_at")
+  durationMinutes     Int                          @map("duration_minutes")
+  basePrice           Decimal                      @map("base_price") @db.Decimal(10, 2)
+  nriPrice            Decimal                      @map("nri_price") @db.Decimal(10, 2)
+  samagriIncluded     Boolean                      @default(true) @map("samagri_included")
+  samagriItems        Json?                        @map("samagri_items")
+  images              Json                         @default("[]")
+  videoProofMandatory Boolean                      @default(true) @map("video_proof_mandatory")
+  isActive            Boolean                      @default(true) @map("is_active")
+  sortOrder           Int                          @default(0) @map("sort_order")
+  createdAt           DateTime                     @default(now()) @map("created_at")
+  updatedAt           DateTime                     @updatedAt @map("updated_at")
+  embedding           Unsupported("vector(1024)")?
 
   templeOfferings TemplePujaOffering[]
   bookings        PujaBooking[]
@@ -398,6 +412,9 @@ model Payment {
   user    User         @relation(fields: [userId], references: [id])
   booking PujaBooking? @relation(fields: [bookingId], references: [id])
 
+  storeOrders         StoreOrder[]         @relation("StoreOrderPayment")
+  wellnessEnrollments WellnessEnrollment[] @relation("WellnessEnrollmentPayment")
+
   @@index([gatewayPaymentId])
   @@index([userId])
   @@index([status])
@@ -424,27 +441,28 @@ model PriestPayout {
 }
 
 model ContentItem {
-  id              String        @id @default(uuid()) @db.Uuid
+  id              String                       @id @default(uuid()) @db.Uuid
   type            ContentType
   title           String
-  titleLocal      String?       @map("title_local")
-  slug            String        @unique
+  titleLocal      String?                      @map("title_local")
+  slug            String                       @unique
   body            String
-  audioUrl        String?       @map("audio_url")
-  videoUrl        String?       @map("video_url")
-  imageUrl        String?       @map("image_url")
+  audioUrl        String?                      @map("audio_url")
+  videoUrl        String?                      @map("video_url")
+  imageUrl        String?                      @map("image_url")
   deity           String?
-  language        Language      @default(hi)
-  durationSeconds Int?          @map("duration_seconds")
+  language        Language                     @default(hi)
+  durationSeconds Int?                         @map("duration_seconds")
   tags            String[]
-  isPremium       Boolean       @default(false) @map("is_premium")
-  viewCount       Int           @default(0) @map("view_count")
-  likeCount       Int           @default(0) @map("like_count")
-  sortOrder       Int           @default(0) @map("sort_order")
-  status          ContentStatus @default(draft)
-  publishedAt     DateTime?     @map("published_at")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  isPremium       Boolean                      @default(false) @map("is_premium")
+  viewCount       Int                          @default(0) @map("view_count")
+  likeCount       Int                          @default(0) @map("like_count")
+  sortOrder       Int                          @default(0) @map("sort_order")
+  status          ContentStatus                @default(draft)
+  publishedAt     DateTime?                    @map("published_at")
+  createdAt       DateTime                     @default(now()) @map("created_at")
+  updatedAt       DateTime                     @updatedAt @map("updated_at")
+  embedding       Unsupported("vector(1024)")?
 
   @@index([slug])
   @@index([type])
@@ -929,6 +947,63 @@ enum DonationStatus {
   failed
 }
 
+// ─── SUPPORT / STORE-ORDER / WELLNESS-SESSION ENUMS ────────────────────────
+
+enum SupportTicketCategory {
+  BOOKING
+  PAYMENT
+  ACCOUNT
+  TECHNICAL
+  OTHER
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum StoreOrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum WellnessSessionType {
+  YOGA
+  MEDITATION
+  VIPASSANA
+  PRANAYAMA
+  OTHER
+}
+
+enum WellnessSessionStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum WellnessEnrollmentStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  REFUNDED
+  ATTENDED
+}
+
 model Donation {
   id                String         @id
   userId            String         @map("user_id") @db.Uuid
@@ -950,4 +1025,118 @@ model Donation {
   @@index([userId, createdAt])
   @@index([gaushalaId, createdAt])
   @@map("donations")
+}
+
+// ─── SUPPORT TICKETS ───────────────────────────────────────────────────────
+
+model SupportTicket {
+  id           String                @id @default(uuid()) @db.Uuid
+  ticketNumber String                @unique @map("ticket_number")
+  userId       String                @map("user_id") @db.Uuid
+  subject      String
+  body         String
+  category     SupportTicketCategory @default(OTHER)
+  status       SupportTicketStatus   @default(OPEN)
+  priority     SupportTicketPriority @default(MEDIUM)
+  assignedToId String?               @map("assigned_to_id") @db.Uuid
+  resolvedAt   DateTime?             @map("resolved_at")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  user       User                   @relation("SupportTicketUser", fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo User?                  @relation("SupportTicketAssignee", fields: [assignedToId], references: [id])
+  messages   SupportTicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id         String   @id @default(uuid()) @db.Uuid
+  ticketId   String   @map("ticket_id") @db.Uuid
+  authorId   String   @map("author_id") @db.Uuid
+  body       String
+  isInternal Boolean  @default(false) @map("is_internal")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_messages")
+}
+
+// ─── STORE ORDERS ──────────────────────────────────────────────────────────
+
+model StoreOrder {
+  id              String           @id @default(uuid()) @db.Uuid
+  orderNumber     String           @unique @map("order_number")
+  userId          String           @map("user_id") @db.Uuid
+  // items: [{ productId, qty, priceAtPurchase }]
+  items           Json
+  totalAmountInr  Decimal          @map("total_amount_inr") @db.Decimal(10, 2)
+  status          StoreOrderStatus @default(PENDING)
+  shippingAddress Json             @map("shipping_address")
+  paymentId       String?          @map("payment_id") @db.Uuid
+  trackingNumber  String?          @map("tracking_number")
+  // statusHistory: [{ status, changedAt, changedBy, note }] — append-only audit log
+  statusHistory   Json[]           @default([]) @map("status_history")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment? @relation("StoreOrderPayment", fields: [paymentId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("store_orders")
+}
+
+// ─── WELLNESS SESSIONS ─────────────────────────────────────────────────────
+
+model WellnessSession {
+  id              String                @id @default(uuid()) @db.Uuid
+  instructorId    String                @map("instructor_id") @db.Uuid
+  title           String
+  description     String
+  type            WellnessSessionType   @default(OTHER)
+  scheduledAt     DateTime              @map("scheduled_at")
+  durationMinutes Int                   @map("duration_minutes")
+  capacity        Int
+  priceInr        Decimal               @map("price_inr") @db.Decimal(10, 2)
+  // Jitsi room URL — set by instructor; only visible to instructor + paid enrollees
+  roomUrl         String?               @map("room_url")
+  status          WellnessSessionStatus @default(SCHEDULED)
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  instructor  User                 @relation("WellnessInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+  enrollments WellnessEnrollment[]
+
+  @@index([instructorId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("wellness_sessions")
+}
+
+model WellnessEnrollment {
+  id         String                   @id @default(uuid()) @db.Uuid
+  sessionId  String                   @map("session_id") @db.Uuid
+  userId     String                   @map("user_id") @db.Uuid
+  paymentId  String?                  @map("payment_id") @db.Uuid
+  status     WellnessEnrollmentStatus @default(PENDING_PAYMENT)
+  enrolledAt DateTime                 @default(now()) @map("enrolled_at")
+  attendedAt DateTime?                @map("attended_at")
+
+  session WellnessSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?        @relation("WellnessEnrollmentPayment", fields: [paymentId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@index([userId])
+  @@index([status])
+  @@map("wellness_enrollments")
 }

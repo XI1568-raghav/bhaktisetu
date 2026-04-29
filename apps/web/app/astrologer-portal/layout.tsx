@@ -9,6 +9,7 @@ import {
  CalendarClock,
  UserCircle,
  Sparkles,
+ Wallet,
  Menu,
  X,
  LogOut,
@@ -22,6 +23,8 @@ const sidebarLinks = [
  { href: '/astrologer-portal/messages', label: 'Messages', icon: MessageSquare },
  { href: '/astrologer-portal/consultations', label: 'Consultations', icon: CalendarClock },
  { href: '/astrologer-portal/availability', label: 'Availability', icon: CalendarClock },
+ { href: '/astrologer-portal/earnings', label: 'Earnings', icon: Wallet },
+ { href: '/astrologer-portal/subscription', label: 'Subscription', icon: Sparkles },
  { href: '/astrologer-portal/profile', label: 'Profile', icon: UserCircle },
 ];
 

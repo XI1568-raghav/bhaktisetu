@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService } from '../services/admin.service.js';
+import { prisma } from '../lib/prisma.js';
+import type { Prisma } from '@prisma/client';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
 
@@ -224,5 +226,50 @@ export async function adminRoutes(server: FastifyInstance) {
   server.delete('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
     return { message: 'User deleted', userId: id };
+  });
+
+  // ─── GET /commissions — paginated commission ledger ─────────────────────────
+
+  const commissionQuerySchema = z.object({
+    status: z.enum(['PENDING', 'PAID']).optional(),
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    providerId: z.string().uuid().optional(),
+    page: z.coerce.number().int().positive().default(1),
+    pageSize: z.coerce.number().int().positive().max(200).default(20),
+  });
+
+  server.get('/commissions', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const parsed = commissionQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Invalid query parameters', details: parsed.error.flatten() });
+    }
+    const { status, from, to, providerId, page, pageSize } = parsed.data;
+    const where: Prisma.CommissionWhereInput = {};
+    if (status) where.status = status;
+    if (providerId) where.providerId = providerId;
+    if (from || to) {
+      where.createdAt = {};
+      if (from) (where.createdAt as Prisma.DateTimeFilter).gte = new Date(from);
+      if (to) (where.createdAt as Prisma.DateTimeFilter).lte = new Date(to);
+    }
+    const skip = (page - 1) * pageSize;
+    const [rows, total] = await Promise.all([
+      prisma.commission.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.commission.count({ where }),
+    ]);
+    const data = rows.map((c) => ({
+      ...c,
+      amount: c.amount.toString(),
+      percentage: c.percentage.toString(),
+    }));
+    return { data, page, pageSize, total };
   });
 }

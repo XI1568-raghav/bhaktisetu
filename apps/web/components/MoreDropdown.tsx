@@ -15,6 +15,7 @@ const moreLinks = [
   { href: '/yatra', label: 'Yatra', icon: Mountain },
   { href: '/panchang', label: 'Panchang', icon: Calendar },
   { href: '/gaushala', label: 'Gau Seva', icon: Heart },
+  { href: '/donations', label: 'Donate', icon: Heart },
   { href: '/astrology', label: 'Astrology', icon: Moon },
   { href: '/wellness', label: 'Wellness', icon: Leaf },
 ];
