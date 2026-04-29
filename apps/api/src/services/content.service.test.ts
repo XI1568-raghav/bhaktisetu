@@ -19,7 +19,7 @@ describe('ContentService.findAll', () => {
 
     await service.findAll({});
 
-    const call = prismaMock.contentItem.findMany.mock.calls[0][0];
+    const call = prismaMock.contentItem.findMany.mock.calls[0]![0]!;
     expect(call.where.status).toBe('published');
   });
 
@@ -29,7 +29,7 @@ describe('ContentService.findAll', () => {
 
     await service.findAll({ search: 'BHAJAN' });
 
-    const call = prismaMock.contentItem.findMany.mock.calls[0][0];
+    const call = prismaMock.contentItem.findMany.mock.calls[0]![0]!;
     const tagClause = call.where.OR.find((c: any) => c.tags);
     expect(tagClause).toEqual({ tags: { has: 'bhajan' } });
   });
@@ -55,7 +55,7 @@ describe('ContentService.findAll', () => {
 
     await service.findAll({ isPremium: true });
 
-    const call = prismaMock.contentItem.findMany.mock.calls[0][0];
+    const call = prismaMock.contentItem.findMany.mock.calls[0]![0]!;
     expect(call.where.isPremium).toBe(true);
   });
 });

@@ -164,7 +164,7 @@ describe('PriestService.getProfile', () => {
 
     expect(out.displayName).toBe('Pt. Sharma');
     expect(out.temples).toHaveLength(2);
-    expect(out.temples[0].isPrimary).toBe(true);
+    expect(out.temples[0]!.isPrimary).toBe(true);
     expect(out.stats).toEqual({ totalBookings: 50, completedBookings: 45 });
   });
 });
@@ -178,7 +178,7 @@ describe('PriestService.updateProfile', () => {
       experienceYears: 8,
     });
 
-    const call = prismaMock.priest.update.mock.calls[0][0];
+    const call = prismaMock.priest.update.mock.calls[0]![0]!;
     expect(call.where).toEqual({ id: 'priest-1' });
     expect(call.data).toEqual({ displayName: 'New Name', experienceYears: 8 });
     expect(call.data.bio).toBeUndefined();
@@ -191,7 +191,7 @@ describe('PriestService.updateProfile', () => {
       languages: ['Hindi', 'Sanskrit'],
     });
 
-    const call = prismaMock.priest.update.mock.calls[0][0];
+    const call = prismaMock.priest.update.mock.calls[0]![0]!;
     expect(call.data.specializations).toEqual(['Rudrabhishek']);
     expect(call.data.languages).toEqual(['Hindi', 'Sanskrit']);
   });
@@ -242,7 +242,7 @@ describe('PriestService.getPayoutHistory', () => {
 
     await service.getPayoutHistory('priest-1', { status: 'pending' });
 
-    const call = prismaMock.priestPayout.findMany.mock.calls[0][0];
+    const call = prismaMock.priestPayout.findMany.mock.calls[0]![0]!;
     expect(call.where).toEqual({ priestId: 'priest-1', status: 'pending' });
   });
 });

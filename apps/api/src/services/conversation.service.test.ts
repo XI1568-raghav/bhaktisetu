@@ -52,14 +52,14 @@ describe('ensureConversationForBooking', () => {
       },
     });
 
-    const msgCall = prismaMock.chatMessage.create.mock.calls[0][0];
+    const msgCall = prismaMock.chatMessage.create.mock.calls[0]![0]!;
     expect(msgCall.data.conversationId).toBe('conv-new');
     expect(msgCall.data.senderId).toBe('priest-1');
     expect(msgCall.data.kind).toBe('system');
     expect(msgCall.data.body).toBe('Your priest is ready.');
     expect(msgCall.data.metadata).toEqual({ bookingId: 'bk-1' });
 
-    const updCall = prismaMock.chatConversation.update.mock.calls[0][0];
+    const updCall = prismaMock.chatConversation.update.mock.calls[0]![0]!;
     expect(updCall.where).toEqual({ id: 'conv-new' });
     expect(updCall.data.devoteeUnread).toEqual({ increment: 1 });
     expect(updCall.data.lastMessageAt).toBeInstanceOf(Date);
