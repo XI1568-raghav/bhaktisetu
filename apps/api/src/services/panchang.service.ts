@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { cached, CACHE_TTL } from '../lib/cache.js';
 
 // ─── Dynamic Panchang Computation ──────────────────────────────────────────────
 // Fallback calculations when DB has no data for the requested date.
@@ -391,32 +392,35 @@ export class PanchangService {
   async getToday(city?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const cacheKey = `panchang:today:${today.toISOString().slice(0, 10)}:${city ?? 'default'}`;
 
-    const panchang = await prisma.dailyPanchang.findFirst({
-      where: {
-        date: today,
-        ...(city ? { locationCity: { equals: city, mode: 'insensitive' as const } } : {}),
-      },
+    return cached(cacheKey, CACHE_TTL.PANCHANG_DAY, async () => {
+      const panchang = await prisma.dailyPanchang.findFirst({
+        where: {
+          date: today,
+          ...(city ? { locationCity: { equals: city, mode: 'insensitive' as const } } : {}),
+        },
+      });
+
+      if (panchang) {
+        return panchang;
+      }
+
+      // Fallback: try closest DB date
+      const closest = await prisma.dailyPanchang.findFirst({
+        where: city
+          ? { locationCity: { equals: city, mode: 'insensitive' as const } }
+          : {},
+        orderBy: { date: 'desc' },
+      });
+
+      // If DB is completely empty or closest is more than 7 days old, compute dynamically
+      if (!closest || Math.abs(today.getTime() - closest.date.getTime()) > 7 * 24 * 60 * 60 * 1000) {
+        return computePanchang(today, city ?? 'Delhi');
+      }
+
+      return { ...closest, note: 'Showing most recent available panchang data.' };
     });
-
-    if (panchang) {
-      return panchang;
-    }
-
-    // Fallback: try closest DB date
-    const closest = await prisma.dailyPanchang.findFirst({
-      where: city
-        ? { locationCity: { equals: city, mode: 'insensitive' as const } }
-        : {},
-      orderBy: { date: 'desc' },
-    });
-
-    // If DB is completely empty or closest is more than 7 days old, compute dynamically
-    if (!closest || Math.abs(today.getTime() - closest.date.getTime()) > 7 * 24 * 60 * 60 * 1000) {
-      return computePanchang(today, city ?? 'Delhi');
-    }
-
-    return { ...closest, note: 'Showing most recent available panchang data.' };
   }
 
   /**
@@ -431,19 +435,22 @@ export class PanchangService {
       return null;
     }
 
-    const panchang = await prisma.dailyPanchang.findFirst({
-      where: {
-        date,
-        ...(city ? { locationCity: { equals: city, mode: 'insensitive' as const } } : {}),
-      },
+    const cacheKey = `panchang:date:${date.toISOString().slice(0, 10)}:${city ?? 'default'}`;
+    return cached(cacheKey, CACHE_TTL.PANCHANG_DAY, async () => {
+      const panchang = await prisma.dailyPanchang.findFirst({
+        where: {
+          date,
+          ...(city ? { locationCity: { equals: city, mode: 'insensitive' as const } } : {}),
+        },
+      });
+
+      if (panchang) {
+        return panchang;
+      }
+
+      // Dynamic fallback — always return computed data rather than null
+      return computePanchang(date, city ?? 'Delhi');
     });
-
-    if (panchang) {
-      return panchang;
-    }
-
-    // Dynamic fallback — always return computed data rather than null
-    return computePanchang(date, city ?? 'Delhi');
   }
 
   /**

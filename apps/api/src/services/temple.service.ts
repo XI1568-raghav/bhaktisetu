@@ -1,5 +1,6 @@
 import { Prisma, Tradition } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { cached, CACHE_TTL } from '../lib/cache.js';
 
 export interface TempleListParams {
   city?: string;
@@ -62,49 +63,65 @@ export class TempleService {
     }
 
     const skip = (page - 1) * limit;
-
-    const [temples, total] = await Promise.all([
-      prisma.temple.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          nameLocal: true,
-          slug: true,
-          description: true,
-          deityPrimary: true,
-          deities: true,
-          tradition: true,
-          city: true,
-          state: true,
-          lat: true,
-          lng: true,
-          images: true,
-          timingInfo: true,
-          isVerified: true,
-          trustScore: true,
-          liveDarshanEnabled: true,
-        },
-        orderBy: [{ trustScore: 'desc' }, { name: 'asc' }],
-        skip,
-        take: limit,
-      }),
-      prisma.temple.count({ where }),
-    ]);
-
-    return {
-      temples,
-      total,
+    // Stable cache key: serialize params in a known order so identical
+    // queries collide. Page + limit included so paginated views cache cleanly.
+    const cacheKey = `temple:list:${JSON.stringify({
+      city: city ?? '',
+      state: state ?? '',
+      tradition: tradition ?? '',
+      deity: deity ?? '',
+      search: search ?? '',
+      isVerified: isVerified ?? null,
+      liveDarshan: liveDarshan ?? null,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    })}`;
+
+    return cached(cacheKey, CACHE_TTL.TEMPLE_LIST, async () => {
+      const [temples, total] = await Promise.all([
+        prisma.temple.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            nameLocal: true,
+            slug: true,
+            description: true,
+            deityPrimary: true,
+            deities: true,
+            tradition: true,
+            city: true,
+            state: true,
+            lat: true,
+            lng: true,
+            images: true,
+            timingInfo: true,
+            isVerified: true,
+            trustScore: true,
+            liveDarshanEnabled: true,
+          },
+          orderBy: [{ trustScore: 'desc' }, { name: 'asc' }],
+          skip,
+          take: limit,
+        }),
+        prisma.temple.count({ where }),
+      ]);
+
+      return {
+        temples,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    });
   }
 
   /**
    * Get a single temple by slug with related data.
    */
   async findBySlug(slug: string) {
+    return cached(`temple:slug:${slug}`, CACHE_TTL.TEMPLE_DETAIL, async () => {
     const temple = await prisma.temple.findUnique({
       where: { slug },
       include: {
@@ -156,7 +173,8 @@ export class TempleService {
       },
     });
 
-    return temple;
+      return temple;
+    });
   }
 
   /**
