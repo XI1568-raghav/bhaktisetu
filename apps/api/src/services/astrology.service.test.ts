@@ -41,14 +41,14 @@ describe('AstrologyService.getAstrologers', () => {
   it('sorts by rating desc', () => {
     const out = astrologyService.getAstrologers({ sortBy: 'rating' });
     for (let i = 1; i < out.astrologers.length; i++) {
-      expect(out.astrologers[i - 1].rating).toBeGreaterThanOrEqual(out.astrologers[i].rating);
+      expect(out.astrologers[i - 1]!.rating).toBeGreaterThanOrEqual(out.astrologers[i]!.rating);
     }
   });
 
   it('sorts by price asc', () => {
     const out = astrologyService.getAstrologers({ sortBy: 'price' });
     for (let i = 1; i < out.astrologers.length; i++) {
-      expect(out.astrologers[i - 1].perMinuteRate).toBeLessThanOrEqual(out.astrologers[i].perMinuteRate);
+      expect(out.astrologers[i - 1]!.perMinuteRate).toBeLessThanOrEqual(out.astrologers[i]!.perMinuteRate);
     }
   });
 

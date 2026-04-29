@@ -87,7 +87,7 @@ describe('AiService.chat — real users with DB', () => {
 
     await out.saveConversation('mock answer');
 
-    const updCall = prismaMock.aiConversation.update.mock.calls[0][0];
+    const updCall = prismaMock.aiConversation.update.mock.calls[0]![0]!;
     expect(updCall.where).toEqual({ id: 'conv-1' });
     expect(updCall.data.messages).toHaveLength(3);
     expect(updCall.data.messages[1].content).toBe('new question');
@@ -129,7 +129,7 @@ describe('AiService.listConversations', () => {
 
     await service.listConversations('real-uuid-1', 2, 5);
 
-    const call = prismaMock.aiConversation.findMany.mock.calls[0][0];
+    const call = prismaMock.aiConversation.findMany.mock.calls[0]![0]!;
     expect(call.skip).toBe(5);
     expect(call.take).toBe(5);
     expect(call.orderBy).toEqual({ updatedAt: 'desc' });

@@ -184,7 +184,7 @@ describe('OnboardingService.upsertProviderProfile', () => {
 
     await service.upsertProviderProfile('user-a', 'ASTROLOGER', { displayName: 'Acharya X' });
 
-    const call = prismaMock.astrologerProfile.upsert.mock.calls[0][0];
+    const call = prismaMock.astrologerProfile.upsert.mock.calls[0]![0]!;
     expect(call.create.pricePerMinute).toBe(10);
   });
 });

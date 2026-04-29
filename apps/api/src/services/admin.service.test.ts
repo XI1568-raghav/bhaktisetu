@@ -20,7 +20,7 @@ describe('AdminService.getUsers', () => {
 
     await service.getUsers({ search: 'priya' });
 
-    const call = prismaMock.user.findMany.mock.calls[0][0];
+    const call = prismaMock.user.findMany.mock.calls[0]![0]!;
     expect(call.where.OR).toEqual([
       { fullName: { contains: 'priya', mode: 'insensitive' } },
       { email: { contains: 'priya', mode: 'insensitive' } },
@@ -64,7 +64,7 @@ describe('AdminService.getUsers', () => {
     const out = await service.getUsers({ role: 'PANDIT' });
 
     expect(out.users).toHaveLength(1);
-    expect(out.users[0].id).toBe('u-1');
+    expect(out.users[0]!.id).toBe('u-1');
   });
 
   it('falls back to mock list when prisma errors', async () => {
@@ -118,7 +118,7 @@ describe('AdminService.updateUser', () => {
     const out = await service.updateUser('u-1', { roles: ['PANDIT', 'DEVOTEE'] });
 
     expect(prismaMock.userRoleAssignment.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u-1' } });
-    const createCall = prismaMock.userRoleAssignment.createMany.mock.calls[0][0];
+    const createCall = prismaMock.userRoleAssignment.createMany.mock.calls[0]![0]!;
     expect(createCall.data).toEqual([
       { userId: 'u-1', role: 'PANDIT', isPrimary: true },
       { userId: 'u-1', role: 'DEVOTEE', isPrimary: false },
