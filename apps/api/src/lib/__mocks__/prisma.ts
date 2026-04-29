@@ -79,6 +79,17 @@ export const prismaMock = {
   subscription: {
     findFirst: vi.fn(),
   },
+  marketplaceSubscription: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+  },
+  transaction: {
+    create: vi.fn(),
+    findMany: vi.fn(),
+  },
   $queryRaw: vi.fn(),
   $transaction: vi.fn((fn: any) => fn(prismaMock)),
 };
