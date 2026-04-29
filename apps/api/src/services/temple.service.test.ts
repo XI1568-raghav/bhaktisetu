@@ -19,7 +19,7 @@ describe('TempleService.findAll', () => {
 
     await service.findAll({});
 
-    const call = prismaMock.temple.findMany.mock.calls[0][0];
+    const call = prismaMock.temple.findMany.mock.calls[0]![0]!;
     expect(call.where.status).toBe('active');
   });
 
@@ -29,7 +29,7 @@ describe('TempleService.findAll', () => {
 
     await service.findAll({ city: 'Varanasi', state: 'UP' });
 
-    const call = prismaMock.temple.findMany.mock.calls[0][0];
+    const call = prismaMock.temple.findMany.mock.calls[0]![0]!;
     expect(call.where.city).toEqual({ equals: 'Varanasi', mode: 'insensitive' });
     expect(call.where.state).toEqual({ equals: 'UP', mode: 'insensitive' });
   });
@@ -40,7 +40,7 @@ describe('TempleService.findAll', () => {
 
     await service.findAll({ isVerified: true, liveDarshan: false });
 
-    const call = prismaMock.temple.findMany.mock.calls[0][0];
+    const call = prismaMock.temple.findMany.mock.calls[0]![0]!;
     expect(call.where.isVerified).toBe(true);
     expect(call.where.liveDarshanEnabled).toBe(false);
   });
@@ -51,7 +51,7 @@ describe('TempleService.findAll', () => {
 
     await service.findAll({ search: 'shiva' });
 
-    const call = prismaMock.temple.findMany.mock.calls[0][0];
+    const call = prismaMock.temple.findMany.mock.calls[0]![0]!;
     expect(call.where.OR).toHaveLength(4);
   });
 
@@ -61,7 +61,7 @@ describe('TempleService.findAll', () => {
 
     await service.findAll({});
 
-    const call = prismaMock.temple.findMany.mock.calls[0][0];
+    const call = prismaMock.temple.findMany.mock.calls[0]![0]!;
     expect(call.orderBy).toEqual([{ trustScore: 'desc' }, { name: 'asc' }]);
   });
 

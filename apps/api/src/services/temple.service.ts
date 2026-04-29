@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Tradition } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 export interface TempleListParams {
@@ -41,7 +41,7 @@ export class TempleService {
       where.state = { equals: state, mode: 'insensitive' };
     }
     if (tradition) {
-      where.tradition = tradition as any;
+      where.tradition = tradition as Tradition;
     }
     if (deity) {
       where.deityPrimary = { contains: deity, mode: 'insensitive' };

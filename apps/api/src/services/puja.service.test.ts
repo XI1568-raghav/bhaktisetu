@@ -41,7 +41,7 @@ describe('PujaService.findAllTypes', () => {
 
     await service.findAllTypes({ category: 'WEDDING' });
 
-    const call = prismaMock.pujaType.findMany.mock.calls[0][0];
+    const call = prismaMock.pujaType.findMany.mock.calls[0]![0]!;
     expect(call.where.category).toBe('WEDDING');
   });
 
@@ -51,7 +51,7 @@ describe('PujaService.findAllTypes', () => {
 
     await service.findAllTypes({ deity: 'shiva' });
 
-    const call = prismaMock.pujaType.findMany.mock.calls[0][0];
+    const call = prismaMock.pujaType.findMany.mock.calls[0]![0]!;
     expect(call.where.deity).toEqual({ contains: 'shiva', mode: 'insensitive' });
   });
 
@@ -61,7 +61,7 @@ describe('PujaService.findAllTypes', () => {
 
     await service.findAllTypes({ search: 'rudra' });
 
-    const call = prismaMock.pujaType.findMany.mock.calls[0][0];
+    const call = prismaMock.pujaType.findMany.mock.calls[0]![0]!;
     expect(call.where.OR).toEqual([
       { name: { contains: 'rudra', mode: 'insensitive' } },
       { description: { contains: 'rudra', mode: 'insensitive' } },
@@ -109,6 +109,6 @@ describe('PujaService.findBySlug', () => {
 
     expect(out).not.toBeNull();
     expect(out!.temples).toHaveLength(1);
-    expect(out!.temples[0].offeringId).toBe('off-1');
+    expect(out!.temples[0]!.offeringId).toBe('off-1');
   });
 });
