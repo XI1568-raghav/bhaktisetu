@@ -20,7 +20,7 @@ describe('ProviderService.getProviders (DB path)', () => {
     const out = await service.getProviders('pandit', { city: 'Pune', minRating: 4.5, page: 1, limit: 10 });
 
     expect(out.total).toBe(1);
-    const call = prismaMock.panditProfile.findMany.mock.calls[0][0];
+    const call = prismaMock.panditProfile.findMany.mock.calls[0]![0]!;
     expect(call.where.approved).toBe(true);
     expect(call.where.city).toEqual({ contains: 'Pune', mode: 'insensitive' });
     expect(call.where.rating).toEqual({ gte: 4.5 });
@@ -32,7 +32,7 @@ describe('ProviderService.getProviders (DB path)', () => {
 
     await service.getProviders('pandit', { page: 3, limit: 5 });
 
-    const call = prismaMock.panditProfile.findMany.mock.calls[0][0];
+    const call = prismaMock.panditProfile.findMany.mock.calls[0]![0]!;
     expect(call.skip).toBe(10);
     expect(call.take).toBe(5);
   });
@@ -43,7 +43,7 @@ describe('ProviderService.getProviders (DB path)', () => {
 
     await service.getProviders('pandit', { sort: 'price_asc' });
 
-    const call = prismaMock.panditProfile.findMany.mock.calls[0][0];
+    const call = prismaMock.panditProfile.findMany.mock.calls[0]![0]!;
     expect(call.orderBy.pricePerPuja).toBe('asc');
   });
 
@@ -53,7 +53,7 @@ describe('ProviderService.getProviders (DB path)', () => {
 
     await service.getProviders('astrologer', { specialty: 'Numerology' });
 
-    const call = prismaMock.astrologerProfile.findMany.mock.calls[0][0];
+    const call = prismaMock.astrologerProfile.findMany.mock.calls[0]![0]!;
     expect(call.where.specialties).toEqual({ has: 'Numerology' });
   });
 
@@ -63,7 +63,7 @@ describe('ProviderService.getProviders (DB path)', () => {
 
     await service.getProviders('gaushala', {});
 
-    const call = prismaMock.gaushalaProfile.findMany.mock.calls[0][0];
+    const call = prismaMock.gaushalaProfile.findMany.mock.calls[0]![0]!;
     expect(call.orderBy).toEqual({ totalCows: 'desc' });
   });
 });
@@ -107,7 +107,7 @@ describe('ProviderService.getProviderById', () => {
 
     const out = await service.getProviderById('pandit', 'pandit-001');
     expect((out as any).reviews).toHaveLength(1);
-    const reviewCall = prismaMock.review.findMany.mock.calls[0][0];
+    const reviewCall = prismaMock.review.findMany.mock.calls[0]![0]!;
     expect(reviewCall.where.providerType).toBe('PANDIT');
   });
 

@@ -173,7 +173,7 @@ describe('GaushalaService.getMyAdoptions', () => {
     service.adoptCow('user-x', 'cow_001', 'plan_daily');
     const list = service.getMyAdoptions('user-x');
     expect(list).toHaveLength(1);
-    expect(list[0].cowId).toBe('cow_001');
+    expect(list[0]!.cowId).toBe('cow_001');
   });
 });
 
