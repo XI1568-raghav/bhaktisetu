@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
 import { astrologyService } from '../services/astrology.service.js';
 
@@ -201,6 +202,38 @@ export async function astrologyRoutes(server: FastifyInstance) {
       // Return fallback response instead of 500
       const fallback = astrologyService.getAstrologerFallback(message.trim());
       return { response: fallback };
+    }
+  });
+
+  // ─── Consultation list / patch / start-call ──────────────────────
+
+  server.get('/consultations', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const role = (request.query as { role?: string }).role ?? 'astrologer';
+    const consultations = await astrologyService.listConsultations({ userId, role });
+    return { consultations };
+  });
+
+  server.patch('/consultations/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const schema = z.object({ status: z.enum(['COMPLETED', 'CANCELLED']) });
+    const parsed = schema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.errors[0]?.message ?? 'Invalid' });
+    try {
+      const updated = await astrologyService.updateConsultation(id, parsed.data.status);
+      return { consultation: updated };
+    } catch (e) {
+      return reply.code(404).send({ error: e instanceof Error ? e.message : 'Not found' });
+    }
+  });
+
+  server.post('/consultations/:id/start-call', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const result = await astrologyService.startCall(id);
+      return { roomUrl: result.roomUrl };
+    } catch (e) {
+      return reply.code(404).send({ error: e instanceof Error ? e.message : 'Not found' });
     }
   });
 }

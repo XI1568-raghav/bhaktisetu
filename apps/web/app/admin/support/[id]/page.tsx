@@ -1,7 +1,7 @@
 'use client';
 export const runtime = 'edge';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -17,17 +17,24 @@ import {
  CheckCircle2,
  AlertCircle,
  Activity,
+ Loader2,
 } from 'lucide-react';
 import {
  SAMPLE_ADMIN_TICKETS,
  CATEGORY_MAP,
  PRIORITIES,
  STATUSES,
+ type Ticket,
  type TicketMessage,
- type TicketActivity,
  type TicketStatus,
  type TicketPriority,
 } from '../../../../lib/support';
+import {
+ getTicketById,
+ patchTicket,
+ postMessage,
+} from '../../../../lib/support-api';
+import { useAuth } from '../../../../lib/auth-context';
 import {
  StatusBadge,
  PriorityBadge,
@@ -36,113 +43,133 @@ import {
  timeAgo,
 } from '../../../../components/support/badges';
 
+const AGENT_OPTIONS = ['Priya S.', 'Arjun K.', 'Neha R.', 'Rahul M.', 'Kavita B.'];
+
 export default function AdminTicketDetailPage() {
  const params = useParams<{ id: string }>();
- const baseTicket = useMemo(
- () => SAMPLE_ADMIN_TICKETS.find((t) => t.id === params.id),
- [params.id],
- );
-
- const [messages, setMessages] = useState<TicketMessage[]>(baseTicket?.messages ?? []);
- const [activity, setActivity] = useState<TicketActivity[]>(baseTicket?.activity ?? []);
- const [status, setStatus] = useState<TicketStatus>(baseTicket?.status ?? 'open');
- const [priority, setPriority] = useState<TicketPriority>(baseTicket?.priority ?? 'medium');
- const [assignedTo, setAssignedTo] = useState<string>(baseTicket?.assignedTo ?? '');
+ const { session } = useAuth();
+ const [ticket, setTicket] = useState<Ticket | null>(null);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
+ const [actionError, setActionError] = useState<string | null>(null);
  const [reply, setReply] = useState('');
  const [note, setNote] = useState('');
+ const [sendingReply, setSendingReply] = useState(false);
+ const [savingNote, setSavingNote] = useState(false);
 
- if (!baseTicket) {
+ useEffect(() => {
+ let cancelled = false;
+ (async () => {
+ try {
+ const t = await getTicketById(session?.accessToken, params.id);
+ if (!cancelled) setTicket(t);
+ } catch (err) {
+ if (!cancelled) {
+ const fallback = SAMPLE_ADMIN_TICKETS.find((t) => t.id === params.id);
+ if (fallback) setTicket(fallback);
+ setError(err instanceof Error ? err.message : 'Failed to load ticket');
+ }
+ } finally {
+ if (!cancelled) setLoading(false);
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, [params.id, session?.accessToken]);
+
+ const sendReply = async () => {
+ if (!ticket || !reply.trim()) return;
+ setSendingReply(true);
+ setActionError(null);
+ try {
+ const updated = await postMessage(session?.accessToken, ticket.id, {
+ body: reply.trim(),
+ });
+ setTicket(updated);
+ setReply('');
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not send reply');
+ } finally {
+ setSendingReply(false);
+ }
+ };
+
+ const addNote = async () => {
+ if (!ticket || !note.trim()) return;
+ setSavingNote(true);
+ setActionError(null);
+ try {
+ const updated = await postMessage(session?.accessToken, ticket.id, {
+ body: note.trim(),
+ internal: true,
+ });
+ setTicket(updated);
+ setNote('');
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not save note');
+ } finally {
+ setSavingNote(false);
+ }
+ };
+
+ const changeStatus = async (status: TicketStatus) => {
+ if (!ticket) return;
+ setActionError(null);
+ try {
+ const updated = await patchTicket(session?.accessToken, ticket.id, { status });
+ setTicket(updated);
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not update status');
+ }
+ };
+
+ const changePriority = async (priority: TicketPriority) => {
+ if (!ticket) return;
+ setActionError(null);
+ try {
+ const updated = await patchTicket(session?.accessToken, ticket.id, { priority });
+ setTicket(updated);
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not update priority');
+ }
+ };
+
+ const assignAgent = async (name: string) => {
+ if (!ticket) return;
+ setActionError(null);
+ try {
+ const updated = await patchTicket(session?.accessToken, ticket.id, {
+ assignedTo: name || null,
+ });
+ setTicket(updated);
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not assign agent');
+ }
+ };
+
+ if (loading) {
+ return (
+ <div className="flex items-center gap-2 text-sm text-surface-500 p-8">
+ <Loader2 className="w-4 h-4 animate-spin" /> Loading ticket…
+ </div>
+ );
+ }
+
+ if (!ticket) {
  return (
  <div className="max-w-xl mx-auto bg-white rounded-xl border border-surface-200 p-10 text-center">
  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
  <h2 className="font-semibold text-surface-900 mb-1">Ticket not found</h2>
- <Link
- href="/admin/support"
- className="text-sm text-saffron-700 hover:text-saffron-800"
- >
+ <p className="text-sm text-surface-500 mb-3">{error}</p>
+ <Link href="/admin/support" className="text-sm text-saffron-700 hover:text-saffron-800">
  Back to all tickets
  </Link>
  </div>
  );
  }
 
- const cat = CATEGORY_MAP[baseTicket.category];
-
- const sendReply = () => {
- if (!reply.trim()) return;
- const now = new Date().toISOString();
- const msg: TicketMessage = {
- id: `m-${Date.now()}`,
- author: 'agent',
- authorName: assignedTo || 'Admin',
- body: reply.trim(),
- createdAt: now,
- };
- setMessages((prev) => [...prev, msg]);
- setActivity((prev) => [
- ...prev,
- { id: `act-${Date.now()}`, type: 'note', text: 'Agent replied to user', createdAt: now },
- ]);
- setReply('');
- };
-
- const addNote = () => {
- if (!note.trim()) return;
- const now = new Date().toISOString();
- const msg: TicketMessage = {
- id: `m-${Date.now()}`,
- author: 'agent',
- authorName: assignedTo || 'Admin',
- body: note.trim(),
- createdAt: now,
- internal: true,
- };
- setMessages((prev) => [...prev, msg]);
- setActivity((prev) => [
- ...prev,
- { id: `act-${Date.now()}`, type: 'note', text: 'Internal note added', createdAt: now },
- ]);
- setNote('');
- };
-
- const changeStatus = (next: TicketStatus) => {
- setStatus(next);
- setActivity((prev) => [
- ...prev,
- {
- id: `act-${Date.now()}`,
- type: 'status_change',
- text: `Status → ${STATUSES.find((s) => s.id === next)?.label}`,
- createdAt: new Date().toISOString(),
- },
- ]);
- };
-
- const changePriority = (next: TicketPriority) => {
- setPriority(next);
- setActivity((prev) => [
- ...prev,
- {
- id: `act-${Date.now()}`,
- type: 'priority_change',
- text: `Priority → ${PRIORITIES.find((p) => p.id === next)?.label}`,
- createdAt: new Date().toISOString(),
- },
- ]);
- };
-
- const assignAgent = (name: string) => {
- setAssignedTo(name);
- setActivity((prev) => [
- ...prev,
- {
- id: `act-${Date.now()}`,
- type: 'assignment',
- text: `Assigned to ${name}`,
- createdAt: new Date().toISOString(),
- },
- ]);
- };
+ const cat = CATEGORY_MAP[ticket.category];
 
  return (
  <div>
@@ -158,27 +185,27 @@ export default function AdminTicketDetailPage() {
  <div className="flex items-start justify-between gap-4 flex-wrap">
  <div className="min-w-0">
  <div className="flex items-center gap-2 mb-1 flex-wrap">
- <span className="font-mono text-xs text-saffron-700">{baseTicket.id}</span>
+ <span className="font-mono text-xs text-saffron-700">{ticket.id}</span>
  <span className="text-surface-300">·</span>
  <span className="text-xs text-surface-500">
- {cat.emoji} {cat.name}
+ {cat?.emoji} {cat?.name ?? ticket.category}
  </span>
  </div>
  <h1 className="text-xl font-semibold text-surface-900 break-words">
- {baseTicket.subject}
+ {ticket.subject}
  </h1>
  <div className="flex items-center gap-2 mt-3 flex-wrap">
- <StatusBadge status={status} />
- <PriorityBadge priority={priority} />
+ <StatusBadge status={ticket.status} />
+ <PriorityBadge priority={ticket.priority} />
  <span className="text-xs text-surface-500">
- Created {formatDate(baseTicket.createdAt)}
+ Created {formatDate(ticket.createdAt)}
  </span>
  </div>
  </div>
 
  <div className="flex flex-wrap gap-2">
  <select
- value={status}
+ value={ticket.status}
  onChange={(e) => changeStatus(e.target.value as TicketStatus)}
  className="px-3 py-2 rounded-lg border border-surface-200 text-sm bg-white"
  >
@@ -189,7 +216,7 @@ export default function AdminTicketDetailPage() {
  ))}
  </select>
  <select
- value={priority}
+ value={ticket.priority}
  onChange={(e) => changePriority(e.target.value as TicketPriority)}
  className="px-3 py-2 rounded-lg border border-surface-200 text-sm bg-white"
  >
@@ -200,12 +227,12 @@ export default function AdminTicketDetailPage() {
  ))}
  </select>
  <select
- value={assignedTo}
+ value={ticket.assignedTo ?? ''}
  onChange={(e) => assignAgent(e.target.value)}
  className="px-3 py-2 rounded-lg border border-surface-200 text-sm bg-white"
  >
  <option value="">Unassigned</option>
- {['Priya S.', 'Arjun K.', 'Neha R.', 'Rahul M.', 'Kavita B.'].map((n) => (
+ {AGENT_OPTIONS.map((n) => (
  <option key={n} value={n}>
  {n}
  </option>
@@ -221,13 +248,20 @@ export default function AdminTicketDetailPage() {
  </div>
  </div>
 
+ {actionError && (
+ <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+ <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+ {actionError}
+ </div>
+ )}
+
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
  {/* Left: conversation */}
  <div className="lg:col-span-2 space-y-5">
  <div className="bg-white rounded-xl border border-surface-200 p-5">
  <h2 className="font-semibold text-surface-900 mb-4">Conversation</h2>
  <div className="space-y-4">
- {messages.map((m) => (
+ {ticket.messages.map((m) => (
  <MessageBubble key={m.id} message={m} />
  ))}
  </div>
@@ -252,10 +286,11 @@ export default function AdminTicketDetailPage() {
  <div className="flex justify-end mt-2">
  <button
  onClick={sendReply}
- disabled={!reply.trim()}
+ disabled={sendingReply || !reply.trim()}
  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 disabled:opacity-50 text-white text-sm font-semibold"
  >
- <Send className="w-4 h-4" /> Send reply
+ {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+ {sendingReply ? 'Sending…' : 'Send reply'}
  </button>
  </div>
  </div>
@@ -279,10 +314,11 @@ export default function AdminTicketDetailPage() {
  <div className="flex justify-end mt-2">
  <button
  onClick={addNote}
- disabled={!note.trim()}
+ disabled={savingNote || !note.trim()}
  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold"
  >
- <Lock className="w-4 h-4" /> Save internal note
+ {savingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+ {savingNote ? 'Saving…' : 'Save internal note'}
  </button>
  </div>
  </div>
@@ -296,49 +332,50 @@ export default function AdminTicketDetailPage() {
  <UserIcon className="w-3.5 h-3.5" /> User
  </h3>
  <div className="space-y-2 text-sm">
- <div className="font-semibold text-surface-900">{baseTicket.userName}</div>
+ <div className="font-semibold text-surface-900">{ticket.userName}</div>
  <div className="flex items-center gap-2 text-surface-600">
  <Mail className="w-3.5 h-3.5 text-surface-400" />
- {baseTicket.userEmail}
+ {ticket.userEmail}
  </div>
- {baseTicket.userPhone && (
+ {ticket.userPhone && (
  <div className="flex items-center gap-2 text-surface-600">
  <Phone className="w-3.5 h-3.5 text-surface-400" />
- {baseTicket.userPhone}
+ {ticket.userPhone}
  </div>
  )}
- {baseTicket.userJoinedAt && (
+ {ticket.userJoinedAt && (
  <div className="flex items-center gap-2 text-surface-600">
  <Calendar className="w-3.5 h-3.5 text-surface-400" />
- Joined {formatDate(baseTicket.userJoinedAt)}
+ Joined {formatDate(ticket.userJoinedAt)}
  </div>
  )}
- {baseTicket.userTotalOrders !== undefined && (
+ {ticket.userTotalOrders !== undefined && (
  <div className="flex items-center gap-2 text-surface-600">
  <ShoppingBag className="w-3.5 h-3.5 text-surface-400" />
- {baseTicket.userTotalOrders} total orders
+ {ticket.userTotalOrders} total orders
  </div>
  )}
  </div>
  </div>
 
  {/* Linked order */}
- {baseTicket.orderId && (
+ {ticket.orderId && (
  <div className="bg-white rounded-xl border border-surface-200 p-5">
  <h3 className="text-xs uppercase tracking-wider text-surface-500 font-semibold mb-2">
  Linked order
  </h3>
- <div className="font-mono text-sm text-saffron-700">{baseTicket.orderId}</div>
+ <div className="font-mono text-sm text-saffron-700">{ticket.orderId}</div>
  </div>
  )}
 
  {/* Activity */}
+ {ticket.activity && ticket.activity.length > 0 && (
  <div className="bg-white rounded-xl border border-surface-200 p-5">
  <h3 className="text-xs uppercase tracking-wider text-surface-500 font-semibold mb-3 flex items-center gap-1.5">
  <Activity className="w-3.5 h-3.5" /> Activity log
  </h3>
  <ol className="space-y-3 max-h-80 overflow-y-auto">
- {activity.map((a) => (
+ {ticket.activity.map((a) => (
  <li key={a.id} className="flex gap-3">
  <span className="w-2 h-2 rounded-full bg-saffron-400 mt-1.5 shrink-0" />
  <div className="min-w-0">
@@ -351,6 +388,7 @@ export default function AdminTicketDetailPage() {
  ))}
  </ol>
  </div>
+ )}
  </div>
  </div>
  </div>
