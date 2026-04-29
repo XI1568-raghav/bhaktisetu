@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
+import { initSentryBrowser, captureBrowserException } from '../lib/sentry-client';
+
 export default function GlobalError({
  error,
  reset,
@@ -7,6 +10,11 @@ export default function GlobalError({
  error: Error & { digest?: string };
  reset: () => void;
 }) {
+ useEffect(() => {
+   initSentryBrowser();
+   captureBrowserException(error, { digest: error.digest });
+ }, [error]);
+
  return (
  <html>
  <body style={{ margin: 0, padding: 0, fontFamily: 'system-ui, sans-serif', background: '#f5f3ef', color: '#2a2520' }}>

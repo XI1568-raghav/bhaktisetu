@@ -35,6 +35,7 @@ import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
+import { SentryProvider } from "../components/SentryProvider";
 import { getTempleHero } from "../lib/images";
 import Link from "next/link";
 import "./globals.css";
@@ -375,6 +376,7 @@ export default function RootLayout({
  </footer>
  <DeferredClientWidgets />
  <Analytics />
+ <SentryProvider />
  <NotificationPrompt />
  </CartProvider>
  </AuthProvider>
