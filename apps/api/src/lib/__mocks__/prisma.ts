@@ -86,6 +86,7 @@ export const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
+    count: vi.fn(),
   },
   transaction: {
     create: vi.fn(),
@@ -96,6 +97,8 @@ export const prismaMock = {
     findMany: vi.fn(),
     upsert: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
+    deleteMany: vi.fn(),
   },
   onboardingStep: {
     findFirst: vi.fn(),
@@ -109,6 +112,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   storeProfile: {
@@ -117,6 +121,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   astrologerProfile: {
@@ -125,6 +130,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   wellnessProfile: {
@@ -133,6 +139,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   gaushalaProfile: {
@@ -141,6 +148,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   templeProfile: {
@@ -149,6 +157,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   chatConversation: {
@@ -167,6 +176,20 @@ export const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
     aggregate: vi.fn(),
+  },
+  commission: {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    aggregate: vi.fn(),
+  },
+  aiConversation: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
   },
   $queryRaw: vi.fn(),
   $transaction: vi.fn((fn: any) => fn(prismaMock)),
