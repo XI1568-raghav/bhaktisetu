@@ -90,6 +90,48 @@ export const prismaMock = {
     create: vi.fn(),
     findMany: vi.fn(),
   },
+  userRoleAssignment: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    upsert: vi.fn(),
+    create: vi.fn(),
+  },
+  onboardingStep: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    upsert: vi.fn(),
+    update: vi.fn(),
+  },
+  panditProfile: {
+    upsert: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+  },
+  storeProfile: {
+    upsert: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+  },
+  astrologerProfile: {
+    upsert: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+  },
+  wellnessProfile: {
+    upsert: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+  },
+  gaushalaProfile: {
+    upsert: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+  },
+  templeProfile: {
+    upsert: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+  },
   $queryRaw: vi.fn(),
   $transaction: vi.fn((fn: any) => fn(prismaMock)),
 };
