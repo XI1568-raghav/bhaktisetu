@@ -278,7 +278,7 @@ export async function darshanRoutes(server: FastifyInstance) {
             ? (stream.temple.images as string[])[0]
             : null,
           viewerCount: stream.viewerCount,
-          startedAt: (stream as any).actualStart?.toISOString() ?? null,
+          startedAt: stream.actualStart?.toISOString() ?? null,
         };
       }
     } catch {
