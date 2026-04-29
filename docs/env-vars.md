@@ -44,7 +44,7 @@ Adding a new integration? Match this contract.
 
 | Var | Used by | Behavior when absent |
 |---|---|---|
-| `NEXT_PUBLIC_SENTRY_DSN` | `sentry.client.config.ts` | client SDK not initialised |
+| `NEXT_PUBLIC_SENTRY_DSN` | `apps/web/lib/sentry-client.ts` (via `SentryProvider` + `global-error.tsx`) | client SDK not initialised; no browser errors captured |
 | `NEXT_PUBLIC_POSTHOG_KEY` | `components/Analytics.tsx` | analytics disabled |
 | `NEXT_PUBLIC_POSTHOG_HOST` | same | defaults to `us.i.posthog.com` |
 | `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | `components/CloudflareAnalytics.tsx` | manual injection path. **Usually unnecessary** — when `darshya.online` is proxied through Cloudflare (orange cloud), the beacon is auto-injected at the edge with no client-side code needed. Only set this if a page is served outside Cloudflare's proxy. |
