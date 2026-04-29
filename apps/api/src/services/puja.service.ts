@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, PujaCategory } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 export interface PujaListParams {
@@ -21,7 +21,7 @@ export class PujaService {
     };
 
     if (category) {
-      where.category = category as any;
+      where.category = category as PujaCategory;
     }
     if (deity) {
       where.deity = { contains: deity, mode: 'insensitive' };
