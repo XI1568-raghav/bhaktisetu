@@ -10,6 +10,7 @@
  */
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('node:path');
+const fs = require('node:fs');
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
@@ -37,5 +38,25 @@ config.resolver.blockList = [
   /apps\/admin\/.*/,
   /apps\/medusa-store\/.*/,
 ];
+
+// 4. Workspace packages (@poojly/*) use NodeNext-style ".js" import
+//    specifiers on .ts source. Next/tsc resolve these; Metro doesn't.
+//    Rewrite "./client.js" -> "./client.ts" (or .tsx) when the .ts
+//    source actually exists on disk.
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    moduleName.startsWith('.') &&
+    (moduleName.endsWith('.js') || moduleName.endsWith('.jsx'))
+  ) {
+    const baseDir = path.dirname(context.originModulePath);
+    for (const ext of ['.ts', '.tsx']) {
+      const candidate = moduleName.replace(/\.jsx?$/, ext);
+      if (fs.existsSync(path.resolve(baseDir, candidate))) {
+        return context.resolveRequest(context, candidate, platform);
+      }
+    }
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;
