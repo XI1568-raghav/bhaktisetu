@@ -34,7 +34,7 @@ literally echoes `"build: ok (empty shell)"`
 | **P0** | `apps/admin` is a phantom — no `app/` folder, no real build. The "admin dashboard" surface listed in `CLAUDE.md:21` does not exist. | `apps/admin/package.json:9`; no `apps/admin/app/` | Internal ops cannot moderate temples / approve priests / refund bookings without it. |
 | **P1** | Eight portal pages render hardcoded mock arrays as if they were real data. | `apps/web/app/admin/users/page.tsx:32`; `astrologer-portal/consultations/page.tsx:37`; `wellness-portal/students/page.tsx:32`; `temple-portal/donations/page.tsx:32`; `store-admin/reviews/page.tsx:23`; `settings/subscription/page.tsx:23-35`; `settings/earnings/page.tsx:27-47`; `priest/reviews/page.tsx:23` | A signed-in temple manager visiting their donations page sees fake names. Either wire to API or hide behind a "Coming soon" state. |
 | **P1** | `pujas/[slug]/book` builds slot availability from a `mockSlots` array. | `apps/web/app/pujas/[slug]/book/page.tsx:411` | Devotee can "book" a fictional slot. Drives an immediate refund event. |
-| **P1** | Demo-pay endpoint can mint real `PujaBooking` rows; gate is correct (`ENABLE_DEMO_PAY` + 10/10min bucket) but only if Render env var is set. `docs/session-handoff.md:34-44` says it's user-pending. | `apps/api/src/routes/demo-pay.ts:34-74` | If env var unset on next redeploy, free bookings flow back open. Set `ENABLE_DEMO_PAY=false` explicitly today. |
+| **P1** | Demo-pay endpoint can mint real `PujaBooking` rows; gate is correct (`ENABLE_DEMO_PAY` + 10/10min bucket) but only if Render env var is set. | `apps/api/src/routes/demo-pay.ts:34-74` | If env var unset on next redeploy, free bookings flow back open. Set `ENABLE_DEMO_PAY=false` explicitly today. |
 | **P1** | CSP entirely disabled. | `apps/api/src/server.ts:58` | Any reflected-XSS becomes account takeover. Real fix needs script-source inventory (PostHog, CF, Razorpay, Jitsi). |
 | **P2** | Chat send and demo-pay rate limits are in-memory `Map`s — single-instance only. | `apps/api/src/routes/conversations.ts:49`; `demo-pay.ts:45` | Free-tier Render is single-instance today, so this works. The day we scale to two workers, both limits silently double. Move to Upstash Redis. |
 | **P2** | `pnpm audit --prod` reports 23 vulns (6 high `tar`, 5 high `xmldom`, 1 critical `protobufjs`) — all in expo build chain only, not deployed. | `docs/security-pass-2026-04-27.md:22-38` | Add `pnpm audit --prod --audit-level high` to CI to catch a regression that crosses into runtime. |
@@ -44,8 +44,8 @@ literally echoes `"build: ok (empty shell)"`
 | Debt | Cost it pays |
 |---|---|
 | `apps/api/src/lib/r2.ts` is now a Supabase Storage adapter but keeps its R2 name (`docs/launch-state.md:84`). | Every new contributor needs the lore. |
-| Demo accounts (`docs/session-handoff.md:46-61`) ship as real seeded UUIDs in production DB. | Anyone who learns `demo123` can authenticate as ADMIN. The chip-hiding gate is UX only. |
-| Prisma migrations are run manually from a laptop with prod `DATABASE_URL` exported (`docs/session-handoff.md:148`). | One missed `migrate deploy` and we ship a build whose code expects columns the DB doesn't have. |
+| Demo accounts ship as real seeded UUIDs in production DB. Map lives in `apps/api/src/middlewares/auth.ts` DEMO_ROLE_MAP. | Anyone who learns `demo123` can authenticate as ADMIN. The chip-hiding gate is UX only. Demo branch is now gated by `NODE_ENV !== 'production' \|\| ALLOW_DEMO_TOKENS=true`. |
+| Prisma migrations are run manually from a laptop with prod `DATABASE_URL` exported. | One missed `migrate deploy` and we ship a build whose code expects columns the DB doesn't have. |
 | Daily cron lives in `.github/workflows/daily-cron.yml`. | If GitHub Actions has an outage on a launch day, panchang push and any scheduled puja reminders silently miss. No alerting. |
 | Synthetic IDs (`demo-*`, `anon-*`) are special-cased throughout `services/ai.service.ts` and `middlewares/auth.ts` because Prisma `@db.Uuid` rejects them. | Every new persisted entity needs the same special-case branch or we get random 500s for demo/anon users. |
 | `helmet({ contentSecurityPolicy: false })` (`server.ts:58`). | Permanent XSS multiplier until inventoried. |
@@ -54,7 +54,7 @@ literally echoes `"build: ok (empty shell)"`
 
 | Metric | Value | Source |
 |---|---|---|
-| API cold start | ~30 s on Render free | `docs/session-handoff.md:142` |
+| API cold start | ~30 s on Render free | known Render free-tier behavior |
 | API p50 / p95 latency | `[UNKNOWN]` | No APM dashboard wired; Sentry tracks errors only |
 | Web TTFB | `[UNKNOWN]` | No CF Pages perf snapshot recorded |
 | DB p95 query time | `[UNKNOWN]` | Supabase observability not in `docs/` |
@@ -72,9 +72,9 @@ need indexing before a launch surge.
 |---|---|---|
 | Laptop dies | Code on GitHub | Prod `DATABASE_URL`, Razorpay live secret, VAPID private key live in `.env` files on the laptop. Rotate to a 1Password vault + recovery list before Day 7. |
 | DB pwned / dropped | Supabase nightly backups (default) | We have not tested a restore. Run a dry-run restore into a staging Supabase project. |
-| Render free-tier hibernation | Health check 200 within 60 s (`docs/session-handoff.md:143`) | First request after sleep is the 30 s cold start. A user who clicks a magic-link email at 3 a.m. waits half a minute. Mitigation: `cron-keepalive` ping every 14 min from the same GitHub Actions runner that already runs daily. |
+| Render free-tier hibernation | Health check 200 within 60 s | First request after sleep is the 30 s cold start. A user who clicks a magic-link email at 3 a.m. waits half a minute. Mitigation: `cron-keepalive` ping every 14 min from the same GitHub Actions runner that already runs daily. |
 | Founder hit by a bus | None | No second engineer has push access; no ops runbook beyond `docs/`. |
-| Razorpay webhook secret rotates | Manual re-paste (`docs/session-handoff.md:147`) | One missed paste = silent payment failures. Add a heartbeat job that fires a self-test webhook weekly. |
+| Razorpay webhook secret rotates | Manual re-paste on Render env. | One missed paste = silent payment failures. Add a heartbeat job that fires a self-test webhook weekly. |
 
 ## 6. Top 3 things to do this week
 
