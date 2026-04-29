@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, ContentType, Language } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 export interface ContentListParams {
@@ -31,13 +31,13 @@ export class ContentService {
     };
 
     if (type) {
-      where.type = type as any;
+      where.type = type as ContentType;
     }
     if (deity) {
       where.deity = { contains: deity, mode: 'insensitive' };
     }
     if (language) {
-      where.language = language as any;
+      where.language = language as Language;
     }
     if (isPremium !== undefined) {
       where.isPremium = isPremium;
@@ -136,7 +136,7 @@ export class ContentService {
     );
 
     const langFilter: Prisma.ContentItemWhereInput = language
-      ? { language: language as any }
+      ? { language: language as Language }
       : {};
 
     // Fetch one of each type, using sortOrder offset by day to rotate
@@ -209,10 +209,10 @@ export class ContentService {
     };
 
     if (type) {
-      where.type = type as any;
+      where.type = type as ContentType;
     }
     if (language) {
-      where.language = language as any;
+      where.language = language as Language;
     }
 
     const skip = (page - 1) * limit;

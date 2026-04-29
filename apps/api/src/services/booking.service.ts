@@ -218,7 +218,7 @@ export class BookingService {
         templePujaOfferingId: data.templePujaOfferingId,
         scheduledDate: scheduledDate,
         scheduledTimeSlot: data.scheduledTimeSlot,
-        devoteeNames: data.devoteeNames as any,
+        devoteeNames: data.devoteeNames as Prisma.InputJsonValue,
         sankalpDetails: data.sankalpDetails ?? null,
         specialInstructions: data.specialInstructions ?? null,
         priceAmount,

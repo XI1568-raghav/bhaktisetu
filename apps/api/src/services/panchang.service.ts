@@ -627,12 +627,15 @@ export class PanchangService {
 
     const dbDateSet = new Set(dbEntries.map((e) => e.date.toISOString().split('T')[0]));
 
-    // Fill gaps with computed data
-    const allEntries = [...dbEntries];
+    // Fill gaps with computed data. allEntries is a union of DB rows
+    // and dynamically-computed objects (which carry an extra `computed: true`
+    // marker). Callers don't distinguish by Prisma metadata, so widen here.
+    type ComputedPanchang = ReturnType<typeof computePanchang>;
+    const allEntries: Array<typeof dbEntries[number] | ComputedPanchang> = [...dbEntries];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0]!;
       if (!dbDateSet.has(dateStr)) {
-        allEntries.push(computePanchang(new Date(d), city ?? 'Delhi') as any);
+        allEntries.push(computePanchang(new Date(d), city ?? 'Delhi'));
       }
     }
 

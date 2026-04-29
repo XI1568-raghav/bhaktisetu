@@ -105,7 +105,8 @@ export class AiService {
     const scriptureContext = formatScriptureContext(relevantVerses);
 
     // 2. Load or create conversation (skip DB if unavailable)
-    let conversation: { id: string; messages: any[]; title: string | null };
+    type StoredMessage = { role: 'user' | 'assistant'; content: string; timestamp?: string };
+    let conversation: { id: string; messages: StoredMessage[]; title: string | null };
     let dbAvailable = true;
 
     try {
@@ -145,7 +146,7 @@ export class AiService {
 
       conversation = {
         id: existing.id,
-        messages: existing.messages as any[],
+        messages: (existing.messages as unknown) as StoredMessage[],
         title: existing.title,
       };
     } else {
@@ -161,9 +162,9 @@ export class AiService {
     }
 
     // 3. Build message history for Claude
-    const historyMessages = conversation.messages.map((m: any) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content as string,
+    const historyMessages = conversation.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
     }));
 
     // Add current message
