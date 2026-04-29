@@ -40,3 +40,15 @@ apps/medusa-store/.cache/
 # Misc
 *.log
 *.tsbuildinfo
+
+# EAS build artifacts (mobile)
+apps/mobile/build-log.txt
+apps/mobile/build.json
+apps/mobile/log*.txt
+apps/mobile/log*.url
+apps/mobile/log_url.txt
+
+# Playwright test outputs (web)
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/pitch-captures/
