@@ -9,6 +9,7 @@ import {
  Send,
  AlertCircle,
  Ticket as TicketIcon,
+ Loader2,
 } from 'lucide-react';
 import {
  SUPPORT_CATEGORIES,
@@ -19,9 +20,12 @@ import {
  type TicketPriority,
  type Ticket,
 } from '../../../../lib/support';
+import { createTicket, newTicketSchema } from '../../../../lib/support-api';
+import { useAuth } from '../../../../lib/auth-context';
 
 export default function NewTicketPage() {
  const router = useRouter();
+ const { session } = useAuth();
  const [category, setCategory] = useState<TicketCategory>('puja');
  const [priority, setPriority] = useState<TicketPriority>('medium');
  const [subject, setSubject] = useState('');
@@ -53,27 +57,43 @@ export default function NewTicketPage() {
  if (f) setAttachmentName(f.name);
  };
 
- const submit = (e: React.FormEvent) => {
+ const submit = async (e: React.FormEvent) => {
  e.preventDefault();
  setError(null);
- if (!subject.trim() || !description.trim()) {
- setError('Subject and description are required.');
+
+ const payload = {
+ subject: subject.trim(),
+ body: description.trim(),
+ category,
+ priority,
+ orderId: orderId.trim() || undefined,
+ attachmentName: attachmentName ?? undefined,
+ };
+ const parsed = newTicketSchema.safeParse(payload);
+ if (!parsed.success) {
+ const first = parsed.error.issues[0];
+ setError(first?.message ?? 'Please check the form fields.');
  return;
  }
- setSubmitting(true);
 
+ setSubmitting(true);
+ try {
+ const created = await createTicket(session?.accessToken, parsed.data);
+ router.push(`/support/tickets/${created.id}`);
+ } catch (err) {
+ // Network/offline fallback: persist locally so the user doesn't lose work.
  const id = formatTicketId();
  const now = new Date().toISOString();
  const ticket: Ticket = {
  id,
- subject: subject.trim(),
- category,
- priority,
+ subject: parsed.data.subject,
+ category: parsed.data.category,
+ priority: parsed.data.priority,
  status: 'open',
  createdAt: now,
  updatedAt: now,
- orderId: orderId.trim() || undefined,
- attachmentName: attachmentName || undefined,
+ orderId: parsed.data.orderId,
+ attachmentName: parsed.data.attachmentName,
  userName: 'You',
  userEmail: 'you@darshya.online',
  messages: [
@@ -81,25 +101,29 @@ export default function NewTicketPage() {
  id: `m-${Date.now()}`,
  author: 'user',
  authorName: 'You',
- body: description.trim(),
+ body: parsed.data.body,
  createdAt: now,
  },
  {
  id: `m-${Date.now() + 1}`,
  author: 'system',
  authorName: 'Darshya Support',
- body: 'Thanks! Expected first response: 4 hours. Ticket assigned to support team.',
+ body: 'Saved offline. Will sync when you are back online.',
  createdAt: now,
  },
  ],
  activity: [
- { id: `act-${Date.now()}`, type: 'created', text: 'Ticket created by user', createdAt: now },
- { id: `act-${Date.now() + 1}`, type: 'assignment', text: 'Auto-assigned to support queue', createdAt: now },
+ { id: `act-${Date.now()}`, type: 'created', text: 'Ticket created (offline)', createdAt: now },
  ],
  };
-
  addUserTicket(ticket);
- setTimeout(() => router.push(`/support/tickets/${id}`), 300);
+ setError(
+ (err instanceof Error ? err.message : 'Could not reach server') +
+ ' — saved locally.',
+ );
+ setSubmitting(false);
+ setTimeout(() => router.push(`/support/tickets/${id}`), 600);
+ }
  };
 
  return (
@@ -172,9 +196,11 @@ export default function NewTicketPage() {
  type="text"
  value={subject}
  onChange={(e) => setSubject(e.target.value)}
- placeholder="Short summary of your issue"
+ placeholder="Short summary of your issue (5-200 characters)"
  className="w-full px-3 py-2.5 rounded-lg border border-surface-200 bg-white focus:border-saffron-500 focus:ring-2 focus:ring-saffron-500/20 outline-none text-sm"
  required
+ minLength={5}
+ maxLength={200}
  />
  </div>
 
@@ -187,9 +213,11 @@ export default function NewTicketPage() {
  value={description}
  onChange={(e) => setDescription(e.target.value)}
  rows={6}
- placeholder="Describe what happened, when, and any steps you've tried."
+ placeholder="Describe what happened, when, and any steps you've tried (20+ characters)."
  className="w-full px-3 py-2.5 rounded-lg border border-surface-200 bg-white focus:border-saffron-500 focus:ring-2 focus:ring-saffron-500/20 outline-none text-sm resize-y"
  required
+ minLength={20}
+ maxLength={5000}
  />
  </div>
 
@@ -240,7 +268,7 @@ export default function NewTicketPage() {
  disabled={submitting}
  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold transition-colors disabled:opacity-60"
  >
- <Send className="w-4 h-4" />
+ {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
  {submitting ? 'Submitting...' : 'Submit ticket'}
  </button>
  </div>

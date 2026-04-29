@@ -1,17 +1,29 @@
 'use client';
 
+import { useState } from 'react';
 import {
  TrendingUp,
  Users,
- Calendar,
  MapPin,
  Download,
  Flame,
  Star,
  BarChart3,
+ Loader2,
 } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
+import {
+  getDashboard,
+  getRevenue,
+  getUsers,
+  rowsToCsv,
+  downloadCsv,
+} from '../../../lib/admin-api';
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+// ── Mock visualisation data ───────────────────────────────────────────────────
+// The charts below remain hard-coded for the reports landing surface; only
+// the export buttons hit live endpoints. Wire-through of charts is a follow-up
+// once `/admin/dashboard` returns the matching time-series shape.
 
 const userGrowth = [
  { month: 'Nov 25', users: 6200 },
@@ -67,11 +79,104 @@ const geographicDistribution = [
 
 const maxStatePct = Math.max(...geographicDistribution.map((g) => g.pct));
 
+type ExportType = 'users' | 'revenue' | 'all';
+
 export default function AdminReportsPage() {
- const handleExport = (type: string) => {
- // Mock export — in production, call API endpoint
- alert(`Export "${type}" report triggered (demo)`);
- };
+  const { session } = useAuth();
+  const token = session?.accessToken;
+
+  const [exportLoading, setExportLoading] = useState<ExportType | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  const handleExport = async (type: ExportType) => {
+    setExportLoading(type);
+    setExportError(null);
+    try {
+      if (type === 'users') {
+        const data = await getUsers(token);
+        const rows = data.users.map((u) => ({
+          id: u.id,
+          fullName: u.fullName,
+          email: u.email ?? '',
+          phone: u.phone,
+          roles: (u.roles ?? []).join('|'),
+          subscriptionTier: u.subscriptionTier ?? '',
+          createdAt: u.createdAt,
+        }));
+        const csv = rowsToCsv(rows, [
+          'id', 'fullName', 'email', 'phone', 'roles', 'subscriptionTier', 'createdAt',
+        ]);
+        downloadCsv(`darshya-users-${today()}.csv`, csv);
+      } else if (type === 'revenue') {
+        const data = await getRevenue(token);
+        const summaryRows = [
+          { metric: 'Total Commissions (paid)', amountInr: data.totalCommissions },
+          { metric: 'Total Subscriptions (active)', amountInr: data.totalSubscriptions },
+          { metric: 'Pending Payouts', amountInr: data.pendingPayouts },
+        ];
+        const commissionRows = data.commissions.map((c) => ({
+          metric: `Commission ${c.id}`,
+          bookingId: c.bookingId,
+          providerId: c.providerId,
+          amountInr: c.amount,
+          status: c.status,
+          createdAt: c.createdAt,
+        }));
+        const csv =
+          rowsToCsv(summaryRows, ['metric', 'amountInr']) +
+          '\n' +
+          rowsToCsv(commissionRows, [
+            'metric', 'bookingId', 'providerId', 'amountInr', 'status', 'createdAt',
+          ]);
+        downloadCsv(`darshya-revenue-${today()}.csv`, csv);
+      } else {
+        const [dash, rev, usersResp] = await Promise.all([
+          getDashboard(token),
+          getRevenue(token),
+          getUsers(token),
+        ]);
+        const dashRows = [
+          { metric: 'Total Users', value: dash.totalUsers },
+          { metric: 'Active Subscriptions', value: dash.activeSubscriptions },
+          { metric: 'Pending Approvals', value: dash.pendingApprovals },
+          { metric: 'Total Revenue', value: dash.totalRevenue },
+          ...Object.entries(dash.usersByRole).map(([role, count]) => ({
+            metric: `Users (${role})`,
+            value: count,
+          })),
+        ];
+        const revRows = [
+          { metric: 'Total Commissions (paid)', value: rev.totalCommissions },
+          { metric: 'Total Subscriptions (active)', value: rev.totalSubscriptions },
+          { metric: 'Pending Payouts', value: rev.pendingPayouts },
+        ];
+        const userRows = usersResp.users.map((u) => ({
+          metric: 'User',
+          id: u.id,
+          fullName: u.fullName,
+          email: u.email ?? '',
+          phone: u.phone,
+          roles: (u.roles ?? []).join('|'),
+          createdAt: u.createdAt,
+        }));
+        const csv =
+          rowsToCsv(dashRows, ['metric', 'value']) +
+          '\n' +
+          rowsToCsv(revRows, ['metric', 'value']) +
+          '\n' +
+          rowsToCsv(userRows, [
+            'metric', 'id', 'fullName', 'email', 'phone', 'roles', 'createdAt',
+          ]);
+        downloadCsv(`darshya-platform-${today()}.csv`, csv);
+      }
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExportLoading(null);
+    }
+  };
 
  return (
  <div className="space-y-6">
@@ -84,24 +189,33 @@ export default function AdminReportsPage() {
  <div className="flex gap-2">
  <button
  onClick={() => handleExport('users')}
- className="inline-flex items-center gap-1.5 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] text-xs font-medium text-surface-700 rounded-lg hover:bg-surface-50 transition-colors"
+ disabled={exportLoading !== null}
+ className="inline-flex items-center gap-1.5 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] text-xs font-medium text-surface-700 rounded-lg hover:bg-surface-50 transition-colors disabled:opacity-60"
  >
- <Download className="w-3.5 h-3.5" /> Export Users
+ {exportLoading === 'users' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Export Users
  </button>
  <button
  onClick={() => handleExport('revenue')}
- className="inline-flex items-center gap-1.5 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] text-xs font-medium text-surface-700 rounded-lg hover:bg-surface-50 transition-colors"
+ disabled={exportLoading !== null}
+ className="inline-flex items-center gap-1.5 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] text-xs font-medium text-surface-700 rounded-lg hover:bg-surface-50 transition-colors disabled:opacity-60"
  >
- <Download className="w-3.5 h-3.5" /> Export Revenue
+ {exportLoading === 'revenue' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Export Revenue
  </button>
  <button
- onClick={() => handleExport('bookings')}
- className="inline-flex items-center gap-1.5 px-3 py-2 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ onClick={() => handleExport('all')}
+ disabled={exportLoading !== null}
+ className="inline-flex items-center gap-1.5 px-3 py-2 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-60"
  >
- <Download className="w-3.5 h-3.5" /> Export All
+ {exportLoading === 'all' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Export All
  </button>
  </div>
  </div>
+
+ {exportError && (
+   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+     {exportError}
+   </div>
+ )}
 
  {/* User growth chart */}
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">

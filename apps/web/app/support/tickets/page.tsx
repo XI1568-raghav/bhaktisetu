@@ -7,16 +7,20 @@ import {
  Ticket as TicketIcon,
  Inbox,
  ArrowRight,
+ Loader2,
+ AlertCircle,
 } from 'lucide-react';
 import {
- loadUserTickets,
  SUPPORT_CATEGORIES,
  STATUSES,
  CATEGORY_MAP,
+ loadUserTickets,
  type Ticket,
  type TicketStatus,
  type TicketCategory,
 } from '../../../lib/support';
+import { listTickets } from '../../../lib/support-api';
+import { useAuth } from '../../../lib/auth-context';
 import {
  StatusBadge,
  PriorityBadge,
@@ -24,15 +28,33 @@ import {
 } from '../../../components/support/badges';
 
 export default function MyTicketsPage() {
+ const { session } = useAuth();
  const [tickets, setTickets] = useState<Ticket[]>([]);
- const [loaded, setLoaded] = useState(false);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
  const [categoryFilter, setCategoryFilter] = useState<TicketCategory | 'all'>('all');
 
  useEffect(() => {
+ let cancelled = false;
+ (async () => {
+ try {
+ const data = await listTickets(session?.accessToken);
+ if (!cancelled) setTickets(data);
+ } catch (err) {
+ // Fall back to localStorage so offline / demo flows still render.
+ if (!cancelled) {
  setTickets(loadUserTickets());
- setLoaded(true);
- }, []);
+ setError(err instanceof Error ? err.message : 'Failed to load tickets');
+ }
+ } finally {
+ if (!cancelled) setLoading(false);
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, [session?.accessToken]);
 
  const filtered = useMemo(() => {
  return tickets.filter((t) => {
@@ -60,6 +82,16 @@ export default function MyTicketsPage() {
  New ticket
  </Link>
  </div>
+
+ {error && (
+ <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+ <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+ <span>
+ Showing locally cached tickets — couldn&apos;t reach the support
+ server ({error}).
+ </span>
+ </div>
+ )}
 
  {/* Filters */}
  <div className="bg-white rounded-xl border border-surface-200 p-4 mb-5 flex flex-wrap items-center gap-3">
@@ -103,8 +135,10 @@ export default function MyTicketsPage() {
  </div>
 
  {/* List */}
- {!loaded ? (
- <div className="text-sm text-surface-500 p-8">Loading...</div>
+ {loading ? (
+ <div className="flex items-center gap-2 text-sm text-surface-500 p-8">
+ <Loader2 className="w-4 h-4 animate-spin" /> Loading tickets…
+ </div>
  ) : filtered.length === 0 ? (
  <EmptyState hasAny={tickets.length > 0} />
  ) : (
@@ -131,7 +165,7 @@ export default function MyTicketsPage() {
  </td>
  <td className="px-4 py-3.5 hidden md:table-cell">
  <span className="text-xs text-surface-600">
- {CATEGORY_MAP[t.category].emoji} {CATEGORY_MAP[t.category].name}
+ {CATEGORY_MAP[t.category]?.emoji} {CATEGORY_MAP[t.category]?.name ?? t.category}
  </span>
  </td>
  <td className="px-4 py-3.5">

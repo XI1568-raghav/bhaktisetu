@@ -1,6 +1,9 @@
 import { FastifyInstance } from 'fastify';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { generateText, DEMO_MODE } from '../integrations/claude.js';
+import { prisma } from '../lib/prisma.js';
+import { authenticateUser } from '../middlewares/auth.js';
 
 const chatSchema = z.object({
   message: z.string().min(1).max(2000),
@@ -377,5 +380,167 @@ export async function supportRoutes(server: FastifyInstance) {
         source: 'fallback',
       });
     }
+  });
+
+  // ─── Support tickets (CRUD) ──────────────────────────────────────────────
+
+  const createTicketSchema = z.object({
+    subject: z.string().min(3).max(200),
+    body: z.string().min(1).max(10000),
+    category: z.enum(['BOOKING', 'PAYMENT', 'ACCOUNT', 'TECHNICAL', 'OTHER']).default('OTHER'),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+  });
+
+  const ticketIdParams = z.object({ id: z.string().uuid() });
+
+  const ticketMessageSchema = z.object({
+    body: z.string().min(1).max(10000),
+    isInternal: z.boolean().optional().default(false),
+  });
+
+  const updateTicketSchema = z.object({
+    status: z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']).optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+    assignedToId: z.string().uuid().nullable().optional(),
+  });
+
+  function nextTicketNumber(): string {
+    const d = new Date();
+    const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+    const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
+    return `ST-${ymd}-${rand}`;
+  }
+
+  function isAdmin(req: any) {
+    return Array.isArray(req.currentUser?.roles) && req.currentUser.roles.includes('ADMIN');
+  }
+
+  // POST /tickets — create a new support ticket
+  server.post('/tickets', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const parsed = createTicketSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: parsed.error.flatten() });
+    }
+    const userId = request.currentUser!.id;
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        ticketNumber: nextTicketNumber(),
+        userId,
+        subject: parsed.data.subject,
+        body: parsed.data.body,
+        category: parsed.data.category,
+        priority: parsed.data.priority,
+      },
+    });
+    return reply.code(201).send({ data: ticket });
+  });
+
+  // GET /tickets — list tickets (own; admin can pass ?all=true to see everyone's)
+  server.get('/tickets', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { all } = request.query as { all?: string };
+    const userId = request.currentUser!.id;
+    const wantsAll = all === 'true';
+    if (wantsAll && !isAdmin(request)) {
+      return reply.code(403).send({ error: 'Admin role required to list all tickets' });
+    }
+    const where = wantsAll ? {} : { userId };
+    const tickets = await prisma.supportTicket.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    return reply.send({ data: tickets });
+  });
+
+  // GET /tickets/:id — owner or admin
+  server.get('/tickets/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const params = ticketIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid ticket id' });
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: params.data.id },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
+    const userId = request.currentUser!.id;
+    if (ticket.userId !== userId && !isAdmin(request)) {
+      return reply.code(403).send({ error: 'Not authorized to view this ticket' });
+    }
+    // Hide internal notes from non-admin owners
+    const messages = isAdmin(request)
+      ? ticket.messages
+      : ticket.messages.filter((m) => !m.isInternal);
+    return reply.send({ data: { ...ticket, messages } });
+  });
+
+  // POST /tickets/:id/messages — owner or admin appends message
+  server.post(
+    '/tickets/:id/messages',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = ticketIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid ticket id' });
+      const body = ticketMessageSchema.safeParse(request.body ?? {});
+      if (!body.success) {
+        return reply.code(400).send({ error: 'Invalid request body', details: body.error.flatten() });
+      }
+      const ticket = await prisma.supportTicket.findUnique({ where: { id: params.data.id } });
+      if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
+
+      const userId = request.currentUser!.id;
+      const admin = isAdmin(request);
+      if (ticket.userId !== userId && !admin) {
+        return reply.code(403).send({ error: 'Not authorized to post to this ticket' });
+      }
+      // Internal notes can only be posted by admins.
+      const isInternal = body.data.isInternal && admin;
+
+      const message = await prisma.supportTicketMessage.create({
+        data: {
+          ticketId: ticket.id,
+          authorId: userId,
+          body: body.data.body,
+          isInternal,
+        },
+      });
+      // Auto-bump ticket to IN_PROGRESS when admin replies on an open ticket.
+      if (admin && ticket.status === 'OPEN') {
+        await prisma.supportTicket.update({
+          where: { id: ticket.id },
+          data: { status: 'IN_PROGRESS' },
+        });
+      }
+      return reply.code(201).send({ data: message });
+    }
+  );
+
+  // PATCH /tickets/:id — admin-only update of status / assignedTo / priority
+  server.patch('/tickets/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) {
+      return reply.code(403).send({ error: 'Admin role required' });
+    }
+    const params = ticketIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid ticket id' });
+    const body = updateTicketSchema.safeParse(request.body ?? {});
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: body.error.flatten() });
+    }
+    const ticket = await prisma.supportTicket.findUnique({ where: { id: params.data.id } });
+    if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
+
+    const data: Record<string, unknown> = {};
+    if (body.data.status !== undefined) {
+      data.status = body.data.status;
+      if (body.data.status === 'RESOLVED' || body.data.status === 'CLOSED') {
+        data.resolvedAt = new Date();
+      }
+    }
+    if (body.data.priority !== undefined) data.priority = body.data.priority;
+    if (body.data.assignedToId !== undefined) data.assignedToId = body.data.assignedToId;
+
+    const updated = await prisma.supportTicket.update({
+      where: { id: ticket.id },
+      data,
+    });
+    return reply.send({ data: updated });
   });
 }

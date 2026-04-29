@@ -1,61 +1,39 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
  Search,
- Filter,
  ChevronLeft,
  ChevronRight,
  Eye,
  UserCheck,
  Ban,
  Trash2,
- MoreVertical,
+ Loader2,
 } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
+import {
+  getUsers,
+  patchUser,
+  backendToUiRole,
+  type BackendUser,
+  type UiRole,
+} from '../../../lib/admin-api';
 
-// ── Mock Users ────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type UserStatus = 'active' | 'pending' | 'blocked';
-type UserRole = 'devotee' | 'priest' | 'store_owner' | 'astrologer' | 'wellness_instructor' | 'gaushala_manager' | 'temple_manager';
 
-interface MockUser {
+interface AdminUserRow {
  id: string;
  name: string;
  email: string;
- role: UserRole;
+ role: UiRole;
  status: UserStatus;
  joinedDate: string;
  phone: string;
 }
-
-const mockUsers: MockUser[] = [
- { id: 'u001', name: 'Arjun Sharma', email: 'arjun.sharma@gmail.com', role: 'devotee', status: 'active', joinedDate: '2025-11-12', phone: '+919876543210' },
- { id: 'u002', name: 'Pandit Ramesh Sharma', email: 'ramesh.sharma@gmail.com', role: 'priest', status: 'active', joinedDate: '2025-10-05', phone: '+919876543211' },
- { id: 'u003', name: 'Vikram Patel', email: 'vikram.patel@gmail.com', role: 'store_owner', status: 'active', joinedDate: '2025-09-20', phone: '+919876543212' },
- { id: 'u004', name: 'Jyotishi Suresh Kumar', email: 'suresh.k@gmail.com', role: 'astrologer', status: 'pending', joinedDate: '2026-04-10', phone: '+919876543213' },
- { id: 'u005', name: 'Ananya Devi', email: 'ananya.devi@gmail.com', role: 'wellness_instructor', status: 'active', joinedDate: '2025-12-01', phone: '+919876543214' },
- { id: 'u006', name: 'Govind Prasad', email: 'govind.prasad@gmail.com', role: 'gaushala_manager', status: 'pending', joinedDate: '2026-03-22', phone: '+919876543215' },
- { id: 'u007', name: 'Swami Dayananda', email: 'swami.d@gmail.com', role: 'temple_manager', status: 'active', joinedDate: '2025-08-15', phone: '+919876543216' },
- { id: 'u008', name: 'Priya Kumari', email: 'priya.kumari@gmail.com', role: 'devotee', status: 'active', joinedDate: '2026-01-15', phone: '+919876543217' },
- { id: 'u009', name: 'Ravi Tiwari', email: 'ravi.tiwari@gmail.com', role: 'priest', status: 'pending', joinedDate: '2026-04-14', phone: '+919876543218' },
- { id: 'u010', name: 'Arun Mehta', email: 'arun.mehta@gmail.com', role: 'store_owner', status: 'pending', joinedDate: '2026-04-13', phone: '+919876543219' },
- { id: 'u011', name: 'Deepa Nair', email: 'deepa.nair@gmail.com', role: 'devotee', status: 'active', joinedDate: '2026-02-20', phone: '+919876543220' },
- { id: 'u012', name: 'Rakesh Tiwari', email: 'rakesh.t@gmail.com', role: 'astrologer', status: 'active', joinedDate: '2025-07-11', phone: '+919876543221' },
- { id: 'u013', name: 'Sneha Desai', email: 'sneha.desai@gmail.com', role: 'wellness_instructor', status: 'active', joinedDate: '2025-11-30', phone: '+919876543222' },
- { id: 'u014', name: 'Govind Yadav', email: 'govind.y@gmail.com', role: 'gaushala_manager', status: 'active', joinedDate: '2025-06-14', phone: '+919876543223' },
- { id: 'u015', name: 'Meera Joshi', email: 'meera.j@gmail.com', role: 'devotee', status: 'blocked', joinedDate: '2025-05-20', phone: '+919876543224' },
- { id: 'u016', name: 'Rajesh Pandey', email: 'rajesh.p@gmail.com', role: 'temple_manager', status: 'pending', joinedDate: '2026-04-11', phone: '+919876543225' },
- { id: 'u017', name: 'Kavita Singh', email: 'kavita.s@gmail.com', role: 'devotee', status: 'active', joinedDate: '2026-03-05', phone: '+919876543226' },
- { id: 'u018', name: 'Pandit Hari Om Mishra', email: 'hariom.m@gmail.com', role: 'priest', status: 'active', joinedDate: '2025-04-18', phone: '+919876543227' },
- { id: 'u019', name: 'Nisha Gupta', email: 'nisha.gupta@gmail.com', role: 'devotee', status: 'active', joinedDate: '2026-04-01', phone: '+919876543228' },
- { id: 'u020', name: 'Amit Verma', email: 'amit.verma@gmail.com', role: 'store_owner', status: 'active', joinedDate: '2025-10-10', phone: '+919876543229' },
- { id: 'u021', name: 'Sita Rani Devi', email: 'sita.rani@gmail.com', role: 'devotee', status: 'active', joinedDate: '2026-04-08', phone: '+919876543230' },
- { id: 'u022', name: 'Karan Malhotra', email: 'karan.m@gmail.com', role: 'astrologer', status: 'pending', joinedDate: '2026-04-15', phone: '+919876543231' },
- { id: 'u023', name: 'Pooja Rawat', email: 'pooja.rawat@gmail.com', role: 'wellness_instructor', status: 'pending', joinedDate: '2026-04-12', phone: '+919876543232' },
- { id: 'u024', name: 'Dinesh Chaudhary', email: 'dinesh.c@gmail.com', role: 'gaushala_manager', status: 'active', joinedDate: '2025-09-01', phone: '+919876543233' },
- { id: 'u025', name: 'Lakshmi Iyer', email: 'lakshmi.i@gmail.com', role: 'temple_manager', status: 'active', joinedDate: '2025-07-22', phone: '+919876543234' },
-];
 
 const roleLabels: Record<string, string> = {
  devotee: 'Devotee',
@@ -65,6 +43,7 @@ const roleLabels: Record<string, string> = {
  wellness_instructor: 'Wellness',
  gaushala_manager: 'Gaushala',
  temple_manager: 'Temple Mgr',
+ admin: 'Admin',
 };
 
 const roleBadgeColors: Record<string, string> = {
@@ -75,6 +54,7 @@ const roleBadgeColors: Record<string, string> = {
  wellness_instructor: 'bg-teal-50 text-teal-700',
  gaushala_manager: 'bg-amber-50 text-amber-700',
  temple_manager: 'bg-red-50 text-red-700',
+ admin: 'bg-surface-200 text-surface-700',
 };
 
 const statusBadge: Record<string, string> = {
@@ -85,15 +65,64 @@ const statusBadge: Record<string, string> = {
 
 const PAGE_SIZE = 10;
 
+// Maps the backend's free-form status string + role array to the UI's
+// active/pending/blocked tri-state. Backend sometimes omits status (recent
+// rows) — default to active so admins still see the user.
+function mapStatus(raw: BackendUser): UserStatus {
+  const s = (raw.status ?? '').toLowerCase();
+  if (s === 'blocked' || s === 'banned' || s === 'suspended') return 'blocked';
+  if (s === 'pending' || s === 'pending_approval' || s === 'awaiting_approval') return 'pending';
+  return 'active';
+}
+
+function mapUser(raw: BackendUser): AdminUserRow {
+  const primary = (raw.roles?.[0] ?? 'DEVOTEE') as keyof typeof backendToUiRole;
+  const uiRole = backendToUiRole[primary] ?? 'devotee';
+  return {
+    id: raw.id,
+    name: raw.fullName,
+    email: raw.email ?? '',
+    role: uiRole,
+    status: mapStatus(raw),
+    joinedDate: raw.createdAt,
+    phone: raw.phone,
+  };
+}
+
 export default function AdminUsersPage() {
- const [users, setUsers] = useState(mockUsers);
+ const { session } = useAuth();
+ const token = session?.accessToken;
+
+ const [users, setUsers] = useState<AdminUserRow[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
  const [search, setSearch] = useState('');
  const [roleFilter, setRoleFilter] = useState<string>('all');
  const [statusFilter, setStatusFilter] = useState<string>('all');
  const [page, setPage] = useState(1);
- const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+ useEffect(() => {
+   if (!token) return;
+   let cancelled = false;
+   (async () => {
+     setLoading(true);
+     setError(null);
+     try {
+       const data = await getUsers(token);
+       if (cancelled) return;
+       setUsers(data.users.map(mapUser));
+     } catch (err) {
+       if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load users');
+     } finally {
+       if (!cancelled) setLoading(false);
+     }
+   })();
+   return () => {
+     cancelled = true;
+   };
+ }, [token]);
 
  const filtered = useMemo(() => {
  return users.filter((u) => {
@@ -108,30 +137,52 @@ export default function AdminUsersPage() {
  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
  const handleApprove = async (userId: string) => {
- setActionLoading(userId + '-approve');
- await new Promise((r) => setTimeout(r, 600));
- setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, status: 'active' as UserStatus } : u));
- setActionLoading(null);
+   setActionLoading(userId + '-approve');
+   setError(null);
+   try {
+     await patchUser(token, userId, { approved: true });
+     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: 'active' as UserStatus } : u)));
+   } catch (err) {
+     setError(err instanceof Error ? err.message : 'Approve failed');
+   } finally {
+     setActionLoading(null);
+   }
  };
 
  const handleToggleBlock = async (userId: string, currentStatus: UserStatus) => {
- setActionLoading(userId + '-block');
- await new Promise((r) => setTimeout(r, 600));
- setUsers((prev) => prev.map((u) =>
- u.id === userId
- ? { ...u, status: (currentStatus === 'blocked' ? 'active' : 'blocked') as UserStatus }
- : u
- ));
- setActionLoading(null);
+   setActionLoading(userId + '-block');
+   setError(null);
+   const nextBlocked = currentStatus !== 'blocked';
+   try {
+     await patchUser(token, userId, { blocked: nextBlocked });
+     setUsers((prev) =>
+       prev.map((u) =>
+         u.id === userId
+           ? { ...u, status: (nextBlocked ? 'blocked' : 'active') as UserStatus }
+           : u,
+       ),
+     );
+   } catch (err) {
+     setError(err instanceof Error ? err.message : 'Action failed');
+   } finally {
+     setActionLoading(null);
+   }
  };
 
  const handleDelete = async (userId: string) => {
- setDeleteConfirm(null);
- setActionMenuOpen(null);
- setActionLoading(userId + '-delete');
- await new Promise((r) => setTimeout(r, 400));
- setUsers((prev) => prev.filter((u) => u.id !== userId));
- setActionLoading(null);
+   setDeleteConfirm(null);
+   setActionLoading(userId + '-delete');
+   setError(null);
+   // Soft-delete via block — there is no production-ready destructive
+   // delete endpoint yet, so we mark blocked and remove from the local view.
+   try {
+     await patchUser(token, userId, { blocked: true });
+     setUsers((prev) => prev.filter((u) => u.id !== userId));
+   } catch (err) {
+     setError(err instanceof Error ? err.message : 'Delete failed');
+   } finally {
+     setActionLoading(null);
+   }
  };
 
  return (
@@ -141,6 +192,12 @@ export default function AdminUsersPage() {
  <h1 className="text-lg font-semibold text-surface-800">User Management</h1>
  <p className="text-sm text-surface-500 mt-0.5">Manage all platform users across roles</p>
  </div>
+
+ {error && (
+   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+     {error}
+   </div>
+ )}
 
  {/* Filters */}
  <div className="flex flex-col sm:flex-row gap-3">
@@ -182,6 +239,13 @@ export default function AdminUsersPage() {
 
  {/* Table */}
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
+ {loading ? (
+   <div className="p-12 text-center">
+     <Loader2 className="w-6 h-6 text-surface-400 mx-auto mb-3 animate-spin" />
+     <p className="text-sm text-surface-500">Loading users…</p>
+   </div>
+ ) : (
+ <>
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
  <thead>
@@ -270,7 +334,7 @@ export default function AdminUsersPage() {
  {deleteConfirm === user.id && (
  <div className="absolute right-5 top-full mt-1 z-20 bg-white border border-surface-200 rounded-lg shadow-lg p-4 w-64 text-left">
  <p className="text-sm text-surface-800 font-medium mb-2">Delete this user?</p>
- <p className="text-xs text-surface-500 mb-3">This action cannot be undone. The user "{user.name}" will be permanently removed.</p>
+ <p className="text-xs text-surface-500 mb-3">This will block and hide &quot;{user.name}&quot;. The account is not destroyed and can be restored by support.</p>
  <div className="flex gap-2">
  <button
  onClick={() => setDeleteConfirm(null)}
@@ -298,7 +362,7 @@ export default function AdminUsersPage() {
  {/* Pagination */}
  <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border)]">
  <span className="text-xs text-surface-500">
- Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} users
+ Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} users
  </span>
  <div className="flex items-center gap-1">
  <button
@@ -330,6 +394,8 @@ export default function AdminUsersPage() {
  </button>
  </div>
  </div>
+ </>
+ )}
  </div>
  </div>
  );

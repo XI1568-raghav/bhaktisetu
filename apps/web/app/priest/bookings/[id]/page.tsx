@@ -49,39 +49,6 @@ interface BookingDetail {
  user: { fullName: string; phone: string };
 }
 
-// ─── Fallback ───────────────────────────────────────────────────
-
-const fallbackBooking: BookingDetail = {
- id: '1',
- bookingNumber: 'BS-20260416-34521',
- status: 'completed',
- scheduledDate: '2026-04-16',
- scheduledTimeSlot: '09:00',
- priceAmount: 1151,
- priestPayout: 805,
- platformCommission: 346,
- currency: 'INR',
- devoteeNames: [
- { name: 'Rajesh Kumar', gotra: 'Bharadvaja', nakshatra: 'Rohini' },
- { name: 'Sunita Kumar', gotra: 'Bharadvaja', nakshatra: 'Pushya' },
- ],
- sankalpDetails: 'For the well-being and prosperity of the Kumar family. May Lord Shiva bless the family with health, wealth, and happiness.',
- specialInstructions: 'Please include special abhishek with Ganga water and bilvapatra.',
- videoProofUrl: null,
- videoUploadedAt: null,
- rating: null,
- reviewText: null,
- createdAt: '2026-04-14T10:30:00Z',
- temple: { id: '1', name: 'Shri Kashi Vishwanath Temple', city: 'Varanasi', state: 'Uttar Pradesh' },
- pujaType: {
- id: '1',
- name: 'Rudrabhishek Puja',
- durationMinutes: 120,
- description: 'Sacred Rudrabhishek performed with Vedic mantras to invoke Lord Shiva\'s blessings.',
- },
- user: { fullName: 'Rajesh Kumar', phone: '+91 98765 43210' },
-};
-
 // ─── Helpers ────────────────────────────────────────────────────
 
 function formatCurrency(amount: number): string {
@@ -122,58 +89,68 @@ export default function PriestBookingDetailPage() {
 
  const [booking, setBooking] = useState<BookingDetail | null>(null);
  const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
  const [actionLoading, setActionLoading] = useState(false);
+ const [actionError, setActionError] = useState<string | null>(null);
  const [videoUrl, setVideoUrl] = useState('');
  const [videoSubmitted, setVideoSubmitted] = useState(false);
 
- useEffect(() => {
  async function fetchBooking() {
+ setError(null);
  try {
  const res = await fetch(`${API_BASE_URL}/priest/bookings`, {
- headers: { Authorization: `Bearer ${session?.accessToken}` },
+ headers: { Authorization: `Bearer ${session?.accessToken ?? ''}` },
  });
- if (res.ok) {
+ if (!res.ok) {
+ const body = await res.text().catch(() => '');
+ throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+ }
  const data = await res.json();
  const found = (data.bookings || []).find((b: any) => b.id === bookingId);
- if (found) {
+ if (!found) {
+ throw new Error('Booking not found');
+ }
  setBooking(found);
- } else {
- throw new Error('Not found');
- }
- } else {
- throw new Error('API unavailable');
- }
- } catch {
- setBooking(fallbackBooking);
+ } catch (e) {
+ const msg = e instanceof Error ? e.message : 'Network error';
+ setError(msg);
+ setBooking(null);
  } finally {
  setLoading(false);
  }
  }
+
+ useEffect(() => {
+ if (session?.accessToken) {
  fetchBooking();
+ } else {
+ setLoading(false);
+ }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [session, bookingId]);
 
  async function handleAction(action: string) {
  if (!booking) return;
  setActionLoading(true);
+ setActionError(null);
  try {
  const endpoint = `${API_BASE_URL}/priest/bookings/${booking.id}/${action}`;
  const res = await fetch(endpoint, {
  method: 'PATCH',
  headers: {
- Authorization: `Bearer ${session?.accessToken}`,
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
  'Content-Type': 'application/json',
  },
  });
- if (res.ok) {
- const statusMap: Record<string, string> = {
- accept: 'priest_assigned',
- start: 'in_progress',
- complete: 'completed',
- };
- setBooking((prev) => prev ? { ...prev, status: statusMap[action] ?? prev.status } : null);
+ if (!res.ok) {
+ const body = await res.text().catch(() => '');
+ throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
  }
- } catch {
- // Silent fail for MVP
+ // Re-fetch to get server-truth state instead of guessing.
+ await fetchBooking();
+ } catch (e) {
+ const msg = e instanceof Error ? e.message : 'Network error';
+ setActionError(msg);
  } finally {
  setActionLoading(false);
  }
@@ -182,23 +159,25 @@ export default function PriestBookingDetailPage() {
  async function handleVideoUpload() {
  if (!booking || !videoUrl.trim()) return;
  setActionLoading(true);
+ setActionError(null);
  try {
  const res = await fetch(`${API_BASE_URL}/priest/bookings/${booking.id}/video`, {
  method: 'POST',
  headers: {
- Authorization: `Bearer ${session?.accessToken}`,
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
  'Content-Type': 'application/json',
  },
  body: JSON.stringify({ videoUrl: videoUrl.trim() }),
  });
- if (res.ok) {
- setBooking((prev) =>
- prev ? { ...prev, status: 'video_uploaded', videoProofUrl: videoUrl.trim() } : null
- );
- setVideoSubmitted(true);
+ if (!res.ok) {
+ const body = await res.text().catch(() => '');
+ throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
  }
- } catch {
- // Silent fail
+ setVideoSubmitted(true);
+ await fetchBooking();
+ } catch (e) {
+ const msg = e instanceof Error ? e.message : 'Network error';
+ setActionError(msg);
  } finally {
  setActionLoading(false);
  }
@@ -214,11 +193,23 @@ export default function PriestBookingDetailPage() {
 
  if (!booking) {
  return (
+ <div className="space-y-4 max-w-4xl">
+ <Link
+ href="/priest/bookings"
+ className="inline-flex items-center gap-2 text-sm text-surface-500 hover:text-saffron-600 transition-colors"
+ >
+ <ArrowLeft className="w-4 h-4" />
+ Back to Bookings
+ </Link>
+ {error ? (
+ <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+ Could not load booking: {error}
+ </div>
+ ) : (
  <div className="text-center py-20">
  <p className="text-surface-500">Booking not found</p>
- <Link href="/priest/bookings" className="text-saffron-600 mt-2 inline-block">
- Back to bookings
- </Link>
+ </div>
+ )}
  </div>
  );
  }
@@ -235,6 +226,12 @@ export default function PriestBookingDetailPage() {
  <ArrowLeft className="w-4 h-4" />
  Back to Bookings
  </Link>
+
+ {actionError && (
+ <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+ Action failed: {actionError}
+ </div>
+ )}
 
  {/* Header */}
  <div className="bg-white rounded-xl border border-surface-100 p-6">

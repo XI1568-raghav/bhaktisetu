@@ -29,7 +29,8 @@
     "posthog-js": "^1.369.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.4"
+    "tailwindcss": "^4.1.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.13.16",

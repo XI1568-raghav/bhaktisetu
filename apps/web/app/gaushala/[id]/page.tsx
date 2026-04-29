@@ -540,10 +540,13 @@ export default async function CowDetailPage({
  </button>
  ))}
  </div>
- <button className="w-full mt-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md shadow-emerald-500/20 btn-press flex items-center justify-center gap-2">
+ <Link
+ href={`/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}`}
+ className="w-full mt-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md shadow-emerald-500/20 btn-press flex items-center justify-center gap-2"
+ >
  <Heart className="w-5 h-5" />
- Adopt {cow.name}
- </button>
+ Donate to {cow.gaushalaName}
+ </Link>
  </div>
  )}
  </div>
@@ -630,10 +633,13 @@ export default async function CowDetailPage({
  </div>
  ))}
  </div>
- <button className="w-full py-3 bg-white text-emerald-700 font-bold rounded-xl hover:bg-emerald-50 transition-all btn-press flex items-center justify-center gap-2">
+ <Link
+ href={`/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}`}
+ className="w-full py-3 bg-white text-emerald-700 font-bold rounded-xl hover:bg-emerald-50 transition-all btn-press flex items-center justify-center gap-2"
+ >
  <Heart className="w-5 h-5" />
- Adopt Now
- </button>
+ Donate Now
+ </Link>
  <p className="text-emerald-200 text-[11px] text-center mt-3">
  Starting from just Rs 51/day
  </p>
