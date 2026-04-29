@@ -83,8 +83,7 @@ Superpowers: Brainstorm → Plan → TDD → Execute → Review → Verify.
 
 | File | When to read |
 |---|---|
-| `docs/session-handoff.md` | **Read first.** Live handoff from the most recent session: what shipped, what's deferred, env vars to set, smoke results. Delete the file once §6 (deferred work) is empty. |
-| `docs/launch-state.md` | Current launch progress, recent files, open items user must provide |
+| `docs/launch-state.md` | **Read first.** Current launch progress, recent files, open items user must provide |
 | `docs/auth-model.md` | Token formats, demo accounts, middleware ordering |
 | `docs/env-vars.md` | Every env var + behavior when absent |
 | `docs/glossary.md` | Domain terms (darshan, puja, sankalp, 80G, etc.) |
