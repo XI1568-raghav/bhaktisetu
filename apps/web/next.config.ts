@@ -11,6 +11,13 @@ if (process.env.NODE_ENV === 'development') {
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@poojly/ui', '@poojly/shared', '@poojly/analytics'],
+  typescript: {
+    // pnpm hoists @types/react@18 (mobile) alongside @types/react@19 (web),
+    // and Next 15's webpack-side typechecker resolves to 18 for some files
+    // (Suspense / SuspenseProps shape diff). Real type-check still gates CI
+    // via `turbo type-check` running on the per-app tsconfigs.
+    ignoreBuildErrors: true,
+  },
   images: {
     // Cloudflare Pages doesn't support Next's default image optimizer without a custom loader.
     unoptimized: true,
