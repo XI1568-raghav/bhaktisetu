@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { BookingStatus } from '@prisma/client';
 import { bookingService } from '../services/booking.service.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
@@ -106,7 +107,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         };
 
         const result = await bookingService.getUserBookings(userId, {
-          status: status as any,
+          status: status as BookingStatus | undefined,
           dateFrom,
           dateTo,
           page: Number(page) || 1,
