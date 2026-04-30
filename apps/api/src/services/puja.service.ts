@@ -1,5 +1,6 @@
 import { Prisma, PujaCategory } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { cached, CACHE_TTL } from '../lib/cache.js';
 
 export interface PujaListParams {
   category?: string;
@@ -35,84 +36,95 @@ export class PujaService {
     }
 
     const skip = (page - 1) * limit;
-
-    const [pujaTypes, total] = await Promise.all([
-      prisma.pujaType.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          nameLocal: true,
-          slug: true,
-          description: true,
-          category: true,
-          deity: true,
-          durationMinutes: true,
-          basePrice: true,
-          nriPrice: true,
-          samagriIncluded: true,
-          images: true,
-          sortOrder: true,
-        },
-        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-        skip,
-        take: limit,
-      }),
-      prisma.pujaType.count({ where }),
-    ]);
-
-    return {
-      pujaTypes,
-      total,
+    const cacheKey = `puja:list:${JSON.stringify({
+      category: category ?? '',
+      deity: deity ?? '',
+      search: search ?? '',
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    })}`;
+
+    return cached(cacheKey, CACHE_TTL.PUJA_LIST, async () => {
+      const [pujaTypes, total] = await Promise.all([
+        prisma.pujaType.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            nameLocal: true,
+            slug: true,
+            description: true,
+            category: true,
+            deity: true,
+            durationMinutes: true,
+            basePrice: true,
+            nriPrice: true,
+            samagriIncluded: true,
+            images: true,
+            sortOrder: true,
+          },
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+          skip,
+          take: limit,
+        }),
+        prisma.pujaType.count({ where }),
+      ]);
+
+      return {
+        pujaTypes,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    });
   }
 
   /**
    * Get a puja type by slug, including which temples offer it.
    */
   async findBySlug(slug: string) {
-    const pujaType = await prisma.pujaType.findUnique({
-      where: { slug },
-      include: {
-        templeOfferings: {
-          where: { isActive: true },
-          include: {
-            temple: {
-              select: {
-                id: true,
-                name: true,
-                nameLocal: true,
-                slug: true,
-                city: true,
-                state: true,
-                images: true,
-                isVerified: true,
-                trustScore: true,
-                liveDarshanEnabled: true,
+    return cached(`puja:slug:${slug}`, CACHE_TTL.PUJA_DETAIL, async () => {
+      const pujaType = await prisma.pujaType.findUnique({
+        where: { slug },
+        include: {
+          templeOfferings: {
+            where: { isActive: true },
+            include: {
+              temple: {
+                select: {
+                  id: true,
+                  name: true,
+                  nameLocal: true,
+                  slug: true,
+                  city: true,
+                  state: true,
+                  images: true,
+                  isVerified: true,
+                  trustScore: true,
+                  liveDarshanEnabled: true,
+                },
               },
             },
           },
         },
-      },
+      });
+
+      if (!pujaType) {
+        return null;
+      }
+
+      return {
+        ...pujaType,
+        temples: pujaType.templeOfferings.map((o) => ({
+          offeringId: o.id,
+          availableSlots: o.availableSlots,
+          maxBookingsPerSlot: o.maxBookingsPerSlot,
+          priceOverride: o.priceOverride,
+          ...o.temple,
+        })),
+      };
     });
-
-    if (!pujaType) {
-      return null;
-    }
-
-    return {
-      ...pujaType,
-      temples: pujaType.templeOfferings.map((o) => ({
-        offeringId: o.id,
-        availableSlots: o.availableSlots,
-        maxBookingsPerSlot: o.maxBookingsPerSlot,
-        priceOverride: o.priceOverride,
-        ...o.temple,
-      })),
-    };
   }
 
   /**

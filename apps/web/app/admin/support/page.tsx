@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
  LifeBuoy,
@@ -10,17 +10,21 @@ import {
  AlertCircle,
  TrendingUp,
  Filter,
+ Loader2,
 } from 'lucide-react';
 import {
- SAMPLE_ADMIN_TICKETS,
  SUPPORT_CATEGORIES,
  STATUSES,
  PRIORITIES,
  CATEGORY_MAP,
+ SAMPLE_ADMIN_TICKETS,
+ type Ticket,
  type TicketStatus,
  type TicketPriority,
  type TicketCategory,
 } from '../../../lib/support';
+import { listTickets } from '../../../lib/support-api';
+import { useAuth } from '../../../lib/auth-context';
 import {
  StatusBadge,
  PriorityBadge,
@@ -29,34 +33,58 @@ import {
 } from '../../../components/support/badges';
 
 export default function AdminSupportPage() {
+ const { session } = useAuth();
+ const [tickets, setTickets] = useState<Ticket[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
  const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'all'>('all');
  const [categoryFilter, setCategoryFilter] = useState<TicketCategory | 'all'>('all');
  const [search, setSearch] = useState('');
 
+ useEffect(() => {
+ let cancelled = false;
+ (async () => {
+ try {
+ const data = await listTickets(session?.accessToken, { all: true });
+ if (!cancelled) setTickets(data);
+ } catch (err) {
+ if (!cancelled) {
+ setTickets(SAMPLE_ADMIN_TICKETS);
+ setError(err instanceof Error ? err.message : 'Failed to load tickets');
+ }
+ } finally {
+ if (!cancelled) setLoading(false);
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, [session?.accessToken]);
+
  const stats = useMemo(() => {
- const open = SAMPLE_ADMIN_TICKETS.filter((t) => t.status === 'open').length;
- const inProgress = SAMPLE_ADMIN_TICKETS.filter((t) => t.status === 'in_progress').length;
+ const open = tickets.filter((t) => t.status === 'open').length;
+ const inProgress = tickets.filter((t) => t.status === 'in_progress').length;
  const todayIso = new Date().toISOString().slice(0, 10);
- const resolvedToday = SAMPLE_ADMIN_TICKETS.filter(
+ const resolvedToday = tickets.filter(
  (t) => t.status === 'resolved' && t.updatedAt.slice(0, 10) === todayIso,
  ).length;
- return { open, inProgress, resolvedToday, avgResponse: '1h 42m' };
- }, []);
+ return { open, inProgress, resolvedToday, avgResponse: '—' };
+ }, [tickets]);
 
  const filtered = useMemo(() => {
  const s = search.trim().toLowerCase();
- return SAMPLE_ADMIN_TICKETS.filter((t) => {
+ return tickets.filter((t) => {
  if (statusFilter !== 'all' && t.status !== statusFilter) return false;
  if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
  if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
  if (s) {
- const hay = `${t.id} ${t.subject} ${t.userName} ${t.userEmail}`.toLowerCase();
+ const hay = `${t.id} ${t.subject} ${t.userName ?? ''} ${t.userEmail ?? ''}`.toLowerCase();
  if (!hay.includes(s)) return false;
  }
  return true;
  });
- }, [statusFilter, priorityFilter, categoryFilter, search]);
+ }, [tickets, statusFilter, priorityFilter, categoryFilter, search]);
 
  return (
  <div>
@@ -73,32 +101,19 @@ export default function AdminSupportPage() {
  </div>
  </div>
 
+ {error && (
+ <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+ <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+ Showing sample tickets — couldn&apos;t reach the support server ({error}).
+ </div>
+ )}
+
  {/* Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
- <StatCard
- label="Open tickets"
- value={stats.open}
- icon={AlertCircle}
- accent="amber"
- />
- <StatCard
- label="In progress"
- value={stats.inProgress}
- icon={Clock}
- accent="blue"
- />
- <StatCard
- label="Resolved today"
- value={stats.resolvedToday}
- icon={CheckCircle2}
- accent="green"
- />
- <StatCard
- label="Avg response time"
- value={stats.avgResponse}
- icon={TrendingUp}
- accent="saffron"
- />
+ <StatCard label="Open tickets" value={stats.open} icon={AlertCircle} accent="amber" />
+ <StatCard label="In progress" value={stats.inProgress} icon={Clock} accent="blue" />
+ <StatCard label="Resolved today" value={stats.resolvedToday} icon={CheckCircle2} accent="green" />
+ <StatCard label="Avg response time" value={stats.avgResponse} icon={TrendingUp} accent="saffron" />
  </div>
 
  {/* Filter bar */}
@@ -148,6 +163,11 @@ export default function AdminSupportPage() {
 
  {/* Table */}
  <div className="bg-white rounded-xl border border-surface-200 overflow-hidden">
+ {loading ? (
+ <div className="flex items-center gap-2 text-sm text-surface-500 p-8">
+ <Loader2 className="w-4 h-4 animate-spin" /> Loading tickets…
+ </div>
+ ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
  <thead className="bg-surface-50 border-b border-surface-200 text-xs uppercase tracking-wider text-surface-500">
@@ -182,7 +202,7 @@ export default function AdminSupportPage() {
  </td>
  <td className="px-4 py-3">
  <span className="text-xs text-surface-600 whitespace-nowrap">
- {CATEGORY_MAP[t.category].emoji} {CATEGORY_MAP[t.category].name}
+ {CATEGORY_MAP[t.category]?.emoji} {CATEGORY_MAP[t.category]?.name ?? t.category}
  </span>
  </td>
  <td className="px-4 py-3"><PriorityBadge priority={t.priority} /></td>
@@ -208,6 +228,7 @@ export default function AdminSupportPage() {
  </tbody>
  </table>
  </div>
+ )}
  </div>
  </div>
  );

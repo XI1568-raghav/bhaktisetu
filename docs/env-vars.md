@@ -23,6 +23,7 @@ Adding a new integration? Match this contract.
 | `GROQ_API_KEY` | `services/ai.service.ts` | AI endpoints unavailable |
 | `SUPABASE_URL` | core auth | **required** — auth broken without it |
 | `SUPABASE_SERVICE_ROLE_KEY` | core auth | **required** |
+| `REDIS_URL` (or `UPSTASH_REDIS_URL`) | `lib/cache.ts` (panchang/temple/puja read-through cache) | no-op — every cache call falls through to DB. App keeps working, just hits DB harder. |
 
 ### Day 3
 

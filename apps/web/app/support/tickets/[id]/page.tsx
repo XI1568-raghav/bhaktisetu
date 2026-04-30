@@ -15,15 +15,20 @@ import {
  User as UserIcon,
  Shield,
  Activity,
+ Loader2,
 } from 'lucide-react';
 import {
  getUserTicket,
- updateUserTicket,
- generateAgentReply,
  CATEGORY_MAP,
  type Ticket,
  type TicketMessage,
 } from '../../../../lib/support';
+import {
+ getTicketById,
+ patchTicket,
+ postMessage,
+} from '../../../../lib/support-api';
+import { useAuth } from '../../../../lib/auth-context';
 import {
  StatusBadge,
  PriorityBadge,
@@ -34,96 +39,84 @@ import {
 export default function TicketDetailPage() {
  const params = useParams<{ id: string }>();
  const router = useRouter();
+ const { session } = useAuth();
  const [ticket, setTicket] = useState<Ticket | null>(null);
- const [loaded, setLoaded] = useState(false);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
  const [reply, setReply] = useState('');
  const [sending, setSending] = useState(false);
+ const [actionError, setActionError] = useState<string | null>(null);
 
  useEffect(() => {
- const t = getUserTicket(params.id);
- if (t) {
- // If the ticket only has the user message and system auto-response, simulate an agent reply.
- if (t.messages.length === 2 && t.messages[1]?.author === 'system') {
- const now = new Date().toISOString();
- const agentMessage: TicketMessage = {
- id: `m-${Date.now()}`,
- author: 'agent',
- authorName: 'Priya S.',
- body: generateAgentReply(t.category, t.subject),
- createdAt: now,
+ let cancelled = false;
+ (async () => {
+ try {
+ const t = await getTicketById(session?.accessToken, params.id);
+ if (!cancelled) setTicket(t);
+ } catch (err) {
+ if (!cancelled) {
+ const fallback = getUserTicket(params.id);
+ if (fallback) setTicket(fallback);
+ setError(err instanceof Error ? err.message : 'Failed to load ticket');
+ }
+ } finally {
+ if (!cancelled) setLoading(false);
+ }
+ })();
+ return () => {
+ cancelled = true;
  };
- const updated = updateUserTicket(t.id, (curr) => ({
- ...curr,
- status: 'in_progress',
- updatedAt: now,
- messages: [...curr.messages, agentMessage],
- activity: [
- ...curr.activity,
- {
- id: `act-${Date.now()}`,
- type: 'status_change',
- text: 'Status: Open → In Progress',
- createdAt: now,
- },
- {
- id: `act-${Date.now() + 1}`,
- type: 'assignment',
- text: 'Assigned to Priya S.',
- createdAt: now,
- },
- ],
- }));
- setTicket(updated ?? t);
- } else {
- setTicket(t);
- }
- }
- setLoaded(true);
- }, [params.id]);
+ }, [params.id, session?.accessToken]);
 
- const sendReply = () => {
+ const sendReply = async () => {
  if (!ticket || !reply.trim()) return;
  setSending(true);
- const now = new Date().toISOString();
- const msg: TicketMessage = {
- id: `m-${Date.now()}`,
- author: 'user',
- authorName: 'You',
+ setActionError(null);
+ try {
+ const updated = await postMessage(session?.accessToken, ticket.id, {
  body: reply.trim(),
- createdAt: now,
- };
- const updated = updateUserTicket(ticket.id, (curr) => ({
- ...curr,
- status: curr.status === 'resolved' ? 'in_progress' : curr.status,
- updatedAt: now,
- messages: [...curr.messages, msg],
- activity: [
- ...curr.activity,
- { id: `act-${Date.now()}`, type: 'note', text: 'User replied', createdAt: now },
- ],
- }));
+ });
  setTicket(updated);
  setReply('');
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not send reply');
+ } finally {
  setSending(false);
+ }
  };
 
- const changeStatus = (status: Ticket['status'], label: string) => {
+ const changeStatus = async (status: Ticket['status']) => {
  if (!ticket) return;
- const now = new Date().toISOString();
- const updated = updateUserTicket(ticket.id, (curr) => ({
- ...curr,
+ setActionError(null);
+ try {
+ const updated = await patchTicket(session?.accessToken, ticket.id, {
  status,
- updatedAt: now,
- activity: [
- ...curr.activity,
- { id: `act-${Date.now()}`, type: 'status_change', text: label, createdAt: now },
- ],
- }));
+ });
  setTicket(updated);
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not update ticket');
+ }
  };
 
- if (!loaded) {
- return <div className="min-h-screen p-10 text-sm text-surface-500 bg-[#faf7f0]">Loading...</div>;
+ const escalate = async () => {
+ if (!ticket) return;
+ setActionError(null);
+ try {
+ const updated = await patchTicket(session?.accessToken, ticket.id, {
+ priority: 'urgent',
+ });
+ setTicket(updated);
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Could not escalate ticket');
+ }
+ };
+
+ if (loading) {
+ return (
+ <div className="min-h-screen p-10 text-sm text-surface-500 bg-[#faf7f0] flex items-center gap-2">
+ <Loader2 className="w-4 h-4 animate-spin" /> Loading ticket…
+ </div>
+ );
  }
 
  if (!ticket) {
@@ -133,7 +126,7 @@ export default function TicketDetailPage() {
  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
  <h2 className="font-semibold text-surface-900 mb-1">Ticket not found</h2>
  <p className="text-sm text-surface-500 mb-5">
- This ticket doesn&apos;t exist in your browser storage. It may have been created on another device.
+ {error ?? "This ticket doesn't exist or you don't have access."}
  </p>
  <button
  onClick={() => router.push('/support/tickets')}
@@ -166,7 +159,7 @@ export default function TicketDetailPage() {
  <span className="font-mono text-xs text-saffron-700">{ticket.id}</span>
  <span className="text-surface-300">·</span>
  <span className="text-xs text-surface-500">
- {cat.emoji} {cat.name}
+ {cat?.emoji} {cat?.name ?? ticket.category}
  </span>
  </div>
  <h1 className="text-xl font-semibold text-surface-900">{ticket.subject}</h1>
@@ -179,40 +172,23 @@ export default function TicketDetailPage() {
  </div>
  </div>
  <div className="flex items-center gap-2 flex-wrap">
- {ticket.status === 'resolved' ? (
+ {ticket.status === 'resolved' || ticket.status === 'closed' ? (
  <button
- onClick={() => changeStatus('open', 'Ticket reopened')}
+ onClick={() => changeStatus('open')}
  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-surface-200 text-sm font-medium text-surface-700 hover:bg-surface-50"
  >
  <RotateCcw className="w-4 h-4" /> Reopen
  </button>
  ) : (
  <button
- onClick={() => changeStatus('resolved', 'Marked as resolved by user')}
+ onClick={() => changeStatus('resolved')}
  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium"
  >
  <CheckCircle2 className="w-4 h-4" /> Mark resolved
  </button>
  )}
  <button
- onClick={() => {
- const now = new Date().toISOString();
- const updated = updateUserTicket(ticket.id, (t) => ({
- ...t,
- priority: 'urgent',
- updatedAt: now,
- activity: [
- ...t.activity,
- {
- id: `act-${Date.now()}`,
- type: 'priority_change',
- text: 'Escalated by user → Urgent',
- createdAt: now,
- },
- ],
- }));
- if (updated) setTicket(updated);
- }}
+ onClick={escalate}
  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-surface-200 text-sm font-medium text-red-700 hover:bg-red-50"
  >
  <AlertCircle className="w-4 h-4" /> Escalate
@@ -221,13 +197,20 @@ export default function TicketDetailPage() {
  </div>
  </div>
 
+ {actionError && (
+ <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+ <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+ {actionError}
+ </div>
+ )}
+
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
  {/* Conversation */}
  <div className="lg:col-span-2 space-y-4">
  <div className="bg-white rounded-xl border border-surface-200 p-5">
  <h2 className="font-semibold text-surface-900 mb-4">Conversation</h2>
  <div className="space-y-4">
- {ticket.messages.map((m) => (
+ {ticket.messages.filter((m) => !m.internal).map((m) => (
  <MessageBubble key={m.id} message={m} />
  ))}
  </div>
@@ -251,7 +234,8 @@ export default function TicketDetailPage() {
  disabled={sending || !reply.trim()}
  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
  >
- <Send className="w-4 h-4" /> Send reply
+ {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+ {sending ? 'Sending…' : 'Send reply'}
  </button>
  </div>
  </div>
@@ -266,9 +250,6 @@ export default function TicketDetailPage() {
  Linked order
  </h3>
  <div className="font-mono text-sm text-saffron-700">{ticket.orderId}</div>
- <a href="#" className="text-xs text-saffron-700 hover:text-saffron-800 mt-1 inline-block">
- View order →
- </a>
  </div>
  )}
 
@@ -284,6 +265,7 @@ export default function TicketDetailPage() {
  </div>
  )}
 
+ {ticket.activity && ticket.activity.length > 0 && (
  <div className="bg-white rounded-xl border border-surface-200 p-4">
  <h3 className="text-xs uppercase tracking-wider text-surface-500 font-semibold mb-3 inline-flex items-center gap-1.5">
  <Activity className="w-3.5 h-3.5" /> Activity
@@ -300,6 +282,7 @@ export default function TicketDetailPage() {
  ))}
  </ol>
  </div>
+ )}
 
  <div className="bg-white rounded-xl border border-surface-200 p-4">
  <h3 className="text-xs uppercase tracking-wider text-surface-500 font-semibold mb-3">
