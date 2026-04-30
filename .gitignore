@@ -40,3 +40,18 @@ apps/medusa-store/.cache/
 # Misc
 *.log
 *.tsbuildinfo
+
+# EAS build artifacts (mobile)
+apps/mobile/build-log.txt
+apps/mobile/build.json
+apps/mobile/log*.txt
+apps/mobile/log*.url
+apps/mobile/log_url.txt
+
+# Playwright test outputs (web)
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/pitch-captures/
+
+# Pitch reel intermediate artifacts (regenerable via stitch-pitch-video-v2.sh)
+apps/web/scripts/build/

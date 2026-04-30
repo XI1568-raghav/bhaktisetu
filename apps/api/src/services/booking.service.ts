@@ -286,6 +286,35 @@ export class BookingService {
       },
     });
 
+    // When a booking flips to confirmed, write a Commission ledger row so
+    // /admin/commissions has a single source of truth for payout
+    // reconciliation. Idempotent — guarded by findFirst on bookingId so a
+    // double-confirm or webhook retry never double-writes.
+    if (newStatus === 'confirmed') {
+      try {
+        const existing = await prisma.commission.findFirst({
+          where: { bookingId: updated.id },
+          select: { id: true },
+        });
+        if (!existing && updated.priestId) {
+          const priceNum = Number(updated.priceAmount);
+          const commissionNum = Number(updated.platformCommission);
+          const percentage = priceNum > 0 ? commissionNum / priceNum : 0;
+          await prisma.commission.create({
+            data: {
+              bookingId: updated.id,
+              providerId: updated.priestId,
+              amount: updated.platformCommission,
+              percentage,
+              status: 'PENDING',
+            },
+          });
+        }
+      } catch (err) {
+        console.warn('[booking.service] commission write failed:', err);
+      }
+    }
+
     // Push notification on key transitions. Fire-and-forget — push failure
     // must never break booking flow. notifyUser no-ops if VAPID is unset
     // or the user has no subscriptions.

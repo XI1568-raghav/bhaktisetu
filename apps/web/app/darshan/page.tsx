@@ -1,25 +1,13 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import {
- Video,
- Play,
- Users,
- Clock,
- MapPin,
- Bell,
- Calendar,
- Wifi,
- Eye,
- Radio,
- ChevronDown,
- Search,
-} from 'lucide-react';
+import { Play, Radio } from 'lucide-react';
 import {
  getLiveDarshan,
  getScheduledDarshan,
  type DarshanStream,
 } from '../../lib/api';
-import { getTempleHero } from '../../lib/images';
+import DarshanBrowser from '../../components/DarshanBrowser';
+import DarshanScheduleRemindButton from '../../components/DarshanScheduleRemindButton';
 
 export const metadata: Metadata = {
  title: 'Live Darshan',
@@ -273,151 +261,9 @@ async function fetchScheduledStreams(): Promise<DarshanStream[]> {
  }
 }
 
-// ─── Async Sections ───────────────────────────────────────────────────────────
-
-async function LiveStreamsSection() {
- const streams = await fetchLiveStreams();
-
- return (
- <section className="py-10">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
- <Wifi className="w-5 h-5 text-red-500" />
- Live Now
- <span className="text-sm font-normal text-surface-500 ml-2">
- {streams.length} stream{streams.length !== 1 ? 's' : ''}
- </span>
- </h2>
-
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
- {streams.map((stream) => {
- const templeImage =
- stream.temple.images && stream.temple.images.length > 0
- ? stream.temple.images[0]!.url
- : null;
- return (
- <a
- key={stream.id}
- href={`/darshan/${stream.id}`}
- className="group rounded-xl overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-surface-200 hover:shadow-lg transition-all duration-300"
- >
- {/* Video preview */}
- <div className="relative aspect-video bg-surface-200">
- <img
- src={templeImage ? templeImage : getTempleHero(stream.temple.slug)}
- alt={stream.temple.name}
- loading="lazy"
- className="absolute inset-0 w-full h-full object-cover opacity-90"
- />
- <div className="absolute inset-0 flex items-center justify-center">
- <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 group-hover:scale-110 transition-all">
- <Play className="w-6 h-6 text-white ml-0.5" />
- </div>
- </div>
-
- {/* Live badge */}
- <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
- <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
- LIVE
- </div>
-
- {/* HD badge */}
- <div className="absolute top-3 right-3 bg-black/60 text-white text-xs font-bold px-2 py-0.5 rounded backdrop-blur-sm">
- HD
- </div>
-
- {/* Viewer count */}
- <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/60 text-white text-xs font-medium px-2 py-1 rounded-md backdrop-blur-sm">
- <Eye className="w-3 h-3" />
- {stream.viewerCount.toLocaleString('en-IN')}
- </div>
- </div>
-
- {/* Info */}
- <div className="p-4">
- <h3 className="font-semibold text-surface-800 group-hover:text-saffron-600 transition-colors truncate">
- {stream.temple.name}
- </h3>
- <p className="text-sm text-surface-500 flex items-center gap-1 mt-1">
- <MapPin className="w-3.5 h-3.5 shrink-0" />
- {stream.temple.city}
- </p>
- <p className="text-xs text-surface-600 mt-1">
- {stream.temple.deityPrimary}
- </p>
- </div>
- </a>
- );
- })}
- </div>
- </div>
- </section>
- );
-}
-
-async function ScheduledStreamsSection() {
- const streams = await fetchScheduledStreams();
-
- return (
- <section className="py-10 border-t border-[var(--color-border)]">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6 flex items-center gap-2">
- <Calendar className="w-5 h-5 text-saffron-400" />
- Upcoming Streams
- </h2>
-
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
- {streams.map((stream) => (
- <div
- key={stream.id}
- className="group rounded-xl overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-surface-200 transition-all"
- >
- {/* Upcoming stream preview */}
- <div className="relative aspect-video bg-surface-200">
- <img
- src={getTempleHero(stream.temple.slug)}
- alt={`${stream.temple.name} - Upcoming stream`}
- loading="lazy"
- className="absolute inset-0 w-full h-full object-cover opacity-40"
- />
- <div className="absolute inset-0 flex items-center justify-center">
- <div className="text-center">
- <Clock className="w-8 h-8 text-surface-400 mx-auto mb-1" />
- <span className="text-sm text-surface-400">Upcoming</span>
- </div>
- </div>
-
- {/* Scheduled time badge */}
- <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-surface-600 text-surface-500 text-xs font-bold px-2.5 py-1 rounded-full">
- <Clock className="w-3 h-3" />
- {stream.scheduledStart ?? 'TBD'}
- </div>
- </div>
-
- <div className="p-4">
- <h3 className="font-semibold text-surface-800 truncate">
- {stream.temple.name}
- </h3>
- <p className="text-sm text-surface-500 flex items-center gap-1 mt-1">
- <MapPin className="w-3.5 h-3.5 shrink-0" />
- {stream.temple.city}
- </p>
- <div className="flex items-center justify-between mt-3">
- <span className="text-xs text-saffron-400 font-medium">
- {stream.temple.deityPrimary}
- </span>
- <button className="flex items-center gap-1 text-xs text-surface-400 hover:text-saffron-600 transition-colors">
- <Bell className="w-3.5 h-3.5" />
- Remind Me
- </button>
- </div>
- </div>
- </div>
- ))}
- </div>
- </div>
- </section>
- );
+async function StreamsBrowserSection() {
+ const [live, scheduled] = await Promise.all([fetchLiveStreams(), fetchScheduledStreams()]);
+ return <DarshanBrowser liveStreams={live} scheduledStreams={scheduled} />;
 }
 
 // ─── Page Component ───────────────────────────────────────────────────────────
@@ -446,88 +292,19 @@ export default function DarshanPage() {
  time. HD quality streams with temple audio.
  </p>
 
- {/* Search and filters */}
+ <Suspense
+ fallback={
  <div className="mt-8 flex flex-wrap gap-3">
- <div className="relative flex-1 min-w-64 max-w-md">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
- <input
- type="text"
- placeholder="Search temples..."
- className="w-full pl-12 pr-4 py-3 rounded-lg bg-white text-surface-800 placeholder:text-surface-400 border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-saffron-300"
- />
+ <div className="h-12 w-64 max-w-md rounded-lg bg-white animate-pulse" />
+ <div className="h-12 w-32 rounded-lg bg-white animate-pulse" />
+ <div className="h-12 w-32 rounded-lg bg-white animate-pulse" />
  </div>
- <div className="relative">
- <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-3 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
- <option>All Deities</option>
- <option>Lord Shiva</option>
- <option>Lord Vishnu</option>
- <option>Lord Krishna</option>
- <option>Lord Ganesha</option>
- <option>Goddess Durga</option>
- </select>
- <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
- </div>
- <div className="relative">
- <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-3 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
- <option>All Regions</option>
- <option>North India</option>
- <option>South India</option>
- <option>East India</option>
- <option>West India</option>
- </select>
- <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
- </div>
- </div>
+ }
+ >
+ <StreamsBrowserSection />
+ </Suspense>
  </div>
  </section>
-
- {/* Live Streams */}
- <Suspense
- fallback={
- <div className="py-10">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <div className="h-6 bg-surface-200 rounded w-40 mb-6" />
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
- {Array.from({ length: 4 }).map((_, i) => (
- <div key={i} className="animate-pulse">
- <div className="aspect-video bg-surface-200 rounded-t-2xl" />
- <div className="bg-[var(--color-surface)] rounded-b-2xl p-4 space-y-2">
- <div className="h-4 bg-surface-200 rounded w-3/4" />
- <div className="h-3 bg-surface-200 rounded w-1/2" />
- </div>
- </div>
- ))}
- </div>
- </div>
- </div>
- }
- >
- <LiveStreamsSection />
- </Suspense>
-
- {/* Scheduled Streams */}
- <Suspense
- fallback={
- <div className="py-10 border-t border-[var(--color-border)]">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <div className="h-6 bg-surface-200 rounded w-48 mb-6" />
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
- {Array.from({ length: 4 }).map((_, i) => (
- <div key={i} className="animate-pulse">
- <div className="aspect-video bg-surface-200 rounded-t-2xl" />
- <div className="bg-[var(--color-surface)] rounded-b-2xl p-4 space-y-2">
- <div className="h-4 bg-surface-200 rounded w-3/4" />
- <div className="h-3 bg-surface-200 rounded w-1/2" />
- </div>
- </div>
- ))}
- </div>
- </div>
- </div>
- }
- >
- <ScheduledStreamsSection />
- </Suspense>
 
  {/* Daily Schedule */}
  <section className="py-10 border-t border-[var(--color-border)]">
@@ -545,7 +322,9 @@ export default function DarshanPage() {
  <div className="col-span-1"></div>
  </div>
 
- {fallbackScheduleTable.map((row, i) => (
+ {fallbackScheduleTable.map((row, i) => {
+ const reminderId = `schedule:${row.time}:${row.temple}:${row.event}`;
+ return (
  <div
  key={i}
  className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 border-b border-[var(--color-border)]/50 last:border-0 text-sm items-center hover:bg-surface-200/30 transition-colors"
@@ -578,18 +357,21 @@ export default function DarshanPage() {
  {row.status === 'live' ? (
  <a
  href="/darshan"
- className="text-saffron-400 hover:text-saffron-300"
+ className="text-saffron-400 hover:text-saffron-300 inline-flex"
+ aria-label={`Watch ${row.temple} ${row.event} now`}
  >
  <Play className="w-4 h-4" />
  </a>
  ) : row.status === 'upcoming' ? (
- <button className="text-surface-600 hover:text-surface-400">
- <Bell className="w-4 h-4" />
- </button>
+ <DarshanScheduleRemindButton
+ reminderId={reminderId}
+ label={`${row.temple} ${row.event}`}
+ />
  ) : null}
  </div>
  </div>
- ))}
+ );
+ })}
  </div>
  </div>
  </section>

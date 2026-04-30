@@ -94,13 +94,12 @@ Each of these came up in a department doc and was explicitly downranked:
 Every Monday morning, ~20 minutes:
 
 1. `docs/launch-state.md` — has anything moved?
-2. `docs/session-handoff.md` — what's the most-recent session's deferred list?
-3. This file (`docs/company/00-orchestrator.md`) — are any of the 5 founder decisions ripe?
-4. UptimeRobot dashboard — was the API up all week?
-5. Sentry — top 3 errors by count.
-6. Render logs filtered on `auth.geo` — any new countries hitting auth?
+2. This file (`docs/company/00-orchestrator.md`) — are any of the 5 founder decisions ripe?
+3. UptimeRobot dashboard — was the API up all week?
+4. Sentry — top 3 errors by count.
+5. Render logs filtered on `auth.geo` — any new countries hitting auth?
 
-If all six are green or unchanged, that's the week's review done. Spend the rest on the sequenced plan above.
+If all five are green or unchanged, that's the week's review done. Spend the rest on the sequenced plan above.
 
 ---
 

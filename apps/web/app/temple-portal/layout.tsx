@@ -9,6 +9,8 @@ import {
  Flame,
  Heart,
  UserCircle,
+ Wallet,
+ Sparkles,
  Menu,
  X,
  LogOut,
@@ -24,6 +26,8 @@ const sidebarLinks = [
  { href: '/temple-portal/darshan', label: 'Live Darshan', icon: Video },
  { href: '/temple-portal/pujas', label: 'Pujas', icon: Flame },
  { href: '/temple-portal/donations', label: 'Donations', icon: Heart },
+ { href: '/temple-portal/payouts', label: 'Payouts', icon: Wallet },
+ { href: '/temple-portal/subscription', label: 'Subscription', icon: Sparkles },
 ];
 
 function TemplePortalLayout({ children }: { children: React.ReactNode }) {

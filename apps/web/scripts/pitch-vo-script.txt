@@ -1,0 +1,13 @@
+India spends four lakh crore rupees a year on devotion. Temple visits, pujas, gaushala donations, pilgrimages.
+Today, that money flows offline, fragmented, and untrusted.
+NRIs send money to a cousin who claims it reached the priest. There is no receipt. No proof.
+Darshya is the trust layer.
+Twenty verified temples on day one. Real photos, real priests, real Aadhaar verification. Every page renders structured data so Google sees us. Every devotee finds us.
+Book a puja for any deity. The priest performs the ritual. Mandatory video proof uploads before payout. The devotee gets a Sanskrit sankalp, a recorded ceremony, and an eighty-G tax receipt.
+Live darshan inside the sanctum, AWS IVS streaming, sub-second latency. A grandfather in New Jersey watches his grandson's mundan in Varanasi, in real time.
+Daily panchang turns first-time visitors into daily users. Astrology, horoscope, AI panditji, second vertical, same trust layer.
+Gaushala adoption with eighty-G receipts. Pilgrimage planning. Devotional commerce.
+And one Llama panditji on Groq, fifteen hundred tokens a second, answering in Hindi, English, Tamil, Sanskrit.
+Eight role portals. One product. Live today at darshya dot online.
+We are raising seed to win the trust layer for one billion devotees.
+Darshya. Devotion, verified.

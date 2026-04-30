@@ -653,7 +653,28 @@ const RASHIS: DailyHoroscope[] = [
 
 // ─── Service Implementation ──────────────────────────────────────────────────────
 
+// ─── Persisted Consultation Record (for portal listing) ────────────────────────
+export interface PortalConsultation {
+  id: string;
+  userId: string;
+  astrologerId: string;
+  clientName: string;
+  type: string;
+  mode: 'video' | 'call' | 'chat';
+  scheduledAt: string;
+  duration: number;
+  rate: number;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
+  rating?: number;
+  notes?: string;
+  roomUrl?: string | null;
+  endedAt?: string;
+}
+
 class AstrologyService {
+  // In-memory store of consultation sessions (MVP — replace with Prisma later)
+  private sessions: Map<string, PortalConsultation> = new Map();
+
   // ── Get Astrologers (with filters) ────────────────────────────────────────
   getAstrologers(params: AstrologersParams = {}) {
     let filtered = [...ASTROLOGERS];
@@ -768,17 +789,64 @@ class AstrologyService {
     if (!astrologer.isOnline) return { error: 'Astrologer is currently offline.' };
     if (astrologer.isBusy) return { error: 'Astrologer is currently busy with another consultation.' };
 
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const startedAt = new Date().toISOString();
+
+    // Persist a portal-shaped record so astrologer dashboards can list it
+    this.sessions.set(sessionId, {
+      id: sessionId,
+      userId,
+      astrologerId,
+      clientName: 'Devotee',
+      type: astrologer.specializations[0] ?? 'General Consultation',
+      mode,
+      scheduledAt: startedAt,
+      duration: 30,
+      rate: astrologer.perMinuteRate,
+      status: 'scheduled',
+      roomUrl: null,
+    });
+
     return {
-      sessionId: `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      sessionId,
       userId,
       astrologerId,
       astrologerName: astrologer.name,
       mode,
       status: 'waiting',
       perMinuteRate: astrologer.perMinuteRate,
-      startedAt: new Date().toISOString(),
+      startedAt,
       freeMinutes: 5,
     };
+  }
+
+  // ── List Consultations (for portal dashboards) ────────────────────────────
+  async listConsultations({ userId, role }: { userId: string; role: string }): Promise<PortalConsultation[]> {
+    const all = Array.from(this.sessions.values());
+    if (role === 'astrologer') return all.filter((s) => s.astrologerId === userId);
+    return all.filter((s) => s.userId === userId);
+  }
+
+  // ── Update Consultation Status ────────────────────────────────────────────
+  async updateConsultation(id: string, status: 'COMPLETED' | 'CANCELLED'): Promise<PortalConsultation> {
+    const session = this.sessions.get(id);
+    if (!session) throw new Error('Consultation not found');
+    session.status = status === 'COMPLETED' ? 'completed' : 'cancelled';
+    if (status === 'COMPLETED') session.endedAt = new Date().toISOString();
+    this.sessions.set(id, session);
+    return session;
+  }
+
+  // ── Start Call (allocate Jitsi room) ──────────────────────────────────────
+  async startCall(id: string): Promise<{ roomUrl: string }> {
+    const session = this.sessions.get(id);
+    if (!session) throw new Error('Consultation not found');
+    if (!session.roomUrl) {
+      session.roomUrl = `https://meet.jit.si/darshya-${id}`;
+      session.status = 'in_progress';
+      this.sessions.set(id, session);
+    }
+    return { roomUrl: session.roomUrl };
   }
 
   // ── Vedic compute helpers ─────────────────────────────────────────────────
