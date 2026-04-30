@@ -151,25 +151,4 @@ export async function storeRoutes(server: FastifyInstance) {
     };
   });
 
-  // ─── GET /orders/:id ────────────────────────────────────────────────────────
-
-  server.get('/orders/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    // MVP placeholder
-    return {
-      order: {
-        id,
-        status: 'processing',
-        items: [],
-        subtotal: 0,
-        shipping: 0,
-        tax: 0,
-        total: 0,
-        currency: 'INR',
-        shippingAddress: null,
-        trackingNumber: null,
-        createdAt: new Date().toISOString(),
-      },
-    };
-  });
 }
