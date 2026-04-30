@@ -304,6 +304,7 @@ function Thread({ conversationId, counterpartyName, side, onBack, onMessagesChan
   const [startingCall, setStartingCall] = useState(false);
   const [rating, setRating] = useState<ExistingRating | null>(null);
   const [ratingLoaded, setRatingLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const sinceRef = useRef<string | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -386,6 +387,13 @@ function Thread({ conversationId, counterpartyName, side, onBack, onMessagesChan
     }
   }
 
+  async function onThreadRefresh() {
+    setRefreshing(true);
+    sinceRef.current = null;
+    await fetchMessages(true);
+    setRefreshing(false);
+  }
+
   async function startCall() {
     if (startingCall) return;
     setStartingCall(true);
@@ -453,6 +461,7 @@ function Thread({ conversationId, counterpartyName, side, onBack, onMessagesChan
           data={messages}
           keyExtractor={(m) => m.id}
           contentContainerStyle={styles.threadList}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onThreadRefresh} />}
           renderItem={({ item }) => <MessageBubble msg={item} />}
         />
         {side === 'devotee' && callEnded && ratingLoaded ? (

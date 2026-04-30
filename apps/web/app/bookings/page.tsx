@@ -48,75 +48,43 @@ interface BookingListItem {
 
 type TabFilter = 'all' | 'upcoming' | 'completed' | 'cancelled';
 
-// ─── Fallback bookings ─────────────────────────────────────────
+// ─── API → UI mapping ──────────────────────────────────────────
+// Backend returns nested temple/pujaType/priest objects + Decimal amounts;
+// UI uses flat strings/numbers. Normalize at the boundary, here.
 
-const fallbackBookings: BookingListItem[] = [
- {
- id: '1',
- bookingNumber: 'BS-20260410-34521',
- templeName: 'Shri Kashi Vishwanath Temple',
- templeCity: 'Varanasi',
- pujaName: 'Rudrabhishek Puja',
- scheduledDate: '2026-04-20',
- scheduledTime: '09:00',
- status: 'priest_assigned',
- totalAmount: 1151,
- videoUrl: null,
- createdAt: '2026-04-10T10:30:00Z',
- },
- {
- id: '2',
- bookingNumber: 'BS-20260405-29874',
- templeName: 'Siddhivinayak Temple',
- templeCity: 'Mumbai',
- pujaName: 'Ganesh Atharvashirsha Path',
- scheduledDate: '2026-04-12',
- scheduledTime: '07:30',
- status: 'delivered',
- totalAmount: 702,
- videoUrl: 'https://example.com/video/2',
- createdAt: '2026-04-05T08:15:00Z',
- },
- {
- id: '3',
- bookingNumber: 'BS-20260401-18432',
- templeName: 'ISKCON Temple',
- templeCity: 'Delhi',
- pujaName: 'Satyanarayan Katha',
- scheduledDate: '2026-04-08',
- scheduledTime: '10:00',
- status: 'video_uploaded',
- totalAmount: 952,
- videoUrl: 'https://example.com/video/3',
- createdAt: '2026-04-01T14:20:00Z',
- },
- {
- id: '4',
- bookingNumber: 'BS-20260328-12098',
- templeName: 'Trimbakeshwar Temple',
- templeCity: 'Nashik',
- pujaName: 'Maha Mrityunjay Jaap',
- scheduledDate: '2026-04-02',
- scheduledTime: '06:00',
- status: 'completed',
- totalAmount: 1701,
- videoUrl: 'https://example.com/video/4',
- createdAt: '2026-03-28T09:45:00Z',
- },
- {
- id: '5',
- bookingNumber: 'BS-20260325-09876',
- templeName: 'Mahalakshmi Temple',
- templeCity: 'Kolhapur',
- pujaName: 'Mahalakshmi Puja',
- scheduledDate: '2026-03-30',
- scheduledTime: '08:00',
- status: 'cancelled',
- totalAmount: 1002,
- videoUrl: null,
- createdAt: '2026-03-25T11:30:00Z',
- },
-];
+interface ApiBooking {
+  id: string;
+  bookingNumber: string;
+  status: BookingStatus;
+  scheduledDate: string;
+  scheduledTimeSlot: string;
+  priceAmount: string | number;
+  videoProofUrl: string | null;
+  createdAt: string;
+  temple?: { name?: string; city?: string } | null;
+  pujaType?: { name?: string } | null;
+}
+
+function mapBooking(b: ApiBooking): BookingListItem {
+  // scheduledDate from API may be ISO datetime — strip time portion.
+  const dateOnly =
+    typeof b.scheduledDate === 'string' && b.scheduledDate.includes('T')
+      ? b.scheduledDate.slice(0, 10)
+      : b.scheduledDate;
+  return {
+    id: b.id,
+    bookingNumber: b.bookingNumber,
+    templeName: b.temple?.name ?? 'Temple',
+    templeCity: b.temple?.city ?? '',
+    pujaName: b.pujaType?.name ?? 'Puja',
+    scheduledDate: dateOnly,
+    scheduledTime: b.scheduledTimeSlot ?? '',
+    status: b.status,
+    totalAmount: Number(b.priceAmount ?? 0),
+    videoUrl: b.videoProofUrl ?? null,
+    createdAt: b.createdAt,
+  };
+}
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -176,29 +144,38 @@ function BookingsContent() {
  const { session } = useAuth();
  const [bookings, setBookings] = useState<BookingListItem[]>([]);
  const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
  const [activeTab, setActiveTab] = useState<TabFilter>('all');
 
  useEffect(() => {
  async function fetchBookings() {
+ setError(null);
  try {
  const res = await fetch(`${API_BASE_URL}/bookings/my`, {
  headers: {
- Authorization: `Bearer ${session?.accessToken}`,
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
  },
  });
- if (res.ok) {
- const data = await res.json();
- setBookings(data.bookings || data.data || []);
- } else {
- throw new Error('API unavailable');
+ if (!res.ok) {
+   const body = await res.text().catch(() => '');
+   throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
  }
- } catch {
- setBookings(fallbackBookings);
+ const data = await res.json();
+ const raw: ApiBooking[] = data.bookings ?? data.data ?? [];
+ setBookings(raw.map(mapBooking));
+ } catch (e) {
+ const msg = e instanceof Error ? e.message : 'Network error';
+ setError(msg);
+ setBookings([]);
  } finally {
  setLoading(false);
  }
  }
- fetchBookings();
+ if (session?.accessToken) {
+   fetchBookings();
+ } else {
+   setLoading(false);
+ }
  }, [session]);
 
  const filteredBookings = bookings.filter((b) => {
@@ -245,6 +222,11 @@ function BookingsContent() {
  </div>
 
  <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+ {error && (
+   <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+     Could not load your bookings: {error}
+   </div>
+ )}
  {/* Tabs */}
  <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-surface-100">
  {tabs.map((tab) => (

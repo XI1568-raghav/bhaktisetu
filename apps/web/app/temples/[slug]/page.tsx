@@ -8,7 +8,6 @@ import {
  Video,
  Clock,
  Heart,
- Share2,
  ChevronRight,
  Flame,
  Info,
@@ -34,6 +33,7 @@ import {
  getSimilarTemples,
  type TempleDetailRich,
 } from '../../../lib/temple-details';
+import TempleHeartShareButtons from '../../../components/TempleHeartShareButtons';
 
 // ──────────────────────────────────────────────────────────────
 // Fallback temple from API (when no rich detail exists)
@@ -269,14 +269,7 @@ function RichTemplePage({
  </div>
 
  {/* Top-right actions */}
- <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-6">
- <button className="rounded-lg bg-white/20 p-2.5 backdrop-blur-md transition-colors hover:bg-white/30">
- <Heart className="h-5 w-5 text-white" />
- </button>
- <button className="rounded-lg bg-white/20 p-2.5 backdrop-blur-md transition-colors hover:bg-white/30">
- <Share2 className="h-5 w-5 text-white" />
- </button>
- </div>
+ <TempleHeartShareButtons slug={rich.slug} templeName={rich.name} />
  </div>
  </section>
 
@@ -755,6 +748,12 @@ function RichTemplePage({
  >
  <Video className="h-4 w-4" /> Live Darshan
  </Link>
+ <Link
+ href={`/donations?causeId=${encodeURIComponent(rich.slug)}&causeKind=temple&causeName=${encodeURIComponent(rich.name)}`}
+ className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white py-2.5 text-sm font-medium text-surface-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+ >
+ <Heart className="h-4 w-4" /> Donate to this Temple
+ </Link>
  {rich.officialDarshanBookingUrl && (
  <a
  href={rich.officialDarshanBookingUrl}
@@ -896,6 +895,12 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white py-2.5 text-sm font-medium text-surface-700 hover:border-saffron-300"
  >
  <Video className="h-4 w-4" /> Live Darshan
+ </Link>
+ <Link
+ href={`/donations?causeId=${encodeURIComponent(temple.id)}&causeKind=temple&causeName=${encodeURIComponent(temple.name)}`}
+ className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white py-2.5 text-sm font-medium text-surface-700 hover:border-emerald-300 hover:text-emerald-700"
+ >
+ <Heart className="h-4 w-4" /> Donate to this Temple
  </Link>
  {temple.websiteUrl && (
  <a

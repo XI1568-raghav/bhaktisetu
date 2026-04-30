@@ -1,6 +1,95 @@
 import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
+import { generateInvoice } from '../lib/pdf-invoice.js';
+import { sendEmail } from '../lib/email.js';
+
+/**
+ * Send a puja-booking tax invoice to the devotee. Best-effort: any failure
+ * (PDF, email, or DB read) is swallowed and logged so it can never block
+ * the payment-confirmation flow this is called from.
+ */
+async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
+  try {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        bookingNumber: true,
+        priceAmount: true,
+        createdAt: true,
+        user: { select: { fullName: true, email: true } },
+        temple: { select: { name: true, city: true } },
+        pujaType: { select: { name: true } },
+      },
+    });
+    if (!booking || !booking.user.email) return;
+    const pdf = await generateInvoice({
+      type: 'puja_booking',
+      bookingNumber: booking.bookingNumber,
+      devoteeName: booking.user.fullName,
+      pujaName: booking.pujaType.name,
+      templeName: booking.temple.name,
+      templeCity: booking.temple.city,
+      amountInr: Number(booking.priceAmount),
+      createdAt: booking.createdAt.toISOString().slice(0, 10),
+    });
+    await sendEmail({
+      to: booking.user.email,
+      subject: `Darshya tax invoice — ${booking.bookingNumber}`,
+      html: `<p>Namaste ${booking.user.fullName},</p><p>Your tax invoice for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
+      text: `Tax invoice for booking ${booking.bookingNumber} attached.`,
+      attachments: [
+        { filename: `invoice-${booking.bookingNumber}.pdf`, content: pdf },
+      ],
+    });
+  } catch (err) {
+    console.warn('[payment.service] sendPujaBookingInvoice failed:', err);
+  }
+}
+
+/**
+ * Insert a Commission row when a PujaBooking flips to confirmed. The
+ * platform's cut (priceAmount * (1 - priest commission share)) was already
+ * computed at booking-create time and stored on the booking row. We
+ * mirror it into the Commission ledger so /admin/commissions has a single
+ * source of truth for accounting and payout reconciliation.
+ *
+ * Idempotent — uses a unique-on-bookingId guard via findFirst, so a
+ * webhook retry after a verifyPayment success won't double-write.
+ */
+async function writePujaCommissionOnConfirm(bookingId: string): Promise<void> {
+  try {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        priceAmount: true,
+        platformCommission: true,
+        priestId: true,
+      },
+    });
+    if (!booking || !booking.priestId) return;
+    const existing = await prisma.commission.findFirst({
+      where: { bookingId: booking.id },
+      select: { id: true },
+    });
+    if (existing) return;
+    const priceNum = Number(booking.priceAmount);
+    const commissionNum = Number(booking.platformCommission);
+    const percentage = priceNum > 0 ? commissionNum / priceNum : 0;
+    await prisma.commission.create({
+      data: {
+        bookingId: booking.id,
+        providerId: booking.priestId,
+        amount: booking.platformCommission,
+        percentage,
+        status: 'PENDING',
+      },
+    });
+  } catch (err) {
+    console.warn('[payment.service] writePujaCommissionOnConfirm failed:', err);
+  }
+}
 
 // ─── Razorpay client ────────────────────────────────────────────────────────────
 
@@ -201,6 +290,8 @@ export class PaymentService {
         where: { id: payment.booking.id },
         data: { status: 'confirmed' },
       });
+      await writePujaCommissionOnConfirm(payment.booking.id);
+      void sendPujaBookingInvoice(payment.booking.id);
     }
 
     return {
@@ -299,6 +390,8 @@ export class PaymentService {
               where: { id: payment.booking.id },
               data: { status: 'confirmed' },
             });
+            await writePujaCommissionOnConfirm(payment.booking.id);
+            void sendPujaBookingInvoice(payment.booking.id);
           }
         }
 
@@ -501,6 +594,42 @@ export class PaymentService {
     });
 
     return payout;
+  }
+
+  /**
+   * Mark a PriestPayout as completed and flip the matching Commission row
+   * to PAID. Called from the admin "release payout" flow once the bank
+   * transfer has been initiated. Both writes happen in a single
+   * transaction so the ledger stays consistent.
+   */
+  async markPayoutPaid(payoutId: string) {
+    return prisma.$transaction(async (tx) => {
+      const payout = await tx.priestPayout.findUnique({
+        where: { id: payoutId },
+        select: { id: true, status: true, bookingId: true },
+      });
+      if (!payout) {
+        throw new Error('Payout not found.');
+      }
+      if (payout.status === 'completed') {
+        return payout;
+      }
+      const updated = await tx.priestPayout.update({
+        where: { id: payout.id },
+        data: { status: 'completed', processedAt: new Date() },
+      });
+      const commission = await tx.commission.findFirst({
+        where: { bookingId: payout.bookingId },
+        select: { id: true },
+      });
+      if (commission) {
+        await tx.commission.update({
+          where: { id: commission.id },
+          data: { status: 'PAID', paidAt: new Date() },
+        });
+      }
+      return updated;
+    });
   }
 
   /**

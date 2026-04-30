@@ -16,6 +16,8 @@ import {
  ChevronRight,
  Shield,
  LifeBuoy,
+ Wallet,
+ Sparkles,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -26,6 +28,8 @@ const sidebarLinks = [
  { href: '/admin/users', label: 'Users', icon: Users },
  { href: '/admin/approvals', label: 'Approvals', icon: ClipboardCheck },
  { href: '/admin/support', label: 'Support Tickets', icon: LifeBuoy },
+ { href: '/admin/commissions', label: 'Commissions', icon: Wallet },
+ { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
  { href: '/admin/revenue', label: 'Revenue', icon: IndianRupee },
  { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
  { href: '/admin/settings', label: 'Settings', icon: Settings },
