@@ -1227,6 +1227,10 @@ model OutreachLog {
   payload     Json?
   errorMsg    String?         @map("error_msg")
   sentAt      DateTime        @default(now()) @map("sent_at")
+  openedAt    DateTime?       @map("opened_at")
+  clickedAt   DateTime?       @map("clicked_at")
+  openCount   Int             @default(0) @map("open_count")
+  clickCount  Int             @default(0) @map("click_count")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
