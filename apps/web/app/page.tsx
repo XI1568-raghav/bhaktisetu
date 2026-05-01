@@ -109,11 +109,11 @@ export default function HomePage() {
  </div>
 
  <div data-reveal="fade" data-delay="4" className="mt-8 flex items-center gap-6 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <div><span data-counter data-counter-target="200+" className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>200+</span> Temples</div>
+ <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Verified</span> Temples</div>
  <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
- <div><span data-counter data-counter-target="50K+" className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>50K+</span> Pujas</div>
+ <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Aadhaar</span> Priests</div>
  <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>4.9</span> Rating</div>
+ <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>HD</span> Live Streams</div>
  </div>
  </div>
 
@@ -258,9 +258,7 @@ export default function HomePage() {
  <span className="flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </span>
- <span className="flex items-center gap-1 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
- <Users className="w-3 h-3" /> 12,450
- </span>
+ 
  </div>
  <div className="absolute bottom-4 left-4 right-4">
  <h3 className="text-lg sm:text-xl font-semibold text-white">Shri Kashi Vishwanath Temple</h3>

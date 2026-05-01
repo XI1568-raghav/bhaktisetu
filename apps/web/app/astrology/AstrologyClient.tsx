@@ -810,8 +810,8 @@ export default function AstrologyPage() {
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-14">
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
  {[
- { icon: Users, value: '41,000+', label: 'Verified Astrologers', color: 'text-saffron-600' },
- { icon: Award, value: '5%', label: 'Acceptance Rate', color: 'text-saffron-600' },
+ { icon: Users, value: 'Vetted', label: 'Verified Astrologers', color: 'text-saffron-600' },
+ { icon: Award, value: 'Selective', label: 'Manual Onboarding', color: 'text-saffron-600' },
  { icon: Clock, value: '24/7', label: 'Available', color: 'text-saffron-600' },
  { icon: Lock, value: '100%', label: 'Private & Secure', color: 'text-saffron-600' },
  ].map((stat) => {
