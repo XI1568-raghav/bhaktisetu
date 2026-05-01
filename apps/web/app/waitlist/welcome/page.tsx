@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -12,6 +12,14 @@ interface Stats {
 }
 
 export default function WaitlistWelcomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-[calc(100vh-3.5rem)]" style={{ background: 'var(--color-bg, #f5f3ef)' }} />}>
+      <WelcomeContent />
+    </Suspense>
+  );
+}
+
+function WelcomeContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get('code') ?? '';
   const [stats, setStats] = useState<Stats | null>(null);
