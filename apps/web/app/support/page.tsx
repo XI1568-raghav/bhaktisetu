@@ -127,7 +127,7 @@ export default function SupportPage() {
  {POPULAR_ARTICLES.map((article, idx) => (
  <a
  key={article.id}
- href="#"
+ href={`/support/faq?q=${encodeURIComponent(article.title)}`}
  className="group flex items-start gap-4 py-4 border-b border-surface-100 hover:border-saffron-300 transition-colors"
  >
  <span className="text-sm font-bold text-saffron-600 w-6 shrink-0 pt-0.5">
