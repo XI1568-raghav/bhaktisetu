@@ -119,6 +119,29 @@ export default function HomeScreen() {
           <Text style={styles.searchPlaceholder}>Search pujas, temples, content…</Text>
         </TouchableOpacity>
 
+        {!user && (
+          <TouchableOpacity
+            style={styles.waitlistCard}
+            activeOpacity={0.85}
+            onPress={() => router.push('/(onboard)/waitlist' as any)}
+          >
+            <View style={styles.waitlistIcon}>
+              <Ionicons name="sparkles" size={20} color={colors.saffron[700]} />
+            </View>
+            <View style={styles.waitlistText}>
+              <Text style={styles.waitlistTitle}>Join the Darshya waitlist</Text>
+              <Text style={styles.waitlistSubtitle}>
+                Reserve your early-access spot. Daily panchang on email.
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.saffron[700]}
+            />
+          </TouchableOpacity>
+        )}
+
         <View style={styles.panchangCard}>
           <View style={styles.panchangHeader}>
             <Ionicons name="sunny" size={18} color={colors.amber[500]} />
@@ -259,6 +282,30 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.stone[200],
   },
   searchPlaceholder: { fontSize: fontSize.base, color: colors.stone[500] },
+  waitlistCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.saffron[100],
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+  },
+  waitlistIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waitlistText: { flex: 1 },
+  waitlistTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
+  waitlistSubtitle: { fontSize: fontSize.xs, color: colors.stone[700], marginTop: 2 },
   panchangCard: {
     backgroundColor: colors.amber[400],
     marginHorizontal: spacing.lg, marginTop: spacing.md,

@@ -65,6 +65,13 @@ const quickLinks: QuickLink[] = [
 
 const moreLinks: QuickLink[] = [
   {
+    id: 'list-business',
+    icon: 'business',
+    label: 'List your business',
+    subtitle: 'Temple, gaushala, pandit, astrologer or wellness',
+    color: colors.saffron[600],
+  },
+  {
     id: 'help',
     icon: 'help-circle',
     label: 'Help & Support',
@@ -84,6 +91,52 @@ const moreLinks: QuickLink[] = [
     label: 'Share App',
     subtitle: 'Invite friends and family',
     color: colors.green[500],
+  },
+];
+
+interface OnboardOption {
+  id: string;
+  label: string;
+  subtitle: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  href: string;
+}
+
+const ONBOARD_OPTIONS: OnboardOption[] = [
+  {
+    id: 'temple',
+    label: 'List your temple',
+    subtitle: 'Live darshan, puja bookings, 80G donations',
+    icon: 'home',
+    href: '/(onboard)/list-temple',
+  },
+  {
+    id: 'priest',
+    label: 'Become a pandit',
+    subtitle: 'Earn from pujas and consultations',
+    icon: 'person',
+    href: '/(onboard)/become-priest',
+  },
+  {
+    id: 'astrologer',
+    label: 'Become an astrologer',
+    subtitle: 'Per-minute jyotish consultations',
+    icon: 'star',
+    href: '/(onboard)/become-astrologer',
+  },
+  {
+    id: 'wellness',
+    label: 'Teach yoga & meditation',
+    subtitle: 'Live group sessions, fair payouts',
+    icon: 'leaf',
+    href: '/(onboard)/become-wellness',
+  },
+  {
+    id: 'gaushala',
+    label: 'List your gaushala',
+    subtitle: '80G donations, monthly seva subs',
+    icon: 'paw',
+    href: '/(onboard)/list-gaushala',
   },
 ];
 
@@ -118,6 +171,7 @@ export default function ProfileScreen() {
   const bookingsQuery = useBookings();
   const addressesQuery = useUserAddresses();
   const [refreshing, setRefreshing] = useState(false);
+  const [showOnboardOptions, setShowOnboardOptions] = useState(false);
 
   const bookingCount = bookingsQuery.data?.data?.length ?? 0;
   const addressCount = addressesQuery.data?.data?.length ?? 0;
@@ -159,6 +213,10 @@ export default function ProfileScreen() {
     }
     if (id === 'addresses') {
       Alert.alert('Addresses', `${addressCount} saved address${addressCount === 1 ? '' : 'es'}.`);
+      return;
+    }
+    if (id === 'list-business') {
+      setShowOnboardOptions((v) => !v);
       return;
     }
     Alert.alert('Coming Soon', 'This feature is coming soon!');
@@ -283,6 +341,49 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+
+        {/* Onboarding options (expanded when "List your business" tapped) */}
+        {showOnboardOptions && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Choose your role</Text>
+            <View style={styles.linksCard}>
+              {ONBOARD_OPTIONS.map((opt, index) => (
+                <React.Fragment key={opt.id}>
+                  <TouchableOpacity
+                    style={styles.linkRow}
+                    activeOpacity={0.6}
+                    onPress={() => router.push(opt.href as any)}
+                  >
+                    <View
+                      style={[
+                        styles.linkIcon,
+                        { backgroundColor: `${colors.saffron[600]}14` },
+                      ]}
+                    >
+                      <Ionicons
+                        name={opt.icon}
+                        size={20}
+                        color={colors.saffron[600]}
+                      />
+                    </View>
+                    <View style={styles.linkInfo}>
+                      <Text style={styles.linkLabel}>{opt.label}</Text>
+                      <Text style={styles.linkSubtitle}>{opt.subtitle}</Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.stone[300]}
+                    />
+                  </TouchableOpacity>
+                  {index < ONBOARD_OPTIONS.length - 1 && (
+                    <View style={styles.divider} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Sign Out (if authenticated) */}
         {isAuthenticated && (
