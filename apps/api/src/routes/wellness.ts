@@ -428,25 +428,6 @@ export async function wellnessRoutes(server: FastifyInstance) {
     return { instructor };
   });
 
-  // ─── GET /sessions ─────────────────────────────────────────────────────────
-  server.get('/sessions', async (request) => {
-    const { category, date } = request.query as {
-      category?: string;
-      date?: string;
-    };
-
-    let filtered = [...sessions];
-
-    if (category) {
-      filtered = filtered.filter((s) => s.category === category);
-    }
-    if (date) {
-      filtered = filtered.filter((s) => s.date === date);
-    }
-
-    return { sessions: filtered, total: filtered.length };
-  });
-
   // ─── GET /programs ─────────────────────────────────────────────────────────
   server.get('/programs', async (request) => {
     const { category, level } = request.query as {

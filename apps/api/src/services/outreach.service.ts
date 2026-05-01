@@ -1,0 +1,308 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Resend } from 'resend';
+import { prisma } from '../lib/prisma.js';
+import type { Lead, OutreachChannel, OutreachStatus } from '@prisma/client';
+
+/**
+ * Outreach service: sends cold email + WhatsApp first-touch and follow-ups
+ * to scraped leads. Logs every send to OutreachLog for audit + dedup.
+ *
+ * Env:
+ *   RESEND_API_KEY                    — required for email; if absent, sendEmail returns {skipped:true}
+ *   OUTREACH_FROM_EMAIL               — default: "Darshya <outreach@darshya.online>"
+ *   OUTREACH_REPLY_TO                 — default: founder@darshya.online
+ *   WHATSAPP_TOKEN                    — required for WhatsApp; if absent, sendWhatsApp no-ops
+ *   WHATSAPP_PHONE_ID                 — required for WhatsApp; if absent, sendWhatsApp no-ops
+ *   WHATSAPP_API_VERSION              — default: v21.0
+ */
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TEMPLATES_DIR = path.join(__dirname, '..', 'templates', 'outreach');
+
+const FROM_EMAIL = process.env.OUTREACH_FROM_EMAIL ?? 'Darshya <outreach@darshya.online>';
+const REPLY_TO = process.env.OUTREACH_REPLY_TO ?? 'founder@darshya.online';
+
+const resendKey = process.env.RESEND_API_KEY;
+const resend = resendKey ? new Resend(resendKey) : null;
+
+const whatsappToken = process.env.WHATSAPP_TOKEN ?? process.env.WHATSAPP_ACCESS_TOKEN;
+const whatsappPhoneId = process.env.WHATSAPP_PHONE_ID ?? process.env.WHATSAPP_PHONE_NUMBER_ID;
+const whatsappApiVersion = process.env.WHATSAPP_API_VERSION ?? 'v21.0';
+const whatsappEnabled = !!(whatsappToken && whatsappPhoneId);
+
+// ─── Template loading ───────────────────────────────────────────────────
+
+const baseStyles = `
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: #fbf7f1; color: #3d2e1f; padding: 0; margin: 0; }
+  .container { max-width: 560px; margin: 24px auto; padding: 32px 28px;
+               background: white; border-radius: 12px;
+               box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .brand { font-size: 22px; font-weight: 600; color: #ea580c; margin: 0 0 24px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 16px; }
+  p { font-size: 14px; line-height: 1.6; margin: 0 0 12px; }
+  .btn { display: inline-block; background: #ea580c; color: white !important;
+         padding: 12px 24px; border-radius: 8px; text-decoration: none;
+         font-weight: 500; font-size: 14px; margin: 12px 0; }
+  .signature { margin-top: 28px; padding-top: 16px; border-top: 1px solid #eee;
+               font-size: 13px; color: #555; }
+  .footer { font-size: 11px; color: #999; margin-top: 28px;
+            padding-top: 16px; border-top: 1px solid #eee; text-align: center; }
+`;
+
+const layoutStart = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container"><div class="brand">Darshya</div>`;
+
+function layoutEnd(unsubUrl: string): string {
+  return `<div class="footer">Darshya · India's Devotional Super App · https://darshya.online<br>
+You received this because we found your contact during temple/provider research.<br>
+<a href="${unsubUrl}">Unsubscribe</a> · IT Rules 2021 / CAN-SPAM / CASL compliant</div>
+</div></body></html>`;
+}
+
+const templateCache = new Map<string, string>();
+
+function loadTemplate(filename: string): string {
+  if (templateCache.has(filename)) return templateCache.get(filename)!;
+  const fullPath = path.join(TEMPLATES_DIR, filename);
+  const raw = fs.readFileSync(fullPath, 'utf-8');
+  templateCache.set(filename, raw);
+  return raw;
+}
+
+function interpolate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? '');
+}
+
+function renderEmailTemplate(filename: string, vars: Record<string, string>): string {
+  const tpl = loadTemplate(filename);
+  const unsubUrl = `https://darshya.online/unsubscribe?lead=${encodeURIComponent(vars.leadId ?? '')}`;
+  const replaced = tpl
+    .replace(/\{\{layoutStart\}\}/g, layoutStart)
+    .replace(/\{\{layoutEnd\}\}/g, layoutEnd(unsubUrl));
+  return interpolate(replaced, vars);
+}
+
+// ─── Subject lines per template ─────────────────────────────────────────
+
+const SUBJECTS: Record<string, string> = {
+  temple_first_touch: 'Darshya — आपके मंदिर के लिए digital booking platform',
+  temple_followup_3day: 'Re: आपके मंदिर के लिए Darshya partnership',
+  temple_followup_7day: 'Last reminder — Darshya 100-temple early-mover slot',
+  priest_first_touch: 'Darshya — पंडित जी के लिए online पूजा platform',
+  priest_followup_3day: 'Re: Darshya priest partnership',
+  priest_followup_7day: 'Last reminder — Darshya priest slot',
+  astrologer_first_touch: 'Darshya — verified astrologers के लिए online platform',
+  astrologer_followup_3day: 'Re: Darshya astrologer partnership',
+  astrologer_followup_7day: 'Last reminder — Darshya astrologer slot',
+  wellness_first_touch: 'Darshya — invite for wellness instructors (yoga / pranayama / meditation)',
+  wellness_followup_3day: 'Re: Darshya wellness instructor partnership',
+  wellness_followup_7day: 'Last reminder — Darshya wellness slot',
+  gaushala_first_touch: 'Darshya — आपकी गौशाला के लिए 80G donation platform',
+  gaushala_followup_3day: 'Re: Darshya gaushala partnership',
+  gaushala_followup_7day: 'Last reminder — Darshya gaushala slot',
+};
+
+// ─── Public API ─────────────────────────────────────────────────────────
+
+export interface SendResult {
+  ok: boolean;
+  skipped?: boolean;
+  id?: string;
+  error?: string;
+}
+
+interface LeadLike {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  whatsappNumber: string | null;
+  city: string | null;
+  role: string;
+}
+
+export interface SendEmailParams {
+  lead: LeadLike;
+  templateKey: string;
+  variables?: Record<string, string>;
+  language?: 'hi' | 'en';
+}
+
+/**
+ * Resolve the template filename. Tries `<key>.<lang>.html` first, then
+ * `<key>.html`, then `<key>.en.html` as final fallback.
+ */
+function resolveEmailFile(templateKey: string, lang: 'hi' | 'en'): string | null {
+  const candidates = [`${templateKey}.${lang}.html`, `${templateKey}.html`, `${templateKey}.en.html`];
+  for (const c of candidates) {
+    const full = path.join(TEMPLATES_DIR, c);
+    if (fs.existsSync(full)) return c;
+  }
+  return null;
+}
+
+export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
+  const { lead, templateKey, variables = {}, language = 'hi' } = params;
+  if (!lead.email) {
+    return { ok: false, error: 'lead has no email' };
+  }
+  if (!resend) {
+    return { ok: false, skipped: true };
+  }
+  const file = resolveEmailFile(templateKey, language);
+  if (!file) {
+    return { ok: false, error: `template not found: ${templateKey}` };
+  }
+  const html = renderEmailTemplate(file, {
+    leadId: lead.id,
+    name: lead.name || 'ji',
+    city: lead.city || 'India',
+    ...variables,
+  });
+  const subject = SUBJECTS[templateKey] ?? 'A note from Darshya';
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: lead.email,
+      replyTo: REPLY_TO,
+      subject,
+      html,
+      headers: {
+        'List-Unsubscribe': `<https://darshya.online/api/v1/outreach/unsubscribe?lead=${lead.id}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, id: data?.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// ─── WhatsApp ───────────────────────────────────────────────────────────
+
+function normalisePhone(input: string): string {
+  const digits = input.replace(/\D/g, '');
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.startsWith('0') && digits.length === 11) return `91${digits.slice(1)}`;
+  return digits;
+}
+
+function loadWhatsappTemplate(templateKey: string): string | null {
+  const file = path.join(TEMPLATES_DIR, `${templateKey}.txt`);
+  if (!fs.existsSync(file)) return null;
+  return fs.readFileSync(file, 'utf-8').trim();
+}
+
+export interface SendWhatsAppParams {
+  lead: LeadLike;
+  templateKey: string;
+  variables?: Record<string, string>;
+}
+
+export async function sendWhatsApp(params: SendWhatsAppParams): Promise<SendResult> {
+  const { lead, templateKey, variables = {} } = params;
+  if (!whatsappEnabled) return { ok: false, skipped: true };
+  const target = lead.whatsappNumber ?? lead.phone;
+  if (!target) return { ok: false, error: 'lead has no whatsapp/phone' };
+
+  const tpl = loadWhatsappTemplate(templateKey);
+  if (!tpl) return { ok: false, error: `whatsapp template missing: ${templateKey}` };
+  const text = interpolate(tpl, {
+    leadId: lead.id,
+    name: lead.name || 'ji',
+    city: lead.city || 'India',
+    ...variables,
+  }).slice(0, 1000);
+
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/${whatsappApiVersion}/${whatsappPhoneId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${whatsappToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: normalisePhone(target),
+          type: 'text',
+          text: { body: text, preview_url: true },
+        }),
+      },
+    );
+    const data = (await res.json()) as {
+      messages?: Array<{ id: string }>;
+      error?: { message: string };
+    };
+    if (!res.ok) {
+      return { ok: false, error: data.error?.message ?? `HTTP ${res.status}` };
+    }
+    return { ok: true, id: data.messages?.[0]?.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// ─── Logging + counters ─────────────────────────────────────────────────
+
+export interface RecordOutreachParams {
+  leadId: string;
+  channel: OutreachChannel;
+  templateKey: string;
+  status: OutreachStatus;
+  payload?: Record<string, unknown>;
+  error?: string;
+}
+
+export async function recordOutreach(params: RecordOutreachParams): Promise<void> {
+  await prisma.outreachLog.create({
+    data: {
+      leadId: params.leadId,
+      channel: params.channel,
+      templateKey: params.templateKey,
+      status: params.status,
+      payload: params.payload as object | undefined,
+      errorMsg: params.error,
+    },
+  });
+}
+
+export async function incrementContactCount(leadId: string): Promise<void> {
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      contactCount: { increment: 1 },
+      lastContactedAt: new Date(),
+    },
+  });
+}
+
+// ─── Per-role first-touch template selection ───────────────────────────
+
+export function firstTouchTemplateKey(role: Lead['role']): string {
+  switch (role) {
+    case 'TEMPLE': return 'temple_first_touch';
+    case 'PRIEST': return 'priest_first_touch';
+    case 'ASTROLOGER': return 'astrologer_first_touch';
+    case 'WELLNESS_INSTRUCTOR': return 'wellness_first_touch';
+    case 'GAUSHALA': return 'gaushala_first_touch';
+    default: return 'temple_first_touch';
+  }
+}
+
+export function followupTemplateKey(role: Lead['role'], days: 3 | 7): string {
+  const base = firstTouchTemplateKey(role).replace('_first_touch', '');
+  return `${base}_followup_${days}day`;
+}
+
+export const outreachConfig = {
+  whatsappEnabled,
+  emailEnabled: !!resend,
+  fromEmail: FROM_EMAIL,
+  replyTo: REPLY_TO,
+};

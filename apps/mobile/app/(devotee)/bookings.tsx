@@ -20,7 +20,18 @@ export default function DevoteeBookings() {
   const filtered = all.filter((b: any) => {
     if (filter === 'all') return true;
     const status = String(b.status ?? '').toLowerCase();
-    if (filter === 'upcoming') return status.includes('confirm') || status.includes('pend');
+    if (filter === 'upcoming') {
+      return (
+        status.includes('confirm') ||
+        status.includes('pend') ||
+        status.includes('book') ||
+        status.includes('progress') ||
+        status.includes('priest_assigned')
+      );
+    }
+    if (filter === 'completed') {
+      return status.includes('complet') || status.includes('deliver') || status.includes('video');
+    }
     return status.includes(filter);
   });
 
@@ -37,6 +48,15 @@ export default function DevoteeBookings() {
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
+      {bookingsQuery.isError ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>
+            Could not load your bookings:{' '}
+            {bookingsQuery.error instanceof Error ? bookingsQuery.error.message : 'Unknown error'}
+          </Text>
+        </View>
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.sm }}>
         {FILTERS.map((f) => {
           const active = filter === f.key;
@@ -53,24 +73,43 @@ export default function DevoteeBookings() {
         })}
       </ScrollView>
 
-      {filtered.length === 0 ? (
+      {bookingsQuery.isLoading ? (
+        <Text style={styles.loading}>Loading...</Text>
+      ) : filtered.length === 0 ? (
         <EmptyHint text="No bookings yet — book a puja to get started." />
       ) : (
         filtered.map((b: any) => {
           const status = String(b.status ?? 'pending').toLowerCase();
-          const color = status.includes('complet')
+          const color = status.includes('complet') || status.includes('deliver')
             ? colors.green[600]
             : status.includes('cancel')
               ? colors.red[600]
-              : status.includes('confirm')
+              : status.includes('confirm') || status.includes('priest')
                 ? colors.saffron[600]
                 : colors.amber[600];
+          const pujaName =
+            b.pujaName ??
+            b.pujaType?.name ??
+            b.bookingNumber ??
+            'Booking';
+          const templeName = b.templeName ?? b.temple?.name;
+          const dateRaw = b.scheduledDate ?? '';
+          const date =
+            typeof dateRaw === 'string' && dateRaw.includes('T')
+              ? dateRaw.slice(0, 10)
+              : dateRaw;
+          const time = b.scheduledTime ?? b.scheduledTimeSlot ?? '';
+          const amount = b.totalAmount ?? b.priceAmount;
           return (
             <ListRow
               key={b.id}
-              primary={b.pujaName ?? b.bookingNumber ?? 'Booking'}
-              secondary={`${b.scheduledDate ?? ''} ${b.scheduledTime ?? ''}`.trim() || 'Schedule TBD'}
-              trailing={b.totalAmount ? `₹${Number(b.totalAmount).toLocaleString('en-IN')}` : undefined}
+              primary={pujaName}
+              secondary={
+                templeName
+                  ? `${templeName} • ${date} ${time}`.trim()
+                  : `${date} ${time}`.trim() || 'Schedule TBD'
+              }
+              trailing={amount ? `₹${Number(amount).toLocaleString('en-IN')}` : undefined}
               status={{ label: b.status ?? 'pending', color }}
             />
           );
@@ -91,4 +130,14 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.saffron[600] },
   chipText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.stone[600] },
   chipTextActive: { color: colors.white },
+  loading: { textAlign: 'center', padding: spacing.lg, color: colors.stone[500] },
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    borderColor: colors.red[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  errorText: { color: colors.red[600], fontSize: fontSize.sm },
 });
