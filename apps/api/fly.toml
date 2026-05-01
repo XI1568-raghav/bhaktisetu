@@ -1,4 +1,4 @@
-app = "poojly-api"
+app = "bhaktisetu"
 primary_region = "bom"
 
 [build]

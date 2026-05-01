@@ -36,8 +36,8 @@ Region: `bom` (Mumbai). VM: shared 1 CPU / 512 MB. Health check at `/health`.
 From repo root:
 
 ```bash
-docker build -t poojly-api -f apps/api/Dockerfile .
-docker run -p 4000:4000 --env-file apps/api/.env poojly-api
+docker build -t bhaktisetu -f apps/api/Dockerfile .
+docker run -p 4000:4000 --env-file apps/api/.env bhaktisetu
 ```
 
 ## Notes

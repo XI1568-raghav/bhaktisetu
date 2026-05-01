@@ -23,6 +23,42 @@ const TEMPLATES_DIR = path.join(__dirname, '..', 'templates', 'outreach');
 
 const FROM_EMAIL = process.env.OUTREACH_FROM_EMAIL ?? 'Darshya <outreach@darshya.online>';
 const REPLY_TO = process.env.OUTREACH_REPLY_TO ?? 'founder@darshya.online';
+const TRACKING_BASE = (
+  process.env.OUTREACH_TRACKING_BASE_URL ??
+  process.env.PUBLIC_API_URL ??
+  'https://api.darshya.online'
+).replace(/\/+$/, '');
+
+/**
+ * Wrap every <a href> in the rendered HTML with a click-tracking redirect,
+ * and append a 1×1 open-tracking pixel before </body>. The unsubscribe link
+ * and any href that already points at the tracking host are left alone so
+ * we don't recursively wrap our own infrastructure.
+ */
+function injectTracking(html: string, logId: string): string {
+  if (!logId) return html;
+  const pixel =
+    `<img src="${TRACKING_BASE}/api/v1/outreach/pixel.gif?id=${encodeURIComponent(logId)}" ` +
+    `width="1" height="1" alt="" style="display:none;border:0;outline:none;" />`;
+
+  const wrapped = html.replace(/href="([^"]+)"/g, (match, raw: string) => {
+    const url = raw.trim();
+    // Skip mailto/tel/anchor/template-placeholder hrefs.
+    if (/^(mailto:|tel:|#|\{\{)/i.test(url)) return match;
+    // Skip the unsubscribe link — it must remain a direct CAN-SPAM compliant URL.
+    if (/\/unsubscribe(\?|$)/i.test(url)) return match;
+    // Skip our tracking host to avoid wrapping our own redirects.
+    if (url.startsWith(TRACKING_BASE)) return match;
+    const encoded = Buffer.from(url, 'utf-8').toString('base64url');
+    const tracked = `${TRACKING_BASE}/api/v1/outreach/click?id=${encodeURIComponent(logId)}&u=${encoded}`;
+    return `href="${tracked}"`;
+  });
+
+  if (wrapped.includes('</body>')) {
+    return wrapped.replace('</body>', `${pixel}</body>`);
+  }
+  return `${wrapped}${pixel}`;
+}
 
 const resendKey = process.env.RESEND_API_KEY;
 const resend = resendKey ? new Resend(resendKey) : null;
@@ -129,6 +165,8 @@ export interface SendEmailParams {
   templateKey: string;
   variables?: Record<string, string>;
   language?: 'hi' | 'en';
+  /** OutreachLog id used to wrap href links + open pixel. When omitted, no tracking is injected. */
+  logId?: string;
 }
 
 /**
@@ -145,7 +183,7 @@ function resolveEmailFile(templateKey: string, lang: 'hi' | 'en'): string | null
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
-  const { lead, templateKey, variables = {}, language = 'hi' } = params;
+  const { lead, templateKey, variables = {}, language = 'hi', logId } = params;
   if (!lead.email) {
     return { ok: false, error: 'lead has no email' };
   }
@@ -156,12 +194,13 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
   if (!file) {
     return { ok: false, error: `template not found: ${templateKey}` };
   }
-  const html = renderEmailTemplate(file, {
+  const rendered = renderEmailTemplate(file, {
     leadId: lead.id,
     name: lead.name || 'ji',
     city: lead.city || 'India',
     ...variables,
   });
+  const html = logId ? injectTracking(rendered, logId) : rendered;
   const subject = SUBJECTS[templateKey] ?? 'A note from Darshya';
   try {
     const { data, error } = await resend.emails.send({
@@ -257,11 +296,14 @@ export interface RecordOutreachParams {
   status: OutreachStatus;
   payload?: Record<string, unknown>;
   error?: string;
+  /** Optional pre-generated id so callers can wire tracking links/pixel before the row is written. */
+  id?: string;
 }
 
-export async function recordOutreach(params: RecordOutreachParams): Promise<void> {
-  await prisma.outreachLog.create({
+export async function recordOutreach(params: RecordOutreachParams): Promise<{ id: string }> {
+  const created = await prisma.outreachLog.create({
     data: {
+      ...(params.id ? { id: params.id } : {}),
       leadId: params.leadId,
       channel: params.channel,
       templateKey: params.templateKey,
@@ -269,7 +311,9 @@ export async function recordOutreach(params: RecordOutreachParams): Promise<void
       payload: params.payload as object | undefined,
       errorMsg: params.error,
     },
+    select: { id: true },
   });
+  return { id: created.id };
 }
 
 export async function incrementContactCount(leadId: string): Promise<void> {
