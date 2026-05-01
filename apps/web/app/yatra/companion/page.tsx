@@ -312,7 +312,7 @@ export default function CompanionListingPage() {
  <Link href="/yatra" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
  Browse Yatras <ArrowRight className="w-3.5 h-3.5" />
  </Link>
- <Link href="tel:+918012345678" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+ <Link href="tel:+919037049955" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
  <Phone className="w-3.5 h-3.5" /> Talk to advisor
  </Link>
  </div>
