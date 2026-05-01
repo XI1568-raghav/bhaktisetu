@@ -42,6 +42,10 @@ export default function PriestLayout() {
           name="profile"
           options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }}
         />
+        <Tabs.Screen
+          name="subscription"
+          options={{ title: 'Plan', tabBarIcon: ({ color, size }) => <TabIcon name="card" color={color} size={size} /> }}
+        />
         <Tabs.Screen name="reviews" options={{ href: null, title: 'Reviews' }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
