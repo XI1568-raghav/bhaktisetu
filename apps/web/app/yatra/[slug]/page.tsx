@@ -44,6 +44,57 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  const yatra = getYatraBySlug(slug);
  if (!yatra) return notFound();
 
+ const lowestPackage = yatra.packages.reduce(
+ (min, p) => (p.price < min ? p.price : min),
+ yatra.packages[0]?.price ?? yatra.startingPrice,
+ );
+ const highestPackage = yatra.packages.reduce(
+ (max, p) => (p.price > max ? p.price : max),
+ yatra.packages[0]?.price ?? yatra.startingPrice,
+ );
+
+ const jsonLd = {
+ '@context': 'https://schema.org',
+ '@type': 'TouristTrip',
+ name: yatra.title,
+ description: yatra.description,
+ image: [yatra.heroImage, ...yatra.gallery].slice(0, 6),
+ url: `https://darshya.online/yatra/${yatra.slug}`,
+ touristType: 'Pilgrims',
+ itinerary: yatra.places.map((place, i) => ({
+ '@type': 'Place',
+ name: place,
+ position: i + 1,
+ })),
+ subjectOf: {
+ '@type': 'CreativeWork',
+ name: `${yatra.title} — ${yatra.durationDays} day itinerary`,
+ },
+ provider: {
+ '@type': 'Organization',
+ name: 'Darshya',
+ url: 'https://darshya.online',
+ },
+ offers: {
+ '@type': 'AggregateOffer',
+ priceCurrency: 'INR',
+ lowPrice: lowestPackage,
+ highPrice: highestPackage,
+ offerCount: yatra.packages.length,
+ availability: 'https://schema.org/InStock',
+ url: `https://darshya.online/yatra/${yatra.slug}/book`,
+ offers: yatra.packages.map((pkg) => ({
+ '@type': 'Offer',
+ name: `${yatra.title} — ${pkg.name}`,
+ description: pkg.tagline,
+ price: pkg.price,
+ priceCurrency: 'INR',
+ availability: 'https://schema.org/InStock',
+ url: `https://darshya.online/yatra/${yatra.slug}/book?tier=${pkg.tier}`,
+ })),
+ },
+ };
+
  const diffColor = {
  easy: '#16a34a',
  moderate: '#b87333',
@@ -54,6 +105,10 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  return (
  <ScrollReveal>
  <div style={{ background: 'var(--color-bg)' }}>
+ <script
+ type="application/ld+json"
+ dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+ />
  {/* ═══ HERO ═════════════════════════════════════════════ */}
  <section className="relative">
  <div className="absolute inset-0">
