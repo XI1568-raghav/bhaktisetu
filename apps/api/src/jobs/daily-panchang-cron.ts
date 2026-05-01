@@ -104,10 +104,12 @@ export async function runDailyPanchangBlast(): Promise<PanchangBlastResult> {
   let failed = 0;
   let cursor: string | null = null;
 
+  type BatchRow = { id: string; email: string; fullName: string | null };
+
   // Cursor-based pagination on createdAt (stable, ascending) — avoids
   // OFFSET cost on large tables and tolerates concurrent inserts.
   while (true) {
-    const batch = await prisma.waitlist.findMany({
+    const batch: BatchRow[] = await prisma.waitlist.findMany({
       where: {
         status: 'CONFIRMED',
         panchangOptIn: true,
