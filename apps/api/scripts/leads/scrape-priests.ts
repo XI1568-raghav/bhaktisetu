@@ -13,6 +13,7 @@
  */
 import * as cheerio from 'cheerio';
 import { politeFetch, runScrape, type RawLead } from './_shared.js';
+import { PRIEST_SEED } from './_priest-seed.js';
 
 interface DirectorySource {
   source: string;
@@ -130,6 +131,8 @@ async function fetchAndParse(
 
 async function main(): Promise<void> {
   await runScrape('PRIEST', 'priests', async ({ upsert }) => {
+    console.log(`[priests] seeding ${PRIEST_SEED.length} static priests first`);
+    for (const lead of PRIEST_SEED) await upsert(lead);
     for (const source of DIRECTORY_URLS) {
       await fetchAndParse(source, upsert);
     }

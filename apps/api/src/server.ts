@@ -48,6 +48,7 @@ import { wellnessSessionRoutes } from './routes/wellness-sessions.js';
 import { outreachWebhookRoutes, outreachAdminRoutes } from './routes/outreach-webhook.js';
 import { adminLeadsRoutes } from './routes/admin-leads.js';
 import { waitlistRoutes } from './routes/waitlist.js';
+import { leadsSelfOnboardRoutes } from './routes/leads-self-onboard.js';
 
 const server = Fastify({
   logger: {
@@ -145,6 +146,7 @@ async function bootstrap() {
   await server.register(outreachAdminRoutes, { prefix: '/api/v1/admin/outreach' });
   await server.register(adminLeadsRoutes, { prefix: '/api/v1/admin' });
   await server.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
+  await server.register(leadsSelfOnboardRoutes, { prefix: '/api/v1/leads' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
