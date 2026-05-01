@@ -179,7 +179,7 @@ export default function HelpPage() {
  {cat.articles.map((article) => (
  <li key={article}>
  <a
- href="#"
+ href={`/support/faq?q=${encodeURIComponent(article)}`}
  className="flex items-center gap-1.5 text-xs py-1 transition-colors group"
  style={{ color: "var(--color-text-muted)" }}
  >
