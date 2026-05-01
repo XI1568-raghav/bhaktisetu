@@ -55,7 +55,7 @@ npx prisma db seed   # creates 8 demo accounts + 5 temples + 25 pujas
    ANTHROPIC_API_KEY=<optional, get from console.anthropic.com>
    ```
 6. Click **Deploy**. Railway builds Docker image + runs `prisma migrate deploy` on start
-7. Once deployed, Railway assigns a URL like `poojly-api-production.up.railway.app` — copy it
+7. Once deployed, Railway assigns a URL like `bhaktisetu.onrender.com` — copy it
 8. Go to **Settings** → **Networking** → click **"Generate Domain"** if no URL shown yet
 
 Verify: `curl https://<your-railway-url>/health` should return `{"status":"ok"}`

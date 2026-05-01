@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import {
   sendEmail,
@@ -71,15 +72,19 @@ async function sendFirstTouch(lead: Lead): Promise<{ ok: boolean; error?: string
 
   const personalizedOpener = await generatePersonalizedOpener(lead);
 
-  // Email first
+  // Email first. Pre-generate the OutreachLog id so click + open tracking
+  // links can reference it before the row is written.
+  const emailLogId = randomUUID();
   const emailResult = await sendEmail({
     lead,
     templateKey,
     language: 'hi',
     variables: { personalizedOpener },
+    logId: emailLogId,
   });
   if (emailResult.ok) {
     await recordOutreach({
+      id: emailLogId,
       leadId: lead.id,
       channel: 'EMAIL',
       templateKey,
@@ -135,9 +140,11 @@ async function sendFollowup(lead: Lead, days: 3 | 7): Promise<{ ok: boolean; err
   if (await alreadySent(lead.id, templateKey)) {
     return { ok: true };
   }
-  const result = await sendEmail({ lead, templateKey, language: 'hi' });
+  const followupLogId = randomUUID();
+  const result = await sendEmail({ lead, templateKey, language: 'hi', logId: followupLogId });
   if (result.ok) {
     await recordOutreach({
+      id: followupLogId,
       leadId: lead.id,
       channel: 'EMAIL',
       templateKey,
