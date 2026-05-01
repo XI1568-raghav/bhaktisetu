@@ -1140,3 +1140,87 @@ model WellnessEnrollment {
   @@index([status])
   @@map("wellness_enrollments")
 }
+
+// ─── LEAD GENERATION ───────────────────────────────────────────────────────
+// Outreach pipeline: scraped provider candidates per role. Not connected to
+// User/auth — these are prospects until converted (convertedUserId set).
+
+enum LeadRole {
+  TEMPLE
+  PRIEST
+  ASTROLOGER
+  WELLNESS_INSTRUCTOR
+  GAUSHALA
+}
+
+enum LeadStatus {
+  NEW
+  QUEUED
+  EMAILED
+  REPLIED
+  CONVERTED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+model Lead {
+  id              String     @id @default(uuid()) @db.Uuid
+  role            LeadRole
+  name            String
+  city            String?
+  state           String?
+  country         String     @default("India")
+  phone           String?
+  email           String?
+  whatsappNumber  String?    @map("whatsapp_number")
+  source          String
+  sourceUrl       String?    @map("source_url")
+  metadata        Json       @default("{}")
+  status          LeadStatus @default(NEW)
+  lastContactedAt DateTime?  @map("last_contacted_at")
+  contactCount    Int        @default(0) @map("contact_count")
+  convertedUserId String?    @map("converted_user_id") @db.Uuid
+  notes           String?
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  outreachLogs OutreachLog[]
+
+  @@unique([role, email])
+  @@unique([role, phone])
+  @@index([role, status])
+  @@index([city, role])
+  @@map("leads")
+}
+
+enum OutreachChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum OutreachStatus {
+  SENT
+  DELIVERED
+  OPENED
+  REPLIED
+  BOUNCED
+  FAILED
+}
+
+model OutreachLog {
+  id          String          @id @default(uuid()) @db.Uuid
+  leadId      String          @map("lead_id") @db.Uuid
+  channel     OutreachChannel
+  templateKey String          @map("template_key")
+  status      OutreachStatus
+  payload     Json?
+  errorMsg    String?         @map("error_msg")
+  sentAt      DateTime        @default(now()) @map("sent_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([status, sentAt])
+  @@map("outreach_logs")
+}
