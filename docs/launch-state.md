@@ -89,3 +89,12 @@ Multi-vertical super-app vs NRI-only narrow focus. Two or more tripwires firing 
 ## Active multi-session plans
 
 - `C:\Users\DELL\.claude\plans\iridescent-gathering-blum.md` — Mobile App full parity. See `docs/mobile-plan.md`.
+
+## Outreach + Waitlist Operations
+
+- Daily ops endpoint: `POST /api/v1/admin/jobs/daily-ops` (admin token)
+- Recommended cron: every 30 min via cron-job.org → outreach tick
+- Daily 5am IST: panchang blast
+- Lead scrapers: `pnpm leads:scrape-all` (manual or weekly)
+- Admin dashboard: https://darshya.online/admin/leads
+- Required env vars: RESEND_API_KEY, GROQ_API_KEY, WHATSAPP_TOKEN (optional)

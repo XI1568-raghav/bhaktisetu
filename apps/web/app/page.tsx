@@ -29,6 +29,17 @@ export default function HomePage() {
  return (
  <ScrollReveal>
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
+ {/* Sticky early-access banner — pinned just below the fixed nav. */}
+ <div
+   className="sticky top-14 z-[55] w-full text-center text-[12px] sm:text-xs px-4 py-2"
+   style={{ background: 'var(--color-primary)', color: '#fff' }}
+ >
+   <span className="font-medium">1000-devotee early access</span>
+   <span className="mx-2 opacity-70">—</span>
+   <Link href="/waitlist" className="underline underline-offset-2 font-semibold whitespace-nowrap">
+     Join the waitlist →
+   </Link>
+ </div>
  <div style={{ background: 'var(--color-bg)' }}>
 
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}

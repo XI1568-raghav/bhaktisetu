@@ -117,6 +117,20 @@ export default function TabLayout() {
           title: 'Bookings',
         }}
       />
+      <Tabs.Screen
+        name="donations"
+        options={{
+          href: null,
+          title: 'Donations',
+        }}
+      />
+      <Tabs.Screen
+        name="support"
+        options={{
+          href: null,
+          title: 'Support',
+        }}
+      />
     </Tabs>
     </RoleGuard>
   );
