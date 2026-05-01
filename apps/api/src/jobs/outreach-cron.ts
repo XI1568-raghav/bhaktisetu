@@ -7,7 +7,27 @@ import {
   firstTouchTemplateKey,
   followupTemplateKey,
 } from '../services/outreach.service.js';
+import { generateText } from '../integrations/claude.js';
 import type { Lead } from '@prisma/client';
+
+/**
+ * Generate a one-sentence personalized opener via Groq. Returns '' if the AI
+ * provider is unavailable or the call fails — templates render fine without it.
+ */
+async function generatePersonalizedOpener(lead: Lead): Promise<string> {
+  if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY === 'demo-key') {
+    return '';
+  }
+  try {
+    const systemPrompt =
+      'You write one-sentence personalized openers for B2B cold emails to Indian devotional service providers. Output only the sentence, no quotes, no preamble. Max 20 words. Reference the city\'s devotional culture or notable temples briefly.';
+    const userMessage = `Recipient name: ${lead.name}\nCity: ${lead.city ?? 'India'}\nRole: ${lead.role}\n\nWrite the one-sentence opener.`;
+    const text = await generateText({ systemPrompt, userMessage, maxTokens: 80 });
+    return text.trim().replace(/^["']|["']$/g, '').slice(0, 280);
+  } catch {
+    return '';
+  }
+}
 
 /**
  * Outreach cron tick. Runs every 30 minutes via /api/v1/admin/outreach/run
@@ -49,8 +69,15 @@ async function sendFirstTouch(lead: Lead): Promise<{ ok: boolean; error?: string
   // Skip excluded roles — none currently excluded, but kept for future.
   if (!templateKey) return { ok: false, error: 'no template for role' };
 
+  const personalizedOpener = await generatePersonalizedOpener(lead);
+
   // Email first
-  const emailResult = await sendEmail({ lead, templateKey, language: 'hi' });
+  const emailResult = await sendEmail({
+    lead,
+    templateKey,
+    language: 'hi',
+    variables: { personalizedOpener },
+  });
   if (emailResult.ok) {
     await recordOutreach({
       leadId: lead.id,
@@ -71,7 +98,11 @@ async function sendFirstTouch(lead: Lead): Promise<{ ok: boolean; error?: string
 
   // WhatsApp (best-effort, not required)
   if (lead.whatsappNumber || lead.phone) {
-    const waResult = await sendWhatsApp({ lead, templateKey });
+    const waResult = await sendWhatsApp({
+      lead,
+      templateKey,
+      variables: { personalizedOpener },
+    });
     if (waResult.ok) {
       await recordOutreach({
         leadId: lead.id,
