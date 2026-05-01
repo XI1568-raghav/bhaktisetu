@@ -234,11 +234,15 @@ export async function getPujaTypes(params?: {
  category?: string;
  deity?: string;
  search?: string;
+ page?: number;
+ limit?: number;
 }): Promise<PaginatedResponse<PujaType>> {
  const searchParams = new URLSearchParams();
  if (params?.category) searchParams.set('category', params.category);
  if (params?.deity) searchParams.set('deity', params.deity);
  if (params?.search) searchParams.set('search', params.search);
+ if (params?.page) searchParams.set('page', String(params.page));
+ if (params?.limit) searchParams.set('limit', String(params.limit));
 
  const query = searchParams.toString();
  return serverFetch<PaginatedResponse<PujaType>>(
