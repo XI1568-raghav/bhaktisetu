@@ -19,6 +19,7 @@ import {
  type DarshanStream,
 } from '../../../lib/api';
 import DarshanPlayer from '../../../components/DarshanPlayer';
+import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
 import { getTempleHero } from '../../../lib/images';
 
 // ─── YouTube stream URL lookup for fallback ──────────────────────────────────
@@ -194,6 +195,17 @@ export default async function DarshanDetailPage({
  {/* Main — Video Player */}
  <div className="lg:col-span-2 space-y-6">
  {/* Player */}
+ {stream.streamProvider === 'YOUTUBE' ? (
+ <YouTubeDarshanPlayer
+ videoId={stream.youtubeVideoId}
+ channelId={stream.youtubeChannelId}
+ attribution={stream.attribution}
+ />
+ ) : stream.streamProvider === 'EXTERNAL_RTMP' ? (
+ <div className="aspect-video bg-surface-100 flex items-center justify-center text-surface-400 rounded-xl">
+ Stream offline
+ </div>
+ ) : (
  <DarshanPlayer
  streamUrl={playbackUrl}
  templeName={stream.temple.name}
@@ -207,6 +219,7 @@ export default async function DarshanDetailPage({
  templeDeity={stream.temple.deityPrimary}
  templeImage={templeImage}
  />
+ )}
 
  {/* Stream info */}
  <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">

@@ -125,6 +125,12 @@ enum StreamStatus {
   scheduled
 }
 
+enum StreamProvider {
+  YOUTUBE
+  IVS
+  EXTERNAL_RTMP
+}
+
 enum SubscriptionPlan {
   bhakti_pass_monthly
   bhakti_pass_yearly
@@ -493,18 +499,22 @@ model DailyPanchang {
 }
 
 model LiveDarshanStream {
-  id             String       @id @default(uuid()) @db.Uuid
-  templeId       String       @map("temple_id") @db.Uuid
-  streamKey      String       @map("stream_key")
-  playbackUrl    String       @map("playback_url")
-  status         StreamStatus @default(offline)
-  scheduledStart DateTime?    @map("scheduled_start")
-  actualStart    DateTime?    @map("actual_start")
-  viewerCount    Int          @default(0) @map("viewer_count")
-  peakViewers    Int          @default(0) @map("peak_viewers")
-  isPremium      Boolean      @default(false) @map("is_premium")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  id               String         @id @default(uuid()) @db.Uuid
+  templeId         String         @map("temple_id") @db.Uuid
+  streamKey        String         @map("stream_key")
+  playbackUrl      String         @map("playback_url")
+  status           StreamStatus   @default(offline)
+  scheduledStart   DateTime?      @map("scheduled_start")
+  actualStart      DateTime?      @map("actual_start")
+  viewerCount      Int            @default(0) @map("viewer_count")
+  peakViewers      Int            @default(0) @map("peak_viewers")
+  isPremium        Boolean        @default(false) @map("is_premium")
+  streamProvider   StreamProvider @default(YOUTUBE) @map("stream_provider")
+  youtubeVideoId   String?        @map("youtube_video_id")
+  youtubeChannelId String?        @map("youtube_channel_id")
+  attribution      String?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   temple Temple @relation(fields: [templeId], references: [id])
 
@@ -1223,4 +1233,43 @@ model OutreachLog {
   @@index([leadId])
   @@index([status, sentAt])
   @@map("outreach_logs")
+}
+
+// ─── DEVOTEE WAITLIST ─────────────────────────────────────────────────────
+// Pre-launch viral waitlist with referral codes. Devotees join, confirm via
+// email, then climb the rank by sharing their unique referral URL.
+
+model Waitlist {
+  id             String         @id @default(uuid()) @db.Uuid
+  email          String         @unique
+  fullName       String?
+  phone          String?
+  city           String?
+  preferredDeity String?
+  panchangOptIn  Boolean        @default(true)
+  whatsappOptIn  Boolean        @default(false)
+  referralCode   String         @unique
+  referredByCode String?
+  referralCount  Int            @default(0)
+  source         String?
+  status         WaitlistStatus @default(PENDING)
+  confirmedAt    DateTime?
+  invitedAt      DateTime?
+  convertedAt    DateTime?
+  lastNudgedAt   DateTime?
+  nudgeCount     Int            @default(0)
+  createdAt      DateTime       @default(now())
+
+  @@index([referralCode])
+  @@index([referredByCode])
+  @@index([status])
+  @@map("waitlist")
+}
+
+enum WaitlistStatus {
+  PENDING
+  CONFIRMED
+  INVITED
+  CONVERTED
+  UNSUBSCRIBED
 }
