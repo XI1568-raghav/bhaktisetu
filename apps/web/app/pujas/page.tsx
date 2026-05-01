@@ -29,7 +29,7 @@ export const revalidate = 600;
 export const metadata: Metadata = {
  title: "Pujas",
  description:
- "Book authentic pujas at renowned temples across India. Verified pandits, live streaming, prasad delivery. Choose from 200+ sacred rituals.",
+ "Book authentic pujas at renowned temples across India. Verified pandits, live streaming, prasad delivery. Choose from a curated catalogue of sacred rituals.",
 };
 
 const categories = [
