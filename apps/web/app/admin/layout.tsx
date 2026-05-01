@@ -18,6 +18,9 @@ import {
  LifeBuoy,
  Wallet,
  Sparkles,
+ Target,
+ Send,
+ ListChecks,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -27,6 +30,9 @@ const sidebarLinks = [
  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
  { href: '/admin/users', label: 'Users', icon: Users },
  { href: '/admin/approvals', label: 'Approvals', icon: ClipboardCheck },
+ { href: '/admin/leads', label: 'Leads', icon: Target },
+ { href: '/admin/outreach', label: 'Outreach', icon: Send },
+ { href: '/admin/waitlist', label: 'Waitlist', icon: ListChecks },
  { href: '/admin/support', label: 'Support Tickets', icon: LifeBuoy },
  { href: '/admin/commissions', label: 'Commissions', icon: Wallet },
  { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
