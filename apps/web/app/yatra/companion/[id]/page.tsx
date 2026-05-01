@@ -128,7 +128,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  >
  Book This Companion <ArrowRight className="w-3 h-3" />
  </Link>
- <Link href="tel:+918012345678" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
+ <Link href="tel:+919037049955" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
  <Phone className="w-3 h-3" /> Call advisor
  </Link>
  </div>
