@@ -422,9 +422,9 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
   // Path mounts under same prefix as admin (/api/v1/admin) but bypasses auth.
   server.get('/cron/tick', async (request, reply) => {
     const token = (request.query as { token?: string })?.token;
-    const expected = process.env.CRON_TICK_TOKEN;
+    const expected = process.env.CRON_TICK_TOKEN ?? process.env.CRON_AUTH_TOKEN;
     if (!expected) {
-      return reply.code(503).send({ error: 'CRON_TICK_TOKEN not configured' });
+      return reply.code(503).send({ error: 'CRON token not configured' });
     }
     if (token !== expected) {
       return reply.code(401).send({ error: 'Invalid token' });
