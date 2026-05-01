@@ -56,6 +56,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/terms',
     '/auth/login',
     '/auth/signup',
+    '/waitlist',
+    '/waitlist/welcome',
   ];
 
   const [templeSlugs, pujaSlugs] = await Promise.all([
