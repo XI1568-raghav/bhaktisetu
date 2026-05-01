@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDeityImage } from "../../lib/images";
+import { getPujaTypes, type PujaType } from "../../lib/api";
 import {
  Flame,
  Star,
@@ -22,6 +23,8 @@ import {
  Tag,
  Sparkles,
 } from "lucide-react";
+
+export const revalidate = 600;
 
 export const metadata: Metadata = {
  title: "Pujas",
@@ -77,172 +80,195 @@ const priceRanges = [
  "Above ₹5,000",
 ];
 
-const pujas = [
+// View-model the page actually renders. Real API data is mapped onto this
+// shape; if the API is unreachable we fall back to a static set of pujas
+// whose slugs MATCH real DB seed slugs so /pujas/<slug> still resolves.
+interface PujaCard {
+ id: string;
+ slug: string;
+ name: string;
+ temple: string;
+ category: string;
+ deity: string;
+ price: number;
+ duration: string;
+ tag: string;
+ tagColor: string;
+ hasLiveStream: boolean;
+ hasPrasadDelivery: boolean;
+ description: string;
+}
+
+const TAG_COLORS = [
+ 'bg-saffron-600',
+ 'bg-ganga-blue',
+ 'bg-tulsi-green',
+ 'bg-temple-gold',
+ 'bg-sacred-red',
+ 'bg-purple-600',
+ 'bg-lotus-pink',
+ 'bg-rudraksha-brown',
+];
+
+function categoryTag(category: string, idx: number): { tag: string; tagColor: string } {
+ const map: Record<string, string> = {
+ Abhishekam: 'Most Popular',
+ 'Path / Paath': 'Recommended',
+ Jaap: 'Health',
+ 'Dosh Nivaran': 'Dosh Nivaran',
+ 'Shanti Puja': 'For Prosperity',
+ Aarti: 'Daily',
+ 'Havan / Homam': 'Vedic',
+ 'Festival Special': 'Festival',
+ };
+ return {
+ tag: map[category] || 'Featured',
+ tagColor: TAG_COLORS[idx % TAG_COLORS.length],
+ };
+}
+
+function formatDuration(minutes: number): string {
+ if (!minutes || minutes <= 0) return '1 hour';
+ if (minutes < 60) return `${minutes} min`;
+ const h = Math.floor(minutes / 60);
+ const m = minutes % 60;
+ return m === 0 ? `${h} hour${h > 1 ? 's' : ''}` : `${h}h ${m}m`;
+}
+
+function mapPujaTypeToCard(p: PujaType, idx: number): PujaCard {
+ const { tag, tagColor } = categoryTag(p.category, idx);
+ const price = Number(p.basePrice) || 0;
+ return {
+ id: p.id,
+ slug: p.slug,
+ name: p.name,
+ temple: 'Multiple temples',
+ category: p.category || 'Puja',
+ deity: p.deity || 'Lord Shiva',
+ price,
+ duration: formatDuration(p.durationMinutes),
+ tag,
+ tagColor,
+ hasLiveStream: true,
+ hasPrasadDelivery: p.samagriIncluded,
+ description: p.description || `${p.name} performed by verified pandits.`,
+ };
+}
+
+// Fallback only used if the API is offline. Slugs MUST match real DB seeds
+// so /pujas/<slug> still renders the correct detail page.
+const FALLBACK_PUJAS: PujaCard[] = [
  {
- id: 1,
- name: "Rudrabhishek Puja",
- temple: "Kashi Vishwanath, Varanasi",
- category: "Abhishekam",
- deity: "Lord Shiva",
+ id: 'fb-1',
+ slug: 'rudrabhishek',
+ name: 'Rudrabhishek Puja',
+ temple: 'Kashi Vishwanath, Varanasi',
+ category: 'Abhishekam',
+ deity: 'Lord Shiva',
  price: 1100,
- rating: 4.9,
- reviews: 2340,
- duration: "2 hours",
- tag: "Most Popular",
- tagColor: "bg-saffron-600",
+ duration: '2 hours',
+ tag: 'Most Popular',
+ tagColor: 'bg-saffron-600',
  hasLiveStream: true,
  hasPrasadDelivery: true,
- bookings: 2340,
  description:
- "Sacred abhishekam of the Shiva Lingam with panchamrit — milk, honey, curd, ghee, and sugar. Includes 108 chants of Om Namah Shivaya.",
+ 'Sacred abhishekam of the Shiva Lingam with panchamrit — milk, honey, curd, ghee, and sugar. Includes 108 chants of Om Namah Shivaya.',
  },
  {
- id: 2,
- name: "Satyanarayan Katha",
- temple: "ISKCON, Delhi",
- category: "Path / Paath",
- deity: "Lord Vishnu",
+ id: 'fb-2',
+ slug: 'satyanarayan-katha',
+ name: 'Satyanarayan Katha',
+ temple: 'ISKCON, Delhi',
+ category: 'Path / Paath',
+ deity: 'Lord Vishnu',
  price: 751,
- rating: 4.8,
- reviews: 1820,
- duration: "1.5 hours",
- tag: "Recommended",
- tagColor: "bg-ganga-blue",
+ duration: '1.5 hours',
+ tag: 'Recommended',
+ tagColor: 'bg-ganga-blue',
  hasLiveStream: true,
  hasPrasadDelivery: true,
- bookings: 1820,
  description:
- "Complete Satyanarayan Katha with five chapters, aarti, and prasad distribution. Ideal for new beginnings and thanksgiving.",
+ 'Complete Satyanarayan Katha with five chapters, aarti, and prasad distribution. Ideal for new beginnings and thanksgiving.',
  },
  {
- id: 3,
- name: "Ganesh Atharvashirsha Path",
- temple: "Siddhivinayak, Mumbai",
- category: "Path / Paath",
- deity: "Lord Ganesha",
- price: 501,
- rating: 4.9,
- reviews: 3100,
- duration: "45 min",
- tag: "Trending",
- tagColor: "bg-tulsi-green",
- hasLiveStream: true,
- hasPrasadDelivery: true,
- bookings: 3100,
- description:
- "Recitation of the powerful Ganesh Atharvashirsha for removing obstacles and bringing success. Includes modak prasad.",
- },
- {
- id: 4,
- name: "Mahalakshmi Puja",
- temple: "Mahalakshmi Temple, Kolhapur",
- category: "Shanti Puja",
- deity: "Goddess Lakshmi",
- price: 851,
- rating: 4.7,
- reviews: 1560,
- duration: "1 hour",
- tag: "For Prosperity",
- tagColor: "bg-temple-gold",
- hasLiveStream: true,
- hasPrasadDelivery: true,
- bookings: 1560,
- description:
- "Worship of Goddess Mahalakshmi with kumkum archana, lotus offerings, and Shri Suktam recitation for wealth and prosperity.",
- },
- {
- id: 5,
- name: "Maha Mrityunjaya Jaap",
- temple: "Kashi Vishwanath, Varanasi",
- category: "Jaap",
- deity: "Lord Shiva",
+ id: 'fb-3',
+ slug: 'mahamrityunjaya',
+ name: 'Maha Mrityunjaya Jaap',
+ temple: 'Kashi Vishwanath, Varanasi',
+ category: 'Jaap',
+ deity: 'Lord Shiva',
  price: 1500,
- rating: 4.9,
- reviews: 1780,
- duration: "2.5 hours",
- tag: "Health",
- tagColor: "bg-sacred-red",
+ duration: '2.5 hours',
+ tag: 'Health',
+ tagColor: 'bg-sacred-red',
  hasLiveStream: true,
  hasPrasadDelivery: true,
- bookings: 1780,
  description:
- "108 recitations of the Maha Mrityunjaya Mantra with vedic rituals for health, longevity, and overcoming life-threatening situations.",
+ '108 recitations of the Maha Mrityunjaya Mantra with vedic rituals for health, longevity, and overcoming life-threatening situations.',
  },
  {
- id: 6,
- name: "Navgraha Shanti Puja",
- temple: "Navagraha Temple, Guwahati",
- category: "Dosh Nivaran",
- deity: "Navagraha",
+ id: 'fb-4',
+ slug: 'navagraha-shanti',
+ name: 'Navagraha Shanti Puja',
+ temple: 'Navagraha Temple, Guwahati',
+ category: 'Dosh Nivaran',
+ deity: 'Navagraha',
  price: 2100,
- rating: 4.6,
- reviews: 980,
- duration: "3 hours",
- tag: "Astrology",
- tagColor: "bg-purple-600",
+ duration: '3 hours',
+ tag: 'Astrology',
+ tagColor: 'bg-purple-600',
  hasLiveStream: true,
  hasPrasadDelivery: false,
- bookings: 980,
  description:
- "Complete Navagraha Shanti Puja to pacify all nine planets. Includes separate homam for each graha and navgraha stotram.",
+ 'Complete Navagraha Shanti Puja to pacify all nine planets. Includes separate homam for each graha and navgraha stotram.',
  },
  {
- id: 7,
- name: "Sunderkand Path",
- temple: "Sankat Mochan, Varanasi",
- category: "Path / Paath",
- deity: "Lord Hanuman",
- price: 351,
- rating: 4.8,
- reviews: 4200,
- duration: "2 hours",
- tag: "Tuesday Special",
- tagColor: "bg-saffron-600",
+ id: 'fb-5',
+ slug: 'ganesh-puja',
+ name: 'Ganesh Puja',
+ temple: 'Siddhivinayak, Mumbai',
+ category: 'Path / Paath',
+ deity: 'Lord Ganesha',
+ price: 501,
+ duration: '45 min',
+ tag: 'Trending',
+ tagColor: 'bg-tulsi-green',
  hasLiveStream: true,
  hasPrasadDelivery: true,
- bookings: 4200,
  description:
- "Complete recitation of Sunderkand from Ramcharitmanas. Especially auspicious on Tuesdays and Saturdays for strength and courage.",
+ 'Worship of Lord Ganesha for removing obstacles and bringing success. Includes modak prasad.',
  },
  {
- id: 8,
- name: "Durga Saptashati Path",
- temple: "Vaishno Devi, Katra",
- category: "Path / Paath",
- deity: "Goddess Durga",
- price: 1800,
- rating: 4.8,
- reviews: 1340,
- duration: "4 hours",
- tag: "Navratri Special",
- tagColor: "bg-lotus-pink",
+ id: 'fb-6',
+ slug: 'lakshmi-puja',
+ name: 'Mahalakshmi Puja',
+ temple: 'Mahalakshmi Temple, Kolhapur',
+ category: 'Shanti Puja',
+ deity: 'Goddess Lakshmi',
+ price: 851,
+ duration: '1 hour',
+ tag: 'For Prosperity',
+ tagColor: 'bg-temple-gold',
  hasLiveStream: true,
  hasPrasadDelivery: true,
- bookings: 1340,
  description:
- "Full recitation of the 700 verses of Durga Saptashati (Devi Mahatmyam) with havan and kumkum archana.",
- },
- {
- id: 9,
- name: "Kaal Sarp Dosh Nivaran",
- temple: "Trimbakeshwar, Nashik",
- category: "Dosh Nivaran",
- deity: "Lord Shiva",
- price: 5100,
- rating: 4.6,
- reviews: 620,
- duration: "5 hours",
- tag: "Dosh Nivaran",
- tagColor: "bg-rudraksha-brown",
- hasLiveStream: true,
- hasPrasadDelivery: false,
- bookings: 620,
- description:
- "Comprehensive Kaal Sarp Dosh Nivaran puja with Nag offerings, Tripindi Shraadh, and Rudrabhishek at Trimbakeshwar Jyotirlinga.",
+ 'Worship of Goddess Mahalakshmi with kumkum archana, lotus offerings, and Shri Suktam recitation for wealth and prosperity.',
  },
 ];
 
-export default function PujasPage() {
+async function loadPujas(): Promise<PujaCard[]> {
+ try {
+ const res = await getPujaTypes({ limit: 100 });
+ const items = Array.isArray(res?.data) ? res.data : [];
+ if (items.length === 0) return FALLBACK_PUJAS;
+ return items.map(mapPujaTypeToCard);
+ } catch {
+ return FALLBACK_PUJAS;
+ }
+}
+
+export default async function PujasPage() {
+ const pujas = await loadPujas();
  return (
  <div className="min-h-screen bg-surface-50">
  {/* Hero */}
@@ -506,21 +532,12 @@ export default function PujasPage() {
  </p>
 
  <div className="flex items-center gap-3 mt-3 text-sm">
- <div className="flex items-center gap-1">
- <Star className="w-4 h-4 text-temple-gold fill-temple-gold" />
- <span className="font-semibold text-surface-700">
- {puja.rating}
- </span>
- </div>
- <span className="text-surface-300">|</span>
- <span className="text-surface-500">
- {puja.reviews.toLocaleString("en-IN")} reviews
- </span>
- <span className="text-surface-300">|</span>
  <span className="text-surface-500 flex items-center gap-1">
  <Clock className="w-3.5 h-3.5" />
  {puja.duration}
  </span>
+ <span className="text-surface-300">|</span>
+ <span className="text-surface-500 truncate">{puja.category}</span>
  </div>
 
  <div className="mt-4 flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--color-divider)' }}>
@@ -533,7 +550,7 @@ export default function PujasPage() {
  </span>
  </div>
  <a
- href={`/pujas/${puja.name.toLowerCase().replace(/\s+/g, '-')}`}
+ href={`/pujas/${puja.slug}`}
  className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
  style={{ background: 'var(--color-primary)', color: '#fff' }}
  >
