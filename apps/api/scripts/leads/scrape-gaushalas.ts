@@ -9,6 +9,7 @@
  */
 import * as cheerio from 'cheerio';
 import { politeFetch, runScrape, type RawLead } from './_shared.js';
+import { GAUSHALA_SEED } from './_gaushala-seed.js';
 
 interface DirectorySource {
   source: string;
@@ -118,6 +119,8 @@ async function fetchAndParse(
 
 async function main(): Promise<void> {
   await runScrape('GAUSHALA', 'gaushalas', async ({ upsert }) => {
+    console.log(`[gaushalas] seeding ${GAUSHALA_SEED.length} static gaushalas first`);
+    for (const lead of GAUSHALA_SEED) await upsert(lead);
     for (const source of SOURCES) {
       await fetchAndParse(source, upsert);
     }
