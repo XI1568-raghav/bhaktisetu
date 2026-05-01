@@ -30,6 +30,7 @@ import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNav } from "../components/MobileNav";
 import { MoreDropdown } from "../components/MoreDropdown";
+import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
 import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
 import { NotificationPrompt } from "../components/NotificationPrompt";
@@ -153,6 +154,16 @@ const footerSections = [
  ],
  },
  {
+ title: "For Business",
+ links: [
+ { href: "/list-temple", label: "List your temple" },
+ { href: "/become-priest", label: "Become a pandit" },
+ { href: "/become-astrologer", label: "Become an astrologer" },
+ { href: "/become-wellness", label: "Teach yoga & meditation" },
+ { href: "/list-gaushala", label: "List your gaushala" },
+ ],
+ },
+ {
  title: "Company",
  links: [
  { href: "/about", label: "About Us" },
@@ -270,6 +281,7 @@ export default function RootLayout({
 
  {/* Right side */}
  <div className="flex items-center gap-1.5 ml-auto md:ml-0 shrink-0">
+ <ListYourBusinessDropdown />
  <GlobalSearch />
  <NavCartButton />
  <div className="hidden sm:block">
@@ -289,7 +301,7 @@ export default function RootLayout({
  <div className="h-px bg-gradient-to-r from-transparent via-saffron-600/40 to-transparent" />
 
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-20">
- <div className="grid grid-cols-2 md:grid-cols-6 gap-10">
+ <div className="grid grid-cols-2 md:grid-cols-7 gap-10">
  {/* Brand column */}
  <div className="col-span-2">
  <div className="flex items-center gap-2.5 mb-5">
