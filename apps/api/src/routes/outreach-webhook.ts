@@ -8,19 +8,30 @@ import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { generateText } from '../integrations/claude.js';
 import {
   recordOutreach,
-  sendEmail,
   outreachConfig,
 } from '../services/outreach.service.js';
+import { sendEmail as sendRawEmail } from '../lib/email.js';
 import { runOutreachTick } from '../jobs/outreach-cron.js';
 
 /**
  * Inbound reply + unsubscribe + admin-trigger routes.
  *
- *   POST /api/v1/outreach/reply-webhook  — Resend inbound parse webhook
+ *   POST /api/v1/outreach/reply-webhook  — Resend inbound parse webhook (legacy alias)
+ *   POST /api/v1/outreach/inbound        — Resend inbound parse webhook (current)
  *   GET  /api/v1/outreach/unsubscribe    — One-click unsub (CAN-SPAM / IT Rules 2021)
  *   POST /api/v1/outreach/unsubscribe    — RFC 8058 one-click POST
  *   POST /api/v1/admin/outreach/run      — Manual cron tick (admin only)
  *   POST /api/v1/outreach/bounce-webhook — Resend bounce webhook
+ *
+ * Inbound replies run through a Groq classifier (with regex fallback) into
+ * one of: INTERESTED, NEEDS_INFO, UNSUBSCRIBE, SPAM, OUT_OF_OFFICE. The
+ * `classifiedIntent` is persisted in OutreachLog.payload (no schema change
+ * needed — the column is JSON). Lead.status is updated for INTERESTED /
+ * NEEDS_INFO (→ REPLIED) and UNSUBSCRIBE (→ UNSUBSCRIBED); SPAM and
+ * OUT_OF_OFFICE leave status untouched. INTERESTED also pings ADMIN_EMAILS.
+ *
+ * Every external call is wrapped — the webhook ALWAYS returns 200 (Resend
+ * retries on 5xx and we don't want loops).
  */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,12 +39,34 @@ const TEMPLATES_DIR = path.join(__dirname, '..', 'templates', 'outreach');
 
 const POSITIVE_INTENT = /\b(interested|join|onboard|register|connect|sign\s*up|tell\s*me\s*more|count me in)\b|कैसे|जोड़ें|रुचि|जुड़ना|ज्वाइन/i;
 const NEGATIVE_INTENT = /\b(unsubscribe|stop|remove|opt[-\s]?out|no\s+thanks|not interested)\b|बंद|हटा|मना/i;
+const OOO_INTENT = /\b(out of office|out-of-office|on (vacation|leave|holiday)|annual leave|away from (?:my )?desk|will be back|automatic reply|auto[-\s]?reply)\b/i;
+
+const CALENDAR_LINK = process.env.OUTREACH_CALENDAR_URL ?? 'https://cal.com/darshya/intro';
+
+type IntentLabel = 'INTERESTED' | 'NEEDS_INFO' | 'UNSUBSCRIBE' | 'SPAM' | 'OUT_OF_OFFICE';
+
+const VALID_INTENTS: ReadonlySet<IntentLabel> = new Set([
+  'INTERESTED',
+  'NEEDS_INFO',
+  'UNSUBSCRIBE',
+  'SPAM',
+  'OUT_OF_OFFICE',
+]);
 
 // ─── Reply payload schema (Resend inbound) ──────────────────────────────
+//
+// Resend's inbound webhook posts `from` as either a plain string or a
+// `{ email, name }` object. We accept both shapes — anything else falls
+// through to undefined.
+
+const fromSchema = z.union([
+  z.string(),
+  z.object({ email: z.string().optional(), name: z.string().optional() }).passthrough(),
+]);
 
 const replySchema = z.object({
-  from: z.string().optional(),
-  to: z.string().optional(),
+  from: fromSchema.optional(),
+  to: z.union([z.string(), z.array(z.string())]).optional(),
   subject: z.string().optional(),
   text: z.string().optional(),
   html: z.string().optional(),
@@ -42,6 +75,21 @@ const replySchema = z.object({
   // Optional explicit lead id when sender provides X-Darshya-Lead header
   leadId: z.string().uuid().optional(),
 });
+
+function fromToString(from: z.infer<typeof fromSchema> | undefined): string | undefined {
+  if (!from) return undefined;
+  if (typeof from === 'string') return from;
+  return from.email ?? from.name;
+}
+
+function fromToEmail(from: z.infer<typeof fromSchema> | undefined): string | null {
+  if (!from) return null;
+  if (typeof from === 'string') {
+    const m = from.match(/<?([\w.+-]+@[\w.-]+)>?/);
+    return m && m[1] ? m[1].toLowerCase() : null;
+  }
+  return (from.email ?? null)?.toLowerCase() ?? null;
+}
 
 function extractLeadIdFromHeaders(
   headers: Array<{ name: string; value: string }> | undefined,
@@ -66,12 +114,114 @@ async function aiAutoReply(lead: {
 }, replyText: string): Promise<string> {
   const role = lead.role.toLowerCase().replace('_instructor', '').replace('_', '-');
   const portal = `https://darshya.online/${role}-portal/signup`;
-  const systemPrompt = `You are Darshya's onboarding assistant. Reply to this provider lead in their language (Hindi / English / Hinglish — match the tone they used). Be warm, respectful, concise (max 6 sentences). Acknowledge their interest, share signup link ${portal}, and ask for the best time today/tomorrow for a 15-minute call. Sign as "Team Darshya". Do NOT invent prices or features — keep it factual.`;
+  const systemPrompt = `You are Darshya's onboarding assistant. Reply to this provider lead in their language (Hindi / English / Hinglish — match the tone they used). Be warm, respectful, concise (max 6 sentences). Acknowledge their interest, share signup link ${portal} and the calendar booking link ${CALENDAR_LINK}, and ask them to pick a 15-minute slot. Sign as "Team Darshya". Do NOT invent prices or features — keep it factual.`;
   const userMessage = `Lead name: ${lead.name}\nCity: ${lead.city ?? 'unknown'}\nRole: ${lead.role}\n\nTheir reply:\n"""\n${replyText.slice(0, 1500)}\n"""\n\nWrite the reply email body only (no subject line, no headers).`;
   try {
     return await generateText({ systemPrompt, userMessage, maxTokens: 400 });
   } catch {
-    return `Namaste ${lead.name},\n\nThank you for your interest in Darshya! You can sign up here: ${portal}\n\nCould you share a 15-minute window today or tomorrow for a quick call?\n\nWarm regards,\nTeam Darshya`;
+    return `Namaste ${lead.name},\n\nThank you for your interest in Darshya! You can sign up here: ${portal}\n\nPick a 15-minute slot here: ${CALENDAR_LINK}\n\nWarm regards,\nTeam Darshya`;
+  }
+}
+
+async function aiNeedsInfoReply(lead: {
+  id: string;
+  name: string;
+  email: string | null;
+  city: string | null;
+  role: string;
+}, replyText: string): Promise<string> {
+  const role = lead.role.toLowerCase().replace('_instructor', '').replace('_', '-');
+  const portal = `https://darshya.online/${role}-portal/signup`;
+  const systemPrompt = `You are Darshya's onboarding assistant. The provider lead asked specific questions before committing. Match their language (Hindi / English / Hinglish). Be concise (max 8 sentences). Use ONLY these factual answers — do NOT invent figures:
+- Pricing: zero setup fee. Platform commission 20–40% depending on category, settled on each completed booking.
+- Video proof: every puja booking is recorded by the priest and uploaded before payout (mandatory).
+- Payouts: priest payout = booking price minus commission, released after Aadhaar verification + video upload, within 7 working days.
+- Free tier: applicants pay nothing to list.
+Acknowledge their question, answer the relevant FAQ items above (skip irrelevant ones), share signup link ${portal} and calendar link ${CALENDAR_LINK}, and invite them to book a 15-minute call. Sign as "Team Darshya".`;
+  const userMessage = `Lead name: ${lead.name}\nCity: ${lead.city ?? 'unknown'}\nRole: ${lead.role}\n\nTheir reply (with questions):\n"""\n${replyText.slice(0, 1500)}\n"""\n\nWrite the reply email body only (no subject line, no headers).`;
+  try {
+    return await generateText({ systemPrompt, userMessage, maxTokens: 500 });
+  } catch {
+    return `Namaste ${lead.name},
+
+Thanks for your questions. Quick answers:
+- Pricing: no setup fee. Platform commission is 20–40% depending on category, applied per completed booking.
+- Video proof: every puja booking is recorded by the priest and uploaded before payout (mandatory on Darshya).
+- Payouts: settled within 7 working days of video upload, after Aadhaar verification.
+
+Sign-up: ${portal}
+Book a 15-minute call: ${CALENDAR_LINK}
+
+Warm regards,
+Team Darshya`;
+  }
+}
+
+/**
+ * Classify a single inbound reply into one of the five intent buckets.
+ * Wraps the LLM call: any failure (no key, network, malformed response)
+ * yields `null`, which the caller falls back to regex heuristics.
+ */
+async function classifyIntent(replyText: string): Promise<IntentLabel | null> {
+  const text = replyText.trim();
+  if (!text) return null;
+  const systemPrompt =
+    'You classify B2B email replies. Return ONLY one word: INTERESTED, NEEDS_INFO, UNSUBSCRIBE, SPAM, or OUT_OF_OFFICE.';
+  try {
+    const raw = await generateText({
+      systemPrompt,
+      userMessage: text.slice(0, 2000),
+      maxTokens: 8,
+    });
+    const cleaned = raw
+      .replace(/[^A-Za-z_]/g, ' ')
+      .trim()
+      .toUpperCase()
+      .split(/\s+/)[0];
+    if (cleaned && VALID_INTENTS.has(cleaned as IntentLabel)) {
+      return cleaned as IntentLabel;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function heuristicIntent(replyText: string): IntentLabel {
+  if (NEGATIVE_INTENT.test(replyText)) return 'UNSUBSCRIBE';
+  if (OOO_INTENT.test(replyText)) return 'OUT_OF_OFFICE';
+  if (POSITIVE_INTENT.test(replyText)) return 'INTERESTED';
+  return 'NEEDS_INFO';
+}
+
+async function notifyAdminsOfInterestedReply(
+  lead: { id: string; name: string; email: string | null; city: string | null; role: string },
+  replyText: string,
+  fromEmail: string | null,
+): Promise<void> {
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+  if (adminEmails.length === 0) return;
+  const safeText = replyText.slice(0, 4000).replace(/[<>]/g, (c) => (c === '<' ? '&lt;' : '&gt;'));
+  try {
+    await sendRawEmail({
+      to: adminEmails,
+      subject: `[Darshya] INTERESTED reply from ${lead.name} (${lead.role})`,
+      html: `<h1>Interested lead replied</h1>
+<p><strong>Name:</strong> ${lead.name}<br/>
+<strong>Role:</strong> ${lead.role}<br/>
+<strong>City:</strong> ${lead.city ?? 'unknown'}<br/>
+<strong>Email:</strong> ${lead.email ?? fromEmail ?? 'unknown'}<br/>
+<strong>Lead ID:</strong> ${lead.id}</p>
+<h2>Their reply</h2>
+<pre style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:6px;">${safeText}</pre>
+<p>Calendar link sent: <a href="${CALENDAR_LINK}">${CALENDAR_LINK}</a></p>`,
+      text: `Interested lead: ${lead.name} (${lead.role}, ${lead.city ?? 'unknown'})\nLead ID: ${lead.id}\n\nReply:\n${safeText}\n\nCalendar: ${CALENDAR_LINK}`,
+    });
+  } catch {
+    // Notification is best-effort; never break the webhook.
   }
 }
 
@@ -85,89 +235,187 @@ function unsubscribeHtml(): string {
 
 // ─── Routes ─────────────────────────────────────────────────────────────
 
-export async function outreachWebhookRoutes(server: FastifyInstance) {
-  // ── Inbound reply parsing ──────────────────────────────────────────
-  server.post('/reply-webhook', async (request, reply) => {
-    const parsed = replySchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: 'Invalid payload', details: parsed.error.flatten() });
-    }
-    const { from, text = '', html = '', headers, leadId: explicitId } = parsed.data;
-    const leadId = explicitId ?? extractLeadIdFromHeaders(headers, text, html);
-    if (!leadId) {
-      return reply.code(202).send({ ok: false, reason: 'no leadId resolvable' });
-    }
+/**
+ * Process one inbound reply. Always resolves — never throws.
+ * Resend retries on 5xx, so we swallow every non-fatal error and return
+ * an action string for the route handler to ship back as 200.
+ */
+async function handleInbound(body: unknown): Promise<{
+  ok: boolean;
+  action: string;
+  intent?: IntentLabel;
+  reason?: string;
+}> {
+  const parsed = replySchema.safeParse(body);
+  if (!parsed.success) {
+    return { ok: false, action: 'invalid_payload' };
+  }
+  const { from, text = '', html = '', headers, leadId: explicitId } = parsed.data;
+  const leadId = explicitId ?? extractLeadIdFromHeaders(headers, text, html);
+  const replyText = text || html;
+  const fromEmail = fromToEmail(from);
 
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    if (!lead) {
-      return reply.code(202).send({ ok: false, reason: 'lead not found' });
-    }
+  // Try to resolve the lead via id, else fall back to the sender email.
+  let lead = leadId ? await prisma.lead.findUnique({ where: { id: leadId } }) : null;
+  if (!lead && fromEmail) {
+    lead = await prisma.lead.findFirst({ where: { email: fromEmail } });
+  }
+  if (!lead) {
+    return { ok: false, action: 'lead_not_resolvable', reason: 'no leadId resolvable' };
+  }
 
-    // Negative intent → unsubscribe
-    if (NEGATIVE_INTENT.test(text) || NEGATIVE_INTENT.test(html)) {
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: { status: 'UNSUBSCRIBED' },
-      });
-      await recordOutreach({
-        leadId: lead.id,
-        channel: 'EMAIL',
-        templateKey: 'inbound_reply',
-        status: 'REPLIED',
-        payload: { from, intent: 'negative' },
-      });
-      return reply.send({ ok: true, action: 'unsubscribed' });
-    }
+  // Classify (LLM, with regex fallback).
+  const llmIntent = await classifyIntent(replyText);
+  const intent: IntentLabel = llmIntent ?? heuristicIntent(replyText);
 
-    // Positive intent → flip REPLIED + AI auto-reply
-    if (POSITIVE_INTENT.test(text) || POSITIVE_INTENT.test(html)) {
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: { status: 'REPLIED' },
-      });
-      await recordOutreach({
-        leadId: lead.id,
-        channel: 'EMAIL',
-        templateKey: 'inbound_reply',
-        status: 'REPLIED',
-        payload: { from, intent: 'positive' },
-      });
+  const fromForLog = fromToString(from);
+  const baseLogPayload = {
+    from: fromForLog,
+    classifiedIntent: intent,
+    classifierSource: llmIntent ? 'llm' : 'heuristic',
+  };
 
-      const replyBody = await aiAutoReply(lead, text || html);
-      const sendResult = await sendEmail({
-        lead,
-        templateKey: 'ai_auto_reply',
-        // Use a synthetic inline template — fall back to plain text
-        variables: {},
-      });
-
-      // sendEmail looks up a file; for AI replies we want to send raw HTML.
-      // Bypass via direct Resend call when configured; otherwise just log.
-      if (!sendResult.ok && !sendResult.skipped) {
-        // Direct send not possible without template — log the AI body so the
-        // founder can pick it up.
+  try {
+    switch (intent) {
+      case 'UNSUBSCRIBE': {
+        await prisma.lead.update({ where: { id: lead.id }, data: { status: 'UNSUBSCRIBED' } });
         await recordOutreach({
           leadId: lead.id,
           channel: 'EMAIL',
-          templateKey: 'ai_auto_reply',
-          status: 'FAILED',
-          payload: { aiBody: replyBody },
-          error: 'auto-reply send not yet wired to direct HTML send',
+          templateKey: 'inbound_reply',
+          status: 'REPLIED',
+          payload: baseLogPayload,
         });
+        return { ok: true, action: 'unsubscribed', intent };
       }
-      return reply.send({ ok: true, action: 'replied', config: outreachConfig.emailEnabled });
-    }
 
-    // Neutral / unclear → just log
-    await recordOutreach({
-      leadId: lead.id,
-      channel: 'EMAIL',
-      templateKey: 'inbound_reply',
-      status: 'REPLIED',
-      payload: { from, intent: 'neutral' },
-    });
-    return reply.send({ ok: true, action: 'logged' });
-  });
+      case 'INTERESTED': {
+        await prisma.lead.update({ where: { id: lead.id }, data: { status: 'REPLIED' } });
+        let aiBody = '';
+        try {
+          aiBody = await aiAutoReply(lead, replyText);
+        } catch {
+          aiBody = '';
+        }
+        await recordOutreach({
+          leadId: lead.id,
+          channel: 'EMAIL',
+          templateKey: 'inbound_reply',
+          status: 'REPLIED',
+          payload: { ...baseLogPayload, aiBody, calendarLink: CALENDAR_LINK },
+        });
+
+        if (lead.email && aiBody) {
+          try {
+            const replyHtml = `<div style="font-family:sans-serif;font-size:14px;line-height:1.6;">${aiBody.replace(/\n/g, '<br/>')}</div>`;
+            await sendRawEmail({
+              to: lead.email,
+              subject: `Re: Darshya — quick chat?`,
+              html: replyHtml,
+              text: aiBody,
+            });
+          } catch {
+            // Reply send is best-effort; admin notification still fires.
+          }
+        }
+
+        await notifyAdminsOfInterestedReply(lead, replyText, fromEmail);
+        return { ok: true, action: 'replied_interested', intent };
+      }
+
+      case 'NEEDS_INFO': {
+        await prisma.lead.update({ where: { id: lead.id }, data: { status: 'REPLIED' } });
+        let aiBody = '';
+        try {
+          aiBody = await aiNeedsInfoReply(lead, replyText);
+        } catch {
+          aiBody = '';
+        }
+        await recordOutreach({
+          leadId: lead.id,
+          channel: 'EMAIL',
+          templateKey: 'inbound_reply',
+          status: 'REPLIED',
+          payload: { ...baseLogPayload, aiBody, calendarLink: CALENDAR_LINK },
+        });
+        if (lead.email && aiBody) {
+          try {
+            const replyHtml = `<div style="font-family:sans-serif;font-size:14px;line-height:1.6;">${aiBody.replace(/\n/g, '<br/>')}</div>`;
+            await sendRawEmail({
+              to: lead.email,
+              subject: `Re: Darshya — quick answers`,
+              html: replyHtml,
+              text: aiBody,
+            });
+          } catch {
+            // best-effort
+          }
+        }
+        return { ok: true, action: 'replied_needs_info', intent };
+      }
+
+      case 'OUT_OF_OFFICE': {
+        // Don't change status; we'll keep them in the cadence.
+        await recordOutreach({
+          leadId: lead.id,
+          channel: 'EMAIL',
+          templateKey: 'inbound_reply',
+          status: 'REPLIED',
+          payload: baseLogPayload,
+        });
+        return { ok: true, action: 'logged_ooo', intent };
+      }
+
+      case 'SPAM':
+      default: {
+        await recordOutreach({
+          leadId: lead.id,
+          channel: 'EMAIL',
+          templateKey: 'inbound_reply',
+          status: 'REPLIED',
+          payload: baseLogPayload,
+        });
+        return { ok: true, action: 'logged_spam', intent };
+      }
+    }
+  } catch (err) {
+    // Last-resort: log a failure row so the inbound is auditable, then
+    // tell Resend "got it" so it doesn't loop.
+    try {
+      await recordOutreach({
+        leadId: lead.id,
+        channel: 'EMAIL',
+        templateKey: 'inbound_reply',
+        status: 'FAILED',
+        payload: { ...baseLogPayload, errored: true },
+        error: err instanceof Error ? err.message : String(err),
+      });
+    } catch {
+      // swallow — we still need to ack the webhook
+    }
+    return { ok: false, action: 'errored', intent };
+  }
+}
+
+export async function outreachWebhookRoutes(server: FastifyInstance) {
+  // ── Inbound reply parsing ──────────────────────────────────────────
+  const inboundHandler = async (
+    request: import('fastify').FastifyRequest,
+    reply: import('fastify').FastifyReply,
+  ) => {
+    try {
+      const result = await handleInbound(request.body);
+      return reply.code(200).send(result);
+    } catch (err) {
+      // Never crash inbound — Resend retries on 5xx and we don't want loops.
+      request.log.error({ err }, 'inbound webhook unexpected failure');
+      return reply.code(200).send({ ok: false, action: 'errored' });
+    }
+  };
+
+  server.post('/reply-webhook', inboundHandler);
+  // Spec also wires Resend inbound parse webhook at /inbound — same handler.
+  server.post('/inbound', inboundHandler);
 
   // ── Bounce webhook (Resend / SES style) ────────────────────────────
   server.post('/bounce-webhook', async (request, reply) => {
