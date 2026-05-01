@@ -255,8 +255,53 @@ export default async function PujaDetailPage({
  const { slug } = await params;
  const puja = await getPujaBySlug(slug);
 
+ const lowestPrice = puja.temples.reduce((min, t) => {
+ const p = Number(t.priceOverride || puja.basePrice);
+ return p < min ? p : min;
+ }, Number(puja.basePrice));
+
+ const jsonLd = {
+ '@context': 'https://schema.org',
+ '@type': 'Product',
+ name: puja.name,
+ description: puja.description,
+ category: puja.category,
+ image: puja.images.length > 0 ? puja.images.map((i) => i.url) : undefined,
+ brand: {
+ '@type': 'Organization',
+ name: 'Darshya',
+ },
+ offers: {
+ '@type': 'AggregateOffer',
+ priceCurrency: 'INR',
+ lowPrice: lowestPrice,
+ highPrice: Number(puja.basePrice) * 5,
+ offerCount: puja.temples.length,
+ availability: 'https://schema.org/InStock',
+ url: `https://darshya.online/pujas/${puja.slug}`,
+ offers: puja.temples.map((temple) => ({
+ '@type': 'Offer',
+ name: `${puja.name} at ${temple.templeName}`,
+ price: Number(temple.priceOverride || puja.basePrice),
+ priceCurrency: 'INR',
+ availability: temple.isActive
+ ? 'https://schema.org/InStock'
+ : 'https://schema.org/OutOfStock',
+ url: `https://darshya.online/pujas/${puja.slug}/book?temple=${temple.templeSlug}`,
+ areaServed: {
+ '@type': 'Place',
+ name: `${temple.templeCity}, ${temple.templeState}`,
+ },
+ })),
+ },
+ };
+
  return (
  <div className="min-h-screen bg-surface-50">
+ <script
+ type="application/ld+json"
+ dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+ />
  {/* Breadcrumb */}
  <div className="border-b border-surface-100 bg-white">
  <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
