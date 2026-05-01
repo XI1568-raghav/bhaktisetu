@@ -107,7 +107,7 @@ async function tickWaitlistNudges(): Promise<WaitlistResult> {
             from: fromAddress,
             to: row.email,
             subject: 'Confirm your Darshya waitlist spot',
-            html: `<p>Tap to confirm and unlock referrals: <a href="https://darshya.online/waitlist/confirm?id=${row.id}">Confirm</a></p>`,
+            html: `<p>Tap to confirm and unlock referrals: <a href="https://darshya.online/waitlist/confirm?code=${row.id}">Confirm</a></p>`,
           }),
         });
       } catch {
