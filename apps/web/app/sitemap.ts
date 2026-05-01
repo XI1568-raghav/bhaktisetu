@@ -58,6 +58,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/auth/signup',
     '/waitlist',
     '/waitlist/welcome',
+    '/list-temple',
+    '/become-priest',
+    '/become-astrologer',
+    '/become-wellness',
+    '/list-gaushala',
+  ];
+
+  const yatraSlugs = [
+    'char-dham', 'do-dham', 'jyotirlinga-yatra', 'four-dhams-india',
+    'amarnath', 'vaishno-devi', 'shirdi-sai', 'tirupati-south', 'ayodhya-kashi',
   ];
 
   const [templeSlugs, pujaSlugs] = await Promise.all([
@@ -86,5 +96,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticEntries, ...templeEntries, ...pujaEntries];
+  const yatraEntries = yatraSlugs.map((slug) => ({
+    url: `${BASE_URL}/yatra/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  return [...staticEntries, ...templeEntries, ...pujaEntries, ...yatraEntries];
 }
