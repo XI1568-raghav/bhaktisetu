@@ -359,6 +359,10 @@ export interface DarshanStream {
  peakViewers: number;
  isPremium: boolean;
  scheduledStart: string | null;
+ streamProvider?: 'YOUTUBE' | 'IVS' | 'EXTERNAL_RTMP' | null;
+ youtubeVideoId?: string | null;
+ youtubeChannelId?: string | null;
+ attribution?: string | null;
  temple: {
  name: string;
  slug: string;
