@@ -416,4 +416,20 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
     const result = await runDailyOps();
     return result;
   });
+
+  // Public GET tick endpoint for free-tier external pingers (UptimeRobot etc).
+  // Token-gated via CRON_TICK_TOKEN env. Returns 401 if missing/wrong.
+  // Path mounts under same prefix as admin (/api/v1/admin) but bypasses auth.
+  server.get('/cron/tick', async (request, reply) => {
+    const token = (request.query as { token?: string })?.token;
+    const expected = process.env.CRON_TICK_TOKEN;
+    if (!expected) {
+      return reply.code(503).send({ error: 'CRON_TICK_TOKEN not configured' });
+    }
+    if (token !== expected) {
+      return reply.code(401).send({ error: 'Invalid token' });
+    }
+    const result = await runDailyOps();
+    return result;
+  });
 }
