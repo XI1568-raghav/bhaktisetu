@@ -114,3 +114,32 @@ export type {
   AdminDashboard,
   AdminUser,
 } from "./hooks/providers.js";
+
+// ─── Wave 1-4 hooks (orders, tickets, wellness v2, astrology, commissions, subs, donations) ───
+export {
+  useStoreOrders,
+  useStoreOrder,
+  useCreateStoreOrder,
+  useUpdateStoreOrderStatus,
+  useSupportTickets,
+  useSupportTicket,
+  useCreateSupportTicket,
+  useUpdateSupportTicket,
+  useAddTicketMessage,
+  useWellnessSessionsV2,
+  useWellnessSession,
+  useCreateWellnessSession,
+  useEnrollWellnessSession,
+  useVerifyWellnessEnrollment,
+  useSetWellnessRoom,
+  useAstrologyConsultations,
+  useUpdateConsultation,
+  useStartConsultationCall,
+  useAdminCommissions,
+  useSubscriptionPlans,
+  useMySubscription,
+  useSubscribe,
+  useCancelSubscription,
+  useCreateDonationOrder,
+  useVerifyDonation,
+} from "./hooks/wave-1-4.js";

@@ -1,26 +1,22 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useProducts } from '@poojly/api-client';
-import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useStoreOrders, useUpdateStoreOrderStatus } from '@poojly/api-client';
+import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Order {
   id: string;
-  number: string;
-  customer: string;
-  items: number;
-  amount: number;
-  status: 'pending' | 'packed' | 'shipped' | 'delivered';
-  createdAt: string;
+  orderNumber?: string;
+  number?: string;
+  customerName?: string;
+  customer?: string;
+  itemCount?: number;
+  items?: number;
+  totalAmount?: number | string;
+  amount?: number | string;
+  status: string;
+  createdAt?: string;
 }
-
-const FALLBACK: Order[] = [
-  { id: '1', number: 'ORD-2026-0001', customer: 'Priya M.', items: 3, amount: 1697, status: 'pending', createdAt: 'Today, 10:23 AM' },
-  { id: '2', number: 'ORD-2026-0002', customer: 'Ramesh K.', items: 1, amount: 2499, status: 'packed', createdAt: 'Today, 09:15 AM' },
-  { id: '3', number: 'ORD-2026-0003', customer: 'Anjali S.', items: 2, amount: 998, status: 'shipped', createdAt: 'Yesterday' },
-  { id: '4', number: 'ORD-2026-0004', customer: 'Vikram B.', items: 5, amount: 4250, status: 'delivered', createdAt: '2 days ago' },
-  { id: '5', number: 'ORD-2026-0005', customer: 'Meera D.', items: 1, amount: 599, status: 'pending', createdAt: '3 days ago' },
-];
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -28,38 +24,73 @@ const FILTERS = [
   { key: 'packed', label: 'Packed' },
   { key: 'shipped', label: 'Shipped' },
   { key: 'delivered', label: 'Delivered' },
+  { key: 'cancelled', label: 'Cancelled' },
 ];
 
-const STATUS_COLOR: Record<Order['status'], string> = {
-  pending: colors.amber[600],
-  packed: colors.saffron[600],
-  shipped: colors.stone[600],
-  delivered: colors.green[600],
-};
+const STATUS_OPTIONS = ['pending', 'packed', 'shipped', 'delivered', 'cancelled'];
+
+function statusColor(status: string): string {
+  const s = status.toLowerCase();
+  if (s.includes('cancel')) return colors.red[600];
+  if (s.includes('deliver')) return colors.green[600];
+  if (s.includes('ship')) return colors.stone[600];
+  if (s.includes('pack')) return colors.saffron[600];
+  return colors.amber[600];
+}
 
 export default function StoreOrders() {
-  const productsQuery = useProducts();
+  const ordersQuery = useStoreOrders();
+  const updateStatus = useUpdateStoreOrderStatus();
   const [filter, setFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Real orders endpoint not yet exposed via api-client; use products refetch
-  // as a freshness signal and surface FALLBACK orders for layout demo.
-  const orders = useMemo(() => FALLBACK, []);
-  const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
+  const orders = (ordersQuery.data?.data as Order[] | undefined) ?? [];
+  const filtered =
+    filter === 'all'
+      ? orders
+      : orders.filter((o) => String(o.status).toLowerCase() === filter);
 
   async function onRefresh() {
     setRefreshing(true);
-    await productsQuery.refetch();
+    await ordersQuery.refetch();
     setRefreshing(false);
   }
+
+  function handleChangeStatus(order: Order) {
+    const buttons = STATUS_OPTIONS.map((s) => ({
+      text: s.charAt(0).toUpperCase() + s.slice(1),
+      onPress: async () => {
+        try {
+          await updateStatus.mutateAsync({ id: order.id, status: s });
+        } catch (err) {
+          Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update');
+        }
+      },
+    }));
+    Alert.alert('Update status', `Order ${order.orderNumber ?? order.number ?? order.id}`, [
+      ...buttons,
+      { text: 'Dismiss', style: 'cancel' },
+    ]);
+  }
+
+  const pendingCount = orders.filter((o) => String(o.status).toLowerCase() === 'pending').length;
 
   return (
     <PortalScreen
       title="Orders"
-      subtitle={`${orders.length} total • ${orders.filter((o) => o.status === 'pending').length} pending`}
+      subtitle={`${orders.length} total • ${pendingCount} pending`}
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
+      {ordersQuery.isError ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>
+            Could not load orders:{' '}
+            {ordersQuery.error instanceof Error ? ordersQuery.error.message : 'Unknown error'}
+          </Text>
+        </View>
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.sm }}>
         {FILTERS.map((f) => {
           const active = filter === f.key;
@@ -76,18 +107,54 @@ export default function StoreOrders() {
         })}
       </ScrollView>
 
-      {filtered.length === 0 ? (
+      {ordersQuery.isLoading ? (
+        <Text style={styles.loading}>Loading...</Text>
+      ) : filtered.length === 0 ? (
         <EmptyHint text="No orders match this filter." />
       ) : (
-        filtered.map((o) => (
-          <ListRow
-            key={o.id}
-            primary={`${o.number} • ${o.customer}`}
-            secondary={`${o.items} item${o.items === 1 ? '' : 's'} • ${o.createdAt}`}
-            trailing={`₹${o.amount.toLocaleString('en-IN')}`}
-            status={{ label: o.status, color: STATUS_COLOR[o.status] }}
-          />
-        ))
+        filtered.map((o) => {
+          const number = o.orderNumber ?? o.number ?? o.id;
+          const customer = o.customerName ?? o.customer ?? 'Customer';
+          const itemCount = o.itemCount ?? o.items ?? 0;
+          const amount = Number(o.totalAmount ?? o.amount ?? 0);
+          return (
+            <View key={o.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardPrimary}>
+                    {number} • {customer}
+                  </Text>
+                  <Text style={styles.cardSecondary}>
+                    {itemCount} item{itemCount === 1 ? '' : 's'}
+                    {o.createdAt ? ` • ${new Date(o.createdAt).toLocaleDateString('en-IN')}` : ''}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.pill,
+                    { backgroundColor: `${statusColor(o.status)}1A`, borderColor: statusColor(o.status) },
+                  ]}
+                >
+                  <Text style={[styles.pillText, { color: statusColor(o.status) }]}>{o.status}</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardFooter}>
+                <Text style={styles.amount}>₹{amount.toLocaleString('en-IN')}</Text>
+                <TouchableOpacity
+                  style={styles.statusBtn}
+                  onPress={() => handleChangeStatus(o)}
+                  activeOpacity={0.8}
+                  disabled={updateStatus.isPending}
+                >
+                  <Text style={styles.statusBtnText}>
+                    {updateStatus.isPending ? 'Updating...' : 'Change status'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })
       )}
     </PortalScreen>
   );
@@ -104,4 +171,49 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.saffron[600] },
   chipText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.stone[600] },
   chipTextActive: { color: colors.white },
+  loading: { textAlign: 'center', padding: spacing.lg, color: colors.stone[500] },
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    borderColor: colors.red[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  errorText: { color: colors.red[600], fontSize: fontSize.sm },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+    marginBottom: spacing.sm,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start' },
+  cardPrimary: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
+  cardSecondary: { fontSize: fontSize.sm, color: colors.stone[500], marginTop: 2 },
+  pill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    marginLeft: spacing.sm,
+  },
+  pillText: { fontSize: fontSize.xs, fontWeight: '700' },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
+  amount: { fontSize: fontSize.base, fontWeight: '700', color: colors.saffron[700] },
+  statusBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[600],
+    backgroundColor: colors.white,
+  },
+  statusBtnText: { color: colors.saffron[700], fontSize: fontSize.sm, fontWeight: '700' },
 });
