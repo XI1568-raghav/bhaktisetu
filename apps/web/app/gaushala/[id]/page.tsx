@@ -339,7 +339,7 @@ const gaushalaInfo: Record<
  }
 > = {
  gs_001: {
- phone: "+91 9876543210",
+ phone: "+91 90370 49955",
  email: "info@krishnagaushala.org",
  hours: "6:00 AM - 7:00 PM (All days)",
  facilities: [
@@ -350,7 +350,7 @@ const gaushalaInfo: Record<
  ],
  },
  gs_002: {
- phone: "+91 9123456780",
+ phone: "+91 90370 49955",
  email: "seva@kamdhenugaushala.in",
  hours: "7:00 AM - 6:00 PM (Mon-Sat)",
  facilities: [
@@ -361,7 +361,7 @@ const gaushalaInfo: Record<
  ],
  },
  gs_003: {
- phone: "+91 9988776655",
+ phone: "+91 90370 49955",
  email: "contact@gokulgaushala.org",
  hours: "5:30 AM - 8:00 PM (All days)",
  facilities: [

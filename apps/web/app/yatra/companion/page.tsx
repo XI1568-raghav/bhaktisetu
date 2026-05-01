@@ -217,35 +217,6 @@ export default function CompanionListingPage() {
  </div>
  </section>
 
- {/* ═══ TESTIMONIALS ═════════════════════════════════════ */}
- <section className="py-10 md:py-14">
- <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Family testimonials</p>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Stories from children of elderly yatris
- </h2>
-
- <div data-reveal="up" className="grid md:grid-cols-3 gap-4">
- {[
- { name: 'Anirudh Tiwari', city: 'Mumbai', comment: 'My parents (71 and 68) did Char Dham for the first time. Rajesh ji sent us a video update every evening. My mother said he treated them like his own parents.', yatra: 'Char Dham' },
- { name: 'Nitya Raman', city: 'Bangalore', comment: 'Sending my 76-year-old mother alone to Tirupati felt impossible until Lakshmi akka joined her. She even accompanied her to the doctor post-yatra.', yatra: 'Tirupati + South' },
- { name: 'Sameer Khanna', city: 'Delhi', comment: 'Aslam bhai refused to fly my father in bad weather — we lost one day but came home safe. That judgement is priceless.', yatra: 'Amarnath' },
- ].map((t, i) => (
- <div key={i} className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <div className="flex items-center gap-1 mb-3">
- {Array.from({ length: 5 }).map((_, s) => (
- <Star key={s} className="w-3 h-3" fill="var(--color-primary)" style={{ color: 'var(--color-primary)' }} />
- ))}
- </div>
- <p className="text-xs leading-relaxed mb-4" style={{ color: 'var(--color-text)' }}>&ldquo;{t.comment}&rdquo;</p>
- <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{t.name}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{t.city} · {t.yatra}</p>
- </div>
- ))}
- </div>
- </div>
- </section>
-
  {/* ═══ ADVANCE PAYMENT ═════════════════════════════════ */}
  <section className="py-10 md:py-14" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
