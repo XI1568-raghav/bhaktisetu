@@ -53,6 +53,7 @@ export default function RootLayout() {
             <Stack.Screen name="(temple)" options={{ headerShown: false }} />
             <Stack.Screen name="(gaushala)" options={{ headerShown: false }} />
             <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+            <Stack.Screen name="(onboard)" options={{ headerShown: false }} />
           </Stack>
         </AuthProvider>
       </QueryClientProvider>
