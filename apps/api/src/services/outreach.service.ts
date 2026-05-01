@@ -21,8 +21,8 @@ import type { Lead, OutreachChannel, OutreachStatus } from '@prisma/client';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates', 'outreach');
 
-const FROM_EMAIL = process.env.OUTREACH_FROM_EMAIL ?? 'Darshya <outreach@darshya.online>';
-const REPLY_TO = process.env.OUTREACH_REPLY_TO ?? 'founder@darshya.online';
+const FROM_EMAIL = process.env.OUTREACH_FROM_EMAIL ?? process.env.RESEND_FROM ?? 'Darshya <support@darshya.online>';
+const REPLY_TO = process.env.OUTREACH_REPLY_TO ?? 'support@darshya.online';
 const TRACKING_BASE = (
   process.env.OUTREACH_TRACKING_BASE_URL ??
   process.env.PUBLIC_API_URL ??
