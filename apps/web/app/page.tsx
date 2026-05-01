@@ -70,7 +70,7 @@ export default function HomePage() {
  style={{ background: 'var(--color-art-2)', color: 'var(--color-text)' }}
  >
  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
- 12,450+ devotees watching live darshan
+ Early access — 1,000 founding devotees
  </div>
 
  <h1
@@ -127,7 +127,7 @@ export default function HomePage() {
  </div>
  <div className="absolute bottom-2.5 left-2.5">
  <p className="text-xs font-medium text-white">Kashi Vishwanath</p>
- <p className="text-[10px] text-white/60">Morning Aarti • 12.4K watching</p>
+ <p className="text-[10px] text-white/60">Morning Aarti • Varanasi</p>
  </div>
  </div>
  <div className="rounded-xl p-3 flex flex-col justify-between scroll-float" style={{ background: 'var(--color-art-1)', minHeight: '90px', animationDelay: '0s' }}>
@@ -162,7 +162,7 @@ export default function HomePage() {
  { num: '01', title: 'The Gap', text: 'Millions of Hindus worldwide are disconnected from their spiritual roots and temple traditions.' },
  { num: '02', title: 'The Market', text: 'A $58B religious market is moving online — yet no single platform serves the full devotional journey.' },
  { num: '03', title: 'The Bridge', text: 'Darshya brings live darshan, verified pujas, AI guidance, and sacred commerce into one app.' },
- { num: '04', title: 'The Impact', text: '50K+ pujas performed, 200+ temples connected, and a growing community of devoted users.' },
+ { num: '04', title: 'The Impact', text: 'Onboarding 200+ temples and verified priests; building a trustworthy bridge for devotees worldwide.' },
  ].map((ch, i) => (
  <div key={ch.num} data-reveal="cascade" data-delay={String(i + 1)} className="relative pl-4" style={{ borderLeft: '2px solid var(--color-primary)' }}>
  <span className="text-[10px] font-bold" style={{ color: 'var(--color-primary)' }}>{ch.num}</span>
@@ -297,8 +297,8 @@ export default function HomePage() {
  <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
- <p data-counter data-counter-target="50K+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>50K+</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Pujas with proof</p>
+ <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>HD</p>
+ <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Video proof every puja</p>
  </div>
  </div>
  <div className="flex flex-wrap gap-3 mb-4">
@@ -343,7 +343,7 @@ export default function HomePage() {
  {[1,2,3,4,5].map(i => (
  <span key={i} className="text-[10px]" style={{ color: 'var(--color-primary)' }}></span>
  ))}
- <span className="text-[9px] ml-1" style={{ color: 'var(--color-text-muted)' }}>(2.1K)</span>
+ <span className="text-[9px] ml-1" style={{ color: 'var(--color-text-muted)' }}>preview</span>
  </div>
  <div className="flex items-center justify-between">
  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(184, 115, 51, 0.15)', color: 'var(--color-primary)' }}>Online</span>
@@ -514,7 +514,7 @@ export default function HomePage() {
  <section className="py-10 md:py-12">
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
  <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Join 50,000+ devotees on Darshya
+ Join the early-access community
  </h2>
  <p data-reveal="up" data-delay="1" className="text-xs max-w-sm mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Begin your spiritual journey today. Live darshan, authentic pujas, AI guidance — all in one place.

@@ -53,7 +53,7 @@ const milestones = [
  { year: "2024", event: "Puja booking with video proof goes live" },
  { year: "2025", event: "Ask Pandit AI spiritual guidance launched" },
  { year: "2025", event: "Gaushala seva and NRI devotee features added" },
- { year: "2026", event: "500+ temples, 10 lakh+ devotees served" },
+ { year: "2026", event: "Public early-access launch — onboarding founding devotees" },
 ];
 
 export default function AboutPage() {

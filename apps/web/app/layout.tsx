@@ -316,28 +316,36 @@ export default function RootLayout({
  </p>
  <div className="flex items-center gap-2">
  <a
- href="#"
+ href="https://www.facebook.com/darshya.online"
+ target="_blank"
+ rel="noopener noreferrer"
  aria-label="Facebook"
  className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Facebook className="w-4 h-4" />
  </a>
  <a
- href="#"
+ href="https://twitter.com/darshya_app"
+ target="_blank"
+ rel="noopener noreferrer"
  aria-label="Twitter"
  className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Twitter className="w-4 h-4" />
  </a>
  <a
- href="#"
+ href="https://www.instagram.com/darshya.online"
+ target="_blank"
+ rel="noopener noreferrer"
  aria-label="Instagram"
  className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Instagram className="w-4 h-4" />
  </a>
  <a
- href="#"
+ href="https://www.youtube.com/@darshya"
+ target="_blank"
+ rel="noopener noreferrer"
  aria-label="YouTube"
  className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
@@ -375,7 +383,7 @@ export default function RootLayout({
  <Mail className="w-3.5 h-3.5" /> support@darshya.online
  </span>
  <span className="flex items-center gap-1.5">
- <Phone className="w-3.5 h-3.5" /> +91 80-DARSHYA-00
+ <Phone className="w-3.5 h-3.5" /> +91 90370 49955
  </span>
  <span className="flex items-center gap-1.5">
  <MapPin className="w-3.5 h-3.5" /> Bengaluru, India
