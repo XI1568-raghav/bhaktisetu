@@ -283,7 +283,7 @@ export default function YatraHubPage() {
  { icon: Shield, t: 'Background verified', s: 'Aadhaar + police check' },
  { icon: Heart, t: 'First-aid certified', s: 'Medicine + BP monitoring' },
  { icon: MapPin, t: 'GPS tracking', s: 'Real-time family updates' },
- { icon: Star, t: '4.9/5 rated', s: 'Across 1,000+ yatras' },
+ { icon: Star, t: 'Hand-screened', s: 'Every companion is interviewed' },
  ].map((f) => (
  <div key={f.t} className="p-4 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <f.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />

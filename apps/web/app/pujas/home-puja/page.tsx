@@ -88,7 +88,7 @@ export default function HomePujaHubPage() {
  {/* ── Trust callout card ───────────────────────────────────── */}
  <div className="relative bg-white rounded-2xl border border-[var(--color-border)] shadow-warm-sm p-6 md:p-8">
  <div className="absolute -top-3 -right-3 bg-saffron-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
- Trusted by 10,000+ families
+ Verified pandits & video proof
  </div>
  <h3 className="text-xl font-bold text-surface-800 mb-5">Why Darshya Home Puja</h3>
  <ul className="space-y-4">

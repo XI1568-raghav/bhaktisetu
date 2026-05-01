@@ -30,7 +30,7 @@ const categories = [
  color: 'var(--color-art-2)',
  description:
  'Hatha, Vinyasa, Ashtanga, Kundalini, and Yin yoga with certified instructors. Morning and evening live sessions.',
- sessions: '40+ weekly sessions',
+ sessions: 'Live weekly sessions',
  },
  {
  title: 'Meditation',
@@ -39,7 +39,7 @@ const categories = [
  color: 'var(--color-art-1)',
  description:
  'Guided meditation, Transcendental, Mindfulness, Chakra healing, and Sound bath experiences.',
- sessions: '25+ weekly sessions',
+ sessions: 'Multiple weekly sessions',
  },
  {
  title: 'Vipassana',
@@ -48,7 +48,7 @@ const categories = [
  color: 'var(--color-art-3)',
  description:
  '10-day residential retreats, preparatory courses, and introductory sessions in the S.N. Goenka tradition.',
- sessions: '4 retreats/month',
+ sessions: 'Monthly retreats',
  },
 ];
 
@@ -142,11 +142,11 @@ export default function WellnessPage() {
  </div>
 
  <div data-reveal="fade" data-delay="3" className="mt-10 flex items-center gap-8 text-sm" style={{ color: 'var(--color-text-muted)' }}>
- <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>8</span> Instructors</div>
+ <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Certified</span> Instructors</div>
  <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>65+</span> Weekly sessions</div>
+ <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Live</span> Group sessions</div>
  <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>4.8</span> Avg rating</div>
+ <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>1:1</span> Private bookings</div>
  </div>
  </div>
  </div>
