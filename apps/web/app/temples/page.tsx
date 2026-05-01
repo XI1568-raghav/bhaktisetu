@@ -6,7 +6,7 @@ import { TemplesBrowser, type TempleCardData } from '../../components/temples/Te
 export const metadata: Metadata = {
  title: 'Sacred Temples of India',
  description:
- 'Explore 500+ sacred temples across India. Find temples by state, deity or tradition. Watch live darshan, book pujas with verified priests, and plan your pilgrimage.',
+ 'Explore sacred temples across India. Find temples by state, deity or tradition. Watch live darshan, book pujas with verified priests, and plan your pilgrimage.',
 };
 
 // Derive card data from the rich detail map (always available, no API dependency)
