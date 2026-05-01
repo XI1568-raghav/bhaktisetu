@@ -96,7 +96,7 @@ async function tickWaitlistNudges(): Promise<WaitlistResult> {
     if (!row.email) continue;
     if (resendKey) {
       try {
-        const fromAddress = process.env.RESEND_FROM ?? 'Darshya <hello@darshya.online>';
+        const fromAddress = process.env.RESEND_FROM ?? 'Darshya <support@darshya.online>';
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
