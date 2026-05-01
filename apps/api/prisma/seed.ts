@@ -28,10 +28,9 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@shrikashivishwanath.org',
     websiteUrl: 'https://shrikashivishwanath.org',
     images: [
-      'https://images.darshya.online/temples/kashi-vishwanath/main.jpg',
-      'https://images.darshya.online/temples/kashi-vishwanath/golden-spire.jpg',
-      'https://images.darshya.online/temples/kashi-vishwanath/corridor.jpg',
-      'https://images.darshya.online/temples/kashi-vishwanath/ganga-view.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/ff/Kashi_Vishwanath.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/47/Annapurna_Entrance_of_kashi_vishwanath_temple.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b0/Ganga_Dwar%2C_Gateway_of_Corridor_of_Kashi_Vishwanath_Temple%2C_Varanasi_2.webp',
     ],
     timingInfo: {
       regularHours: {
@@ -52,7 +51,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Tirumala Tirupati Devasthanam',
     nameLocal: 'తిరుమల తిరుపతి దేవస్థానం',
     slug: 'tirumala-tirupati',
-    description: `Sri Venkateswara Temple at Tirumala is the most visited religious place in the world. Dedicated to Lord Venkateswara, a form of Lord Vishnu, it is situated on the seventh peak (Venkatadri) of Tirumala Hills in Tirupati, Andhra Pradesh.`,
+    description: `Sri Venkateswara Swamy Temple at Tirumala is one of the most visited Hindu pilgrimage sites in the world, drawing an average of 50,000 to 100,000 devotees daily. Dedicated to Lord Venkateswara — a form of Vishnu who, according to scripture, descended on the Tirumala hills to redeem mankind in the Kali Yuga — the shrine is situated on the seventh peak (Venkatadri) of the Seshachalam Range at an altitude of 853 metres in Tirupati district, Andhra Pradesh.
+
+The temple is built in Dravidian style and is believed to have existed since at least the 9th century, with successive Pallava, Chola, Pandya, and Vijayanagara rulers contributing to its expansion. The main deity is a self-manifested (svayambhu) idol of Lord Venkateswara standing in the Garbhagriha; the inner sanctum, the Ananda Nilayam, is crowned with a gilded vimana plated in pure gold. The temple's hereditary archakas perform six daily sevas in strict accordance with the Vaikhanasa Agama tradition.
+
+The shrine is administered by Tirumala Tirupati Devasthanams (TTD), an independent trust under the Andhra Pradesh government. TTD operates an extensive online sevas booking system, free Annaprasadam halls (Matrusri Tarigonda Vengamamba Annaprasadam Complex) serving meals to all pilgrims, and the famed Tirupati Laddu prasadam, which holds a Geographical Indication tag. The Brahmotsavam in September–October and Vaikuntha Ekadashi (December–January) are the most attended festivals, when special "Vaikuntha Dwaram" darshan is offered.`,
     deityPrimary: 'Lord Venkateswara',
     deities: ['Lord Venkateswara', 'Padmavathi', 'Lakshmi', 'Garuda'],
     tradition: 'vaishnava' as const,
@@ -66,10 +69,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@tirumala.org',
     websiteUrl: 'https://www.tirumala.org',
     images: [
-      'https://images.darshya.online/temples/tirumala-tirupati/main.jpg',
-      'https://images.darshya.online/temples/tirumala-tirupati/gopuram.jpg',
-      'https://images.darshya.online/temples/tirumala-tirupati/golden-vimana.jpg',
-      'https://images.darshya.online/temples/tirumala-tirupati/laddu.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4e/Tirumala_090615.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/d/d9/Tirumala_Venkateswara_temple_entrance_09062015.JPG',
+      'https://upload.wikimedia.org/wikipedia/commons/4/4a/Tirumala_View_from_srivari_padalu.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/5a/Sri_vari_swarana_radham879.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -90,7 +93,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Siddhivinayak Temple',
     nameLocal: 'सिद्धिविनायक मंदिर',
     slug: 'siddhivinayak-mumbai',
-    description: `Shree Siddhivinayak Ganapati Mandir is a Hindu temple dedicated to Lord Ganesha, located at Prabhadevi in Mumbai, Maharashtra. Built in 1801, the temple is one of the richest and most visited temples in Mumbai.`,
+    description: `Shree Siddhivinayak Ganapati Mandir at Prabhadevi in Mumbai, Maharashtra is one of the most visited Hindu temples in India and one of the wealthiest religious institutions in Mumbai. The original small shrine was built on 19 November 1801 by Laxman Vithu Patil and Deubai Patil; the current sanctum and multi-storey structure date from a 1990s rebuilding by architect Sharad Athale.
+
+The temple enshrines a 2.5-foot-tall black-stone idol of Ganesha carved from a single rock, with the trunk turned to the right — making it a "Siddhi-pith" (a seat where prayers are believed to be granted). The idol is flanked by Riddhi and Siddhi (consorts representing prosperity and fulfilment), and the sanctum's wooden doors and ceiling are inlaid with gold. The temple's distinctive five-tiered shikhara, painted in saffron and topped with a gilded kalash, is a Mumbai landmark.
+
+The shrine is administered by the Shree Siddhivinayak Ganapati Mandir Trust (Prabhadevi), constituted in 1980, which channels surplus offerings into hospitals, schools, and disaster relief. Tuesdays — considered Ganesha's day — see the heaviest crowds, with queues stretching for hours; the temple operates a free online "Atithi Darshan" pass system and a paid VIP darshan to ease access. Ganesh Chaturthi (August–September) and Maghi Ganesh Jayanti (January–February) are observed with special abhishekam, processions, and round-the-clock darshan.`,
     deityPrimary: 'Lord Ganesha',
     deities: ['Lord Ganesha', 'Riddhi', 'Siddhi'],
     tradition: 'smarta' as const,
@@ -104,10 +111,7 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@siddhivinayak.org',
     websiteUrl: 'https://www.siddhivinayak.org',
     images: [
-      'https://images.darshya.online/temples/siddhivinayak/main.jpg',
-      'https://images.darshya.online/temples/siddhivinayak/golden-dome.jpg',
-      'https://images.darshya.online/temples/siddhivinayak/idol.jpg',
-      'https://images.darshya.online/temples/siddhivinayak/entrance.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b9/Shree_Siddhivinayak_Temple_Mumbai.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -128,7 +132,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Somnath Temple',
     nameLocal: 'सोमनाथ मंदिर',
     slug: 'somnath-gujarat',
-    description: `Somnath Temple, located at the shore of the Arabian Sea in Prabhas Patan near Veraval in Gujarat, is one of the most sacred pilgrimage sites for Hindus. It is the first among the twelve Jyotirlinga shrines of Lord Shiva.`,
+    description: `Somnath Temple at Prabhas Patan near Veraval, Gujarat, sits on the western shore of the Arabian Sea and is revered as the first (Adi) among the twelve Jyotirlinga shrines of Lord Shiva. The current Chalukya-style structure was completed in 1951 under the supervision of Sardar Vallabhbhai Patel and K. M. Munshi, after the Government of Saurashtra acquired the site following Independence; it was consecrated by President Rajendra Prasad on 11 May 1951.
+
+The temple's history stretches back to antiquity — references to Soma (the moon god) building a golden shrine here appear in the Skanda Purana and Shivapurana. It was repeatedly destroyed and rebuilt: most famously sacked by Mahmud of Ghazni in 1026, and again by armies of Alauddin Khalji, Muzaffar Shah I, Mahmud Begada, and Aurangzeb. The 1951 reconstruction in the Maru-Gurjara style features a 50-metre shikhara crowned with an 8.2-metre flagpole, the Nij Mandir housing the Jyotirlinga, and a Sabha Mandap supported by 50 ornate pillars.
+
+Somnath is one of the four Dhams of Saurashtra and a Tirth Kshetra. A line on the temple's south wall indicates that there is no land between the shrine and Antarctica directly south. The temple administration is the Shree Somnath Trust, chaired by trustees including the Prime Minister of India. A Sound and Light Show ("Jay Somnath") is staged daily after sunset on the temple plinth, and Mahashivaratri and Karthik Purnima draw massive pilgrim gatherings.`,
     deityPrimary: 'Lord Shiva',
     deities: ['Lord Shiva', 'Parvati', 'Nandi', 'Ganesha'],
     tradition: 'shaiva' as const,
@@ -142,10 +150,9 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@somnath.org',
     websiteUrl: 'https://somnath.org',
     images: [
-      'https://images.darshya.online/temples/somnath/main.jpg',
-      'https://images.darshya.online/temples/somnath/sea-view.jpg',
-      'https://images.darshya.online/temples/somnath/evening.jpg',
-      'https://images.darshya.online/temples/somnath/light-show.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/1/10/Somanath_mandir_%28cropped%29.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/a/ac/Somanath_Temple.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/78/Ancient_Somnath_temple%2C_Veraval_Gujarat.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -166,7 +173,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Jagannath Temple',
     nameLocal: 'ଜଗନ୍ନାଥ ମନ୍ଦିର',
     slug: 'jagannath-puri',
-    description: `The Jagannath Temple in Puri is one of the most sacred Hindu temples, dedicated to Lord Jagannath, a form of Lord Vishnu. Located on the eastern coast of India in Puri, Odisha, it is one of the four sacred Char Dham pilgrimage sites.`,
+    description: `Shree Jagannath Temple in Puri, Odisha, is one of the four Char Dham pilgrimage sites established by Adi Shankaracharya in the 8th century, alongside Badrinath, Dwarka and Rameshwaram. Dedicated to Lord Jagannath ("Lord of the Universe"), a form of Vishnu worshipped together with his elder brother Balabhadra, sister Subhadra, and the Sudarshana Chakra, the present temple was built in the 12th century by King Anantavarman Chodaganga Deva of the Eastern Ganga dynasty and completed under his successor Anangabhima Deva III.
+
+The temple is built in Kalinga architectural style on a raised platform on Nilachala (the Blue Mountain). Its 65-metre tall Vimana (deul) is one of the tallest in India and is crowned by the Nilachakra — an 8-spoked wheel of an alloy of eight metals — and a flag (patita pavana) that is hand-changed every evening by a hereditary climber. The Meghanada Pachira (compound wall) measures roughly 200 by 192 metres and encloses the main shrine, the Bhog Mandap, the Nata Mandir and the Jagamohan, plus over 30 subsidiary shrines.
+
+The temple's three deities are uniquely carved from neem wood and are ritually re-made every 8, 12 or 19 years in a ceremony called Nabakalebara. The annual Rath Yatra (June–July) sees the deities drawn through Puri's streets in three colossal wooden chariots, an event that draws millions of devotees. The kitchen is one of the largest in the world, preparing Mahaprasad — 56 dishes (Chappan Bhog) cooked daily on wood fires in earthen pots and offered first to Jagannath. Non-Hindus are not permitted inside the main precinct; they may view the temple from the roof of nearby Raghunandan Library.`,
     deityPrimary: 'Lord Jagannath',
     deities: ['Lord Jagannath', 'Balabhadra', 'Subhadra', 'Sudarshana'],
     tradition: 'vaishnava' as const,
@@ -180,10 +191,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     email: 'info@jagannath.nic.in',
     websiteUrl: 'https://jagannath.nic.in',
     images: [
-      'https://images.darshya.online/temples/jagannath-puri/main.jpg',
-      'https://images.darshya.online/temples/jagannath-puri/rath-yatra.jpg',
-      'https://images.darshya.online/temples/jagannath-puri/nilachakra.jpg',
-      'https://images.darshya.online/temples/jagannath-puri/mahaprasad.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b7/Shri_Jagannath_temple.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/9/90/Bird_view_of_Jagannath_Temple%2C_Puri.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/a/ae/Singhadwara.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/2/20/Rath_Yatra_Puri_07-11027.jpg',
     ],
     timingInfo: {
       regularHours: {
@@ -218,7 +229,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-11-43442344',
     email: 'info@akshardham.com',
     websiteUrl: 'https://akshardham.com',
-    images: ['https://images.darshya.online/temples/akshardham-delhi/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/e/e9/Swaminarayan_Akshardham%2C_Delhi.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/3/33/Akshardham_Dome.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/9/98/Akshardham_Delhi_Ricky_W.jpg',
+    ],
     timingInfo: { regularHours: { mandirOpen: '09:30 - 18:30', exhibitions: '10:00 - 18:00', musicalFountain: '19:15 - 19:45' }, closedOn: 'Mondays' },
     trustScore: 4.9,
     liveDarshanEnabled: false,
@@ -241,7 +256,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-80-23471956',
     email: 'info@iskconbangalore.org',
     websiteUrl: 'https://iskconbangalore.org',
-    images: ['https://images.darshya.online/temples/iskcon-bangalore/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/1/11/ISKCON_Banglaore_Temple.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7f/Iskon_temple.JPG',
+      'https://upload.wikimedia.org/wikipedia/commons/6/61/Entrance_of_Iskcon_temple.jpg',
+    ],
     timingInfo: { regularHours: { mangalaArati: '04:15 - 04:45', morningDarshan: '07:15 - 13:00', eveningDarshan: '16:15 - 20:30' }, closedOn: 'Open all days' },
     trustScore: 4.8,
     liveDarshanEnabled: true,
@@ -264,7 +283,12 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-44-24641670',
     email: null,
     websiteUrl: null,
-    images: ['https://images.darshya.online/temples/kapaleeshwarar-chennai/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/9/99/Kapaleeswarar1.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/e/eb/Mylapore_***REMOVED***.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f3/Kapaleeshwarar_Temple._Chennai._2010.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/0/00/Mylapore_***REMOVED***.jpg',
+    ],
     timingInfo: { regularHours: { morning: '05:30 - 12:00', evening: '16:00 - 22:00' }, specialDays: 'Arupathimoovar Festival in March-April', closedOn: 'Open all days' },
     trustScore: 4.7,
     liveDarshanEnabled: false,
@@ -287,7 +311,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-33-25645222',
     email: null,
     websiteUrl: 'https://dakshineswarkalitemple.org',
-    images: ['https://images.darshya.online/temples/dakshineswar-kolkata/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/3/32/Dakhineshwar_Temple_beside_the_Hoogly%2C_West_Bengal.JPG',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b4/Dakshineswar_Kali_Temple_on_the_bank_River_Ganges.jpg',
+    ],
     timingInfo: { regularHours: { summer: '06:00 - 12:30, 15:00 - 20:30', winter: '06:30 - 12:30, 15:00 - 20:30' }, closedOn: 'Open all days' },
     trustScore: 4.8,
     liveDarshanEnabled: false,
@@ -310,7 +337,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-40-23230203',
     email: null,
     websiteUrl: null,
-    images: ['https://images.darshya.online/temples/birla-mandir-hyderabad/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/3/3c/Birla_Mandir%2C_Hyderabad.png',
+      'https://upload.wikimedia.org/wikipedia/commons/4/47/Birla_Temple_no_1.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/d/d8/BirlaMandir.jpg',
+    ],
     timingInfo: { regularHours: { morning: '07:00 - 12:00', evening: '15:00 - 21:00' }, closedOn: 'Open all days' },
     trustScore: 4.6,
     liveDarshanEnabled: false,
@@ -333,7 +364,9 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-20-24472448',
     email: 'info@dagdushethganpati.com',
     websiteUrl: 'https://dagdushethganpati.com',
-    images: ['https://images.darshya.online/temples/dagdusheth-pune/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/3/3d/Dagadusheth_Halwai_Ganpati_Temple_illuminated_2.jpg',
+    ],
     timingInfo: { regularHours: { open: '06:00 - 23:30' }, specialDays: 'Ganesh Chaturthi 10-day festival (Aug-Sep)', closedOn: 'Open all days' },
     trustScore: 4.9,
     liveDarshanEnabled: true,
@@ -356,7 +389,9 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-79-23260001',
     email: 'info@akshardham.com',
     websiteUrl: 'https://akshardham.com/gujarat',
-    images: ['https://images.darshya.online/temples/akshardham-gandhinagar/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/7/77/Akshardham_Gandhinagar_Gujarat.jpg',
+    ],
     timingInfo: { regularHours: { mandir: '09:30 - 18:30', sahajanandWaterShow: '19:15 - 20:00' }, closedOn: 'Mondays' },
     trustScore: 4.8,
     liveDarshanEnabled: false,
@@ -379,7 +414,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: null,
     email: null,
     websiteUrl: 'https://govinddevji.net',
-    images: ['https://images.darshya.online/temples/govind-dev-ji-jaipur/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/7/74/Govind_dev_ji.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/7/7c/Govind_Dev_Ji_Temple_Inner_Side.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/5/54/Govind_Dev_Ji_Temple%2C_Jaipur%2C_20191218_1059_9091.jpg',
+    ],
     timingInfo: { regularHours: { mangalaAarti: '04:30 - 05:00', dhupAarti: '07:45 - 09:00', shringarAarti: '09:30 - 10:30', rajbhog: '11:00 - 11:30', sandhyaAarti: '17:30 - 19:30', shayanAarti: '20:30 - 21:15' }, closedOn: 'Open all days' },
     trustScore: 4.8,
     liveDarshanEnabled: true,
@@ -389,7 +428,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Vaishno Devi Bhawan',
     nameLocal: 'माता वैष्णो देवी भवन',
     slug: 'vaishno-devi-katra',
-    description: `Mata Vaishno Devi Bhawan, perched at 5,200 ft on the Trikuta Hills, is one of the most visited Hindu shrines in the world. Devotees trek 12 km from Katra to receive darshan of the three pindis representing Maha Kali, Maha Lakshmi, and Maha Saraswati.`,
+    description: `Mata Vaishno Devi Bhawan, perched at an altitude of 5,200 feet (1,584 m) on the Trikuta Hills in the Reasi district of Jammu and Kashmir, is one of the most visited Hindu shrines in the world, drawing more than 8 million pilgrims annually. The shrine is dedicated to the goddess Vaishnavi, an aspect of Adi Shakti, who is worshipped in the form of three natural rock outcrops — pindis — representing Maha Kali, Maha Lakshmi, and Maha Saraswati housed inside a small holy cave (Garbhajun).
+
+Pilgrims undertake a 13-kilometre uphill trek from the base camp at Katra, passing the way-station of Banganga (where the goddess is said to have shot an arrow into the earth to slake her thirst), the Charan Paduka (where she rested), and the Ardhkuwari cave (where she meditated for nine months). Onward routes include the older Himkoti track and the newer, gentler Tarakote Marg, opened in 2018 to ease congestion. Helicopter services from Katra to Sanjichhat and battery-operated cars and pony rides supplement the trek.
+
+The shrine and its yatra are administered by the Shri Mata Vaishno Devi Shrine Board (SMVDSB), set up by an Act of the J&K Legislature in 1986. The board operates pilgrim accommodations at Katra, Adkuwari and the Bhawan, runs a yatra-registration counter (mandatory RFID slip), maintains skywalks and grills along the route, and funds hospitals and the Shri Mata Vaishno Devi University. Navratri (March–April and September–October) sees record footfalls; the cave's natural mouth is open year-round but yatra timings can be curtailed by snow or landslides.`,
     deityPrimary: 'Mata Vaishno Devi',
     deities: ['Maha Kali', 'Maha Lakshmi', 'Maha Saraswati'],
     tradition: 'shakta' as const,
@@ -402,7 +445,12 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-1991-234804',
     email: 'info@maavaishnodevi.org',
     websiteUrl: 'https://www.maavaishnodevi.org',
-    images: ['https://images.darshya.online/temples/vaishno-devi-katra/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/c/c8/Vaishno_devi.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/d/d7/Vaishno_Devi_Bhawan_Facade_Lighting.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b0/Snowfall_in_Vaishno_Devi.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c2/Vaishno_Devi_Navratras.jpg',
+    ],
     timingInfo: { regularHours: { yatra: '24x7 (subject to weather)' }, specialDays: 'Navratri (Mar-Apr & Sep-Oct)', closedOn: 'Open all days' },
     trustScore: 4.9,
     liveDarshanEnabled: true,
@@ -412,7 +460,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Shirdi Sai Baba Samadhi Temple',
     nameLocal: 'श्री साईबाबा समाधी मंदिर',
     slug: 'shirdi-sai-baba',
-    description: `Shri Saibaba Sansthan Trust at Shirdi houses the samadhi (final resting place) of Sai Baba of Shirdi, who lived from c.1838 to 1918. The temple draws over 60,000 devotees every day.`,
+    description: `The Samadhi Mandir at Shirdi, in the Ahmednagar district of Maharashtra, enshrines the burial place of Sai Baba of Shirdi (c. 1838 – 15 October 1918), the saint revered by both Hindus and Muslims and known for his teachings of "Shraddha" (faith) and "Saburi" (patience). Sai Baba lived for over six decades in a dilapidated mosque he called Dwarkamai and took mahasamadhi on Vijayadashami day in 1918; his body was interred in the Buty Wada — originally being built as a Krishna temple by the wealthy devotee Bapusaheb Buty — which was then re-consecrated as the Samadhi Mandir.
+
+The temple complex covers over 200 acres and includes the Samadhi Mandir (housing Sai Baba's tomb and a 1.5-metre tall white-marble idol sculpted by Balaji Vasant Talim and installed in 1954), the Dwarkamai mosque, the Chavadi (where Baba slept on alternate nights), the Gurusthan (the neem tree under which he first appeared in Shirdi), Lendi Bagh (his garden), and the Khandoba Mandir. The mandir's silver-railed sanctum, gold-plated throne and main hall accommodating roughly 600 seated devotees were added in successive renovations.
+
+The shrine and the village are administered by the Shri Saibaba Sansthan Trust (Shirdi), constituted in 1922 and reorganised under a 2004 Maharashtra Act. The trust runs free Prasadalaya meals, the Sai Baba Hospital, two pilgrim accommodation complexes, an online darshan-pass and aarti-booking system, and funds charitable programmes across Maharashtra. Daily attendance averages 60,000 and rises to over 300,000 on Ramnavami, Gurupurnima and Vijayadashami (Punyatithi). The four daily aartis — Kakad, Madhyana, Dhoop and Shej — are televised live and streamed online.`,
     deityPrimary: 'Sai Baba',
     deities: ['Sai Baba'],
     tradition: 'smarta' as const,
@@ -425,7 +477,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-2423-258500',
     email: 'helpdesk@sai.org.in',
     websiteUrl: 'https://www.sai.org.in',
-    images: ['https://images.darshya.online/temples/shirdi-sai-baba/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/e/e4/Sai_baba_samadhi_mandir_.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b1/Sai_gold_full.jpg',
+    ],
     timingInfo: { regularHours: { open: '04:00 - 23:15', kakad: '04:30 - 05:00', madhyana: '12:00 - 12:30', dhoop: '18:30 - 19:00', shej: '22:30 - 23:00' }, closedOn: 'Open all days' },
     trustScore: 4.9,
     liveDarshanEnabled: true,
@@ -448,7 +503,12 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-4573-221343',
     email: null,
     websiteUrl: null,
-    images: ['https://images.darshya.online/temples/ramanathaswamy-rameshwaram/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/8/84/Ramanathaswamy_temple7.JPG',
+      'https://upload.wikimedia.org/wikipedia/commons/3/3e/Rameswaram_temple_%2811%29.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/0/06/43Rameswaram_The_Great_Corridor.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/a/a3/East_Gopura_of_Rameswaram_Temple.jpg',
+    ],
     timingInfo: { regularHours: { morning: '05:00 - 13:00', evening: '15:00 - 21:00' }, closedOn: 'Open all days' },
     trustScore: 4.8,
     liveDarshanEnabled: false,
@@ -458,7 +518,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Meenakshi Amman Temple',
     nameLocal: 'மீனாட்சி அம்மன் கோயில்',
     slug: 'meenakshi-madurai',
-    description: `Arulmigu Meenakshi Sundareshwarar Temple in Madurai is a sprawling Dravidian temple complex dedicated to Goddess Meenakshi (Parvati) and her consort Sundareswarar (Shiva). Its 14 gopurams, including the 170-foot southern gopuram, are covered with thousands of vivid sculptures.`,
+    description: `Arulmigu Meenakshi Sundareshwarar Temple in Madurai, Tamil Nadu, is a sprawling Dravidian temple complex dedicated to Goddess Meenakshi (a form of Parvati) and her consort Sundareshwarar (Shiva). The temple stands on the southern bank of the Vaigai River and forms the geographic and ritual heart of the old city, with the streets of Madurai laid out in concentric squares around it. The current structure was largely commissioned by the Nayak ruler Tirumalai Nayak (r. 1623–1659), although portions of the complex predate the 12th century.
+
+The temple covers approximately 14 acres and is enclosed by high outer walls, pierced by 14 gopurams (gateway towers); the four outer rajagopurams rise to between 49 and 52 metres, with the South Gopuram (170 ft / 51.9 m) the tallest. Each gopuram is encrusted with thousands of brightly painted stucco sculptures of deities, demons, mythological scenes and animals — repainted and re-consecrated every 12 years in the Kumbabhishekam ceremony. Within the walls are two main shrines (Meenakshi and Sundareshwarar), the Golden Lotus Tank (Porthamarai Kulam), the famed 1,000-Pillar Hall (Aayiram Kaal Mandapam, now an art museum) and the Kambathadi Mandapam.
+
+Daily worship follows the Shaiva Agama tradition, with six pujas a day; the night-time Palli Arai Pujai sees the deities ceremonially "put to bed" together. The 12-day Chithirai Festival in April–May, which re-enacts the celestial wedding of Meenakshi and Sundareshwarar, is the temple's largest annual event and draws over a million devotees. The temple is administered by the Hindu Religious and Charitable Endowments Department of the Tamil Nadu government. Non-Hindus are not permitted into the inner sanctums but may visit the outer prakarams and the museum.`,
     deityPrimary: 'Goddess Meenakshi',
     deities: ['Meenakshi (Parvati)', 'Sundareshwarar (Shiva)'],
     tradition: 'shakta' as const,
@@ -471,7 +535,12 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-452-2344360',
     email: null,
     websiteUrl: 'https://maduraimeenakshi.org',
-    images: ['https://images.darshya.online/temples/meenakshi-madurai/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/6/65/India_Meenakshi_Temple.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f4/Meenakshi_Amman_West_Tower.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/60/Madurai_Meenakshi_temple_shikhara.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e9/An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg',
+    ],
     timingInfo: { regularHours: { morning: '05:00 - 12:30', evening: '16:00 - 22:00' }, specialDays: 'Chithirai Festival (Apr-May)', closedOn: 'Open all days' },
     trustScore: 4.9,
     liveDarshanEnabled: false,
@@ -494,7 +563,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: null,
     email: null,
     websiteUrl: null,
-    images: ['https://images.darshya.online/temples/dwarkadhish-dwarka/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/0/0c/Dwarakadheesh_Temple%2C_2014.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/9/90/Dwarakadheesh_temple%2C_Dwaraka.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f2/Dwarka_Mandir.jpg',
+    ],
     timingInfo: { regularHours: { morning: '06:30 - 13:00', evening: '17:00 - 21:30' }, specialDays: 'Janmashtami (Aug-Sep)', closedOn: 'Open all days' },
     trustScore: 4.8,
     liveDarshanEnabled: false,
@@ -504,7 +577,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Badrinath Temple',
     nameLocal: 'बद्रीनाथ मंदिर',
     slug: 'badrinath-uttarakhand',
-    description: `Shri Badrinath Dham, situated at 3,133 m on the banks of the Alaknanda in the Garhwal Himalayas, is one of the four Char Dham and one of the 108 Divya Desams of Vaishnavism. The temple is open only six months a year (typically May to November) due to extreme winter conditions.`,
+    description: `Shri Badrinath Dham, situated at an altitude of 3,133 m on the left bank of the Alaknanda river in Chamoli district of Uttarakhand's Garhwal Himalayas, is one of the four Char Dham pilgrimage sites of India and one of the 108 Divya Desams of the Sri Vaishnava tradition. The shrine is dedicated to Lord Badrinarayan — Vishnu seated in the Padmasana posture — and is flanked on either side by the twin peaks of Nar and Narayan, with the 6,560 m Neelkanth Parvat ("Garhwal Queen") as a backdrop.
+
+According to the Bhagavata Purana, Vishnu performed severe penance at this site under a Badri (jujube) tree, while Lakshmi sheltered him from the sun in the form of the tree itself — hence the name "Badri-nath". The 1-metre-tall black stone (Shaligram) idol of Badrinarayan is said to have been recovered from the Alaknanda by Adi Shankaracharya in the 8th century and re-installed in the present three-storeyed temple, which was rebuilt by King Pradip Shah of Garhwal in the 17th century after damage by avalanches and rebuilt again after the 1803 Himalayan earthquake.
+
+The temple opens annually in late April or early May (on a date set by the Tehri royal house) and closes in mid-November after Vijaya Dashami; during the six-month winter closure the deity is symbolically worshipped at Joshimath's Narsingh Temple, while an akhand jyoti (everlasting lamp) is left burning inside the main shrine. The site is administered by the Shri Badarinath–Shri Kedarnath Temple Committee under an Uttarakhand state Act. Pilgrims also bathe in the natural hot-water spring of Tapt Kund at the temple's base before darshan. The shrine is connected by NH-7 via Joshimath; the nearest railhead is Rishikesh (295 km) and helicopter services run from Dehradun in season.`,
     deityPrimary: 'Lord Vishnu (Badrinarayan)',
     deities: ['Badrinarayan (Vishnu)', 'Nara-Narayan', 'Lakshmi', 'Garuda'],
     tradition: 'vaishnava' as const,
@@ -517,7 +594,10 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: '+91-1389-222083',
     email: null,
     websiteUrl: 'https://badrinath-kedarnath.gov.in',
-    images: ['https://images.darshya.online/temples/badrinath-uttarakhand/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/f/f9/Badrinath_Temple_%2C_Uttarakhand.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c4/Badri_Night.JPG',
+    ],
     timingInfo: { regularHours: { morning: '04:30 - 13:00', evening: '16:00 - 21:00' }, specialDays: 'Open May to November only; closed Nov to Apr (Akhand Jyoti during winter at Pandukeshwar)', closedOn: 'Closed in winter (approx Nov-Apr)' },
     trustScore: 4.9,
     liveDarshanEnabled: false,
@@ -527,7 +607,11 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     name: 'Lingaraj Temple',
     nameLocal: 'ଲିଙ୍ଗରାଜ ମନ୍ଦିର',
     slug: 'lingaraj-bhubaneswar',
-    description: `Lingaraj Temple, built in the 11th century in the Kalinga style, is the largest temple in Bhubaneswar. The 180-foot vimana enshrines Harihara — a syncretic form of Vishnu and Shiva — and is the heart of Ekamra Kshetra.`,
+    description: `Lingaraj Temple, built largely in the late 11th century during the reign of the Somavamsi king Jajati Keshari and completed under the Eastern Gangas, is the largest and most prominent temple in the old town of Bhubaneswar, Odisha. It marks the spiritual centre of Ekamra Kshetra — the ancient sacred precinct described in the Brahma Purana as one of the four chief Shaiva Tirthas of India alongside Kashi, Ujjain, and Pashupatinath.
+
+The temple is a textbook example of Kalinga architecture, with its four classical components arranged on a single east–west axis: the Vimana (sanctum tower), the Jagamohana (assembly hall), the Nata Mandir (festival hall) and the Bhog Mandap (offering hall). The rekha-deul Vimana rises to roughly 55 metres (180 ft) and is intricately carved with miniature shikharas, narrative panels, and erotic figures characteristic of the Kalinga school. The presiding deity is a 2.5-metre-wide self-manifested rough-hewn stone — worshipped as Harihara, the syncretic union of Shiva ("Hari" being a Shaiva epithet here, despite its more common Vaishnava use) and Vishnu — bathed daily with water, milk and bhang.
+
+The compound covers 250,000 sq ft, is enclosed by a 7-metre laterite wall, and houses over 50 minor shrines. The temple's Bindu Sagar tank, just to the north, plays a central role in the annual Ashokashtami festival in March–April when the deity Lingaraj is taken in procession to the Rameshwar Temple. The temple is administered by the Lingaraj Temple Trust under the Odisha government's Endowments Department. As at Jagannath Puri, non-Hindus are not allowed inside the precinct but may view the temple from a viewing platform on the outer compound wall, set up by the Archaeological Survey of India.`,
     deityPrimary: 'Harihara',
     deities: ['Lingaraj (Shiva)', 'Vishnu', 'Parvati'],
     tradition: 'shaiva' as const,
@@ -540,7 +624,12 @@ The Kashi Vishwanath Corridor, inaugurated in 2021, has transformed the temple p
     phone: null,
     email: null,
     websiteUrl: null,
-    images: ['https://images.darshya.online/temples/lingaraj-bhubaneswar/main.jpg'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/8/88/Lingaraj_Temple%2C_Bhubaneswar.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/0/0b/Lingaraj_Temple_Complex.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f3/11th_century_Lingaraja_temple%2C_Bhubaneswar_Odisha_India.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/d/dc/Lingaraj_Temple_complex_at_dusk_during_Shivratri_2020.jpg',
+    ],
     timingInfo: { regularHours: { morning: '05:00 - 12:30', evening: '15:30 - 21:30' }, specialDays: 'Shivaratri, Ashokashtami (Apr)', closedOn: 'Open all days (non-Hindus not permitted inside main sanctum)' },
     trustScore: 4.7,
     liveDarshanEnabled: false,
