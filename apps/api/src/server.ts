@@ -45,6 +45,8 @@ import { demoPayRoutes } from './routes/demo-pay.js';
 import { ratingRoutes } from './routes/ratings.js';
 import { storeOrderRoutes } from './routes/store-orders.js';
 import { wellnessSessionRoutes } from './routes/wellness-sessions.js';
+import { outreachWebhookRoutes, outreachAdminRoutes } from './routes/outreach-webhook.js';
+import { adminLeadsRoutes } from './routes/admin-leads.js';
 
 const server = Fastify({
   logger: {
@@ -138,6 +140,9 @@ async function bootstrap() {
   await server.register(ratingRoutes, { prefix: '/api/v1/ratings' });
   await server.register(storeOrderRoutes, { prefix: '/api/v1/store' });
   await server.register(wellnessSessionRoutes, { prefix: '/api/v1/wellness' });
+  await server.register(outreachWebhookRoutes, { prefix: '/api/v1/outreach' });
+  await server.register(outreachAdminRoutes, { prefix: '/api/v1/admin/outreach' });
+  await server.register(adminLeadsRoutes, { prefix: '/api/v1/admin' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
