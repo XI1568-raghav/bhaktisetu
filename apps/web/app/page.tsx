@@ -25,9 +25,26 @@ export const metadata: Metadata = {
  description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
 };
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Darshya',
+  url: 'https://darshya.online',
+  logo: 'https://darshya.online/logo.png',
+  description: "India's devotional super-app — live darshan, puja booking with video proof, AI spiritual guidance, gaushala seva.",
+  sameAs: [
+    'https://twitter.com/darshya_app',
+    'https://www.instagram.com/darshya.online',
+  ],
+};
+
 export default function HomePage() {
  return (
  <ScrollReveal>
+ <script
+   type="application/ld+json"
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+ />
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
  {/* Sticky early-access banner — pinned just below the fixed nav. */}
  <div
