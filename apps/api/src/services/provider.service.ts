@@ -175,10 +175,63 @@ export class ProviderService {
 
     try {
       const result = await this.queryProviders(type, filters, page, limit);
-      return result;
+      // Lazy-enrich each provider with aggregate rating fields and the
+      // tier-relevant aadhaarVerified flag. We cannot reliably persist a
+      // tier column without a schema migration, so badge tier is computed
+      // on read by clients from these signals.
+      const enriched = await Promise.all(
+        result.providers.map((p) => this.enrichRatingFields(type, p)),
+      );
+      return { ...result, providers: enriched };
     } catch {
       return this.getMockProviders(type, filters, page, limit);
     }
+  }
+
+  /**
+   * Backfill ratingAvg / ratingCount on a provider row so the response
+   * shape is uniform regardless of which underlying profile model is
+   * being queried (PanditProfile lacks separate ratingAvg/ratingCount,
+   * but the global Review table is the source of truth anyway).
+   */
+  private async enrichRatingFields(
+    type: ProviderTypeKey,
+    p: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const id = p.id as string | undefined;
+    if (!id) return p;
+    let ratingAvg = typeof p.rating === 'number' ? (p.rating as number) : 0;
+    let ratingCount = typeof p.totalPujas === 'number' ? (p.totalPujas as number) : 0;
+    try {
+      const providerTypeMap: Record<ProviderTypeKey, string> = {
+        pandit: 'PANDIT',
+        store: 'STORE',
+        astrologer: 'ASTROLOGER',
+        wellness: 'WELLNESS',
+        gaushala: 'GAUSHALA',
+        temple: 'TEMPLE',
+      };
+      const agg = await prisma.review.aggregate({
+        where: {
+          providerId: id,
+          providerType: providerTypeMap[type] as 'PANDIT' | 'STORE' | 'ASTROLOGER' | 'WELLNESS' | 'GAUSHALA' | 'TEMPLE',
+        },
+        _avg: { rating: true },
+        _count: { _all: true },
+      });
+      if (agg._count._all > 0) {
+        ratingAvg = Math.round((agg._avg.rating ?? 0) * 100) / 100;
+        ratingCount = agg._count._all;
+      }
+    } catch {
+      // Schema/connection missing — fall back to row-level fields.
+    }
+    return {
+      ...p,
+      ratingAvg,
+      ratingCount,
+      aadhaarVerified: typeof p.aadhaarVerified === 'boolean' ? p.aadhaarVerified : false,
+    };
   }
 
   async getProviderById(type: ProviderTypeKey, id: string): Promise<Record<string, unknown> | null> {
@@ -202,7 +255,8 @@ export class ProviderService {
         take: 10,
       });
 
-      return { ...provider, reviews };
+      const enriched = await this.enrichRatingFields(type, provider);
+      return { ...enriched, reviews };
     } catch {
       const mockList = MOCK_MAP[type] ?? [];
       const provider = mockList.find((p) => p.id === id) ?? null;
