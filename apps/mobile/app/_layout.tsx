@@ -5,6 +5,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initApiClient } from '@poojly/api-client';
 import { AuthProvider, getStoredAccessToken } from '../lib/auth-context';
+import { initSentryMobile } from '../lib/sentry';
+
+// Initialise Sentry once at module load, before any user code runs.
+// No-op if EXPO_PUBLIC_SENTRY_DSN is missing.
+initSentryMobile();
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
