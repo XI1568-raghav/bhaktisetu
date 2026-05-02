@@ -3,9 +3,17 @@ import { ArrowLeft } from "lucide-react";
 import { COMPANY, postalContactLine } from "../../lib/company";
 
 export const metadata: Metadata = {
- title: "Refund Policy",
+ title: "Refund & Cancellation Policy",
  description:
  "Darshya\u2019s refund policy for puja bookings, store orders, gaushala contributions, and chadhava offerings.",
+ alternates: { canonical: "https://darshya.online/refunds" },
+ openGraph: {
+ title: "Refund & Cancellation Policy | Darshya",
+ description:
+ "Refund timelines and rules for pujas, astrology, donations, and store orders. Refunds via Razorpay in 5\u20137 business days.",
+ url: "https://darshya.online/refunds",
+ type: "website",
+ },
 };
 
 export default function RefundsPage() {
@@ -34,7 +42,7 @@ export default function RefundsPage() {
  Refund Policy
  </h1>
  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
- Last updated: April 1, 2026
+ Last updated: May 2, 2026
  </p>
  </div>
  </section>
@@ -77,8 +85,12 @@ export default function RefundsPage() {
  <td className="py-1.5">100% refund</td>
  </tr>
  <tr>
- <td className="py-1.5">Within 24 hours of scheduled puja</td>
- <td className="py-1.5">No refund (preparations begun)</td>
+ <td className="py-1.5">6 to 24 hours before scheduled puja</td>
+ <td className="py-1.5">50% refund</td>
+ </tr>
+ <tr>
+ <td className="py-1.5">Less than 6 hours before scheduled puja</td>
+ <td className="py-1.5">No refund (preparations underway)</td>
  </tr>
  <tr>
  <td className="py-1.5">Puja not performed by temple</td>
@@ -138,17 +150,32 @@ export default function RefundsPage() {
  </ul>
  </RefundSection>
 
- <RefundSection title="4. Gaushala Seva Contributions">
+ <RefundSection title="4. Astrology & Wellness Sessions">
  <p>
- Donations made toward gau seva (cow feeding, medical care,
- adoption) are non-refundable as they are processed as
- charitable contributions and the funds are immediately
- allocated to the gaushala. You will receive a receipt and
- photo/video update of the seva performed.
+ Astrology and wellness consultations may be cancelled up to
+ 6 hours before the scheduled session for a full refund. Once
+ the session has started or the consultant has joined the
+ video room, the booking is non-refundable. If the consultant
+ fails to join within 15 minutes of the scheduled start, you
+ are entitled to a full refund or a free reschedule.
  </p>
  </RefundSection>
 
- <RefundSection title="5. Chadhava (Virtual Offerings)">
+ <RefundSection title="5. Gaushala Seva & Donations">
+ <p>
+ Donations toward gau seva (cow feeding, medical care,
+ adoption) and general charitable donations are
+ non-refundable, as the funds are immediately allocated to
+ the gaushala or beneficiary and an 80G receipt is generated.
+ If you believe a donation was made in error, you must
+ contact support@darshya.online within 7 days of the donation;
+ we will review the request on a case-by-case basis. Once an
+ 80G receipt has been issued and claimed for tax benefit,
+ reversal is not possible.
+ </p>
+ </RefundSection>
+
+ <RefundSection title="6. Chadhava (Virtual Offerings)">
  <p>
  Virtual offerings (flowers, bhog, diya) made at temples are
  non-refundable once the offering has been processed. If the
@@ -157,7 +184,7 @@ export default function RefundsPage() {
  </p>
  </RefundSection>
 
- <RefundSection title="6. Live Darshan">
+ <RefundSection title="7. Live Darshan">
  <p>
  Live darshan is a free service and does not involve payments.
  Premium darshan features, if introduced in the future, will
@@ -166,7 +193,7 @@ export default function RefundsPage() {
  </p>
  </RefundSection>
 
- <RefundSection title="7. Refund Processing Timeline">
+ <RefundSection title="8. Refund Processing Timeline">
  <ul>
  <li>
  <strong>UPI and Wallets:</strong> 1&ndash;3 business days.
@@ -188,7 +215,7 @@ export default function RefundsPage() {
  </ul>
  </RefundSection>
 
- <RefundSection title="8. How to Request a Refund">
+ <RefundSection title="9. How to Request a Refund">
  <ol className="list-decimal pl-5 space-y-2">
  <li>
  Log in to your Darshya account and navigate to your
@@ -209,7 +236,7 @@ export default function RefundsPage() {
  </ol>
  </RefundSection>
 
- <RefundSection title="9. Disputes">
+ <RefundSection title="10. Disputes">
  <p>
  If you believe a refund has been incorrectly denied, you may
  escalate the matter by emailing grievance@darshya.online. Our
@@ -218,7 +245,7 @@ export default function RefundsPage() {
  </p>
  </RefundSection>
 
- <RefundSection title="10. Contact">
+ <RefundSection title="11. Contact">
  <p>For refund-related queries:</p>
  <ul>
  <li>Email: {COMPANY.supportEmail}</li>
