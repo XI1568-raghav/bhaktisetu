@@ -5,6 +5,14 @@ export const metadata: Metadata = {
  title: "Privacy Policy",
  description:
  "Darshya\u2019s privacy policy. Learn how we collect, use, and protect your personal and devotional data.",
+ alternates: { canonical: "https://darshya.online/privacy" },
+ openGraph: {
+ title: "Privacy Policy | Darshya",
+ description:
+ "How Darshya collects, uses, and protects your personal and devotional data. DPDP Act 2023 compliant.",
+ url: "https://darshya.online/privacy",
+ type: "website",
+ },
 };
 
 export default function PrivacyPage() {
@@ -33,7 +41,7 @@ export default function PrivacyPage() {
  Privacy Policy
  </h1>
  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
- Last updated: April 1, 2026
+ Last updated: May 2, 2026
  </p>
  </div>
  </section>
@@ -145,23 +153,51 @@ export default function PrivacyPage() {
  </ul>
  </PolicySection>
 
- <PolicySection title="4. Information Sharing">
- <p>We share your information only in these limited circumstances:</p>
+ <PolicySection title="4. Information Sharing & Third-Party Processors">
+ <p>We share your information only in these limited circumstances, and only with
+ sub-processors that meet industry-standard security and contractual safeguards:</p>
  <ul>
+ <li>
+ <strong>Razorpay (Payments — India):</strong> Processes domestic
+ INR transactions. Receives card/UPI/banking data directly; we
+ do not store full card numbers or CVV.
+ </li>
+ <li>
+ <strong>Stripe (Payments — International):</strong> Processes
+ NRI transactions in USD under PCI DSS Level 1.
+ </li>
+ <li>
+ <strong>Supabase (Database & Auth):</strong> Stores account
+ records, bookings, and content metadata in EU-region Postgres
+ with row-level security policies.
+ </li>
+ <li>
+ <strong>Cloudflare (CDN, DNS, Analytics):</strong> Routes web
+ traffic, caches static assets, and provides cookieless
+ privacy-first web analytics.
+ </li>
+ <li>
+ <strong>Resend (Transactional Email):</strong> Delivers booking
+ confirmations, receipts, and OTPs to your registered email.
+ </li>
+ <li>
+ <strong>PostHog (Product Analytics):</strong> Anonymous,
+ aggregated usage data to improve features. No PII is sent.
+ </li>
+ <li>
+ <strong>Groq (AI Inference):</strong> Powers AI chat (Ask
+ Pandit) and content recommendations. Prompt content is
+ transmitted for inference and not retained for training.
+ </li>
  <li>
  <strong>Temple Priests:</strong> Sankalp details (devotee name,
  gotra, nakshatra, and puja purpose) are shared with the
  assigned priest solely for performing the booked ritual.
  </li>
  <li>
- <strong>Payment Processors:</strong> Razorpay and Stripe process
- your payment data under their own privacy policies and PCI DSS
- compliance.
- </li>
- <li>
- <strong>Delivery Partners:</strong> Your shipping address is
- shared with logistics providers for prasad and store order
- deliveries.
+ <strong>Delivery Partners (India Post, Delhivery, etc.):</strong>{" "}
+ Your shipping address is shared with logistics providers for
+ prasad and store order deliveries.
  </li>
  <li>
  <strong>Legal Requirements:</strong> We may disclose information
@@ -230,7 +266,46 @@ export default function PrivacyPage() {
  </p>
  </PolicySection>
 
- <PolicySection title="9. Children's Privacy">
+ <PolicySection title="9. DPDP Act 2023 Compliance (India)">
+ <p>
+ Darshya complies with the Digital Personal Data Protection Act,
+ 2023 (&quot;DPDP Act&quot;). For users in India, we act as a Data
+ Fiduciary and process your personal data on the lawful basis of
+ your consent or for performance of a contract (e.g., a booking).
+ Specifically, we ensure that:
+ </p>
+ <ul>
+ <li>
+ Consent is obtained at the point of collection in clear, plain
+ language; you may withdraw consent at any time without penalty.
+ </li>
+ <li>
+ You may exercise your rights under Sections 11–14 of the Act:
+ right to access, correction, erasure, grievance redressal, and
+ nomination.
+ </li>
+ <li>
+ We retain personal data only for as long as necessary for the
+ specified purpose, or as required by Indian law.
+ </li>
+ <li>
+ We notify the Data Protection Board of India and affected
+ users of any personal data breach without undue delay.
+ </li>
+ <li>
+ Children&apos;s data (under 18) is processed only with verifiable
+ parental consent and never used for tracking, behavioural
+ monitoring, or targeted advertising.
+ </li>
+ </ul>
+ <p>
+ <strong>Grievance Officer:</strong> For DPDP-related complaints,
+ email grievance@darshya.online. We aim to acknowledge within 48
+ hours and resolve within 30 days as required by the Act.
+ </p>
+ </PolicySection>
+
+ <PolicySection title="10. Children's Privacy">
  <p>
  Darshya is not directed at children under the age of 13. We
  do not knowingly collect personal information from children. If
@@ -241,7 +316,7 @@ export default function PrivacyPage() {
  </p>
  </PolicySection>
 
- <PolicySection title="10. Changes to This Policy">
+ <PolicySection title="11. Changes to This Policy">
  <p>
  We may update this Privacy Policy from time to time. Material
  changes will be communicated via email or a prominent notice on
@@ -251,7 +326,7 @@ export default function PrivacyPage() {
  </p>
  </PolicySection>
 
- <PolicySection title="11. Contact Us">
+ <PolicySection title="12. Contact Us">
  <p>
  For privacy-related queries or to exercise your data rights:
  </p>

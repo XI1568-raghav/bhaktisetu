@@ -5,6 +5,14 @@ export const metadata: Metadata = {
  title: "Terms of Service",
  description:
  "Terms of service for using Darshya \u2014 puja bookings, live darshan, store purchases, and all platform services.",
+ alternates: { canonical: "https://darshya.online/terms" },
+ openGraph: {
+ title: "Terms of Service | Darshya",
+ description:
+ "Eligibility, services, payments, liability, and dispute resolution for the Darshya platform.",
+ url: "https://darshya.online/terms",
+ type: "website",
+ },
 };
 
 export default function TermsPage() {
@@ -33,7 +41,7 @@ export default function TermsPage() {
  Terms of Service
  </h1>
  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
- Last updated: April 1, 2026
+ Last updated: May 2, 2026
  </p>
  </div>
  </section>
@@ -175,9 +183,20 @@ export default function TermsPage() {
  applicable rate.
  </li>
  <li>
- Platform commission on puja bookings ranges from 20&ndash;40%
- as configured per temple. Priest payouts are processed
- after successful video proof submission.
+ Platform commission rates by service category:
+ <ul className="mt-2">
+ <li>Puja booking: 25% (configurable 20&ndash;40% per temple)</li>
+ <li>Astrology consultation: 30%</li>
+ <li>Wellness session: 25%</li>
+ <li>Donations: 0% commission + &#8377;100 flat fee per 80G receipt</li>
+ <li>Store products: standard MedusaJS take rate</li>
+ </ul>
+ </li>
+ <li>
+ Priest, astrologer, and provider payouts are processed
+ after successful service delivery (e.g., video proof for
+ puja, completed session for astrology). Payouts are gated
+ on Aadhaar / bank verification per RBI norms.
  </li>
  </ul>
  </TermsSection>
@@ -266,22 +285,33 @@ export default function TermsPage() {
  outages, temple closures, natural events).
  </li>
  <li>
- Our total liability for any claim arising from your use of
- the Platform shall not exceed the amount you paid to us in
- the 12 months preceding the claim.
+ Our aggregate total liability for any and all claims
+ arising from your use of the Platform shall not exceed the
+ greater of (a) the amount you paid to us in the 12 months
+ preceding the claim, or (b) INR ₹10,000. This cap applies
+ to the fullest extent permitted by Indian law.
+ </li>
+ <li>
+ You agree to indemnify and hold harmless Darshya, its
+ operators, and partners against any third-party claims
+ arising from your misuse of the Platform, false sankalp
+ information, violation of these Terms, or infringement of
+ any rights of another party.
  </li>
  </ul>
  </TermsSection>
 
- <TermsSection title="12. Dispute Resolution">
+ <TermsSection title="12. Governing Law & Dispute Resolution">
  <p>
- Any disputes arising from these Terms or your use of the
- Platform shall be resolved through arbitration in accordance
- with the Arbitration and Conciliation Act, 1996. The
- arbitration shall be conducted in Bengaluru, Karnataka, India.
- The language of arbitration shall be English. These Terms
- shall be governed by and construed in accordance with the laws
- of India.
+ These Terms shall be governed by and construed in accordance
+ with the laws of India, without regard to conflict-of-law
+ principles. Any disputes arising from these Terms or your use
+ of the Platform shall be resolved through arbitration under
+ the Arbitration and Conciliation Act, 1996, conducted in
+ English by a sole arbitrator in Bengaluru, Karnataka, India.
+ Subject to arbitration, the courts of Bengaluru shall have
+ exclusive jurisdiction over any matter arising from these
+ Terms.
  </p>
  </TermsSection>
 
