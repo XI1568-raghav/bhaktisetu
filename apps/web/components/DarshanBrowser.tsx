@@ -14,7 +14,7 @@ import {
  Wifi,
 } from 'lucide-react';
 import type { DarshanStream, TempleImage } from '../lib/api';
-import { getTempleHero, getDeityImage } from '../lib/images';
+import { getTempleHero, getDeityImage, wikiThumb } from '../lib/images';
 
 function firstImageUrl(images: TempleImage[] | undefined): string | null {
  if (!images || images.length === 0) return null;
@@ -24,6 +24,10 @@ function firstImageUrl(images: TempleImage[] | undefined): string | null {
   return first.url;
  }
  return null;
+}
+
+function templeImageThumb(url: string): string {
+ return wikiThumb(url, 800);
 }
 
 function deityFallback(deityPrimary: string): string {
@@ -38,7 +42,7 @@ function deityFallback(deityPrimary: string): string {
 }
 
 function templeImageFor(stream: DarshanStream): string {
- return firstImageUrl(stream.temple.images) ?? getTempleHero(stream.temple.slug) ?? deityFallback(stream.temple.deityPrimary);
+ return templeImageThumb(firstImageUrl(stream.temple.images) ?? getTempleHero(stream.temple.slug) ?? deityFallback(stream.temple.deityPrimary));
 }
 
 const REMINDERS_KEY = 'poojly_darshan_reminders';
@@ -240,6 +244,9 @@ export default function DarshanBrowser({
             src={templeImage}
             alt={stream.temple.name}
             loading="lazy"
+            width={800}
+            height={450}
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-90"
            />
            <div className="absolute inset-0 flex items-center justify-center">
@@ -304,6 +311,9 @@ export default function DarshanBrowser({
              src={templeImageFor(stream)}
              alt={`${stream.temple.name} - Upcoming stream`}
              loading="lazy"
+             width={800}
+             height={450}
+             decoding="async"
              className="absolute inset-0 w-full h-full object-cover opacity-40"
             />
             <div className="absolute inset-0 flex items-center justify-center">
