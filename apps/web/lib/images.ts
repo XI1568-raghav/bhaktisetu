@@ -50,9 +50,24 @@ function wiki(url: string): string {
  return url;
 }
 
+// Wikimedia banned ad-hoc thumb widths in 2024 — only these ladder steps work.
+// https://www.mediawiki.org/wiki/Common_thumbnail_sizes
+const COMMONS_LADDER = [20, 40, 60, 120, 250, 330, 500, 960, 1280, 1920, 3840] as const;
+
+function snapToLadder(width: number): number {
+ // Snap UP to next ladder step so quality never undershoots requested size.
+ for (const step of COMMONS_LADDER) {
+   if (step >= width) return step;
+ }
+ return COMMONS_LADDER[COMMONS_LADDER.length - 1]!;
+}
+
 /**
  * Convert ANY Wikimedia Commons URL to a thumbnail at the given width.
  * Originals (5-15 MB) become resized thumbnails (50-300 KB) — critical for perf.
+ *
+ * Width is snapped to the Commons ladder (250/330/500/960/1280/1920) — Commons
+ * rejects arbitrary widths with HTTP 400 since 2024.
  *
  * Handles both shapes:
  *   .../commons/a/bc/Foo.jpg          → .../commons/thumb/a/bc/Foo.jpg/<w>px-Foo.jpg
@@ -60,15 +75,16 @@ function wiki(url: string): string {
  */
 export function wikiThumb(url: string, width: number): string {
  if (!url.includes('upload.wikimedia.org/wikipedia/commons/')) return url;
+ const w = snapToLadder(width);
  if (url.includes('/commons/thumb/')) {
-   return url.replace(/\/(\d+)px-/, `/${width}px-`);
+   return url.replace(/\/(\d+)px-/, `/${w}px-`);
  }
  const match = url.match(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/?#]+)$/);
  if (!match) return url;
  const [, a, bc, file] = match;
  // .svg → .svg.png thumb (Commons rule). Other extensions pass through.
  const thumbFile = /\.svg$/i.test(file!) ? `${file}.png` : file;
- return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${width}px-${thumbFile}`;
+ return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${w}px-${thumbFile}`;
 }
 
 /**
