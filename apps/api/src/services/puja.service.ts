@@ -114,15 +114,66 @@ export class PujaService {
         return null;
       }
 
+      // Frontend (apps/web/app/pujas/[slug]/page.tsx and .../book/page.tsx)
+      // expects each entry's `id` to be the offering id (so it can be sent as
+      // `templeOfferingId` to /bookings/create-order), and reads
+      // `templeName/templeSlug/templeCity/templeState`. We expose both shapes
+      // — flat temple fields (legacy) plus the prefixed ones — so older
+      // callers don't break. availableSlots is a string[] in DB; map to
+      // [{time,label}] for the booking UI.
+      const slotLabel = (slot: string): string => {
+        const [hStr, mStr] = slot.split(':');
+        const h = Number(hStr ?? 0);
+        const m = Number(mStr ?? 0);
+        const period = h < 12 ? 'AM' : 'PM';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        const time12 = `${h12}:${String(m).padStart(2, '0')} ${period}`;
+        const window = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening';
+        return `${window} (${time12})`;
+      };
+
       return {
         ...pujaType,
-        temples: pujaType.templeOfferings.map((o) => ({
-          offeringId: o.id,
-          availableSlots: o.availableSlots,
-          maxBookingsPerSlot: o.maxBookingsPerSlot,
-          priceOverride: o.priceOverride,
-          ...o.temple,
-        })),
+        temples: pujaType.templeOfferings.map((o) => {
+          const slots = (o.availableSlots as unknown);
+          const slotArr: { time: string; label: string }[] = Array.isArray(slots)
+            ? (slots as unknown[]).map((s) => {
+                if (typeof s === 'string') return { time: s, label: slotLabel(s) };
+                if (s && typeof s === 'object' && 'time' in (s as object)) {
+                  const obj = s as { time: string; label?: string };
+                  return { time: obj.time, label: obj.label ?? slotLabel(obj.time) };
+                }
+                return { time: String(s), label: String(s) };
+              })
+            : [];
+          return {
+            // booking page reads `id` as the offering id
+            id: o.id,
+            offeringId: o.id,
+            availableSlots: slotArr,
+            maxBookingsPerSlot: o.maxBookingsPerSlot,
+            priceOverride: o.priceOverride,
+            // prefixed shape the web uses
+            templeId: o.temple.id,
+            templeName: o.temple.name,
+            templeNameLocal: o.temple.nameLocal,
+            templeSlug: o.temple.slug,
+            templeCity: o.temple.city,
+            templeState: o.temple.state,
+            templeImages: o.temple.images,
+            isActive: o.isActive,
+            isVerified: o.temple.isVerified,
+            trustScore: o.temple.trustScore,
+            liveDarshanEnabled: o.temple.liveDarshanEnabled,
+            // legacy flat fields kept for any older consumer
+            name: o.temple.name,
+            nameLocal: o.temple.nameLocal,
+            slug: o.temple.slug,
+            city: o.temple.city,
+            state: o.temple.state,
+            images: o.temple.images,
+          };
+        }),
       };
     });
   }
