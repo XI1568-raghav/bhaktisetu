@@ -4,8 +4,6 @@ import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
- IndianRupee,
- TrendingUp,
  Calendar,
  CheckCircle2,
  Clock,
@@ -18,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
+import EarningsCard from '../../components/provider/EarningsCard';
+import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -158,6 +158,8 @@ export default function PriestDashboard() {
  const { session } = useAuth();
  const [data, setData] = useState<DashboardData | null>(null);
  const [loading, setLoading] = useState(true);
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ const [kycReason, setKycReason] = useState<string | null>(null);
 
  useEffect(() => {
  async function fetchDashboard() {
@@ -176,7 +178,26 @@ export default function PriestDashboard() {
  setLoading(false);
  }
  }
+ async function fetchKyc() {
+ if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ try {
+ const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ });
+ if (!r.ok) return;
+ const j = await r.json();
+ if (!j.kyc) setKycState('unsubmitted');
+ else if (j.kyc.verified) setKycState('verified');
+ else if (j.kyc.rejectionReason) {
+ setKycState('rejected');
+ setKycReason(j.kyc.rejectionReason);
+ } else setKycState('pending');
+ } catch {
+ // graceful fallback
+ }
+ }
  fetchDashboard();
+ fetchKyc();
  }, [session]);
 
  if (loading) {
@@ -189,30 +210,6 @@ export default function PriestDashboard() {
  }
 
  if (!data) return null;
-
- const earningCards = [
- {
- label: 'Total Earned',
- value: formatCurrency(data.earnings.total),
- icon: IndianRupee,
- color: 'text-tulsi-green',
- bg: 'bg-tulsi-green-light/20',
- },
- {
- label: 'This Month',
- value: formatCurrency(data.earnings.thisMonth),
- icon: TrendingUp,
- color: 'text-saffron-600',
- bg: 'bg-saffron-50',
- },
- {
- label: 'Pending Payout',
- value: formatCurrency(data.earnings.pending),
- icon: Clock,
- color: 'text-amber-600',
- bg: 'bg-amber-50',
- },
- ];
 
  const statCards = [
  { label: 'Total Bookings', value: data.bookings.total, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -234,33 +231,19 @@ export default function PriestDashboard() {
  <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
  Namaste, {data.priest.displayName.split(' ')[0]}!
  </h1>
- <p className="text-surface-500 mt-1">
- Here is your dashboard overview for today.
- </p>
+ <div className="mt-1 flex items-center gap-3 flex-wrap">
+ <p className="text-surface-500">Here is your dashboard overview for today.</p>
+ <KycStatusBadge state={kycState} reason={kycReason} />
+ </div>
  </div>
 
  <MyProviderProfileCard role="PANDIT" onboardingSlug="priest" publicListingType="pandit" />
 
- {/* Earnings Cards */}
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
- {earningCards.map((card) => {
- const Icon = card.icon;
- return (
- <div
- key={card.label}
- className="bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow"
- >
- <div className="flex items-center gap-3 mb-3">
- <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center`}>
- <Icon className={`w-5 h-5 ${card.color}`} />
- </div>
- <span className="text-sm text-surface-500">{card.label}</span>
- </div>
- <p className="text-lg font-semibold text-surface-800">{card.value}</p>
- </div>
- );
- })}
- </div>
+ <EarningsCard
+ totalPaid={data.earnings.total}
+ pending={data.earnings.pending}
+ thisMonth={data.earnings.thisMonth}
+ />
 
  {/* Quick Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

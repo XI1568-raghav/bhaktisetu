@@ -1,11 +1,11 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
+import EarningsCard from '../../components/provider/EarningsCard';
+import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
- IndianRupee,
- TrendingUp,
  Star,
  Clock,
  Users,
@@ -15,6 +15,8 @@ import {
  Video,
  Calendar,
 } from 'lucide-react';
+import { useAuth } from '../../lib/auth-context';
+import { API_BASE_URL } from '../../lib/api-config';
 
 // ─── Mock Data ──────────────────────────────────────────────────
 
@@ -103,31 +105,31 @@ function getModeIcon(mode: string) {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function AstrologerDashboard() {
+ const { session } = useAuth();
  const data = dashboardData;
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ const [kycReason, setKycReason] = useState<string | null>(null);
 
- const earningCards = [
- {
- label: 'Today\'s Earnings',
- value: formatCurrency(data.stats.earningsToday),
- icon: IndianRupee,
- color: 'text-purple-600',
- bg: 'bg-purple-50',
- },
- {
- label: 'This Month',
- value: formatCurrency(data.stats.earningsThisMonth),
- icon: TrendingUp,
- color: 'text-saffron-600',
- bg: 'bg-saffron-50',
- },
- {
- label: 'Total Earned',
- value: formatCurrency(data.stats.totalEarnings),
- icon: IndianRupee,
- color: 'text-tulsi-green',
- bg: 'bg-tulsi-green-light/20',
- },
- ];
+ useEffect(() => {
+ if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ (async () => {
+ try {
+ const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ });
+ if (!r.ok) return;
+ const j = await r.json();
+ if (!j.kyc) setKycState('unsubmitted');
+ else if (j.kyc.verified) setKycState('verified');
+ else if (j.kyc.rejectionReason) {
+ setKycState('rejected');
+ setKycReason(j.kyc.rejectionReason);
+ } else setKycState('pending');
+ } catch {
+ // graceful fallback
+ }
+ })();
+ }, [session]);
 
  const quickStats = [
  { label: 'Today\'s Sessions', value: data.stats.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -143,28 +145,19 @@ export default function AstrologerDashboard() {
  <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
  Namaste, {data.astrologer.name.split(' ')[0]}!
  </h1>
- <p className="text-surface-500 mt-1">Your astrology practice at a glance.</p>
+ <div className="mt-1 flex items-center gap-3 flex-wrap">
+ <p className="text-surface-500">Your astrology practice at a glance.</p>
+ <KycStatusBadge state={kycState} reason={kycReason} />
+ </div>
  </div>
 
  <MyProviderProfileCard role="ASTROLOGER" onboardingSlug="astrologer" publicListingType="astrologer" />
 
- {/* Earnings */}
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
- {earningCards.map((card) => {
- const Icon = card.icon;
- return (
- <div key={card.label} className="bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow">
- <div className="flex items-center gap-3 mb-3">
- <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center`}>
- <Icon className={`w-5 h-5 ${card.color}`} />
- </div>
- <span className="text-sm text-surface-500">{card.label}</span>
- </div>
- <p className="text-lg font-semibold text-surface-800">{card.value}</p>
- </div>
- );
- })}
- </div>
+ <EarningsCard
+ totalPaid={data.stats.totalEarnings}
+ thisMonth={data.stats.earningsThisMonth}
+ pending={data.stats.earningsToday}
+ />
 
  {/* Quick Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
