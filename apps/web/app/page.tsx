@@ -119,17 +119,28 @@ export default function HomePage() {
 
  {/* Right — Bento with parallax float */}
  <div data-reveal="zoom-rotate" data-delay="1" className="hidden md:grid grid-cols-2 gap-2.5">
- <div className="col-span-2 rounded-xl overflow-hidden relative" data-parallax="0.08" style={{ border: '1px solid var(--color-border)' }}>
- <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath" className="w-full h-40 object-cover" loading="eager" fetchPriority="high" decoding="async" />
- <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+ <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
+ <img
+ src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg"
+ srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/960px-The_Golden_Temple_of_Amrithsar_7.jpg 960w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg 1920w"
+ sizes="(max-width: 768px) 100vw, 600px"
+ alt="Sri Harmandir Sahib (Golden Temple) — live darshan"
+ width={1920}
+ height={960}
+ className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+ loading="eager"
+ fetchPriority="high"
+ decoding="async"
+ />
+ <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </div>
  <div className="absolute bottom-2.5 left-2.5">
- <p className="text-xs font-medium text-white">Kashi Vishwanath</p>
- <p className="text-[10px] text-white/60">Morning Aarti • Varanasi</p>
+ <p className="text-xs font-medium text-white">Golden Temple, Amritsar</p>
+ <p className="text-[10px] text-white/70">Watch live darshan →</p>
  </div>
- </div>
+ </Link>
  <div className="rounded-xl p-3 flex flex-col justify-between scroll-float" style={{ background: 'var(--color-art-1)', minHeight: '90px', animationDelay: '0s' }}>
  <Shield className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <div>
@@ -250,37 +261,36 @@ export default function HomePage() {
  </Link>
  </div>
 
- <div data-reveal="cinematic" className="relative rounded-xl overflow-hidden card-hover" style={{ border: '1px solid var(--color-border)' }}>
- <div className="aspect-[16/7] relative">
+ <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
+ <div className="aspect-[16/9] relative">
  <img
- src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1920px-Kashi_Vishwanath.jpg"
- srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/960px-Kashi_Vishwanath.jpg 960w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1280px-Kashi_Vishwanath.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1920px-Kashi_Vishwanath.jpg 1920w"
+ src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg"
+ srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/960px-The_Golden_Temple_of_Amrithsar_7.jpg 960w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg 1920w"
  sizes="(max-width: 768px) 100vw, 1200px"
- alt="Kashi Vishwanath Temple Live"
+ alt="Sri Harmandir Sahib (Golden Temple), Amritsar — live darshan"
  width={1920}
- height={840}
- className="w-full h-full object-cover"
+ height={1080}
+ className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
  fetchPriority="high"
  decoding="async"
  />
- <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+ <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
  <div className="absolute top-3 left-3 flex items-center gap-2">
  <span className="flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </span>
- 
  </div>
  <div className="absolute bottom-4 left-4 right-4">
- <h3 className="text-lg sm:text-xl font-semibold text-white">Shri Kashi Vishwanath Temple</h3>
- <p className="text-xs text-white/70 mt-0.5">Morning Aarti • Varanasi, Uttar Pradesh</p>
+ <h3 className="text-lg sm:text-xl font-semibold text-white">Sri Harmandir Sahib</h3>
+ <p className="text-xs text-white/80 mt-0.5">Live Darshan • Amritsar, Punjab</p>
  </div>
- <div className="absolute inset-0 flex items-center justify-center">
- <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all cursor-pointer">
- <Play className="w-6 h-6 text-white ml-0.5" />
- </div>
- </div>
+ <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+ <div className="w-16 h-16 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:bg-white/40 group-hover:scale-110">
+ <Play className="w-7 h-7 text-white ml-0.5" />
  </div>
  </div>
+ </div>
+ </Link>
  </div>
  </section>
 
