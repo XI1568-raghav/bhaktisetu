@@ -32,12 +32,12 @@ export const metadata: Metadata = {
 // ─── Static fallback data ─────────────────────────────────────────────────────
 
 const tabs = [
- { id: 'all', label: 'All', count: 795 },
- { id: 'aarti', label: 'Aarti', count: 120 },
- { id: 'chalisa', label: 'Chalisa', count: 45 },
- { id: 'mantra', label: 'Mantra', count: 200 },
- { id: 'bhajan', label: 'Bhajan', count: 350 },
- { id: 'story', label: 'Stories', count: 80 },
+ { id: 'all', label: 'All', count: 14 },
+ { id: 'aarti', label: 'Aarti', count: 3 },
+ { id: 'chalisa', label: 'Chalisa', count: 2 },
+ { id: 'mantra', label: 'Mantra', count: 4 },
+ { id: 'bhajan', label: 'Bhajan', count: 3 },
+ { id: 'story', label: 'Stories', count: 1 },
 ];
 
 const fallbackFeaturedContent: ContentItem[] = [
@@ -315,39 +315,38 @@ const fallbackContentItems: ContentItem[] = [
 const collections = [
  {
  name: 'Morning Mantras',
- count: 24,
+ filterType: 'mantra',
+ count: 4,
  description: 'Start your day with sacred chants',
  gradient: 'from-amber-400 to-saffron-600',
  },
  {
  name: 'Evening Aarti Collection',
- count: 18,
+ filterType: 'aarti',
+ count: 3,
  description: 'Complete sandhya aarti for all deities',
  gradient: 'from-saffron-500 to-lotus-pink',
  },
  {
- name: 'Meditation & Peace',
- count: 32,
- description: 'Om chanting and peaceful mantras',
+ name: 'Chalisas',
+ filterType: 'chalisa',
+ count: 2,
+ description: 'Sacred 40-verse hymns for daily recitation',
  gradient: 'from-ganga-blue to-purple-600',
  },
  {
- name: 'Shiva Special',
- count: 40,
- description: 'Stotrams, mantras, and bhajans for Mahadev',
+ name: 'Bhajans',
+ filterType: 'bhajan',
+ count: 3,
+ description: 'Devotional songs for the heart',
  gradient: 'from-surface-600 to-surface-800',
  },
  {
- name: 'Krishna Bhajans',
- count: 56,
- description: 'Melodious bhajans for Lord Krishna',
+ name: 'Spiritual Stories',
+ filterType: 'story',
+ count: 1,
+ description: 'Tales from Puranas and scriptures',
  gradient: 'from-ganga-blue to-tulsi-green',
- },
- {
- name: 'Devi Shakti',
- count: 28,
- description: 'Powerful stotrams for the Divine Mother',
- gradient: 'from-sacred-red to-lotus-pink',
  },
 ];
 
@@ -697,16 +696,15 @@ export default async function ContentPage({
  {collections.map((col, i) => {
  const collectionImages = [
  getContentImage('mantra', 'thumbnail'),
- getContentImage('chalisa', 'thumbnail'),
- getContentImage('stotram', 'thumbnail'),
  getContentImage('aarti', 'thumbnail'),
+ getContentImage('chalisa', 'thumbnail'),
  getContentImage('bhajan', 'thumbnail'),
- getContentImage('meditation'),
+ getContentImage('stotram', 'thumbnail'),
  ];
  return (
  <a
  key={col.name}
- href="/content"
+ href={`/content?type=${col.filterType}`}
  className="group rounded-xl overflow-hidden hover:shadow-lg transition-all"
  >
  <div
