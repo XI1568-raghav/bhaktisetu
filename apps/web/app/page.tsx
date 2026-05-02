@@ -253,12 +253,12 @@ export default function HomePage() {
  <div data-reveal="cinematic" className="relative rounded-xl overflow-hidden card-hover" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/7] relative">
  <img
- src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1600px-Kashi_Vishwanath.jpg"
- srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/800px-Kashi_Vishwanath.jpg 800w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1280px-Kashi_Vishwanath.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1600px-Kashi_Vishwanath.jpg 1600w"
+ src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1920px-Kashi_Vishwanath.jpg"
+ srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/960px-Kashi_Vishwanath.jpg 960w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1280px-Kashi_Vishwanath.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1920px-Kashi_Vishwanath.jpg 1920w"
  sizes="(max-width: 768px) 100vw, 1200px"
  alt="Kashi Vishwanath Temple Live"
- width={1600}
- height={700}
+ width={1920}
+ height={840}
  className="w-full h-full object-cover"
  fetchPriority="high"
  decoding="async"
