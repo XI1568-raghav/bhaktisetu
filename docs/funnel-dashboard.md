@@ -83,3 +83,49 @@ pnpm turbo type-check --filter=@poojly/admin
 
 (`@bhaktisetu/admin` does not exist in this workspace — the admin package
 is named `@poojly/admin` for legacy compatibility, see CLAUDE.md.)
+
+## Cohort retention dashboard (Layer AJ)
+
+Server-rendered weekly cohort retention at `/retention` in `apps/admin`. Same
+PostHog auth and ISR (5-minute) pattern as the funnel page.
+
+### What it shows
+
+A heatmap of weekly cohorts over the **last 8 weeks**. Rows are signup
+cohorts (week of first `$pageview`), columns are intervals 0..7 weeks
+later. Each cell is the percentage of that cohort that returned that week.
+
+| Property | Value |
+|---|---|
+| Endpoint | `POST $POSTHOG_HOST/api/projects/$POSTHOG_PROJECT_ID/insights/retention/` |
+| Cohort signup event | first `$pageview` (`retention_first_time`) |
+| Returning event | any `$pageview` |
+| Period | `Week` |
+| Intervals | 8 |
+| Window | last 56 days (`date_from = -56d`) |
+
+### Heatmap encoding
+
+Cells use a saffron gradient (`rgba(225, 99, 24, alpha)`) where `alpha` is
+the retention percentage scaled into `[0.08, 1.0]`. Week 0 is hard-coded to
+`100%` (it is the cohort itself). A small legend renders at the bottom of
+the table.
+
+The heatmap is pure HTML/CSS — no chart library — to keep the admin app
+free of new dependencies.
+
+### Empty state
+
+When `POSTHOG_API_KEY` (or `POSTHOG_PROJECT_ID`) is missing, the page shows
+**"Set POSTHOG_API_KEY to view retention"** along with the list of
+specifically missing vars. Same fallback applies for network errors,
+non-2xx responses, schema mismatches, and zero-event windows.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `apps/admin/lib/posthog-retention.ts` | `fetchRetention()` — typed PostHog client + zod validation. Mirrors `posthog-funnel.ts`. |
+| `apps/admin/app/retention/page.tsx` | Server component, ISR 300 s. Renders cohort grid with saffron heatmap. |
+| `apps/admin/components/admin-nav.tsx` | "Retention" nav link added between Funnel and Bookings. |
+
