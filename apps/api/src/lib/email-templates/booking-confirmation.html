@@ -1,0 +1,154 @@
+<!--
+  Saffron-themed booking confirmation email for Darshya puja bookings.
+  Token format: {{name}} — replaced server-side by lib/email.ts helper.
+  Inline styles only (Gmail strips <style> blocks for many clients).
+  Width 560px, table-based layout for Outlook compatibility.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your puja is booked — Darshya</title>
+  </head>
+  <body style="margin:0;padding:0;background:#fbf3e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#3d2611;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fbf3e6;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(180,83,9,0.08);">
+
+            <!-- Saffron banner -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#f97316 0%,#ea580c 60%,#c2410c 100%);padding:36px 28px;text-align:center;">
+                <div style="font-size:14px;letter-spacing:3px;color:#fff7ed;text-transform:uppercase;margin-bottom:8px;">॥ शुभम् ॥</div>
+                <div style="font-size:28px;font-weight:700;color:#ffffff;margin:0;">Your puja is booked</div>
+                <div style="font-size:14px;color:#ffedd5;margin-top:8px;">Booking #{{bookingNumber}}</div>
+              </td>
+            </tr>
+
+            <!-- Greeting -->
+            <tr>
+              <td style="padding:32px 32px 8px 32px;">
+                <p style="font-size:16px;line-height:1.6;margin:0 0 12px 0;color:#3d2611;">
+                  Namaste <strong>{{devoteeName}}</strong>,
+                </p>
+                <p style="font-size:14px;line-height:1.7;margin:0;color:#5a4423;">
+                  Your sankalp has been received. Our priest will perform the
+                  ritual on your behalf and upload a tamper-proof video of
+                  the entire puja within 6 hours of the scheduled time.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Details card -->
+            <tr>
+              <td style="padding:24px 32px 8px 32px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;">
+                  <tr>
+                    <td style="padding:20px 22px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9a3412;padding-bottom:4px;">Puja</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:16px;font-weight:600;color:#3d2611;padding-bottom:14px;">{{pujaName}}</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9a3412;padding-bottom:4px;">Temple</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:15px;font-weight:500;color:#3d2611;padding-bottom:14px;">{{templeName}}</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9a3412;padding-bottom:4px;">Date &amp; time</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:15px;font-weight:500;color:#3d2611;padding-bottom:14px;">{{scheduledDate}} · {{scheduledTimeSlot}}</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9a3412;padding-bottom:4px;">Priest assigned</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:15px;font-weight:500;color:#3d2611;padding-bottom:14px;">{{priestName}}</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9a3412;padding-bottom:4px;">Amount paid</td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:18px;font-weight:700;color:#c2410c;">{{amount}}</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Video proof timeline -->
+            <tr>
+              <td style="padding:24px 32px 8px 32px;">
+                <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#9a3412;margin-bottom:12px;">What happens next</div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td valign="top" width="32" style="padding:6px 0;">
+                      <div style="width:24px;height:24px;background:#fed7aa;border-radius:50%;color:#9a3412;font-weight:700;font-size:13px;text-align:center;line-height:24px;">1</div>
+                    </td>
+                    <td style="padding:6px 0 6px 12px;font-size:14px;line-height:1.6;color:#5a4423;">
+                      Priest receives the booking and prepares samagri.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td valign="top" width="32" style="padding:6px 0;">
+                      <div style="width:24px;height:24px;background:#fed7aa;border-radius:50%;color:#9a3412;font-weight:700;font-size:13px;text-align:center;line-height:24px;">2</div>
+                    </td>
+                    <td style="padding:6px 0 6px 12px;font-size:14px;line-height:1.6;color:#5a4423;">
+                      Puja performed at the scheduled time, with sankalp in
+                      your name and gotra.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td valign="top" width="32" style="padding:6px 0;">
+                      <div style="width:24px;height:24px;background:#fed7aa;border-radius:50%;color:#9a3412;font-weight:700;font-size:13px;text-align:center;line-height:24px;">3</div>
+                    </td>
+                    <td style="padding:6px 0 6px 12px;font-size:14px;line-height:1.6;color:#5a4423;">
+                      <strong>Video proof uploaded within 6 hours.</strong>
+                      You will receive a separate email with the link.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td valign="top" width="32" style="padding:6px 0;">
+                      <div style="width:24px;height:24px;background:#fed7aa;border-radius:50%;color:#9a3412;font-weight:700;font-size:13px;text-align:center;line-height:24px;">4</div>
+                    </td>
+                    <td style="padding:6px 0 6px 12px;font-size:14px;line-height:1.6;color:#5a4423;">
+                      Prasad dispatched (if requested) within 3-5 business
+                      days.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- CTA -->
+            <tr>
+              <td align="center" style="padding:24px 32px 32px 32px;">
+                <a href="{{bookingUrl}}" style="display:inline-block;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:8px;">View booking</a>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#fef3e2;padding:20px 32px;text-align:center;border-top:1px solid #fed7aa;">
+                <div style="font-size:12px;color:#9a3412;margin-bottom:4px;">Darshya · India's Devotional Super App</div>
+                <div style="font-size:11px;color:#a8825d;">
+                  Need help? Reply to this email or write to
+                  <a href="mailto:support@darshya.online" style="color:#c2410c;text-decoration:none;">support@darshya.online</a>
+                </div>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
