@@ -27,13 +27,14 @@ import {
  ArrowUpRight,
 } from 'lucide-react';
 import { getTempleBySlug, type TempleDetail } from '../../../lib/api';
-import { getTempleHero, getTempleGallery } from '../../../lib/images';
+import { getTempleHero, getTempleGallery, getDeityImage } from '../../../lib/images';
 import {
  getTempleDetail,
  getSimilarTemples,
  type TempleDetailRich,
 } from '../../../lib/temple-details';
 import TempleHeartShareButtons from '../../../components/TempleHeartShareButtons';
+import AnalyticsEvent from '../../../components/AnalyticsEvent';
 
 // ──────────────────────────────────────────────────────────────
 // Fallback temple from API (when no rich detail exists)
@@ -95,15 +96,50 @@ export async function generateMetadata({
  const name = rich?.name ?? fallback?.name ?? 'Temple';
  const location = rich ? `${rich.location}, ${rich.state}` : `${fallback?.city ?? ''}, ${fallback?.state ?? ''}`;
  const deity = rich?.deity ?? fallback?.deityPrimary ?? 'Devotees';
+ const description =
+   rich?.significance?.slice(0, 200) ??
+   fallback?.description?.slice(0, 200) ??
+   `Plan your darshan of ${name}. Book pujas, view timings, travel info, dress code, gallery, festivals and more. Deity: ${deity}.`;
+
+ const apiImages = fallback?.images;
+ const firstApiImage = Array.isArray(apiImages)
+   ? typeof apiImages[0] === 'string'
+     ? (apiImages[0] as string)
+     : (apiImages[0] as { url?: string } | undefined)?.url
+   : undefined;
+ const ogImage =
+   firstApiImage ||
+   (rich ? getTempleHero(slug) : undefined) ||
+   getDeityImage((deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-'));
+
+ const url = `https://darshya.online/temples/${slug}`;
+ const title = `${name} — ${location}`;
 
  return {
- title: `${name} — ${location}`,
- description: `Plan your darshan of ${name}. Book pujas, view timings, travel info, dress code, gallery, festivals and more. Deity: ${deity}.`,
- openGraph: {
- title: name,
- description: rich?.significance?.slice(0, 160) ?? fallback?.description?.slice(0, 160) ?? '',
- type: 'website',
- },
+   title,
+   description,
+   alternates: { canonical: url },
+   openGraph: {
+     title,
+     description,
+     type: 'website',
+     url,
+     siteName: 'Darshya',
+     images: [
+       {
+         url: ogImage,
+         width: 1200,
+         height: 630,
+         alt: name,
+       },
+     ],
+   },
+   twitter: {
+     card: 'summary_large_image',
+     title,
+     description,
+     images: [ogImage],
+   },
  };
 }
 
@@ -122,9 +158,9 @@ export default async function TempleDetailPage({
 
  if (!rich && !apiTemple) notFound();
 
- // JSON-LD structured data for Google rich snippets. PlaceOfWorship is
- // Schema.org's canonical type for temples/mosques/churches; Google
- // surfaces it with map cards, hours, ratings.
+ // JSON-LD LocalBusiness/PlaceOfWorship schema for Google rich snippets.
+ // PlaceOfWorship is Schema.org's canonical type for temples/mosques/churches;
+ // Google surfaces it with map cards, hours, ratings.
  const ldName = rich?.name ?? apiTemple?.name ?? '';
  const ldDesc = rich?.significance ?? apiTemple?.description ?? '';
  const apiImages = apiTemple?.images;
@@ -133,11 +169,16 @@ export default async function TempleDetailPage({
      ? (apiImages[0] as string)
      : (apiImages[0] as { url?: string } | undefined)?.url)
   : undefined;
- const ldImage = (rich && getTempleHero(slug)) || firstApiImage;
+ const ldImage = firstApiImage || (rich ? getTempleHero(slug) : undefined);
  const ldCity = rich?.location ?? apiTemple?.city ?? '';
  const ldState = rich?.state ?? apiTemple?.state ?? '';
- const ldRating = apiTemple?.trustScore;
- const ld = {
+ const ldStreet = apiTemple?.addressLine ?? '';
+ const ldPostal = apiTemple?.pincode ?? '';
+ const ldCountryRaw = apiTemple?.country ?? 'IN';
+ const ldCountry = ldCountryRaw === 'India' ? 'IN' : ldCountryRaw;
+ const ldPhone = apiTemple?.phone ?? null;
+ const ldTrustScore = apiTemple?.trustScore;
+ const ld: Record<string, unknown> = {
   '@context': 'https://schema.org',
   '@type': 'PlaceOfWorship',
   name: ldName,
@@ -146,18 +187,24 @@ export default async function TempleDetailPage({
   ...(ldImage ? { image: ldImage } : {}),
   address: {
    '@type': 'PostalAddress',
+   ...(ldStreet ? { streetAddress: ldStreet } : {}),
    addressLocality: ldCity,
    addressRegion: ldState,
-   addressCountry: 'IN',
+   ...(ldPostal ? { postalCode: ldPostal } : {}),
+   addressCountry: ldCountry,
   },
-  ...(typeof apiTemple?.lat === 'number' && typeof apiTemple?.lng === 'number'
+  ...(typeof apiTemple?.lat === 'number' &&
+  typeof apiTemple?.lng === 'number' &&
+  apiTemple.lat !== 0 &&
+  apiTemple.lng !== 0
    ? { geo: { '@type': 'GeoCoordinates', latitude: apiTemple.lat, longitude: apiTemple.lng } }
    : {}),
-  ...(typeof ldRating === 'number' && ldRating > 0
+  ...(ldPhone ? { telephone: ldPhone } : {}),
+  ...(typeof ldTrustScore === 'number' && ldTrustScore > 0
    ? {
       aggregateRating: {
        '@type': 'AggregateRating',
-       ratingValue: ldRating,
+       ratingValue: Math.min(5, ldTrustScore / 20),
        bestRating: 5,
        ratingCount: 1,
       },
@@ -171,10 +218,22 @@ export default async function TempleDetailPage({
   />
  );
 
+ const analyticsName = rich?.name ?? apiTemple?.name ?? slug;
+ const analyticsCity = rich?.location ?? apiTemple?.city ?? '';
+ const analyticsState = rich?.state ?? apiTemple?.state ?? '';
+ const analyticsTag = (
+  <AnalyticsEvent
+   event="temple_viewed"
+   dedupeKey={`temple_viewed:${slug}`}
+   properties={{ slug, name: analyticsName, city: analyticsCity, state: analyticsState }}
+  />
+ );
+
  if (rich) {
  return (
   <>
    {ldScript}
+   {analyticsTag}
    <RichTemplePage slug={slug} rich={rich} apiTemple={apiTemple} />
   </>
  );
@@ -184,6 +243,7 @@ export default async function TempleDetailPage({
  return (
   <>
    {ldScript}
+   {analyticsTag}
    <SimpleTemplePage slug={slug} temple={apiTemple!} />
   </>
  );
