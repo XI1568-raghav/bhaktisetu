@@ -125,6 +125,22 @@ const TEMPLE_LIVE_STREAMS = [
   },
 ];
 
+// Short-alias → canonical slug map. URLs like /darshan/kashi-vishwanath should
+// resolve to the temple stored under templeSlug 'kashi-vishwanath-varanasi'.
+const SLUG_ALIASES: Record<string, string> = {
+  'kashi-vishwanath': 'kashi-vishwanath-varanasi',
+  'somnath': 'somnath-gujarat',
+  'tirupati': 'tirumala-tirupati',
+  'golden-temple': 'golden-temple-amritsar',
+  'shirdi': 'shirdi-sai-baba',
+  'siddhivinayak': 'siddhivinayak-mumbai',
+  'mahakaleshwar': 'mahakaleshwar-ujjain',
+};
+
+function resolveSlug(idOrSlug: string): string {
+  return SLUG_ALIASES[idOrSlug] ?? idOrSlug;
+}
+
 export async function darshanRoutes(server: FastifyInstance) {
   // GET /live - List streams currently live per Temple.timingInfo aarti window.
   // Live = either DB row marked status='live' OR scheduled aarti window happening
@@ -261,10 +277,11 @@ export async function darshanRoutes(server: FastifyInstance) {
   server.get('/:id/stream', async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    // Check hardcoded streams first - match by id OR templeSlug.
+    // Check hardcoded streams first - match by id OR templeSlug (incl. short alias).
     // The /darshan/<slug> page hits this endpoint with a slug, not the synthetic id.
+    const canonicalSlug = resolveSlug(id);
     const hardcoded = TEMPLE_LIVE_STREAMS.find(
-      (s) => s.id === id || s.templeSlug === id,
+      (s) => s.id === id || s.templeSlug === id || s.templeSlug === canonicalSlug,
     );
     if (hardcoded) {
       return {
