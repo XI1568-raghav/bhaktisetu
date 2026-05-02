@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
@@ -164,7 +165,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         data: {
           status: body.data.status,
           trackingNumber: body.data.trackingNumber ?? order.trackingNumber,
-          statusHistory: [...existingHistory, historyEntry] as any,
+          statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
         },
       });
       return reply.send({ data: serializeOrder(updated) });
@@ -206,7 +207,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         where: { id: order.id },
         data: {
           status: 'CONFIRMED',
-          statusHistory: [...existingHistory, historyEntry] as any,
+          statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
         },
       });
 
@@ -214,13 +215,22 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       void (async () => {
         try {
           if (!order.user.email) return;
-          const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+          // items + shippingAddress are stored as Json; narrow to the shapes
+          // we wrote in the checkout flow (validated by *Schema above).
+          type StoreOrderItem = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
+          type StoreOrderAddr = {
+            fullName?: string; line1?: string; line2?: string; city?: string;
+            state?: string; pincode?: string; country?: string;
+          };
+          const items: StoreOrderItem[] = Array.isArray(order.items)
+            ? (order.items as unknown as StoreOrderItem[])
+            : [];
           const lineItems = items.map((it) => ({
             name: typeof it.name === 'string' ? it.name : (it.productId ?? 'Item'),
             qty: Number(it.qty ?? 1),
             priceInr: Number(it.priceAtPurchase ?? 0),
           }));
-          const addr = order.shippingAddress as any;
+          const addr = order.shippingAddress as unknown as StoreOrderAddr;
           const addrStr = [
             addr?.fullName, addr?.line1, addr?.line2, addr?.city,
             addr?.state, addr?.pincode, addr?.country,

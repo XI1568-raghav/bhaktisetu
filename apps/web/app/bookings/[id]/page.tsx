@@ -250,7 +250,7 @@ function BookingDetailContent() {
  } catch {
  // Demo mode
  }
- setBooking({ ...booking, status: 'cancelled' as any });
+ setBooking({ ...booking, status: 'cancelled' });
  setCancelling(false);
  setShowCancelConfirm(false);
  };
