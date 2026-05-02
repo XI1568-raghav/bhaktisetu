@@ -6,7 +6,10 @@ const LINKS = [
   { href: "/payouts", label: "Payouts" },
   { href: "/refunds", label: "Refunds" },
   { href: "/leads", label: "Leads" },
+  { href: "/leads-conversion", label: "Conversion" },
   { href: "/temples", label: "Temples" },
+  { href: "/broadcast", label: "Broadcast" },
+  { href: "/content-queue", label: "Content queue" },
 ];
 
 export function AdminNav() {
