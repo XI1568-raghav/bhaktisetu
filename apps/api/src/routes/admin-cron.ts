@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { discoverLiveStreams } from '../jobs/youtube-discovery.js';
+import { refreshApolloLeads } from '../jobs/apollo-refresh.js';
 
 /**
  * Token-gated manual triggers for cron jobs that don't need to wait for the
@@ -39,6 +40,17 @@ export async function adminCronRoutes(server: FastifyInstance) {
       return reply.code(401).send({ error: 'Unauthorized' });
     }
     const result = await discoverLiveStreams();
+    return reply.send({ ok: true, result });
+  });
+
+  // Apollo lead refresh — bypasses the 7-day cooldown that gates the
+  // automatic master-cron call. Useful when ICPs change or the previous
+  // run errored mid-batch.
+  server.get<{ Querystring: TokenQuery }>('/apollo-refresh', async (request, reply) => {
+    if (!authorisedToken(request.query.token)) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    const result = await refreshApolloLeads();
     return reply.send({ ok: true, result });
   });
 }
