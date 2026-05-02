@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendPush, webPushConfig, PushSubscriptionPayload } from '../lib/web-push.js';
+import { sendFcm, fcmConfig } from '../lib/fcm.js';
+import { prisma } from '../lib/prisma.js';
 
 /**
  * Web push subscription endpoints.
@@ -85,6 +87,102 @@ export async function notificationRoutes(server: FastifyInstance) {
       expired: results.filter((r) => r.expired).length,
       failed: results.filter((r) => !r.ok && !r.expired && !r.skipped).length,
     });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // FCM device tokens (mobile + web). Stored in Prisma so Render can spin
+  // multiple instances without losing subscriptions.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  server.post('/register-token', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const body = (request.body ?? {}) as {
+      deviceToken?: string;
+      platform?: string;
+      language?: string;
+      aartiOptIn?: boolean;
+    };
+    const deviceToken = body.deviceToken?.trim();
+    const platform = body.platform;
+    if (!deviceToken) return reply.code(400).send({ error: 'deviceToken required' });
+    if (!platform || !['ios', 'android', 'web'].includes(platform)) {
+      return reply.code(400).send({ error: 'platform must be ios|android|web' });
+    }
+    const userId = request.currentUser!.id;
+    // Idempotent upsert on the unique deviceToken — re-registration overwrites
+    // any prior owner (handles device handed between users / re-installs).
+    type FcmTokenModel = {
+      upsert: (args: unknown) => Promise<{ id: string }>;
+    };
+    const model = (prisma as unknown as { fcmDeviceToken?: FcmTokenModel }).fcmDeviceToken;
+    if (!model) {
+      // Migration not applied yet — graceful no-op so demo envs don't 500.
+      return reply.send({ ok: true, skipped: true, reason: 'fcm_device_tokens not migrated' });
+    }
+    const row = await model.upsert({
+      where: { deviceToken },
+      create: {
+        userId,
+        deviceToken,
+        platform,
+        language: body.language ?? null,
+        aartiOptIn: body.aartiOptIn ?? true,
+      },
+      update: {
+        userId,
+        platform,
+        language: body.language ?? null,
+        aartiOptIn: body.aartiOptIn ?? true,
+      },
+    });
+    return reply.send({ ok: true, id: row.id });
+  });
+
+  server.post('/unregister-token', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const body = (request.body ?? {}) as { deviceToken?: string };
+    const deviceToken = body.deviceToken?.trim();
+    if (!deviceToken) return reply.code(400).send({ error: 'deviceToken required' });
+    const userId = request.currentUser!.id;
+    type FcmTokenModel = {
+      deleteMany: (args: { where: { deviceToken: string; userId: string } }) => Promise<{ count: number }>;
+    };
+    const model = (prisma as unknown as { fcmDeviceToken?: FcmTokenModel }).fcmDeviceToken;
+    if (!model) return reply.send({ ok: true, skipped: true });
+    const r = await model.deleteMany({ where: { deviceToken, userId } });
+    return reply.send({ ok: true, removed: r.count });
+  });
+
+  server.post('/test-fcm', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const body = (request.body ?? {}) as { userId?: string; title?: string; body?: string; url?: string };
+    const caller = request.currentUser!;
+    // Admin guard: any non-admin can only push to themselves.
+    const isAdmin = (caller as { roles?: string[] }).roles?.includes('admin') ?? false;
+    const targetUserId = body.userId && isAdmin ? body.userId : caller.id;
+
+    type FcmTokenModel = {
+      findMany: (args: { where: { userId: string }; select: { deviceToken: true } }) => Promise<Array<{ deviceToken: string }>>;
+      deleteMany: (args: { where: { deviceToken: { in: string[] } } }) => Promise<{ count: number }>;
+    };
+    const model = (prisma as unknown as { fcmDeviceToken?: FcmTokenModel }).fcmDeviceToken;
+    if (!model || !fcmConfig.enabled) {
+      return reply.send({ ok: true, skipped: true, reason: !fcmConfig.enabled ? 'FCM not configured' : 'model missing' });
+    }
+    const rows = await model.findMany({ where: { userId: targetUserId }, select: { deviceToken: true } });
+    if (rows.length === 0) return reply.code(404).send({ error: 'no devices for user' });
+    const expired: string[] = [];
+    let sent = 0;
+    let failed = 0;
+    for (const r of rows) {
+      const result = await sendFcm(r.deviceToken, {
+        title: body.title ?? 'Darshya',
+        body: body.body ?? 'Test push',
+        data: body.url ? { url: body.url } : undefined,
+      });
+      if (result.ok) sent++;
+      else if (result.expired) expired.push(r.deviceToken);
+      else if (!result.skipped) failed++;
+    }
+    if (expired.length) await model.deleteMany({ where: { deviceToken: { in: expired } } });
+    return reply.send({ ok: true, sent, expired: expired.length, failed });
   });
 }
 
