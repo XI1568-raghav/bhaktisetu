@@ -1,10 +1,11 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
+import EarningsCard from '../../components/provider/EarningsCard';
+import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
- IndianRupee,
- TrendingUp,
  Users,
  CalendarDays,
  Clock,
@@ -12,6 +13,8 @@ import {
  Leaf,
  Star,
 } from 'lucide-react';
+import { useAuth } from '../../lib/auth-context';
+import { API_BASE_URL } from '../../lib/api-config';
 
 // ─── Mock Data ──────────────────────────────────────────────────
 
@@ -92,13 +95,35 @@ function formatDate(dateStr: string): string {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function WellnessDashboard() {
+ const { session } = useAuth();
  const data = dashboardData;
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ const [kycReason, setKycReason] = useState<string | null>(null);
+
+ useEffect(() => {
+ if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ (async () => {
+ try {
+ const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ });
+ if (!r.ok) return;
+ const j = await r.json();
+ if (!j.kyc) setKycState('unsubmitted');
+ else if (j.kyc.verified) setKycState('verified');
+ else if (j.kyc.rejectionReason) {
+ setKycState('rejected');
+ setKycReason(j.kyc.rejectionReason);
+ } else setKycState('pending');
+ } catch {
+ // graceful fallback
+ }
+ })();
+ }, [session]);
 
  const statCards = [
  { label: 'Upcoming Sessions', value: data.stats.upcomingSessions, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
  { label: 'Active Students', value: data.stats.activeStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
- { label: 'This Month', value: formatCurrency(data.stats.earningsThisMonth), icon: TrendingUp, color: 'text-saffron-600', bg: 'bg-saffron-50' },
- { label: 'Total Earned', value: formatCurrency(data.stats.totalEarnings), icon: IndianRupee, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
  ];
 
  return (
@@ -108,19 +133,28 @@ export default function WellnessDashboard() {
  <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
  Namaste, {data.instructor.name.split(' ').pop()}!
  </h1>
- <p className="text-surface-500 mt-1">
+ <div className="mt-1 flex items-center gap-3 flex-wrap">
+ <p className="text-surface-500">
  Your wellness practice overview.
  <span className="ml-2 inline-flex items-center gap-1 text-sm">
  <Star className="w-3.5 h-3.5 text-temple-gold fill-temple-gold" />
  {data.instructor.rating} ({data.instructor.ratingCount} reviews)
  </span>
  </p>
+ <KycStatusBadge state={kycState} reason={kycReason} />
+ </div>
  </div>
 
  <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />
 
+ <EarningsCard
+ totalPaid={data.stats.totalEarnings}
+ thisMonth={data.stats.earningsThisMonth}
+ pending={null}
+ />
+
  {/* Stats */}
- <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+ <div className="grid grid-cols-2 gap-4">
  {statCards.map((card) => {
  const Icon = card.icon;
  return (
