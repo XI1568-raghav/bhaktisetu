@@ -371,6 +371,9 @@ export interface DarshanStream {
  youtubeVideoId?: string | null;
  youtubeChannelId?: string | null;
  attribution?: string | null;
+ // Schedule-driven from Temple.timingInfo
+ currentSlot?: string;
+ endsInMin?: number;
  temple: {
  name: string;
  slug: string;
@@ -380,7 +383,13 @@ export interface DarshanStream {
  };
 }
 
-export async function getLiveDarshan(): Promise<{ streams: DarshanStream[] }> {
+export interface UpcomingDarshanNote {
+ templeSlug: string;
+ nextSlot: string;
+ startsInMin: number;
+}
+
+export async function getLiveDarshan(): Promise<{ streams: DarshanStream[]; upcoming?: UpcomingDarshanNote[] }> {
  return serverFetch('/darshan/live', { revalidate: 30, tags: ['darshan'] });
 }
 

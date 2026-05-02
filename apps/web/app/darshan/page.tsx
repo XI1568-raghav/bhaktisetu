@@ -241,13 +241,16 @@ const fallbackScheduleTable = [
 
 // ─── Data Fetching ────────────────────────────────────────────────────────────
 
-async function fetchLiveStreams(): Promise<DarshanStream[]> {
+async function fetchLiveStreams(): Promise<{ streams: DarshanStream[]; upcoming: { templeSlug: string; nextSlot: string; startsInMin: number }[] }> {
  try {
  const res = await getLiveDarshan();
- if (!res || !Array.isArray(res.streams)) return fallbackLiveStreams;
- return res.streams.length > 0 ? res.streams : fallbackLiveStreams;
+ if (!res || !Array.isArray(res.streams)) return { streams: fallbackLiveStreams, upcoming: [] };
+ return {
+   streams: res.streams.length > 0 ? res.streams : fallbackLiveStreams,
+   upcoming: res.upcoming ?? [],
+ };
  } catch {
- return fallbackLiveStreams;
+ return { streams: fallbackLiveStreams, upcoming: [] };
  }
 }
 
@@ -263,7 +266,7 @@ async function fetchScheduledStreams(): Promise<DarshanStream[]> {
 
 async function StreamsBrowserSection() {
  const [live, scheduled] = await Promise.all([fetchLiveStreams(), fetchScheduledStreams()]);
- return <DarshanBrowser liveStreams={live} scheduledStreams={scheduled} />;
+ return <DarshanBrowser liveStreams={live.streams} upcomingNotes={live.upcoming} scheduledStreams={scheduled} />;
 }
 
 // ─── Page Component ───────────────────────────────────────────────────────────
