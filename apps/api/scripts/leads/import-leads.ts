@@ -5,12 +5,15 @@
  * `_apollo-contacts-<date>.ts` datasets behind a single entry point.
  *
  * Source selection:
- *   LEADS_SOURCE=manual (default)  → imports `_real-contacts-2026-05-02.ts`
- *   LEADS_SOURCE=apollo            → imports the most recent
- *                                    `_apollo-contacts-<YYYY-MM-DD>.ts` in
- *                                    this directory. Errors with a clear
- *                                    message if none exists.
- *   LEADS_SOURCE=both              → manual first, then apollo.
+ *   LEADS_SOURCE=manual (default)     → imports `_real-contacts-2026-05-02.ts`
+ *   LEADS_SOURCE=apollo               → imports the most recent
+ *                                       `_apollo-contacts-<YYYY-MM-DD>.ts` in
+ *                                       this directory. Errors with a clear
+ *                                       message if none exists.
+ *   LEADS_SOURCE=bengaluru-pandits    → imports
+ *                                       `_real-pandits-bengaluru-2026-05-02.ts`
+ *                                       (week-1 GTM seed, all PRIEST role).
+ *   LEADS_SOURCE=both                 → manual first, then apollo.
  *
  * Run:
  *   LEADS_SOURCE=apollo pnpm --filter @poojly/api tsx scripts/leads/import-leads.ts
@@ -21,7 +24,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { LeadRole } from '@prisma/client';
 import { upsertLead, prisma, type RawLead } from './_shared.js';
 
-type Source = 'manual' | 'apollo' | 'both';
+type Source = 'manual' | 'apollo' | 'both' | 'bengaluru-pandits';
 
 interface ManualLead {
   name: string;
@@ -59,7 +62,7 @@ interface ApolloBucket {
 
 function resolveSource(): Source {
   const v = (process.env.LEADS_SOURCE ?? 'manual').toLowerCase();
-  if (v === 'apollo' || v === 'both') return v;
+  if (v === 'apollo' || v === 'both' || v === 'bengaluru-pandits') return v;
   return 'manual';
 }
 
@@ -134,6 +137,75 @@ async function importManual(): Promise<{ inserted: number; skipped: number }> {
   return { inserted, skipped };
 }
 
+interface BengaluruPanditShape {
+  name: string;
+  phone: string;
+  email?: string;
+  role: LeadRole;
+  city: 'Bengaluru';
+  state: 'Karnataka';
+  neighborhood: string;
+  specialization: string;
+  yearsExperience?: number;
+  source: string;
+  sourceUrl: string;
+  websiteUrl?: string;
+  verifiedFrom: string;
+  qualityFlag?: string;
+}
+
+interface BengaluruPanditBucket {
+  role: LeadRole;
+  rows: BengaluruPanditShape[];
+}
+
+function bengaluruPanditToRaw(r: BengaluruPanditShape): RawLead {
+  return {
+    name: r.name,
+    city: r.city,
+    state: r.state,
+    country: 'India',
+    phone: r.phone,
+    email: r.email ?? null,
+    source: r.source,
+    sourceUrl: r.sourceUrl,
+    metadata: {
+      websiteUrl: r.websiteUrl,
+      neighborhood: r.neighborhood,
+      specialization: r.specialization,
+      yearsExperience: r.yearsExperience,
+      verifiedAt: '2026-05-02',
+      verifiedFrom: r.verifiedFrom,
+      qualityFlag: r.qualityFlag,
+      sourceClass: 'web-scrape-public',
+      researchPass: '2026-05-02-bengaluru-pandits',
+      gtmCohort: 'week-1-bengaluru',
+    },
+  };
+}
+
+async function importBengaluruPandits(): Promise<{
+  inserted: number;
+  skipped: number;
+}> {
+  const mod = (await import('./_real-pandits-bengaluru-2026-05-02.js')) as {
+    ALL_BUCKETS: BengaluruPanditBucket[];
+  };
+  let inserted = 0;
+  let skipped = 0;
+  for (const { role, rows } of mod.ALL_BUCKETS) {
+    for (const r of rows) {
+      const result = await upsertLead(prisma, role, bengaluruPanditToRaw(r));
+      if (result === 'created') inserted++;
+      else skipped++;
+    }
+    console.log(
+      `[import-leads/bengaluru-pandits] ${role}: total=${rows.length}`,
+    );
+  }
+  return { inserted, skipped };
+}
+
 async function importApollo(
   dir: string,
 ): Promise<{ inserted: number; skipped: number }> {
@@ -176,6 +248,11 @@ async function main(): Promise<void> {
     }
     if (source === 'apollo' || source === 'both') {
       const r = await importApollo(dir);
+      inserted += r.inserted;
+      skipped += r.skipped;
+    }
+    if (source === 'bengaluru-pandits') {
+      const r = await importBengaluruPandits();
       inserted += r.inserted;
       skipped += r.skipped;
     }
