@@ -3,6 +3,7 @@ import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
 
 /**
  * Send a puja-booking tax invoice to the devotee. Best-effort: any failure
@@ -630,6 +631,233 @@ export class PaymentService {
       }
       return updated;
     });
+  }
+
+  /**
+   * Create a Stripe PaymentIntent for an NRI booking, billed in USD.
+   *
+   * Pricing source: PujaType.nriPrice (USD-denominated). The booking row
+   * itself stores `priceAmount` in INR for accounting consistency, so the
+   * USD amount is computed fresh here from nriPrice and stored on the
+   * Payment row + metadata for reconciliation.
+   *
+   * Demo mode (no STRIPE_SECRET_KEY): returns a synthetic pi_demo_* id +
+   * client_secret so the web checkout flow stays exercisable.
+   */
+  async createStripeOrder(
+    bookingId: string,
+    userId: string,
+  ): Promise<{
+    orderId: string;
+    paymentIntentId: string;
+    clientSecret: string | null;
+    amount: number;
+    currency: 'USD';
+    paymentId: string;
+    publishableKey: string;
+    demo: boolean;
+  }> {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        bookingNumber: true,
+        userId: true,
+        status: true,
+        pujaType: { select: { nriPrice: true } },
+      },
+    });
+
+    if (!booking) {
+      throw new Error('Booking not found.');
+    }
+    if (booking.userId !== userId) {
+      throw new Error('You are not authorized to pay for this booking.');
+    }
+    if (booking.status !== 'pending_payment') {
+      throw new Error(
+        `Payment can only be initiated for bookings in "pending_payment" status. Current: "${booking.status}".`,
+      );
+    }
+
+    const usdAmount = Number(booking.pujaType.nriPrice);
+    if (!usdAmount || usdAmount <= 0) {
+      throw new Error('Puja does not have a valid NRI (USD) price configured.');
+    }
+
+    // Re-use existing initiated/authorized Stripe payment if present,
+    // mirroring the Razorpay path for idempotency under retries.
+    const existing = await prisma.payment.findFirst({
+      where: {
+        bookingId: booking.id,
+        paymentGateway: 'stripe',
+        status: { in: ['initiated', 'authorized'] },
+      },
+      select: { id: true, gatewayOrderId: true, metadata: true },
+    });
+
+    const stripe = await getStripe();
+    const amountInCents = Math.round(usdAmount * 100);
+
+    if (existing && existing.gatewayOrderId) {
+      const meta = (existing.metadata as Record<string, any> | null) ?? {};
+      return {
+        orderId: existing.gatewayOrderId,
+        paymentIntentId: existing.gatewayOrderId,
+        clientSecret: typeof meta.clientSecret === 'string' ? meta.clientSecret : null,
+        amount: amountInCents,
+        currency: 'USD',
+        paymentId: existing.id,
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+        demo: isStripeDemoMode,
+      };
+    }
+
+    const intent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: 'usd',
+      metadata: {
+        bookingId: booking.id,
+        bookingNumber: booking.bookingNumber,
+        userId,
+      },
+      automatic_payment_methods: { enabled: true },
+    });
+
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        bookingId: booking.id,
+        amount: usdAmount,
+        currency: 'USD',
+        paymentGateway: 'stripe',
+        gatewayOrderId: intent.id,
+        status: 'initiated',
+        metadata: {
+          stripePaymentIntentId: intent.id,
+          clientSecret: intent.client_secret,
+          receipt: booking.bookingNumber,
+        },
+      },
+      select: { id: true },
+    });
+
+    return {
+      orderId: intent.id,
+      paymentIntentId: intent.id,
+      clientSecret: intent.client_secret,
+      amount: amountInCents,
+      currency: 'USD',
+      paymentId: payment.id,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+      demo: isStripeDemoMode,
+    };
+  }
+
+  /**
+   * Verify a Stripe webhook payload + dispatch downstream effects. Mirror
+   * of handleWebhookRaw — HMAC over the literal bytes Stripe sent, using
+   * the SDK's constructEvent helper which is timing-safe internally.
+   *
+   * Handled events:
+   *   payment_intent.succeeded -> mark Payment captured + booking confirmed
+   *   payment_intent.payment_failed -> mark Payment failed
+   *   charge.refunded -> mark Payment refunded / partially_refunded
+   */
+  async handleStripeWebhook(
+    rawBody: string | Buffer,
+    signature: string,
+  ): Promise<WebhookResult> {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      throw new Error('STRIPE_WEBHOOK_SECRET is not configured.');
+    }
+
+    const stripe = await getStripe();
+    let event: { type: string; data: { object: Record<string, any> } };
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    } catch {
+      throw new Error('Webhook signature verification failed.');
+    }
+
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const intent = event.data.object;
+        const payment = await prisma.payment.findFirst({
+          where: { gatewayOrderId: intent.id, paymentGateway: 'stripe' },
+          include: { booking: { select: { id: true, status: true } } },
+        });
+        if (payment) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'captured',
+              gatewayPaymentId: intent.id,
+              method: typeof intent.payment_method_types?.[0] === 'string'
+                ? intent.payment_method_types[0]
+                : 'card',
+            },
+          });
+          if (payment.booking && payment.booking.status === 'pending_payment') {
+            await prisma.pujaBooking.update({
+              where: { id: payment.booking.id },
+              data: { status: 'confirmed' },
+            });
+            await writePujaCommissionOnConfirm(payment.booking.id);
+            void sendPujaBookingInvoice(payment.booking.id);
+          }
+        }
+        return { handled: true, event: event.type };
+      }
+
+      case 'payment_intent.payment_failed': {
+        const intent = event.data.object;
+        const payment = await prisma.payment.findFirst({
+          where: { gatewayOrderId: intent.id, paymentGateway: 'stripe' },
+        });
+        if (payment) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'failed',
+              gatewayPaymentId: intent.id,
+              metadata: {
+                ...((payment.metadata as Record<string, any>) ?? {}),
+                failureReason: intent.last_payment_error?.message,
+                failureCode: intent.last_payment_error?.code,
+              },
+            },
+          });
+        }
+        return { handled: true, event: event.type };
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object;
+        const intentId = charge.payment_intent as string | undefined;
+        if (!intentId) return { handled: false, event: event.type };
+        const payment = await prisma.payment.findFirst({
+          where: { gatewayOrderId: intentId, paymentGateway: 'stripe' },
+        });
+        if (payment) {
+          const refundedCents = Number(charge.amount_refunded ?? 0);
+          const refundedUsd = refundedCents / 100;
+          const fullyRefunded = refundedUsd >= Number(payment.amount);
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              refundAmount: refundedUsd,
+              status: fullyRefunded ? 'refunded' : 'partially_refunded',
+            },
+          });
+        }
+        return { handled: true, event: event.type };
+      }
+
+      default:
+        return { handled: false, event: event.type };
+    }
   }
 
   /**
