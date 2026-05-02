@@ -407,6 +407,12 @@ export interface ApprovedProvider {
  city?: string | null;
  state?: string | null;
  rating?: number;
+ // ratingAvg/ratingCount are richer than `rating` (which is a single
+ // float left over from the old schema). The badge tier needs both.
+ ratingAvg?: number;
+ ratingCount?: number;
+ // Aadhaar gate is required for all badge tiers and for priest payouts.
+ aadhaarVerified?: boolean;
  experience?: number;
  specialties?: string[];
  languages?: string[];

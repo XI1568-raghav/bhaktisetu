@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { MapPin, Star, ArrowRight, Award, IndianRupee } from 'lucide-react';
+import { MapPin, ArrowRight, Award, IndianRupee } from 'lucide-react';
 import { getApprovedProviders, type ProviderListingType, type ApprovedProvider } from '../lib/api';
+import ProviderBadge, { RatingDisplay } from './provider/ProviderBadge';
 
 interface Props {
  type: ProviderListingType;
@@ -109,7 +110,12 @@ export async function ApprovedProvidersStrip({
  {providers.map((p) => {
  const name = getDisplayName(type, p);
  const price = getPriceLabel(type, p);
- const rating = typeof p.rating === 'number' && p.rating > 0 ? p.rating.toFixed(1) : null;
+ const ratingAvg = typeof p.ratingAvg === 'number' && p.ratingAvg > 0
+ ? p.ratingAvg
+ : typeof p.rating === 'number' && p.rating > 0
+ ? p.rating
+ : 0;
+ const ratingCount = typeof p.ratingCount === 'number' ? p.ratingCount : 0;
 
  return (
  <Link
@@ -131,6 +137,14 @@ export async function ApprovedProvidersStrip({
  {p.city}
  </p>
  )}
+ <div className="mt-1">
+ <ProviderBadge
+ size="xs"
+ aadhaarVerified={p.aadhaarVerified}
+ ratingAvg={ratingAvg}
+ ratingCount={ratingCount}
+ />
+ </div>
  </div>
  </div>
 
@@ -156,14 +170,7 @@ export async function ApprovedProvidersStrip({
  )}
 
  <div className="flex items-center justify-between pt-2 border-t border-surface-100">
- {rating ? (
- <span className="inline-flex items-center gap-1 text-xs text-surface-600">
- <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
- {rating}
- </span>
- ) : (
- <span className="text-[10px] text-green-600 font-medium">New</span>
- )}
+ <RatingDisplay avg={ratingAvg} count={ratingCount} size="xs" />
  {price && (
  <span className="text-xs font-semibold text-surface-700 inline-flex items-center">
  <IndianRupee className="w-3 h-3" />

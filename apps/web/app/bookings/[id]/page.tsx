@@ -591,11 +591,15 @@ function BookingDetailContent() {
 
  <textarea
  value={reviewText}
- onChange={(e) => setReviewText(e.target.value)}
+ onChange={(e) => setReviewText(e.target.value.slice(0, 200))}
  rows={3}
- placeholder="Share your experience... (optional)"
- className="mb-4 w-full rounded-xl border border-surface-200 px-4 py-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+ maxLength={200}
+ placeholder="Share your experience with the priest... (optional, max 200 chars)"
+ className="mb-1 w-full rounded-xl border border-surface-200 px-4 py-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200"
  />
+ <p className="mb-3 text-right text-xs text-surface-400">
+ {reviewText.length}/200
+ </p>
 
  <button
  onClick={handleSubmitReview}

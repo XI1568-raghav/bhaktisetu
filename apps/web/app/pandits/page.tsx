@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { MapPin, Star, Award, Languages, ArrowRight } from 'lucide-react';
+import { MapPin, Award, Languages, ArrowRight } from 'lucide-react';
 import { getApprovedProviders, type ApprovedProvider } from '../../lib/api';
+import ProviderBadge, { RatingDisplay } from '../../components/provider/ProviderBadge';
 
 export const runtime = 'edge';
 
@@ -86,7 +87,6 @@ export default async function PanditsListingPage({
  {providers.map((p) => {
  const name = getDisplayName(p);
  const price = getPrice(p);
- const rating = typeof p.rating === 'number' && p.rating > 0 ? p.rating.toFixed(1) : null;
  return (
  <Link
  key={p.id}
@@ -146,15 +146,20 @@ export default async function PanditsListingPage({
  </p>
  )}
 
+ <div className="mb-2">
+ <ProviderBadge
+ size="xs"
+ aadhaarVerified={p.aadhaarVerified}
+ ratingAvg={p.ratingAvg ?? p.rating}
+ ratingCount={p.ratingCount}
+ />
+ </div>
  <div className="flex items-center justify-between pt-3 border-t border-surface-100">
- {rating ? (
- <span className="inline-flex items-center gap-1 text-sm text-surface-700">
- <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
- <span className="font-medium">{rating}</span>
- </span>
- ) : (
- <span className="text-xs text-green-600 font-medium">New on Darshya</span>
- )}
+ <RatingDisplay
+ avg={p.ratingAvg ?? p.rating}
+ count={p.ratingCount}
+ size="xs"
+ />
  {price && (
  <span className="text-sm font-semibold text-surface-800">
  {price} <span className="text-xs font-normal text-surface-500">/ puja</span>
