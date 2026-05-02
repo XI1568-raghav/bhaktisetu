@@ -272,4 +272,67 @@ export async function adminRoutes(server: FastifyInstance) {
     }));
     return { data, page, pageSize, total };
   });
+
+  // ─── Ratings moderation ───────────────────────────────────────────────────
+  // The Review model is schema-locked: there is no isHidden column. Until a
+  // migration adds one, the "Hide rating" action is a no-op that we log so
+  // ops sees the moderator intent. The list endpoint still works.
+  const ratingsQuerySchema = z.object({
+    stars: z.string().optional(),
+    providerId: z.string().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  });
+
+  server.get('/ratings', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const parsed = ratingsQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Invalid query parameters', details: parsed.error.flatten() });
+    }
+    const { stars, providerId, page, pageSize } = parsed.data;
+    const where: Prisma.ReviewWhereInput = {};
+    if (stars) {
+      const n = Number(stars);
+      if (Number.isFinite(n) && n >= 1 && n <= 5) where.rating = n;
+    }
+    if (providerId) where.providerId = providerId;
+    const skip = (page - 1) * pageSize;
+    const [rows, total] = await Promise.all([
+      prisma.review.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
+      prisma.review.count({ where }),
+    ]);
+    return {
+      data: rows.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        providerId: r.providerId,
+        providerType: r.providerType,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        // isHidden column not in schema yet — always false until migration.
+        isHidden: false,
+      })),
+      page,
+      pageSize,
+      total,
+    };
+  });
+
+  server.post('/ratings/:id/hide', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    // Schema-locked: no isHidden column on reviews. We log the moderator
+    // intent so ops can act manually until the migration lands.
+    server.log.warn(
+      { reviewId: id, moderator: request.currentUser?.id },
+      'Admin attempted to hide rating but isHidden column is not in schema. Skipped.',
+    );
+    return reply.send({
+      ok: false,
+      skipped: true,
+      reason: 'Review.isHidden column not present in current schema. Logged moderator intent.',
+    });
+  });
 }

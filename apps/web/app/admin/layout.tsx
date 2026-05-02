@@ -21,6 +21,7 @@ import {
  Target,
  Send,
  ListChecks,
+ Star,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -34,6 +35,7 @@ const sidebarLinks = [
  { href: '/admin/outreach', label: 'Outreach', icon: Send },
  { href: '/admin/waitlist', label: 'Waitlist', icon: ListChecks },
  { href: '/admin/support', label: 'Support Tickets', icon: LifeBuoy },
+ { href: '/admin/ratings', label: 'Ratings', icon: Star },
  { href: '/admin/commissions', label: 'Commissions', icon: Wallet },
  { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
  { href: '/admin/revenue', label: 'Revenue', icon: IndianRupee },

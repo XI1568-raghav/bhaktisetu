@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Star, Languages, Award, Calendar, IndianRupee } from 'lucide-react';
+import ProviderBadge, { RatingDisplay } from '../../../components/provider/ProviderBadge';
 
 export const runtime = 'edge';
 
@@ -25,6 +26,9 @@ interface PanditDetail {
  city?: string | null;
  state?: string | null;
  rating?: number;
+ ratingAvg?: number;
+ ratingCount?: number;
+ aadhaarVerified?: boolean;
  totalPujas?: number;
  pricePerPuja?: number | string;
  reviews?: Array<{
@@ -91,6 +95,13 @@ export default async function PanditDetailPage({ params }: PageProps) {
  </div>
  <div className="flex-1 min-w-0">
  <h1 className="text-2xl font-semibold text-surface-800 mb-1">{name}</h1>
+ <div className="mb-2">
+ <ProviderBadge
+ aadhaarVerified={pandit.aadhaarVerified}
+ ratingAvg={pandit.ratingAvg ?? pandit.rating}
+ ratingCount={pandit.ratingCount ?? pandit.totalPujas}
+ />
+ </div>
  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-surface-500 mb-3">
  {pandit.city && (
  <span className="inline-flex items-center gap-1">
@@ -105,13 +116,18 @@ export default async function PanditDetailPage({ params }: PageProps) {
  {pandit.experience}+ years experience
  </span>
  )}
- {rating && (
+ <RatingDisplay
+ avg={pandit.ratingAvg ?? pandit.rating}
+ count={pandit.ratingCount ?? pandit.totalPujas}
+ size="sm"
+ />
+ {!pandit.ratingCount && rating && pandit.totalPujas ? (
  <span className="inline-flex items-center gap-1">
  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
  <span className="font-medium text-surface-700">{rating}</span>
- {pandit.totalPujas ? <span className="text-surface-400">({pandit.totalPujas} pujas)</span> : null}
+ <span className="text-surface-400">({pandit.totalPujas} pujas)</span>
  </span>
- )}
+ ) : null}
  </div>
  {pandit.bio && (
  <p className="text-sm text-surface-600 leading-relaxed">{pandit.bio}</p>
