@@ -10,6 +10,9 @@ interface PlanDefinition {
   price: number;
   currency: string;
   interval: string;
+  // Optional explicit duration (overrides interval-based math). Used by
+  // short-window plans like the AI astro single-session pass (1 day).
+  durationDays?: number;
   features: string[];
   popular: boolean;
 }
@@ -176,6 +179,35 @@ const PLANS: PlanDefinition[] = [
     features: ['Live darshan streaming', 'Donation management', 'Featured placement', 'Analytics dashboard', 'Priority support'],
     popular: true,
   },
+  // ─── AI Astrologer paywall plans (Layer M3) ──────────────────────────────
+  // These are devotee-side plans. They reuse MarketplacePlan codes:
+  //   BASIC -> single-session pass (24h, 30 messages)
+  //   PRO   -> monthly unlimited (30d)
+  // No new enum value required.
+  {
+    id: 'astro_session',
+    name: 'Single Astro Session',
+    plan: 'BASIC',
+    roles: ['DEVOTEE'],
+    price: 99,
+    currency: 'INR',
+    interval: 'day',
+    durationDays: 1,
+    features: ['30 AI Pandit messages', 'Valid for 24 hours', 'Personalized guidance'],
+    popular: false,
+  },
+  {
+    id: 'astro_monthly',
+    name: 'Astro Monthly Unlimited',
+    plan: 'PRO',
+    roles: ['DEVOTEE'],
+    price: 499,
+    currency: 'INR',
+    interval: 'month',
+    durationDays: 30,
+    features: ['Unlimited AI Pandit chat', 'Priority responses', 'Cancel anytime'],
+    popular: true,
+  },
 ];
 
 // In-memory subscriptions for demo
@@ -199,7 +231,10 @@ export class SubscriptionService {
 
     const now = new Date();
     const endDate = new Date(now);
-    if (plan.interval === 'month') {
+    if (typeof plan.durationDays === 'number' && plan.durationDays > 0) {
+      // Explicit short-duration plan (e.g. 1-day astro session pass)
+      endDate.setDate(endDate.getDate() + plan.durationDays);
+    } else if (plan.interval === 'month') {
       endDate.setMonth(endDate.getMonth() + 1);
     } else if (plan.interval === 'year') {
       endDate.setFullYear(endDate.getFullYear() + 1);

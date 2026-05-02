@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Send, Loader2, Sparkles } from 'lucide-react';
 import AiChatMessage, { type Citation } from './AiChatMessage';
 import { API_BASE_URL } from '../lib/api-config';
 import {
@@ -289,6 +290,13 @@ export default function AiChat({
  const [currentConvId, setCurrentConvId] = useState<string | null>(
  conversationId || null
  );
+ const [usage, setUsage] = useState<{
+ plan: 'free' | 'session' | 'monthly' | 'anonymous';
+ used: number;
+ limit: number | null;
+ remaining: number | null;
+ } | null>(null);
+ const [paywallHit, setPaywallHit] = useState(false);
  const messagesScrollRef = useRef<HTMLDivElement>(null);
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -335,6 +343,35 @@ export default function AiChat({
  useEffect(() => {
  inputRef.current?.focus();
  }, []);
+
+ // ─── Usage indicator ──────────────────────────────────────────────────────
+ // Pulls remaining-message state from the API so we can show
+ // "3 of 5 free messages this month" / "Subscribed (unlimited)".
+ // Only runs for authenticated users — anonymous demo doesn't have a quota.
+
+ const refreshUsage = useCallback(async () => {
+ if (!accessToken) {
+ setUsage(null);
+ return;
+ }
+ try {
+ const res = await fetch(`${API_BASE_URL}/ai/usage`, {
+ headers: { Authorization: `Bearer ${accessToken}` },
+ });
+ if (!res.ok) {
+ setUsage(null);
+ return;
+ }
+ const data = await res.json();
+ setUsage(data);
+ } catch {
+ setUsage(null);
+ }
+ }, [accessToken]);
+
+ useEffect(() => {
+ refreshUsage();
+ }, [refreshUsage]);
 
  // ─── Send Message ─────────────────────────────────────────────────────────
 
@@ -407,6 +444,23 @@ export default function AiChat({
  language,
  }),
  });
+
+ if (res.status === 402) {
+ // Paywall — quota exhausted. Replace the placeholder with an
+ // upgrade prompt and bail out of the stream loop.
+ const data = await res.json().catch(() => ({}));
+ const upgradeContent =
+ data.message ||
+ 'You have reached your free message limit. Upgrade to continue.';
+ setMessages((prev) =>
+ prev.map((m) =>
+ m.id === assistantMsgId ? { ...m, content: upgradeContent } : m
+ )
+ );
+ setPaywallHit(true);
+ setIsStreaming(false);
+ return;
+ }
 
  if (!res.ok) {
  throw new Error(`HTTP ${res.status}`);
@@ -545,6 +599,8 @@ export default function AiChat({
  } finally {
  setIsStreaming(false);
  inputRef.current?.focus();
+ // Refresh quota counter so the indicator stays in sync after each turn.
+ refreshUsage();
  }
  }
 
@@ -563,8 +619,54 @@ export default function AiChat({
  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
  }
 
+ // ─── Usage banner ────────────────────────────────────────────────────────
+ // Compact strip above the messages with current plan + remaining count.
+ // Promotes the upgrade page when the user has 2 or fewer free messages
+ // left, or when the paywall just fired.
+
+ const showUpgradeNudge =
+ paywallHit ||
+ (usage?.plan === 'free' && (usage.remaining ?? 0) <= 2) ||
+ (usage?.plan === 'session' && (usage.remaining ?? 0) <= 5);
+
+ const usageLabel = usage
+ ? usage.plan === 'monthly'
+ ? 'Subscribed — unlimited messages'
+ : usage.plan === 'session'
+ ? `Session pass — ${usage.remaining} of ${usage.limit} messages left`
+ : usage.plan === 'free'
+ ? `${usage.used} of ${usage.limit} free messages used this month`
+ : null
+ : null;
+
  return (
  <div className="flex flex-col h-full min-h-0">
+ {/* Usage indicator */}
+ {usageLabel && (
+ <div
+ className="px-4 py-2 flex items-center justify-between gap-3 text-xs"
+ style={{
+ background: showUpgradeNudge ? 'rgba(194,65,12,0.06)' : 'transparent',
+ borderBottom: '1px solid var(--color-border, #e8dcc8)',
+ color: 'var(--color-text, #3d2e1f)',
+ }}
+ >
+ <span className="flex items-center gap-1.5 truncate">
+ <Sparkles className="w-3.5 h-3.5 text-saffron-600 shrink-0" />
+ {usageLabel}
+ </span>
+ {showUpgradeNudge && (
+ <Link
+ href="/upgrade"
+ className="px-2.5 py-1 rounded-md text-white text-xs font-medium shrink-0 transition-all"
+ style={{ background: 'var(--color-primary, #c2410c)' }}
+ >
+ Upgrade
+ </Link>
+ )}
+ </div>
+ )}
+
  {/* Messages area */}
  <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-6 overscroll-contain min-h-0">
  {messages.length === 0 ? (
