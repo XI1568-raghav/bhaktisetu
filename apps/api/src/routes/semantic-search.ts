@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { generateEmbedding, toPgVector, embeddings } from '../lib/embeddings.js';
 
@@ -52,20 +53,25 @@ async function vectorSearch(
   const lit = toPgVector(embedding);
   const { titleCol, snippetCol } = TABLE_COLS[table];
   const lim = Math.max(1, Math.min(50, limit));
-  // table + column names are whitelisted (not from user input) so safe to interpolate.
+  // table/column names are whitelisted; toPgVector sanitises numeric
+  // values via Number.isFinite + toFixed(6). Switching from
+  // $queryRawUnsafe to tagged $queryRaw lets Prisma bind `lit` and `lim`
+  // as parameters rather than splice them into the SQL string.
+  const titleColSql = Prisma.raw(titleCol);
+  const snippetColSql = Prisma.raw(snippetCol);
+  const tableSql = Prisma.raw(table);
   try {
-    return await prisma.$queryRawUnsafe<
+    return await prisma.$queryRaw<
       Array<{ id: string; title: string; snippet: string; score: number }>
-    >(
-      `select id,
-              ${titleCol} as title,
-              coalesce(left(${snippetCol}, 240), '') as snippet,
-              1 - (embedding <=> '${lit}'::vector) as score
-         from ${table}
-        where embedding is not null
-        order by embedding <=> '${lit}'::vector
-        limit ${lim}`,
-    );
+    >`
+      select id,
+             ${titleColSql} as title,
+             coalesce(left(${snippetColSql}, 240), '') as snippet,
+             1 - (embedding <=> ${lit}::vector) as score
+        from ${tableSql}
+       where embedding is not null
+       order by embedding <=> ${lit}::vector
+       limit ${lim}`;
   } catch (err) {
     console.warn(`[semantic-search] ${table} vector query failed:`, (err as Error).message);
     return [];

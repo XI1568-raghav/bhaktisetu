@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-saffron-50: #FFF8F0;
+  --color-saffron-100: #FEEDD8;
+  --color-saffron-200: #FDD8AF;
+  --color-saffron-300: #FBBD7D;
+  --color-saffron-400: #F99A48;
+  --color-saffron-500: #E16318;
+  --color-saffron-600: #C25313;
+  --color-saffron-700: #9E440F;
+}
