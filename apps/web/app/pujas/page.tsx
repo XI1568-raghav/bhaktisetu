@@ -124,7 +124,7 @@ function categoryTag(category: string, idx: number): { tag: string; tagColor: st
  };
  return {
  tag: map[category] || 'Featured',
- tagColor: TAG_COLORS[idx % TAG_COLORS.length],
+ tagColor: TAG_COLORS[idx % TAG_COLORS.length] ?? 'bg-saffron-600',
  };
 }
 
@@ -139,9 +139,15 @@ function formatDuration(minutes: number): string {
 function mapPujaTypeToCard(p: PujaType, idx: number): PujaCard {
  const { tag, tagColor } = categoryTag(p.category, idx);
  const price = Number(p.basePrice) || 0;
- const firstImage = Array.isArray((p as { images?: string[] }).images)
-   ? (p as { images: string[] }).images[0] ?? null
-   : null;
+ const rawImages = (p as unknown as { images?: unknown }).images;
+ let firstImage: string | null = null;
+ if (Array.isArray(rawImages) && rawImages.length > 0) {
+   const f = rawImages[0];
+   if (typeof f === 'string') firstImage = f;
+   else if (f && typeof f === 'object' && 'url' in f && typeof (f as {url: unknown}).url === 'string') {
+     firstImage = (f as {url: string}).url;
+   }
+ }
  return {
  id: p.id,
  slug: p.slug,

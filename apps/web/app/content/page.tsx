@@ -32,12 +32,11 @@ export const metadata: Metadata = {
 // ─── Static fallback data ─────────────────────────────────────────────────────
 
 const tabs = [
- { id: 'all', label: 'All', count: 14 },
- { id: 'aarti', label: 'Aarti', count: 3 },
- { id: 'chalisa', label: 'Chalisa', count: 2 },
- { id: 'mantra', label: 'Mantra', count: 4 },
- { id: 'bhajan', label: 'Bhajan', count: 3 },
- { id: 'story', label: 'Stories', count: 1 },
+ { id: 'all', label: 'All', count: 22 },
+ { id: 'aarti', label: 'Aarti', count: 5 },
+ { id: 'chalisa', label: 'Chalisa', count: 6 },
+ { id: 'mantra', label: 'Mantra', count: 6 },
+ { id: 'article', label: 'Articles', count: 5 },
 ];
 
 const fallbackFeaturedContent: ContentItem[] = [
@@ -316,36 +315,29 @@ const collections = [
  {
  name: 'Morning Mantras',
  filterType: 'mantra',
- count: 4,
+ count: 6,
  description: 'Start your day with sacred chants',
  gradient: 'from-amber-400 to-saffron-600',
  },
  {
  name: 'Evening Aarti Collection',
  filterType: 'aarti',
- count: 3,
+ count: 5,
  description: 'Complete sandhya aarti for all deities',
  gradient: 'from-saffron-500 to-lotus-pink',
  },
  {
  name: 'Chalisas',
  filterType: 'chalisa',
- count: 2,
+ count: 6,
  description: 'Sacred 40-verse hymns for daily recitation',
  gradient: 'from-ganga-blue to-purple-600',
  },
  {
- name: 'Bhajans',
- filterType: 'bhajan',
- count: 3,
- description: 'Devotional songs for the heart',
- gradient: 'from-surface-600 to-surface-800',
- },
- {
- name: 'Spiritual Stories',
- filterType: 'story',
- count: 1,
- description: 'Tales from Puranas and scriptures',
+ name: 'Spiritual Articles',
+ filterType: 'article',
+ count: 5,
+ description: 'Reflections, scriptures, and devotional reading',
  gradient: 'from-ganga-blue to-tulsi-green',
  },
 ];
@@ -698,7 +690,6 @@ export default async function ContentPage({
  getContentImage('mantra', 'thumbnail'),
  getContentImage('aarti', 'thumbnail'),
  getContentImage('chalisa', 'thumbnail'),
- getContentImage('bhajan', 'thumbnail'),
  getContentImage('stotram', 'thumbnail'),
  ];
  return (

@@ -29,7 +29,19 @@ function richToCard(t: TempleDetailRich): TempleCardData {
  isDivyaDesam: !!t.isDivyaDesam,
  popularity: t.isJyotirlinga ? 100 : t.isDivyaDesam ? 90 : t.isShaktiPeetha ? 85 : 70,
  hasRichDetail: true,
+ imageUrl: null,
  };
+}
+
+// API images come back as either string[] or {url}[] depending on transform layer.
+function firstImageUrl(images: unknown): string | null {
+ if (!Array.isArray(images) || images.length === 0) return null;
+ const first = images[0];
+ if (typeof first === 'string') return first;
+ if (first && typeof first === 'object' && 'url' in first && typeof (first as {url: unknown}).url === 'string') {
+  return (first as {url: string}).url;
+ }
+ return null;
 }
 
 function apiToCard(t: TempleListItem): TempleCardData {
@@ -65,6 +77,7 @@ function apiToCard(t: TempleListItem): TempleCardData {
  isDivyaDesam: false,
  popularity: t.trustScore,
  hasRichDetail: TEMPLE_DETAILS[t.slug] !== undefined,
+ imageUrl: firstImageUrl(t.images),
  };
 }
 
@@ -79,11 +92,18 @@ export default async function TemplesPage() {
  try {
  const result = await getTemples({ limit: 50 });
  totalFromApi = Math.max(result.pagination.total, richCards.length);
+ const apiBySlug = new Map(result.data.map((t) => [t.slug, t]));
+ // Merge API image into rich-detail cards; otherwise rich card keeps imageUrl: null and falls to deity.
+ const mergedRich = richCards.map((card) => {
+  const apiMatch = apiBySlug.get(card.slug);
+  if (!apiMatch) return card;
+  return { ...card, imageUrl: card.imageUrl ?? firstImageUrl(apiMatch.images) };
+ });
  const existingSlugs = new Set(richCards.map((t) => t.slug));
  const extraApi = result.data
  .filter((t) => !existingSlugs.has(t.slug))
  .map(apiToCard);
- merged = [...richCards, ...extraApi];
+ merged = [...mergedRich, ...extraApi];
  } catch {
  // API unavailable — proceed with rich-detail only
  }

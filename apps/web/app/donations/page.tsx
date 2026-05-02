@@ -191,8 +191,13 @@ export default async function DonationsLandingPage({
         {temples.length > 0 ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {temples.map((t) => {
+              const firstImg = t.images?.[0];
               const img =
-                t.images?.[0]?.url ?? IMAGES.gaushala['cow-shelter'];
+                typeof firstImg === 'string'
+                  ? firstImg
+                  : firstImg && typeof firstImg === 'object' && 'url' in firstImg
+                  ? firstImg.url
+                  : IMAGES.gaushala['cow-shelter'];
               return (
                 <CauseCard
                   key={t.id}
