@@ -49,6 +49,7 @@ import { wellnessSessionRoutes } from './routes/wellness-sessions.js';
 import { outreachWebhookRoutes, outreachAdminRoutes } from './routes/outreach-webhook.js';
 import { outreachTrackingRoutes } from './routes/outreach-tracking.js';
 import { adminLeadsRoutes } from './routes/admin-leads.js';
+import { adminTemplesRoutes } from './routes/admin-temples.js';
 import { waitlistRoutes } from './routes/waitlist.js';
 import { leadsSelfOnboardRoutes } from './routes/leads-self-onboard.js';
 
@@ -149,6 +150,7 @@ async function bootstrap() {
   await server.register(outreachTrackingRoutes, { prefix: '/api/v1/outreach' });
   await server.register(outreachAdminRoutes, { prefix: '/api/v1/admin/outreach' });
   await server.register(adminLeadsRoutes, { prefix: '/api/v1/admin' });
+  await server.register(adminTemplesRoutes, { prefix: '/api/v1/admin/temple-timings' });
   await server.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
   await server.register(leadsSelfOnboardRoutes, { prefix: '/api/v1/leads' });
 
