@@ -37,6 +37,7 @@ import { NotificationPrompt } from "../components/NotificationPrompt";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
+import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
 import { getTempleHero } from "../lib/images";
 import Link from "next/link";
 import "./globals.css";
@@ -235,6 +236,7 @@ export default function RootLayout({
  <CloudflareAnalytics />
  </head>
  <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]">
+ <SentryErrorBoundary>
  <AuthProvider>
  <CartProvider>
 
@@ -404,6 +406,7 @@ export default function RootLayout({
  <NotificationPrompt />
  </CartProvider>
  </AuthProvider>
+ </SentryErrorBoundary>
  </body>
  </html>
  );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { initSentryBrowser, captureBrowserException } from '../lib/sentry-client';
+import { initSentryBrowser, captureBrowserException } from '../lib/sentry';
 
 export default function GlobalError({
  error,
