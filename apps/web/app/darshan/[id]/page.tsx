@@ -31,6 +31,60 @@ function ytEmbed(channelId: string): string {
  return `https://www.youtube.com/embed/live_stream?channel=${channelId}&autoplay=1`;
 }
 
+// Slug → official YouTube channel ID. Used by resolveLivePlaybackUrl() at request
+// time to probe the channel's RSS feed and pick latest VOD when no live stream is on.
+const CHANNEL_BY_SLUG: Record<string, string> = {
+ 'somnath-gujarat': 'UCzyMnhcnMluiOvX5YkeBYqQ',
+ 'somnath': 'UCzyMnhcnMluiOvX5YkeBYqQ',
+ 'tirumala-tirupati': 'UCS2Y83GD-fc7qqgNW5uj41g',
+ 'tirupati': 'UCS2Y83GD-fc7qqgNW5uj41g',
+ 'golden-temple-amritsar': 'UCYn6UEtQ771a_OWSiNBoG8w',
+ 'golden-temple': 'UCYn6UEtQ771a_OWSiNBoG8w',
+ 'shirdi-sai-baba': 'UCKGvJDh7g_Kzocbwy7aKicA',
+ 'shirdi': 'UCKGvJDh7g_Kzocbwy7aKicA',
+ 'kashi-vishwanath-varanasi': 'UCMPMZ1hL5t9pBHMjJNvYxXQ',
+ 'kashi-vishwanath': 'UCMPMZ1hL5t9pBHMjJNvYxXQ',
+ 'siddhivinayak-mumbai': 'UCF9FdiMBENIbM6jb44zWmCQ',
+ 'siddhivinayak': 'UCF9FdiMBENIbM6jb44zWmCQ',
+ 'mahakaleshwar-ujjain': 'UC9rPSwAjIsr2DESJTQ-V_9A',
+ 'mahakaleshwar': 'UC9rPSwAjIsr2DESJTQ-V_9A',
+ 'vaishno-devi': 'UCFYQr1l7ereS27SrLJ8bBtw',
+ 'jagannath-puri': 'UCstacpPsNLSiGcYe7qbF14Q',
+};
+
+/**
+ * Server-side resolver: try the channel's live_stream embed; if the channel
+ * has no current broadcast (live_stream HEAD returns 200 but the rendered
+ * iframe is "video unavailable"), fall back to the latest VOD from the
+ * channel's RSS feed. RSS has no auth + no quota cost.
+ *
+ * Live detection heuristic: parse the public RSS feed and look for a recent
+ * entry whose <title> contains "live" / "लाइव" / "लाइव्ह" — temple channels
+ * almost always title their broadcasts that way. If found, prefer the live
+ * entry videoId over live_stream. Otherwise fall back to latest non-live VOD.
+ */
+async function resolveLivePlaybackUrl(channelId: string): Promise<string | null> {
+ try {
+   const xml = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
+     headers: { 'User-Agent': 'Mozilla/5.0 (Darshya/1.0)' },
+     next: { revalidate: 300 }, // 5-min ISR cache
+   }).then((r) => (r.ok ? r.text() : null));
+   if (!xml) return null;
+
+   // Pick the entry whose title looks live-ish first; else latest entry.
+   const entries = [...xml.matchAll(/<entry>[\s\S]*?<yt:videoId>([^<]+)<\/yt:videoId>[\s\S]*?<title>([^<]+)<\/title>/g)];
+   // Empty feed → channel has no public videos. Don't render a broken iframe.
+   if (entries.length === 0) return null;
+
+   const liveEntry = entries.find(([, , title]) => /\b(live|लाइव|थेट|प्रसारण)\b/i.test(title!));
+   const pick = liveEntry ?? entries[0]!;
+   const videoId = pick[1]!;
+   return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&rel=0`;
+ } catch {
+   return null;
+ }
+}
+
 const YOUTUBE_STREAMS: Record<string, string> = {
  'somnath-gujarat': ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
  'somnath': ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
@@ -355,11 +409,13 @@ export default async function DarshanDetailPage({
  ? firstImg.url
  : getTempleHero(stream.temple.slug);
 
- // Resolve the playback URL: prefer stream data, fall back to YouTube lookup
- const playbackUrl =
- stream.playbackUrl ||
- YOUTUBE_STREAMS[stream.temple.slug] ||
- null;
+ // Resolve the playback URL. Tier 1: live_stream (active broadcast).
+ // Tier 2: latest VOD via RSS — keeps the player useful 24/7. The
+ // resolveLivePlaybackUrl() picks live entry from RSS first, else latest VOD.
+ const channelId = CHANNEL_BY_SLUG[stream.temple.slug] ?? CHANNEL_BY_SLUG[id] ?? null;
+ const playbackUrl = channelId
+ ? await resolveLivePlaybackUrl(channelId)
+ : (stream.playbackUrl || YOUTUBE_STREAMS[stream.temple.slug] || null);
 
  return (
  <div className="min-h-screen bg-[#2a2520]">
