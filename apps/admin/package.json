@@ -8,7 +8,7 @@
     "build": "echo \"build: ok (empty shell)\"",
     "start": "next start",
     "lint": "echo \"lint: ok\"",
-    "type-check": "echo \"type-check: ok\""
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@poojly/api-client": "workspace:*",
@@ -21,7 +21,8 @@
     "tailwindcss": "^4.1.4",
     "@tailwindcss/postcss": "^4.1.4",
     "lucide-react": "^0.503.0",
-    "recharts": "^2.15.3"
+    "recharts": "^2.15.3",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@poojly/tsconfig": "workspace:*",
