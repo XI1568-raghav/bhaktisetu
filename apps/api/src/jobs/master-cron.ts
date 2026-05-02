@@ -3,6 +3,9 @@ import { runOutreachTick } from './outreach-cron.js';
 import { maybeRunYoutubeDiscovery, type YoutubeDiscoveryResult } from './youtube-discovery.js';
 import { maybeRunApolloRefresh, type ApolloRefreshResult } from './apollo-refresh.js';
 import { tickContentSeed, type ContentSeedResult } from './content-seed.js';
+import { runAartiNotify, type AartiNotifyResult } from './aarti-notify.js';
+import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.js';
+import { prewarmDailyHoroscopes } from '../lib/astrology.js';
 
 // Master orchestration cron: a single function the admin / external scheduler
 // can call once per tick. Each step is best-effort and isolated — a failure
@@ -52,6 +55,9 @@ export interface DailyOpsResult {
   youtube: YoutubeResult;
   apollo: ApolloResult;
   contentSeed: ContentSeedResult;
+  aartiNotify: AartiNotifyResult;
+  weeklyDigest: WeeklyDigestResult & { gated?: boolean };
+  horoscopes: { generated: number; date: string; skipped?: boolean; reason?: string };
   ranAt: string;
 }
 
@@ -238,6 +244,17 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
         skipped: true,
         reason: 'outreachOnly',
       },
+      aartiNotify: {
+        templesChecked: 0,
+        aartisMatched: 0,
+        pushesSent: 0,
+        expiredTokens: 0,
+        failed: 0,
+        skipped: true,
+        reason: 'outreachOnly',
+      },
+      weeklyDigest: { sent: 0, skipped: 0, failed: 0, gated: true, reason: 'outreachOnly' },
+      horoscopes: { generated: 0, date: new Date().toISOString().slice(0, 10), skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
@@ -246,6 +263,9 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const youtube = await tickYoutubeDiscovery();
   const apollo = await tickApolloRefresh();
   const contentSeed = await tickContentSeed();
+  const aartiNotify = await tickAartiNotify();
+  const weeklyDigest = await tickWeeklyDigest();
+  const horoscopes = await tickHoroscopePrewarm();
   return {
     outreach,
     waitlist,
@@ -253,6 +273,62 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     youtube,
     apollo,
     contentSeed,
+    aartiNotify,
+    weeklyDigest,
+    horoscopes,
     ranAt: new Date().toISOString(),
   };
+}
+
+async function tickHoroscopePrewarm(): Promise<{ generated: number; date: string; skipped?: boolean; reason?: string }> {
+  // Best-effort 24h cache warm of all 12 daily horoscopes. If Groq/Anthropic
+  // is offline, the lib falls back to static text — this should never throw.
+  try {
+    const r = await prewarmDailyHoroscopes();
+    return { generated: r.generated, date: r.date };
+  } catch (err) {
+    return {
+      generated: 0,
+      date: new Date().toISOString().slice(0, 10),
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+async function tickWeeklyDigest(): Promise<WeeklyDigestResult & { gated?: boolean }> {
+  // Best-effort: any failure (DB down, Resend hiccup) is captured into the
+  // result so the rest of runDailyOps continues. Sunday 9 AM IST + 6-day
+  // cooldown gating happens inside maybeRunWeeklyDigest.
+  try {
+    return await maybeRunWeeklyDigest();
+  } catch (err) {
+    return {
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      gated: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+async function tickAartiNotify(): Promise<AartiNotifyResult> {
+  // Best-effort: never throw. The job itself catches its own DB/FCM errors
+  // and returns a structured result with skipped/reason. We wrap to be safe
+  // against schema-not-migrated environments where prisma.temple itself
+  // could throw before runAartiNotify can react.
+  try {
+    return await runAartiNotify();
+  } catch (err) {
+    return {
+      templesChecked: 0,
+      aartisMatched: 0,
+      pushesSent: 0,
+      expiredTokens: 0,
+      failed: 0,
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
