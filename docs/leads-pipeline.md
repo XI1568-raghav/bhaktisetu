@@ -1,11 +1,12 @@
 # Leads Pipeline
 
-Two-track lead acquisition for Darshya outreach:
+Three-track lead acquisition for Darshya outreach:
 
 1. **Manual** — hand-verified contacts in `apps/api/scripts/leads/_real-contacts-2026-05-02.ts` (110 rows, 5 roles).
 2. **Apollo enrichment** — auto-fetched ICP-matched contacts via Apollo.io.
+3. **Bengaluru pandits (week-1 GTM)** — hand-curated local pandit list in `_real-pandits-bengaluru-2026-05-02.ts` (23 rows, all `PRIEST` role until a `PANDIT` enum is added). City-focused for the first sales pipeline.
 
-Both feed the same `Lead` table via `upsertLead` (idempotent by `(role, email)` or `(role, phone)`).
+All three feed the same `Lead` table via `upsertLead` (idempotent by `(role, email)` or `(role, phone)`).
 
 ## Quick start
 
@@ -17,9 +18,10 @@ echo "APOLLO_API_KEY=..." >> apps/api/.env
 pnpm --filter @poojly/api enrich-leads
 
 # 3. import to DB (manual = default)
-pnpm --filter @poojly/api import-leads                   # manual only
-LEADS_SOURCE=apollo pnpm --filter @poojly/api import-leads  # apollo only
-LEADS_SOURCE=both   pnpm --filter @poojly/api import-leads  # both
+pnpm --filter @poojly/api import-leads                              # manual only
+LEADS_SOURCE=apollo pnpm --filter @poojly/api import-leads          # apollo only
+LEADS_SOURCE=both   pnpm --filter @poojly/api import-leads          # manual + apollo
+LEADS_SOURCE=bengaluru-pandits pnpm --filter @poojly/api import-leads  # week-1 Bengaluru
 ```
 
 ## Apollo free-tier credit budget
@@ -77,4 +79,5 @@ If Apollo enrichment is unavailable (no key, hit credit cap, API down), the manu
 - `apps/api/scripts/leads/enrich-from-apollo.ts` — generates `_apollo-contacts-<date>.ts`.
 - `apps/api/scripts/leads/import-leads.ts` — unified importer.
 - `apps/api/scripts/leads/_real-contacts-2026-05-02.ts` — manual dataset.
+- `apps/api/scripts/leads/_real-pandits-bengaluru-2026-05-02.ts` — Bengaluru week-1 GTM seed.
 - `apps/api/scripts/leads/_apollo-contacts-<YYYY-MM-DD>.ts` — auto-generated, do not edit.

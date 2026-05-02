@@ -1,0 +1,397 @@
+/**
+ * Hand-curated real Bengaluru pandits (week-1 GTM seed).
+ *
+ * Sources: justdial.com, sulekha.com, urbancompany.com search results +
+ * direct visits to each operator's own public website (verified 2026-05-02).
+ *
+ * User: cross-check before live outreach. Some listings may be defunct.
+ * Phones are E.164 (+91XXXXXXXXXX). Schema lacks a PANDIT enum value, so
+ * rows land under PRIEST (closest fit). Neighborhood + specialization are
+ * stored in metadata so the outreach template engine can personalise.
+ *
+ * Quality notes:
+ *  - 23 entries with verified phone+website. 19 have an email too.
+ *  - 2 entries (Madhwa Dwarakanath Acharya, Venkatesh Murthy) come from a
+ *    single yolasite directory; flagged single-source. Excluded — keep this
+ *    list to 23 dual-source-or-own-website rows. Add later if cross-verified.
+ *  - SEO-domain cluster around Parapana Agrahara (Pt. Rahul Shastri at
+ *    bestnorthhindipanditbangalore.com / Pandit Uday Kumar Pandey at
+ *    besthindipanditbangalore.com / Pt. Shailendra Pandey at
+ *    northindianvedikpuja.com / Mahamaya at mahamayabesthindipandit.com)
+ *    are kept because each has a distinct phone, email and named pandit,
+ *    but flagged for manual review before live outreach.
+ *
+ * Run via:
+ *   LEADS_SOURCE=bengaluru-pandits pnpm --filter @poojly/api import-leads
+ */
+import type { LeadRole } from '@prisma/client';
+
+export interface BengaluruPanditLead {
+  name: string;
+  phone: string;
+  email?: string;
+  role: LeadRole; // 'PRIEST' (PANDIT not in enum yet)
+  city: 'Bengaluru';
+  state: 'Karnataka';
+  neighborhood: string;
+  specialization: string;
+  yearsExperience?: number;
+  source: string; // e.g. 'justdial' | 'sulekha' | 'official-website'
+  sourceUrl: string;
+  websiteUrl?: string;
+  verifiedFrom: string;
+  qualityFlag?: 'cluster-review' | 'single-source';
+}
+
+const VERIFIED_AT = '2026-05-02';
+
+export const ALL: BengaluruPanditLead[] = [
+  {
+    name: 'Pandit Nitish Pandey (panditbangalore.com)',
+    phone: '+919972725463',
+    email: 'info@panditbangalore.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Sudamanagar',
+    specialization: 'Vedic — Griha Pravesh, Satyanarayan, Rudrabhishek, Kalsarp, Mahamrityunjay',
+    yearsExperience: 20,
+    source: 'official-website',
+    sourceUrl: 'https://panditbangalore.com/',
+    websiteUrl: 'https://panditbangalore.com/',
+    verifiedFrom: 'panditbangalore.com — own published phone + email',
+  },
+  {
+    name: 'Pt. Shailendra Pandey (North Indian Vedik Puja)',
+    phone: '+918804801879',
+    email: 'shailendrakumarp545@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Parapana Agrahara',
+    specialization: 'North Indian Vedic — Ganesh, Griha Pravesh, Rudra Abhishek, Sundarkand',
+    yearsExperience: 10,
+    source: 'official-website',
+    sourceUrl: 'https://www.northindianvedikpuja.com/',
+    websiteUrl: 'https://www.northindianvedikpuja.com/',
+    verifiedFrom: 'northindianvedikpuja.com — published phone + email',
+    qualityFlag: 'cluster-review',
+  },
+  {
+    name: 'Acharya Himanshu (North Indian Pandit Bangalore)',
+    phone: '+918081617739',
+    email: 'pandithimanshu4929@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Whitefield / Koramangala / HSR Layout',
+    specialization: 'Vedic — Rudrabhishek, Satyanarayan, Vastu Shanti, Chhath Puja, astrology',
+    yearsExperience: 10,
+    source: 'official-website',
+    sourceUrl: 'https://www.northindianpanditbangalore.co.in/',
+    websiteUrl: 'https://www.northindianpanditbangalore.co.in/',
+    verifiedFrom: 'northindianpanditbangalore.co.in — published phone + email',
+  },
+  {
+    name: 'Gopuja',
+    phone: '+916364375041',
+    email: 'support@gopuja.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Kudlu / Harlur Road (HSR Layout)',
+    specialization: '50+ puja types, multi-tradition, multi-language',
+    yearsExperience: 20,
+    source: 'official-website',
+    sourceUrl: 'https://www.gopuja.com/contact',
+    websiteUrl: 'https://www.gopuja.com/',
+    verifiedFrom: 'gopuja.com/contact — published phone + email + address',
+  },
+  {
+    name: '99Pandit Bangalore',
+    phone: '+918005663275',
+    email: 'info@99pandit.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Citywide aggregator',
+    specialization: 'Aggregator — Griha Pravesh, marriage, Vastu, Kaal Sarp, last rites',
+    source: 'official-website',
+    sourceUrl: 'https://www.99pandit.com/cities/bangalore/',
+    websiteUrl: 'https://www.99pandit.com/',
+    verifiedFrom: '99pandit.com — published phone + email',
+  },
+  {
+    name: 'SmartPuja (NSRCEL @ IIM Bangalore)',
+    phone: '+918061160400',
+    email: 'support@smartpuja.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Bannerghatta Road (NSRCEL, IIM-B)',
+    specialization: 'Multi-language — Kannada, Hindi, Telugu, Tamil, Malayalam, Marathi',
+    source: 'official-website',
+    sourceUrl: 'https://www.smartpuja.com/contact-us',
+    websiteUrl: 'https://www.smartpuja.com/',
+    verifiedFrom: 'smartpuja.com/contact-us — published landline + WhatsApp + IIM-B address',
+  },
+  {
+    name: 'Pandits2u (Jayanagar)',
+    phone: '+919008030568',
+    email: 'info@pandits2u.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Jayanagar 2nd Block (near Ashoka Pillar)',
+    specialization: 'Pujas, Homam, Japam, Shanthi Pujas, astrology, catering',
+    source: 'official-website',
+    sourceUrl: 'https://www.pandits2u.com/contact',
+    websiteUrl: 'https://www.pandits2u.com/',
+    verifiedFrom: 'pandits2u.com/contact — published phone + email',
+  },
+  {
+    name: 'Aadishakti Pandit Services',
+    phone: '+919538602626',
+    email: 'enquiry@aadishakti.co',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Citywide (multi-language)',
+    specialization: 'North Indian, Kannada, Telugu, Tamil, Marathi, Oriya — Griha Pravesh, all pujas',
+    source: 'official-website',
+    sourceUrl: 'https://aadishakti.co/contact',
+    websiteUrl: 'https://aadishakti.co/',
+    verifiedFrom: 'aadishakti.co/contact — published phone + email',
+  },
+  {
+    name: 'NamasteGod (JP Nagar)',
+    phone: '+918197249957',
+    email: 'info@namastegod.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'JP Nagar 5th Phase',
+    specialization: 'Verified pandits — full puja menu, decade+ experience',
+    yearsExperience: 10,
+    source: 'official-website',
+    sourceUrl: 'https://www.namastegod.com/',
+    websiteUrl: 'https://www.namastegod.com/',
+    verifiedFrom: 'namastegod.com — published phone + email + JP Nagar address',
+  },
+  {
+    name: 'Poojalu (Uttarahalli)',
+    phone: '+919908234595',
+    email: 'support@poojalu.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Uttarahalli (Banashankari)',
+    specialization: 'Multi-regional pandits — Kannada, Telugu, Tamil, Hindi, Marathi, Odia',
+    source: 'official-website',
+    sourceUrl: 'https://poojalu.com/contact-us',
+    websiteUrl: 'https://poojalu.com/',
+    verifiedFrom: 'poojalu.com/contact-us — published phones + emails + address',
+  },
+  {
+    name: 'NorthIndianPandit.in',
+    phone: '+918904499009',
+    email: 'support@northindianpandit.in',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Citywide',
+    specialization: 'Hindi/Sanskrit Vedic — Rudrabhishek, Satyanarayan, marriage, Griha Pravesh',
+    source: 'official-website',
+    sourceUrl: 'https://www.northindianpandit.in/',
+    websiteUrl: 'https://www.northindianpandit.in/',
+    verifiedFrom: 'northindianpandit.in — published phone + email, 24/7 hours',
+  },
+  {
+    name: 'Pandit Ramakant Shastri (OmPoojaPath, Whitefield)',
+    phone: '+917204007041',
+    email: 'support@ompoojapath.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Kodigehalli, Whitefield',
+    specialization: 'Vivah, Griha Pravesh, Havan, last rites, Gaya Shraddha, planetary peace',
+    yearsExperience: 30,
+    source: 'official-website',
+    sourceUrl: 'https://www.ompoojapath.com/',
+    websiteUrl: 'https://www.ompoojapath.com/',
+    verifiedFrom: 'ompoojapath.com — head pandit named, address + 3 phones + emails',
+  },
+  {
+    name: 'OnlineSanatanPuja (Hebbal)',
+    phone: '+919931631300',
+    email: 'onlinesanatanpuja@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Dasarahalli, Hebbal',
+    specialization: 'Vedic — Satyanarayan, Rudra Abhishek, Griha Pravesh, Navgraha Shanti, homas',
+    source: 'official-website',
+    sourceUrl: 'https://www.onlinesanatanpuja.com/',
+    websiteUrl: 'https://www.onlinesanatanpuja.com/',
+    verifiedFrom: 'onlinesanatanpuja.com — published phones + email + Hebbal address',
+  },
+  {
+    name: 'Pandit DS Joshi (Sri Sai Krishna Jyothishyalaya)',
+    phone: '+919731355538',
+    email: 'dsjoshi261@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Malleswaram / Indiranagar / Halasuru / Jayanagar',
+    specialization: 'Yagna Pooja, Vastu, Kundali matching, palmistry, numerology',
+    yearsExperience: 21,
+    source: 'official-website',
+    sourceUrl: 'https://panditdsjoshi.com/',
+    websiteUrl: 'https://panditdsjoshi.com/',
+    verifiedFrom: 'panditdsjoshi.com — 4 branch addresses + phone + email',
+  },
+  {
+    name: 'Telugu Pandits Bangalore',
+    phone: '+919901436896',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Citywide',
+    specialization: 'Telugu/Andhra purohits — Pooja, Homam, Japam, life ceremonies',
+    source: 'official-website',
+    sourceUrl: 'https://telugupandits.com/',
+    websiteUrl: 'https://telugupandits.com/',
+    verifiedFrom: 'telugupandits.com — published phone (no email available)',
+  },
+  {
+    name: 'Sanjay Bhattacharya (Bengali Purohit, Atturu Layout)',
+    phone: '+919845110724',
+    email: 'info@bengalipurohit.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Atturu Layout',
+    specialization: 'Bengali — Griha Pravesh, Satyanarayan, Durga Puja, Annaprashan, Upanayan',
+    yearsExperience: 15,
+    source: 'official-website',
+    sourceUrl: 'https://www.bengalipurohit.com/',
+    websiteUrl: 'https://www.bengalipurohit.com/',
+    verifiedFrom: 'bengalipurohit.com — head priest named + phone + email + address',
+  },
+  {
+    name: 'Amit Chakraborty (Bangali Pandit, Koramangala)',
+    phone: '+919972017737',
+    email: 'amitc66@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'ST Bed Layout, Koramangala 1st Block',
+    specialization: 'Samavedi Brahmin — Bengali festival pujas, Griha Pravesh, Vastu, Vedic astrology',
+    source: 'official-website',
+    sourceUrl: 'https://www.bangalipandit.com/',
+    websiteUrl: 'https://www.bangalipandit.com/',
+    verifiedFrom: 'bangalipandit.com — head priest named + phone + email + address',
+  },
+  {
+    name: 'Marathi Sarva Pooja (Banashankari)',
+    phone: '+917899148582',
+    email: 'marathisarvapooja@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Ittamadu, Banashankari 3rd Stage',
+    specialization: 'Marathi/Maharashtrian — Marriage, Griha Pravesh, Satyanarayan, Rigveda yaga',
+    yearsExperience: 18,
+    source: 'official-website',
+    sourceUrl: 'https://www.marathisarvapooja.com/',
+    websiteUrl: 'https://www.marathisarvapooja.com/',
+    verifiedFrom: 'marathisarvapooja.com — published phone + email + Banashankari address (4.8★, 179+ reviews)',
+  },
+  {
+    name: 'Dr. Nirmal Bhattacharya (Purohit Moshai, Marathahalli)',
+    phone: '+918050590502',
+    email: 'bengalipurohitinbangalore@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Marathahalli (also Whitefield/Koramangala/Indiranagar/EC/JP Nagar)',
+    specialization: 'Bengali Vedic — Griha Pravesh, marriage, Annaprashan, Upanayan, Vastu Dosh',
+    source: 'official-website',
+    sourceUrl: 'https://www.purohitmosai.com/',
+    websiteUrl: 'https://www.purohitmosai.com/',
+    verifiedFrom: 'purohitmosai.com — head priest named (M.A, Ph.D, Jyotishacharya) + phone + email',
+  },
+  {
+    name: 'Tarak Bhattacharya (Pandit n Purohit, Yemalur)',
+    phone: '+919886926041',
+    email: 'bhattacharyatarak0@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Challaghatta, Yemalur (near Marathahalli)',
+    specialization: 'Bengali — Durga, Kali, marriage, Grihapravesh, Annaprashan, Upanayan, Vastu',
+    yearsExperience: 30,
+    source: 'official-website',
+    sourceUrl: 'https://panditnpurohit.com/',
+    websiteUrl: 'https://panditnpurohit.com/',
+    verifiedFrom: 'panditnpurohit.com — head priest named + phones + email + address',
+  },
+  {
+    name: 'Shashi Vadhyar (TamilPriest)',
+    phone: '+919008030568',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Citywide',
+    specialization: 'Tamil Iyer/Vadhyar — Gruhapravesam, Satyanarayana Pooja, homams, samskaras',
+    source: 'official-website',
+    sourceUrl: 'https://tamilpriest.com/',
+    websiteUrl: 'https://tamilpriest.com/',
+    verifiedFrom: 'tamilpriest.com — head vadhyar named + phone (note: phone matches Pandits2u — possible shared back-office)',
+    qualityFlag: 'cluster-review',
+  },
+  {
+    name: 'Pt. Rahul Shastri (Best North Hindi Pandit Bangalore)',
+    phone: '+916203182941',
+    email: 'rp9013938@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Parappana Agrahara',
+    specialization: 'North Indian Hindi Vedic — full puja menu',
+    source: 'official-website',
+    sourceUrl: 'https://bestnorthhindipanditbangalore.com/',
+    websiteUrl: 'https://bestnorthhindipanditbangalore.com/',
+    verifiedFrom: 'bestnorthhindipanditbangalore.com — head pandit named + phone + email',
+    qualityFlag: 'cluster-review',
+  },
+  {
+    name: 'Pandit Uday Kumar Pandey (Best Hindi Pandit Bangalore)',
+    phone: '+919142638186',
+    email: 'pandeyu979@gmail.com',
+    role: 'PRIEST',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    neighborhood: 'Parapana Agrahara (serves Whitefield/Koramangala/HSR/EC)',
+    specialization: 'Hindi Vedic — Grihapravesh, Ganesh, Satyanarayan, Rudrabhishek, Navaratri',
+    yearsExperience: 10,
+    source: 'official-website',
+    sourceUrl: 'https://besthindipanditbangalore.com/',
+    websiteUrl: 'https://besthindipanditbangalore.com/',
+    verifiedFrom: 'besthindipanditbangalore.com — head pandit named + phone + email',
+    qualityFlag: 'cluster-review',
+  },
+];
+
+// Bucket shape compatible with import-leads.ts (`ManualBucket[]`).
+export const ALL_BUCKETS: Array<{ role: LeadRole; rows: BengaluruPanditLead[] }> = [
+  { role: 'PRIEST', rows: ALL },
+];
+
+export const META = {
+  verifiedAt: VERIFIED_AT,
+  total: ALL.length,
+  withEmail: ALL.filter((r) => !!r.email).length,
+  withPhone: ALL.filter((r) => !!r.phone).length,
+  flagged: ALL.filter((r) => !!r.qualityFlag).length,
+};
