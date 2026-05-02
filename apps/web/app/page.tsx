@@ -252,7 +252,17 @@ export default function HomePage() {
 
  <div data-reveal="cinematic" className="relative rounded-xl overflow-hidden card-hover" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/7] relative">
- <img src={getTempleHero('kashi-vishwanath')} alt="Kashi Vishwanath Temple Live" data-parallax="0.05" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img
+ src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1600px-Kashi_Vishwanath.jpg"
+ srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/800px-Kashi_Vishwanath.jpg 800w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1280px-Kashi_Vishwanath.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1600px-Kashi_Vishwanath.jpg 1600w"
+ sizes="(max-width: 768px) 100vw, 1200px"
+ alt="Kashi Vishwanath Temple Live"
+ width={1600}
+ height={700}
+ className="w-full h-full object-cover"
+ fetchPriority="high"
+ decoding="async"
+ />
  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
  <div className="absolute top-3 left-3 flex items-center gap-2">
  <span className="flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">

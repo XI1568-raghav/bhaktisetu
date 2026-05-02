@@ -14,7 +14,7 @@ import {
  Filter,
  X,
 } from 'lucide-react';
-import { getTempleHero, getDeityImage } from '../../lib/images';
+import { getTempleHero, getDeityImage, wikiThumb } from '../../lib/images';
 
 export type DeityTypeFilter = 'All' | 'Shiva' | 'Vishnu' | 'Shakti' | 'Ganesha' | 'Sikh' | 'Other';
 export type SortMode = 'popularity' | 'alphabetical' | 'state';
@@ -271,10 +271,13 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
  >
  <div className="relative aspect-[16/10] bg-gradient-to-br from-orange-100 to-amber-50">
  <img
- src={temple.imageUrl ?? getTempleHero(temple.slug) ?? getDeityImage(deityFallbackKey(temple.deityType))}
+ src={wikiThumb(temple.imageUrl ?? getTempleHero(temple.slug) ?? getDeityImage(deityFallbackKey(temple.deityType)), 800)}
  alt={`${temple.name} - ${temple.city}`}
  loading="lazy"
+ width={800}
+ height={500}
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+ decoding="async"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
 

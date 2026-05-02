@@ -51,16 +51,32 @@ function wiki(url: string): string {
 }
 
 /**
- * Resize a Wikimedia Commons /thumb/ URL to a different width.
- * For non-thumb URLs (originals), returns as-is.
+ * Convert ANY Wikimedia Commons URL to a thumbnail at the given width.
+ * Originals (5-15 MB) become resized thumbnails (50-300 KB) — critical for perf.
  *
- * Example:
- * wikiResize('.../thumb/a/bc/Foo.jpg/1280px-Foo.jpg', 600)
- * → '.../thumb/a/bc/Foo.jpg/1280px-Foo.jpg'
+ * Handles both shapes:
+ *   .../commons/a/bc/Foo.jpg          → .../commons/thumb/a/bc/Foo.jpg/<w>px-Foo.jpg
+ *   .../commons/thumb/a/bc/Foo.jpg/1280px-Foo.jpg → ...rewritten width
+ */
+export function wikiThumb(url: string, width: number): string {
+ if (!url.includes('upload.wikimedia.org/wikipedia/commons/')) return url;
+ if (url.includes('/commons/thumb/')) {
+   return url.replace(/\/(\d+)px-/, `/${width}px-`);
+ }
+ const match = url.match(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/?#]+)$/);
+ if (!match) return url;
+ const [, a, bc, file] = match;
+ // .svg → .svg.png thumb (Commons rule). Other extensions pass through.
+ const thumbFile = /\.svg$/i.test(file!) ? `${file}.png` : file;
+ return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${width}px-${thumbFile}`;
+}
+
+/**
+ * Resize a Wikimedia Commons /thumb/ URL to a different width.
+ * Backward compat — prefer wikiThumb which also handles originals.
  */
 export function wikiResize(url: string, width: number): string {
- if (!url.includes('upload.wikimedia.org/wikipedia/commons/thumb/')) return url;
- return url.replace(/\/(\d+)px-/, `/${width}px-`);
+ return wikiThumb(url, width);
 }
 
 /**
@@ -532,12 +548,12 @@ export function getImage(
 
 export function getTempleHero(slug: string): string {
  const temple = IMAGES.temples[slug as TempleSlug];
- return temple?.hero ?? FALLBACK_IMAGE;
+ return wikiThumb(temple?.hero ?? FALLBACK_IMAGE, 1600);
 }
 
 export function getTempleThumbnail(slug: string): string {
  const temple = IMAGES.temples[slug as TempleSlug];
- return temple?.thumbnail ?? FALLBACK_IMAGE;
+ return wikiThumb(temple?.thumbnail ?? FALLBACK_IMAGE, 800);
 }
 
 export function getTempleGallery(slug: string): readonly string[] {
@@ -548,11 +564,13 @@ export function getTempleGallery(slug: string): readonly string[] {
 export function getDeityImage(slug: string, variant: 'portrait' | 'square' = 'portrait'): string {
  const key = variant === 'square' ? `${slug}-square` : slug;
  const deities = IMAGES.deities as Record<string, string>;
- return deities[key] ?? deities[slug] ?? FALLBACK_IMAGE;
+ const url = deities[key] ?? deities[slug] ?? FALLBACK_IMAGE;
+ return wikiThumb(url, variant === 'square' ? 600 : 800);
 }
 
 export function getPujaImage(slug: string): string {
- return (IMAGES.pujas as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
+ const url = (IMAGES.pujas as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
+ return wikiThumb(url, 800);
 }
 
 export function getProductImage(slug: string): string {
@@ -560,7 +578,8 @@ export function getProductImage(slug: string): string {
 }
 
 export function getHeroImage(page: string): string {
- return (IMAGES.hero as Record<string, string>)[page] ?? FALLBACK_IMAGE;
+ const url = (IMAGES.hero as Record<string, string>)[page] ?? FALLBACK_IMAGE;
+ return wikiThumb(url, 1600);
 }
 
 export function getAstrologerImage(gender: 'male' | 'female', index: number): string {
@@ -569,11 +588,13 @@ export function getAstrologerImage(gender: 'male' | 'female', index: number): st
 }
 
 export function getFestivalImage(slug: string): string {
- return (IMAGES.festivals as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
+ const url = (IMAGES.festivals as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
+ return wikiThumb(url, 800);
 }
 
 export function getContentImage(type: string, variant: 'full' | 'thumbnail' = 'full'): string {
  const key = variant === 'thumbnail' ? `${type}-thumbnail` : type;
  const content = IMAGES.content as Record<string, string>;
- return content[key] ?? content[type] ?? FALLBACK_IMAGE;
+ const url = content[key] ?? content[type] ?? FALLBACK_IMAGE;
+ return wikiThumb(url, variant === 'thumbnail' ? 400 : 1200);
 }
