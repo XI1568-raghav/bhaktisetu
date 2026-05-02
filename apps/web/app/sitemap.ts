@@ -141,11 +141,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // New yatra destination landing pages (Layer M1) — affiliate revenue.
+  const { destinationSlugs } = await import('../lib/yatra-destinations');
+  const yatraDestEntries = destinationSlugs().map((slug) => ({
+    url: `${BASE_URL}/yatra/destinations/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
   return [
     ...topLevelEntries,
     ...secondaryEntries,
     ...templeEntries,
     ...pujaEntries,
     ...yatraEntries,
+    ...yatraDestEntries,
+    { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];
 }

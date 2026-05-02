@@ -15,6 +15,7 @@ import { bookingRoutes } from './routes/bookings.js';
 import { paymentRoutes } from './routes/payments.js';
 import { contentRoutes } from './routes/content.js';
 import { darshanRoutes } from './routes/darshan.js';
+import { affiliateRoutes } from './routes/affiliate.js';
 import { userRoutes } from './routes/users.js';
 import { authRoutes } from './routes/auth.js';
 import { subscriptionRoutes } from './routes/subscriptions.js';
@@ -130,6 +131,7 @@ async function bootstrap() {
   await server.register(providerRoutes, { prefix: '/api/v1/providers' });
   await server.register(providerKycRoutes, { prefix: '/api/v1/provider-kyc' });
   await server.register(yatraRoutes, { prefix: '/api/v1/yatra' });
+  await server.register(affiliateRoutes, { prefix: '/api/v1/affiliate' });
   await server.register(supportRoutes, { prefix: '/api/v1/support' });
   await server.register(searchRoutes, { prefix: '/api/v1/search' });
   await server.register(consultationRoutes, { prefix: '/api/v1/consultation' });
