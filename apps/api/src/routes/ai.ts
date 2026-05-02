@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
 import { aiService } from '../services/ai.service.js';
+import { canSendMessage, recordMessage, getUsageSummary } from '../lib/ai-usage.js';
 
 // AI chat hits Groq (paid). A logged-out attacker hammering this endpoint
 // at the global 100/min would burn Groq quota fast. 20/min/IP allows a
@@ -47,6 +48,25 @@ export async function aiRoutes(server: FastifyInstance) {
 
     const userId = request.currentUser?.id ?? `anon-${Date.now().toString(36)}`;
 
+    // ─── M3 paywall — usage gate ──────────────────────────────────────────
+    // Logged-in users hit the per-tier counter. Anonymous users fall through
+    // (canSendMessage short-circuits on the `anon-` prefix) so the public
+    // Ask Pandit demo keeps working.
+    const decision = await canSendMessage(userId);
+    if (!decision.allowed) {
+      return reply.status(402).send({
+        error: 'limit_reached',
+        plan: decision.plan,
+        used: decision.used,
+        limit: decision.limit,
+        upgradeUrl: '/upgrade',
+        message:
+          decision.plan === 'free'
+            ? `You've used all ${decision.limit} free messages this month. Upgrade for more.`
+            : `You've used all ${decision.limit} messages in this session. Upgrade for unlimited.`,
+      });
+    }
+
     try {
       const { stream, conversationId: convId, citations, saveConversation } = await aiService.chat({
         userId,
@@ -77,6 +97,12 @@ export async function aiRoutes(server: FastifyInstance) {
 
       // Send initial metadata event
       raw.write(`data: ${JSON.stringify({ type: 'metadata', conversationId: convId, citations })}\n\n`);
+
+      // Record this message against the user's usage counter. Fire-and-forget;
+      // a counter write must never break the stream. Anonymous IDs no-op.
+      recordMessage(userId).catch((err) => {
+        server.log.warn({ err }, 'recordMessage failed');
+      });
 
       // Stream the response
       let fullResponse = '';
@@ -120,6 +146,16 @@ export async function aiRoutes(server: FastifyInstance) {
 
       return reply.status(500).send({ error: 'Failed to process chat message' });
     }
+  });
+
+  // ─── GET /usage — Current message-quota state for logged-in user ───────────
+  // Drives the in-chat indicator ("3 of 5 free messages this month").
+  // Auth required — anonymous users have no quota to report.
+
+  server.get('/usage', { preHandler: [authenticateUser] }, async (request) => {
+    const userId = request.currentUser!.id;
+    const summary = await getUsageSummary(userId);
+    return summary;
   });
 
   // ─── GET /conversations — List user conversations ───────────────────────────

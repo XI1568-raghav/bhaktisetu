@@ -11,6 +11,10 @@ const subscribeSchema = z.object({
   role: z.enum([
     'PANDIT', 'STORE_OWNER', 'ASTROLOGER',
     'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER', 'TEMPLE_MANAGER',
+    // DEVOTEE is included so the AI-astrologer paywall (M3) can target the
+    // devotee subscribing to astro_session / astro_monthly without piggy-
+    // backing on a marketplace role.
+    'DEVOTEE',
   ]),
   paymentMethodId: z.string().optional(),
 });
