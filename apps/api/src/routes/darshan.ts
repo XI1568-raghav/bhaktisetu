@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { getLiveStatus } from '../lib/darshan-schedule.js';
+import { getChannelEmbedInfo, liveStreamUrl, videoEmbedUrl } from '../lib/youtube-feed.js';
 
 // YouTube live stream embed URLs for major temples.
 // Channel IDs verified 2026-05-02 against https://www.youtube.com/feeds/videos.xml?channel_id=...
@@ -284,12 +285,20 @@ export async function darshanRoutes(server: FastifyInstance) {
       (s) => s.id === id || s.templeSlug === id || s.templeSlug === canonicalSlug,
     );
     if (hardcoded) {
+      // Probe RSS for latest VOD as fallback. The live_stream embed is dark
+      // unless the channel is currently broadcasting; recent video keeps the
+      // player useful 24/7.
+      const feed = await getChannelEmbedInfo(hardcoded.youtubeChannelId);
+      const recentUrl = feed.videoId ? videoEmbedUrl(feed.videoId) : null;
       return {
         streamId: id,
         templeId: id,
         templeName: hardcoded.templeName,
         status: 'live',
-        playbackUrl: hardcoded.playbackUrl,
+        playbackUrl: liveStreamUrl(hardcoded.youtubeChannelId),
+        recentVideoUrl: recentUrl,
+        recentVideoTitle: feed.title,
+        youtubeChannelId: hardcoded.youtubeChannelId,
         thumbnailUrl: hardcoded.thumbnailUrl,
         viewerCount: hardcoded.viewerCount + Math.floor(Math.random() * 500),
         startedAt: new Date(Date.now() - 3600000).toISOString(),
