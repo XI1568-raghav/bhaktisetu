@@ -2,7 +2,9 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { getLiveStatus } from '../lib/darshan-schedule.js';
 
-// YouTube live stream embed URLs for major temples (verified channels)
+// YouTube live stream embed URLs for major temples.
+// Channel IDs verified 2026-05-02 against https://www.youtube.com/feeds/videos.xml?channel_id=...
+// (200 = real channel; 404 = dead). Use only OFFICIAL temple/board YouTube channels.
 const TEMPLE_LIVE_STREAMS = [
   {
     id: 'live-somnath',
@@ -10,12 +12,12 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Somnath Temple',
     city: 'Veraval',
     deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UCqYfGDaOXosiB0zhxJKaSVg',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCqYfGDaOXosiB0zhxJKaSVg&autoplay=1',
+    youtubeChannelId: 'UCzyMnhcnMluiOvX5YkeBYqQ', // Shree Somnath (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCzyMnhcnMluiOvX5YkeBYqQ&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1590077428593-a55bb07c4665?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 8450,
     peakViewers: 15200,
-    availability: '24/7 Live',
+    availability: 'Live aarti & darshan',
   },
   {
     id: 'live-ttd',
@@ -23,8 +25,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Tirumala Venkateswara Temple (SVBC)',
     city: 'Tirupati',
     deityPrimary: 'Lord Venkateswara',
-    youtubeChannelId: 'UCJmlFv2P07E-s3M_sJJKeBg',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCJmlFv2P07E-s3M_sJJKeBg&autoplay=1',
+    youtubeChannelId: 'UCS2Y83GD-fc7qqgNW5uj41g', // SVBC TTD (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCS2Y83GD-fc7qqgNW5uj41g&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 28300,
     peakViewers: 52000,
@@ -36,8 +38,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Golden Temple (Harmandir Sahib)',
     city: 'Amritsar',
     deityPrimary: 'Guru Granth Sahib',
-    youtubeChannelId: 'UCsb05JlJO-Z7Yx_2bZWM1GA',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCsb05JlJO-Z7Yx_2bZWM1GA&autoplay=1',
+    youtubeChannelId: 'UCYn6UEtQ771a_OWSiNBoG8w', // SGPC, Sri Amritsar (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCYn6UEtQ771a_OWSiNBoG8w&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 15600,
     peakViewers: 32000,
@@ -49,8 +51,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shri Sai Baba Sansthan Temple',
     city: 'Shirdi',
     deityPrimary: 'Sai Baba',
-    youtubeChannelId: 'UCpVmI7DTRMYSU4HiEPJOHtw',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCpVmI7DTRMYSU4HiEPJOHtw&autoplay=1',
+    youtubeChannelId: 'UCKGvJDh7g_Kzocbwy7aKicA', // Shree Saibaba Sansthan Trust (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCKGvJDh7g_Kzocbwy7aKicA&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 6200,
     peakViewers: 18000,
@@ -62,8 +64,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shri Kashi Vishwanath Temple',
     city: 'Varanasi',
     deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UCuY3K0cx15SkGr-uHj6jh1w',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCuY3K0cx15SkGr-uHj6jh1w&autoplay=1',
+    youtubeChannelId: 'UCMPMZ1hL5t9pBHMjJNvYxXQ', // kashi vishwanath (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCMPMZ1hL5t9pBHMjJNvYxXQ&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 12450,
     peakViewers: 24000,
@@ -75,8 +77,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shree Siddhivinayak Temple',
     city: 'Mumbai',
     deityPrimary: 'Lord Ganesha',
-    youtubeChannelId: 'UCyrJNbN06WL-8R_mbzuEB0A',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCyrJNbN06WL-8R_mbzuEB0A&autoplay=1',
+    youtubeChannelId: 'UCF9FdiMBENIbM6jb44zWmCQ', // Shree Siddhivinayak Ganapati Temple Trust (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCF9FdiMBENIbM6jb44zWmCQ&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1604948501466-4e9c339b9c24?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 8760,
     peakViewers: 14000,
@@ -88,8 +90,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Mahakaleshwar Temple',
     city: 'Ujjain',
     deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UCcf8K09z_GXFEFslDvjQ4cQ',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCcf8K09z_GXFEFslDvjQ4cQ&autoplay=1',
+    youtubeChannelId: 'UC9rPSwAjIsr2DESJTQ-V_9A', // Ujjain Mahakal (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC9rPSwAjIsr2DESJTQ-V_9A&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1604948501466-4e9c339b9c24?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 9400,
     peakViewers: 22000,
@@ -101,8 +103,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shri Mata Vaishno Devi Temple',
     city: 'Katra',
     deityPrimary: 'Goddess Vaishno Devi',
-    youtubeChannelId: 'UCfNJsTvf-ygFijU-wqO3Amg',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCfNJsTvf-ygFijU-wqO3Amg&autoplay=1',
+    youtubeChannelId: 'UCFYQr1l7ereS27SrLJ8bBtw', // Shri Mata Vaishno Devi Shrine Board (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCFYQr1l7ereS27SrLJ8bBtw&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 5800,
     peakViewers: 16000,
@@ -114,8 +116,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Jagannath Temple',
     city: 'Puri',
     deityPrimary: 'Lord Jagannath',
-    youtubeChannelId: 'UCdQpU9tTNQNniXO0LTQsGmg',
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCdQpU9tTNQNniXO0LTQsGmg&autoplay=1',
+    youtubeChannelId: 'UCstacpPsNLSiGcYe7qbF14Q', // Shree Jagannatha Temple Administration, Puri (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCstacpPsNLSiGcYe7qbF14Q&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 7300,
     peakViewers: 45000,
@@ -259,8 +261,11 @@ export async function darshanRoutes(server: FastifyInstance) {
   server.get('/:id/stream', async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    // Check hardcoded streams first
-    const hardcoded = TEMPLE_LIVE_STREAMS.find((s) => s.id === id);
+    // Check hardcoded streams first - match by id OR templeSlug.
+    // The /darshan/<slug> page hits this endpoint with a slug, not the synthetic id.
+    const hardcoded = TEMPLE_LIVE_STREAMS.find(
+      (s) => s.id === id || s.templeSlug === id,
+    );
     if (hardcoded) {
       return {
         streamId: id,

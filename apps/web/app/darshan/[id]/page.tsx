@@ -23,41 +23,212 @@ import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
 import { getTempleHero } from '../../../lib/images';
 
 // ─── YouTube stream URL lookup for fallback ──────────────────────────────────
+// Channel IDs verified 2026-05-02 against YouTube RSS feed (200 = real, 404 = dead).
+// Mirrors apps/api/src/routes/darshan.ts TEMPLE_LIVE_STREAMS — keep in sync.
+// Lookup keys are accepted as both the canonical temple slug AND short alias.
+
+function ytEmbed(channelId: string): string {
+ return `https://www.youtube.com/embed/live_stream?channel=${channelId}&autoplay=1`;
+}
 
 const YOUTUBE_STREAMS: Record<string, string> = {
- 'kashi-vishwanath': 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
- 'somnath': 'https://www.youtube.com/embed/live_stream?channel=UC6dqKmIjJiIvHasMJJbmQkA',
- 'tirupati': 'https://www.youtube.com/embed/live_stream?channel=UCHDfKNnEBPsJuvWuHbqPRmQ',
- 'siddhivinayak': 'https://www.youtube.com/embed/live_stream?channel=UCyrJNbN06WL-8R_mbzuEB0A',
- 'mahakaleshwar': 'https://www.youtube.com/embed/live_stream?channel=UCcf8K09z_GXFEFslDvjQ4cQ',
- 'jagannath-puri': 'https://www.youtube.com/embed/live_stream?channel=UCdQpU9tTNQNniXO0LTQsGmg',
- 'golden-temple': 'https://www.youtube.com/embed/live_stream?channel=UCt1dgP67k5GkzJfEmJyhiKg',
- 'kedarnath': 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
- 'badrinath': 'https://www.youtube.com/embed/live_stream?channel=UCHDfKNnEBPsJuvWuHbqPRmQ',
- 'dwarkadhish': 'https://www.youtube.com/embed/live_stream?channel=UC6dqKmIjJiIvHasMJJbmQkA',
- 'iskcon-vrindavan': 'https://www.youtube.com/embed/live_stream?channel=UCfNJsTvf-ygFijU-wqO3Amg',
- 'meenakshi-amman': 'https://www.youtube.com/embed/live_stream?channel=UCVY0rCRUWqxe-JJWPK1h3kA',
+ 'somnath-gujarat': ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
+ 'somnath': ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
+ 'tirumala-tirupati': ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
+ 'tirupati': ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
+ 'golden-temple-amritsar': ytEmbed('UCYn6UEtQ771a_OWSiNBoG8w'),
+ 'golden-temple': ytEmbed('UCYn6UEtQ771a_OWSiNBoG8w'),
+ 'shirdi-sai-baba': ytEmbed('UCKGvJDh7g_Kzocbwy7aKicA'),
+ 'shirdi': ytEmbed('UCKGvJDh7g_Kzocbwy7aKicA'),
+ 'kashi-vishwanath-varanasi': ytEmbed('UCMPMZ1hL5t9pBHMjJNvYxXQ'),
+ 'kashi-vishwanath': ytEmbed('UCMPMZ1hL5t9pBHMjJNvYxXQ'),
+ 'siddhivinayak-mumbai': ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
+ 'siddhivinayak': ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
+ 'mahakaleshwar-ujjain': ytEmbed('UC9rPSwAjIsr2DESJTQ-V_9A'),
+ 'mahakaleshwar': ytEmbed('UC9rPSwAjIsr2DESJTQ-V_9A'),
+ 'vaishno-devi': ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
+ 'jagannath-puri': ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
+ // Bonus extras for related-temples links
+ 'iskcon-vrindavan': ytEmbed('UCvjJr9LuZcvKMGldK7e631Q'),
 };
 
-// ─── Fallback data ────────────────────────────────────────────────────────────
-
-const fallbackStream: DarshanStream = {
- id: 'fallback-1',
+const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
+ 'kashi-vishwanath': {
+ id: 'live-kashi',
  templeId: 'temple-kashi',
- playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCt5gUnMmz_gYMSgvZmZxJQA',
+ playbackUrl: ytEmbed('UCMPMZ1hL5t9pBHMjJNvYxXQ'),
  status: 'live',
  viewerCount: 12450,
- peakViewers: 18200,
+ peakViewers: 24000,
  isPremium: false,
  scheduledStart: null,
  temple: {
  name: 'Shri Kashi Vishwanath Temple',
- slug: 'kashi-vishwanath',
+ slug: 'kashi-vishwanath-varanasi',
  city: 'Varanasi',
  deityPrimary: 'Lord Shiva',
  images: [],
  },
+ },
+ 'somnath': {
+ id: 'live-somnath',
+ templeId: 'temple-somnath',
+ playbackUrl: ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
+ status: 'live',
+ viewerCount: 8450,
+ peakViewers: 15200,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Somnath Temple',
+ slug: 'somnath-gujarat',
+ city: 'Veraval',
+ deityPrimary: 'Lord Shiva',
+ images: [],
+ },
+ },
+ 'tirupati': {
+ id: 'live-ttd',
+ templeId: 'temple-ttd',
+ playbackUrl: ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
+ status: 'live',
+ viewerCount: 28300,
+ peakViewers: 52000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Tirumala Venkateswara Temple (SVBC)',
+ slug: 'tirumala-tirupati',
+ city: 'Tirupati',
+ deityPrimary: 'Lord Venkateswara',
+ images: [],
+ },
+ },
+ 'golden-temple': {
+ id: 'live-golden-temple',
+ templeId: 'temple-golden',
+ playbackUrl: ytEmbed('UCYn6UEtQ771a_OWSiNBoG8w'),
+ status: 'live',
+ viewerCount: 15600,
+ peakViewers: 32000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Golden Temple (Harmandir Sahib)',
+ slug: 'golden-temple-amritsar',
+ city: 'Amritsar',
+ deityPrimary: 'Guru Granth Sahib',
+ images: [],
+ },
+ },
+ 'shirdi': {
+ id: 'live-shirdi',
+ templeId: 'temple-shirdi',
+ playbackUrl: ytEmbed('UCKGvJDh7g_Kzocbwy7aKicA'),
+ status: 'live',
+ viewerCount: 6200,
+ peakViewers: 18000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Shri Sai Baba Sansthan Temple',
+ slug: 'shirdi-sai-baba',
+ city: 'Shirdi',
+ deityPrimary: 'Sai Baba',
+ images: [],
+ },
+ },
+ 'siddhivinayak': {
+ id: 'live-siddhivinayak',
+ templeId: 'temple-siddhi',
+ playbackUrl: ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
+ status: 'live',
+ viewerCount: 8760,
+ peakViewers: 14000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Shree Siddhivinayak Temple',
+ slug: 'siddhivinayak-mumbai',
+ city: 'Mumbai',
+ deityPrimary: 'Lord Ganesha',
+ images: [],
+ },
+ },
+ 'mahakaleshwar': {
+ id: 'live-mahakaleshwar',
+ templeId: 'temple-mahakal',
+ playbackUrl: ytEmbed('UC9rPSwAjIsr2DESJTQ-V_9A'),
+ status: 'live',
+ viewerCount: 9400,
+ peakViewers: 22000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Mahakaleshwar Temple',
+ slug: 'mahakaleshwar-ujjain',
+ city: 'Ujjain',
+ deityPrimary: 'Lord Shiva',
+ images: [],
+ },
+ },
+ 'vaishno-devi': {
+ id: 'live-vaishno-devi',
+ templeId: 'temple-vaishno',
+ playbackUrl: ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
+ status: 'live',
+ viewerCount: 5800,
+ peakViewers: 16000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Shri Mata Vaishno Devi Temple',
+ slug: 'vaishno-devi',
+ city: 'Katra',
+ deityPrimary: 'Goddess Vaishno Devi',
+ images: [],
+ },
+ },
+ 'jagannath-puri': {
+ id: 'live-jagannath',
+ templeId: 'temple-jagannath',
+ playbackUrl: ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
+ status: 'live',
+ viewerCount: 7300,
+ peakViewers: 45000,
+ isPremium: false,
+ scheduledStart: null,
+ temple: {
+ name: 'Jagannath Temple',
+ slug: 'jagannath-puri',
+ city: 'Puri',
+ deityPrimary: 'Lord Jagannath',
+ images: [],
+ },
+ },
 };
+
+const FALLBACK_KEY_BY_SLUG: Record<string, keyof typeof FALLBACK_TEMPLE_LIBRARY> = {
+ 'kashi-vishwanath': 'kashi-vishwanath',
+ 'kashi-vishwanath-varanasi': 'kashi-vishwanath',
+ 'somnath': 'somnath',
+ 'somnath-gujarat': 'somnath',
+ 'tirumala-tirupati': 'tirupati',
+ 'tirupati': 'tirupati',
+ 'golden-temple': 'golden-temple',
+ 'golden-temple-amritsar': 'golden-temple',
+ 'shirdi': 'shirdi',
+ 'shirdi-sai-baba': 'shirdi',
+ 'siddhivinayak': 'siddhivinayak',
+ 'siddhivinayak-mumbai': 'siddhivinayak',
+ 'mahakaleshwar': 'mahakaleshwar',
+ 'mahakaleshwar-ujjain': 'mahakaleshwar',
+ 'vaishno-devi': 'vaishno-devi',
+ 'jagannath-puri': 'jagannath-puri',
+};
+
+// Default-of-defaults if even the slug map fails. Non-null since the key is hardcoded above.
+const fallbackStream: DarshanStream = FALLBACK_TEMPLE_LIBRARY['kashi-vishwanath']!;
 
 const fallbackSchedule = [
  { time: '3:00 AM', event: 'Mangala Aarti', status: 'completed' },
@@ -98,17 +269,26 @@ const fallbackRelatedTemples = [
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
-async function getStreamById(id: string): Promise<DarshanStream> {
+// `idOrSlug` accepts either the stream id (e.g. live-somnath) or the temple slug
+// (e.g. somnath-gujarat). DarshanBrowser links to /darshan/<slug>, so slug is the hot path.
+async function getStreamById(idOrSlug: string): Promise<DarshanStream> {
  try {
  const [liveRes, scheduledRes] = await Promise.all([
  getLiveDarshan(),
  getScheduledDarshan(),
  ]);
  const allStreams = [...liveRes.streams, ...scheduledRes.streams];
- const found = allStreams.find((s) => s.id === id);
+ const found =
+ allStreams.find((s) => s.id === idOrSlug) ||
+ allStreams.find((s) => s.temple.slug === idOrSlug);
  if (found) return found;
  } catch {
- // API unavailable
+ // API unavailable, fall through to static library
+ }
+ const fallbackKey = FALLBACK_KEY_BY_SLUG[idOrSlug];
+ if (fallbackKey) {
+ const entry = FALLBACK_TEMPLE_LIBRARY[fallbackKey];
+ if (entry) return entry;
  }
  return fallbackStream;
 }
@@ -133,9 +313,25 @@ export async function generateMetadata({
 }): Promise<Metadata> {
  const { id } = await params;
  const stream = await getStreamById(id);
+ const title = `Live Darshan — ${stream.temple.name}, ${stream.temple.city}`;
+ const description = `Watch live darshan from ${stream.temple.name} in ${stream.temple.city}. Daily aarti & continuous live stream from the official temple channel. ${stream.temple.deityPrimary}.`;
+ const url = `https://darshya.online/darshan/${stream.temple.slug}`;
  return {
- title: `Live Darshan - ${stream.temple.name}`,
- description: `Watch live darshan from ${stream.temple.name}, ${stream.temple.city}. Dedicated to ${stream.temple.deityPrimary}.`,
+ title,
+ description,
+ alternates: { canonical: url },
+ openGraph: {
+ title,
+ description,
+ url,
+ type: 'website',
+ siteName: 'Darshya',
+ },
+ twitter: {
+ card: 'summary_large_image',
+ title,
+ description,
+ },
  };
 }
 
@@ -245,13 +441,31 @@ export default async function DarshanDetailPage({
  )}
  </div>
  </div>
+ <div className="hidden sm:flex items-center gap-4 shrink-0">
+ {(() => {
+ const cid =
+ stream.youtubeChannelId ||
+ (playbackUrl?.match(/channel=(UC[A-Za-z0-9_-]{22})/)?.[1] ?? null);
+ return cid ? (
+ <a
+ href={`https://www.youtube.com/channel/${cid}/live`}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="inline-flex items-center gap-1.5 text-sm text-saffron-400 font-semibold hover:text-saffron-300 transition-colors"
+ >
+ Watch on YouTube
+ <ExternalLink className="w-4 h-4" />
+ </a>
+ ) : null;
+ })()}
  <a
  href={`/temples/${stream.temple.slug}`}
- className="hidden sm:inline-flex items-center gap-1.5 text-sm text-saffron-400 font-semibold hover:text-saffron-300 transition-colors shrink-0"
+ className="inline-flex items-center gap-1.5 text-sm text-saffron-400 font-semibold hover:text-saffron-300 transition-colors"
  >
  Temple Page
  <ExternalLink className="w-4 h-4" />
  </a>
+ </div>
  </div>
 
  {/* Quick stats */}
