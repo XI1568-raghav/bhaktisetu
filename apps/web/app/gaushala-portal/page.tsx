@@ -1,7 +1,10 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
+import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth-context';
+import { API_BASE_URL } from '../../lib/api-config';
 import Link from 'next/link';
 import { Beef, Heart, IndianRupee, HandHeart, Plus, Settings, Users } from 'lucide-react';
 
@@ -34,16 +37,42 @@ const statusColor: Record<string, string> = {
 };
 
 export default function GaushalaDashboard() {
- const { user } = useAuth();
+ const { user, session } = useAuth();
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ const [kycReason, setKycReason] = useState<string | null>(null);
+
+ useEffect(() => {
+ if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ (async () => {
+ try {
+ const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ });
+ if (!r.ok) return;
+ const j = await r.json();
+ if (!j.kyc) setKycState('unsubmitted');
+ else if (j.kyc.verified) setKycState('verified');
+ else if (j.kyc.rejectionReason) {
+ setKycState('rejected');
+ setKycReason(j.kyc.rejectionReason);
+ } else setKycState('pending');
+ } catch {
+ // graceful fallback
+ }
+ })();
+ }, [session]);
 
  return (
  <div className="p-6 lg:p-8 space-y-8">
  {/* Header */}
  <div>
  <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Jai Gau Mata</h1>
- <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="mt-1 flex items-center gap-3 flex-wrap">
+ <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
  Welcome back, {user?.fullName}. Here&apos;s your gaushala overview.
  </p>
+ <KycStatusBadge state={kycState} reason={kycReason} />
+ </div>
  </div>
 
  <MyProviderProfileCard role="GAUSHALA_MANAGER" onboardingSlug="gaushala_manager" publicListingType="gaushala" />

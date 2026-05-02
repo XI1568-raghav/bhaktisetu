@@ -15,7 +15,6 @@ import {
  CheckCircle2,
  Play,
  Video,
- Upload,
  ExternalLink,
  Loader2,
  MessageSquare,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -364,32 +364,23 @@ export default function PriestBookingDetailPage() {
  <p className="text-sm text-surface-600">
  Upload video proof of the completed puja. This is mandatory before payout is processed.
  </p>
- <div>
- <label className="block text-xs font-medium text-surface-500 mb-1.5">Video URL</label>
- <input
- type="url"
- value={videoUrl}
- onChange={(e) => setVideoUrl(e.target.value)}
- placeholder="https://youtube.com/watch?v=... or upload link"
- className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
+ <VideoProofUpload
+ bookingId={booking.id}
+ existingUrl={booking.videoProofUrl}
+ onUploaded={async (url) => {
+ setVideoUrl(url);
+ await fetch(`${API_BASE_URL}/priest/bookings/${booking.id}/video`, {
+ method: 'POST',
+ headers: {
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({ videoUrl: url }),
+ });
+ setVideoSubmitted(true);
+ await fetchBooking();
+ }}
  />
- </div>
-
- <div className="bg-surface-50 rounded-lg p-3 border-2 border-dashed border-surface-200 text-center">
- <Upload className="w-6 h-6 text-surface-400 mx-auto mb-1" />
- <p className="text-xs text-surface-500">
- Or drag and drop video file here (coming soon)
- </p>
- </div>
-
- <button
- onClick={handleVideoUpload}
- disabled={actionLoading || !videoUrl.trim()}
- className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50"
- >
- {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Video className="w-5 h-5" />}
- Upload Video Proof
- </button>
  </div>
  )}
 
