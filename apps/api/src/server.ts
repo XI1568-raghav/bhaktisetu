@@ -52,8 +52,14 @@ import { outreachTrackingRoutes } from './routes/outreach-tracking.js';
 import { adminLeadsRoutes } from './routes/admin-leads.js';
 import { adminTemplesRoutes } from './routes/admin-temples.js';
 import { adminBookingsRoutes } from './routes/admin-bookings.js';
+import { adminLeadConversionRoutes } from './routes/admin-lead-conversion.js';
 import { waitlistRoutes } from './routes/waitlist.js';
 import { leadsSelfOnboardRoutes } from './routes/leads-self-onboard.js';
+import {
+  whatsappBroadcastRoutes,
+  whatsappWebhookRoutes,
+} from './routes/whatsapp-broadcast.js';
+import { adminContentQueueRoutes } from './routes/admin-content-queue.js';
 
 const server = Fastify({
   logger: {
@@ -155,8 +161,12 @@ async function bootstrap() {
   await server.register(adminLeadsRoutes, { prefix: '/api/v1/admin' });
   await server.register(adminTemplesRoutes, { prefix: '/api/v1/admin/temple-timings' });
   await server.register(adminBookingsRoutes, { prefix: '/api/v1/admin/bookings' });
+  await server.register(adminLeadConversionRoutes, { prefix: '/api/v1/admin/leads' });
   await server.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
   await server.register(leadsSelfOnboardRoutes, { prefix: '/api/v1/leads' });
+  await server.register(whatsappBroadcastRoutes, { prefix: '/api/v1/admin/whatsapp' });
+  await server.register(whatsappWebhookRoutes, { prefix: '/api/v1/whatsapp' });
+  await server.register(adminContentQueueRoutes, { prefix: '/api/v1/admin/content-queue' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
