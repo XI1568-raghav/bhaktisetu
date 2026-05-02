@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus } from '@prisma/client';
 import { bookingService } from '../services/booking.service.js';
+import { paymentService } from '../services/payment.service.js';
+import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
@@ -319,6 +321,262 @@ export async function bookingRoutes(server: FastifyInstance) {
         });
       }
     }
+  );
+
+  // GET /slots - Slot availability for a temple offering on a date.
+  //
+  // Web booking page (apps/web/app/pujas/[slug]/book/page.tsx) calls this
+  // with templeId=<offering uuid>. We accept the offering id directly and
+  // return {slots:[{time,label,remaining,total}]} which the page renders.
+  // Public — no auth so the page can show availability before login.
+  server.get('/slots', async (request, reply) => {
+    try {
+      const { templeId, date } = request.query as { templeId?: string; date?: string };
+      if (!templeId || !date) {
+        return reply.status(400).send({ error: 'templeId and date are required.' });
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return reply.status(400).send({ error: 'date must be YYYY-MM-DD.' });
+      }
+
+      // templeId may be either an offering id (preferred, what web sends) or
+      // a real Temple id (legacy). Resolve to a TemplePujaOffering either way.
+      let offering = await prisma.templePujaOffering.findUnique({
+        where: { id: templeId },
+      });
+      if (!offering) {
+        // Fall back: maybe a real Temple uuid was sent — pick its first active offering.
+        offering = await prisma.templePujaOffering.findFirst({
+          where: { templeId, isActive: true },
+        });
+      }
+      if (!offering || !offering.isActive) {
+        return { slots: [] };
+      }
+
+      const scheduledDate = new Date(date);
+      const counts = await prisma.pujaBooking.groupBy({
+        by: ['scheduledTimeSlot'],
+        where: {
+          templePujaOfferingId: offering.id,
+          scheduledDate,
+          status: { notIn: ['cancelled', 'refunded'] },
+        },
+        _count: { id: true },
+      });
+      const used = new Map(counts.map((c) => [c.scheduledTimeSlot, c._count.id]));
+
+      const slotLabel = (slot: string): string => {
+        const [hStr, mStr] = slot.split(':');
+        const h = Number(hStr ?? 0);
+        const m = Number(mStr ?? 0);
+        const period = h < 12 ? 'AM' : 'PM';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        const time12 = `${h12}:${String(m).padStart(2, '0')} ${period}`;
+        const window = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening';
+        return `${window} (${time12})`;
+      };
+
+      const max = offering.maxBookingsPerSlot;
+      const raw = (offering.availableSlots as unknown[]) ?? [];
+      const slots = raw.map((s) => {
+        const time = typeof s === 'string'
+          ? s
+          : (s as { time?: string }).time ?? String(s);
+        const booked = used.get(time) ?? 0;
+        return {
+          time,
+          label: typeof s === 'object' && s && 'label' in (s as object)
+            ? (s as { label: string }).label
+            : slotLabel(time),
+          remaining: Math.max(0, max - booked),
+          total: max,
+        };
+      });
+      return { slots };
+    } catch (error: any) {
+      server.log.error(error, 'Failed to fetch slot availability (web shape)');
+      return reply.status(500).send({ error: 'Failed to fetch availability' });
+    }
+  });
+
+  // POST /create-order - Used by the web booking wizard
+  // (apps/web/app/pujas/[slug]/book/page.tsx). Combines the existing
+  // createBooking + paymentService.createRazorpayOrder steps so the client
+  // makes ONE round-trip to launch checkout. Body shape mirrors the web
+  // form rather than the legacy POST /book schema.
+  const createOrderBodySchema = z.object({
+    pujaSlug: z.string().min(1),
+    templeOfferingId: z.string().uuid(),
+    scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    scheduledTime: z.string().min(1),
+    devotees: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          gotra: z.string().optional(),
+          nakshatra: z.string().optional(),
+        }),
+      )
+      .min(1)
+      .max(5),
+    sankalp: z.string().optional(),
+    specialInstructions: z.string().optional(),
+    prasadDelivery: z.boolean().optional().default(false),
+    deliveryAddress: z
+      .object({
+        fullName: z.string().min(1),
+        line1: z.string().min(1),
+        line2: z.string().optional(),
+        city: z.string().min(1),
+        state: z.string().min(1),
+        pincode: z.string().regex(/^\d{6}$/),
+        phone: z.string().regex(/^[6-9]\d{9}$/),
+      })
+      .optional(),
+  });
+
+  server.post(
+    '/create-order',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const body = createOrderBodySchema.parse(request.body);
+        const userId = request.currentUser!.id;
+
+        // 1. Resolve puja + offering. The offering already binds templeId +
+        // pujaTypeId so we re-derive both server-side and never trust the
+        // client to tell us which puja/temple combination it is.
+        const pujaType = await prisma.pujaType.findUnique({
+          where: { slug: body.pujaSlug },
+          select: { id: true },
+        });
+        if (!pujaType) {
+          return reply.status(404).send({ error: 'Puja type not found.' });
+        }
+
+        const offering = await prisma.templePujaOffering.findUnique({
+          where: { id: body.templeOfferingId },
+          select: { id: true, templeId: true, pujaTypeId: true, isActive: true },
+        });
+        if (!offering) {
+          return reply.status(404).send({ error: 'Temple offering not found.' });
+        }
+        if (offering.pujaTypeId !== pujaType.id) {
+          return reply.status(400).send({
+            error: 'Selected temple does not offer this puja.',
+          });
+        }
+
+        // 2. Optional: persist a delivery address if prasad requested.
+        let prasadAddressId: string | undefined;
+        if (body.prasadDelivery && body.deliveryAddress) {
+          // UserAddress has no dedicated recipient/phone columns. We pack
+          // them into `label` so the priest can still reach the devotee
+          // when the prasad is dispatched. Schema cleanup is tracked but
+          // this row keeps the data round-trippable.
+          const addr = await prisma.userAddress.create({
+            data: {
+              userId,
+              label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
+              line1: body.deliveryAddress.line1,
+              line2: body.deliveryAddress.line2 ?? null,
+              city: body.deliveryAddress.city,
+              state: body.deliveryAddress.state,
+              pincode: body.deliveryAddress.pincode,
+            },
+            select: { id: true },
+          }).catch(() => null);
+          prasadAddressId = addr?.id;
+        }
+
+        // 3. Create the booking (status pending_payment).
+        const booking = await bookingService.createBooking({
+          userId,
+          templeId: offering.templeId,
+          pujaTypeId: offering.pujaTypeId,
+          templePujaOfferingId: offering.id,
+          scheduledDate: body.scheduledDate,
+          scheduledTimeSlot: body.scheduledTime,
+          devoteeNames: body.devotees,
+          sankalpDetails: body.sankalp,
+          specialInstructions: body.specialInstructions,
+          prasadDeliveryRequested: body.prasadDelivery,
+          prasadDeliveryAddressId: prasadAddressId,
+        });
+
+        // 4. Create the Razorpay order. In demo mode (no RAZORPAY_KEY_ID)
+        // payment.service returns a synthetic order_demo_* id and the web
+        // page falls back to its demo-payment button.
+        const order = await paymentService.createRazorpayOrder(booking.id, userId);
+
+        return reply.status(201).send({
+          orderId: booking.id,
+          bookingId: booking.id,
+          bookingNumber: booking.bookingNumber,
+          razorpayOrderId: order.orderId,
+          amount: order.amount,
+          currency: order.currency,
+          razorpayKeyId: order.razorpayKeyId,
+        });
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: 'Validation Error',
+            details: error.errors,
+          });
+        }
+        server.log.error(error, 'Failed to create booking order (web shape)');
+        return reply.status(400).send({
+          error: error.message || 'Failed to create booking order',
+        });
+      }
+    },
+  );
+
+  // POST /verify-payment - Verify Razorpay signature and confirm booking.
+  // Web booking wizard calls this from the Razorpay handler after a
+  // successful client-side checkout. Returns {bookingNumber} so the
+  // success screen can display BS-YYYYMMDD-XXXXX.
+  const verifyPaymentBodySchema = z.object({
+    orderId: z.string().uuid(),
+    razorpayPaymentId: z.string().min(1),
+    razorpayOrderId: z.string().min(1),
+    razorpaySignature: z.string().min(1),
+  });
+
+  server.post(
+    '/verify-payment',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const body = verifyPaymentBodySchema.parse(request.body);
+        const result = await paymentService.verifyPayment(
+          body.razorpayOrderId,
+          body.razorpayPaymentId,
+          body.razorpaySignature,
+        );
+        return result;
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: 'Validation Error',
+            details: error.errors,
+          });
+        }
+        if (error.message?.includes('invalid signature')) {
+          return reply.status(400).send({ error: error.message, verified: false });
+        }
+        if (error.message?.includes('not found')) {
+          return reply.status(404).send({ error: error.message });
+        }
+        server.log.error(error, 'Failed to verify payment (web shape)');
+        return reply.status(400).send({
+          error: error.message || 'Failed to verify payment',
+          verified: false,
+        });
+      }
+    },
   );
 
   // POST /:id/review - Submit a review for a completed booking
