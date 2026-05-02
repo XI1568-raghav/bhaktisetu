@@ -1301,3 +1301,50 @@ model ContentDraft {
   @@index([type])
   @@map("content_drafts")
 }
+
+// FCM device tokens for push notifications (mobile + web).
+// One user can have many devices. `userId` is loosely typed (no FK) so a
+// failed/legacy User row doesn't cascade-delete tokens; cleanup happens via
+// the FCM "expired" feedback loop instead.
+model FcmDeviceToken {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  deviceToken String   @unique @map("device_token")
+  platform    String
+  language    String?
+  aartiOptIn  Boolean  @default(true) @map("aarti_opt_in")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("fcm_device_tokens")
+}
+
+// Devotee → temple follow. Drives "next aarti" reminders to subscribers of
+// that specific temple (in addition to global aarti opt-in).
+model TempleFollow {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  templeId  String   @map("temple_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, templeId])
+  @@index([templeId])
+  @@map("temple_follows")
+}
+
+// Kundli generation analytics. Stores a non-PII signature so we can dedupe
+// repeat lookups without retaining raw birth details longer than necessary.
+model KundliRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  dob         DateTime @db.Date
+  tob         String
+  location    String
+  signature   String
+  generatedAt DateTime @default(now()) @map("generated_at")
+
+  @@index([signature])
+  @@index([userId])
+  @@map("kundli_requests")
+}

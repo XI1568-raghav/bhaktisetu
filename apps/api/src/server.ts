@@ -60,6 +60,7 @@ import {
   whatsappWebhookRoutes,
 } from './routes/whatsapp-broadcast.js';
 import { adminContentQueueRoutes } from './routes/admin-content-queue.js';
+import { adminDonationsExportRoutes } from './routes/admin-donations-export.js';
 
 const server = Fastify({
   logger: {
@@ -167,6 +168,7 @@ async function bootstrap() {
   await server.register(whatsappBroadcastRoutes, { prefix: '/api/v1/admin/whatsapp' });
   await server.register(whatsappWebhookRoutes, { prefix: '/api/v1/whatsapp' });
   await server.register(adminContentQueueRoutes, { prefix: '/api/v1/admin/content-queue' });
+  await server.register(adminDonationsExportRoutes, { prefix: '/api/v1/admin/donations' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
