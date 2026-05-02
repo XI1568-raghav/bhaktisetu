@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
+import { HomeHeroCta } from '../components/HomeHeroCta';
 
 export const metadata: Metadata = {
  title: "Darshya — India's Devotional Super App",
@@ -92,13 +93,7 @@ export default function HomePage() {
  </p>
 
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
- <Link
- href="/temples"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-all btn-press"
- style={{ background: 'var(--color-primary)' }}
- >
- Explore Temples <ArrowRight className="w-3.5 h-3.5" />
- </Link>
+ <HomeHeroCta />
  <Link
  href="/pujas"
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
