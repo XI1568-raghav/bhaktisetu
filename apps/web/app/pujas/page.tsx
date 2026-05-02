@@ -97,6 +97,7 @@ interface PujaCard {
  hasLiveStream: boolean;
  hasPrasadDelivery: boolean;
  description: string;
+ imageUrl: string | null;
 }
 
 const TAG_COLORS = [
@@ -138,6 +139,9 @@ function formatDuration(minutes: number): string {
 function mapPujaTypeToCard(p: PujaType, idx: number): PujaCard {
  const { tag, tagColor } = categoryTag(p.category, idx);
  const price = Number(p.basePrice) || 0;
+ const firstImage = Array.isArray((p as { images?: string[] }).images)
+   ? (p as { images: string[] }).images[0] ?? null
+   : null;
  return {
  id: p.id,
  slug: p.slug,
@@ -152,6 +156,7 @@ function mapPujaTypeToCard(p: PujaType, idx: number): PujaCard {
  hasLiveStream: true,
  hasPrasadDelivery: p.samagriIncluded,
  description: p.description || `${p.name} performed by verified pandits.`,
+ imageUrl: firstImage,
  };
 }
 
@@ -173,6 +178,7 @@ const FALLBACK_PUJAS: PujaCard[] = [
  hasPrasadDelivery: true,
  description:
  'Sacred abhishekam of the Shiva Lingam with panchamrit — milk, honey, curd, ghee, and sugar. Includes 108 chants of Om Namah Shivaya.',
+ imageUrl: null,
  },
  {
  id: 'fb-2',
@@ -189,6 +195,7 @@ const FALLBACK_PUJAS: PujaCard[] = [
  hasPrasadDelivery: true,
  description:
  'Complete Satyanarayan Katha with five chapters, aarti, and prasad distribution. Ideal for new beginnings and thanksgiving.',
+ imageUrl: null,
  },
  {
  id: 'fb-3',
@@ -205,6 +212,7 @@ const FALLBACK_PUJAS: PujaCard[] = [
  hasPrasadDelivery: true,
  description:
  '108 recitations of the Maha Mrityunjaya Mantra with vedic rituals for health, longevity, and overcoming life-threatening situations.',
+ imageUrl: null,
  },
  {
  id: 'fb-4',
@@ -221,6 +229,7 @@ const FALLBACK_PUJAS: PujaCard[] = [
  hasPrasadDelivery: false,
  description:
  'Complete Navagraha Shanti Puja to pacify all nine planets. Includes separate homam for each graha and navgraha stotram.',
+ imageUrl: null,
  },
  {
  id: 'fb-5',
@@ -237,6 +246,7 @@ const FALLBACK_PUJAS: PujaCard[] = [
  hasPrasadDelivery: true,
  description:
  'Worship of Lord Ganesha for removing obstacles and bringing success. Includes modak prasad.',
+ imageUrl: null,
  },
  {
  id: 'fb-6',
@@ -253,6 +263,7 @@ const FALLBACK_PUJAS: PujaCard[] = [
  hasPrasadDelivery: true,
  description:
  'Worship of Goddess Mahalakshmi with kumkum archana, lotus offerings, and Shri Suktam recitation for wealth and prosperity.',
+ imageUrl: null,
  },
 ];
 
@@ -473,7 +484,7 @@ export default async function PujasPage() {
  {/* Puja image */}
  <div className="relative aspect-[16/10] bg-gradient-to-br from-saffron-100 to-amber-50">
  <img
- src={getDeityImage(
+ src={puja.imageUrl ?? getDeityImage(
  puja.deity === 'Lord Shiva' ? 'lord-shiva' :
  puja.deity === 'Lord Vishnu' ? 'lord-vishnu' :
  puja.deity === 'Lord Ganesha' ? 'lord-ganesha' :
@@ -562,13 +573,6 @@ export default async function PujasPage() {
  ))}
  </div>
 
- {/* Load more */}
- <div className="text-center mt-10">
- <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-saffron-200 text-saffron-600 font-medium rounded-lg hover:bg-saffron-50 transition-colors">
- Load More Pujas
- <ArrowRight className="w-4 h-4" />
- </button>
- </div>
  </div>
  </div>
  );
