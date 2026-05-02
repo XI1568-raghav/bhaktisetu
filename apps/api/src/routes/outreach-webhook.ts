@@ -12,6 +12,7 @@ import {
 } from '../services/outreach.service.js';
 import { sendEmail as sendRawEmail } from '../lib/email.js';
 import { runOutreachTick } from '../jobs/outreach-cron.js';
+import { sendOpsAlert } from '../lib/alert.js';
 
 /**
  * Inbound reply + unsubscribe + admin-trigger routes.
@@ -320,6 +321,21 @@ async function handleInbound(body: unknown): Promise<{
         }
 
         await notifyAdminsOfInterestedReply(lead, replyText, fromEmail);
+
+        // Real-time ops alert (Slack-first, email fallback). Wrapped so a
+        // misconfigured webhook never breaks the 200 ACK Resend expects.
+        try {
+          const senderEmail = lead.email ?? fromEmail ?? 'unknown';
+          const snippet = replyText.slice(0, 500).replace(/\s+/g, ' ').trim();
+          await sendOpsAlert({
+            subject: `Hot lead replied: ${senderEmail}`,
+            body: `${snippet}\n\nLead: ${lead.name} (${lead.role}, ${lead.city ?? 'unknown'})\nAdmin: https://darshya.online/admin/leads/${lead.id}`,
+            severity: 'high',
+          });
+        } catch {
+          // best-effort — webhook must still ACK 200
+        }
+
         return { ok: true, action: 'replied_interested', intent };
       }
 
