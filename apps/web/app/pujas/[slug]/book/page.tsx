@@ -40,8 +40,26 @@ import {
  Sparkles,
  RefreshCw,
 } from 'lucide-react';
+import posthog from 'posthog-js';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
+
+// PostHog never throws on capture, but its singleton may not be initialised
+// in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
+// __loaded and wrap in try/catch so analytics can never break checkout.
+function safeCapture(event: string, props: Record<string, string | number | boolean | undefined>) {
+ try {
+  const ph = posthog as unknown as { __loaded?: boolean };
+  if (!ph.__loaded) return;
+  const cleaned: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(props)) {
+   if (v !== undefined) cleaned[k] = v;
+  }
+  posthog.capture(event, cleaned);
+ } catch {
+  // never block the user
+ }
+}
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -266,15 +284,25 @@ function generateBookingNumber(): string {
 
 // ─── Load Razorpay ──────────────────────────────────────────────
 
-const loadRazorpay = (): Promise<any> => {
+// Razorpay's checkout.js attaches a constructor to window; we don't ship its
+// types so describe just the surface we use.
+type RazorpayInstance = {
+ open: () => void;
+ on: (event: string, handler: (response: { error?: { description?: string } }) => void) => void;
+};
+type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
+type RazorpayWindow = typeof window & { Razorpay?: RazorpayConstructor };
+
+const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
  return new Promise((resolve) => {
- if ((window as any).Razorpay) {
- resolve((window as any).Razorpay);
+ const w = window as RazorpayWindow;
+ if (w.Razorpay) {
+ resolve(w.Razorpay);
  return;
  }
  const script = document.createElement('script');
  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
- script.onload = () => resolve((window as any).Razorpay);
+ script.onload = () => resolve((window as RazorpayWindow).Razorpay);
  document.body.appendChild(script);
  });
 };
@@ -504,6 +532,12 @@ export default function PujaBookingPage() {
  return;
  }
 
+ safeCapture('booking_started', {
+ pujaSlug: slug,
+ templeSlug: selectedTemple?.templeSlug,
+ priceInr: totalPrice,
+ });
+
  setPaymentLoading(true);
  setPaymentError('');
 
@@ -561,6 +595,11 @@ export default function PujaBookingPage() {
 
  // Step 2: Open Razorpay checkout
  const Razorpay = await loadRazorpay();
+ if (!Razorpay) {
+ setPaymentError('Could not load Razorpay checkout. Please retry.');
+ setPaymentLoading(false);
+ return;
+ }
 
  const options = {
  key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_demo',
@@ -609,6 +648,11 @@ export default function PujaBookingPage() {
 
  const verifyData = await verifyRes.json().catch(() => null);
  const bkNum = verifyData?.bookingNumber ?? generateBookingNumber();
+ safeCapture('payment_success', {
+ bookingId: bkNum,
+ amountInr: totalPrice,
+ currency: 'INR',
+ });
  setBookingNumber(bkNum);
  setBookingSuccess(true);
  setPaymentLoading(false);
@@ -695,9 +739,19 @@ export default function PujaBookingPage() {
 
  // Demo payment for testing without Razorpay
  const handleDemoPayment = () => {
+ safeCapture('booking_started', {
+ pujaSlug: slug,
+ templeSlug: selectedTemple?.templeSlug,
+ priceInr: totalPrice,
+ });
  setPaymentLoading(true);
  setTimeout(() => {
  const bkNum = generateBookingNumber();
+ safeCapture('payment_success', {
+ bookingId: bkNum,
+ amountInr: totalPrice,
+ currency: 'INR',
+ });
  setBookingNumber(bkNum);
  setBookingSuccess(true);
  setPaymentLoading(false);
