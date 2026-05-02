@@ -120,9 +120,61 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       const payload = request.body as Record<string, unknown>;
       const event = typeof payload.event === 'string' ? payload.event : 'unknown';
       server.log.info({ event }, 'Subscription webhook verified');
-      // Downstream event dispatch is intentionally deferred until subscription
-      // state is wired to the DB. Today: ack the verified event and move on.
+
+      if (event.startsWith('subscription.')) {
+        try {
+          const r = await subscriptionService.handleSubscriptionEvent(event, payload);
+          return { received: true, event, handled: r.handled, reason: r.reason };
+        } catch (err) {
+          server.log.error({ err, event }, 'Subscription event handler threw');
+          return { received: true, event, handled: false, reason: 'handler error' };
+        }
+      }
+
       return { received: true, event };
     }
   );
+
+  // ─── POST /create — Create auto-renewing Razorpay subscription ─────────────
+
+  const createSchema = z.object({
+    planId: z.string().min(1),
+    role: z.enum([
+      'PANDIT', 'STORE_OWNER', 'ASTROLOGER',
+      'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER', 'TEMPLE_MANAGER', 'DEVOTEE',
+    ]),
+  });
+
+  server.post('/create', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const parsed = createSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: parsed.error.flatten() });
+    }
+    const userId = request.currentUser!.id;
+    try {
+      const result = await subscriptionService.createRazorpaySubscription({
+        userId,
+        planId: parsed.data.planId,
+        role: parsed.data.role,
+      });
+      return { subscription: result };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create subscription';
+      return reply.code(400).send({ error: message });
+    }
+  });
+
+  // ─── POST /cancel-auto-renew — Cancel future renewals ──────────────────────
+
+  server.post('/cancel-auto-renew', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    try {
+      const r = await subscriptionService.cancelRazorpaySubscription(userId);
+      if (!r.cancelled) return reply.code(404).send({ error: r.message });
+      return r;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to cancel subscription';
+      return reply.code(500).send({ error: message });
+    }
+  });
 }
