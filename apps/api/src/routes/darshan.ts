@@ -65,8 +65,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shri Kashi Vishwanath Temple',
     city: 'Varanasi',
     deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UCMPMZ1hL5t9pBHMjJNvYxXQ', // kashi vishwanath (official)
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCMPMZ1hL5t9pBHMjJNvYxXQ&autoplay=1',
+    youtubeChannelId: 'UCdMj2twWfMHXrWgX5oVdoyA', // Shree Kashi Vishwanath Mandir Trust (official, embedded on shrikashivishwanath.org)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCdMj2twWfMHXrWgX5oVdoyA&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 12450,
     peakViewers: 24000,
