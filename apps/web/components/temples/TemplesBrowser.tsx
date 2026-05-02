@@ -14,7 +14,7 @@ import {
  Filter,
  X,
 } from 'lucide-react';
-import { getTempleHero } from '../../lib/images';
+import { getTempleHero, getDeityImage } from '../../lib/images';
 
 export type DeityTypeFilter = 'All' | 'Shiva' | 'Vishnu' | 'Shakti' | 'Ganesha' | 'Sikh' | 'Other';
 export type SortMode = 'popularity' | 'alphabetical' | 'state';
@@ -37,6 +37,17 @@ export interface TempleCardData {
  isDivyaDesam: boolean;
  popularity: number;
  hasRichDetail: boolean;
+ imageUrl: string | null;
+}
+
+function deityFallbackKey(deityType: DeityTypeFilter): string {
+ switch (deityType) {
+  case 'Shiva': return 'lord-shiva';
+  case 'Vishnu': return 'lord-vishnu';
+  case 'Shakti': return 'goddess-durga';
+  case 'Ganesha': return 'lord-ganesha';
+  default: return 'lord-shiva';
+ }
 }
 
 const DEITY_FILTERS: { value: DeityTypeFilter; label: string }[] = [
@@ -260,7 +271,7 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
  >
  <div className="relative aspect-[16/10] bg-gradient-to-br from-orange-100 to-amber-50">
  <img
- src={getTempleHero(temple.slug)}
+ src={temple.imageUrl ?? getTempleHero(temple.slug) ?? getDeityImage(deityFallbackKey(temple.deityType))}
  alt={`${temple.name} - ${temple.city}`}
  loading="lazy"
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"

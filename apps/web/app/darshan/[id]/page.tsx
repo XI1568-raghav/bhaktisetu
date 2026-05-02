@@ -151,9 +151,12 @@ export default async function DarshanDetailPage({
  const relatedStreams = await getRelatedStreams(id);
 
  const isLive = stream.status === 'live';
+ const firstImg = stream.temple.images?.[0];
  const templeImage =
- stream.temple.images && stream.temple.images.length > 0
- ? stream.temple.images[0]!.url
+ typeof firstImg === 'string'
+ ? firstImg
+ : firstImg && typeof firstImg === 'object' && 'url' in firstImg
+ ? firstImg.url
  : getTempleHero(stream.temple.slug);
 
  // Resolve the playback URL: prefer stream data, fall back to YouTube lookup
