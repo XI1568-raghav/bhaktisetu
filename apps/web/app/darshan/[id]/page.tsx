@@ -34,8 +34,8 @@ function ytEmbed(channelId: string): string {
 // Slug → official YouTube channel ID. Used by resolveLivePlaybackUrl() at request
 // time to probe the channel's RSS feed and pick latest VOD when no live stream is on.
 const CHANNEL_BY_SLUG: Record<string, string> = {
- 'somnath-gujarat': 'UCzyMnhcnMluiOvX5YkeBYqQ',
- 'somnath': 'UCzyMnhcnMluiOvX5YkeBYqQ',
+ 'somnath-gujarat': 'UCT1egsvA08YcdMLiEu1DTRg',
+ 'somnath': 'UCT1egsvA08YcdMLiEu1DTRg',
  'tirumala-tirupati': 'UCS2Y83GD-fc7qqgNW5uj41g',
  'tirupati': 'UCS2Y83GD-fc7qqgNW5uj41g',
  'golden-temple-amritsar': 'UCYn6UEtQ771a_OWSiNBoG8w',
@@ -46,8 +46,8 @@ const CHANNEL_BY_SLUG: Record<string, string> = {
  'kashi-vishwanath': 'UCdMj2twWfMHXrWgX5oVdoyA',
  'siddhivinayak-mumbai': 'UCF9FdiMBENIbM6jb44zWmCQ',
  'siddhivinayak': 'UCF9FdiMBENIbM6jb44zWmCQ',
- 'mahakaleshwar-ujjain': 'UC9rPSwAjIsr2DESJTQ-V_9A',
- 'mahakaleshwar': 'UC9rPSwAjIsr2DESJTQ-V_9A',
+ 'mahakaleshwar-ujjain': 'UC7q12ONY2mvuq066rreluhQ',
+ 'mahakaleshwar': 'UC7q12ONY2mvuq066rreluhQ',
  'vaishno-devi': 'UCFYQr1l7ereS27SrLJ8bBtw',
  'jagannath-puri': 'UCstacpPsNLSiGcYe7qbF14Q',
 };
@@ -86,8 +86,8 @@ async function resolveLivePlaybackUrl(channelId: string): Promise<string | null>
 }
 
 const YOUTUBE_STREAMS: Record<string, string> = {
- 'somnath-gujarat': ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
- 'somnath': ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
+ 'somnath-gujarat': ytEmbed('UCT1egsvA08YcdMLiEu1DTRg'),
+ 'somnath': ytEmbed('UCT1egsvA08YcdMLiEu1DTRg'),
  'tirumala-tirupati': ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
  'tirupati': ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
  'golden-temple-amritsar': ytEmbed('UCYn6UEtQ771a_OWSiNBoG8w'),
@@ -98,12 +98,14 @@ const YOUTUBE_STREAMS: Record<string, string> = {
  'kashi-vishwanath': ytEmbed('UCdMj2twWfMHXrWgX5oVdoyA'),
  'siddhivinayak-mumbai': ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
  'siddhivinayak': ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
- 'mahakaleshwar-ujjain': ytEmbed('UC9rPSwAjIsr2DESJTQ-V_9A'),
- 'mahakaleshwar': ytEmbed('UC9rPSwAjIsr2DESJTQ-V_9A'),
+ 'mahakaleshwar-ujjain': ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
+ 'mahakaleshwar': ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
  'vaishno-devi': ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
  'jagannath-puri': ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
  // Bonus extras for related-temples links
- 'iskcon-vrindavan': ytEmbed('UCvjJr9LuZcvKMGldK7e631Q'),
+ // ISKCON Vrindavan — UCAA6IsLVfbHrP1I_lzxv09Q (verified 2026-05-02, daily "Live Darshan" + SB classes).
+ // Replaced UCvjJr9LuZcvKMGldK7e631Q which had only 1 video from June 2025.
+ 'iskcon-vrindavan': ytEmbed('UCAA6IsLVfbHrP1I_lzxv09Q'),
 };
 
 const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
@@ -127,7 +129,7 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  'somnath': {
  id: 'live-somnath',
  templeId: 'temple-somnath',
- playbackUrl: ytEmbed('UCzyMnhcnMluiOvX5YkeBYqQ'),
+ playbackUrl: ytEmbed('UCT1egsvA08YcdMLiEu1DTRg'),
  status: 'live',
  viewerCount: 8450,
  peakViewers: 15200,
@@ -212,7 +214,7 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  'mahakaleshwar': {
  id: 'live-mahakaleshwar',
  templeId: 'temple-mahakal',
- playbackUrl: ytEmbed('UC9rPSwAjIsr2DESJTQ-V_9A'),
+ playbackUrl: ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
  status: 'live',
  viewerCount: 9400,
  peakViewers: 22000,
