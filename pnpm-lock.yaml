@@ -83,6 +83,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.4
         version: 4.2.4
+      zod:
+        specifier: ^3.24.4
+        version: 3.25.76
     devDependencies:
       '@poojly/tsconfig':
         specifier: workspace:*

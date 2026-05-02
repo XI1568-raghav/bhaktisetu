@@ -93,13 +93,11 @@ export async function ratingRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'Forbidden' });
     }
 
-    const rows = await prisma.$queryRawUnsafe<RatingRow[]>(
-      `SELECT id, conversation_id, devotee_id, provider_id, stars, body, created_at
-       FROM service_ratings
-       WHERE conversation_id = $1::uuid
-       LIMIT 1`,
-      conversationId,
-    );
+    const rows = await prisma.$queryRaw<RatingRow[]>`
+      SELECT id, conversation_id, devotee_id, provider_id, stars, body, created_at
+        FROM service_ratings
+       WHERE conversation_id = ${conversationId}::uuid
+       LIMIT 1`;
     return reply.send({ rating: rows[0] ?? null });
   });
 

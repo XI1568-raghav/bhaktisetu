@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { runOutreachTick } from './outreach-cron.js';
+import { maybeRunYoutubeDiscovery, type YoutubeDiscoveryResult } from './youtube-discovery.js';
 
 // Master orchestration cron: a single function the admin / external scheduler
 // can call once per tick. Each step is best-effort and isolated — a failure
@@ -26,10 +27,19 @@ interface PanchangResult {
   reason?: string;
 }
 
+interface YoutubeResult {
+  skipped?: boolean;
+  reason?: string;
+  liveCount?: number;
+  offlineCount?: number;
+  errorCount?: number;
+}
+
 export interface DailyOpsResult {
   outreach: OutreachResult;
   waitlist: WaitlistResult;
   panchang: PanchangResult;
+  youtube: YoutubeResult;
   ranAt: string;
 }
 
@@ -145,6 +155,32 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
   }
 }
 
+async function tickYoutubeDiscovery(): Promise<YoutubeResult> {
+  // Best-effort: any failure (DB down, YT API quota, network) is logged
+  // into the result rather than thrown, so the rest of the daily-ops tick
+  // continues. The 30-min in-process gate lives inside maybeRunYoutubeDiscovery.
+  try {
+    const gated = await maybeRunYoutubeDiscovery();
+    if (gated.skipped) {
+      return { skipped: true, reason: gated.reason ?? 'gated' };
+    }
+    const r = gated.result as YoutubeDiscoveryResult;
+    if (r.skipped) {
+      return { skipped: true, reason: r.reason };
+    }
+    return {
+      liveCount: r.liveCount,
+      offlineCount: r.offlineCount,
+      errorCount: r.errorCount,
+    };
+  } catch (err) {
+    return {
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult> {
   const outreach = await tickOutreach();
   if (opts.outreachOnly) {
@@ -152,10 +188,12 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       outreach,
       waitlist: { nudged: 0, skipped: true },
       panchang: { sent: 0, skipped: true },
+      youtube: { skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
   const waitlist = await tickWaitlistNudges();
   const panchang = await tickPanchangBlast(opts.forcePanchang ?? false);
-  return { outreach, waitlist, panchang, ranAt: new Date().toISOString() };
+  const youtube = await tickYoutubeDiscovery();
+  return { outreach, waitlist, panchang, youtube, ranAt: new Date().toISOString() };
 }

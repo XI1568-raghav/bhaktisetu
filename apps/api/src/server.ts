@@ -40,6 +40,7 @@ import { whatsappOtpRoutes } from './routes/whatsapp-otp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
+import { adminCronRoutes } from './routes/admin-cron.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { demoPayRoutes } from './routes/demo-pay.js';
 import { ratingRoutes } from './routes/ratings.js';
@@ -138,6 +139,7 @@ async function bootstrap() {
   await server.register(notificationRoutes, { prefix: '/api/v1/notifications' });
   await server.register(semanticSearchRoutes, { prefix: '/api/v1/semantic-search' });
   await server.register(cronRoutes, { prefix: '/api/v1/cron' });
+  await server.register(adminCronRoutes, { prefix: '/api/v1/admin/cron' });
   await server.register(conversationRoutes, { prefix: '/api/v1/conversations' });
   await server.register(demoPayRoutes, { prefix: '/api/v1/demo-pay' });
   await server.register(ratingRoutes, { prefix: '/api/v1/ratings' });
