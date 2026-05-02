@@ -49,7 +49,7 @@ const verifyEnrollmentSchema = z.object({
 const sessionIdParams = z.object({ id: z.string().uuid() });
 const enrollmentIdParams = z.object({ id: z.string().uuid() });
 
-function isAdmin(req: any): boolean {
+function isAdmin(req: { currentUser?: { roles?: string[] } }): boolean {
   return Array.isArray(req.currentUser?.roles) && req.currentUser.roles.includes('ADMIN');
 }
 
@@ -101,8 +101,8 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
     });
     // Strip roomUrl from public listing — only enrolled paid users / instructor see it.
     const stripped = sessions.map((s) => {
-      const { roomUrl, ...rest } = s as any;
-      void roomUrl;
+      const { roomUrl: _omitRoomUrl, ...rest } = s;
+      void _omitRoomUrl;
       return serializeSession(rest);
     });
     return reply.send({ data: stripped });
@@ -122,11 +122,11 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
     const auth = request.headers.authorization;
     if (auth) {
       try {
-        await authenticateUser(request as any, reply as any);
+        await authenticateUser(request, reply);
       } catch {
         // Best-effort — public route still works without auth.
       }
-      const userId = (request as any).currentUser?.id as string | undefined;
+      const userId = request.currentUser?.id;
       if (userId) {
         if (userId === session.instructorId || isAdmin(request)) {
           canSeeRoom = true;
@@ -139,8 +139,8 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       }
     }
 
-    const out = serializeSession(session);
-    if (!canSeeRoom) delete (out as any).roomUrl;
+    const out: { roomUrl?: string | null } & Record<string, unknown> = serializeSession(session);
+    if (!canSeeRoom) delete out.roomUrl;
     return reply.send({ data: out });
   });
 

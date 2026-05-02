@@ -503,7 +503,9 @@ export async function authRoutes(server: FastifyInstance) {
           id: user.id,
           email: user.email,
           fullName: user.fullName,
-          role: (user as any).role || 'devotee',
+          // User model has no `role` column (roles live in user_role_assignments);
+          // legacy callers still expect a string here, so default to 'devotee'.
+          role: (user as unknown as { role?: string }).role || 'devotee',
           avatarUrl: user.avatarUrl,
           preferredLanguage: user.preferredLanguage,
           subscriptionTier: user.subscriptionTier,
@@ -586,13 +588,13 @@ export async function authRoutes(server: FastifyInstance) {
           ...(phoneValue ? { phone: phoneValue } : {}),
           locationCity: city || undefined,
         },
-        create: ({
+        create: {
           id: authData.user.id,
           email: emailLower,
           fullName,
           phone: phoneValue,
           locationCity: city || undefined,
-        } as any),
+        },
       });
 
       return reply.code(201).send({
@@ -727,19 +729,17 @@ export async function authRoutes(server: FastifyInstance) {
           fullName,
           avatarUrl,
         },
-        // phone is nullable after the 20260428_phone_nullable migration; the
-        // `as any` shields us from a stale generated client that still types
-        // it as required (regen happens on next deploy).
-        create: ({
+        // phone is nullable per schema (20260428_phone_nullable migration).
+        create: {
           id: supaUser.id,
           email,
           fullName,
           avatarUrl,
           phone: null,
           preferredLanguage: 'hi',
-        } as any),
+        },
         include: { subscription: { where: { status: 'active' }, take: 1 } },
-      }) as any;
+      });
 
       return reply.send({
         session: {
@@ -752,7 +752,8 @@ export async function authRoutes(server: FastifyInstance) {
           email: dbUser.email,
           phone: dbUser.phone,
           fullName: dbUser.fullName,
-          role: (dbUser as any).role || 'devotee',
+          // User has no `role` column; legacy callers still expect a string here.
+          role: (dbUser as unknown as { role?: string }).role || 'devotee',
           avatarUrl: dbUser.avatarUrl,
           preferredLanguage: dbUser.preferredLanguage,
           subscriptionTier: dbUser.subscriptionTier,
