@@ -23,6 +23,7 @@ import {
  Package,
  Undo2,
 } from 'lucide-react';
+import { getDeityImage, getPujaImage } from '../../../lib/images';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -237,13 +238,40 @@ export async function generateMetadata({
  const { slug } = await params;
  const puja = await getPujaBySlug(slug);
 
+ const url = `https://darshya.online/pujas/${slug}`;
+ const title = `${puja.name} — Book Online | Darshya`;
+ const description = `Book ${puja.name} online at verified temples. ${puja.description.slice(0, 140)}`;
+
+ const firstPujaImage = puja.images && puja.images.length > 0 ? puja.images[0]?.url : undefined;
+ const pujaCatalogImage = getPujaImage(slug);
+ const deitySlug = (puja.deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-');
+ const ogImage = firstPujaImage || pujaCatalogImage || getDeityImage(deitySlug);
+
  return {
- title: `${puja.name} - Book Online`,
- description: `Book ${puja.name} online at verified temples. ${puja.description.slice(0, 120)}...`,
- openGraph: {
- title: `${puja.name} | Darshya`,
- description: puja.description.slice(0, 160),
- },
+   title,
+   description,
+   alternates: { canonical: url },
+   openGraph: {
+     title,
+     description,
+     type: 'website',
+     url,
+     siteName: 'Darshya',
+     images: [
+       {
+         url: ogImage,
+         width: 1200,
+         height: 630,
+         alt: puja.name,
+       },
+     ],
+   },
+   twitter: {
+     card: 'summary_large_image',
+     title,
+     description,
+     images: [ogImage],
+   },
  };
 }
 
