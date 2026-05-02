@@ -51,10 +51,17 @@ const cancelBookingSchema = z.object({
   reason: z.string().max(500).optional(),
 });
 
-const submitReviewSchema = z.object({
-  rating: z.number().int().min(1).max(5),
-  reviewText: z.string().max(2000).optional(),
-});
+// Accept either `reviewText` (legacy) or `text` (new bookings/[id] UI). The
+// frontend stars input has a 200-char comment limit per the AV.1 spec; we
+// keep the upper bound at 2000 to remain backwards-compatible with mobile
+// clients that may still post longer text.
+const submitReviewSchema = z
+  .object({
+    rating: z.number().int().min(1).max(5),
+    reviewText: z.string().max(2000).optional(),
+    text: z.string().max(2000).optional(),
+  })
+  .transform((v) => ({ rating: v.rating, reviewText: v.reviewText ?? v.text }));
 
 const paramsWithId = z.object({
   id: z.string().uuid(),
@@ -529,6 +536,106 @@ export async function bookingRoutes(server: FastifyInstance) {
         server.log.error(error, 'Failed to create booking order (web shape)');
         return reply.status(400).send({
           error: error.message || 'Failed to create booking order',
+        });
+      }
+    },
+  );
+
+  // POST /create-stripe-order - NRI / USD checkout via Stripe.
+  //
+  // Mirror of /create-order but bills in USD using PujaType.nriPrice. The
+  // server picks gateway based on the request body's `currency` field —
+  // 'INR' (default, omitted) → Razorpay; 'USD' → Stripe. Web booking
+  // page flips this when the user toggles "Pay in USD" or when their
+  // session profile flag isNri is set.
+  const createStripeOrderBodySchema = createOrderBodySchema.extend({
+    currency: z.literal('USD').optional(),
+  });
+
+  server.post(
+    '/create-stripe-order',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const body = createStripeOrderBodySchema.parse(request.body);
+        const userId = request.currentUser!.id;
+
+        // Resolve puja + offering as in /create-order.
+        const pujaType = await prisma.pujaType.findUnique({
+          where: { slug: body.pujaSlug },
+          select: { id: true },
+        });
+        if (!pujaType) {
+          return reply.status(404).send({ error: 'Puja type not found.' });
+        }
+
+        const offering = await prisma.templePujaOffering.findUnique({
+          where: { id: body.templeOfferingId },
+          select: { id: true, templeId: true, pujaTypeId: true, isActive: true },
+        });
+        if (!offering) {
+          return reply.status(404).send({ error: 'Temple offering not found.' });
+        }
+        if (offering.pujaTypeId !== pujaType.id) {
+          return reply.status(400).send({
+            error: 'Selected temple does not offer this puja.',
+          });
+        }
+
+        let prasadAddressId: string | undefined;
+        if (body.prasadDelivery && body.deliveryAddress) {
+          const addr = await prisma.userAddress.create({
+            data: {
+              userId,
+              label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
+              line1: body.deliveryAddress.line1,
+              line2: body.deliveryAddress.line2 ?? null,
+              city: body.deliveryAddress.city,
+              state: body.deliveryAddress.state,
+              pincode: body.deliveryAddress.pincode,
+            },
+            select: { id: true },
+          }).catch(() => null);
+          prasadAddressId = addr?.id;
+        }
+
+        const booking = await bookingService.createBooking({
+          userId,
+          templeId: offering.templeId,
+          pujaTypeId: offering.pujaTypeId,
+          templePujaOfferingId: offering.id,
+          scheduledDate: body.scheduledDate,
+          scheduledTimeSlot: body.scheduledTime,
+          devoteeNames: body.devotees,
+          sankalpDetails: body.sankalp,
+          specialInstructions: body.specialInstructions,
+          prasadDeliveryRequested: body.prasadDelivery,
+          prasadDeliveryAddressId: prasadAddressId,
+        });
+
+        const order = await paymentService.createStripeOrder(booking.id, userId);
+
+        return reply.status(201).send({
+          orderId: booking.id,
+          bookingId: booking.id,
+          bookingNumber: booking.bookingNumber,
+          stripePaymentIntentId: order.paymentIntentId,
+          clientSecret: order.clientSecret,
+          amount: order.amount,
+          currency: order.currency,
+          stripePublishableKey: order.publishableKey,
+          demo: order.demo,
+        });
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: 'Validation Error',
+            details: error.errors,
+          });
+        }
+        server.log.error(error, 'Failed to create Stripe NRI booking order');
+        return reply.status(400).send({
+          error: error.message || 'Failed to create Stripe booking order',
         });
       }
     },

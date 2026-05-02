@@ -161,6 +161,49 @@ export async function paymentRoutes(server: FastifyInstance) {
     }
   );
 
+  // POST /webhook/stripe - Stripe webhook handler (no auth — uses
+  // stripe-signature header verified via STRIPE_WEBHOOK_SECRET).
+  //
+  // Always verifies HMAC over the raw bytes Stripe sent (Stripe SDK's
+  // constructEvent does this internally with timing-safe compare). We
+  // never accept a re-serialised JSON path because Stripe's signing
+  // payload is byte-exact.
+  server.post(
+    '/webhook/stripe',
+    { config: { rawBody: true } },
+    async (request, reply) => {
+      try {
+        const signature = request.headers['stripe-signature'] as string | undefined;
+        if (!signature) {
+          return reply.status(400).send({
+            error: 'Missing stripe-signature header.',
+          });
+        }
+        const rawBody = (request as unknown as { rawBody?: string }).rawBody;
+        if (!rawBody) {
+          server.log.error('Stripe webhook requires fastify-raw-body — rawBody missing for this route');
+          return reply.status(500).send({ error: 'Webhook configuration error' });
+        }
+        const result = await paymentService.handleStripeWebhook(rawBody, signature);
+        return reply.status(200).send(result);
+      } catch (error: any) {
+        if (error.message?.includes('signature verification failed')) {
+          server.log.warn('Stripe webhook signature verification failed');
+          return reply.status(400).send({
+            error: 'Webhook signature verification failed.',
+          });
+        }
+        server.log.error(error, 'Failed to process Stripe webhook');
+        // Return 200 so Stripe doesn't retry-storm us on internal errors
+        // unrelated to signature validity. Mirrors Razorpay handler.
+        return reply.status(200).send({
+          handled: false,
+          error: 'Internal processing error',
+        });
+      }
+    },
+  );
+
   // GET /:id - Get payment details for a booking
   server.get(
     '/:id',
