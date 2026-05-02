@@ -305,4 +305,66 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       }
     }
   );
+
+  // ─── POST /admin/bookings/:bookingId/video-proof/flag ─────────────────────
+  //
+  // Flags an uploaded video proof as invalid. Clears videoProofUrl /
+  // videoUploadedAt and reverts status to `completed` so the assigned
+  // priest can re-upload. Idempotent: flagging an already-empty proof is
+  // a no-op (returns the current row).
+  server.post<{ Params: { bookingId: string }; Body: unknown }>(
+    '/:bookingId/video-proof/flag',
+    { preHandler: adminPreHandlers },
+    async (request, reply) => {
+      const { bookingId } = request.params;
+      const parsed = rejectBodySchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: 'Invalid body', details: parsed.error.flatten() });
+      }
+      try {
+        const booking = await prisma.pujaBooking.findUnique({
+          where: { id: bookingId },
+          select: {
+            id: true,
+            status: true,
+            videoProofUrl: true,
+            cancellationReason: true,
+          },
+        });
+        if (!booking) {
+          return reply.code(404).send({ error: 'Booking not found' });
+        }
+        if (!booking.videoProofUrl) {
+          return reply.code(409).send({
+            error: 'No video proof on this booking to flag.',
+          });
+        }
+        const updated = await prisma.pujaBooking.update({
+          where: { id: bookingId },
+          data: {
+            videoProofUrl: null,
+            videoUploadedAt: null,
+            status: 'completed',
+            cancellationReason: `[video-flagged] ${parsed.data.reason}`,
+          },
+          select: {
+            id: true,
+            bookingNumber: true,
+            status: true,
+            videoProofUrl: true,
+          },
+        });
+        request.log.info(
+          { bookingId, reason: parsed.data.reason },
+          'admin flagged video proof as invalid'
+        );
+        return { booking: updated };
+      } catch (err) {
+        request.log.error({ err, bookingId }, 'admin video flag failed');
+        return reply.code(500).send({ error: 'Failed to flag video' });
+      }
+    }
+  );
 }
