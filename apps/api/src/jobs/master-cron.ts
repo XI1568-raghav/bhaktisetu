@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { runOutreachTick } from './outreach-cron.js';
 import { maybeRunYoutubeDiscovery, type YoutubeDiscoveryResult } from './youtube-discovery.js';
 import { maybeRunApolloRefresh, type ApolloRefreshResult } from './apollo-refresh.js';
+import { tickContentSeed, type ContentSeedResult } from './content-seed.js';
 
 // Master orchestration cron: a single function the admin / external scheduler
 // can call once per tick. Each step is best-effort and isolated — a failure
@@ -50,6 +51,7 @@ export interface DailyOpsResult {
   panchang: PanchangResult;
   youtube: YoutubeResult;
   apollo: ApolloResult;
+  contentSeed: ContentSeedResult;
   ranAt: string;
 }
 
@@ -228,6 +230,14 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       panchang: { sent: 0, skipped: true },
       youtube: { skipped: true, reason: 'outreachOnly' },
       apollo: { skipped: true, reason: 'outreachOnly' },
+      contentSeed: {
+        redditOk: 0,
+        redditFailed: 0,
+        quoraOk: 0,
+        quoraFailed: 0,
+        skipped: true,
+        reason: 'outreachOnly',
+      },
       ranAt: new Date().toISOString(),
     };
   }
@@ -235,12 +245,14 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const panchang = await tickPanchangBlast(opts.forcePanchang ?? false);
   const youtube = await tickYoutubeDiscovery();
   const apollo = await tickApolloRefresh();
+  const contentSeed = await tickContentSeed();
   return {
     outreach,
     waitlist,
     panchang,
     youtube,
     apollo,
+    contentSeed,
     ranAt: new Date().toISOString(),
   };
 }
