@@ -55,7 +55,11 @@ export async function pujaRoutes(server: FastifyInstance) {
         return reply.status(404).send({ error: 'Puja type not found' });
       }
 
-      return { pujaType };
+      // Return the puja at the root for the web app's detail/booking pages
+      // (which read `data` directly as `PujaDetail`), and ALSO under
+      // `pujaType` for legacy callers that destructure `res.pujaType`.
+      // Single source of truth: same object reference, two keys.
+      return { ...pujaType, pujaType };
     } catch (error) {
       server.log.error(error, 'Failed to fetch puja type');
       return reply.status(500).send({ error: 'Failed to fetch puja type details' });
