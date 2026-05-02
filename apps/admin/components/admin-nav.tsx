@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/temples", label: "Temples" },
   { href: "/broadcast", label: "Broadcast" },
   { href: "/content-queue", label: "Content queue" },
+  { href: "/donations-export", label: "80G export" },
 ];
 
 export function AdminNav() {

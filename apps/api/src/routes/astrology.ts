@@ -2,6 +2,15 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
 import { astrologyService } from '../services/astrology.service.js';
+import {
+  generateKundli,
+  getDailyHoroscope,
+  prewarmDailyHoroscopes,
+  KundliInputSchema,
+  HoroscopeQuerySchema,
+  SIGNS,
+} from '../lib/astrology.js';
+import { prisma } from '../lib/prisma.js';
 
 export async function astrologyRoutes(server: FastifyInstance) {
   // ─── GET /astrologers ──────────────────────────────────────────────────────
@@ -104,24 +113,87 @@ export async function astrologyRoutes(server: FastifyInstance) {
   );
 
   // ─── POST /kundli ──────────────────────────────────────────────────────────
-  // Generate kundli from birth details
+  // Legacy shape used by existing web UI. Kept for backward compatibility.
 
   server.post('/kundli', async (request, reply) => {
-    const { birthDate, birthTime, birthPlace, name } = request.body as {
-      birthDate: string;
-      birthTime: string;
-      birthPlace: string;
+    const body = request.body as {
+      birthDate?: string;
+      birthTime?: string;
+      birthPlace?: string;
       name?: string;
+      // New shape (Zod-validated path).
+      dob?: string;
+      tob?: string;
+      location?: string;
+      latitude?: number;
+      longitude?: number;
+      timezone?: string;
     };
 
-    if (!birthDate || !birthTime || !birthPlace) {
-      return reply
-        .code(400)
-        .send({ error: 'birthDate, birthTime, and birthPlace are required.' });
+    // If caller used the v2 shape (dob/tob/location|lat/lng), route to the new lib.
+    if (body.dob && body.tob && (body.location || (body.latitude !== undefined && body.longitude !== undefined))) {
+      const parsed = KundliInputSchema.safeParse(body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: parsed.error.errors[0]?.message ?? 'Invalid kundli input.' });
+      }
+      const result = await generateKundli(parsed.data);
+      // Best-effort analytics — never block on this.
+      void prisma.kundliRequest
+        .create({
+          data: {
+            userId: request.currentUser?.id ?? null,
+            dob: new Date(parsed.data.dob),
+            tob: parsed.data.tob,
+            location: parsed.data.location ?? `${parsed.data.latitude},${parsed.data.longitude}`,
+            signature: result.signature,
+          },
+        })
+        .catch(() => undefined);
+      return { kundli: result };
     }
 
-    const kundli = await astrologyService.getKundliAsync(birthDate, birthTime, birthPlace, name);
+    if (!body.birthDate || !body.birthTime || !body.birthPlace) {
+      return reply
+        .code(400)
+        .send({ error: 'Provide either {dob, tob, location} or {birthDate, birthTime, birthPlace}.' });
+    }
+
+    const kundli = await astrologyService.getKundliAsync(body.birthDate, body.birthTime, body.birthPlace, body.name);
     return { kundli };
+  });
+
+  // ─── GET /horoscope/daily ──────────────────────────────────────────────────
+  // 24h-cached daily horoscope per sun sign. Pre-warmed by master-cron.
+
+  server.get('/horoscope/daily', async (request, reply) => {
+    const parsed = HoroscopeQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: parsed.error.errors[0]?.message ?? 'Invalid query.',
+        validSigns: SIGNS,
+      });
+    }
+    try {
+      const horoscope = await getDailyHoroscope(parsed.data);
+      return { horoscope };
+    } catch (err) {
+      return reply.code(400).send({ error: err instanceof Error ? err.message : 'Failed to load horoscope.' });
+    }
+  });
+
+  // ─── POST /horoscope/prewarm ───────────────────────────────────────────────
+  // Cron-only endpoint. Token-gated via CRON_SECRET to prevent abuse.
+
+  server.post('/horoscope/prewarm', async (request, reply) => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const token = (request.headers['x-cron-secret'] as string | undefined) ?? '';
+      if (token !== cronSecret) {
+        return reply.code(401).send({ error: 'Invalid cron secret.' });
+      }
+    }
+    const result = await prewarmDailyHoroscopes();
+    return { prewarmed: result };
   });
 
   // ─── GET /horoscope/all ────────────────────────────────────────────────────
