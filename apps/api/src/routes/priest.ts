@@ -1,8 +1,13 @@
 import { FastifyInstance } from 'fastify';
+import { randomBytes } from 'node:crypto';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { priestService } from '../services/priest.service.js';
 import { prisma } from '../lib/prisma.js';
+import { presignR2Upload, r2 } from '../lib/r2.js';
 import { BookingStatus, PayoutStatus } from '@prisma/client';
+
+const MAX_VIDEO_MB = 200;
+const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
 export async function priestRoutes(server: FastifyInstance) {
   // All priest routes require authentication and priest role
@@ -99,6 +104,77 @@ export async function priestRoutes(server: FastifyInstance) {
       reply.code(400).send({ error: err.message });
     }
   });
+
+  // ─── POST /bookings/:id/video-proof/signed-url ──────────────────────────────
+  //
+  // Returns a presigned PUT URL the priest's browser uses to upload the
+  // proof video directly to R2 (or Supabase Storage fallback). Auth gates
+  // ensure only the assigned priest of this booking can request a URL.
+  // 5-minute expiry, 200 MB cap (enforced client-side; backend enforces
+  // type allowlist). Idempotent — repeated calls just return fresh URLs.
+
+  server.post(
+    '/bookings/:id/video-proof/signed-url',
+    { preHandler: priestAuth },
+    async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const body = (request.body ?? {}) as { contentType?: string; ext?: string };
+        const contentType = body.contentType ?? 'video/mp4';
+        if (!ALLOWED_VIDEO_TYPES.has(contentType)) {
+          return reply.code(400).send({
+            error: `Unsupported contentType. Allowed: ${[...ALLOWED_VIDEO_TYPES].join(', ')}.`,
+          });
+        }
+        if (!r2.enabled) {
+          return reply.code(503).send({
+            error: 'Storage backend not configured.',
+            message:
+              'Set R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY (preferred) or SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY.',
+          });
+        }
+
+        const priestId = await getPriestId(request.currentUser!.id);
+        const booking = await prisma.pujaBooking.findUnique({
+          where: { id },
+          select: { id: true, priestId: true, status: true },
+        });
+        if (!booking) return reply.code(404).send({ error: 'Booking not found.' });
+        if (booking.priestId !== priestId) {
+          return reply
+            .code(403)
+            .send({ error: 'Only the assigned priest can upload video proof for this booking.' });
+        }
+        if (booking.status !== 'completed') {
+          return reply.code(409).send({
+            error: `Video proof can only be uploaded for bookings in "completed" status. Current: "${booking.status}".`,
+          });
+        }
+
+        const ext = (body.ext ?? contentType.split('/')[1] ?? 'mp4').replace(/[^a-z0-9]/gi, '').slice(0, 6);
+        const rand = randomBytes(6).toString('hex');
+        const key = `booking-proofs/${id}/${Date.now()}-${rand}.${ext}`;
+
+        const signed = await presignR2Upload({ key, contentType, expiresInSec: 300 });
+        if (!signed) {
+          return reply.code(500).send({ error: 'Failed to generate upload URL' });
+        }
+
+        return reply.send({
+          uploadUrl: signed.uploadUrl,
+          publicUrl: signed.publicUrl,
+          backend: signed.backend,
+          key,
+          expiresIn: 300,
+          method: 'PUT',
+          headers: { 'Content-Type': contentType },
+          maxSizeMb: MAX_VIDEO_MB,
+        });
+      } catch (err: any) {
+        reply.code(400).send({ error: err.message });
+      }
+    }
+  );
 
   // ─── POST /bookings/:id/video ───────────────────────────────────────────────
 

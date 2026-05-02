@@ -36,17 +36,16 @@ export async function mediaRoutes(server: FastifyInstance) {
     const id = randomBytes(8).toString('hex');
     const key = `${kind}/${safeUserId}/${Date.now()}-${id}${ext ? `.${ext}` : ''}`;
 
-    const url = await presignR2Upload({ key, contentType, expiresInSec: 600 });
-    if (!url) {
+    const result = await presignR2Upload({ key, contentType, expiresInSec: 600 });
+    if (!result) {
       return reply.code(500).send({ error: 'Failed to generate upload URL' });
     }
 
-    const publicUrl = publicUrlFor(key);
-
     return reply.send({
-      uploadUrl: url,
+      uploadUrl: result.uploadUrl,
       key,
-      publicUrl,
+      publicUrl: result.publicUrl ?? publicUrlFor(key),
+      backend: result.backend,
       expiresIn: 600,
       method: 'PUT',
       headers: { 'Content-Type': contentType },
