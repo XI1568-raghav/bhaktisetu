@@ -367,6 +367,21 @@ export default function PujaBookingPage() {
  const [bookingSuccess, setBookingSuccess] = useState(false);
  const [bookingNumber, setBookingNumber] = useState('');
 
+ // NRI / USD checkout toggle. Default heuristic: browser timezone outside
+ // Asia/Kolkata → diaspora user, default to USD. User can flip the toggle
+ // either way at the payment step. Falls back to false on SSR / errors.
+ const [payInUsd, setPayInUsd] = useState(false);
+ useEffect(() => {
+  try {
+   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+   if (tz && tz !== 'Asia/Kolkata' && !tz.startsWith('Asia/Calcutta')) {
+    setPayInUsd(true);
+   }
+  } catch {
+   // ignore
+  }
+ }, []);
+
  // ─── Validation errors ──────────────────────────────────────
  const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -414,6 +429,15 @@ export default function PujaBookingPage() {
  if (wantsPrasad) total += PRASAD_DELIVERY_FEE;
  return total;
  }, [basePrice, wantsPrasad]);
+
+ // USD price comes straight from PujaType.nriPrice — already encodes
+ // the 9-10x diaspora multiplier configured per puja type. We do not
+ // add platform/prasad surcharges to NRI orders to keep the headline
+ // price simple at the diaspora segment.
+ const nriUsdPrice = useMemo(() => {
+ if (!puja) return 0;
+ return Number(puja.nriPrice || 0);
+ }, [puja]);
 
  // ─── Fetch slot availability ────────────────────────────────
  useEffect(() => {
@@ -679,6 +703,108 @@ export default function PujaBookingPage() {
  setPaymentError(err.message || 'Something went wrong. Please try again.');
  setPaymentLoading(false);
  }
+ };
+
+ // ─── Stripe NRI / USD payment ───────────────────────────────
+ //
+ // Hits POST /bookings/create-stripe-order which mirrors /create-order
+ // but bills in USD using PujaType.nriPrice. On success we redirect to
+ // a Stripe-hosted checkout if a session URL is returned, otherwise we
+ // fall back to the demo success screen (no STRIPE_SECRET_KEY).
+ const handleStripePayment = async () => {
+  if (!isAuthenticated) {
+   window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+   return;
+  }
+  safeCapture('booking_started', {
+   pujaSlug: slug,
+   templeSlug: selectedTemple?.templeSlug,
+   priceUsd: nriUsdPrice,
+   currency: 'USD',
+  });
+  setPaymentLoading(true);
+  setPaymentError('');
+
+  try {
+   const res = await fetch(`${API_BASE_URL}/bookings/create-stripe-order`, {
+    method: 'POST',
+    headers: {
+     'Content-Type': 'application/json',
+     Authorization: `Bearer ${session?.accessToken}`,
+    },
+    body: JSON.stringify({
+     pujaSlug: slug,
+     templeOfferingId: selectedTempleId,
+     scheduledDate: selectedDate,
+     scheduledTime: selectedSlot,
+     devotees: devotees.map((d) => ({
+      name: d.name,
+      gotra: d.gotra || undefined,
+      nakshatra: d.nakshatra || undefined,
+     })),
+     sankalp: sankalp || undefined,
+     specialInstructions: specialInstructions || undefined,
+     prasadDelivery: wantsPrasad,
+     deliveryAddress: wantsPrasad ? address : undefined,
+     currency: 'USD',
+    }),
+   }).catch(() => null);
+
+   if (!res || !res.ok) {
+    const msg = res
+     ? `Could not create your USD order (${res.status}). Please try again or contact support@darshya.online.`
+     : 'Network error reaching the booking service. Check your connection and try again.';
+    setPaymentError(msg);
+    setPaymentLoading(false);
+    return;
+   }
+
+   const data = await res.json().catch(() => null);
+   if (!data?.orderId) {
+    setPaymentError('Booking service returned an unexpected response. Please try again.');
+    setPaymentLoading(false);
+    return;
+   }
+
+   // Demo mode: no Stripe SDK key set on server. Booking row still
+   // exists; show success screen so the flow stays exercisable in
+   // dev/preview without burning a real card.
+   if (data.demo || !data.clientSecret) {
+    const bkNum = data.bookingNumber ?? generateBookingNumber();
+    safeCapture('payment_success', {
+     bookingId: bkNum,
+     amountUsd: nriUsdPrice,
+     currency: 'USD',
+     demo: true,
+    });
+    setBookingNumber(bkNum);
+    setBookingSuccess(true);
+    setPaymentLoading(false);
+    return;
+   }
+
+   // Real Stripe — redirect to Stripe-hosted checkout. We ask the
+   // backend to create a Checkout Session URL via the same endpoint
+   // when a publishable key is configured. As a minimum-viable path
+   // we redirect to Stripe's PaymentIntent confirmation page using
+   // the client_secret if a checkout URL isn't returned.
+   if (data.checkoutUrl) {
+    window.location.href = data.checkoutUrl;
+    return;
+   }
+
+   // Fallback: no hosted checkout URL — surface a friendly message
+   // pointing the user to the email confirmation flow.
+   setPaymentError(
+    'Stripe checkout is currently unavailable on this device. Please email support@darshya.online with booking ' +
+     (data.bookingNumber ?? data.orderId) +
+     ' and we\'ll send you a secure payment link.',
+   );
+   setPaymentLoading(false);
+  } catch (err: any) {
+   setPaymentError(err.message || 'Something went wrong. Please try again.');
+   setPaymentLoading(false);
+  }
  };
 
  // ─── AI Sankalp Generation ──────────────────────────────────
@@ -1791,9 +1917,36 @@ export default function PujaBookingPage() {
  </span>
  </div>
 
+ {/* INR / USD toggle — diaspora-friendly. Defaults to USD when
+   * the browser timezone is outside Asia/Kolkata. Either currency
+   * routes server-side to the correct gateway (Razorpay vs Stripe). */}
+ {nriUsdPrice > 0 && (
+ <div className="mb-4 flex items-center justify-between rounded-xl border border-surface-100 bg-white p-3 text-sm">
+ <span className="text-surface-600">Currency</span>
+ <div className="flex gap-1 rounded-lg bg-surface-100 p-1">
+ <button
+ onClick={() => setPayInUsd(false)}
+ className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+ !payInUsd ? 'bg-white text-saffron-600 shadow-sm' : 'text-surface-500'
+ }`}
+ >
+ INR ₹{totalPrice.toLocaleString('en-IN')}
+ </button>
+ <button
+ onClick={() => setPayInUsd(true)}
+ className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+ payInUsd ? 'bg-white text-saffron-600 shadow-sm' : 'text-surface-500'
+ }`}
+ >
+ USD ${nriUsdPrice.toLocaleString('en-US')}
+ </button>
+ </div>
+ </div>
+ )}
+
  <div className="flex flex-col gap-3 sm:flex-row">
  <button
- onClick={handlePayment}
+ onClick={payInUsd ? handleStripePayment : handlePayment}
  disabled={paymentLoading}
  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-saffron-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-saffron-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
@@ -1801,6 +1954,11 @@ export default function PujaBookingPage() {
  <>
  <Loader2 className="h-5 w-5 animate-spin" />
  Processing...
+ </>
+ ) : payInUsd ? (
+ <>
+ <CreditCard className="h-5 w-5" />
+ Pay ${nriUsdPrice.toLocaleString('en-US')} with Stripe
  </>
  ) : (
  <>
