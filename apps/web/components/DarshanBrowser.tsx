@@ -120,12 +120,21 @@ function streamHref(stream: DarshanStream): string {
  return slug ? `/darshan/${slug}` : `/darshan/${stream.id}`;
 }
 
+function formatStartsIn(min: number): string {
+ if (min < 60) return `${min}m`;
+ const h = Math.floor(min / 60);
+ const m = min % 60;
+ return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
 export default function DarshanBrowser({
  liveStreams,
  scheduledStreams,
+ upcomingNotes = [],
 }: {
  liveStreams: DarshanStream[];
  scheduledStreams: DarshanStream[];
+ upcomingNotes?: { templeSlug: string; nextSlot: string; startsInMin: number }[];
 }) {
  const [query, setQuery] = useState('');
  const [deity, setDeity] = useState(DEITY_OPTIONS[0]!);
@@ -277,6 +286,15 @@ export default function DarshanBrowser({
            <p className="text-xs text-surface-600 mt-1">
             {stream.temple.deityPrimary}
            </p>
+           {stream.currentSlot && (
+            <p className="text-xs font-medium text-saffron-700 mt-1.5 flex items-center gap-1">
+             <Wifi className="w-3 h-3" />
+             {stream.currentSlot}
+             {typeof stream.endsInMin === 'number' && stream.endsInMin > 0 && (
+              <span className="text-surface-500 font-normal">• ends in {formatStartsIn(stream.endsInMin)}</span>
+             )}
+            </p>
+           )}
           </div>
          </Link>
         );
@@ -285,6 +303,38 @@ export default function DarshanBrowser({
      )}
     </div>
    </section>
+
+   {/* Next aarti today — scheduled per Temple.timingInfo */}
+   {upcomingNotes.length > 0 && (
+    <section className="py-8 border-t border-[var(--color-border)]">
+     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
+       <Clock className="w-5 h-5 text-saffron-500" />
+       Next Aarti
+       <span className="text-sm font-normal text-surface-500 ml-2">
+        {upcomingNotes.length} temple{upcomingNotes.length !== 1 ? 's' : ''} scheduled
+       </span>
+      </h2>
+      <div className="flex flex-wrap gap-2">
+       {upcomingNotes
+        .slice()
+        .sort((a, b) => a.startsInMin - b.startsInMin)
+        .slice(0, 12)
+        .map((note) => (
+        <Link
+         key={note.templeSlug}
+         href={`/darshan/${note.templeSlug}`}
+         className="rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs text-surface-700 hover:border-saffron-300 hover:text-saffron-700 transition-colors"
+        >
+         <span className="font-medium">{note.nextSlot}</span>
+         <span className="text-surface-400 mx-1.5">•</span>
+         <span className="text-surface-500">in {formatStartsIn(note.startsInMin)}</span>
+        </Link>
+       ))}
+      </div>
+     </div>
+    </section>
+   )}
 
    {/* Upcoming */}
    <section className="py-10 border-t border-[var(--color-border)]">
