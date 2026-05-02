@@ -82,7 +82,10 @@ export default function UpgradePage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/subscriptions/subscribe`, {
+      const isAutoRenew = planId === 'astro_monthly';
+      const endpoint = isAutoRenew ? '/subscriptions/create' : '/subscriptions/subscribe';
+
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,6 +97,15 @@ export default function UpgradePage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Subscription failed (${res.status})`);
+      }
+
+      const data = (await res.json().catch(() => ({}))) as {
+        subscription?: { shortUrl?: string | null; skipped?: boolean };
+      };
+
+      if (isAutoRenew && data.subscription?.shortUrl) {
+        window.location.href = data.subscription.shortUrl;
+        return;
       }
 
       router.push('/ask-pandit?upgraded=1');

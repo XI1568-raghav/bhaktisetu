@@ -1,4 +1,6 @@
+import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
+import { sendEmail } from '../lib/email.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -325,6 +327,214 @@ export class SubscriptionService {
     }
   }
 
+  // ─── Razorpay Subscriptions API (auto-renewal) ─────────────────────────────
+  // Strategy: only the ₹499 monthly plan auto-renews. The ₹99 single-session
+  // pass remains one-shot via the existing /subscribe path. Razorpay
+  // subscription IDs are stored in Transaction.metadata so no schema change
+  // is needed; lookups during webhooks key on metadata.razorpaySubscriptionId.
+
+  async createRazorpaySubscription(args: {
+    userId: string;
+    planId: string;
+    role: string;
+  }): Promise<{
+    subscriptionId: string;
+    shortUrl: string | null;
+    status: string;
+    skipped?: boolean;
+    reason?: string;
+  }> {
+    const plan = PLANS.find((p) => p.id === args.planId);
+    if (!plan) throw new Error(`Plan not found: ${args.planId}`);
+    if (!plan.roles.includes(args.role)) {
+      throw new Error(`Plan ${args.planId} is not available for role ${args.role}`);
+    }
+    if (plan.price <= 0) {
+      throw new Error('Auto-renewal not supported for free plans');
+    }
+
+    const rzpPlanId = mapToRazorpayPlanId(args.planId);
+    const keyId = process.env.RAZORPAY_KEY_ID || '';
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+    const isDemo = !keyId || keyId === 'rzp_test_demo' || !rzpPlanId;
+
+    let subscriptionId: string;
+    let shortUrl: string | null;
+    let status: string;
+
+    if (isDemo) {
+      subscriptionId = `sub_demo_${Date.now()}`;
+      shortUrl = null;
+      status = 'created';
+    } else {
+      const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const subRes = await (rzp as unknown as {
+        subscriptions: {
+          create: (opts: Record<string, unknown>) => Promise<{
+            id: string;
+            short_url?: string;
+            status?: string;
+          }>;
+        };
+      }).subscriptions.create({
+        plan_id: rzpPlanId,
+        total_count: 12,
+        customer_notify: 1,
+        notes: { darshyaUserId: args.userId, darshyaPlanId: args.planId, role: args.role },
+      });
+      subscriptionId = subRes.id;
+      shortUrl = subRes.short_url ?? null;
+      status = subRes.status ?? 'created';
+    }
+
+    try {
+      await prisma.transaction.create({
+        data: {
+          userId: args.userId,
+          type: 'SUBSCRIPTION',
+          amount: plan.price,
+          status: 'PENDING',
+          metadata: {
+            kind: 'razorpay_subscription_create',
+            razorpaySubscriptionId: subscriptionId,
+            planId: args.planId,
+            role: args.role,
+            shortUrl,
+            status,
+          },
+        },
+      });
+    } catch {
+      // mock fallback — fine
+    }
+
+    if (isDemo) {
+      try {
+        await this.subscribe(args.userId, args.planId, args.role);
+      } catch {
+        // ignore
+      }
+    }
+
+    return { subscriptionId, shortUrl, status, skipped: isDemo, reason: isDemo ? 'demo-mode' : undefined };
+  }
+
+  async cancelRazorpaySubscription(userId: string): Promise<{ cancelled: boolean; message: string }> {
+    let rzpSubId: string | null = null;
+    try {
+      const recent = await prisma.transaction.findMany({
+        where: { userId, type: 'SUBSCRIPTION' },
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+      });
+      for (const t of recent) {
+        const meta = (t as unknown as { metadata?: { razorpaySubscriptionId?: string; kind?: string } }).metadata;
+        if (meta?.razorpaySubscriptionId && meta.kind === 'razorpay_subscription_create') {
+          rzpSubId = meta.razorpaySubscriptionId;
+          break;
+        }
+      }
+    } catch {
+      // fall through
+    }
+
+    const keyId = process.env.RAZORPAY_KEY_ID || '';
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+    const isDemo = !keyId || keyId === 'rzp_test_demo' || !rzpSubId || rzpSubId.startsWith('sub_demo_');
+
+    if (rzpSubId && !isDemo) {
+      try {
+        const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        await (rzp as unknown as {
+          subscriptions: { cancel: (id: string, cancelAtCycleEnd?: 0 | 1) => Promise<unknown> };
+        }).subscriptions.cancel(rzpSubId, 1);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[subscription.service] Razorpay cancel failed:', err);
+      }
+    }
+
+    const local = await this.cancel(userId);
+    return {
+      cancelled: local.cancelled || !!rzpSubId,
+      message: rzpSubId
+        ? 'Auto-renewal cancelled. Access continues until end of current billing cycle.'
+        : local.message,
+    };
+  }
+
+  async handleSubscriptionEvent(event: string, payload: unknown): Promise<{ handled: boolean; reason?: string }> {
+    const sub = extractRazorpaySubscriptionFromEvent(payload);
+    if (!sub?.id) return { handled: false, reason: 'no subscription in payload' };
+
+    let userId: string | null = null;
+    let planId: string | null = null;
+    let role: string | null = null;
+    try {
+      const txns = await prisma.transaction.findMany({ where: { type: 'SUBSCRIPTION' }, orderBy: { createdAt: 'desc' }, take: 200 });
+      for (const t of txns) {
+        const meta = (t as unknown as { metadata?: { razorpaySubscriptionId?: string; planId?: string; role?: string } }).metadata;
+        if (meta?.razorpaySubscriptionId === sub.id) {
+          userId = (t as unknown as { userId: string }).userId;
+          planId = meta.planId ?? null;
+          role = meta.role ?? null;
+          break;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!userId || !planId || !role) {
+      return { handled: false, reason: 'no matching local subscription' };
+    }
+
+    switch (event) {
+      case 'subscription.activated':
+      case 'subscription.charged': {
+        await this.subscribe(userId, planId, role);
+        if (event === 'subscription.charged') {
+          await safeSendEmail({
+            userId,
+            subject: 'Darshya — your subscription renewed',
+            html: '<p>Your Darshya subscription has been renewed for another month. Continue your spiritual journey at <a href="https://darshya.online/ask-pandit">darshya.online</a>.</p>',
+          });
+        }
+        return { handled: true };
+      }
+      case 'subscription.cancelled':
+      case 'subscription.completed': {
+        try {
+          await prisma.marketplaceSubscription.updateMany({
+            where: { userId, status: 'ACTIVE' },
+            data: { status: event === 'subscription.completed' ? 'EXPIRED' : 'CANCELLED', endDate: new Date() },
+          });
+        } catch {
+          // ignore
+        }
+        return { handled: true };
+      }
+      case 'subscription.halted': {
+        try {
+          await prisma.marketplaceSubscription.updateMany({
+            where: { userId, status: 'ACTIVE' },
+            data: { status: 'PAST_DUE' },
+          });
+        } catch {
+          // ignore
+        }
+        await safeSendEmail({
+          userId,
+          subject: 'Darshya — payment failed',
+          html: '<p>We could not renew your Darshya subscription. <a href="https://darshya.online/account/subscriptions">Update your payment method</a> to continue uninterrupted access.</p>',
+        });
+        return { handled: true };
+      }
+      default:
+        return { handled: false, reason: `unhandled event: ${event}` };
+    }
+  }
+
   async cancel(userId: string): Promise<{ message: string; cancelled: boolean }> {
     try {
       const subscription = await prisma.marketplaceSubscription.findFirst({
@@ -354,3 +564,57 @@ export class SubscriptionService {
 }
 
 export const subscriptionService = new SubscriptionService();
+
+// ─── Helpers ────────────────────────────────────────────────────────────────────
+
+function mapToRazorpayPlanId(darshyaPlanId: string): string {
+  const envMap: Record<string, string | undefined> = {
+    astro_monthly: process.env.RAZORPAY_PLAN_ASTRO_MONTHLY,
+    'plan-pandit-basic': process.env.RAZORPAY_PLAN_PANDIT_BASIC,
+    'plan-pandit-pro': process.env.RAZORPAY_PLAN_PANDIT_PRO,
+    'plan-astro-basic': process.env.RAZORPAY_PLAN_ASTRO_BASIC,
+    'plan-astro-pro': process.env.RAZORPAY_PLAN_ASTRO_PRO,
+    'plan-store-basic': process.env.RAZORPAY_PLAN_STORE_BASIC,
+    'plan-store-pro': process.env.RAZORPAY_PLAN_STORE_PRO,
+    'plan-wellness-basic': process.env.RAZORPAY_PLAN_WELLNESS_BASIC,
+    'plan-temple-pro': process.env.RAZORPAY_PLAN_TEMPLE_PRO,
+  };
+  return envMap[darshyaPlanId] ?? '';
+}
+
+function extractRazorpaySubscriptionFromEvent(payload: unknown): { id: string; status?: string } | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const p = payload as { payload?: { subscription?: { entity?: { id?: string; status?: string } } } };
+  const entity = p.payload?.subscription?.entity;
+  if (entity?.id) return { id: entity.id, status: entity.status };
+  return null;
+}
+
+async function safeSendEmail(args: { userId: string; subject: string; html: string }): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: args.userId }, select: { email: true } });
+    if (!user?.email) return;
+    await sendEmail({ to: user.email, subject: args.subject, html: args.html });
+  } catch {
+    // best-effort — never break webhook handling
+  }
+}
+
+export async function findUpcomingExpirations(daysAhead: number): Promise<Array<{ userId: string; endDate: Date; email: string | null }>> {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+  try {
+    const subs = await prisma.marketplaceSubscription.findMany({
+      where: { status: 'ACTIVE', endDate: { gte: now, lte: horizon } },
+      take: 500,
+    });
+    const out: Array<{ userId: string; endDate: Date; email: string | null }> = [];
+    for (const s of subs) {
+      const u = await prisma.user.findUnique({ where: { id: s.userId }, select: { email: true } });
+      out.push({ userId: s.userId, endDate: s.endDate, email: u?.email ?? null });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
