@@ -6,6 +6,15 @@ import { tickContentSeed, type ContentSeedResult } from './content-seed.js';
 import { runAartiNotify, type AartiNotifyResult } from './aarti-notify.js';
 import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.js';
 import { prewarmDailyHoroscopes } from '../lib/astrology.js';
+import { processAutoRefunds } from '../services/refund.service.js';
+
+interface RefundCronResult {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  skipped?: boolean;
+  reason?: string;
+}
 
 // Master orchestration cron: a single function the admin / external scheduler
 // can call once per tick. Each step is best-effort and isolated — a failure
@@ -58,6 +67,7 @@ export interface DailyOpsResult {
   aartiNotify: AartiNotifyResult;
   weeklyDigest: WeeklyDigestResult & { gated?: boolean };
   horoscopes: { generated: number; date: string; skipped?: boolean; reason?: string };
+  refunds: RefundCronResult;
   ranAt: string;
 }
 
@@ -255,6 +265,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       },
       weeklyDigest: { sent: 0, skipped: 0, failed: 0, gated: true, reason: 'outreachOnly' },
       horoscopes: { generated: 0, date: new Date().toISOString().slice(0, 10), skipped: true, reason: 'outreachOnly' },
+      refunds: { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
@@ -266,6 +277,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const aartiNotify = await tickAartiNotify();
   const weeklyDigest = await tickWeeklyDigest();
   const horoscopes = await tickHoroscopePrewarm();
+  const refunds = await tickAutoRefunds();
   return {
     outreach,
     waitlist,
@@ -276,8 +288,27 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     aartiNotify,
     weeklyDigest,
     horoscopes,
+    refunds,
     ranAt: new Date().toISOString(),
   };
+}
+
+async function tickAutoRefunds(): Promise<RefundCronResult> {
+  // Best-effort: refund.service.processAutoRefunds picks up cancelled
+  // bookings tagged "[refund-requested]" older than 1h and full-refunds
+  // each via Razorpay. Any error (network, DB, schema gap) is captured so
+  // the rest of runDailyOps continues.
+  try {
+    return await processAutoRefunds();
+  } catch (err) {
+    return {
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 async function tickHoroscopePrewarm(): Promise<{ generated: number; date: string; skipped?: boolean; reason?: string }> {
