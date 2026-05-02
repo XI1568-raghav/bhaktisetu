@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { runOutreachTick } from './outreach-cron.js';
 import { maybeRunYoutubeDiscovery, type YoutubeDiscoveryResult } from './youtube-discovery.js';
+import { maybeRunApolloRefresh, type ApolloRefreshResult } from './apollo-refresh.js';
 
 // Master orchestration cron: a single function the admin / external scheduler
 // can call once per tick. Each step is best-effort and isolated — a failure
@@ -35,11 +36,20 @@ interface YoutubeResult {
   errorCount?: number;
 }
 
+interface ApolloResult {
+  skipped?: boolean;
+  reason?: string;
+  newLeads?: number;
+  skippedExisting?: number;
+  errorCount?: number;
+}
+
 export interface DailyOpsResult {
   outreach: OutreachResult;
   waitlist: WaitlistResult;
   panchang: PanchangResult;
   youtube: YoutubeResult;
+  apollo: ApolloResult;
   ranAt: string;
 }
 
@@ -81,7 +91,7 @@ async function tickOutreach(): Promise<OutreachResult> {
 }
 
 async function tickWaitlistNudges(): Promise<WaitlistResult> {
-  const waitlist = (prisma as any).waitlist;
+  const waitlist = prisma.waitlist;
   if (!waitlist) return { nudged: 0, skipped: true };
 
   const cutoff = new Date(Date.now() - WAITLIST_NUDGE_AGE_HOURS * 60 * 60 * 1000);
@@ -145,13 +155,41 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
   }
   // Fan-out target: users opted-in to daily panchang notifications. Until
   // push subscriptions land in Prisma we no-op cleanly.
-  const subModel = (prisma as any).pushSubscription ?? (prisma as any).panchangSubscription;
+  type SubModel = { findMany: (args: { take: number }) => Promise<unknown[]> };
+  const prismaWithFutureModels = prisma as unknown as {
+    pushSubscription?: SubModel;
+    panchangSubscription?: SubModel;
+  };
+  const subModel = prismaWithFutureModels.pushSubscription ?? prismaWithFutureModels.panchangSubscription;
   if (!subModel) return { sent: 0, skipped: true, reason: 'no push subscription model' };
   try {
     const subs = await subModel.findMany({ take: 1000 });
     return { sent: subs.length };
   } catch {
     return { sent: 0, skipped: true };
+  }
+}
+
+async function tickApolloRefresh(): Promise<ApolloResult> {
+  // Best-effort: gated on a 7-day in-process cooldown inside
+  // maybeRunApolloRefresh(). Missing APOLLO_API_KEY → skipped. Any error
+  // (network, schema, prisma) is captured into the result so the rest of
+  // runDailyOps continues.
+  try {
+    const r: ApolloRefreshResult = await maybeRunApolloRefresh();
+    if (r.skipped) {
+      return { skipped: true, reason: r.reason };
+    }
+    return {
+      newLeads: r.newLeads,
+      skippedExisting: r.skippedExisting,
+      errorCount: r.errors.length,
+    };
+  } catch (err) {
+    return {
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
@@ -189,11 +227,20 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       waitlist: { nudged: 0, skipped: true },
       panchang: { sent: 0, skipped: true },
       youtube: { skipped: true, reason: 'outreachOnly' },
+      apollo: { skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
   const waitlist = await tickWaitlistNudges();
   const panchang = await tickPanchangBlast(opts.forcePanchang ?? false);
   const youtube = await tickYoutubeDiscovery();
-  return { outreach, waitlist, panchang, youtube, ranAt: new Date().toISOString() };
+  const apollo = await tickApolloRefresh();
+  return {
+    outreach,
+    waitlist,
+    panchang,
+    youtube,
+    apollo,
+    ranAt: new Date().toISOString(),
+  };
 }
