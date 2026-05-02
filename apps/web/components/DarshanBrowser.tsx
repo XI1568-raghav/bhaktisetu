@@ -13,8 +13,33 @@ import {
  ChevronDown,
  Wifi,
 } from 'lucide-react';
-import type { DarshanStream } from '../lib/api';
-import { getTempleHero } from '../lib/images';
+import type { DarshanStream, TempleImage } from '../lib/api';
+import { getTempleHero, getDeityImage } from '../lib/images';
+
+function firstImageUrl(images: TempleImage[] | undefined): string | null {
+ if (!images || images.length === 0) return null;
+ const first = images[0];
+ if (typeof first === 'string') return first;
+ if (first && typeof first === 'object' && 'url' in first && typeof first.url === 'string') {
+  return first.url;
+ }
+ return null;
+}
+
+function deityFallback(deityPrimary: string): string {
+ const d = deityPrimary.toLowerCase();
+ if (d.includes('shiva')) return getDeityImage('lord-shiva');
+ if (d.includes('vishnu') || d.includes('venkateswara') || d.includes('balaji') || d.includes('jagannath') || d.includes('krishna') || d.includes('rama')) return getDeityImage('lord-vishnu');
+ if (d.includes('ganesha') || d.includes('vinayak') || d.includes('ganapati')) return getDeityImage('lord-ganesha');
+ if (d.includes('durga') || d.includes('kali') || d.includes('devi')) return getDeityImage('goddess-durga');
+ if (d.includes('lakshmi')) return getDeityImage('goddess-lakshmi');
+ if (d.includes('hanuman')) return getDeityImage('lord-hanuman');
+ return getDeityImage('lord-shiva');
+}
+
+function templeImageFor(stream: DarshanStream): string {
+ return firstImageUrl(stream.temple.images) ?? getTempleHero(stream.temple.slug) ?? deityFallback(stream.temple.deityPrimary);
+}
 
 const REMINDERS_KEY = 'poojly_darshan_reminders';
 
@@ -203,10 +228,7 @@ export default function DarshanBrowser({
      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
        {filteredLive.map((stream) => {
-        const templeImage =
-         stream.temple.images && stream.temple.images.length > 0
-          ? stream.temple.images[0]!.url
-          : null;
+        const templeImage = templeImageFor(stream);
         return (
          <Link
           key={stream.id}
@@ -215,7 +237,7 @@ export default function DarshanBrowser({
          >
           <div className="relative aspect-video bg-surface-200">
            <img
-            src={templeImage ? templeImage : getTempleHero(stream.temple.slug)}
+            src={templeImage}
             alt={stream.temple.name}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover opacity-90"
@@ -279,7 +301,7 @@ export default function DarshanBrowser({
           <Link href={streamHref(stream)} className="block">
            <div className="relative aspect-video bg-surface-200">
             <img
-             src={getTempleHero(stream.temple.slug)}
+             src={templeImageFor(stream)}
              alt={`${stream.temple.name} - Upcoming stream`}
              loading="lazy"
              className="absolute inset-0 w-full h-full object-cover opacity-40"

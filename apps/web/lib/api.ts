@@ -84,6 +84,10 @@ function normalizePaginated(payload: unknown): unknown {
 
 // ─── Temple API ─────────────────────────────────────────────────
 
+// API returns images as either string[] (Wikipedia URLs from temple seed)
+// or {url, alt, type}[] (legacy structured shape). Consumers use a helper to read first URL.
+export type TempleImage = string | { url: string; alt?: string; type?: string };
+
 export interface TempleListItem {
  id: string;
  name: string;
@@ -97,7 +101,7 @@ export interface TempleListItem {
  state: string;
  lat: number;
  lng: number;
- images: { url: string; alt: string; type: string }[];
+ images: TempleImage[];
  isVerified: boolean;
  trustScore: number;
  liveDarshanEnabled: boolean;
@@ -372,7 +376,7 @@ export interface DarshanStream {
  slug: string;
  city: string;
  deityPrimary: string;
- images: { url: string; alt: string }[];
+ images: TempleImage[];
  };
 }
 
