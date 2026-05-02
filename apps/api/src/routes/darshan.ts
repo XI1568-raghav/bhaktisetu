@@ -13,8 +13,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Somnath Temple',
     city: 'Veraval',
     deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UCzyMnhcnMluiOvX5YkeBYqQ', // Shree Somnath (official)
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCzyMnhcnMluiOvX5YkeBYqQ&autoplay=1',
+    youtubeChannelId: 'UCT1egsvA08YcdMLiEu1DTRg', // Shree Somnath (official)
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCT1egsvA08YcdMLiEu1DTRg&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1590077428593-a55bb07c4665?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 8450,
     peakViewers: 15200,
@@ -91,8 +91,8 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Mahakaleshwar Temple',
     city: 'Ujjain',
     deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UC9rPSwAjIsr2DESJTQ-V_9A', // Ujjain Mahakal (official)
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC9rPSwAjIsr2DESJTQ-V_9A&autoplay=1',
+    youtubeChannelId: 'UC7q12ONY2mvuq066rreluhQ', // Mahakaleshwar Jyotirlinga Live Darshan — daily Bhasma Aarti
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC7q12ONY2mvuq066rreluhQ&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1604948501466-4e9c339b9c24?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 9400,
     peakViewers: 22000,
@@ -104,7 +104,7 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shri Mata Vaishno Devi Temple',
     city: 'Katra',
     deityPrimary: 'Goddess Vaishno Devi',
-    youtubeChannelId: 'UCFYQr1l7ereS27SrLJ8bBtw', // Shri Mata Vaishno Devi Shrine Board (official)
+    youtubeChannelId: 'UCFYQr1l7ereS27SrLJ8bBtw', // Shri Mata Vaishno Devi Shrine Board (official, verified 2026-05-02 — irregular cadence; resolver picks latest VOD)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCFYQr1l7ereS27SrLJ8bBtw&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 5800,
@@ -117,7 +117,7 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Jagannath Temple',
     city: 'Puri',
     deityPrimary: 'Lord Jagannath',
-    youtubeChannelId: 'UCstacpPsNLSiGcYe7qbF14Q', // Shree Jagannatha Temple Administration, Puri (official)
+    youtubeChannelId: 'UCstacpPsNLSiGcYe7qbF14Q', // Shree Jagannatha Temple Administration, Puri (official, verified 2026-05-02 — daily Dhwaja Bandha Ritual + Patitapabana Darshan)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCstacpPsNLSiGcYe7qbF14Q&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 7300,
