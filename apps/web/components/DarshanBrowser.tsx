@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import type { DarshanStream, TempleImage } from '../lib/api';
 import { getTempleHero, getDeityImage, wikiThumb } from '../lib/images';
+import { Fragment } from 'react';
+import AdSlot from './AdSlot';
 
 function firstImageUrl(images: TempleImage[] | undefined): string | null {
  if (!images || images.length === 0) return null;
@@ -240,11 +242,18 @@ export default function DarshanBrowser({
       <p className="text-sm text-surface-500">No live streams match your filters.</p>
      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-       {filteredLive.map((stream) => {
+       {filteredLive.map((stream, index) => {
         const templeImage = templeImageFor(stream);
+        // In-feed sponsored card every 4th tile (after card 4, 8, 12 …).
+        const showAd = index > 0 && index % 4 === 0;
         return (
+         <Fragment key={stream.id}>
+         {showAd && (
+          <div className="sm:col-span-2 lg:col-span-4">
+           <AdSlot slotId="DARSHAN_INFEED" format="in-feed" label="Sponsored" />
+          </div>
+         )}
          <Link
-          key={stream.id}
           href={streamHref(stream)}
           className="group rounded-xl overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-surface-200 hover:shadow-lg transition-all duration-300"
          >
@@ -297,6 +306,7 @@ export default function DarshanBrowser({
            )}
           </div>
          </Link>
+         </Fragment>
         );
        })}
       </div>

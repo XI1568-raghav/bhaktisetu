@@ -38,6 +38,7 @@ import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
+import AdSenseScript from "../components/AdSenseScript";
 import { getTempleHero } from "../lib/images";
 import Link from "next/link";
 import "./globals.css";
@@ -403,6 +404,7 @@ export default function RootLayout({
  <DeferredClientWidgets />
  <Analytics />
  <SentryProvider />
+ <AdSenseScript />
  <NotificationPrompt />
  </CartProvider>
  </AuthProvider>

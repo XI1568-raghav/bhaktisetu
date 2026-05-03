@@ -20,6 +20,7 @@ import {
 } from '../../../lib/api';
 import DarshanPlayer from '../../../components/DarshanPlayer';
 import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
+import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
 
 // ─── YouTube stream URL lookup for fallback ──────────────────────────────────
@@ -451,6 +452,7 @@ export default async function DarshanDetailPage({
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
  {/* Main — Video Player */}
  <div className="lg:col-span-2 space-y-6">
+ <AdSlot slotId="DARSHAN_BANNER" format="horizontal" label="Sponsored" />
  {/* Player */}
  {stream.streamProvider === 'YOUTUBE' ? (
  <YouTubeDarshanPlayer
