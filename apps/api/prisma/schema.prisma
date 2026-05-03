@@ -657,12 +657,44 @@ model PanditProfile {
   availability    Json?
   approved        Boolean   @default(false)
   approvedAt      DateTime? @map("approved_at")
+  availableForAntyeshti Boolean @default(false) @map("available_for_antyeshti")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@index([city])
   @@index([approved])
+  @@index([availableForAntyeshti])
   @@map("pandit_profiles")
+}
+
+// Layer AT — death rites booking. No online payment (collect on-site to
+// avoid distress on the bereaved). Status flow:
+//   pending_coordinator → coordinator_called → pandit_assigned →
+//   in_progress → completed | cancelled
+model AntimSanskarBooking {
+  id                  String   @id @default(uuid()) @db.Uuid
+  bookingNumber       String   @unique @map("booking_number")
+  deceasedName        String   @map("deceased_name")
+  contactName         String   @map("contact_name")
+  contactPhone        String   @map("contact_phone")
+  contactRelation     String?  @map("contact_relation")
+  city                String
+  preferredGhat       String?  @map("preferred_ghat")
+  preferredDate       DateTime @map("preferred_date") @db.Date
+  packageTier         String   @map("package_tier")
+  packagePriceInr     Int      @map("package_price_inr")
+  asthiVisarjanRiver  String?  @map("asthi_visarjan_river")
+  notes               String?
+  userId              String?  @map("user_id") @db.Uuid
+  status              String   @default("pending_coordinator")
+  assignedPanditId    String?  @map("assigned_pandit_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([city])
+  @@index([preferredDate])
+  @@index([status])
+  @@map("antim_sanskar_bookings")
 }
 
 model StoreProfile {
