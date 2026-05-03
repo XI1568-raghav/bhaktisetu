@@ -49,7 +49,7 @@ const CHANNEL_BY_SLUG: Record<string, string> = {
  'siddhivinayak': 'UCF9FdiMBENIbM6jb44zWmCQ',
  'mahakaleshwar-ujjain': 'UC7q12ONY2mvuq066rreluhQ',
  'mahakaleshwar': 'UC7q12ONY2mvuq066rreluhQ',
- 'vaishno-devi': 'UCziZy6xAlJWPzgIY4duxAeQ',
+ 'vaishno-devi': 'UCFYQr1l7ereS27SrLJ8bBtw',
  'jagannath-puri': 'UCstacpPsNLSiGcYe7qbF14Q',
 };
 
@@ -101,7 +101,7 @@ const YOUTUBE_STREAMS: Record<string, string> = {
  'siddhivinayak': ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
  'mahakaleshwar-ujjain': ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
  'mahakaleshwar': ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
- 'vaishno-devi': ytEmbed('UCziZy6xAlJWPzgIY4duxAeQ'),
+ 'vaishno-devi': ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
  'jagannath-puri': ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
  // Bonus extras for related-temples links
  // ISKCON Vrindavan — UCAA6IsLVfbHrP1I_lzxv09Q (verified 2026-05-02, daily "Live Darshan" + SB classes).
@@ -232,7 +232,7 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  'vaishno-devi': {
  id: 'live-vaishno-devi',
  templeId: 'temple-vaishno',
- playbackUrl: ytEmbed('UCziZy6xAlJWPzgIY4duxAeQ'),
+ playbackUrl: ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
  status: 'live',
  viewerCount: 5800,
  peakViewers: 16000,

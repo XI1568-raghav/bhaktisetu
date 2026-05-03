@@ -104,12 +104,12 @@ const TEMPLE_LIVE_STREAMS = [
     templeName: 'Shri Mata Vaishno Devi Temple',
     city: 'Katra',
     deityPrimary: 'Goddess Vaishno Devi',
-    youtubeChannelId: 'UCziZy6xAlJWPzgIY4duxAeQ', // Shraddha MH ONE — daily "Live: Maa Vaishno Devi Aarti From Bhawan" (verified 2026-05-03)
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCziZy6xAlJWPzgIY4duxAeQ&autoplay=1',
+    youtubeChannelId: 'UCFYQr1l7ereS27SrLJ8bBtw', // Shri Mata Vaishno Devi Shrine Board (official). Embed-allowed (verified 2026-05-04). Reverted from UCziZy6xAlJWPzgIY4duxAeQ Shraddha MH ONE because that channel uses KDigital licensed audio which BLOCKS iframe embed (returns "Video unavailable — content from KDigital, blocked from display on this website").
+    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCFYQr1l7ereS27SrLJ8bBtw&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=640&h=360&fit=crop&auto=format&q=80',
     viewerCount: 5800,
     peakViewers: 16000,
-    availability: 'Daily Aarti from Bhawan',
+    availability: 'Periodic live darshan (Shrine Board)',
   },
   {
     id: 'live-jagannath',
