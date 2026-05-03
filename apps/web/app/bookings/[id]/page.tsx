@@ -195,6 +195,13 @@ function BookingDetailContent() {
  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
  const [cancelling, setCancelling] = useState(false);
 
+ // Refund state — devotee-initiated refund for paid bookings >24h before slot.
+ const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+ const [refunding, setRefunding] = useState(false);
+ const [refundReason, setRefundReason] = useState('');
+ const [refundRequested, setRefundRequested] = useState(false);
+ const [refundError, setRefundError] = useState<string | null>(null);
+
  useEffect(() => {
  async function fetchBooking() {
  try {
@@ -255,6 +262,35 @@ function BookingDetailContent() {
  setShowCancelConfirm(false);
  };
 
+ // Devotee-initiated refund — eligibility (paid + scheduled > now+24h) is
+ // re-checked server-side; client gates UI by visible status only.
+ const handleRequestRefund = async () => {
+ if (!booking) return;
+ setRefunding(true);
+ setRefundError(null);
+ try {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/request-refund`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${session?.accessToken}`,
+ },
+ body: JSON.stringify({ reason: refundReason || 'Devotee requested refund' }),
+ });
+ if (!res.ok) {
+ const j = (await res.json().catch(() => ({}))) as { error?: string };
+ throw new Error(j.error ?? `HTTP ${res.status}`);
+ }
+ setRefundRequested(true);
+ setBooking({ ...booking, status: 'cancelled' });
+ } catch (err) {
+ setRefundError(err instanceof Error ? err.message : 'Failed to request refund');
+ } finally {
+ setRefunding(false);
+ setShowRefundConfirm(false);
+ }
+ };
+
  if (loading) {
  return (
  <div className="flex min-h-screen items-center justify-center bg-saffron-50">
@@ -291,6 +327,19 @@ function BookingDetailContent() {
  booking.status !== 'video_uploaded' &&
  booking.status !== 'delivered' &&
  booking.status !== 'in_progress';
+ // Refund only when booking is paid (i.e. past pending_payment & not yet
+ // performed) AND scheduled date+time is more than 24h away.
+ const scheduledMs = (() => {
+ const parts = (booking.scheduledTime || '00:00').split(':').map(Number);
+ const d = new Date(booking.scheduledDate + 'T00:00:00');
+ d.setHours(parts[0] ?? 0, parts[1] ?? 0, 0, 0);
+ return d.getTime();
+ })();
+ const isRefundable =
+ !refundRequested &&
+ (booking.status === 'booked' ||
+ booking.status === 'priest_assigned') &&
+ scheduledMs - Date.now() > 24 * 60 * 60 * 1000;
  const canReview =
  !booking.review &&
  !reviewSubmitted &&
@@ -724,6 +773,55 @@ function BookingDetailContent() {
  </button>
  )}
  </>
+ )}
+
+ {isRefundable && (
+ showRefundConfirm ? (
+ <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+ <p className="mb-2 text-sm text-amber-800">
+ Confirm cancellation &amp; refund. Your payment will be returned within 5-7 business days.
+ </p>
+ <textarea
+ value={refundReason}
+ onChange={(e) => setRefundReason(e.target.value.slice(0, 200))}
+ placeholder="Reason (optional)"
+ rows={2}
+ className="mb-2 w-full rounded-md border border-amber-300 px-2 py-1.5 text-xs text-surface-700"
+ />
+ <div className="flex gap-2">
+ <button
+ onClick={handleRequestRefund}
+ disabled={refunding}
+ className="flex-1 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+ >
+ {refunding ? 'Submitting…' : 'Confirm refund'}
+ </button>
+ <button
+ onClick={() => setShowRefundConfirm(false)}
+ className="flex-1 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-600 hover:bg-surface-50"
+ >
+ Back
+ </button>
+ </div>
+ {refundError && (
+ <p className="mt-2 text-xs text-red-600">{refundError}</p>
+ )}
+ </div>
+ ) : (
+ <button
+ onClick={() => setShowRefundConfirm(true)}
+ className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-amber-300 py-2.5 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-50"
+ >
+ <XCircle className="h-4 w-4" />
+ Request cancellation &amp; refund
+ </button>
+ )
+ )}
+
+ {refundRequested && (
+ <div className="rounded-lg border border-tulsi-green-light/50 bg-tulsi-green-light/10 p-3 text-xs text-tulsi-green-dark">
+ Refund requested. It will be processed within 1 hour and credited within 5-7 business days.
+ </div>
  )}
 
  <Link
