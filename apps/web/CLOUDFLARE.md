@@ -17,7 +17,7 @@ npx wrangler login          # OAuth flow — opens browser
 Create the Pages project once (via Dashboard or CLI):
 
 ```bash
-npx wrangler pages project create poojly-web --production-branch main
+npx wrangler pages project create darshya --production-branch main
 ```
 
 ## Deploy
@@ -43,7 +43,7 @@ pnpm run pages:dev
 
 Defaults live in `wrangler.toml` under `[vars]` (non-secret, `NEXT_PUBLIC_*` only). For secrets and per-environment overrides, use the Cloudflare dashboard:
 
-1. Cloudflare Dashboard -> Workers & Pages -> `poojly-web` -> Settings -> Environment variables
+1. Cloudflare Dashboard -> Workers & Pages -> `darshya` -> Settings -> Environment variables
 2. Add per environment (Production / Preview):
    - `NEXT_PUBLIC_API_URL` = `https://api.darshya.online` (production) or Railway preview URL
    - `NEXT_PUBLIC_SUPABASE_URL`
