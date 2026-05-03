@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface Member {
@@ -20,7 +20,7 @@ function authHeader(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export default function OrgMembersPage() {
+function OrgMembersContent() {
   const sp = useSearchParams();
   const orgId = sp.get("org");
   const [members, setMembers] = useState<Member[]>([]);
@@ -169,5 +169,13 @@ export default function OrgMembersPage() {
         )}
       </section>
     </main>
+  );
+}
+
+export default function OrgMembersPage() {
+  return (
+    <Suspense fallback={<main className="p-10">Loading…</main>}>
+      <OrgMembersContent />
+    </Suspense>
   );
 }
