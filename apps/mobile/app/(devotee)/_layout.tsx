@@ -131,6 +131,15 @@ export default function TabLayout() {
           title: 'Support',
         }}
       />
+      {/* TD10 — feature-parity sub-screens. Hidden from tab bar; reached via push. */}
+      <Tabs.Screen name="darshan-player" options={{ href: null, title: 'Darshan Player' }} />
+      <Tabs.Screen name="kundli" options={{ href: null, title: 'Kundli' }} />
+      <Tabs.Screen name="horoscope" options={{ href: null, title: 'Horoscope' }} />
+      <Tabs.Screen name="yatra" options={{ href: null, title: 'Yatra' }} />
+      <Tabs.Screen name="yatra-detail" options={{ href: null, title: 'Yatra Detail' }} />
+      <Tabs.Screen name="weddings" options={{ href: null, title: 'Weddings' }} />
+      <Tabs.Screen name="weddings-muhurat" options={{ href: null, title: 'Muhurat' }} />
+      <Tabs.Screen name="upgrade" options={{ href: null, title: 'Upgrade' }} />
     </Tabs>
     </RoleGuard>
   );
