@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import type { Metadata } from 'next';
 import AstrologyClient from './AstrologyClient';
 import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip';

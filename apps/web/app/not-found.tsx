@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import Link from 'next/link';
 
 // Global 404 page. Also serves as the SSR fallback for client-only protected
