@@ -9,6 +9,8 @@ import {
   generateQuoraAnswer,
 } from '../services/content-draft.service.js';
 import { runContentSeed } from '../jobs/content-seed.js';
+import { runContentAutoPost } from '../jobs/content-auto-post.js';
+import { isRedditConfigured } from '../lib/reddit.js';
 
 // Admin routes for the Reddit/Quora content draft queue.
 // All gated behind ADMIN role. Reads + writes go through the
@@ -67,6 +69,23 @@ export async function adminContentQueueRoutes(server: FastifyInstance) {
   server.post('/run', { preHandler: adminPreHandlers }, async () => {
     const result = await runContentSeed(true);
     return result;
+  });
+
+  // POST /admin/content-queue/auto-post — manually trigger Reddit auto-post.
+  // Picks oldest APPROVED reddit drafts within the safelist, respects per-sub
+  // 24h cooldown, max 2 per call. Quora is paste-only (Quora has no API).
+  server.post('/auto-post', { preHandler: adminPreHandlers }, async () => {
+    const result = await runContentAutoPost();
+    return result;
+  });
+
+  // GET /admin/content-queue/auto-post/status — env probe for the UI badge.
+  server.get('/auto-post/status', { preHandler: adminPreHandlers }, async () => {
+    return {
+      reddit: isRedditConfigured(),
+      quora: false,
+      quoraReason: 'Quora has no public posting API — paste manually',
+    };
   });
 
   // POST /admin/content-queue/generate — single ad-hoc draft
