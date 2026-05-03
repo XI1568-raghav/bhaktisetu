@@ -3,6 +3,7 @@ import { runOutreachTick } from './outreach-cron.js';
 import { maybeRunYoutubeDiscovery, type YoutubeDiscoveryResult } from './youtube-discovery.js';
 import { maybeRunApolloRefresh, type ApolloRefreshResult } from './apollo-refresh.js';
 import { tickContentSeed, type ContentSeedResult } from './content-seed.js';
+import { tickContentAutoPost, type AutoPostResult } from './content-auto-post.js';
 import { runAartiNotify, type AartiNotifyResult } from './aarti-notify.js';
 import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.js';
 import { prewarmDailyHoroscopes } from '../lib/astrology.js';
@@ -64,6 +65,7 @@ export interface DailyOpsResult {
   youtube: YoutubeResult;
   apollo: ApolloResult;
   contentSeed: ContentSeedResult;
+  contentAutoPost: AutoPostResult;
   aartiNotify: AartiNotifyResult;
   weeklyDigest: WeeklyDigestResult & { gated?: boolean };
   horoscopes: { generated: number; date: string; skipped?: boolean; reason?: string };
@@ -254,6 +256,15 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
         skipped: true,
         reason: 'outreachOnly',
       },
+      contentAutoPost: {
+        attempted: 0,
+        posted: 0,
+        failed: 0,
+        skipped: 0,
+        errors: [],
+        ranAt: new Date().toISOString(),
+        reason: 'outreachOnly',
+      },
       aartiNotify: {
         templesChecked: 0,
         aartisMatched: 0,
@@ -274,6 +285,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const youtube = await tickYoutubeDiscovery();
   const apollo = await tickApolloRefresh();
   const contentSeed = await tickContentSeed();
+  const contentAutoPost = await tickContentAutoPost();
   const aartiNotify = await tickAartiNotify();
   const weeklyDigest = await tickWeeklyDigest();
   const horoscopes = await tickHoroscopePrewarm();
@@ -285,6 +297,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     youtube,
     apollo,
     contentSeed,
+    contentAutoPost,
     aartiNotify,
     weeklyDigest,
     horoscopes,
