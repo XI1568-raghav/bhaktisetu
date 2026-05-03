@@ -17,6 +17,7 @@ import {
  CheckCircle,
  Leaf,
 } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
@@ -39,7 +40,9 @@ const organizationJsonLd = {
   ],
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+ const t = await getTranslations('home');
+ const tCommon = await getTranslations('common');
  return (
  <ScrollReveal>
  <script
@@ -52,10 +55,10 @@ export default function HomePage() {
    className="sticky top-14 z-[55] w-full text-center text-[12px] sm:text-xs px-4 py-2"
    style={{ background: 'var(--color-primary)', color: '#fff' }}
  >
-   <span className="font-medium">1000-devotee early access</span>
+   <span className="font-medium">{t('bannerEarlyAccess')}</span>
    <span className="mx-2 opacity-70">—</span>
    <Link href="/waitlist" className="underline underline-offset-2 font-semibold whitespace-nowrap">
-     Join the waitlist →
+     {t('bannerCta')} →
    </Link>
  </div>
  <div style={{ background: 'var(--color-bg)' }}>
@@ -71,7 +74,7 @@ export default function HomePage() {
  style={{ background: 'var(--color-art-2)', color: 'var(--color-text)' }}
  >
  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
- Early access — 1,000 founding devotees
+ {t('heroBadge')}
  </div>
 
  <h1
@@ -79,8 +82,8 @@ export default function HomePage() {
  className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
  >
- Your bridge to{' '}
- <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>sacred traditions</span>
+ {t('heroTitle1')}{' '}
+ <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>{t('heroTitle2')}</span>
  </h1>
 
  <p
@@ -89,7 +92,7 @@ export default function HomePage() {
  className="mt-4 text-sm leading-relaxed"
  style={{ color: 'var(--color-text-muted)' }}
  >
- Watch live temple darshan. Book authentic pujas with verified priests. Get AI-powered spiritual guidance rooted in ancient wisdom.
+ {t('heroSubtitle')}
  </p>
 
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
@@ -99,16 +102,16 @@ export default function HomePage() {
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
  >
- Book a Puja
+ {t('heroCtaSecondary')}
  </Link>
  </div>
 
  <div data-reveal="fade" data-delay="4" className="mt-8 flex items-center gap-6 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Verified</span> Temples</div>
+ <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeVerified')}</span> {t('heroBadgeTemples')}</div>
  <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Aadhaar</span> Priests</div>
+ <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeAadhaar')}</span> {t('heroBadgePriests')}</div>
  <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>HD</span> Live Streams</div>
+ <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeHd')}</span> {t('heroBadgeStreams')}</div>
  </div>
  </div>
 
@@ -162,13 +165,13 @@ export default function HomePage() {
  {/* ═══ OUR STORY — wipe-in timeline ════════════════════════════════ */}
  <section className="py-8 md:py-10" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
- <p data-reveal="spring" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Our Story</p>
+ <p data-reveal="spring" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>{t('ourStory')}</p>
  <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
  {[
- { num: '01', title: 'The Gap', text: 'Millions of Hindus worldwide are disconnected from their spiritual roots and temple traditions.' },
- { num: '02', title: 'The Market', text: 'A $58B religious market is moving online — yet no single platform serves the full devotional journey.' },
- { num: '03', title: 'The Bridge', text: 'Darshya brings live darshan, verified pujas, AI guidance, and sacred commerce into one app.' },
- { num: '04', title: 'The Impact', text: 'Onboarding 200+ temples and verified priests; building a trustworthy bridge for devotees worldwide.' },
+ { num: '01', title: t('story1Title'), text: t('story1Text') },
+ { num: '02', title: t('story2Title'), text: t('story2Text') },
+ { num: '03', title: t('story3Title'), text: t('story3Text') },
+ { num: '04', title: t('story4Title'), text: t('story4Text') },
  ].map((ch, i) => (
  <div key={ch.num} data-reveal="cascade" data-delay={String(i + 1)} className="relative pl-4" style={{ borderLeft: '2px solid var(--color-primary)' }}>
  <span className="text-[10px] font-bold" style={{ color: 'var(--color-primary)' }}>{ch.num}</span>
@@ -185,10 +188,10 @@ export default function HomePage() {
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {[
- { number: '1B+', label: 'Hindus worldwide' },
- { number: '30M+', label: 'NRIs disconnected' },
- { number: '900+', label: 'Spiritual startups' },
- { number: '$58B', label: 'Market size' },
+ { number: '1B+', label: t('stat1') },
+ { number: '30M+', label: t('stat2') },
+ { number: '900+', label: t('stat3') },
+ { number: '$58B', label: t('stat4') },
  ].map((stat, i) => (
  <div key={stat.number} data-reveal="cascade" data-delay={String(i + 1)} className="p-3 rounded-xl text-center" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <p data-counter data-counter-target={stat.number} className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary)' }}>{stat.number}</p>
@@ -207,20 +210,20 @@ export default function HomePage() {
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-center gap-2.5 mb-3">
  <Zap className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
- <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Everything in one app</p>
+ <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>{t('everythingOneApp')}</p>
  </div>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- One platform for your complete spiritual journey
+ {t('everythingTitle')}
  </h2>
  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
  {[
- { title: 'Live Darshan', desc: 'HD streams from 200+ temples', href: '/darshan' },
- { title: 'Verified Pujas', desc: 'Video proof + prasad delivery', href: '/pujas' },
- { title: 'Dharmic Yatra', desc: 'Char Dham, 12 Jyotirlingas & more', href: '/yatra' },
- { title: 'AI Pandit', desc: 'Gita-powered spiritual guidance', href: '/ask-pandit' },
- { title: 'Sacred Content', desc: '5,000+ aartis, mantras, bhajans', href: '/content' },
- { title: 'Astrology', desc: 'Free kundli + daily horoscope', href: '/astrology' },
- { title: 'Wellness', desc: 'Yoga, meditation, vipassana', href: '/wellness' },
+ { title: t('featLiveDarshan'), desc: t('featLiveDarshanDesc'), href: '/darshan' },
+ { title: t('featVerifiedPujas'), desc: t('featVerifiedPujasDesc'), href: '/pujas' },
+ { title: t('featDharmicYatra'), desc: t('featDharmicYatraDesc'), href: '/yatra' },
+ { title: t('featAiPandit'), desc: t('featAiPanditDesc'), href: '/ask-pandit' },
+ { title: t('featSacredContent'), desc: t('featSacredContentDesc'), href: '/content' },
+ { title: t('featAstrology'), desc: t('featAstrologyDesc'), href: '/astrology' },
+ { title: t('featWellness'), desc: t('featWellnessDesc'), href: '/wellness' },
  ].map((item, i) => (
  <Link
  key={item.title}
@@ -246,13 +249,13 @@ export default function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-center justify-between mb-5">
  <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>Live Darshan</p>
+ <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>{t('liveDarshanLabel')}</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- See the divine, from anywhere
+ {t('liveDarshanTitle')}
  </h2>
  </div>
  <Link href="/darshan" data-reveal="fade" className="inline-flex items-center gap-1 text-xs font-medium link-underline" style={{ color: 'var(--color-primary)' }}>
- All streams <ArrowRight className="w-3 h-3" />
+ {t('allStreams')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
 
@@ -295,12 +298,12 @@ export default function HomePage() {
  <div className="grid md:grid-cols-2 gap-5">
  {/* Puja Booking card */}
  <div data-reveal="spring" className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Puja Booking</p>
+ <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('pujaBookingLabel')}</p>
  <h3 className="text-lg font-semibold tracking-tight mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Authentic rituals, verified priests
+ {t('pujaBookingTitle')}
  </h3>
  <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
- Book pujas at India&apos;s most revered temples. Every ritual performed by verified pandits with live video proof and sacred prasad delivery.
+ {t('pujaBookingDesc')}
  </p>
  <div className="grid grid-cols-5 grid-rows-2 gap-2 mb-4" style={{ height: '160px' }}>
  <div className="col-span-3 row-span-2 rounded-lg overflow-hidden" data-parallax="0.04">
@@ -316,9 +319,9 @@ export default function HomePage() {
  </div>
  <div className="flex flex-wrap gap-3 mb-4">
  {[
- { icon: Shield, label: 'Verified' },
- { icon: Video, label: 'Video Proof' },
- { icon: Gift, label: 'Prasad Delivery' },
+ { icon: Shield, label: tCommon('verified') },
+ { icon: Video, label: t('videoProof') },
+ { icon: Gift, label: t('prasadDelivery') },
  ].map((f) => (
  <div key={f.label} className="flex items-center gap-1.5">
  <f.icon className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
@@ -327,18 +330,18 @@ export default function HomePage() {
  ))}
  </div>
  <Link href="/pujas" className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
- Browse Pujas <ArrowRight className="w-3 h-3" />
+ {t('browsePujas')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
 
  {/* Astrology card */}
  <div data-reveal="right" className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Astrology</p>
+ <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('astrologyLabel')}</p>
  <h3 className="text-lg font-semibold tracking-tight mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Consult India&apos;s top astrologers
+ {t('astrologyTitle')}
  </h3>
  <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
- Free kundli, daily horoscope for 12 rashis, live consultations starting at ₹15/min with 15+ verified Vedic astrologers.
+ {t('astrologyDesc')}
  </p>
 
  {/* Visual: 12 rashis grid + astrologer card */}
@@ -378,9 +381,9 @@ export default function HomePage() {
 
  <div className="space-y-2 mb-4">
  {[
- { title: 'Free Kundli', badge: 'Free', href: '/astrology/kundli' },
- { title: 'Daily Horoscope', badge: 'Daily', href: '/astrology/horoscope' },
- { title: 'Live Consultation', badge: 'From ₹15/min', href: '/astrology' },
+ { title: t('freeKundli'), badge: tCommon('free'), href: '/astrology/kundli' },
+ { title: t('dailyHoroscope'), badge: 'Daily', href: '/astrology/horoscope' },
+ { title: t('liveConsultation'), badge: 'From ₹15/min', href: '/astrology' },
  ].map((card) => (
  <Link key={card.title} href={card.href} prefetch={false} className="group flex items-center justify-between p-2.5 rounded-lg transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <div className="flex items-center gap-2">
@@ -392,7 +395,7 @@ export default function HomePage() {
  ))}
  </div>
  <Link href="/astrology" className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
- Talk to Astrologer <ArrowRight className="w-3 h-3" />
+ {t('talkToAstrologer')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
  </div>
@@ -407,16 +410,16 @@ export default function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>AI Spiritual Guide</p>
+ <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('aiGuideLabel')}</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Get wisdom from ancient scriptures, instantly
+ {t('aiGuideTitle')}
  </h2>
  <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- Ask Pandit Ji anything. Powered by AI with deep knowledge of the Bhagavad Gita, Upanishads, and Vedic traditions.
+ {t('aiGuideDesc')}
  </p>
  <div data-reveal="spring" data-delay="2">
  <Link href="/ask-pandit" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
- Ask Your Question <ArrowRight className="w-3.5 h-3.5" />
+ {t('askYourQuestion')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
  </div>
@@ -427,8 +430,8 @@ export default function HomePage() {
  <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
  </div>
  <div>
- <p className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>Pandit Ji</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>AI Spiritual Guide</p>
+ <p className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{t('panditJi')}</p>
+ <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>{t('aiSpiritualGuide')}</p>
  </div>
  </div>
  <div className="p-4 space-y-3">
@@ -455,12 +458,12 @@ export default function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Bhakti Store</p>
+ <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('bhaktiStoreLabel')}</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Everything for daily worship
+ {t('bhaktiStoreTitle')}
  </h2>
  <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols — all delivered to your doorstep. Free shipping on orders above ₹499.
+ {t('bhaktiStoreDesc')}
  </p>
  <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-5">
  {['Puja Essentials', 'Rudraksha & Malas', 'Idols', 'Books', 'Organic'].map((tag) => (
@@ -469,7 +472,7 @@ export default function HomePage() {
  </div>
  <div data-reveal="spring" data-delay="3">
  <Link href="/store" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
- Shop Essentials <ArrowRight className="w-3.5 h-3.5" />
+ {t('shopEssentials')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
  </div>
@@ -500,10 +503,10 @@ export default function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {[
- { title: 'Gau Seva', desc: 'Adopt a cow from ₹51/day', href: '/gaushala', icon: Heart },
- { title: 'Panchang', desc: 'Daily tithi & muhurat', href: '/panchang', icon: Calendar },
- { title: 'Content', desc: '5K+ aartis & mantras', href: '/content', icon: Music },
- { title: 'Wellness', desc: 'Yoga & meditation', href: '/wellness', icon: Leaf },
+ { title: t('gauSevaTitle'), desc: t('gauSevaDesc'), href: '/gaushala', icon: Heart },
+ { title: t('panchangTitle'), desc: t('panchangDesc'), href: '/panchang', icon: Calendar },
+ { title: t('contentTitle'), desc: t('contentDesc'), href: '/content', icon: Music },
+ { title: t('wellnessTitle'), desc: t('wellnessDesc'), href: '/wellness', icon: Leaf },
  ].map((item, i) => (
  <Link
  key={item.title}
@@ -527,10 +530,10 @@ export default function HomePage() {
  <section className="py-10 md:py-12">
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
  <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Join the early-access community
+ {t('finalCtaTitle')}
  </h2>
  <p data-reveal="up" data-delay="1" className="text-xs max-w-sm mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
- Begin your spiritual journey today. Live darshan, authentic pujas, AI guidance — all in one place.
+ {t('finalCtaDesc')}
  </p>
  <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3">
  <Link
@@ -538,14 +541,14 @@ export default function HomePage() {
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
  style={{ background: 'var(--color-primary)' }}
  >
- Get Started <ArrowRight className="w-3.5 h-3.5" />
+ {tCommon('getStarted')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  <Link
  href="/temples"
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
  >
- Explore First
+ {t('exploreFirst')}
  </Link>
  </div>
  </div>

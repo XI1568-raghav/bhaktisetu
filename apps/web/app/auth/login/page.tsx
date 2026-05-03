@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Flame, Phone, Mail, ArrowRight, Loader2, CheckCircle2, ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
@@ -21,6 +22,8 @@ function GoogleIcon({ className }: { className?: string }) {
 
 export default function LoginPage() {
  const { signInWithOtp, verifyOtp, signInWithCredentials, isAuthenticated, user } = useAuth();
+ const t = useTranslations('auth');
+ const tCommon = useTranslations('common');
 
  // Demo chips are hidden by default in production. Pass ?demo=1 to enable
  // them for our own QA / showing the app to investors. Real users never
@@ -247,9 +250,7 @@ export default function LoginPage() {
  </span>
  </div>
  <p className="text-surface-500 text-sm">
- {step === 'otp'
- ? 'Enter the code sent to your phone'
- : 'Sign in to your spiritual journey'}
+ {step === 'otp' ? t('otpLabel') : t('loginSubtitle')}
  </p>
  </div>
 
@@ -283,11 +284,11 @@ export default function LoginPage() {
  className="flex items-center gap-1 text-sm text-surface-500 hover:text-saffron-600 mb-4 transition-colors"
  >
  <ArrowLeft className="w-4 h-4" />
- Change number
+ {t('back')}
  </button>
 
  <p className="text-sm text-surface-600 mb-1">
- Enter the 6-digit code sent to
+ {t('otpSent')}
  </p>
  <p className="text-sm font-semibold text-surface-800 mb-6">
  +91 {formatPhoneDisplay(phone)}
@@ -322,11 +323,11 @@ export default function LoginPage() {
  {isSubmitting ? (
  <>
  <Loader2 className="w-5 h-5 animate-spin" />
- Verifying...
+ {tCommon('loading')}
  </>
  ) : (
  <>
- Verify & Sign In
+ {t('verifyCta')}
  <CheckCircle2 className="w-5 h-5" />
  </>
  )}
@@ -335,8 +336,8 @@ export default function LoginPage() {
  <div className="mt-4 text-center">
  {resendCountdown > 0 ? (
  <p className="text-sm text-surface-400">
- Resend OTP in{' '}
- <span className="font-semibold text-surface-600">{resendCountdown}s</span>
+ {t('resendIn')}{' '}
+ <span className="font-semibold text-surface-600">{resendCountdown}{t('seconds')}</span>
  </p>
  ) : (
  <button
@@ -344,7 +345,7 @@ export default function LoginPage() {
  disabled={isSubmitting}
  className="text-sm text-saffron-600 font-semibold hover:text-saffron-700 transition-colors disabled:opacity-50"
  >
- Resend OTP
+ {t('resendOtp')}
  </button>
  )}
  </div>
@@ -375,7 +376,7 @@ export default function LoginPage() {
  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-surface-200 rounded-lg text-sm font-medium text-surface-700 hover:bg-surface-50 hover:-translate-y-0.5 hover:shadow-md transition-all"
  >
  <GoogleIcon className="w-5 h-5" />
- Continue with Google
+ {t('continueWithGoogle')}
  </button>
 
  {/* Divider */}
@@ -384,7 +385,7 @@ export default function LoginPage() {
  <div className="w-full border-t border-surface-200" />
  </div>
  <div className="relative flex justify-center text-xs uppercase">
- <span className="bg-[var(--color-surface)] px-3 text-surface-400">or continue with</span>
+ <span className="bg-[var(--color-surface)] px-3 text-surface-400">{t('or')}</span>
  </div>
  </div>
 

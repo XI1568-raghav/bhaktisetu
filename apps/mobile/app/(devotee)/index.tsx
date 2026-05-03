@@ -396,4 +396,32 @@ const styles = StyleSheet.create({
   pujaPrice: { fontSize: fontSize.base, fontWeight: '800', color: colors.saffron[700] },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   ratingText: { fontSize: fontSize.xs, color: colors.stone[700], fontWeight: '600' },
+  quickActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  quickAction: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    minWidth: 64,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.saffron[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  quickActionLabel: {
+    fontSize: fontSize.xs,
+    color: colors.stone[800],
+    fontWeight: '600',
+  },
 });
