@@ -61,7 +61,12 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', 'date-fns', '@tanstack/react-query', 'lodash'],
+    // TD3 — extended optimize list. These libs are tree-shake friendly under
+    // Next 15 modular optimization. Reduces initial JS bundle significantly.
+    optimizePackageImports: [
+      'lucide-react', 'date-fns', '@tanstack/react-query', 'lodash',
+      'react-icons', 'recharts', 'framer-motion', '@radix-ui/react-icons',
+    ],
     webpackBuildWorker: false,
   },
   compiler: {

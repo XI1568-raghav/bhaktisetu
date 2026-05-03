@@ -29,6 +29,7 @@ import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNav } from "../components/MobileNav";
+import HindiToggle from "../components/HindiToggle";
 import { MoreDropdown } from "../components/MoreDropdown";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
 import { Analytics } from "../components/Analytics";
@@ -288,6 +289,7 @@ export default function RootLayout({
  <div className="flex items-center gap-1.5 ml-auto md:ml-0 shrink-0">
  <ListYourBusinessDropdown />
  <GlobalSearch />
+ <HindiToggle />
  <NavCartButton />
  <div className="hidden sm:block">
  <NavAuthButton />
