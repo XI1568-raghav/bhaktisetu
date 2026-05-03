@@ -1,6 +1,8 @@
 # Cloudflare Pages Migration: `poojly-web` → `darshya` (TD13)
 
 > Status: **Migration complete on Cloudflare side as of 2026-05-02.** Code references updated. Old project pending deletion (7-day rollback hold).
+>
+> **Audit trail:** Initial code-ref cleanup landed in `3c94e77` (mistakenly bundled with the TD9 backup commit due to a stash/rebase race during the cutover session). This file is the canonical playbook; the TD13 commit `chore(infra): ... ` formalises ownership of the migration.
 
 ## Why this migration happened
 
