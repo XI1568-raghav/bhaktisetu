@@ -435,6 +435,13 @@ export async function bookingRoutes(server: FastifyInstance) {
 
       // templeId may be either an offering id (preferred, what web sends) or
       // a real Temple id (legacy). Resolve to a TemplePujaOffering either way.
+      // Validate UUID shape first — Prisma's findUnique throws P2023 on
+      // malformed uuids (cf. TD15 prod smoke 2026-05-04 surfacing 500s when
+      // legacy mobile clients sent slug-style ids).
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRe.test(templeId)) {
+        return { slots: [] };
+      }
       let offering = await prisma.templePujaOffering.findUnique({
         where: { id: templeId },
       });
