@@ -102,9 +102,21 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
   });
+  // Global rate limit. Per-prefix overrides applied via onRoute hook below.
+  // Per-user partition when authenticated; IP fallback for anon traffic.
   await server.register(rateLimit, {
     max: 100,
     timeWindow: '1 minute',
+    keyGenerator: (req) => {
+      const uid = (req as unknown as { currentUser?: { id?: string } }).currentUser?.id;
+      return uid ? `u:${uid}` : `ip:${req.ip}`;
+    },
+    onExceeded: (req) => {
+      server.log.warn(
+        { ip: req.ip, url: req.url, method: req.method },
+        'rate_limit_exceeded',
+      );
+    },
   });
   // Per-route raw body access. Opt-in only — routes that need it pass
   // `{ config: { rawBody: true } }` (e.g. payment webhooks where the
@@ -120,6 +132,25 @@ async function bootstrap() {
 
   // Register auth decorators (must be before routes)
   await registerAuthDecorators(server);
+
+  // Per-prefix rate-limit policy (TD6). Routes can override via
+  // `{ config: { rateLimit: ... } }` — this hook only fills defaults.
+  // Limits documented in docs/rate-limits.md.
+  server.addHook('onRoute', (routeOpts) => {
+    const url = routeOpts.url ?? '';
+    const existing = (routeOpts.config as { rateLimit?: unknown } | undefined)?.rateLimit;
+    if (existing) return;
+    let policy: { max: number; timeWindow: string } | null = null;
+    if (url.startsWith('/auth/') || url.startsWith('/auth')) policy = { max: 10, timeWindow: '1 minute' };
+    else if (url === '/ai/chat' || url.startsWith('/ai/chat')) policy = { max: 20, timeWindow: '1 minute' };
+    else if (url.startsWith('/bookings/create-order') || url.startsWith('/bookings/verify-payment')) policy = { max: 30, timeWindow: '1 minute' };
+    else if (url.startsWith('/donations/create-order')) policy = { max: 10, timeWindow: '1 minute' };
+    else if (url.startsWith('/admin/')) policy = { max: 60, timeWindow: '1 minute' };
+    else if (url.startsWith('/affiliate/')) policy = { max: 60, timeWindow: '1 minute' };
+    if (policy) {
+      routeOpts.config = { ...(routeOpts.config ?? {}), rateLimit: policy };
+    }
+  });
 
   // Health check
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
