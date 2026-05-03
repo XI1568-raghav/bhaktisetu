@@ -198,15 +198,8 @@ export async function adminRoutes(server: FastifyInstance) {
     return { message: 'Content deleted', contentId: id };
   });
 
-  server.get('/bookings', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { page, limit, status, templeId, priestId, dateFrom, dateTo } = request.query as {
-      page?: string; limit?: string; status?: string; templeId?: string; priestId?: string; dateFrom?: string; dateTo?: string;
-    };
-    return {
-      bookings: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20,
-      filters: { status, templeId, priestId, dateFrom, dateTo },
-    };
-  });
+  // GET /bookings moved to apps/api/src/routes/admin-bookings.ts (M2 layer).
+  // Registered separately at /api/v1/admin/bookings prefix in server.ts.
 
   server.get('/payments', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, dateFrom, dateTo } = request.query as {
