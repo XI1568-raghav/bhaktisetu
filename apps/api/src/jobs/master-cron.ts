@@ -8,6 +8,7 @@ import { runAartiNotify, type AartiNotifyResult } from './aarti-notify.js';
 import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.js';
 import { prewarmDailyHoroscopes } from '../lib/astrology.js';
 import { processAutoRefunds } from '../services/refund.service.js';
+import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
 
 interface RefundCronResult {
   processed: number;
@@ -70,6 +71,7 @@ export interface DailyOpsResult {
   weeklyDigest: WeeklyDigestResult & { gated?: boolean };
   horoscopes: { generated: number; date: string; skipped?: boolean; reason?: string };
   refunds: RefundCronResult;
+  backup: BackupResult;
   ranAt: string;
 }
 
@@ -277,6 +279,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       weeklyDigest: { sent: 0, skipped: 0, failed: 0, gated: true, reason: 'outreachOnly' },
       horoscopes: { generated: 0, date: new Date().toISOString().slice(0, 10), skipped: true, reason: 'outreachOnly' },
       refunds: { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'outreachOnly' },
+      backup: { ok: true, skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
@@ -290,6 +293,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const weeklyDigest = await tickWeeklyDigest();
   const horoscopes = await tickHoroscopePrewarm();
   const refunds = await tickAutoRefunds();
+  const backup = await tickWeeklyBackup();
   return {
     outreach,
     waitlist,
@@ -302,8 +306,22 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     weeklyDigest,
     horoscopes,
     refunds,
+    backup,
     ranAt: new Date().toISOString(),
   };
+}
+
+async function tickWeeklyBackup(): Promise<BackupResult> {
+  // Best-effort: pg_dump → R2 upload, gated to Sunday 02:00 IST inside
+  // maybeRunWeeklyBackup. Failures fire Slack/email ops alert; never throw.
+  try {
+    return await maybeRunWeeklyBackup();
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 async function tickAutoRefunds(): Promise<RefundCronResult> {
