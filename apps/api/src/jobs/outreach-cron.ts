@@ -50,6 +50,48 @@ const FIRST_TOUCH_BATCH = 50;
 const FOLLOWUP_BATCH = 50;
 const MAX_CONTACT_COUNT = 3;
 
+// Resend free tier limits:
+// - 2 requests/sec → throttle to 600ms between sends (1.67/sec, headroom)
+// - 100 emails/day → cap at 90 (buffer for transactional emails like booking
+//   confirmations + 80G receipts which share the daily quota)
+// To raise these, upgrade Resend ($20/mo gets 50K/mo + 10/sec) and set
+// `RESEND_TIER=pro` env var which lifts both limits.
+const RESEND_THROTTLE_MS = process.env.RESEND_TIER === 'pro' ? 100 : 600;
+const RESEND_DAILY_CAP = process.env.RESEND_TIER === 'pro' ? 5000 : 90;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function ensureSendCounterTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS resend_daily_counter (
+      day DATE PRIMARY KEY,
+      sent_count INT NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ DEFAULT now()
+    );
+  `).catch(() => undefined);
+}
+
+async function getTodaySendCount(): Promise<number> {
+  await ensureSendCounterTable();
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await prisma.$queryRawUnsafe<Array<{ sent_count: number }>>(
+    `SELECT sent_count FROM resend_daily_counter WHERE day = $1::date LIMIT 1`,
+    today,
+  );
+  return rows[0]?.sent_count ?? 0;
+}
+
+async function bumpTodaySendCount(): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO resend_daily_counter (day, sent_count) VALUES ($1::date, 1)
+     ON CONFLICT (day) DO UPDATE SET sent_count = resend_daily_counter.sent_count + 1, updated_at = now()`,
+    today,
+  ).catch(() => undefined);
+}
+
 export interface OutreachTickResult {
   firstTouch: { attempted: number; ok: number; failed: number };
   followup3day: { attempted: number; ok: number; failed: number };
@@ -174,20 +216,41 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
     durationMs: 0,
   };
 
+  // Resend daily quota check. If today's sends already at cap, skip entirely
+  // — preserves headroom for transactional booking confirmation + 80G receipt
+  // emails which share the same Resend account quota.
+  const sentToday = await getTodaySendCount();
+  if (sentToday >= RESEND_DAILY_CAP) {
+    result.durationMs = Date.now() - t0;
+    return result;
+  }
+  const remaining = () => Math.max(0, RESEND_DAILY_CAP - sentToday - result.firstTouch.ok - result.followup3day.ok - result.followup7day.ok);
+
+  async function throttledSend<T>(fn: () => Promise<T>, ok: () => void): Promise<T> {
+    const out = await fn();
+    // Bump counter only on success (any send returning ok=true)
+    if (out && (out as { ok?: boolean }).ok) {
+      await bumpTodaySendCount();
+      ok();
+    }
+    await sleep(RESEND_THROTTLE_MS);
+    return out;
+  }
+
   // ── 1. First touch ─────────────────────────────────────────────────
   const newLeads = await prisma.lead.findMany({
     where: {
       status: 'NEW',
       email: { not: null },
     },
-    take: FIRST_TOUCH_BATCH,
+    take: Math.min(FIRST_TOUCH_BATCH, remaining()),
     orderBy: { createdAt: 'asc' },
   });
   for (const lead of newLeads) {
+    if (remaining() <= 0) break;
     result.firstTouch.attempted++;
-    const r = await sendFirstTouch(lead);
-    if (r.ok) result.firstTouch.ok++;
-    else result.firstTouch.failed++;
+    const r = await throttledSend(() => sendFirstTouch(lead), () => result.firstTouch.ok++);
+    if (!r.ok) result.firstTouch.failed++;
   }
 
   // ── 2. 3-day follow-up ─────────────────────────────────────────────
@@ -201,14 +264,14 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
       contactCount: { lt: MAX_CONTACT_COUNT },
       email: { not: null },
     },
-    take: FOLLOWUP_BATCH,
+    take: Math.min(FOLLOWUP_BATCH, remaining()),
     orderBy: { lastContactedAt: 'asc' },
   });
   for (const lead of followup3Leads) {
+    if (remaining() <= 0) break;
     result.followup3day.attempted++;
-    const r = await sendFollowup(lead, 3);
-    if (r.ok) result.followup3day.ok++;
-    else result.followup3day.failed++;
+    const r = await throttledSend(() => sendFollowup(lead, 3), () => result.followup3day.ok++);
+    if (!r.ok) result.followup3day.failed++;
   }
 
   // ── 3. 7-day follow-up ─────────────────────────────────────────────
@@ -219,14 +282,14 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
       contactCount: { lt: MAX_CONTACT_COUNT },
       email: { not: null },
     },
-    take: FOLLOWUP_BATCH,
+    take: Math.min(FOLLOWUP_BATCH, remaining()),
     orderBy: { lastContactedAt: 'asc' },
   });
   for (const lead of followup7Leads) {
+    if (remaining() <= 0) break;
     result.followup7day.attempted++;
-    const r = await sendFollowup(lead, 7);
-    if (r.ok) result.followup7day.ok++;
-    else result.followup7day.failed++;
+    const r = await throttledSend(() => sendFollowup(lead, 7), () => result.followup7day.ok++);
+    if (!r.ok) result.followup7day.failed++;
   }
 
   result.durationMs = Date.now() - t0;
