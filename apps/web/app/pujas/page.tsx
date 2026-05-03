@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDeityImage } from "../../lib/images";
 import { getPujaTypes, type PujaType } from "../../lib/api";
+import AdSlot from "../../components/AdSlot";
 import {
  Flame,
  Star,
@@ -479,6 +480,9 @@ export default async function PujasPage() {
  <p className="text-sm text-surface-500 mb-6">
  Showing <span className="font-semibold text-surface-600">{pujas.length}</span> pujas
  </p>
+
+ {/* Sponsored — between trending tags and the All Pujas grid */}
+ <AdSlot slotId="PUJAS_BANNER" format="horizontal" label="Sponsored" className="w-full mb-6" />
 
  {/* Puja Grid */}
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

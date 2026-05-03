@@ -16,6 +16,7 @@ import { getContent, getContentBySlugApi, type ContentItem } from '../../../lib/
 import AudioPlayer from '../../../components/AudioPlayer';
 import { YouTubeEmbed } from '../../../components/YouTubeEmbed';
 import { renderContentBody } from '../../../lib/markdown';
+import AdSlot from '../../../components/AdSlot';
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
@@ -476,6 +477,7 @@ export default async function ContentDetailPage({
 
  {/* Sidebar — related content */}
  <div className="space-y-6">
+ <AdSlot slotId="CONTENT_SIDEBAR" format="vertical" label="Sponsored" />
  <div className="bg-white rounded-xl p-6 border border-surface-100">
  <h3 className="font-bold text-surface-800 mb-4">Related Content</h3>
  <div className="space-y-4">
