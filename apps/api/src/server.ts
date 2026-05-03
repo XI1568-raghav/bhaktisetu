@@ -33,6 +33,7 @@ import { onboardingRoutes } from './routes/onboarding.js';
 import { providerRoutes } from './routes/providers.js';
 import { providerKycRoutes } from './routes/provider-kyc.js';
 import { yatraRoutes } from './routes/yatra.js';
+import { yatraPackagesRoutes } from './routes/yatra-packages.js';
 import { supportRoutes } from './routes/support.js';
 import { searchRoutes } from './routes/search.js';
 import { consultationRoutes } from './routes/consultation.js';
@@ -144,6 +145,7 @@ async function bootstrap() {
   await server.register(providerRoutes, { prefix: '/api/v1/providers' });
   await server.register(providerKycRoutes, { prefix: '/api/v1/provider-kyc' });
   await server.register(yatraRoutes, { prefix: '/api/v1/yatra' });
+  await server.register(yatraPackagesRoutes, { prefix: '/api/v1/yatra-packages' });
   await server.register(affiliateRoutes, { prefix: '/api/v1/affiliate' });
   await server.register(templePortalRoutes, { prefix: '/api/v1/temple-portal' });
   await server.register(supportRoutes, { prefix: '/api/v1/support' });
