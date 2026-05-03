@@ -11,7 +11,7 @@
     "lint": "echo \"lint: ok\"",
     "type-check": "tsc --noEmit",
     "pages:build": "npx @cloudflare/next-on-pages",
-    "pages:deploy": "pnpm run pages:build && wrangler pages deploy .vercel/output/static --project-name=poojly-web",
+    "pages:deploy": "pnpm run pages:build && wrangler pages deploy .vercel/output/static --project-name=darshya",
     "pages:dev": "wrangler pages dev .vercel/output/static"
   },
   "dependencies": {

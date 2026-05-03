@@ -10,7 +10,7 @@ Step-by-step, all **free tier**. ~15 minutes end-to-end.
 ┌─────────────────────┐         ┌─────────────────────┐
 │  Cloudflare Pages   │────────▶│   Railway (API)     │────────▶ Neon Postgres
 │  apps/web (Next.js) │   HTTPS │   apps/api (Fastify)│   SSL   (serverless, 500MB free)
-│  poojly.pages.dev   │         │  xxx.up.railway.app │         Singapore region
+│  darshya.pages.dev   │         │  xxx.up.railway.app │         Singapore region
 └─────────────────────┘         └─────────────────────┘
 ```
 
@@ -50,7 +50,7 @@ npx prisma db seed   # creates 8 demo accounts + 5 temples + 25 pujas
    DIRECT_URL=<from Neon step 1, direct>
    NODE_ENV=production
    PORT=4000
-   CORS_ORIGIN=https://poojly.pages.dev
+   CORS_ORIGIN=https://darshya.pages.dev
    JWT_SECRET=<generate random 32-char string>
    ANTHROPIC_API_KEY=<optional, get from console.anthropic.com>
    ```
@@ -68,7 +68,7 @@ Verify: `curl https://<your-railway-url>/health` should return `{"status":"ok"}`
 2. In sidebar: **Workers & Pages** → **Create** → **Pages** tab → **Connect to Git**
 3. Select GitHub → authorize → pick `bhaktisetu` repo
 4. Build settings:
-   - **Project name:** `poojly-web`
+   - **Project name:** `darshya`
    - **Production branch:** `main`
    - **Framework preset:** Next.js
    - **Build command:** `cd apps/web && pnpm install && pnpm run pages:build`
@@ -82,10 +82,10 @@ Verify: `curl https://<your-railway-url>/health` should return `{"status":"ok"}`
    NEXT_PUBLIC_SUPABASE_ANON_KEY=   # optional
    ```
 6. Click **Save and Deploy**. First build takes ~5 min.
-7. Once deployed → URL will be `https://poojly-web.pages.dev`
+7. Once deployed → URL will be `https://darshya.pages.dev`
 
 **Update Railway's CORS_ORIGIN** to the actual Pages URL:
-- Go to Railway → your API project → Variables → set `CORS_ORIGIN=https://poojly-web.pages.dev`
+- Go to Railway → your API project → Variables → set `CORS_ORIGIN=https://darshya.pages.dev`
 - Railway auto-redeploys
 
 ---
@@ -99,7 +99,7 @@ If you bought `poojly.in` or similar:
 2. Enter `poojly.in` → Cloudflare adds CNAME automatically if domain is on Cloudflare DNS
 3. If domain is elsewhere (Namecheap etc.) → add CNAME record:
    - Name: `@` (or `www`)
-   - Target: `poojly-web.pages.dev`
+   - Target: `darshya.pages.dev`
 
 **For API (Railway):**
 1. Railway → Settings → **Networking** → **Custom Domain** → enter `api.poojly.in`
