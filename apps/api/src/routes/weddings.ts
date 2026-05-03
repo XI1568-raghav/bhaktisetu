@@ -63,10 +63,13 @@ export async function weddingRoutes(server: FastifyInstance) {
 
       const id = `wi_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
+      // `package` is a reserved-ish identifier in some Postgres versions —
+      // quote it. Cast wedding_date so prepared-statement binds the string
+      // to the date column without ambiguity (TD15 surfaced 500s here).
       await prisma.$executeRawUnsafe(
         `INSERT INTO "WeddingInquiry"
-          (id, full_name, email, phone, city, wedding_date, package, guests, budget, message)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          (id, full_name, email, phone, city, wedding_date, "package", guests, budget, message)
+         VALUES ($1,$2,$3,$4,$5,$6::date,$7,$8,$9,$10)`,
         id,
         b.fullName,
         b.email,
