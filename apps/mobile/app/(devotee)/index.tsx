@@ -142,6 +142,14 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+                <View style={styles.quickActionsRow}>
+          <QuickAction icon="planet" label="Kundli" onPress={() => router.push('/(devotee)/kundli' as any)} />
+          <QuickAction icon="star" label="Horoscope" onPress={() => router.push('/(devotee)/horoscope' as any)} />
+          <QuickAction icon="map" label="Yatra" onPress={() => router.push('/(devotee)/yatra' as any)} />
+          <QuickAction icon="heart" label="Weddings" onPress={() => router.push('/(devotee)/weddings' as any)} />
+          <QuickAction icon="diamond" label="Premium" onPress={() => router.push('/(devotee)/upgrade' as any)} />
+        </View>
+
         <View style={styles.panchangCard}>
           <View style={styles.panchangHeader}>
             <Ionicons name="sunny" size={18} color={colors.amber[500]} />
@@ -243,6 +251,17 @@ export default function HomeScreen() {
         <View style={{ height: spacing.xl }} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function QuickAction({ icon, label, onPress }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; }) {
+  return (
+    <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.85}>
+      <View style={styles.quickActionIcon}>
+        <Ionicons name={icon} size={20} color={colors.saffron[700]} />
+      </View>
+      <Text style={styles.quickActionLabel}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 

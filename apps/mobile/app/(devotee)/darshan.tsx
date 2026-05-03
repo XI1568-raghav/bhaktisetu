@@ -9,6 +9,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useDarshan } from '@poojly/api-client';
@@ -110,7 +111,13 @@ function StreamCard({ stream }: { stream: DarshanStream }) {
     <TouchableOpacity
       style={[styles.streamCard, { width: CARD_WIDTH }]}
       activeOpacity={0.7}
-      onPress={() => Alert.alert(stream.templeName, `${isLive ? '🔴 LIVE NOW' : `Scheduled: ${stream.scheduledTime}`}\n${stream.deity} • ${stream.city}`)}
+      onPress={() => {
+        if (isLive) {
+          router.push({ pathname: '/(devotee)/darshan-player' as any, params: { id: stream.id, title: stream.templeName } } as any);
+        } else {
+          Alert.alert(stream.templeName, 'Scheduled: ' + (stream.scheduledTime ?? '') + ' — ' + stream.deity + ' • ' + stream.city);
+        }
+      }}
     >
       {/* Stream preview placeholder */}
       <View style={styles.streamPreview}>
