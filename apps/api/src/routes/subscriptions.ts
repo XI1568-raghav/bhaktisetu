@@ -3,6 +3,7 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { authenticateUser } from '../middlewares/auth.js';
 import { subscriptionService } from '../services/subscription.service.js';
+import { checkAndRecord } from '../lib/webhook-idempotency.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
 
@@ -119,6 +120,23 @@ export async function subscriptionRoutes(server: FastifyInstance) {
 
       const payload = request.body as Record<string, unknown>;
       const event = typeof payload.event === 'string' ? payload.event : 'unknown';
+
+      // Idempotency (TD16): Razorpay retries the same event 2-3x. Use the
+      // header-supplied id when present; otherwise hash the rawBody. On any
+      // DB error, fall through — better to double-process than miss.
+      const headerEventId = (request.headers['x-razorpay-event-id'] as string | undefined) ?? '';
+      const fallbackId = crypto.createHash('sha256').update(rawBody).digest('hex');
+      const eventId = headerEventId || fallbackId;
+      try {
+        const dedupe = await checkAndRecord('razorpay', eventId);
+        if (dedupe.alreadyProcessed) {
+          server.log.info({ event, eventId }, 'Subscription webhook duplicate — skipping');
+          return { received: true, event, duplicate: true };
+        }
+      } catch (idemErr) {
+        server.log.warn({ err: idemErr }, 'Subscription idempotency check failed — falling through');
+      }
+
       server.log.info({ event }, 'Subscription webhook verified');
 
       if (event.startsWith('subscription.')) {

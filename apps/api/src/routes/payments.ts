@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import crypto from 'node:crypto';
 import { paymentService } from '../services/payment.service.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
+import { checkAndRecord } from '../lib/webhook-idempotency.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
 
@@ -132,6 +134,27 @@ export async function paymentRoutes(server: FastifyInstance) {
 
         const payload = request.body as Record<string, any>;
 
+        // Idempotency (TD16): Razorpay retries 2-3x on slow ack. Header
+        // `x-razorpay-event-id` is the canonical id when present; for older
+        // payloads we fall back to a SHA-256 over the rawBody (or stringified
+        // payload). Failure of the lookup must NEVER drop the event — better
+        // to double-process than miss.
+        const headerEventId = (request.headers['x-razorpay-event-id'] as string | undefined) ?? '';
+        const fallbackId = crypto
+          .createHash('sha256')
+          .update(rawBody ?? JSON.stringify(payload ?? {}))
+          .digest('hex');
+        const eventId = headerEventId || fallbackId;
+        try {
+          const dedupe = await checkAndRecord('razorpay', eventId);
+          if (dedupe.alreadyProcessed) {
+            server.log.info({ eventId }, 'Razorpay webhook duplicate — skipping');
+            return reply.status(200).send({ handled: true, duplicate: true });
+          }
+        } catch (idemErr) {
+          server.log.warn({ err: idemErr }, 'Razorpay idempotency check failed — falling through');
+        }
+
         if (useRaw) {
           if (!rawBody) {
             server.log.error('RAZORPAY_VERIFY_RAW (default true) requires fastify-raw-body — rawBody missing for this route');
@@ -184,6 +207,27 @@ export async function paymentRoutes(server: FastifyInstance) {
           server.log.error('Stripe webhook requires fastify-raw-body — rawBody missing for this route');
           return reply.status(500).send({ error: 'Webhook configuration error' });
         }
+
+        // Idempotency (TD16): Stripe gives event.id natively (evt_*). We
+        // parse rawBody for the id before signature verification — using the
+        // id as a cache key is safe even if forged because a hit just makes
+        // us skip processing, which is the correct response to a forgery too.
+        // If parsing fails, fall through; signature check below will still
+        // reject invalid bodies.
+        try {
+          const parsed = JSON.parse(rawBody) as { id?: unknown };
+          const stripeEventId = typeof parsed.id === 'string' ? parsed.id : '';
+          if (stripeEventId) {
+            const dedupe = await checkAndRecord('stripe', stripeEventId);
+            if (dedupe.alreadyProcessed) {
+              server.log.info({ eventId: stripeEventId }, 'Stripe webhook duplicate — skipping');
+              return reply.status(200).send({ handled: true, duplicate: true });
+            }
+          }
+        } catch (idemErr) {
+          server.log.warn({ err: idemErr }, 'Stripe idempotency check failed — falling through');
+        }
+
         const result = await paymentService.handleStripeWebhook(rawBody, signature);
         return reply.status(200).send(result);
       } catch (error: any) {
