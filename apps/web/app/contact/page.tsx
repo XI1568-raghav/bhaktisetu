@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'edge';
 
 import { Mail, Clock, Send, Briefcase, Handshake, Scale, Newspaper, MessageSquare } from "lucide-react";
 import Link from "next/link";

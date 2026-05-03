@@ -1,3 +1,10 @@
+// Cloudflare Pages requires edge runtime on every dynamic route. TD18 made
+// the root layout async (next-intl SSR), promoting every page to dynamic (ƒ).
+// Setting runtime here makes the entire app run on edge — child routes inherit.
+// Remove this if/when we want some pages on Node.js runtime, but then each
+// such page must explicitly export runtime = 'nodejs'.
+export const runtime = 'edge';
+
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";

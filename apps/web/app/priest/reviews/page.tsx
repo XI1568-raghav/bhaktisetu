@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'edge';
 
 import { useState } from 'react';
 import { Star, MessageSquare, ThumbsUp, User, Calendar, Filter } from 'lucide-react';
