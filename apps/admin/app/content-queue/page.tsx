@@ -37,6 +37,10 @@ export default function ContentQueuePage() {
   const [titleEdits, setTitleEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [autoPosting, setAutoPosting] = useState(false);
+  const [autoPostStatus, setAutoPostStatus] = useState<{ reddit: boolean; quora: boolean } | null>(
+    null,
+  );
   const [toast, setToast] = useState<string | null>(null);
 
   function flash(msg: string) {
@@ -60,6 +64,41 @@ export default function ContentQueuePage() {
   useEffect(() => {
     void load(status);
   }, [status]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch(`/api/content-queue/auto-post/status`, { cache: "no-store" });
+        if (res.ok) setAutoPostStatus((await res.json()) as { reddit: boolean; quora: boolean });
+      } catch {
+        // best-effort
+      }
+    })();
+  }, []);
+
+  async function autoPostNow() {
+    setAutoPosting(true);
+    try {
+      const res = await fetch(`/api/content-queue/auto-post`, { method: "POST" });
+      const j = (await res.json()) as {
+        posted?: number;
+        attempted?: number;
+        skipped?: number;
+        failed?: number;
+        reason?: string;
+      };
+      if (j.reason) flash(`Auto-post skipped: ${j.reason}`);
+      else
+        flash(
+          `Auto-post: ${j.posted ?? 0} posted, ${j.skipped ?? 0} skipped, ${j.failed ?? 0} failed`,
+        );
+      void load(status);
+    } catch (err) {
+      flash(`Auto-post failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setAutoPosting(false);
+    }
+  }
 
   async function approveAndCopy(d: Draft) {
     setBusy(d.id);
@@ -155,13 +194,43 @@ export default function ContentQueuePage() {
             to clipboard. Manually paste into the target site, then mark POSTED with the URL.
           </p>
         </div>
-        <button
-          onClick={generateNow}
-          disabled={generating}
-          className="rounded bg-stone-900 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50"
-        >
-          {generating ? "Generating…" : "Generate batch now"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {autoPostStatus && (
+            <span
+              className={`rounded px-2 py-1 text-xs font-medium ${
+                autoPostStatus.reddit
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-stone-100 text-stone-600"
+              }`}
+              title={
+                autoPostStatus.reddit
+                  ? "REDDIT_* env vars configured — auto-post enabled"
+                  : "REDDIT_* env missing — auto-post disabled"
+              }
+            >
+              Reddit auto: {autoPostStatus.reddit ? "on" : "off"}
+            </span>
+          )}
+          <button
+            onClick={autoPostNow}
+            disabled={autoPosting || !autoPostStatus?.reddit}
+            className="rounded border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+            title={
+              autoPostStatus?.reddit
+                ? "Auto-post oldest APPROVED Reddit drafts (rate-limited per sub)"
+                : "Set REDDIT_CLIENT_ID/SECRET/USERNAME/PASSWORD to enable"
+            }
+          >
+            {autoPosting ? "Posting…" : "Auto-post now"}
+          </button>
+          <button
+            onClick={generateNow}
+            disabled={generating}
+            className="rounded bg-stone-900 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50"
+          >
+            {generating ? "Generating…" : "Generate batch now"}
+          </button>
+        </div>
       </header>
 
       {toast && (
