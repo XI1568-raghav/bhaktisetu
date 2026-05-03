@@ -9,6 +9,7 @@ import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.j
 import { prewarmDailyHoroscopes } from '../lib/astrology.js';
 import { processAutoRefunds } from '../services/refund.service.js';
 import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
+import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepResult } from '../lib/webhook-idempotency.js';
 
 interface RefundCronResult {
   processed: number;
@@ -72,7 +73,23 @@ export interface DailyOpsResult {
   horoscopes: { generated: number; date: string; skipped?: boolean; reason?: string };
   refunds: RefundCronResult;
   backup: BackupResult;
+  webhookReplaySweep: WebhookSweepResult;
   ranAt: string;
+}
+
+export async function tickWebhookReplaySweep(): Promise<WebhookSweepResult> {
+  // Best-effort daily sweep of webhook_replay rows older than 30 days.
+  // sweepOldRows() already swallows errors into a structured result, but
+  // we wrap defensively in case the import itself blows up in a non-DB env.
+  try {
+    return await sweepWebhookReplay();
+  } catch (err) {
+    return {
+      deleted: 0,
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 interface RunOptions {
@@ -280,6 +297,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       horoscopes: { generated: 0, date: new Date().toISOString().slice(0, 10), skipped: true, reason: 'outreachOnly' },
       refunds: { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'outreachOnly' },
       backup: { ok: true, skipped: true, reason: 'outreachOnly' },
+      webhookReplaySweep: { deleted: 0, skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
@@ -294,6 +312,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const horoscopes = await tickHoroscopePrewarm();
   const refunds = await tickAutoRefunds();
   const backup = await tickWeeklyBackup();
+  const webhookReplaySweep = await tickWebhookReplaySweep();
   return {
     outreach,
     waitlist,
@@ -307,6 +326,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     horoscopes,
     refunds,
     backup,
+    webhookReplaySweep,
     ranAt: new Date().toISOString(),
   };
 }
