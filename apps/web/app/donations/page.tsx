@@ -12,6 +12,7 @@ import {
   Building2,
   ArrowRight,
 } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import { IMAGES } from '../../lib/images';
 import { getTemples } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';
@@ -60,6 +61,9 @@ export default async function DonationsLandingPage({
   searchParams: Promise<{ causeId?: string; causeKind?: string; causeName?: string }>;
 }) {
   const sp = await searchParams;
+  const t = await getTranslations('donations');
+  const tCommon = await getTranslations('common');
+  const tTerms = await getTranslations('terms');
 
   // If the URL points at a specific cause (deep-linked from a temple or
   // gaushala detail page), render the form directly.
@@ -108,26 +112,24 @@ export default async function DonationsLandingPage({
         <div className="mx-auto max-w-5xl px-6 py-14 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-saffron-700 shadow-sm backdrop-blur">
-              <Heart className="h-3.5 w-3.5" /> Tax-deductible · 80G receipts
+              <Heart className="h-3.5 w-3.5" /> {t('tax80G')}
             </div>
             <h1 className="mb-3 text-3xl font-bold text-surface-900 sm:text-4xl">
-              Support Temples &amp; Gaushalas Across India
+              {t('pageTitle')}
             </h1>
             <p className="mb-6 text-base text-surface-600 sm:text-lg">
-              Your donation funds daily seva, gauseva, festival pujas, and
-              conservation of indigenous cow breeds. Every rupee is tracked;
-              every donor receives a signed 80G receipt by email.
+              {t('pageSubtitle')}
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-surface-500">
               <span className="flex items-center gap-1.5">
-                <Shield className="h-4 w-4 text-emerald-600" /> Razorpay secured
+                <Shield className="h-4 w-4 text-emerald-600" /> {t('trustSecure')}
               </span>
               <span className="flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-saffron-600" /> 80G receipt instantly
+                <FileText className="h-4 w-4 text-saffron-600" /> {t('instantReceipt')}
               </span>
               <span className="flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-amber-500" /> 100% to cause
+                <Sparkles className="h-4 w-4 text-amber-500" /> {t('trustVerified')}
               </span>
             </div>
           </div>
@@ -139,17 +141,17 @@ export default async function DonationsLandingPage({
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
             <h2 className="flex items-center gap-2 text-2xl font-bold text-surface-900">
-              <Heart className="h-6 w-6 text-emerald-600" /> Gau Seva
+              <Heart className="h-6 w-6 text-emerald-600" /> {tTerms('gauSeva')}
             </h2>
             <p className="mt-1 text-sm text-surface-500">
-              Support verified gaushalas — feed, shelter, and protect indigenous cow breeds.
+              {t('gaushalaCauses')}
             </p>
           </div>
           <Link
             href="/gaushala"
             className="hidden text-sm font-semibold text-saffron-600 hover:text-saffron-700 sm:inline-flex sm:items-center sm:gap-1"
           >
-            View all <ArrowRight className="h-4 w-4" />
+            {tCommon('viewAll')} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
@@ -174,17 +176,17 @@ export default async function DonationsLandingPage({
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
             <h2 className="flex items-center gap-2 text-2xl font-bold text-surface-900">
-              <Building2 className="h-6 w-6 text-saffron-600" /> Temples
+              <Building2 className="h-6 w-6 text-saffron-600" /> {t('templeCauses')}
             </h2>
             <p className="mt-1 text-sm text-surface-500">
-              Contribute to daily aarti, festival pujas, and temple upkeep at verified shrines.
+              {t('selectCause')}
             </p>
           </div>
           <Link
             href="/temples"
             className="hidden text-sm font-semibold text-saffron-600 hover:text-saffron-700 sm:inline-flex sm:items-center sm:gap-1"
           >
-            View all <ArrowRight className="h-4 w-4" />
+            {tCommon('viewAll')} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 

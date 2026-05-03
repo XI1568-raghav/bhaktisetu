@@ -1,4 +1,9 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+// next-intl plugin — points at the request-config that resolves locale from
+// URL prefix or `darshya_lang` cookie. Wires `useTranslations` into SSR.
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 // Cloudflare next-on-pages dev platform — hooks up Cloudflare bindings in `next dev`.
 // Only run in development so production builds stay lean.
@@ -165,4 +170,4 @@ const nextConfig: NextConfig = {
 // Future: when browser error capture is wanted, add @sentry/browser as
 // a small standalone dep — that package is pure-browser and tree-shakes
 // cleanly, no Next plugin involvement.
-export default nextConfig;
+export default withNextIntl(nextConfig);

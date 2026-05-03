@@ -156,6 +156,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // /hi prefix entries for the top 10 pages converted in TD18. Only the
+  // surfaces with real Hindi content are duplicated — adding /hi for
+  // unconverted pages would mislead search engines.
+  const hiTranslatedPaths = [
+    '', '/temples', '/pujas', '/darshan', '/donations', '/content',
+    '/store', '/auth/login', '/upgrade', '/yatra/destinations',
+  ];
+  const hiEntries = hiTranslatedPaths.map((p) => ({
+    url: `${BASE_URL}/hi${p}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+    alternates: {
+      languages: {
+        en: `${BASE_URL}${p || '/'}`,
+        hi: `${BASE_URL}/hi${p}`,
+      },
+    },
+  }));
+
   return [
     ...topLevelEntries,
     ...secondaryEntries,
@@ -163,6 +183,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...pujaEntries,
     ...yatraEntries,
     ...yatraDestEntries,
+    ...hiEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];
 }

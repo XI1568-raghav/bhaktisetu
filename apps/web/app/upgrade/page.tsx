@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
@@ -90,6 +91,7 @@ export default function UpgradePage() {
   const { isAuthenticated, session } = useAuth();
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations('upgrade');
 
   async function handleUpgrade(planId: string) {
     if (planId === 'free') return;
@@ -160,11 +162,10 @@ export default function UpgradePage() {
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-surface-800 mb-2">
-            Unlock Pandit Ji
+            {t('pageTitle')}
           </h1>
           <p className="text-surface-500 max-w-xl mx-auto">
-            Five free messages a month, then choose how you want to continue your
-            spiritual journey on Darshya.
+            {t('pageSubtitle')}
           </p>
         </div>
 
@@ -191,7 +192,7 @@ export default function UpgradePage() {
               >
                 {plan.highlight && (
                   <div className="self-start mb-3 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-saffron-100 text-saffron-700">
-                    Most popular
+                    {t('mostPopular')}
                   </div>
                 )}
                 {plan.badge && !plan.highlight && (

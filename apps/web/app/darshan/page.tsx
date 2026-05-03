@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Play, Radio } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import {
  getLiveDarshan,
  getScheduledDarshan,
@@ -271,7 +272,9 @@ async function StreamsBrowserSection() {
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
-export default function DarshanPage() {
+export default async function DarshanPage() {
+ const t = await getTranslations('darshan');
+ const tCommon = await getTranslations('common');
  return (
  <div className="min-h-screen bg-surface-50">
  {/* Hero */}
@@ -281,18 +284,17 @@ export default function DarshanPage() {
  <div className="flex items-center gap-1.5 bg-red-500/10 text-red-600 text-sm font-semibold px-3 py-1.5 rounded-full border border-red-200/40">
  <Radio className="w-4 h-4" />
  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
- LIVE
+ {tCommon('live')}
  </div>
  <span className="text-surface-500 text-sm">
- Temples streaming now
+ {t('liveNow')}
  </span>
  </div>
  <h1 className="text-3xl md:text-4xl font-semibold text-surface-800 mb-3" style={{ fontFamily: 'var(--font-display)' }}>
- Live Darshan
+ {t('pageTitle')}
  </h1>
  <p className="text-surface-500 text-lg max-w-2xl">
- Experience divine darshan from India&rsquo;s most sacred temples in real
- time. HD quality streams with temple audio.
+ {t('pageSubtitle')}
  </p>
 
  <Suspense
@@ -313,7 +315,7 @@ export default function DarshanPage() {
  <section className="py-10 border-t border-[var(--color-border)]">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6">
- Today&rsquo;s Darshan Schedule
+ {t('scheduleSection')}
  </h2>
 
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">

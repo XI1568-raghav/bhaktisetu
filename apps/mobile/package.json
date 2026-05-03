@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@poojly/tsconfig": "workspace:*",
-    "@types/react": "~18.3.12",
+    "@types/react": "^19.0.0",
     "typescript": "^5.8.3"
   }
 }

@@ -49,7 +49,9 @@
       "srvx": "^0.11.13",
       "@tootallnate/once": "^3.0.1",
       "postcss": "^8.5.10",
-      "undici": "^6.24.0"
+      "undici": "^6.24.0",
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0"
     }
   },
   "engines": {

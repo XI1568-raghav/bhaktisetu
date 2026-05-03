@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import {
  Flame,
  Heart,
@@ -112,95 +114,110 @@ export const viewport: Viewport = {
  initialScale: 1,
 };
 
-// Primary nav — always visible on desktop
+// Primary / secondary / highlight link href + icon definitions. Labels are
+// resolved from i18n inside RootLayout so the nav switches with locale.
 const primaryLinks = [
- { href: "/temples", label: "Temples", icon: Home },
- { href: "/darshan", label: "Darshan", icon: Video },
- { href: "/pujas", label: "Pujas", icon: Flame },
- { href: "/content", label: "Content", icon: Music },
- { href: "/store", label: "Store", icon: ShoppingBag },
+ { href: "/temples", labelKey: "temples" as const, icon: Home },
+ { href: "/darshan", labelKey: "darshan" as const, icon: Video },
+ { href: "/pujas", labelKey: "pujas" as const, icon: Flame },
+ { href: "/content", labelKey: "content" as const, icon: Music },
+ { href: "/store", labelKey: "store" as const, icon: ShoppingBag },
 ];
 
-// Secondary nav — shown in "More" dropdown on desktop
 const moreLinks = [
- { href: "/yatra", label: "Yatra", icon: Mountain },
- { href: "/panchang", label: "Panchang", icon: Calendar },
- { href: "/gaushala", label: "Gau Seva", icon: Heart },
- { href: "/donations", label: "Donate", icon: Heart },
- { href: "/astrology", label: "Astrology", icon: Moon },
- { href: "/wellness", label: "Wellness", icon: Leaf },
+ { href: "/yatra", labelKey: "yatra" as const, icon: Mountain },
+ { href: "/panchang", labelKey: "panchang" as const, icon: Calendar },
+ { href: "/gaushala", labelKey: "gauseva" as const, icon: Heart },
+ { href: "/donations", labelKey: "donate" as const, icon: Heart },
+ { href: "/astrology", labelKey: "astrology" as const, icon: Moon },
+ { href: "/wellness", labelKey: "wellness" as const, icon: Leaf },
 ];
 
-// Highlight nav — special styled items
-const highlightLink = { href: "/ask-pandit", label: "Ask Pandit", icon: Sparkles };
+const highlightLink = { href: "/ask-pandit", labelKey: "askPandit" as const, icon: Sparkles };
 
-const footerSections = [
+// Footer sections — labels are i18n keys looked up from `footer.*` plus
+// `terms.*` / `nav.*` namespaces inside RootLayout. Keeps footer fully
+// localised when `darshya_lang` cookie is `hi`.
+type FooterLink = { href: string; t: 'footer' | 'terms' | 'nav'; key: string };
+const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  {
- title: "Explore",
+ titleKey: "explore",
  links: [
- { href: "/temples", label: "Temples" },
- { href: "/darshan", label: "Live Darshan" },
- { href: "/pujas", label: "Book a Puja" },
- { href: "/donations", label: "Donate (80G)" },
- { href: "/yatra", label: "Dharmic Yatra" },
- { href: "/panchang", label: "Panchang" },
- { href: "/wellness", label: "Wellness" },
+ { href: "/temples", t: "nav", key: "temples" },
+ { href: "/darshan", t: "footer", key: "liveDarshan" },
+ { href: "/pujas", t: "footer", key: "bookPuja" },
+ { href: "/donations", t: "footer", key: "donate80G" },
+ { href: "/yatra", t: "footer", key: "dharmicYatra" },
+ { href: "/panchang", t: "nav", key: "panchang" },
+ { href: "/wellness", t: "nav", key: "wellness" },
  ],
  },
  {
- title: "Content",
+ titleKey: "content",
  links: [
- { href: "/content?tab=aarti", label: "Aarti" },
- { href: "/content?tab=chalisa", label: "Chalisa" },
- { href: "/content?tab=mantra", label: "Mantras" },
- { href: "/content?tab=bhajan", label: "Bhajans" },
+ { href: "/content?tab=aarti", t: "terms", key: "aarti" },
+ { href: "/content?tab=chalisa", t: "terms", key: "chalisa" },
+ { href: "/content?tab=mantra", t: "terms", key: "mantra" },
+ { href: "/content?tab=bhajan", t: "terms", key: "bhajan" },
  ],
  },
  {
- title: "For Business",
+ titleKey: "forBusiness",
  links: [
- { href: "/list-temple", label: "List your temple" },
- { href: "/become-priest", label: "Become a pandit" },
- { href: "/become-astrologer", label: "Become an astrologer" },
- { href: "/become-wellness", label: "Teach yoga & meditation" },
- { href: "/list-gaushala", label: "List your gaushala" },
+ { href: "/list-temple", t: "footer", key: "listTemple" },
+ { href: "/become-priest", t: "footer", key: "becomePandit" },
+ { href: "/become-astrologer", t: "footer", key: "becomeAstrologer" },
+ { href: "/become-wellness", t: "footer", key: "teachYoga" },
+ { href: "/list-gaushala", t: "footer", key: "listGaushala" },
  ],
  },
  {
- title: "Company",
+ titleKey: "company",
  links: [
- { href: "/about", label: "About Us" },
- { href: "/careers", label: "Careers" },
- { href: "/blog", label: "Blog" },
- { href: "/contact", label: "Contact" },
- { href: "/pricing", label: "Pricing" },
+ { href: "/about", t: "footer", key: "about" },
+ { href: "/careers", t: "footer", key: "careers" },
+ { href: "/blog", t: "footer", key: "blog" },
+ { href: "/contact", t: "footer", key: "contact" },
+ { href: "/pricing", t: "footer", key: "pricing" },
  ],
  },
  {
- title: "Support",
+ titleKey: "support",
  links: [
- { href: "/support", label: "Support Center" },
- { href: "/support/faq", label: "FAQ" },
- { href: "/support/tickets", label: "My Tickets" },
- { href: "/help", label: "Help Center" },
- { href: "/privacy", label: "Privacy Policy" },
- { href: "/terms", label: "Terms of Service" },
- { href: "/refunds", label: "Refund Policy" },
- { href: "/shipping", label: "Shipping Policy" },
- { href: "/contact", label: "Contact Us" },
- { href: "/credits", label: "Image Credits" },
+ { href: "/support", t: "footer", key: "supportCenter" },
+ { href: "/support/faq", t: "footer", key: "faq" },
+ { href: "/support/tickets", t: "footer", key: "myTickets" },
+ { href: "/help", t: "footer", key: "helpCenter" },
+ { href: "/privacy", t: "footer", key: "privacy" },
+ { href: "/terms", t: "footer", key: "termsService" },
+ { href: "/refunds", t: "footer", key: "refunds" },
+ { href: "/shipping", t: "footer", key: "shipping" },
+ { href: "/contact", t: "footer", key: "contactUs" },
+ { href: "/credits", t: "footer", key: "credits" },
  ],
  },
 ];
 
-export default function RootLayout({
+export default async function RootLayout({
  children,
 }: {
  children: React.ReactNode;
 }) {
+ const locale = await getLocale();
+ const messages = await getMessages();
+ const tNav = await getTranslations('nav');
+ const tFooter = await getTranslations('footer');
+ const tTerms = await getTranslations('terms');
+
+ const tFor: Record<'footer' | 'terms' | 'nav', (k: string) => string> = {
+   footer: tFooter as unknown as (k: string) => string,
+   terms: tTerms as unknown as (k: string) => string,
+   nav: tNav as unknown as (k: string) => string,
+ };
+
  return (
  <html
- lang="en"
+ lang={locale}
  className={`${notoSans.variable} ${notoSansDevanagari.variable}`}
  >
  <head>
@@ -236,8 +253,19 @@ export default function RootLayout({
 
  {/* Cloudflare Web Analytics — privacy-first, no cookies. No-op when env unset. */}
  <CloudflareAnalytics />
+
+ {/* hreflang — search engines pick up every supported locale for this URL.
+     Cookie-driven Hindi has no URL distinction (`darshya_lang` only), so we
+     advertise the prefixed-locale strategy used by middleware. */}
+ <link rel="alternate" hrefLang="en" href="https://darshya.online" />
+ <link rel="alternate" hrefLang="hi" href="https://darshya.online/hi" />
+ <link rel="alternate" hrefLang="ta" href="https://darshya.online/ta" />
+ <link rel="alternate" hrefLang="te" href="https://darshya.online/te" />
+ <link rel="alternate" hrefLang="kn" href="https://darshya.online/kn" />
+ <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
  </head>
- <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]">
+ <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]" data-locale={locale}>
+ <NextIntlClientProvider locale={locale} messages={messages}>
  <SentryErrorBoundary>
  <AuthProvider>
  <CartProvider>
@@ -267,7 +295,7 @@ export default function RootLayout({
  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors whitespace-nowrap"
  >
  <Icon className="w-4 h-4" />
- {link.label}
+ {tNav(link.labelKey)}
  </Link>
  );
  })}
@@ -281,7 +309,7 @@ export default function RootLayout({
  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-saffron-600 hover:bg-saffron-700 rounded-md transition-colors whitespace-nowrap ml-1 btn-press"
  >
  <Sparkles className="w-3.5 h-3.5" />
- {highlightLink.label}
+ {tNav(highlightLink.labelKey)}
  </a>
  </div>
 
@@ -318,8 +346,7 @@ export default function RootLayout({
  </span>
  </div>
  <p className="text-sm text-surface-500 mb-6 max-w-xs leading-relaxed">
- Bringing the divine into daily life. Live darshan, puja
- booking, spiritual content, and more.
+ {tFooter('tagline')}
  </p>
  <div className="flex items-center gap-2">
  <a
@@ -363,18 +390,18 @@ export default function RootLayout({
 
  {/* Link columns */}
  {footerSections.map((section) => (
- <div key={section.title}>
+ <div key={section.titleKey}>
  <h3 className="text-xs font-semibold text-surface-300 mb-4 uppercase tracking-widest">
- {section.title}
+ {tFooter(section.titleKey)}
  </h3>
  <ul className="space-y-2.5">
  {section.links.map((link) => (
- <li key={link.href}>
+ <li key={`${section.titleKey}-${link.href}-${link.key}`}>
  <a
  href={link.href}
  className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
  >
- {link.label}
+ {tFor[link.t](link.key)}
  </a>
  </li>
  ))}
@@ -397,8 +424,7 @@ export default function RootLayout({
  </span>
  </div>
  <p className="text-sm text-surface-600" suppressHydrationWarning>
- &copy; {new Date().getFullYear()} Darshya. All rights
- reserved.
+ &copy; {new Date().getFullYear()} Darshya. {tFooter('rights')}
  </p>
  </div>
  </div>
@@ -411,6 +437,7 @@ export default function RootLayout({
  </CartProvider>
  </AuthProvider>
  </SentryErrorBoundary>
+ </NextIntlClientProvider>
  </body>
  </html>
  );
