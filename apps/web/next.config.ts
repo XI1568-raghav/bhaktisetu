@@ -70,6 +70,11 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
   async headers() {
+    // TD8 — per-route CDN cache rules. Cloudflare honours s-maxage (CDN-only)
+    // and stale-while-revalidate, while max-age controls the browser TTL.
+    // Intentionally not enumerated here:
+    //   - /api/* — handlers set Cache-Control: private, no-cache themselves.
+    //   - HTML pages — fall through to per-route Next revalidate config.
     return [
       {
         // Long-cache static image + font assets served from /public.
@@ -79,6 +84,64 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Next build artefacts are content-hashed.
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Slug pages are mostly-static. 5min CDN edge, 1d SWR keeps Cloudflare
+        // serving while origin regenerates.
+        source: '/temples/:slug',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/pujas/:slug',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/yatra/destinations/:slug',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        // SEO surfaces — refresh hourly, serve stale for a day.
+        source: '/sitemap.xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/robots.txt',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
           },
         ],
       },
