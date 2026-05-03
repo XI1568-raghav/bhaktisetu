@@ -27,6 +27,7 @@ import { storeRoutes } from './routes/store.js';
 import { aiRoutes } from './routes/ai.js';
 import { gaushalaRoutes } from './routes/gaushala.js';
 import { astrologyRoutes } from './routes/astrology.js';
+import { weddingRoutes } from './routes/weddings.js';
 import { wellnessRoutes } from './routes/wellness.js';
 import { onboardingRoutes } from './routes/onboarding.js';
 import { providerRoutes } from './routes/providers.js';
@@ -62,6 +63,8 @@ import {
 } from './routes/whatsapp-broadcast.js';
 import { adminContentQueueRoutes } from './routes/admin-content-queue.js';
 import { adminDonationsExportRoutes } from './routes/admin-donations-export.js';
+import { orgsRoutes } from './routes/orgs.js';
+import { antimSanskarRoutes } from './routes/antim-sanskar.js';
 
 const server = Fastify({
   logger: {
@@ -135,6 +138,7 @@ async function bootstrap() {
   await server.register(aiRoutes, { prefix: '/api/v1/ai' });
   await server.register(gaushalaRoutes, { prefix: '/api/v1/gaushala' });
   await server.register(astrologyRoutes, { prefix: '/api/v1/astrology' });
+  await server.register(weddingRoutes, { prefix: '/api/v1/weddings' });
   await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
   await server.register(onboardingRoutes, { prefix: '/api/v1/onboarding' });
   await server.register(providerRoutes, { prefix: '/api/v1/providers' });
@@ -171,6 +175,8 @@ async function bootstrap() {
   await server.register(whatsappWebhookRoutes, { prefix: '/api/v1/whatsapp' });
   await server.register(adminContentQueueRoutes, { prefix: '/api/v1/admin/content-queue' });
   await server.register(adminDonationsExportRoutes, { prefix: '/api/v1/admin/donations' });
+  await server.register(orgsRoutes, { prefix: '/api/v1/orgs' });
+  await server.register(antimSanskarRoutes, { prefix: '/api/v1/antim-sanskar' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
