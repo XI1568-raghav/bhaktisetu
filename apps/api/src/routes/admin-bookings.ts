@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { processRefund } from '../services/refund.service.js';
 
 // Admin bookings + payouts + refunds ops dashboards.
 //
@@ -220,54 +221,45 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
   });
 
   // ─── POST /admin/bookings/refunds/:bookingId/approve ──────────────────────
-  server.post<{ Params: { bookingId: string } }>(
+  // Calls refund.service.processRefund which (a) fires the Razorpay refund
+  // REST call, (b) updates Payment + PujaBooking rows, (c) sends a refund-
+  // success email via sendEmail. Idempotent — already-refunded bookings
+  // return `{ skipped: true }` instead of double-charging.
+  server.post<{ Params: { bookingId: string }; Body: unknown }>(
     '/refunds/:bookingId/approve',
     { preHandler: adminPreHandlers },
     async (request, reply) => {
       const { bookingId } = request.params;
+      const approveBodySchema = z.object({
+        reason: z.string().max(500).optional(),
+        refundType: z.enum(['full', 'partial']).optional(),
+        amountInr: z.number().positive().optional(),
+      });
+      const parsed = approveBodySchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
+      }
       try {
-        const booking = await prisma.pujaBooking.findUnique({
+        const exists = await prisma.pujaBooking.findUnique({
           where: { id: bookingId },
-          include: { payments: true },
+          select: { id: true },
         });
-        if (!booking) return reply.code(404).send({ error: 'Booking not found' });
+        if (!exists) return reply.code(404).send({ error: 'Booking not found' });
 
-        // Best-effort Razorpay refund (no-op when env unset).
-        const razorpayKey = process.env.RAZORPAY_KEY_ID;
-        const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
-        let razorpayResult: { skipped?: boolean; refundId?: string; error?: string } = { skipped: true };
-        if (razorpayKey && razorpaySecret) {
-          try {
-            const capturedPayment = booking.payments.find((p) => p.status === 'captured');
-            if (capturedPayment?.gatewayPaymentId) {
-              const auth = Buffer.from(`${razorpayKey}:${razorpaySecret}`).toString('base64');
-              const res = await fetch(
-                `https://api.razorpay.com/v1/payments/${capturedPayment.gatewayPaymentId}/refund`,
-                {
-                  method: 'POST',
-                  headers: { authorization: `Basic ${auth}`, 'content-type': 'application/json' },
-                  body: JSON.stringify({}),
-                }
-              );
-              const json = (await res.json().catch(() => ({}))) as { id?: string; error?: { description?: string } };
-              if (res.ok && json.id) razorpayResult = { refundId: json.id };
-              else razorpayResult = { error: json.error?.description ?? `HTTP ${res.status}` };
-            }
-          } catch (err) {
-            razorpayResult = { error: err instanceof Error ? err.message : String(err) };
-            request.log.warn({ err, bookingId }, 'razorpay refund call failed');
-          }
+        const result = await processRefund({
+          bookingId,
+          reason: parsed.data.reason ?? 'Admin-approved refund',
+          refundType: parsed.data.refundType ?? 'full',
+          amountInr: parsed.data.amountInr,
+          initiatedBy: request.currentUser?.id ?? 'admin',
+        });
+
+        if (!result.ok) {
+          request.log.warn({ bookingId, result }, 'refund failed');
+          return reply.code(502).send({ error: result.error ?? 'Refund failed', refund: result });
         }
-
-        const updated = await prisma.pujaBooking.update({
-          where: { id: bookingId },
-          data: {
-            status: 'refunded',
-            cancelledAt: booking.cancelledAt ?? new Date(),
-          },
-        });
-        request.log.info({ bookingId, razorpayResult }, 'admin refund approved');
-        return { booking: updated, razorpay: razorpayResult };
+        request.log.info({ bookingId, refundId: result.refundId, skipped: result.skipped }, 'admin refund approved');
+        return { ok: true, refund: result };
       } catch (err) {
         request.log.error({ err, bookingId }, 'admin refund approve failed');
         return reply.code(500).send({ error: 'Failed to approve refund' });
@@ -290,13 +282,35 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         if (!booking) return reply.code(404).send({ error: 'Booking not found' });
 
         // No REFUND_REJECTED status — fall back to leaving status as-is and
-        // appending the reject reason into cancellationReason for audit.
+        // tagging cancellationReason with the marker. Mirror the rejection
+        // reason into Payment.metadata.refundRejectedReason for audit.
         const updated = await prisma.pujaBooking.update({
           where: { id: bookingId },
           data: {
-            cancellationReason: `[refund-rejected] ${parsed.data.reason}`,
+            cancellationReason: `[refund-rejected] ${parsed.data.reason}`.slice(0, 500),
           },
         });
+        try {
+          const captured = await prisma.payment.findFirst({
+            where: { bookingId, status: { in: ['captured', 'partially_refunded'] } },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (captured) {
+            await prisma.payment.update({
+              where: { id: captured.id },
+              data: {
+                metadata: {
+                  ...((captured.metadata as Record<string, unknown>) ?? {}),
+                  refundRejectedReason: parsed.data.reason,
+                  refundRejectedAt: new Date().toISOString(),
+                  refundRejectedBy: request.currentUser?.id ?? 'admin',
+                },
+              },
+            });
+          }
+        } catch (err) {
+          request.log.warn({ err, bookingId }, 'failed to mirror reject reason into payment.metadata');
+        }
         request.log.info({ bookingId, reason: parsed.data.reason }, 'admin refund rejected');
         return { booking: updated };
       } catch (err) {

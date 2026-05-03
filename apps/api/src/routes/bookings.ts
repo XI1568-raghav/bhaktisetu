@@ -297,6 +297,93 @@ export async function bookingRoutes(server: FastifyInstance) {
     }
   );
 
+  // POST /:id/request-refund - Devotee-initiated refund request.
+  //
+  // Eligibility:
+  //   • booking must be paid (any non-pending_payment, non-cancelled,
+  //     non-refunded status — BookingStatus enum has no `paid` value, see
+  //     schema.prisma:71)
+  //   • now < scheduledDate - 24h
+  //
+  // Schema gap: no REFUND_REQUESTED status. We tag the booking with
+  // status='cancelled' + cancellationReason='[refund-requested] <reason>'
+  // and let processAutoRefunds (master-cron) pick it up after 1h.
+  server.post(
+    '/:id/request-refund',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const { id } = paramsWithId.parse(request.params);
+        const body = z
+          .object({ reason: z.string().min(1).max(500).optional() })
+          .parse(request.body ?? {});
+        const userId = request.currentUser!.id;
+
+        const booking = await prisma.pujaBooking.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+            scheduledDate: true,
+            scheduledTimeSlot: true,
+            cancellationReason: true,
+          },
+        });
+        if (!booking) return reply.status(404).send({ error: 'Booking not found' });
+        if (booking.userId !== userId) {
+          return reply.status(403).send({ error: 'Not authorized for this booking' });
+        }
+        if (booking.status === 'refunded' || booking.status === 'cancelled') {
+          return reply
+            .status(409)
+            .send({ error: `Booking already ${booking.status}; cannot re-request refund.` });
+        }
+        if (booking.status === 'pending_payment') {
+          return reply
+            .status(409)
+            .send({ error: 'Booking has not been paid yet.' });
+        }
+
+        // Cancellation must be >24h before scheduled time.
+        const slotHour = Number((booking.scheduledTimeSlot ?? '00:00').split(':')[0] ?? 0);
+        const slotMin = Number((booking.scheduledTimeSlot ?? '00:00').split(':')[1] ?? 0);
+        const scheduledAt = new Date(booking.scheduledDate);
+        scheduledAt.setHours(slotHour, slotMin, 0, 0);
+        const cutoff = new Date(scheduledAt.getTime() - 24 * 60 * 60 * 1000);
+        if (Date.now() >= cutoff.getTime()) {
+          return reply
+            .status(409)
+            .send({ error: 'Refund requests are not allowed within 24 hours of scheduled time.' });
+        }
+
+        const reason = body.reason ?? 'Devotee requested refund';
+        const updated = await prisma.pujaBooking.update({
+          where: { id },
+          data: {
+            status: 'cancelled' satisfies BookingStatus,
+            cancelledAt: new Date(),
+            cancellationReason: `[refund-requested] ${reason}`.slice(0, 500),
+          },
+          select: { id: true, status: true, cancellationReason: true, cancelledAt: true },
+        });
+
+        return {
+          message: 'Refund requested. It will be processed within 1 hour.',
+          booking: updated,
+          schemaNote:
+            'BookingStatus enum has no REFUND_REQUESTED — using cancelled + cancellationReason marker.',
+        };
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({ error: 'Validation Error', details: error.errors });
+        }
+        server.log.error(error, 'Failed to request refund');
+        return reply.status(500).send({ error: 'Failed to request refund' });
+      }
+    }
+  );
+
   // GET /:id/video - Get video proof URL
   server.get(
     '/:id/video',
