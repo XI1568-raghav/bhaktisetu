@@ -134,6 +134,69 @@ describe('SubscriptionService.getMySubscription', () => {
   });
 });
 
+describe('SubscriptionService — NRI Premium (Layer AR)', () => {
+  it('exposes nri_premium_yearly plan with USD price', () => {
+    const plans = service.getPlans('DEVOTEE');
+    const nri = plans.find((p) => p.id === 'nri_premium_yearly');
+    expect(nri).toBeDefined();
+    expect(nri!.price).toBe(5000);
+    expect(nri!.priceUsd).toBe(60);
+    expect(nri!.interval).toBe('year');
+    expect(nri!.durationDays).toBe(365);
+    expect(nri!.plan).toBe('ENTERPRISE');
+  });
+
+  it('createStripeAnnualSubscription returns demo result when STRIPE key absent', async () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    prismaMock.marketplaceSubscription.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.marketplaceSubscription.create.mockResolvedValue({
+      id: 'sub-nri-1',
+      userId: 'user-1',
+      plan: 'ENTERPRISE',
+      role: 'DEVOTEE',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 365 * 86400000),
+      amount: 5000,
+      status: 'ACTIVE',
+    });
+    prismaMock.transaction.create.mockResolvedValue({});
+
+    const out = await service.createStripeAnnualSubscription({
+      userId: 'user-1',
+      planId: 'nri_premium_yearly',
+    });
+
+    expect(out.skipped).toBe(true);
+    expect(out.reason).toBe('demo-mode');
+    expect(out.sessionId).toMatch(/^cs_demo_/);
+  });
+
+  it('createStripeAnnualSubscription throws on unknown plan', async () => {
+    await expect(
+      service.createStripeAnnualSubscription({ userId: 'u', planId: 'nope' })
+    ).rejects.toThrow(/Plan not found/);
+  });
+
+  it('createStripeAnnualSubscription throws on plan without USD price', async () => {
+    await expect(
+      service.createStripeAnnualSubscription({ userId: 'u', planId: 'astro_monthly' })
+    ).rejects.toThrow(/USD price/);
+  });
+
+  it('isPremium returns true when ENTERPRISE active', async () => {
+    prismaMock.marketplaceSubscription.findFirst.mockResolvedValue({
+      id: 'sub-1', plan: 'ENTERPRISE', status: 'ACTIVE', userId: 'u',
+      endDate: new Date(Date.now() + 86400000),
+    });
+    expect(await service.isPremium('u')).toBe(true);
+  });
+
+  it('isPremium returns false when no premium sub', async () => {
+    prismaMock.marketplaceSubscription.findFirst.mockResolvedValue(null);
+    expect(await service.isPremium('u')).toBe(false);
+  });
+});
+
 describe('SubscriptionService.cancel', () => {
   it('returns cancelled:false when no active subscription', async () => {
     prismaMock.marketplaceSubscription.findFirst.mockResolvedValue(null);

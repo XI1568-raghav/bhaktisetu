@@ -113,8 +113,15 @@ export default function AccountSubscriptionsPage() {
           <div className="rounded-2xl bg-white p-6 shadow-sm border" style={{ borderColor: 'var(--color-border, #e8dcc8)' }}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-surface-800">{subscription.plan}</h2>
+                <h2 className="text-xl font-semibold text-surface-800">
+                  {subscription.plan === 'ENTERPRISE' ? 'NRI Premium' : subscription.plan}
+                </h2>
                 <p className="text-sm text-surface-500 mt-0.5">{subscription.role}</p>
+                {subscription.plan === 'ENTERPRISE' && (
+                  <p className="text-xs text-emerald-700 mt-1 font-medium">
+                    All premium benefits unlocked
+                  </p>
+                )}
               </div>
               <span
                 className="px-2.5 py-0.5 rounded-full text-xs font-semibold"

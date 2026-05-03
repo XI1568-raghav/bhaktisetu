@@ -164,6 +164,38 @@ export async function subscriptionRoutes(server: FastifyInstance) {
     }
   });
 
+  // ─── POST /create-stripe-annual — Stripe NRI annual checkout (Layer AR) ────
+
+  const stripeAnnualSchema = z.object({
+    planId: z.string().min(1),
+  });
+
+  server.post('/create-stripe-annual', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const parsed = stripeAnnualSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: parsed.error.flatten() });
+    }
+    const userId = request.currentUser!.id;
+    try {
+      const result = await subscriptionService.createStripeAnnualSubscription({
+        userId,
+        planId: parsed.data.planId,
+      });
+      return { subscription: result };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create Stripe subscription';
+      return reply.code(400).send({ error: message });
+    }
+  });
+
+  // ─── GET /is-premium — Premium gate check (AR) ─────────────────────────────
+
+  server.get('/is-premium', { preHandler: [authenticateUser] }, async (request) => {
+    const userId = request.currentUser!.id;
+    const isPremium = await subscriptionService.isPremium(userId);
+    return { isPremium };
+  });
+
   // ─── POST /cancel-auto-renew — Cancel future renewals ──────────────────────
 
   server.post('/cancel-auto-renew', { preHandler: [authenticateUser] }, async (request, reply) => {
