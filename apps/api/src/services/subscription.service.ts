@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
+import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,9 @@ interface PlanDefinition {
   // Optional explicit duration (overrides interval-based math). Used by
   // short-window plans like the AI astro single-session pass (1 day).
   durationDays?: number;
+  // Optional USD price for international (NRI) checkout via Stripe. When
+  // present, the plan is eligible for createStripeAnnualSubscription (AR).
+  priceUsd?: number;
   features: string[];
   popular: boolean;
 }
@@ -209,6 +213,30 @@ const PLANS: PlanDefinition[] = [
     durationDays: 30,
     features: ['Unlimited AI Pandit chat', 'Priority responses', 'Cancel anytime'],
     popular: true,
+  },
+  // ─── NRI Premium yearly tier (Layer AR) ──────────────────────────────────
+  // Annual subscription billed in USD via Stripe ($60/yr ≈ ₹5000). Maps to
+  // ENTERPRISE so isPremium() can branch off the marketplace plan code
+  // without inventing a new enum value.
+  {
+    id: 'nri_premium_yearly',
+    name: 'NRI Premium',
+    plan: 'ENTERPRISE',
+    roles: ['DEVOTEE'],
+    price: 5000,
+    currency: 'INR',
+    priceUsd: 60,
+    interval: 'year',
+    durationDays: 365,
+    features: [
+      'No ads anywhere on Darshya',
+      'No NRI surcharge on bookings',
+      'Priority booking 7 days early',
+      'Weekly 1:1 call with priest (Jitsi)',
+      'Free 80G receipt PDF for any donation',
+      'Unlimited AI astro chat',
+    ],
+    popular: false,
   },
 ];
 
@@ -417,6 +445,130 @@ export class SubscriptionService {
     }
 
     return { subscriptionId, shortUrl, status, skipped: isDemo, reason: isDemo ? 'demo-mode' : undefined };
+  }
+
+  // ─── Stripe Annual Subscription (Layer AR — NRI Premium) ────────────────────
+  // ₹5000/yr (~$60) billed in USD via Stripe Checkout. Unlike the Razorpay
+  // monthly subscription which uses the Subscriptions API + saved plan ID,
+  // the annual NRI tier uses a Checkout Session in `subscription` mode with
+  // an inline price_data block — no pre-created Stripe Plan needed, so the
+  // demo path stays env-gated.
+
+  async createStripeAnnualSubscription(args: {
+    userId: string;
+    planId: string;
+  }): Promise<{
+    sessionId: string;
+    url: string | null;
+    status: string;
+    skipped?: boolean;
+    reason?: string;
+  }> {
+    const plan = PLANS.find((p) => p.id === args.planId);
+    if (!plan) throw new Error(`Plan not found: ${args.planId}`);
+    if (!plan.priceUsd || plan.priceUsd <= 0) {
+      throw new Error(`Plan ${args.planId} has no USD price configured for Stripe`);
+    }
+    if (plan.interval !== 'year') {
+      throw new Error(`Plan ${args.planId} is not an annual plan`);
+    }
+
+    const usdAmountCents = Math.round(plan.priceUsd * 100);
+    const successBase = process.env.WEB_APP_URL || 'https://darshya.online';
+    const primaryRole: string = plan.roles[0] ?? 'DEVOTEE';
+
+    if (isStripeDemoMode) {
+      // Demo mode: instantly grant the subscription locally so the flow
+      // stays exercisable without a Stripe key.
+      try {
+        await this.subscribe(args.userId, args.planId, primaryRole);
+      } catch {
+        // ignore
+      }
+      return {
+        sessionId: `cs_demo_${Date.now()}`,
+        url: null,
+        status: 'demo_completed',
+        skipped: true,
+        reason: 'demo-mode',
+      };
+    }
+
+    const stripe = await getStripe();
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: usdAmountCents,
+            recurring: { interval: 'year' },
+            product_data: {
+              name: plan.name,
+              description: 'Darshya NRI Premium — annual',
+            },
+          },
+        },
+      ],
+      success_url: `${successBase}/account/subscriptions?nri=success`,
+      cancel_url: `${successBase}/upgrade?nri=cancelled`,
+      metadata: {
+        darshyaUserId: args.userId,
+        darshyaPlanId: args.planId,
+        role: primaryRole,
+        kind: 'stripe_annual_nri',
+      },
+    });
+
+    try {
+      await prisma.transaction.create({
+        data: {
+          userId: args.userId,
+          type: 'SUBSCRIPTION',
+          amount: plan.price,
+          status: 'PENDING',
+          metadata: {
+            kind: 'stripe_annual_nri',
+            stripeSessionId: session.id,
+            planId: args.planId,
+            role: primaryRole,
+            url: session.url,
+            priceUsd: plan.priceUsd,
+          },
+        },
+      });
+    } catch {
+      // mock fallback — fine
+    }
+
+    return {
+      sessionId: session.id,
+      url: session.url,
+      status: 'created',
+    };
+  }
+
+  /**
+   * Check if a user has an active premium subscription (NRI Premium tier).
+   * Used by AQ ad-gate, NRI surcharge bypass, AI astro paywall (M3), etc.
+   */
+  async isPremium(userId: string): Promise<boolean> {
+    try {
+      const sub = await prisma.marketplaceSubscription.findFirst({
+        where: {
+          userId,
+          status: 'ACTIVE',
+          plan: 'ENTERPRISE',
+          endDate: { gte: new Date() },
+        },
+      });
+      return !!sub;
+    } catch {
+      const m = mockSubscriptions.get(userId);
+      return !!(m && m.status === 'ACTIVE' && m.plan === 'ENTERPRISE');
+    }
   }
 
   async cancelRazorpaySubscription(userId: string): Promise<{ cancelled: boolean; message: string }> {
