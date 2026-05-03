@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAstrologers, useHoroscope } from '@poojly/api-client';
@@ -190,7 +191,13 @@ export default function AstrologyScreen() {
                 key={service.id}
                 style={styles.serviceCard}
                 activeOpacity={0.7}
-                onPress={() => Alert.alert(service.name, `${service.description}\n\nDuration: ${service.duration}\nPrice: ₹${service.price}`)}
+                onPress={() => {
+                  if (service.name.toLowerCase().includes('kundli')) {
+                    router.push('/(devotee)/kundli' as any);
+                    return;
+                  }
+                  Alert.alert(service.name, service.description + ' (Duration: ' + service.duration + ', Price: ₹' + service.price + ')');
+                }}
               >
                 <View style={styles.serviceIconContainer}>
                   <Ionicons name={service.icon} size={22} color={colors.saffron[600]} />
