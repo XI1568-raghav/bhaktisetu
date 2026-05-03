@@ -13,6 +13,8 @@ export function initSentryMobile(): void {
     tracesSampleRate: 0.1,
     sendDefaultPii: false,
     enableAutoSessionTracking: true,
+    // CI sets EXPO_PUBLIC_SENTRY_RELEASE=darshya@<sha> via .github/workflows/sentry-release.yml
+    release: process.env.EXPO_PUBLIC_SENTRY_RELEASE,
   });
   initialized = true;
 }

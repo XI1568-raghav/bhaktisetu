@@ -1,0 +1,122 @@
+name: Sentry Release Tracking
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# TD7: tag a Sentry release per commit, upload sourcemaps for web/api/mobile,
+# and record a deploy. Skips gracefully when SENTRY_AUTH_TOKEN is absent.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'XI1568-raghav/bhaktisetu' }}
+    env:
+      SENTRY_ORG: darshya
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_RELEASE: darshya@${{ github.sha }}
+
+    steps:
+      - name: Guard — token present?
+        id: guard
+        run: |
+          if [ -z "${SENTRY_AUTH_TOKEN}" ]; then
+            echo "SENTRY_AUTH_TOKEN not set — skipping Sentry release tracking."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        if: steps.guard.outputs.enabled == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.guard.outputs.enabled == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Sentry release
+        if: steps.guard.outputs.enabled == 'true'
+        run: |
+          npx --yes @sentry/cli@latest releases new "$SENTRY_RELEASE"
+          npx --yes @sentry/cli@latest releases set-commits "$SENTRY_RELEASE" --auto --ignore-missing
+
+      # ---- Web (Next.js on Cloudflare Pages) ----
+      - name: Build web
+        if: steps.guard.outputs.enabled == 'true'
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL: https://api.darshya.online
+          NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ env.SENTRY_RELEASE }}
+        run: pnpm exec next build
+
+      - name: Upload web sourcemaps
+        if: steps.guard.outputs.enabled == 'true'
+        run: |
+          npx --yes @sentry/cli@latest sourcemaps upload \
+            --org "$SENTRY_ORG" \
+            --project darshya-web \
+            --release "$SENTRY_RELEASE" \
+            apps/web/.next || echo "web sourcemap upload failed (non-fatal)"
+
+      # ---- API (Fastify, tsc output) ----
+      - name: Build api
+        if: steps.guard.outputs.enabled == 'true'
+        working-directory: apps/api
+        env:
+          SENTRY_RELEASE: ${{ env.SENTRY_RELEASE }}
+        run: pnpm run build
+
+      - name: Upload api sourcemaps
+        if: steps.guard.outputs.enabled == 'true'
+        run: |
+          npx --yes @sentry/cli@latest sourcemaps upload \
+            --org "$SENTRY_ORG" \
+            --project darshya-api \
+            --release "$SENTRY_RELEASE" \
+            apps/api/dist || echo "api sourcemap upload failed (non-fatal)"
+
+      # ---- Mobile (Expo) — sourcemaps best-effort ----
+      - name: Export mobile bundle
+        if: steps.guard.outputs.enabled == 'true'
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_SENTRY_RELEASE: ${{ env.SENTRY_RELEASE }}
+        run: pnpm exec expo export --platform all --output-dir dist || echo "mobile export failed (non-fatal)"
+        continue-on-error: true
+
+      - name: Upload mobile sourcemaps
+        if: steps.guard.outputs.enabled == 'true'
+        run: |
+          if [ -d "apps/mobile/dist" ]; then
+            npx --yes @sentry/cli@latest sourcemaps upload \
+              --org "$SENTRY_ORG" \
+              --project darshya-mobile \
+              --release "$SENTRY_RELEASE" \
+              apps/mobile/dist || echo "mobile sourcemap upload failed (non-fatal)"
+          else
+            echo "apps/mobile/dist not present — skipping mobile sourcemap upload"
+          fi
+
+      - name: Finalize release
+        if: steps.guard.outputs.enabled == 'true'
+        run: npx --yes @sentry/cli@latest releases finalize "$SENTRY_RELEASE"
+
+      - name: Record deploy
+        if: steps.guard.outputs.enabled == 'true'
+        run: npx --yes @sentry/cli@latest releases deploys "$SENTRY_RELEASE" new -e production
