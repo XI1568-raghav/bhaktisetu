@@ -1,0 +1,12 @@
+{
+  "name": "@poojly/medusa-store",
+  "version": "0.0.1",
+  "private": true,
+  "description": "MedusaJS headless commerce engine for Darshya dropship store. Stub: install Medusa CLI to bootstrap (see README.md).",
+  "scripts": {
+    "build": "echo \"medusa-store: stub package, no build yet\" && exit 0",
+    "type-check": "echo \"medusa-store: stub\" && exit 0",
+    "start": "echo \"Run: npx create-medusa-app@latest --skip-db . then pnpm dev\" && exit 1",
+    "seed": "node scripts/seed-dropship.mjs"
+  }
+}

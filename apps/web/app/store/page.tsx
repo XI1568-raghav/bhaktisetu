@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getProductImage } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
+import { listProducts } from "../../lib/medusa";
 import {
  ShoppingBag,
  Star,
@@ -52,9 +53,11 @@ const categories = [
  })),
 ];
 
-const products = PRODUCTS;
-
-export default function StorePage() {
+// Catalogue is fetched from Medusa Storefront API when
+// NEXT_PUBLIC_MEDUSA_BACKEND_URL is set; otherwise falls back to PRODUCTS
+// so the grid never blanks. See lib/medusa.ts.
+export default async function StorePage() {
+ const products = await listProducts();
  return (
  <div className="min-h-screen bg-surface-50">
  {/* Hero */}

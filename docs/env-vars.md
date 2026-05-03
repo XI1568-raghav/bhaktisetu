@@ -38,6 +38,11 @@ Adding a new integration? Match this contract.
 | `VAPID_PUBLIC_KEY` | `lib/web-push.ts` | push subscribe disabled; `/vapid-public-key` returns `enabled:false` |
 | `VAPID_PRIVATE_KEY` | same | same |
 | `VAPID_SUBJECT` | same | defaults to `mailto:support@darshya.online` |
+| `REDDIT_CLIENT_ID` | `lib/reddit.ts` (Layer AO auto-post) | `submitRedditPost` returns `{skipped:true}`; cron tick logs + continues |
+| `REDDIT_CLIENT_SECRET` | same | same |
+| `REDDIT_USERNAME` | same | same |
+| `REDDIT_PASSWORD` | same | same |
+| `REDDIT_USER_AGENT` | same | defaults to `darshya-content-bot/1.0 by /u/<username>` |
 
 ## Web client (`apps/web`)
 
@@ -51,6 +56,19 @@ Adding a new integration? Match this contract.
 | `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | `components/CloudflareAnalytics.tsx` | manual injection path. **Usually unnecessary** — when `darshya.online` is proxied through Cloudflare (orange cloud), the beacon is auto-injected at the edge with no client-side code needed. Only set this if a page is served outside Cloudflare's proxy. |
 | `NEXT_PUBLIC_API_URL` | `lib/api-config.ts` | defaults to `http://localhost:4000` |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | booking + donation pages | falls back to `rzp_test_demo` |
+| `NEXT_PUBLIC_MEDUSA_BACKEND_URL` | `lib/medusa.ts` (Storefront API) | unset → `/store` lists static seed catalogue from `lib/products.ts`. Set to e.g. `http://localhost:9000` or `https://commerce.darshya.online` when MedusaJS is running. |
+| `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | same | per-channel publishable key sent as `x-publishable-api-key`. Optional in dev. |
+
+## Commerce (`apps/medusa-store`)
+
+Stub today; values listed for when Medusa boots.
+
+| Var | Used by | Behavior when absent |
+|---|---|---|
+| `MEDUSA_DATABASE_URL` | `medusa-config.js` | required; Medusa won't boot |
+| `MEDUSA_REDIS_URL` | `medusa-config.js` | optional; falls back to in-memory cache |
+| `MEDUSA_ADMIN_URL` / `MEDUSA_ADMIN_TOKEN` | `scripts/seed-dropship.mjs` | seed prints catalogue JSON to stdout instead of POSTing |
+| `STORE_CORS` / `ADMIN_CORS` | `medusa-config.js` | defaults to localhost + darshya.online |
 
 ## Mobile (`apps/mobile`)
 
