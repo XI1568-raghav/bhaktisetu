@@ -10,11 +10,13 @@ interface PlanCard {
   id: string;
   name: string;
   price: number;
+  priceUsd?: number;
   cadence: string;
   description: string;
   features: string[];
   cta: string;
   highlight: boolean;
+  badge?: string;
 }
 
 const PLAN_CARDS: PlanCard[] = [
@@ -62,6 +64,25 @@ const PLAN_CARDS: PlanCard[] = [
     cta: 'Subscribe',
     highlight: true,
   },
+  {
+    id: 'nri_premium_yearly',
+    name: 'NRI Premium',
+    price: 5000,
+    priceUsd: 60,
+    cadence: 'per year',
+    description: 'Annual all-access tier for our diaspora community',
+    features: [
+      'No ads anywhere on Darshya',
+      'No NRI surcharge on bookings',
+      'Priority booking 7 days early',
+      'Weekly 1:1 priest call (Jitsi)',
+      'Free 80G receipt PDF',
+      'Unlimited AI astro chat',
+    ],
+    cta: 'Go Premium',
+    highlight: false,
+    badge: 'For NRI',
+  },
 ];
 
 export default function UpgradePage() {
@@ -82,8 +103,17 @@ export default function UpgradePage() {
     setError(null);
 
     try {
+      const isStripeAnnual = planId === 'nri_premium_yearly';
       const isAutoRenew = planId === 'astro_monthly';
-      const endpoint = isAutoRenew ? '/subscriptions/create' : '/subscriptions/subscribe';
+      const endpoint = isStripeAnnual
+        ? '/subscriptions/create-stripe-annual'
+        : isAutoRenew
+        ? '/subscriptions/create'
+        : '/subscriptions/subscribe';
+
+      const body = isStripeAnnual
+        ? { planId }
+        : { planId, role: 'DEVOTEE' };
 
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
@@ -91,7 +121,7 @@ export default function UpgradePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.accessToken}`,
         },
-        body: JSON.stringify({ planId, role: 'DEVOTEE' }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -100,15 +130,19 @@ export default function UpgradePage() {
       }
 
       const data = (await res.json().catch(() => ({}))) as {
-        subscription?: { shortUrl?: string | null; skipped?: boolean };
+        subscription?: { shortUrl?: string | null; url?: string | null; skipped?: boolean };
       };
 
+      if (isStripeAnnual && data.subscription?.url) {
+        window.location.href = data.subscription.url;
+        return;
+      }
       if (isAutoRenew && data.subscription?.shortUrl) {
         window.location.href = data.subscription.shortUrl;
         return;
       }
 
-      router.push('/ask-pandit?upgraded=1');
+      router.push(isStripeAnnual ? '/account/subscriptions?nri=success' : '/ask-pandit?upgraded=1');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not complete upgrade');
       setBusyPlanId(null);
@@ -140,7 +174,7 @@ export default function UpgradePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PLAN_CARDS.map((plan) => {
             const busy = busyPlanId === plan.id;
             return (
@@ -160,6 +194,11 @@ export default function UpgradePage() {
                     Most popular
                   </div>
                 )}
+                {plan.badge && !plan.highlight && (
+                  <div className="self-start mb-3 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                    {plan.badge}
+                  </div>
+                )}
                 <h2 className="text-xl font-semibold text-surface-800">
                   {plan.name}
                 </h2>
@@ -174,6 +213,11 @@ export default function UpgradePage() {
                     <span className="text-sm text-surface-400 ml-2">
                       / {plan.cadence}
                     </span>
+                  )}
+                  {plan.priceUsd && (
+                    <div className="text-xs text-surface-500 mt-1">
+                      ${plan.priceUsd} USD billed via Stripe
+                    </div>
                   )}
                 </div>
                 <ul className="space-y-2 mb-6 flex-1">
