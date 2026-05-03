@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { COMPANY, postalContactLine } from "../../lib/company";

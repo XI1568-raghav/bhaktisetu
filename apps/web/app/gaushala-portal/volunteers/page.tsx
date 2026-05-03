@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'edge';
 
 import { useState } from 'react';
 import { Search, UserPlus, Phone, Mail, MapPin, Calendar, HandHeart, CheckCircle2, Clock, Sparkles } from 'lucide-react';

@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import type { Metadata } from 'next';
 import { getTemples, type TempleListItem } from '../../lib/api';
 import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details';

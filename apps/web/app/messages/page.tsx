@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'edge';
 
 import AuthGuard from '../../components/AuthGuard';
 import { Inbox } from '../../components/Inbox';

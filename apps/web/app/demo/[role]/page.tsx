@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { RoleDemoClient } from './role-demo-client';
 
 const VALID_ROLES = [

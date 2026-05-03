@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'edge';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
 import { useState, useEffect } from 'react';
