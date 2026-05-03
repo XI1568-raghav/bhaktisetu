@@ -1,0 +1,65 @@
+name: E2E (Playwright)
+
+on:
+  pull_request:
+    branches: [main, develop, rebrand/darshya]
+  push:
+    branches: [main, rebrand/darshya]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL for Playwright tests'
+        required: false
+        default: 'https://darshya.online'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright against ${{ inputs.base_url || 'https://darshya.online' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Don't fail the whole pipeline if the live site is down — soft-fail signal.
+    continue-on-error: true
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ inputs.base_url || 'https://darshya.online' }}
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Run Playwright (TD2 specs)
+        run: pnpm exec playwright test tests/e2e --reporter=html,list
+        continue-on-error: true
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report
+          retention-days: 14
+
+      - name: Upload test-results (traces, screenshots)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ github.run_id }}
+          path: test-results
+          retention-days: 7
