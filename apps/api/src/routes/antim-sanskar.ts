@@ -183,7 +183,47 @@ function familyEmailHtml(params: {
 </div></body></html>`;
 }
 
+async function ensureAntimSanskarTable(): Promise<void> {
+  // Migration 20260502_antim_sanskar provisions this table. On Render's
+  // free tier we run no migration step at deploy, so self-init at boot is
+  // the only way the table appears in prod (TD15 surfaced 42P01 here).
+  // Idempotent — IF NOT EXISTS.
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "antim_sanskar_bookings" (
+      "id"                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      "booking_number"        TEXT UNIQUE NOT NULL,
+      "deceased_name"         TEXT NOT NULL,
+      "contact_name"          TEXT NOT NULL,
+      "contact_phone"         TEXT NOT NULL,
+      "contact_relation"      TEXT,
+      "city"                  TEXT NOT NULL,
+      "preferred_ghat"        TEXT,
+      "preferred_date"        DATE,
+      "package_tier"          TEXT NOT NULL,
+      "package_price_inr"     INTEGER NOT NULL,
+      "asthi_visarjan_river"  TEXT,
+      "notes"                 TEXT,
+      "status"                TEXT NOT NULL DEFAULT 'pending_coordinator',
+      "assigned_pandit_id"    UUID,
+      "created_at"            TIMESTAMPTZ NOT NULL DEFAULT now(),
+      "updated_at"            TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "antim_sanskar_bookings_status_idx"
+      ON "antim_sanskar_bookings" ("status");
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "antim_sanskar_bookings_city_idx"
+      ON "antim_sanskar_bookings" ("city");
+  `);
+}
+
 export async function antimSanskarRoutes(server: FastifyInstance) {
+  await ensureAntimSanskarTable().catch((err) =>
+    server.log.warn({ err }, 'antim-sanskar table init failed'),
+  );
+
   // ─── GET /packages — service tiers ────────────────────────────────────
   server.get('/packages', async () => ({ packages: PACKAGES }));
 
