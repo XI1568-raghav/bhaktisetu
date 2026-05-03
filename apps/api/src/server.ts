@@ -65,6 +65,8 @@ import {
 import { adminContentQueueRoutes } from './routes/admin-content-queue.js';
 import { adminDonationsExportRoutes } from './routes/admin-donations-export.js';
 import { orgsRoutes } from './routes/orgs.js';
+import { marketplaceV2Routes, marketplaceAdminRoutes } from './routes/marketplace-v2.js';
+import { csrMatchRoutes } from './routes/csr-match.js';
 import { antimSanskarRoutes } from './routes/antim-sanskar.js';
 
 const server = Fastify({
@@ -178,6 +180,9 @@ async function bootstrap() {
   await server.register(adminContentQueueRoutes, { prefix: '/api/v1/admin/content-queue' });
   await server.register(adminDonationsExportRoutes, { prefix: '/api/v1/admin/donations' });
   await server.register(orgsRoutes, { prefix: '/api/v1/orgs' });
+  await server.register(marketplaceV2Routes, { prefix: '/api/v2/marketplace' });
+  await server.register(marketplaceAdminRoutes, { prefix: '/api/v1/admin/marketplace' });
+  await server.register(csrMatchRoutes, { prefix: '/api/v1/csr-match' });
   await server.register(antimSanskarRoutes, { prefix: '/api/v1/antim-sanskar' });
 
   // Start server
