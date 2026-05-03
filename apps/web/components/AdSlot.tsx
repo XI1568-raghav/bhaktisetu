@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useIsPremium } from './useIsPremium';
 
 // Minimal subset of AdSense globals we touch. Defining locally avoids a
@@ -42,6 +42,11 @@ export default function AdSlot({ slotId, format, label = 'Advertisement', classN
  const insRef = useRef<HTMLModElement | null>(null);
  const pushedRef = useRef(false);
  const isPremium = useIsPremium();
+ // Ad quarantine: any ancestor with data-ad-quarantine="true" suppresses ads
+ // on that subtree. Used for sensitive verticals (e.g. antim sanskar) where
+ // showing ads next to the content would be disrespectful regardless of
+ // AdSense policy compliance.
+ const [quarantined, setQuarantined] = useState(false);
 
  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
  // Slot id is read at build time via process.env so Next inlines public vars.
@@ -50,7 +55,14 @@ export default function AdSlot({ slotId, format, label = 'Advertisement', classN
  const slot = (process.env as Record<string, string | undefined>)[slotEnvKey];
 
  useEffect(() => {
+  if (typeof document === 'undefined') return;
+  const el = insRef.current?.closest('[data-ad-quarantine="true"]');
+  if (el) setQuarantined(true);
+ }, []);
+
+ useEffect(() => {
   if (isPremium) return;
+  if (quarantined) return;
   if (!client || !slot) return;
   if (pushedRef.current) return;
   if (typeof window === 'undefined') return;
@@ -64,9 +76,10 @@ export default function AdSlot({ slotId, format, label = 'Advertisement', classN
   } catch {
    // Network/CSP failures must never crash a page render.
   }
- }, [isPremium, client, slot]);
+ }, [isPremium, quarantined, client, slot]);
 
  if (isPremium) return null;
+ if (quarantined) return null;
  if (!client || !slot) return null;
 
  const style = FORMAT_STYLE[format];
