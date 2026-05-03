@@ -19,6 +19,8 @@ export function initSentry(): void {
     tracesSampleRate: 0.05,
     // Don't send PII unless explicitly opted in
     sendDefaultPii: false,
+    // CI sets SENTRY_RELEASE=darshya@<sha> via .github/workflows/sentry-release.yml
+    release: process.env.SENTRY_RELEASE,
   });
   initialized = true;
 }
