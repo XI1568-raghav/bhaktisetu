@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Calendar, MapPin, ArrowRight, Mountain } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import { yatraDestinations, formatINRPrice } from '../../../lib/yatra-destinations';
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function YatraDestinationsPage() {
+export default async function YatraDestinationsPage() {
+  const t = await getTranslations('yatra');
+  const tCommon = await getTranslations('common');
   return (
     <div style={{ background: 'var(--color-bg)' }}>
       {/* Hero */}
@@ -24,13 +27,13 @@ export default function YatraDestinationsPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-5" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
             <Mountain className="w-3.5 h-3.5" />
-            Most-Visited Pilgrimage Destinations
+            {t('destinationsBadge')}
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight max-w-3xl" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-            10 Sacred Yatra Destinations You Must Visit
+            {t('destinationsTitle')}
           </h1>
           <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
-            India\'s most visited pilgrimage sites with curated itineraries, best season to visit, how to reach, and direct booking through trusted partners — MakeMyTrip, Goibibo and IRCTC Tourism.
+            {t('destinationsSubtitle')}
           </p>
         </div>
       </section>
@@ -56,7 +59,7 @@ export default function YatraDestinationsPage() {
                 </div>
                 <div className="p-4 flex flex-col flex-1">
                   <div className="flex items-center gap-3 text-[11px] mb-2.5" style={{ color: 'var(--color-text-muted)' }}>
-                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {d.durationDays} days</span>
+                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {d.durationDays} {t('days')}</span>
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {d.region}</span>
                   </div>
                   <p className="text-xs leading-relaxed line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
@@ -64,13 +67,13 @@ export default function YatraDestinationsPage() {
                   </p>
                   <div className="mt-auto pt-4 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
                     <div>
-                      <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>From</p>
+                      <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>{t('from')}</p>
                       <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                        {formatINRPrice(d.startingPriceInr)} <span className="text-[10px] font-normal" style={{ color: 'var(--color-text-muted)' }}>/ person</span>
+                        {formatINRPrice(d.startingPriceInr)} <span className="text-[10px] font-normal" style={{ color: 'var(--color-text-muted)' }}>/ {t('perPerson')}</span>
                       </p>
                     </div>
                     <div className="flex items-center gap-1 text-[11px] font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
-                      View details <ArrowRight className="w-3 h-3" />
+                      {t('viewDetails')} <ArrowRight className="w-3 h-3" />
                     </div>
                   </div>
                 </div>

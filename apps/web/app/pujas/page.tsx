@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from 'next-intl/server';
 import { getDeityImage } from "../../lib/images";
 import { getPujaTypes, type PujaType } from "../../lib/api";
 import AdSlot from "../../components/AdSlot";
@@ -287,37 +288,36 @@ async function loadPujas(): Promise<PujaCard[]> {
 
 export default async function PujasPage() {
  const pujas = await loadPujas();
+ const t = await getTranslations('pujas');
  return (
  <div className="min-h-screen bg-surface-50">
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
- Book Sacred Pujas Online
+ {t('pageTitle')}
  </h1>
  <p className="text-surface-500 text-lg max-w-2xl">
- Choose from 200+ authentic pujas performed by verified pandits at
- India&rsquo;s most revered temples. Live streaming and prasad delivery
- included.
+ {t('pageSubtitle')}
  </p>
 
  {/* Trust badges */}
  <div className="mt-6 flex flex-wrap gap-4">
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Shield className="w-4 h-4 text-saffron-600" />
- Verified Pandits
+ {t('verifiedPandits')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Video className="w-4 h-4 text-saffron-600" />
- Live Streaming
+ {t('liveStreaming')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Gift className="w-4 h-4 text-saffron-600" />
- Prasad Delivery
+ {t('prasadDelivery')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <CheckCircle2 className="w-4 h-4 text-saffron-600" />
- Money-Back Guarantee
+ {t('videoProof')}
  </div>
  </div>
 
@@ -327,7 +327,7 @@ export default async function PujasPage() {
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
  <input
  type="text"
- placeholder="Search pujas by name, deity, or temple..."
+ placeholder={t('searchPlaceholder')}
  className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[var(--color-border)] bg-white text-surface-800 placeholder:text-surface-500 shadow-warm-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
  />
  </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from 'next-intl/server';
 import { getProductImage } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
 import { listProducts } from "../../lib/medusa";
@@ -58,37 +59,36 @@ const categories = [
 // so the grid never blanks. See lib/medusa.ts.
 export default async function StorePage() {
  const products = await listProducts();
+ const t = await getTranslations('store');
  return (
  <div className="min-h-screen bg-surface-50">
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
- Bhakti Store
+ {t('pageTitle')}
  </h1>
  <p className="text-surface-500 text-lg max-w-2xl">
- Authentic puja samagri, handcrafted idols, sacred rudraksha, and
- spiritual essentials — sourced from trusted artisans and blessed at
- temples.
+ {t('pageSubtitle')}
  </p>
 
  {/* Trust badges */}
  <div className="mt-6 flex flex-wrap gap-4">
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Truck className="w-4 h-4 text-saffron-600" />
- Free Delivery above ₹499
+ {t('freeDelivery')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <BadgeCheck className="w-4 h-4 text-saffron-600" />
- Authentic & Certified
+ {t('blessed')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <RotateCcw className="w-4 h-4 text-saffron-600" />
- Easy Returns
+ {t('easyReturns')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Shield className="w-4 h-4 text-saffron-600" />
- Secure Payments
+ {t('secureCheckout')}
  </div>
  </div>
 
@@ -98,7 +98,7 @@ export default async function StorePage() {
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
  <input
  type="text"
- placeholder="Search products..."
+ placeholder={t('search')}
  className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[var(--color-border)] bg-white text-surface-800 placeholder:text-surface-500 shadow-warm-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
  />
  </div>

@@ -142,6 +142,7 @@
   --font-display: 'Cabinet Grotesk', 'Helvetica Neue', sans-serif;
   --font-body: 'Satoshi', 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-devanagari: var(--font-noto-devanagari), 'Noto Sans Devanagari', 'Cabinet Grotesk', sans-serif;
 
   /* ── Fluid type scale ──────────────────────────────────────────────────── */
   --type-xs: clamp(0.6875rem, 0.66rem + 0.15vw, 0.75rem);
@@ -192,6 +193,15 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   line-height: var(--leading-relaxed);
+}
+
+/* Devanagari font stack when locale is Hindi. Cabinet Grotesk / Satoshi
+   have no Devanagari glyphs, so the browser would fall back to a system
+   serif and break the page rhythm. Swap the body + display vars at <html>
+   level so headings and body text both render in Noto Sans Devanagari. */
+html[lang="hi"] {
+  --font-body: var(--font-devanagari);
+  --font-display: var(--font-devanagari);
 }
 
 ::selection {
