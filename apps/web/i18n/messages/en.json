@@ -1,0 +1,71 @@
+{
+  "nav": {
+    "temples": "Temples",
+    "darshan": "Darshan",
+    "pujas": "Pujas",
+    "content": "Content",
+    "store": "Store",
+    "yatra": "Yatra",
+    "panchang": "Panchang",
+    "donate": "Donate",
+    "astrology": "Astrology",
+    "wellness": "Wellness",
+    "askPandit": "Ask Pandit",
+    "language": "Language"
+  },
+  "common": {
+    "book": "Book",
+    "bookNow": "Book Now",
+    "watchLive": "Watch Live",
+    "donate": "Donate",
+    "viewAll": "View All",
+    "learnMore": "Learn More",
+    "search": "Search",
+    "verified": "Verified",
+    "free": "Free",
+    "loading": "Loading...",
+    "tryAgain": "Try again"
+  },
+  "home": {
+    "heroBadge": "Early access — 1,000 founding devotees",
+    "heroTitle": "Bring the divine into daily life",
+    "heroSubtitle": "Live darshan, puja booking with video proof, and AI spiritual guidance — all in one app.",
+    "heroCtaPrimary": "Watch Live Darshan",
+    "heroCtaSecondary": "Book a Puja"
+  },
+  "temples": {
+    "pageTitle": "Sacred Temples of India",
+    "pageSubtitle": "Explore sacred temples across India. Watch live darshan, book pujas with verified priests, and plan your pilgrimage.",
+    "filterByState": "Filter by state",
+    "filterByDeity": "Filter by deity",
+    "filterByTradition": "Filter by tradition",
+    "noResults": "No temples match your filters."
+  },
+  "pujas": {
+    "pageTitle": "Book a Puja",
+    "pageSubtitle": "Authentic pujas at renowned temples. Verified pandits, live streaming, prasad delivery.",
+    "category": "Category",
+    "deity": "Deity",
+    "occasion": "Occasion",
+    "priceRange": "Price Range",
+    "anyPrice": "Any Price",
+    "allCategories": "All Categories",
+    "allDeities": "All Deities",
+    "allOccasions": "All Occasions"
+  },
+  "terms": {
+    "temple": "Temple",
+    "puja": "Puja",
+    "aarti": "Aarti",
+    "prasad": "Prasad",
+    "darshan": "Darshan",
+    "pandit": "Pandit",
+    "sankalp": "Sankalp",
+    "videoProof": "Video Proof"
+  },
+  "footer": {
+    "tagline": "Bringing the divine into daily life. Live darshan, puja booking, spiritual content, and more.",
+    "support": "Support",
+    "rights": "All rights reserved."
+  }
+}
