@@ -20,6 +20,7 @@ import {
 import AuthGuard from '../../../components/AuthGuard';
 import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -66,6 +67,8 @@ function CheckoutContent() {
  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
  const [placing, setPlacing] = useState(false);
  const [orderPlaced, setOrderPlaced] = useState(false);
+ const [orderNumber, setOrderNumber] = useState<string | null>(null);
+ const [placeError, setPlaceError] = useState<string | null>(null);
 
  if (items.length === 0 && !orderPlaced) {
  return (
@@ -97,7 +100,7 @@ function CheckoutContent() {
  Thank you for your order. You will receive a confirmation soon.
  </p>
  <p className="text-sm text-surface-400 mb-6">
- Order ID: ORD-{Date.now().toString().slice(-8)}
+ Order ID: {orderNumber ?? `ORD-${Date.now().toString().slice(-8)}`}
  </p>
  <div className="space-y-3">
  <Link
@@ -121,11 +124,55 @@ function CheckoutContent() {
 
  async function handlePlaceOrder() {
  setPlacing(true);
- // Simulate order placement
- await new Promise((resolve) => setTimeout(resolve, 1500));
+ setPlaceError(null);
+ try {
+ const addr = SAVED_ADDRESSES.find((a) => a.id === selectedAddress);
+ if (!addr) throw new Error('Select a delivery address');
+ const token =
+ typeof window !== 'undefined'
+ ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
+ : null;
+ const res = await fetch(`${API_BASE_URL}/store/orders`, {
+ method: 'POST',
+ headers: {
+ 'content-type': 'application/json',
+ ...(token ? { authorization: `Bearer ${token}` } : {}),
+ },
+ body: JSON.stringify({
+ items: items.map((it) => ({
+ productId: it.product.id,
+ qty: it.quantity,
+ priceAtPurchase: it.product.price,
+ })),
+ totalAmountInr: total,
+ shippingAddress: {
+ fullName: user?.fullName ?? addr.label,
+ line1: addr.line1,
+ line2: addr.line2,
+ city: addr.city,
+ state: addr.state,
+ pincode: addr.pincode,
+ country: 'India',
+ },
+ }),
+ });
+ if (!res.ok) {
+ const txt = await res.text().catch(() => '');
+ throw new Error(`Order failed (${res.status}) ${txt.slice(0, 120)}`);
+ }
+ const json = (await res.json()) as { data?: { orderNumber?: string } };
+ setOrderNumber(json.data?.orderNumber ?? null);
+ // TODO: launch Razorpay checkout when paymentMethod === 'razorpay' once
+ // /api/v1/payments/razorpay-store-order endpoint lands. COD goes straight
+ // to PENDING which fulfilment confirms manually.
  clearCart();
  setOrderPlaced(true);
+ } catch (err) {
+ const msg = err instanceof Error ? err.message : 'Could not place order';
+ setPlaceError(msg);
+ } finally {
  setPlacing(false);
+ }
  }
 
  return (
@@ -328,6 +375,9 @@ function CheckoutContent() {
  )}
  </button>
 
+ {placeError && (
+ <p className="text-xs text-red-600 text-center mt-3">{placeError}</p>
+ )}
  <p className="text-xs text-surface-400 text-center mt-3">
  By placing this order, you agree to our Terms of Service.
  </p>
