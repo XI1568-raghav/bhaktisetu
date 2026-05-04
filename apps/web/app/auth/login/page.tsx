@@ -2,7 +2,7 @@
 export const runtime = 'edge';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '../../../lib/t';
 import { Flame, Phone, Mail, ArrowRight, Loader2, CheckCircle2, ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';

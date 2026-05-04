@@ -18,7 +18,7 @@ import {
  CheckCircle,
  Leaf,
 } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from '../lib/t';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';

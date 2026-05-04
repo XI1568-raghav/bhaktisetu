@@ -18,6 +18,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "lib/i18n/*.json",
     ".next/types/**/*.ts"
   ],
   "exclude": [

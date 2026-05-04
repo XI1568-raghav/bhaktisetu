@@ -1,14 +1,6 @@
-// Cloudflare Pages requires edge runtime on every dynamic route. TD18 made
-// the root layout async (next-intl SSR), promoting every page to dynamic (ƒ).
-// Setting runtime here makes the entire app run on edge — child routes inherit.
-// Remove this if/when we want some pages on Node.js runtime, but then each
-// such page must explicitly export runtime = 'nodejs'.
-export const runtime = 'edge';
-
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { t } from "../lib/t";
 import {
  Flame,
  Heart,
@@ -38,7 +30,6 @@ import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNav } from "../components/MobileNav";
-import HindiToggle from "../components/HindiToggle";
 import { MoreDropdown } from "../components/MoreDropdown";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
 import { Analytics } from "../components/Analytics";
@@ -142,9 +133,6 @@ const moreLinks = [
 
 const highlightLink = { href: "/ask-pandit", labelKey: "askPandit" as const, icon: Sparkles };
 
-// Footer sections — labels are i18n keys looked up from `footer.*` plus
-// `terms.*` / `nav.*` namespaces inside RootLayout. Keeps footer fully
-// localised when `darshya_lang` cookie is `hi`.
 type FooterLink = { href: string; t: 'footer' | 'terms' | 'nav'; key: string };
 const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  {
@@ -205,26 +193,24 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  },
 ];
 
-export default async function RootLayout({
+export default function RootLayout({
  children,
 }: {
  children: React.ReactNode;
 }) {
- const locale = await getLocale();
- const messages = await getMessages();
- const tNav = await getTranslations('nav');
- const tFooter = await getTranslations('footer');
- const tTerms = await getTranslations('terms');
+ const tNav = t('nav') as unknown as (k: string) => string;
+ const tFooter = t('footer') as unknown as (k: string) => string;
+ const tTerms = t('terms') as unknown as (k: string) => string;
 
  const tFor: Record<'footer' | 'terms' | 'nav', (k: string) => string> = {
-   footer: tFooter as unknown as (k: string) => string,
-   terms: tTerms as unknown as (k: string) => string,
-   nav: tNav as unknown as (k: string) => string,
+   footer: tFooter,
+   terms: tTerms,
+   nav: tNav,
  };
 
  return (
  <html
- lang={locale}
+ lang="en"
  className={`${notoSans.variable} ${notoSansDevanagari.variable}`}
  >
  <head>
@@ -261,18 +247,10 @@ export default async function RootLayout({
  {/* Cloudflare Web Analytics — privacy-first, no cookies. No-op when env unset. */}
  <CloudflareAnalytics />
 
- {/* hreflang — search engines pick up every supported locale for this URL.
-     Cookie-driven Hindi has no URL distinction (`darshya_lang` only), so we
-     advertise the prefixed-locale strategy used by middleware. */}
  <link rel="alternate" hrefLang="en" href="https://darshya.online" />
- <link rel="alternate" hrefLang="hi" href="https://darshya.online/hi" />
- <link rel="alternate" hrefLang="ta" href="https://darshya.online/ta" />
- <link rel="alternate" hrefLang="te" href="https://darshya.online/te" />
- <link rel="alternate" hrefLang="kn" href="https://darshya.online/kn" />
  <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
  </head>
- <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]" data-locale={locale}>
- <NextIntlClientProvider locale={locale} messages={messages}>
+ <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]" data-locale="en">
  <SentryErrorBoundary>
  <AuthProvider>
  <CartProvider>
@@ -324,7 +302,6 @@ export default async function RootLayout({
  <div className="flex items-center gap-1.5 ml-auto md:ml-0 shrink-0">
  <ListYourBusinessDropdown />
  <GlobalSearch />
- <HindiToggle />
  <NavCartButton />
  <div className="hidden sm:block">
  <NavAuthButton />
@@ -444,7 +421,6 @@ export default async function RootLayout({
  </CartProvider>
  </AuthProvider>
  </SentryErrorBoundary>
- </NextIntlClientProvider>
  </body>
  </html>
  );

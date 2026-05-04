@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from '../../lib/t';
 import { getDeityImage } from "../../lib/images";
 import { getPujaTypes, type PujaType } from "../../lib/api";
 import AdSlot from "../../components/AdSlot";

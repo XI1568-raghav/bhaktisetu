@@ -3,7 +3,7 @@ export const runtime = 'edge';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '../../lib/t';
 import { Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';

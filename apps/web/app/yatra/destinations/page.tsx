@@ -2,7 +2,7 @@ export const runtime = 'edge';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Calendar, MapPin, ArrowRight, Mountain } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from '../../../lib/t';
 import { yatraDestinations, formatINRPrice } from '../../../lib/yatra-destinations';
 
 export const metadata: Metadata = {
