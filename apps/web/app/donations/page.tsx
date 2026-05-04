@@ -12,7 +12,7 @@ import {
   Building2,
   ArrowRight,
 } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from '../../lib/t';
 import { IMAGES } from '../../lib/images';
 import { getTemples } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';

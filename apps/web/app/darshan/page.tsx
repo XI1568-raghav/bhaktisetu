@@ -2,7 +2,7 @@ export const runtime = 'edge';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Play, Radio } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from '../../lib/t';
 import {
  getLiveDarshan,
  getScheduledDarshan,

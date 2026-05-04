@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 import type { Metadata } from "next";
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from '../../lib/t';
 import { getProductImage } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
 import { listProducts } from "../../lib/medusa";
