@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import posthog from 'posthog-js';
 
 type EventProps = Record<string, string | number | boolean | undefined | null>;
 
@@ -33,15 +32,14 @@ export default function AnalyticsEvent({
     fired.current = key;
 
     try {
-      const ph = posthog as unknown as { __loaded?: boolean };
-      if (!ph.__loaded) return;
+      if (typeof window === 'undefined' || !window.posthog) return;
       const cleaned: EventProps = {};
       if (properties) {
         for (const [k, v] of Object.entries(properties)) {
           if (v !== undefined && v !== null) cleaned[k] = v;
         }
       }
-      posthog.capture(event, cleaned);
+      window.posthog.capture(event, cleaned);
     } catch {
       // analytics must never break the page
     }

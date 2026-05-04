@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@poojly/ui', '@poojly/shared', '@poojly/analytics'],
+  transpilePackages: ['@poojly/ui', '@poojly/shared'],
   typescript: {
     // pnpm hoists @types/react@18 (mobile) alongside @types/react@19 (web),
     // and Next 15's webpack-side typechecker resolves to 18 for some files
