@@ -2,7 +2,6 @@
 // inventory on this domain. Required for AdSense approval. The publisher ID
 // (pub-XXXX) is the numeric portion of NEXT_PUBLIC_ADSENSE_CLIENT (ca-pub-XXXX).
 
-export const runtime = 'edge';
 export const dynamic = 'force-static';
 
 export function GET(): Response {
