@@ -40,7 +40,6 @@ import {
  Sparkles,
  RefreshCw,
 } from 'lucide-react';
-import posthog from 'posthog-js';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 
@@ -49,13 +48,12 @@ import { API_BASE_URL } from '../../../../lib/api-config';
 // __loaded and wrap in try/catch so analytics can never break checkout.
 function safeCapture(event: string, props: Record<string, string | number | boolean | undefined>) {
  try {
-  const ph = posthog as unknown as { __loaded?: boolean };
-  if (!ph.__loaded) return;
+  if (typeof window === 'undefined' || !window.posthog) return;
   const cleaned: Record<string, string | number | boolean> = {};
   for (const [k, v] of Object.entries(props)) {
    if (v !== undefined) cleaned[k] = v;
   }
-  posthog.capture(event, cleaned);
+  window.posthog.capture(event, cleaned);
  } catch {
   // never block the user
  }
