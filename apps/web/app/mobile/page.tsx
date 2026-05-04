@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 
 import { getTempleHero, getDeityImage } from '../../lib/images';
 import {

@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 
 import { getTempleHero } from '../../../lib/images';
 import { Play, Users, Clock, Bell, MapPin } from 'lucide-react';

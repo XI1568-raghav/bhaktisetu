@@ -5,7 +5,6 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 
-export const runtime = 'edge';
 
 /**
  * Live consultation room — embeds Jitsi Meet.

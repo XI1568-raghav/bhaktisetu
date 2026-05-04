@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import type { Metadata } from "next";
 import { Heart, Users, Globe, BookOpen, Flame, Shield } from "lucide-react";
 

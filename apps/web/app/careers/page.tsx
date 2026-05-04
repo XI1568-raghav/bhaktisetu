@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import type { Metadata } from "next";
 import { MapPin, Clock, Briefcase, Heart, Zap, Users, BookOpen, Coffee } from "lucide-react";
 
