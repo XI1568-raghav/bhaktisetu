@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 
 import { useEffect, useState, useCallback } from 'react';
 import { Star, EyeOff, Loader2, RefreshCw, Filter } from 'lucide-react';
