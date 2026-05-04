@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export const runtime = 'edge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 

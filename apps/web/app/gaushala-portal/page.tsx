@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import SelfOnboardPageShell from '../../components/SelfOnboardPageShell';
 import SelfOnboardForm, { ExtraInput } from '../../components/SelfOnboardForm';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'List your temple on Darshya',

@@ -4,7 +4,6 @@ import { MapPin, Award, Languages, ArrowRight } from 'lucide-react';
 import { getApprovedProviders, type ApprovedProvider } from '../../lib/api';
 import ProviderBadge, { RatingDisplay } from '../../components/provider/ProviderBadge';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
  title: 'Verified Pandits on Darshya',

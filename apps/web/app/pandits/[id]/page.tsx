@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Star, Languages, Award, Calendar, IndianRupee } from 'lucide-react';
 import ProviderBadge, { RatingDisplay } from '../../../components/provider/ProviderBadge';
 
-export const runtime = 'edge';
 
 interface PageProps {
  params: Promise<{ id: string }>;

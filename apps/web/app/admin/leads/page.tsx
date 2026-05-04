@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Upload, X, FileText } from 'lucide-react';

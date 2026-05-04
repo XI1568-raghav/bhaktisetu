@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import SelfOnboardPageShell from '../../components/SelfOnboardPageShell';
 import SelfOnboardForm, { ExtraInput, ExtraSelect } from '../../components/SelfOnboardForm';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'Teach yoga & meditation on Darshya',
