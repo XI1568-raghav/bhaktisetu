@@ -65,21 +65,21 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
  {/* Sidebar */}
  <aside
- className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 bg-[#2a2520] flex flex-col transition-transform duration-200 ${
+ className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 bg-[#faf9f6] border-r border-surface-200 flex flex-col transition-transform duration-200 ${
  sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
  }`}
  >
  {/* Brand header */}
- <div className="h-16 flex items-center gap-3 px-5 border-b border-white/10">
+ <div className="h-16 flex items-center gap-3 px-5 border-b border-surface-200">
  <Logo size={28} color="#E16318" />
  <div>
- <span className="text-white font-bold text-sm tracking-tight">
- Darsh<span className="text-[#E16318]">ya</span>
+ <span className="text-surface-900 font-bold text-sm tracking-tight">
+ Darsh<span className="text-saffron-600">ya</span>
  </span>
- <p className="text-[#7a756e] text-xs">Admin Portal</p>
+ <p className="text-surface-500 text-xs">Admin Portal</p>
  </div>
  <button
- className="lg:hidden ml-auto text-white/60 hover:text-white"
+ className="lg:hidden ml-auto text-surface-500 hover:text-surface-800"
  onClick={() => setSidebarOpen(false)}
  >
  <X className="w-5 h-5" />
@@ -98,13 +98,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
  onClick={() => setSidebarOpen(false)}
  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
  active
- ? 'bg-saffron-600/20 text-[#E16318] ring-1 ring-saffron-600/30'
- : 'text-[#b5b0a8] hover:bg-white/5 hover:text-white'
+ ? 'bg-saffron-50 text-saffron-700 ring-1 ring-saffron-200'
+ : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900'
  }`}
  >
- <Icon className={`w-5 h-5 ${active ? 'text-[#E16318]' : 'text-[#7a756e]'}`} />
+ <Icon className={`w-5 h-5 ${active ? 'text-saffron-600' : 'text-surface-400'}`} />
  {link.label}
- {active && <ChevronRight className="w-4 h-4 ml-auto text-[#E16318]/60" />}
+ {active && <ChevronRight className="w-4 h-4 ml-auto text-saffron-600/60" />}
  </Link>
  );
  })}
@@ -112,23 +112,23 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
  <style dangerouslySetInnerHTML={{ __html: `
  .darshya-admin-scroll::-webkit-scrollbar { width: 6px; }
  .darshya-admin-scroll::-webkit-scrollbar-track { background: transparent; }
- .darshya-admin-scroll::-webkit-scrollbar-thumb { background: rgba(225,99,24,0.45); border-radius: 3px; }
- .darshya-admin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(225,99,24,0.7); }
- .darshya-admin-scroll { scrollbar-width: thin; scrollbar-color: rgba(225,99,24,0.45) transparent; }
+ .darshya-admin-scroll::-webkit-scrollbar-thumb { background: rgba(225,99,24,0.35); border-radius: 3px; }
+ .darshya-admin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(225,99,24,0.6); }
+ .darshya-admin-scroll { scrollbar-width: thin; scrollbar-color: rgba(225,99,24,0.35) transparent; }
  ` }} />
 
  {/* Bottom actions */}
- <div className="px-3 py-4 border-t border-white/10">
+ <div className="px-3 py-4 border-t border-surface-200">
  <Link
  href="/"
- className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#7a756e] hover:bg-white/5 hover:text-white transition-colors"
+ className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 hover:bg-surface-100 hover:text-surface-900 transition-colors"
  >
  <ChevronRight className="w-5 h-5 rotate-180" />
  Back to Site
  </Link>
  <button
  onClick={signOut}
- className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
+ className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors mt-1"
  >
  <LogOut className="w-5 h-5" />
  Sign Out
