@@ -1,10 +1,14 @@
-India spends four lakh crore rupees a year on devotion. Yet the money flows untrusted. NRIs send rupees to a cousin who claims it reached the priest. No receipt. No proof. No video.
+Every day, a billion devotees lose trust to a system that runs on faith alone.
+
+India spends four lakh crore rupees a year on devotion. Yet the priest is unverified. The puja is unrecorded. The receipt does not exist.
 
 Trust is broken.
 
-Darshya is the trust layer. Twenty verified temples. Book any puja with a verified pandit. Mandatory video proof before payout. Sanskrit sankalp, recorded ceremony, instant eighty-G receipt.
+Meet Darshya. The trust layer for devotion.
 
-Live darshan inside the sanctum. AWS IVS. Sub-second latency. An AI panditji at fifteen hundred tokens a second.
+Twenty verified temples. Book any puja, with a verified pandit. Mandatory video proof uploads before payout. Sanskrit sankalp, recorded ceremony, instant eighty-G receipt.
+
+Live darshan from inside the sanctum. Sub-second latency. An AI panditji at fifteen hundred tokens a second. Daily panchang. Gaushala adoption. Pilgrimage planning. Devotional commerce.
 
 Eight role portals. One product. Live today at darshya dot online.
 
