@@ -1,22 +1,27 @@
+/* Investor deck — brand-aligned (cream + saffron + ink).
+   Mirrors apps/web/app/globals.css tokens so the deck feels native to darshya.online,
+   not the dark cosmic theme it shipped with originally. */
 .pitch-root {
-  --bg-1: #0a0710;
-  --bg-2: #150a1c;
-  --bg-3: #1f0f2a;
-  --saffron: #ff7a18;
-  --gold: #f5b32b;
-  --rose: #e8497a;
-  --indigo: #7c3aed;
-  --ink: #efe6f3;
-  --ink-dim: #b0a3bb;
-  --line: rgba(255, 255, 255, 0.08);
+  --bg: #f5f3ef;
+  --bg-soft: #faf8f3;
+  --bg-card: #ffffff;
+  --saffron: #b87333;
+  --saffron-deep: #943B19;
+  --saffron-light: #F99A48;
+  --gold: #d4a438;
+  --ink: #2a2520;
+  --ink-dim: #6b635a;
+  --line: rgba(42, 37, 32, 0.10);
+  --line-strong: rgba(42, 37, 32, 0.18);
 
   position: relative;
   min-height: 100vh;
-  background: radial-gradient(1200px 600px at 80% -10%, rgba(124, 58, 237, 0.25), transparent 60%),
-    radial-gradient(900px 500px at 0% 110%, rgba(232, 73, 122, 0.18), transparent 60%),
-    linear-gradient(180deg, var(--bg-1), var(--bg-2) 50%, var(--bg-1));
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(184, 115, 51, 0.10), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, rgba(244, 175, 73, 0.08), transparent 60%),
+    var(--bg);
   color: var(--ink);
-  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'Satoshi', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   letter-spacing: -0.01em;
   overflow-x: hidden;
 }
@@ -24,7 +29,7 @@
 .pitch-root * { box-sizing: border-box; }
 
 .pitch-root .serif {
-  font-family: 'Cormorant Garamond', 'Noto Serif', Georgia, serif;
+  font-family: 'Cabinet Grotesk', 'Helvetica Neue', Helvetica, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -42,49 +47,52 @@
   position: absolute;
   top: 32px;
   right: 6vw;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 12px;
   letter-spacing: 0.2em;
   color: var(--ink-dim);
 }
 
 .pitch-eyebrow {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 12px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--saffron-deep);
   margin-bottom: 16px;
+  font-weight: 600;
 }
 
 .pitch-h1 {
-  font-family: 'Cormorant Garamond', 'Noto Serif', Georgia, serif;
+  font-family: 'Cabinet Grotesk', 'Helvetica Neue', sans-serif;
   font-size: clamp(48px, 8vw, 120px);
   line-height: 0.95;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: -0.04em;
   margin: 0 0 24px;
+  color: var(--ink);
 }
 
 .pitch-h2 {
-  font-family: 'Cormorant Garamond', 'Noto Serif', Georgia, serif;
+  font-family: 'Cabinet Grotesk', 'Helvetica Neue', sans-serif;
   font-size: clamp(36px, 5vw, 72px);
   line-height: 1.05;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: -0.03em;
   margin: 0 0 24px;
+  color: var(--ink);
 }
 
 .pitch-lead {
   font-size: clamp(18px, 1.4vw, 22px);
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--ink-dim);
   max-width: 720px;
   margin: 0 0 32px;
 }
 
 .pitch-grad-text {
-  background: linear-gradient(120deg, var(--saffron), var(--gold), var(--rose));
+  background: linear-gradient(120deg, var(--saffron), var(--saffron-light), var(--gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -108,16 +116,23 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 28px;
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(8px);
+  background: var(--bg-card);
+  box-shadow: 0 1px 2px rgba(42, 37, 32, 0.04), 0 6px 18px rgba(42, 37, 32, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pitch-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: 0 4px 8px rgba(42, 37, 32, 0.06), 0 12px 32px rgba(184, 115, 51, 0.08);
 }
 
 .pitch-stat {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Cabinet Grotesk', 'Helvetica Neue', sans-serif;
   font-size: clamp(48px, 6vw, 88px);
   line-height: 1;
-  font-weight: 500;
-  background: linear-gradient(120deg, var(--gold), var(--rose));
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--saffron), var(--gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -135,7 +150,8 @@
   border-radius: 18px;
   border: 1px solid var(--line);
   display: block;
-  background: #000;
+  background: var(--ink);
+  box-shadow: 0 12px 40px rgba(42, 37, 32, 0.08);
 }
 
 .pitch-media-grid {
@@ -154,16 +170,19 @@
   gap: 10px;
   padding: 16px 28px;
   border-radius: 999px;
-  background: linear-gradient(120deg, var(--saffron), var(--rose));
+  background: linear-gradient(120deg, var(--saffron), var(--saffron-deep));
   color: #fff;
   text-decoration: none;
   font-weight: 600;
   letter-spacing: 0.02em;
-  box-shadow: 0 12px 40px rgba(255, 122, 24, 0.35);
-  transition: transform 0.2s ease;
+  box-shadow: 0 8px 24px rgba(184, 115, 51, 0.30);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.pitch-cta:hover { transform: translateY(-2px); }
+.pitch-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(184, 115, 51, 0.40);
+}
 
 .pitch-cta-ghost {
   display: inline-flex;
@@ -171,10 +190,17 @@
   gap: 10px;
   padding: 16px 28px;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-card);
   color: var(--ink);
   text-decoration: none;
   font-weight: 500;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.pitch-cta-ghost:hover {
+  background: var(--bg-soft);
+  border-color: var(--saffron);
 }
 
 .pitch-deck-nav {
@@ -187,9 +213,10 @@
   gap: 6px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(10, 7, 16, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--line);
   backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(42, 37, 32, 0.06);
 }
 
 .pitch-dot {
@@ -198,10 +225,10 @@
   border-radius: 50%;
   background: var(--ink-dim);
   opacity: 0.3;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
 
-.pitch-dot.active { opacity: 1; transform: scale(1.4); background: var(--gold); }
+.pitch-dot.active { opacity: 1; transform: scale(1.4); background: var(--saffron); }
 
 .pitch-tag {
   display: inline-block;
@@ -210,7 +237,7 @@
   font-size: 12px;
   letter-spacing: 0.05em;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-card);
   color: var(--ink-dim);
   margin-right: 8px;
   margin-bottom: 8px;
@@ -220,7 +247,7 @@
 
 .pitch-divine-rule {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  background: linear-gradient(90deg, transparent, var(--saffron), transparent);
   margin: 32px 0;
   border: 0;
 }
@@ -228,6 +255,10 @@
 .pitch-table {
   width: 100%;
   border-collapse: collapse;
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
 }
 
 .pitch-table th, .pitch-table td {
@@ -237,13 +268,16 @@
   font-size: 15px;
 }
 
+.pitch-table tr:last-child td { border-bottom: 0; }
+
 .pitch-table th {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--ink-dim);
-  font-weight: 500;
+  color: var(--saffron-deep);
+  font-weight: 600;
+  background: var(--bg-soft);
 }
 
 .pitch-foot {
@@ -256,6 +290,18 @@
   gap: 16px;
   font-size: 14px;
   color: var(--ink-dim);
+  background: var(--bg-soft);
 }
 
 .pitch-deck-nav a { color: inherit; text-decoration: none; }
+
+/* Slide-specific accents — saffron tinted callouts */
+.pitch-callout {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(184, 115, 51, 0.10);
+  color: var(--saffron-deep);
+  font-weight: 600;
+  font-size: 14px;
+}
