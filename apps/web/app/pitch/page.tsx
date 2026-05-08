@@ -24,20 +24,20 @@ export default function PitchPage() {
       <Slide id="01-hook" num="01 / 12">
         <span className="pitch-eyebrow">Darshya · Investor Brief</span>
         <h1 className="pitch-h1">
-          A billion devotees.
+          Devotion,
           <br />
-          <span className="pitch-grad-text">One sacred app.</span>
+          <span className="pitch-grad-text">verified.</span>
         </h1>
         <p className="pitch-lead">
-          India spends ₹4 lakh crore a year on devotion — temple visits, pujas,
-          astrology, gaushala seva, pilgrimages. The category is offline,
-          fragmented, and untrusted. We are building the trust layer.
+          India spends <span className="pitch-callout">₹4 lakh crore</span> a year on devotion —
+          temple visits, pujas, astrology, gaushala seva, pilgrimages. The category is offline,
+          fragmented, and untrusted. Darshya is the trust layer — live today.
         </p>
         <div className="pitch-row">
           <Link href="https://darshya.online" target="_blank" className="pitch-cta">
             Open the live product →
           </Link>
-          <a href="#demo-reel" className="pitch-cta-ghost">Watch 2-min demo ↓</a>
+          <a href="#demo-reel" className="pitch-cta-ghost">Watch 60-sec reel ↓</a>
           <a href="#04-product" className="pitch-cta-ghost">See it work ↓</a>
         </div>
         <div id="demo-reel" style={{ marginTop: 48 }}>
@@ -50,9 +50,9 @@ export default function PitchPage() {
             poster="/pitch/img/01-home-hero.png"
             style={{ width: '100%', maxHeight: '70vh', borderRadius: 12 }}
           />
-          <p style={{ marginTop: 12, fontSize: 13, opacity: 0.7 }}>
-            2-minute reel · 12 product surfaces · captured live from{' '}
-            <a href="https://darshya.online" style={{ textDecoration: 'underline' }}>darshya.online</a>
+          <p style={{ marginTop: 12, fontSize: 13, color: 'var(--ink-dim)' }}>
+            60-second reel · captured live from{' '}
+            <a href="https://darshya.online" style={{ textDecoration: 'underline', color: 'var(--saffron-deep)' }}>darshya.online</a>
           </p>
         </div>
       </Slide>
@@ -101,7 +101,7 @@ export default function PitchPage() {
         <span className="pitch-eyebrow">Product</span>
         <h2 className="pitch-h2">A live, working super-app — not slideware.</h2>
         <p className="pitch-lead">
-          Darshya runs in production at <a href="https://darshya.online" target="_blank" style={{ color: 'var(--gold)' }}>darshya.online</a>.
+          Darshya runs in production at <a href="https://darshya.online" target="_blank" style={{ color: 'var(--saffron-deep)' }}>darshya.online</a>.
           Every screen below is captured from the real product, today.
         </p>
         <div className="pitch-media-grid" style={{ marginTop: 32 }}>
@@ -211,21 +211,21 @@ export default function PitchPage() {
         <h2 className="pitch-h2">Bharat first. Diaspora is the upside.</h2>
         <div className="pitch-grid pitch-grid-3" style={{ marginTop: 32 }}>
           <Card title="Phase 1 · Days 1–30">
-            <strong style={{ color: 'var(--gold)' }}>Anchor temples</strong>
+            <strong style={{ color: 'var(--saffron-deep)' }}>Anchor temples</strong>
             <p style={{ color: 'var(--ink-dim)', marginTop: 8 }}>
               Five lighthouse temples + two gaushalas in Varanasi, Mathura,
               Tirupati. Hand-onboard. Verify the loop end-to-end.
             </p>
           </Card>
           <Card title="Phase 2 · Days 31–60">
-            <strong style={{ color: 'var(--gold)' }}>Public launch</strong>
+            <strong style={{ color: 'var(--saffron-deep)' }}>Public launch</strong>
             <p style={{ color: 'var(--ink-dim)', marginTop: 8 }}>
               PostHog on every funnel. Performance-gated paid acquisition.
               Target: 1,000 MAU, 10 paid pujas, ₹50K GMV.
             </p>
           </Card>
           <Card title="Phase 3 · Days 61–90">
-            <strong style={{ color: 'var(--gold)' }}>NRI activation</strong>
+            <strong style={{ color: 'var(--saffron-deep)' }}>NRI activation</strong>
             <p style={{ color: 'var(--ink-dim)', marginTop: 8 }}>
               USD pricing, US/UK/Canada paid social, diaspora newsletter
               partnerships. Compound the unit economics 9×.
@@ -244,7 +244,7 @@ export default function PitchPage() {
                 <tr><td>Avg ticket</td><td style={{ textAlign: 'right' }}>₹1,500</td></tr>
                 <tr><td>Platform commission</td><td style={{ textAlign: 'right' }}>20–40%</td></tr>
                 <tr><td>Payment fee</td><td style={{ textAlign: 'right' }}>2%</td></tr>
-                <tr><td><strong>Net contribution</strong></td><td style={{ textAlign: 'right', color: 'var(--gold)' }}><strong>₹420</strong></td></tr>
+                <tr><td><strong>Net contribution</strong></td><td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}><strong>₹420</strong></td></tr>
               </tbody>
             </table>
           </Card>
@@ -254,7 +254,7 @@ export default function PitchPage() {
                 <tr><td>Avg ticket</td><td style={{ textAlign: 'right' }}>$165 (₹13,500)</td></tr>
                 <tr><td>Platform commission</td><td style={{ textAlign: 'right' }}>30–45%</td></tr>
                 <tr><td>Payment fee</td><td style={{ textAlign: 'right' }}>3%</td></tr>
-                <tr><td><strong>Net contribution</strong></td><td style={{ textAlign: 'right', color: 'var(--gold)' }}><strong>₹4,800</strong></td></tr>
+                <tr><td><strong>Net contribution</strong></td><td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}><strong>₹4,800</strong></td></tr>
               </tbody>
             </table>
           </Card>
