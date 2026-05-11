@@ -52,7 +52,10 @@ describe('PriestService.acceptBooking', () => {
       id: 'bk-1',
       status: 'confirmed',
       priestId: null,
+      scheduledDate: new Date('2026-12-25'),
+      scheduledTimeSlot: '10:00',
     });
+    prismaMock.pujaBooking.findFirst.mockResolvedValue(null);
     prismaMock.pujaBooking.update.mockResolvedValue({ id: 'bk-1', status: 'priest_assigned' });
 
     const out = await service.acceptBooking('bk-1', 'priest-1');
@@ -64,6 +67,27 @@ describe('PriestService.acceptBooking', () => {
         data: expect.objectContaining({ priestId: 'priest-1', status: 'priest_assigned' }),
       })
     );
+  });
+
+  it('throws when priest already has another booking at same date/time', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'confirmed',
+      priestId: null,
+      scheduledDate: new Date('2026-12-25'),
+      scheduledTimeSlot: '10:00',
+    });
+    // Conflict: another non-cancelled booking for this priest at same slot
+    prismaMock.pujaBooking.findFirst.mockResolvedValue({
+      id: 'bk-other',
+      bookingNumber: 'BS-20261225-OTHER',
+    });
+
+    await expect(service.acceptBooking('bk-1', 'priest-1')).rejects.toThrow(
+      /already.*booking|double.book|conflict/i
+    );
+
+    expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
   });
 });
 
