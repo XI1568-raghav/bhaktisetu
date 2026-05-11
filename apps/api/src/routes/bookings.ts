@@ -14,7 +14,16 @@ const createBookingSchema = z.object({
   templePujaOfferingId: z.string().uuid(),
   scheduledDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .refine(
+      (d) => {
+        const requested = new Date(`${d}T00:00:00`);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return !Number.isNaN(requested.getTime()) && requested >= today;
+      },
+      { message: 'Cannot book a past date.' }
+    ),
   scheduledTimeSlot: z.string().min(1, 'Time slot is required'),
   devoteeNames: z
     .array(

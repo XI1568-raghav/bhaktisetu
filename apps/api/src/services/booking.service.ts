@@ -110,6 +110,17 @@ export class BookingService {
    * Validates offering, slot availability, calculates pricing, and persists.
    */
   async createBooking(data: CreateBookingInput) {
+    // 0. Past-date guard. Zod at the route layer also enforces this, but
+    // the service is reachable from cron/admin/test paths that bypass Zod,
+    // so we re-check here. Compare against today at 00:00 local — same-day
+    // bookings remain allowed.
+    const requested = new Date(`${data.scheduledDate}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (Number.isNaN(requested.getTime()) || requested < today) {
+      throw new Error('Cannot book a past date.');
+    }
+
     // 1. Validate the temple puja offering exists and is active
     const offering = await prisma.templePujaOffering.findUnique({
       where: { id: data.templePujaOfferingId },

@@ -47,6 +47,49 @@ describe('BookingService.createBooking', () => {
     },
   };
 
+  it('throws if scheduledDate is in the past', async () => {
+    // Past-date guard fires before any DB fetch — no mocks needed.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yyyy = yesterday.getFullYear();
+    const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const dd = String(yesterday.getDate()).padStart(2, '0');
+
+    await expect(
+      service.createBooking({ ...validInput, scheduledDate: `${yyyy}-${mm}-${dd}` })
+    ).rejects.toThrow('Cannot book a past date');
+
+    expect(prismaMock.templePujaOffering.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('allows scheduledDate of today (same-day booking)', async () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.pujaBooking.create.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'BS-TODAY-XXXXX',
+      status: 'pending_payment',
+      priceAmount: 500,
+      currency: 'INR',
+      scheduledDate: new Date(`${yyyy}-${mm}-${dd}`),
+      scheduledTimeSlot: '10:00',
+      createdAt: new Date(),
+    });
+
+    const result = await service.createBooking({
+      ...validInput,
+      scheduledDate: `${yyyy}-${mm}-${dd}`,
+    });
+    expect(result.status).toBe('pending_payment');
+  });
+
   it('throws if offering not found', async () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(null);
 
