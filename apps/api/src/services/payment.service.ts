@@ -98,6 +98,22 @@ const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
 const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
+// Hard fail in production if the demo proxy would activate. The proxy
+// returns synthetic order ids and webhook handlers will mark bookings
+// `confirmed` against fake data — i.e. customers think they paid, priests
+// see real assignments, and no money has moved. Crashing at boot makes
+// ops fix the env var; staging can opt out via ALLOW_DEMO_PAYMENTS=true.
+if (
+  isDemoPayment &&
+  process.env.NODE_ENV === 'production' &&
+  process.env.ALLOW_DEMO_PAYMENTS !== 'true'
+) {
+  throw new Error(
+    'RAZORPAY_KEY_ID is missing or set to the demo placeholder in a production environment. ' +
+      'Set real Razorpay credentials or ALLOW_DEMO_PAYMENTS=true (staging only).'
+  );
+}
+
 const razorpay = isDemoPayment
   ? (new Proxy({} as Razorpay, {
       get: (_target, prop) => {
