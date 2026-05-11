@@ -224,7 +224,13 @@ export class PriestService {
   async acceptBooking(bookingId: string, priestId: string) {
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
-      select: { id: true, status: true, priestId: true },
+      select: {
+        id: true,
+        status: true,
+        priestId: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+      },
     });
 
     if (!booking) {
@@ -239,6 +245,28 @@ export class PriestService {
     if (booking.status !== 'confirmed' && booking.status !== 'priest_assigned') {
       throw new Error(
         `Cannot accept booking in "${booking.status}" status. Booking must be in "confirmed" status.`
+      );
+    }
+
+    // Double-booking guard: a priest can only hold one active booking per
+    // (date, slot). Excludes the booking being accepted itself, and any
+    // already-cancelled/refunded slots. DB schema does not enforce this
+    // (TemplePriest is the only @@unique we have); the check lives here so
+    // it covers the only path that writes priestId. If we ever add an
+    // admin-assign path, gate it through this same method.
+    const conflict = await prisma.pujaBooking.findFirst({
+      where: {
+        priestId,
+        scheduledDate: booking.scheduledDate,
+        scheduledTimeSlot: booking.scheduledTimeSlot,
+        status: { notIn: ['cancelled', 'refunded'] },
+        id: { not: bookingId },
+      },
+      select: { id: true, bookingNumber: true },
+    });
+    if (conflict) {
+      throw new Error(
+        `You already have another booking (${conflict.bookingNumber}) at this date and time slot.`
       );
     }
 
