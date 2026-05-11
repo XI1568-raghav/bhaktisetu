@@ -108,9 +108,26 @@ async function buildRealClient(): Promise<StripeClient> {
 /**
  * Get the Stripe client. Returns a demo stub when STRIPE_SECRET_KEY is
  * absent so callers never need to branch on env.
+ *
+ * Production guard: in NODE_ENV=production we refuse to hand back the demo
+ * stub. The stub returns synthetic pi_demo_* ids and constructEvent()
+ * rejects every webhook — both behaviours look like real failures to
+ * customers (paid-then-failed) while no money moves. Staging can override
+ * via ALLOW_DEMO_PAYMENTS=true.
  */
 export async function getStripe(): Promise<StripeClient> {
-  if (isStripeDemoMode) return buildDemoClient();
+  if (isStripeDemoMode) {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.ALLOW_DEMO_PAYMENTS !== 'true'
+    ) {
+      throw new Error(
+        'STRIPE_SECRET_KEY is not set in a production environment. ' +
+          'Set the real key or ALLOW_DEMO_PAYMENTS=true (staging only).'
+      );
+    }
+    return buildDemoClient();
+  }
   if (!realClient) {
     realClient = await buildRealClient();
   }
