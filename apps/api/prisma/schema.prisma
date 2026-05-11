@@ -162,6 +162,9 @@ model User {
   nakshatra         String?
   rashi             String?
   subscriptionTier  SubscriptionTier @default(free) @map("subscription_tier")
+  blocked           Boolean          @default(false)
+  blockedReason     String?          @map("blocked_reason")
+  blockedAt         DateTime?        @map("blocked_at")
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 

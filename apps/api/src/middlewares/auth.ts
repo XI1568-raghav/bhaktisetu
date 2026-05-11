@@ -31,6 +31,27 @@ function extractBearerToken(request: FastifyRequest): string | null {
   return authHeader.substring(7);
 }
 
+// Single chokepoint for the User.blocked gate. Every auth path calls this
+// after looking up the Prisma row and before attaching `request.currentUser`.
+// 403 (not 401) signals "we know who you are, you just can't be here" so
+// the frontend can show a "account suspended" screen instead of bouncing
+// back to login. If we ever add a 4th auth path, route it through here too.
+function rejectIfBlocked(
+  dbUser: { blocked?: boolean | null; blockedReason?: string | null } | null,
+  reply: FastifyReply
+): boolean {
+  if (dbUser?.blocked) {
+    reply.code(403).send({
+      error: 'Forbidden',
+      message: dbUser.blockedReason
+        ? `Account suspended: ${dbUser.blockedReason}`
+        : 'Account suspended. Contact support@darshya.online.',
+    });
+    return true;
+  }
+  return false;
+}
+
 /**
  * Fastify preHandler hook that verifies the JWT with Supabase
  * and attaches the authenticated user from Prisma to the request.
@@ -87,6 +108,7 @@ export async function authenticateUser(
       // before the Phase A migration) keep working.
       const dbUser = await prisma.user.findUnique({ where: { email: profile.email } });
       if (dbUser) {
+        if (rejectIfBlocked(dbUser, reply)) return;
         request.currentUser = {
           id: dbUser.id,
           supabaseId: dbUser.id,
@@ -127,6 +149,7 @@ export async function authenticateUser(
         reply.code(401).send({ error: 'Unauthorized', message: 'User not found for session token.' });
         return;
       }
+      if (rejectIfBlocked(dbUser, reply)) return;
       const roleAssignments = await prisma.userRoleAssignment.findMany({
         where: { userId: dbUser.id },
       });
@@ -171,6 +194,8 @@ export async function authenticateUser(
       });
       return;
     }
+
+    if (rejectIfBlocked(dbUser, reply)) return;
 
     // Fetch user roles
     let roles: MarketplaceRole[] = ['DEVOTEE'];
