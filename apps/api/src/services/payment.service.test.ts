@@ -135,6 +135,58 @@ describe('PaymentService.handleWebhookRaw', () => {
   });
 });
 
+describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () => {
+  // Regression lock: payouts must only be creatable for bookings whose
+  // status is video_uploaded or delivered. The state machine in
+  // booking.service.ts forbids reaching `delivered` without first hitting
+  // `video_uploaded`, so this is the single chokepoint enforcing
+  // "no video proof → no priest payout".
+  const baseBooking = {
+    id: 'bk-1',
+    priestId: 'priest-1',
+    priestPayout: 350,
+    currency: 'INR',
+    bookingNumber: 'BS-20260512-AAAAA',
+  };
+
+  it.each([
+    'pending_payment',
+    'confirmed',
+    'priest_assigned',
+    'in_progress',
+    'completed', // <-- the dangerous one: priest done, but no video proof yet
+    'cancelled',
+    'refunded',
+  ])('refuses payout for status=%s (no video proof yet)', async (status) => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({ ...baseBooking, status });
+
+    await expect(service.createPriestPayout('bk-1')).rejects.toThrow(
+      /can only be created for bookings in "video_uploaded" or "delivered"/
+    );
+    expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
+
+  it.each(['video_uploaded', 'delivered'])(
+    'allows payout for status=%s (video proof on file)',
+    async (status) => {
+      const service = await loadService();
+      prismaMock.pujaBooking.findUnique.mockResolvedValue({ ...baseBooking, status });
+      prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+      prismaMock.priestPayout.create.mockResolvedValue({
+        id: 'po-1',
+        priestId: 'priest-1',
+        bookingId: 'bk-1',
+        amount: 350,
+        status: 'pending',
+      });
+
+      const out = await service.createPriestPayout('bk-1');
+      expect(out.id).toBe('po-1');
+    }
+  );
+});
+
 describe('PaymentService.handleWebhook (legacy JSON.stringify path)', () => {
   it('verifies against re-serialised JSON.stringify(payload)', async () => {
     const service = await loadService();
