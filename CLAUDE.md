@@ -1,7 +1,22 @@
 # Darshya — Project Context
 
 > Slim index. Read this first; load deeper docs as needed.
-> Last refreshed: 2026-04-26.
+> Last refreshed: 2026-05-13.
+
+## Persistent project memory (READ AT SESSION START)
+
+These three files are the source of truth. Conversation history is NOT — it is wiped by /compact and /clear.
+
+@PROJECT_CONTEXT.md
+@ROADMAP.md
+@TASKS.md
+
+**Rules:**
+1. At session start, load `PROJECT_CONTEXT.md`, `ROADMAP.md`, `TASKS.md` and the current task. Build understanding from those files only — do not assume memory of prior chats.
+2. When you learn something long-term (architecture, cross-platform, business direction), UPDATE the matching file. Tell the user which file you updated and show a diff-style summary.
+3. Before /compact or /clear, CONSOLIDATE: update the three files, then write a short HANDOFF block (current task, just-finished, next 2-3 steps).
+4. After /compact or /clear, reload the three files and confirm understanding from them — not from old chat.
+5. Treat these files as shared memory between agents and sessions. A new engineer should onboard from these alone.
 
 ## Identity
 
