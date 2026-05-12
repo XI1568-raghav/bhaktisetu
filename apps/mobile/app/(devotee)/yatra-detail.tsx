@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -34,6 +35,13 @@ export default function YatraDetailScreen() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [notes, setNotes] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await (isPackage ? pkg.refetch() : dest.refetch());
+    setRefreshing(false);
+  }
 
   async function onBook() {
     if (!isPackage) {
@@ -108,7 +116,10 @@ export default function YatraDetailScreen() {
         <Text style={styles.title} numberOfLines={1}>{title}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.hero}>
           <Ionicons name="map" size={56} color={colors.white} />
           <Text style={styles.heroTitle}>{title}</Text>
