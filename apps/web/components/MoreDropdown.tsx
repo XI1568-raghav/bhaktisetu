@@ -9,9 +9,11 @@ import {
   Heart,
   Moon,
   Leaf,
+  Globe2,
 } from 'lucide-react';
 
 const moreLinks = [
+  { href: '/nri', label: 'NRI Premium', icon: Globe2 },
   { href: '/yatra', label: 'Yatra', icon: Mountain },
   { href: '/panchang', label: 'Panchang', icon: Calendar },
   { href: '/gaushala', label: 'Gau Seva', icon: Heart },
