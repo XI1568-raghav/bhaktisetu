@@ -93,6 +93,13 @@ Superpowers: Brainstorm → Plan → TDD → Execute → Review → Verify.
 | `docs/caveats.md` | "Do not touch unless asked" gotchas |
 | `docs/skill-workflow-map.md` | Which Claude Code skill for which business-ops workflow |
 | `docs/cloudflare-pages-migration.md` | Web deploy pipeline + prerender gotchas |
+| `docs/cf-pages-env-wiring-2026-05-13.md` | Sentry + PostHog env paste runbook |
+| `docs/security-rotation-2026-05-13.md` | Resend / Supabase / ALLOW_DEMO_TOKENS rotation runbook |
+| `docs/demo-video-recipe-2026-05-13.md` | Playwright + ffmpeg golden-path MP4 for KYC/Meta/Reddit/investors |
+
+## Recently shipped surfaces
+
+- `/nri` — public NRI Premium landing (server component, full SEO meta, hero + 6 benefits + comparison table + 6 FAQs). Counters Sri Mandir USD-tier strategy tripwire. Wired into MoreDropdown nav. Stripe checkout target: `nri_premium_yearly` (₹5000 / $60), no-ops until U2 Stripe KYC clears.
 
 ## Critical gotchas
 

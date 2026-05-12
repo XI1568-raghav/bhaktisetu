@@ -24,12 +24,14 @@ Test status: **312/501 tests green** (per memory). API test files: 16/16 covered
 | Apple Developer Program | $99/yr signup | iOS build, App Store |
 | Google Play Console | $25 one-time signup | Play Store APK |
 | FCM server key | Firebase project + paste `FCM_SERVER_KEY` to Render | Native push live |
-| Sentry DSN flag | Paste `SENTRY_DSN` to Render + Cloudflare Pages env | Error capture in prod |
+| Sentry DSN flag | Paste `NEXT_PUBLIC_SENTRY_DSN` to CF Pages + `SENTRY_DSN` to Render. Runbook: `docs/cf-pages-env-wiring-2026-05-13.md` | Error capture in prod |
 | WhatsApp Meta Cloud API | Business verification | Outbound WA blasts |
-| PostHog project key | Paste `NEXT_PUBLIC_POSTHOG_KEY` to CF Pages | Funnel dashboards |
+| PostHog project key | Paste `NEXT_PUBLIC_POSTHOG_KEY` to CF Pages. Runbook: same as Sentry above | Funnel dashboards |
 | Affiliate programs | Sign up Amazon/Flipkart/MMT (yatra) | Commission revenue |
-| Supabase password rotation | Reset + update Render `DATABASE_URL` | Security hygiene (chat archive contains old password) |
-| Unset `ALLOW_DEMO_TOKENS` | Render env → delete after investor demos | Prod auth hardening |
+| Supabase password rotation | Reset + update Render `DATABASE_URL`. Runbook: `docs/security-rotation-2026-05-13.md` | Security hygiene (chat archive contains old password) |
+| Unset `ALLOW_DEMO_TOKENS` | Render env → delete after investor demos. Runbook: same as above | Prod auth hardening |
+| Resend API key rotation | Old key `re_46d7rTF7_*` leaked. Runbook: same as above | Email security |
+| Demo MP4 capture run | Install ffmpeg + Playwright Chromium, run `bash scripts/build-demo-video.sh`. Recipe: `docs/demo-video-recipe-2026-05-13.md` | Razorpay/Stripe/Meta KYC + investor outreach |
 
 ## Active multi-session plans
 

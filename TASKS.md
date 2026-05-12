@@ -4,6 +4,24 @@
 > Survives /compact and /clear.
 > Last updated: 2026-05-13.
 
+## HANDOFF (2026-05-13, post P0-P4 sprint)
+
+**Just finished** — 5-task priority sprint shipped in commits `e881543` + `4c48e9a` + `289dc1d`:
+- P0 security rotation runbook (`docs/security-rotation-2026-05-13.md`)
+- P1 prod render verify (4 routes 200, no prerender bail)
+- P2 Sentry+PostHog CF Pages env wiring runbook (`docs/cf-pages-env-wiring-2026-05-13.md`)
+- P3 NRI Premium landing `/nri` + MoreDropdown nav link
+- P4 demo-video Playwright spec + bash stitch script + recipe (`docs/demo-video-recipe-2026-05-13.md`)
+
+**Current task** — none claimed. Ledger clean.
+
+**Next 2-3 steps** (in priority order):
+1. **E5 — Mobile Phase 1 foundation + auth** (~4-5h). See `docs/mobile-plan.md`. Brings Expo app to real Supabase auth + role-aware tab gating. Blocks all later mobile parity phases.
+2. **E2 — wire FCM server key** if user pastes `FCM_SERVER_KEY` to Render. Env-or-noop, native push activates automatically.
+3. **U-action push** — nudge user to actually run the 3 runbooks (security rotation, CF Pages env paste, demo-video bash). Code is shipped; activation gated only on user dashboard clicks.
+
+**Tripwire watch** — once PostHog wired (depends on user action #3), start measuring NRI Day-30 retention, blended CAC, NRI annual:per-puja ratio against `ROADMAP.md` thresholds. Two breaches in same week → pivot to NRI-only SKU.
+
 ## In progress
 
 _(none claimed)_
