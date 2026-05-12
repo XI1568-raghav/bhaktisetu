@@ -6,6 +6,7 @@ import { useTranslations } from '../../lib/t';
 import { Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
+import AuthGuard from '../../components/AuthGuard';
 
 interface PlanCard {
   id: string;
@@ -87,6 +88,14 @@ const PLAN_CARDS: PlanCard[] = [
 ];
 
 export default function UpgradePage() {
+  return (
+    <AuthGuard>
+      <UpgradeInner />
+    </AuthGuard>
+  );
+}
+
+function UpgradeInner() {
   const router = useRouter();
   const { isAuthenticated, session } = useAuth();
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);

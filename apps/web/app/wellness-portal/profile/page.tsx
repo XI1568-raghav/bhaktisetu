@@ -12,6 +12,7 @@ import {
  Languages,
  Leaf,
 } from 'lucide-react';
+import AuthGuard from '../../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -57,6 +58,14 @@ const defaultProfile: WellnessProfile = {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function WellnessProfilePage() {
+ return (
+  <AuthGuard allowedRoles={['wellness_instructor', 'admin']}>
+   <WellnessProfilePageContent />
+  </AuthGuard>
+ );
+}
+
+function WellnessProfilePageContent() {
  const [profile, setProfile] = useState<WellnessProfile>(defaultProfile);
  const [saving, setSaving] = useState(false);
  const [saved, setSaved] = useState(false);

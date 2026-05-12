@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import AuthGuard from '../../../components/AuthGuard';
 
 interface MySubscription {
   id: string;
@@ -17,6 +18,14 @@ interface MySubscription {
 }
 
 export default function AccountSubscriptionsPage() {
+  return (
+    <AuthGuard>
+      <AccountSubscriptionsInner />
+    </AuthGuard>
+  );
+}
+
+function AccountSubscriptionsInner() {
   const router = useRouter();
   const { isAuthenticated, session } = useAuth();
   const [loading, setLoading] = useState(true);

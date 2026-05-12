@@ -13,6 +13,7 @@ import {
  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import AuthGuard from '../../../components/AuthGuard';
 import {
   getUsers,
   patchUser,
@@ -90,6 +91,14 @@ function mapUser(raw: BackendUser): AdminUserRow {
 }
 
 export default function AdminUsersPage() {
+ return (
+  <AuthGuard allowedRoles={['admin']}>
+   <AdminUsersPageContent />
+  </AuthGuard>
+ );
+}
+
+function AdminUsersPageContent() {
  const { session } = useAuth();
  const token = session?.accessToken;
 

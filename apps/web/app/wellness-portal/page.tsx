@@ -94,11 +94,52 @@ function formatDate(dateStr: string): string {
 
 // ─── Component ──────────────────────────────────────────────────
 
+type ApiWellnessSession = {
+ id: string;
+ title: string;
+ scheduledAt: string;
+ durationMinutes: number;
+ capacity: number;
+ priceInr: number;
+ enrolled: number;
+};
+
+type ApiWellnessDashboard = {
+ profile: { fullName?: string | null } | null;
+ stats: {
+  totalSessions: number;
+  upcomingSessions: number;
+  completedSessions: number;
+  totalStudents: number;
+  totalEarningsInr: number;
+  monthEarningsInr: number;
+ };
+ upcomingSessions: ApiWellnessSession[];
+ recentSessions: unknown[];
+};
+
 export default function WellnessDashboard() {
  const { session } = useAuth();
  const data = dashboardData;
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
+ const [api, setApi] = useState<ApiWellnessDashboard | null>(null);
+
+ useEffect(() => {
+  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+  (async () => {
+   try {
+    const r = await fetch(`${API_BASE_URL}/wellness-portal/dashboard`, {
+     headers: { Authorization: `Bearer ${session.accessToken}` },
+    });
+    if (!r.ok) return;
+    const j = (await r.json()) as ApiWellnessDashboard;
+    setApi(j);
+   } catch {
+    // graceful — keep mock
+   }
+  })();
+ }, [session]);
 
  useEffect(() => {
  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
@@ -121,10 +162,16 @@ export default function WellnessDashboard() {
  })();
  }, [session]);
 
- const statCards = [
- { label: 'Upcoming Sessions', value: data.stats.upcomingSessions, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
- { label: 'Active Students', value: data.stats.activeStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
- ];
+ const liveStats = api?.stats;
+ const statCards = liveStats
+  ? [
+   { label: 'Upcoming Sessions', value: liveStats.upcomingSessions, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+   { label: 'Total Students', value: liveStats.totalStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+  ]
+  : [
+   { label: 'Upcoming Sessions', value: data.stats.upcomingSessions, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+   { label: 'Active Students', value: data.stats.activeStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+  ];
 
  return (
  <div className="space-y-6 max-w-5xl">
@@ -148,8 +195,8 @@ export default function WellnessDashboard() {
  <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />
 
  <EarningsCard
- totalPaid={data.stats.totalEarnings}
- thisMonth={data.stats.earningsThisMonth}
+ totalPaid={liveStats?.totalEarningsInr ?? data.stats.totalEarnings}
+ thisMonth={liveStats?.monthEarningsInr ?? data.stats.earningsThisMonth}
  pending={null}
  />
 
@@ -184,7 +231,38 @@ export default function WellnessDashboard() {
  </div>
 
  <div className="divide-y divide-surface-50">
- {data.upcomingSessions.map((session) => (
+ {api ? (
+  api.upcomingSessions.length === 0 ? (
+   <p className="px-5 py-6 text-xs text-surface-400">No upcoming sessions scheduled.</p>
+  ) : api.upcomingSessions.map((s) => (
+   <div key={s.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors">
+    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
+     <Leaf className="w-5 h-5 text-emerald-500" />
+    </div>
+    <div className="flex-1 min-w-0">
+     <h3 className="text-sm font-semibold text-surface-800 truncate mb-0.5">{s.title}</h3>
+     <div className="flex items-center gap-3 text-xs text-surface-400">
+      <span className="flex items-center gap-1">
+       <CalendarDays className="w-3 h-3" />
+       {formatDate(s.scheduledAt)} at {formatTime(s.scheduledAt)}
+      </span>
+      <span className="flex items-center gap-1">
+       <Clock className="w-3 h-3" />
+       {s.durationMinutes} min
+      </span>
+      <span className="flex items-center gap-1">
+       <Users className="w-3 h-3" />
+       {s.enrolled}/{s.capacity}
+      </span>
+     </div>
+    </div>
+    <div className="text-right shrink-0">
+     <p className="text-sm font-bold text-surface-800">{formatCurrency(s.priceInr)}</p>
+     <p className="text-xs text-surface-400">per person</p>
+    </div>
+   </div>
+  ))
+ ) : data.upcomingSessions.map((session) => (
  <div key={session.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors">
  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
  <Leaf className="w-5 h-5 text-emerald-500" />

@@ -1,6 +1,9 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../lib/auth-context';
+import { API_BASE_URL } from '../../lib/api-config';
 import Link from 'next/link';
 import {
  IndianRupee,
@@ -104,32 +107,82 @@ function getStatusBadge(status: string) {
  return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600' };
 }
 
+// ─── API types ──────────────────────────────────────────────────
+
+type ApiBooking = {
+ id: string;
+ bookingNumber: string;
+ devotee: string;
+ pujaName: string;
+ scheduledDate: string;
+ priceInr: number;
+ status: string;
+};
+
+type ApiDashboard = {
+ profile: { templeName?: string | null; templeCity?: string | null; templeState?: string | null } | null;
+ stats: {
+  totalBookings: number;
+  monthBookings: number;
+  totalRevenueInr: number;
+  monthRevenueInr: number;
+  totalStreams: number;
+ };
+ recentBookings: ApiBooking[];
+};
+
 // ─── Component ──────────────────────────────────────────────────
 
 export default function TempleDashboard() {
+ const { session } = useAuth();
+ const [api, setApi] = useState<ApiDashboard | null>(null);
+
+ useEffect(() => {
+  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+  (async () => {
+   try {
+    const r = await fetch(`${API_BASE_URL}/temple-portal/dashboard`, {
+     headers: { Authorization: `Bearer ${session.accessToken}` },
+    });
+    if (!r.ok) return;
+    const j = (await r.json()) as ApiDashboard;
+    setApi(j);
+   } catch {
+    // graceful — keep mock
+   }
+  })();
+ }, [session]);
+
  const data = dashboardData;
+ const liveStats = api?.stats;
+ const liveBookings: ApiBooking[] | null = api?.recentBookings ?? null;
+ const templeName = api?.profile?.templeName ?? data.temple.name;
+ const templeCity = api?.profile?.templeCity ?? data.temple.city;
+ const templeState = api?.profile?.templeState ?? data.temple.state;
 
- const statCards = [
- { label: 'Darshan Viewers Today', value: data.stats.darshanViewersToday.toLocaleString('en-IN'), icon: Eye, color: 'text-purple-600', bg: 'bg-purple-50' },
- { label: 'Puja Bookings Today', value: data.stats.pujaBookingsToday, icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
- { label: 'Donations Today', value: formatCurrency(data.stats.donationsToday), icon: Heart, color: 'text-red-500', bg: 'bg-red-50' },
- { label: 'Total Donations', value: formatCurrency(data.stats.totalDonations), icon: IndianRupee, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
- ];
-
- const quickStats = [
- { label: 'Total Bookings', value: data.stats.totalBookings },
- { label: 'Active Priests', value: data.stats.activePriests },
- ];
+ const statCards = liveStats
+ ? [
+   { label: 'Total Bookings', value: liveStats.totalBookings.toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Bookings This Month', value: liveStats.monthBookings.toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Revenue This Month', value: formatCurrency(liveStats.monthRevenueInr), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
+   { label: 'Total Revenue', value: formatCurrency(liveStats.totalRevenueInr), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
+  ]
+ : [
+   { label: 'Darshan Viewers Today', value: data.stats.darshanViewersToday.toLocaleString('en-IN'), icon: Eye, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Puja Bookings Today', value: data.stats.pujaBookingsToday, icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Donations Today', value: formatCurrency(data.stats.donationsToday), icon: Heart, color: 'text-red-500', bg: 'bg-red-50' },
+   { label: 'Total Donations', value: formatCurrency(data.stats.totalDonations), icon: IndianRupee, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
+  ];
 
  return (
  <div className="space-y-6 max-w-5xl">
  {/* Welcome */}
  <div>
  <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
- {data.temple.name}
+ {templeName}
  </h1>
  <p className="text-surface-500 mt-1">
- {data.temple.city}, {data.temple.state} &middot; Temple management dashboard
+ {templeCity}, {templeState} &middot; Temple management dashboard
  </p>
  </div>
 
@@ -163,7 +216,33 @@ export default function TempleDashboard() {
  </Link>
  </div>
  <div className="divide-y divide-surface-50">
- {data.recentBookings.map((booking) => {
+ {liveBookings ? (
+  liveBookings.length === 0 ? (
+   <p className="px-5 py-6 text-xs text-surface-400">No bookings yet.</p>
+  ) : liveBookings.map((b) => {
+   const badge = getStatusBadge(b.status);
+   const d = new Date(b.scheduledDate);
+   return (
+    <div key={b.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors">
+     <div className="w-10 h-10 bg-saffron-50 rounded-xl flex items-center justify-center shrink-0">
+      <Flame className="w-4 h-4 text-saffron-500" />
+     </div>
+     <div className="flex-1 min-w-0">
+      <h3 className="text-sm font-medium text-surface-800 truncate">{b.pujaName}</h3>
+      <div className="flex items-center gap-2 text-xs text-surface-400">
+       <span>{b.devotee}</span>
+       <span>&middot;</span>
+       <span>{d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} {d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+      </div>
+     </div>
+     <div className="text-right shrink-0">
+      <p className="text-sm font-semibold text-surface-800">{formatCurrency(b.priceInr)}</p>
+      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+     </div>
+    </div>
+   );
+  })
+ ) : data.recentBookings.map((booking) => {
  const badge = getStatusBadge(booking.status);
  return (
  <div key={booking.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors">

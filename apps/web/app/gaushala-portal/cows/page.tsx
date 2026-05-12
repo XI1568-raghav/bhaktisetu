@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Plus, X, Loader2, CheckCircle2, Beef } from 'lucide-react';
+import AuthGuard from '../../../components/AuthGuard';
 
 const cows = [
  { id: 'GS-001', name: 'Kamdhenu', breed: 'Gir', age: '4y 3m', status: 'Healthy', weight: '420 kg', milk: '14L/day', lastCheckup: '2026-04-10' },
@@ -24,6 +25,14 @@ const statusConfig: Record<string, { color: string; badge: string }> = {
 const statuses = ['All', 'Healthy', 'Treatment', 'Pregnant', 'Elderly'];
 
 export default function CowsPage() {
+ return (
+  <AuthGuard allowedRoles={['gaushala_manager', 'admin']}>
+   <CowsPageContent />
+  </AuthGuard>
+ );
+}
+
+function CowsPageContent() {
  const [search, setSearch] = useState('');
  const [filter, setFilter] = useState('All');
  const [showModal, setShowModal] = useState(false);

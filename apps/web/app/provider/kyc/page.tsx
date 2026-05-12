@@ -10,8 +10,22 @@ import {
  Loader2,
  Lock,
 } from 'lucide-react';
-import { useAuth } from '../../../lib/auth-context';
+import { useAuth, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import AuthGuard from '../../../components/AuthGuard';
+
+// Provider roles allowed to access KYC. Devotees redirected to their
+// dashboard — they do not collect payouts and have no business submitting
+// Aadhaar/PAN/bank. Mirror of PROVIDER_ROLES in apps/api/src/routes/provider-kyc.ts.
+const PROVIDER_ROLES: UserRole[] = [
+  'priest',
+  'store_owner',
+  'astrologer',
+  'wellness_instructor',
+  'gaushala_manager',
+  'temple_manager',
+  'admin',
+];
 
 interface KycView {
  aadhaarLast4: string | null;
@@ -24,6 +38,14 @@ interface KycView {
 }
 
 export default function ProviderKycPage() {
+ return (
+  <AuthGuard allowedRoles={PROVIDER_ROLES}>
+   <ProviderKycContent />
+  </AuthGuard>
+ );
+}
+
+function ProviderKycContent() {
  const { session, user } = useAuth();
  const token = session?.accessToken;
 
