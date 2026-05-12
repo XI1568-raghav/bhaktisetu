@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Linking,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -30,6 +31,13 @@ export default function UpgradeScreen() {
   const premiumQuery = useIsPremium();
   const createCheckout = useCreateStripeAnnual();
   const isPremium = premiumQuery.data?.isPremium === true;
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await premiumQuery.refetch();
+    setRefreshing(false);
+  }
 
   async function onUpgrade() {
     if (!user) {
@@ -71,7 +79,10 @@ export default function UpgradeScreen() {
         <Ionicons name="diamond" size={26} color={colors.amber[500]} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.hero}>
           <Ionicons name="sparkles" size={40} color={colors.amber[500]} />
           <Text style={styles.heroTitle}>Devotion without borders</Text>
