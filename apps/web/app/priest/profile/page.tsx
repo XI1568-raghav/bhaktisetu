@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import AuthGuard from '../../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -85,6 +86,14 @@ const ALL_LANGUAGES = [
 // ─── Component ──────────────────────────────────────────────────
 
 export default function PriestProfilePage() {
+ return (
+  <AuthGuard allowedRoles={['priest', 'admin']}>
+   <PriestProfilePageContent />
+  </AuthGuard>
+ );
+}
+
+function PriestProfilePageContent() {
  const { session } = useAuth();
  const [profile, setProfile] = useState<PriestProfile | null>(null);
  const [loading, setLoading] = useState(true);

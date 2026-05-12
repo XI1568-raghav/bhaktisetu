@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
  MapPin,
  Star,
@@ -66,20 +67,39 @@ export function TemplesBrowser({
  temples: TempleCardData[];
  total: number;
 }) {
- const [search, setSearch] = useState('');
+ const router = useRouter();
+ const pathname = usePathname();
+ const searchParams = useSearchParams();
+
+ const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
  // Debounced mirror of `search` — filter logic reads this, not the raw input.
  // Avoids re-filtering 200+ temples on every keystroke.
- const [debouncedSearch, setDebouncedSearch] = useState('');
- const [deityType, setDeityType] = useState<DeityTypeFilter>('All');
- const [state, setState] = useState<string>('All States');
- const [liveOnly, setLiveOnly] = useState(false);
- const [sort, setSort] = useState<SortMode>('popularity');
+ const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') ?? '');
+ const [deityType, setDeityType] = useState<DeityTypeFilter>(
+  () => (searchParams.get('deity') as DeityTypeFilter) || 'All'
+ );
+ const [state, setState] = useState<string>(() => searchParams.get('state') || 'All States');
+ const [liveOnly, setLiveOnly] = useState(() => searchParams.get('live') === '1');
+ const [sort, setSort] = useState<SortMode>(
+  () => (searchParams.get('sort') as SortMode) || 'popularity'
+ );
 
  // 200ms debounce on search input
  useEffect(() => {
  const id = setTimeout(() => setDebouncedSearch(search), 200);
  return () => clearTimeout(id);
  }, [search]);
+
+ useEffect(() => {
+  const params = new URLSearchParams();
+  if (debouncedSearch) params.set('q', debouncedSearch);
+  if (deityType !== 'All') params.set('deity', deityType);
+  if (state !== 'All States') params.set('state', state);
+  if (liveOnly) params.set('live', '1');
+  if (sort !== 'popularity') params.set('sort', sort);
+  const qs = params.toString();
+  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+ }, [debouncedSearch, deityType, state, liveOnly, sort, pathname, router]);
 
  // Derive state list from data
  const states = useMemo(() => {

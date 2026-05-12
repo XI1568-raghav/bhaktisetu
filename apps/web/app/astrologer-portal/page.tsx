@@ -104,11 +104,44 @@ function getModeIcon(mode: string) {
 
 // ─── Component ──────────────────────────────────────────────────
 
+type ApiAstroDashboard = {
+ profile: { fullName?: string | null; rating?: number | null; ratingCount?: number | null } | null;
+ stats: {
+  totalConsultations: number;
+  rating: number;
+  pricePerMinute: number;
+  approved: boolean;
+  consultationsToday: number;
+  earningsTodayInr: number;
+  earningsMonthInr: number;
+  totalEarningsInr: number;
+  activeClients: number;
+ };
+ upcomingSessions: unknown[];
+};
+
 export default function AstrologerDashboard() {
  const { session } = useAuth();
  const data = dashboardData;
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
+ const [api, setApi] = useState<ApiAstroDashboard | null>(null);
+
+ useEffect(() => {
+  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+  (async () => {
+   try {
+    const r = await fetch(`${API_BASE_URL}/astrologer-portal/dashboard`, {
+     headers: { Authorization: `Bearer ${session.accessToken}` },
+    });
+    if (!r.ok) return;
+    const j = (await r.json()) as ApiAstroDashboard;
+    setApi(j);
+   } catch {
+    // graceful — keep mock
+   }
+  })();
+ }, [session]);
 
  useEffect(() => {
  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
@@ -131,12 +164,20 @@ export default function AstrologerDashboard() {
  })();
  }, [session]);
 
- const quickStats = [
- { label: 'Today\'s Sessions', value: data.stats.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
- { label: 'Total Consultations', value: data.stats.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
- { label: 'Active Clients', value: data.stats.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
- { label: 'Rating', value: `${data.astrologer.rating} (${data.astrologer.ratingCount})`, icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
- ];
+ const liveStats = api?.stats;
+ const quickStats = liveStats
+  ? [
+   { label: 'Today\'s Sessions', value: liveStats.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Total Consultations', value: liveStats.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
+   { label: 'Active Clients', value: liveStats.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Rating', value: liveStats.rating ? liveStats.rating.toFixed(1) : '—', icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
+  ]
+  : [
+   { label: 'Today\'s Sessions', value: data.stats.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Total Consultations', value: data.stats.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
+   { label: 'Active Clients', value: data.stats.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Rating', value: `${data.astrologer.rating} (${data.astrologer.ratingCount})`, icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
+  ];
 
  return (
  <div className="space-y-6 max-w-5xl">
@@ -154,9 +195,9 @@ export default function AstrologerDashboard() {
  <MyProviderProfileCard role="ASTROLOGER" onboardingSlug="astrologer" publicListingType="astrologer" />
 
  <EarningsCard
- totalPaid={data.stats.totalEarnings}
- thisMonth={data.stats.earningsThisMonth}
- pending={data.stats.earningsToday}
+ totalPaid={liveStats?.totalEarningsInr ?? data.stats.totalEarnings}
+ thisMonth={liveStats?.earningsMonthInr ?? data.stats.earningsThisMonth}
+ pending={liveStats?.earningsTodayInr ?? data.stats.earningsToday}
  />
 
  {/* Quick Stats */}
@@ -188,7 +229,9 @@ export default function AstrologerDashboard() {
  </div>
 
  <div className="divide-y divide-surface-50">
- {data.upcomingSessions.map((session) => {
+ {api && api.upcomingSessions.length === 0 ? (
+  <p className="px-5 py-6 text-xs text-surface-400">No upcoming sessions. Live consultations will appear here once Consultation persistence ships.</p>
+ ) : data.upcomingSessions.map((session) => {
  const ModeIcon = getModeIcon(session.mode);
  return (
  <div key={session.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors">

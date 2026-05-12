@@ -8,20 +8,35 @@ import { API_BASE_URL } from '../../lib/api-config';
 import Link from 'next/link';
 import { Beef, Heart, IndianRupee, HandHeart, Plus, Settings, Users } from 'lucide-react';
 
-const stats = [
- { label: 'Total Cows', value: '247', change: '+3 this month', Icon: Beef, iconClass: 'text-amber-600' },
- { label: 'Active Donors', value: '1,842', change: '+128 this month', Icon: Heart, iconClass: 'text-rose-600' },
- { label: 'Monthly Donations', value: '₹3.2L', change: '+12% vs last', Icon: IndianRupee, iconClass: 'text-green-600' },
- { label: 'Volunteers Today', value: '34', change: '6 new signups', Icon: HandHeart, iconClass: 'text-blue-600' },
-];
+type DashboardStats = {
+ totalCows: number;
+ totalDonors: number;
+ totalDonationsInr: number;
+ monthDonationsInr: number;
+};
 
-const recentDonations = [
- { name: 'Ramesh Sharma', amount: '₹5,100', type: 'Gau Seva', time: '2h ago' },
- { name: 'Priya Agarwal', amount: '₹2,500', type: 'Feed Sponsor', time: '4h ago' },
- { name: 'Vijay Kumar', amount: '₹11,000', type: 'Medical Fund', time: '1d ago' },
- { name: 'Sunita Devi', amount: '₹1,100', type: 'Gau Seva', time: '1d ago' },
- { name: 'Ankit Mehta', amount: '₹21,000', type: 'Adoption', time: '2d ago' },
-];
+type DashboardDonation = {
+ id: string;
+ donor: string;
+ amountInr: number;
+ paidAt: string | null;
+};
+
+function formatInr(n: number): string {
+ if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+ if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
+ return `₹${n.toLocaleString('en-IN')}`;
+}
+
+function relativeTime(iso: string | null): string {
+ if (!iso) return '';
+ const ms = Date.now() - new Date(iso).getTime();
+ const h = Math.floor(ms / 3_600_000);
+ if (h < 1) return 'just now';
+ if (h < 24) return `${h}h ago`;
+ const d = Math.floor(h / 24);
+ return `${d}d ago`;
+}
 
 const cowHighlights = [
  { id: 'GS-001', name: 'Kamdhenu', breed: 'Gir', status: 'Healthy', age: '4y' },
@@ -40,6 +55,32 @@ export default function GaushalaDashboard() {
  const { user, session } = useAuth();
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
+ const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
+ const [recentDonations, setRecentDonations] = useState<DashboardDonation[]>([]);
+
+ useEffect(() => {
+ if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ (async () => {
+ try {
+ const r = await fetch(`${API_BASE_URL}/gaushala-portal/dashboard`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ });
+ if (!r.ok) return;
+ const j = await r.json();
+ if (j.stats) setDashStats(j.stats);
+ if (Array.isArray(j.recentDonations)) setRecentDonations(j.recentDonations);
+ } catch {
+ // graceful — leave defaults
+ }
+ })();
+ }, [session]);
+
+ const stats = [
+ { label: 'Total Cows', value: String(dashStats?.totalCows ?? 0), change: '', Icon: Beef, iconClass: 'text-amber-600' },
+ { label: 'Active Donors', value: (dashStats?.totalDonors ?? 0).toLocaleString('en-IN'), change: '', Icon: Heart, iconClass: 'text-rose-600' },
+ { label: 'Monthly Donations', value: formatInr(dashStats?.monthDonationsInr ?? 0), change: '', Icon: IndianRupee, iconClass: 'text-green-600' },
+ { label: 'Total Donations', value: formatInr(dashStats?.totalDonationsInr ?? 0), change: '', Icon: HandHeart, iconClass: 'text-blue-600' },
+ ];
 
  useEffect(() => {
  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
@@ -106,13 +147,15 @@ export default function GaushalaDashboard() {
  </Link>
  </div>
  <div className="divide-y divide-amber-50">
- {recentDonations.map((d) => (
- <div key={d.name + d.time} className="px-6 py-3 flex items-center justify-between">
+ {recentDonations.length === 0 ? (
+ <p className="px-6 py-6 text-xs text-gray-400">No donations yet.</p>
+ ) : recentDonations.map((d) => (
+ <div key={d.id} className="px-6 py-3 flex items-center justify-between">
  <div>
- <p className="text-sm font-medium text-gray-800">{d.name}</p>
- <p className="text-xs text-gray-400">{d.type} · {d.time}</p>
+ <p className="text-sm font-medium text-gray-800">{d.donor}</p>
+ <p className="text-xs text-gray-400">Gau Seva · {relativeTime(d.paidAt)}</p>
  </div>
- <span className="text-sm font-semibold text-amber-700">{d.amount}</span>
+ <span className="text-sm font-semibold text-amber-700">{formatInr(d.amountInr)}</span>
  </div>
  ))}
  </div>

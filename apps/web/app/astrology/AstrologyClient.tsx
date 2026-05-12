@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { getAstrologerImage } from '../../lib/images';
 import {
  Star,
@@ -243,12 +244,26 @@ const sortOptions = [
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function AstrologyPage() {
+ const router = useRouter();
+ const pathname = usePathname();
+ const searchParams = useSearchParams();
+
  const [astrologers, setAstrologers] = useState<Astrologer[]>(fallbackAstrologers);
  const [horoscopes] = useState<DailyHoroscope[]>(fallbackHoroscopes);
- const [activeFilter, setActiveFilter] = useState('All');
- const [sortBy, setSortBy] = useState('');
- const [selectedRashi, setSelectedRashi] = useState<string | null>(null);
- const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+ const [activeFilter, setActiveFilter] = useState(() => searchParams.get('filter') || 'All');
+ const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || '');
+ const [selectedRashi, setSelectedRashi] = useState<string | null>(() => searchParams.get('rashi'));
+ const [showOnlineOnly, setShowOnlineOnly] = useState(() => searchParams.get('online') === '1');
+
+ useEffect(() => {
+  const params = new URLSearchParams();
+  if (activeFilter !== 'All') params.set('filter', activeFilter);
+  if (sortBy) params.set('sort', sortBy);
+  if (selectedRashi) params.set('rashi', selectedRashi);
+  if (showOnlineOnly) params.set('online', '1');
+  const qs = params.toString();
+  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+ }, [activeFilter, sortBy, selectedRashi, showOnlineOnly, pathname, router]);
 
  // Kundli form
  const [kundliName, setKundliName] = useState('');

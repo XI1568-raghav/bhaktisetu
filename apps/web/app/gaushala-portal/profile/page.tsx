@@ -2,9 +2,18 @@
 
 import { useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
+import AuthGuard from '../../../components/AuthGuard';
 import { Mail, Phone, MapPin, Camera, Building2, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function GaushalProfilePage() {
+ return (
+  <AuthGuard allowedRoles={['gaushala_manager', 'admin']}>
+   <GaushalProfilePageContent />
+  </AuthGuard>
+ );
+}
+
+function GaushalProfilePageContent() {
  const { user } = useAuth();
  const [saving, setSaving] = useState(false);
  const [saved, setSaved] = useState(false);

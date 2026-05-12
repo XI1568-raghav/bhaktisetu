@@ -12,6 +12,7 @@ import {
  Languages,
  BookOpen,
 } from 'lucide-react';
+import AuthGuard from '../../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -58,6 +59,14 @@ const defaultProfile: AstrologerProfile = {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function AstrologerProfilePage() {
+ return (
+  <AuthGuard allowedRoles={['astrologer', 'admin']}>
+   <AstrologerProfilePageContent />
+  </AuthGuard>
+ );
+}
+
+function AstrologerProfilePageContent() {
  const [profile, setProfile] = useState<AstrologerProfile>(defaultProfile);
  const [saving, setSaving] = useState(false);
  const [saved, setSaved] = useState(false);

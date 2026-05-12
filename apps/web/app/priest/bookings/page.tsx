@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
  Calendar,
  Clock,
@@ -160,12 +160,19 @@ function getStatusConfig(status: string) {
 export default function PriestBookingsPage() {
  const { session } = useAuth();
  const searchParams = useSearchParams();
+ const router = useRouter();
+ const pathname = usePathname();
  const initialTab = (searchParams.get('status') as TabKey) || 'all';
 
  const [bookings, setBookings] = useState<BookingItem[]>([]);
  const [loading, setLoading] = useState(true);
  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+ useEffect(() => {
+  const qs = activeTab === 'all' ? '' : `?status=${activeTab}`;
+  router.replace(`${pathname}${qs}`, { scroll: false });
+ }, [activeTab, pathname, router]);
 
  useEffect(() => {
  async function fetchBookings() {
