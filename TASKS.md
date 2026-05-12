@@ -38,7 +38,7 @@ _(none claimed)_
 
 | Date | Task | Commit |
 |---|---|---|
-| 2026-05-13 | Demo-video Playwright spec + ffmpeg stitch script + recipe doc (U10) | _pending_ |
+| 2026-05-13 | Demo-video Playwright spec + ffmpeg stitch script + recipe doc (U10) | `4c48e9a` |
 | 2026-05-13 | NRI Premium landing page + nav link (P3 / AR) | `e881543` |
 | 2026-05-13 | Sentry + PostHog Cloudflare Pages env wiring runbook (E3+E4) | `e881543` |
 | 2026-05-13 | Security credential rotation runbook (Resend + Supabase + ALLOW_DEMO_TOKENS) | `e881543` |
