@@ -216,22 +216,6 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   const newPaymentStatus =
     refundType === 'partial' && refundInr < paidInr ? 'partially_refunded' : 'refunded';
 
-  await prisma.payment.update({
-    where: { id: captured.id },
-    data: {
-      status: newPaymentStatus,
-      refundAmount: refundInr,
-      metadata: {
-        ...((captured.metadata as Record<string, unknown>) ?? {}),
-        refundId: refund.id,
-        refundedAt: new Date().toISOString(),
-        refundReason: reason,
-        refundType,
-        refundInitiatedBy: initiatedBy,
-      },
-    },
-  });
-
   // Booking only flips to 'refunded' on full refund. For partial, keep
   // status as-is (likely cancelled) and let cancellationReason carry the
   // marker.
@@ -246,9 +230,29 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
           cancellationReason: `[partially-refunded ${refundInr}] ${reason}`.slice(0, 500),
         };
 
-  await prisma.pujaBooking.update({
-    where: { id: bookingId },
-    data: bookingDataPatch,
+  // Atomic: Razorpay already debited; if Payment update lands but Booking
+  // update fails the customer is refunded yet booking still looks active.
+  // Wrap both writes so they commit together.
+  await prisma.$transaction(async (tx) => {
+    await tx.payment.update({
+      where: { id: captured.id },
+      data: {
+        status: newPaymentStatus,
+        refundAmount: refundInr,
+        metadata: {
+          ...((captured.metadata as Record<string, unknown>) ?? {}),
+          refundId: refund.id,
+          refundedAt: new Date().toISOString(),
+          refundReason: reason,
+          refundType,
+          refundInitiatedBy: initiatedBy,
+        },
+      },
+    });
+    await tx.pujaBooking.update({
+      where: { id: bookingId },
+      data: bookingDataPatch,
+    });
   });
 
   // Best-effort success email — never block on send failure.

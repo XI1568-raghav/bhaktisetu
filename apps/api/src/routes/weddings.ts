@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { MuhuratInputSchema, findWeddingMuhurats } from '../lib/muhurat.js';
+import { authenticateUser } from '../middlewares/auth.js';
 
 const InquiryBody = z.object({
   fullName: z.string().min(1).max(120).trim(),
@@ -20,8 +21,10 @@ const InquiryBody = z.object({
 });
 
 export async function weddingRoutes(server: FastifyInstance) {
-  // POST /muhurat — compute ranked muhurat list
-  server.post('/muhurat', async (request, reply) => {
+  // POST /muhurat — compute ranked muhurat list.
+  // Auth gate: prior version was open and let an attacker burn the
+  // mhah-panchang compute loop (Ayanamsa + dasha calc) in a tight loop.
+  server.post('/muhurat', { preHandler: [authenticateUser] }, async (request, reply) => {
     const parsed = MuhuratInputSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply
@@ -34,7 +37,8 @@ export async function weddingRoutes(server: FastifyInstance) {
 
   // POST /inquiry — store inquiry in WeddingInquiry table (raw SQL).
   // We auto-create the table on first call so we don't need a migration.
-  server.post('/inquiry', async (request, reply) => {
+  // Auth required to stop anonymous PII dumps into the table.
+  server.post('/inquiry', { preHandler: [authenticateUser] }, async (request, reply) => {
     const parsed = InquiryBody.safeParse(request.body);
     if (!parsed.success) {
       return reply

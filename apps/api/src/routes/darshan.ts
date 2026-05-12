@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { getLiveStatus } from '../lib/darshan-schedule.js';
 import { getChannelEmbedInfo, liveStreamUrl, videoEmbedUrl } from '../lib/youtube-feed.js';
+import { authenticateUser } from '../middlewares/auth.js';
 
 // YouTube live stream embed URLs for major temples.
 // Channel IDs verified 2026-05-02 against https://www.youtube.com/feeds/videos.xml?channel_id=...
@@ -341,8 +342,10 @@ export async function darshanRoutes(server: FastifyInstance) {
     return reply.status(404).send({ error: 'Stream not found' });
   });
 
-  // POST /:id/join - Join a live darshan session (track viewers)
-  server.post('/:id/join', async (request, _reply) => {
+  // POST /:id/join - Join a live darshan session (track viewers).
+  // Auth required so the viewerCount metric on liveDarshanStream can't
+  // be inflated/deflated by anonymous attackers polluting analytics.
+  server.post('/:id/join', { preHandler: [authenticateUser] }, async (request, _reply) => {
     const { id } = request.params as { id: string };
 
     const hardcoded = TEMPLE_LIVE_STREAMS.find((s) => s.id === id);
@@ -373,7 +376,7 @@ export async function darshanRoutes(server: FastifyInstance) {
   });
 
   // POST /:id/leave - Leave a live darshan session
-  server.post('/:id/leave', async (request, _reply) => {
+  server.post('/:id/leave', { preHandler: [authenticateUser] }, async (request, _reply) => {
     const { id } = request.params as { id: string };
 
     try {

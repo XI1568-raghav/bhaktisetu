@@ -12,30 +12,41 @@ import {
 } from '../lib/astrology.js';
 import { prisma } from '../lib/prisma.js';
 
+// Pagination clamp shared across astrologer list + reviews. Without an
+// upper bound, anyone hitting GET /astrologers?limit=99999 forces a full
+// in-memory scrape — worse, public unauthenticated, so it's a free DoS.
+const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+const astrologerListQuerySchema = paginationSchema.extend({
+  specialization: z.string().optional(),
+  language: z.string().optional(),
+  priceRange: z.string().optional(),
+  online: z.string().optional(),
+  sort: z.enum(['rating', 'price', 'experience']).optional(),
+});
+
 export async function astrologyRoutes(server: FastifyInstance) {
   // ─── GET /astrologers ──────────────────────────────────────────────────────
   // List astrologers with optional filters
 
   server.get('/astrologers', async (request, reply) => {
-    const { specialization, language, priceRange, online, sort, page, limit } =
-      request.query as {
-        specialization?: string;
-        language?: string;
-        priceRange?: string;
-        online?: string;
-        sort?: string;
-        page?: string;
-        limit?: string;
-      };
+    const parsed = astrologerListQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
+    }
+    const { specialization, language, priceRange, online, sort, page, limit } = parsed.data;
 
     const result = astrologyService.getAstrologers({
       specialization,
       language,
       priceRange,
       isOnline: online !== undefined ? online === 'true' : undefined,
-      sortBy: sort as 'rating' | 'price' | 'experience' | undefined,
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
+      sortBy: sort,
+      page,
+      limit,
     });
 
     return result;
@@ -60,13 +71,13 @@ export async function astrologyRoutes(server: FastifyInstance) {
 
   server.get('/astrologers/:id/reviews', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { page, limit } = request.query as { page?: string; limit?: string };
+    const parsed = paginationSchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
+    }
+    const { page, limit } = parsed.data;
 
-    const result = astrologyService.getReviews(
-      id,
-      page ? Number(page) : undefined,
-      limit ? Number(limit) : undefined
-    );
+    const result = astrologyService.getReviews(id, page, limit);
 
     return result;
   });

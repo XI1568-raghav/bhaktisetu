@@ -24,6 +24,99 @@ const userUpdateSchema = z.object({
   ])).optional(),
 });
 
+// Permissive write schemas for admin CRUD stubs. Even though these handlers
+// echo today, validating the boundary now means future implementations
+// (see /admin/temples wire-up task) inherit a real safety net instead of
+// trusting `Record<string, unknown>` casts.
+const TRADITIONS = ['shaiva', 'vaishnava', 'shakta', 'smarta', 'jain', 'sikh', 'buddhist', 'other'] as const;
+const TEMPLE_STATUSES = ['active', 'inactive', 'pending_review'] as const;
+
+// Strict create schema — Temple has many required NOT NULL columns; if we
+// only validated a subset, prisma.create would 500 on missing fields.
+const templeCreateSchema = z.object({
+  name: z.string().min(2).max(200),
+  slug: z.string().min(2).max(120).regex(/^[a-z0-9-]+$/, 'lowercase letters, digits, dashes only').optional(),
+  description: z.string().min(2).max(5000),
+  deityPrimary: z.string().min(2).max(120),
+  deities: z.array(z.string().max(120)).default([]),
+  tradition: z.enum(TRADITIONS).default('other'),
+  addressLine: z.string().min(2).max(300),
+  city: z.string().min(1).max(120),
+  state: z.string().min(1).max(120),
+  pincode: z.string().min(3).max(12),
+  country: z.string().max(60).default('India'),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  phone: z.string().max(40).optional(),
+  email: z.string().email().optional(),
+  websiteUrl: z.string().url().max(500).optional(),
+  isVerified: z.boolean().optional(),
+  status: z.enum(TEMPLE_STATUSES).optional(),
+});
+
+// Patch is permissive — anything in the create shape, all optional. Body
+// keys outside the create shape are dropped via strict schema below.
+const templePatchSchema = templeCreateSchema.partial();
+
+// Legacy permissive schema retained for /admin/temples/:id update echo
+// path until full PATCH wiring lands.
+const templeWriteSchema = z.object({
+  name: z.string().min(2).max(200).optional(),
+  city: z.string().max(120).optional(),
+  state: z.string().max(120).optional(),
+  isVerified: z.boolean().optional(),
+}).passthrough();
+
+function slugifyTempleName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+const priestWriteSchema = z.object({
+  displayName: z.string().min(2).max(120).optional(),
+  isVerified: z.boolean().optional(),
+  status: z.enum(['active', 'suspended', 'inactive']).optional(),
+}).passthrough();
+
+const pujaWriteSchema = z.object({
+  name: z.string().min(2).max(200).optional(),
+  category: z.string().max(80).optional(),
+  basePriceInr: z.number().nonnegative().optional(),
+}).passthrough();
+
+const contentWriteSchema = z.object({
+  title: z.string().min(2).max(300).optional(),
+  type: z.string().max(40).optional(),
+  status: z.string().max(40).optional(),
+}).passthrough();
+
+const userCreateSchema = z.object({
+  fullName: z.string().min(2).max(120),
+  email: z.string().email(),
+  role: z.enum([
+    'DEVOTEE', 'PANDIT', 'STORE_OWNER', 'ASTROLOGER',
+    'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER', 'TEMPLE_MANAGER', 'ADMIN',
+  ]).optional(),
+}).passthrough();
+
+function validateBody<T extends z.ZodTypeAny>(
+  schema: T,
+  body: unknown,
+  reply: import('fastify').FastifyReply,
+): z.infer<T> | null {
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
+    return null;
+  }
+  return parsed.data;
+}
+
 // ─── Routes ─────────────────────────────────────────────────────────────────────
 
 export async function adminRoutes(server: FastifyInstance) {
@@ -116,13 +209,51 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   server.post('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
-    return { message: 'Temple created', temple: body };
+    const body = validateBody(templeCreateSchema, request.body, reply);
+    if (!body) return;
+    const slug = body.slug ?? slugifyTempleName(body.name);
+    if (!slug) {
+      return reply.code(400).send({ error: 'Could not derive slug from name; provide explicit slug.' });
+    }
+    try {
+      const temple = await prisma.temple.create({
+        data: {
+          name: body.name,
+          slug,
+          description: body.description,
+          deityPrimary: body.deityPrimary,
+          deities: body.deities,
+          tradition: body.tradition,
+          addressLine: body.addressLine,
+          city: body.city,
+          state: body.state,
+          pincode: body.pincode,
+          country: body.country,
+          lat: body.lat,
+          lng: body.lng,
+          phone: body.phone ?? null,
+          email: body.email ?? null,
+          websiteUrl: body.websiteUrl ?? null,
+          isVerified: body.isVerified ?? false,
+          status: body.status ?? (body.isVerified ? 'active' : 'pending_review'),
+        },
+      });
+      return reply.code(201).send({ message: 'Temple created', temple });
+    } catch (err) {
+      const e = err as { code?: string; meta?: { target?: string[] | string } };
+      // Prisma uniqueness violation on slug — surface as 409 not 500 so the
+      // admin UI can show a clean "slug taken" message.
+      if (e.code === 'P2002') {
+        return reply.code(409).send({ error: 'Slug already in use', slug });
+      }
+      throw err;
+    }
   });
 
   server.patch('/temples/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(templeWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Temple updated', templeId: id, updates: body };
   });
 
@@ -139,13 +270,15 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   server.post('/priests', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(priestWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Priest created', priest: body };
   });
 
   server.patch('/priests/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(priestWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Priest updated', priestId: id, updates: body };
   });
 
@@ -160,13 +293,15 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   server.post('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(pujaWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Puja type created', puja: body };
   });
 
   server.patch('/pujas/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(pujaWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Puja type updated', pujaId: id, updates: body };
   });
 
@@ -183,13 +318,15 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   server.post('/content', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(contentWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Content created', content: body };
   });
 
   server.patch('/content/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(contentWriteSchema, request.body, reply);
+    if (!body) return;
     return { message: 'Content updated', contentId: id, updates: body };
   });
 
@@ -212,7 +349,8 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   server.post('/users', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
+    const body = validateBody(userCreateSchema, request.body, reply);
+    if (!body) return;
     return { message: 'User created', user: body };
   });
 
@@ -329,3 +467,11 @@ export async function adminRoutes(server: FastifyInstance) {
     });
   });
 }
+
+// Test-only exports — kept off the public surface so route consumers cannot
+// accidentally import implementation details.
+export const __testing = {
+  slugifyTempleName,
+  templeCreateSchema,
+  templePatchSchema,
+};
