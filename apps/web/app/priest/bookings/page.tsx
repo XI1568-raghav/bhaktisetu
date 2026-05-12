@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
@@ -158,6 +158,14 @@ function getStatusConfig(status: string) {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function PriestBookingsPage() {
+ return (
+  <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-saffron-500" /></div>}>
+   <PriestBookingsInner />
+  </Suspense>
+ );
+}
+
+function PriestBookingsInner() {
  const { session } = useAuth();
  const searchParams = useSearchParams();
  const router = useRouter();

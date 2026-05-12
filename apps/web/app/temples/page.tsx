@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTemples, type TempleListItem } from '../../lib/api';
 import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details';
@@ -108,5 +109,9 @@ export default async function TemplesPage() {
  // API unavailable — proceed with rich-detail only
  }
 
- return <TemplesBrowser temples={merged} total={totalFromApi} />;
+ return (
+  <Suspense fallback={<div className="min-h-screen" />}>
+   <TemplesBrowser temples={merged} total={totalFromApi} />
+  </Suspense>
+ );
 }
