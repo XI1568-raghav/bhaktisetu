@@ -55,7 +55,7 @@ _(none claimed)_
 
 | Date | Task | Commit |
 |---|---|---|
-| 2026-05-13 | Mobile pull-to-refresh on 4 raw-ScrollView devotee screens (E6) | (this commit) |
+| 2026-05-13 | Mobile pull-to-refresh on 4 raw-ScrollView devotee screens (E6) | `d5bc036` |
 | 2026-05-13 | Mobile parity audit — confirmed Phase 1-5 substantially shipped (E5) | n/a |
 | 2026-05-13 | Demo-video Playwright spec + ffmpeg stitch script + recipe doc (U10) | `4c48e9a` |
 | 2026-05-13 | NRI Premium landing page + nav link (P3 / AR) | `e881543` |
