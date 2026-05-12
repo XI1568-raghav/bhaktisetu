@@ -2,7 +2,20 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { authenticateUser } from '../middlewares/auth.js';
+import { authenticateUser, requireAnyRole, type MarketplaceRole } from '../middlewares/auth.js';
+
+// Provider roles allowed to submit KYC. DEVOTEE intentionally excluded —
+// devotees never receive payouts, so no Aadhaar/PAN/bank should be on file
+// for them. ADMIN allowed for support-side debugging only.
+const PROVIDER_ROLES: MarketplaceRole[] = [
+  'PANDIT',
+  'STORE_OWNER',
+  'ASTROLOGER',
+  'WELLNESS_INSTRUCTOR',
+  'GAUSHALA_MANAGER',
+  'TEMPLE_MANAGER',
+  'ADMIN',
+];
 
 /**
  * Provider KYC stage 2 — bank + PAN + Aadhaar last-4.
@@ -60,7 +73,7 @@ function maskTail(value: string | null, keep = 4): string | null {
 
 export async function providerKycRoutes(server: FastifyInstance) {
   // ── GET /providers/kyc — current redacted KYC for the signed-in user ──
-  server.get('/', { preHandler: [authenticateUser] }, async (request, reply) => {
+  server.get('/', { preHandler: [authenticateUser, requireAnyRole(...PROVIDER_ROLES)] }, async (request, reply) => {
     const userId = request.currentUser!.id;
     const accessToken = (request.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
 
@@ -97,7 +110,7 @@ export async function providerKycRoutes(server: FastifyInstance) {
   });
 
   // ── POST /providers/kyc — submit/update KYC details ──────────────────
-  server.post('/', { preHandler: [authenticateUser] }, async (request, reply) => {
+  server.post('/', { preHandler: [authenticateUser, requireAnyRole(...PROVIDER_ROLES)] }, async (request, reply) => {
     const parsed = submitSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({

@@ -173,15 +173,24 @@ export async function storeOrderRoutes(server: FastifyInstance) {
   );
 
   // POST /orders/:id/payment-confirm — flip PENDING → CONFIRMED and send invoice.
-  // TODO: gate on a real Razorpay webhook signature once store-order checkout
-  // is integrated end-to-end. Until then, this is admin-only so we can drive
-  // the flow manually for QA and fulfilment ops.
+  // Admin-only manual override for QA / fulfilment ops. In production this
+  // is hard-gated behind ALLOW_DEMO_PAYMENTS=true so a misclick by support
+  // can't bypass the real Razorpay verify path on store-orders/verify-payment.
+  // The proper flow is /store-orders/verify-payment with a real Razorpay sig.
   server.post(
     '/orders/:id/payment-confirm',
     { preHandler: [authenticateUser] },
     async (request, reply) => {
       if (!isAdmin(request)) {
         return reply.code(403).send({ error: 'Admin role required' });
+      }
+      if (
+        process.env.NODE_ENV === 'production' &&
+        process.env.ALLOW_DEMO_PAYMENTS !== 'true'
+      ) {
+        return reply.code(403).send({
+          error: 'Manual payment-confirm disabled in production. Use /verify-payment with a real Razorpay signature.',
+        });
       }
       const params = orderIdParams.safeParse(request.params);
       if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });

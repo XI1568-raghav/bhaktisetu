@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendOpsAlert } from '../lib/alert.js';
 import { sendEmail } from '../lib/email.js';
+import { authenticateUser } from '../middlewares/auth.js';
 
 /**
  * Layer AT — Antim sanskar (death rites) booking.
@@ -243,7 +244,11 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
   });
 
   // ─── POST /book — create a booking. NO online payment. ────────────────
-  server.post('/book', async (request, reply) => {
+  // Auth required: prior version was open and let anyone insert PII rows
+  // (deceased name, contact phone, city) into the antim_sanskar_bookings
+  // table from any browser. The flow is contact-first; an authenticated
+  // devotee account is a small, reasonable gate for a sensitive vertical.
+  server.post('/book', { preHandler: [authenticateUser] }, async (request, reply) => {
     const parsed = bookSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply

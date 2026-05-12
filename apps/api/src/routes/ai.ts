@@ -17,6 +17,33 @@ const chatBodySchema = z.object({
   language: z.string().min(2).max(10).optional(),
 });
 
+// /recommend-puja, /generate-sankalp, /translate previously cast request.body
+// raw — no length caps, no type checks. Public endpoints → trivial DoS via
+// 10MB JSON or wrong-typed fields blowing up Groq prompt assembly.
+const recommendPujaSchema = z.object({
+  lifeEvent: z.string().trim().max(200).optional(),
+  rashi: z.string().trim().max(40).optional(),
+  nakshatra: z.string().trim().max(40).optional(),
+  language: z.string().trim().min(2).max(10).optional(),
+});
+
+const sankalpSchema = z.object({
+  devoteeName: z.string().trim().min(1).max(120),
+  gotra: z.string().trim().max(80).optional(),
+  pujaName: z.string().trim().min(1).max(120),
+  deity: z.string().trim().min(1).max(80),
+  date: z.string().trim().max(40).optional(),
+  city: z.string().trim().max(80).optional(),
+  purpose: z.string().trim().max(500).optional(),
+  additionalNames: z.array(z.string().trim().max(120)).max(20).optional(),
+});
+
+const translateSchema = z.object({
+  text: z.string().trim().min(1).max(5000),
+  sourceLanguage: z.string().trim().min(2).max(10),
+  targetLanguage: z.string().trim().min(2).max(10),
+});
+
 export async function aiRoutes(server: FastifyInstance) {
   // ─── POST /chat — Streaming SSE chat response ──────────────────────────────
   // Auth is optional. Logged-in users get conversation history persisted;
@@ -227,12 +254,11 @@ export async function aiRoutes(server: FastifyInstance) {
   // ─── POST /recommend-puja — Puja recommendations ───────────────────────────
 
   server.post('/recommend-puja', async (request, reply) => {
-    const { lifeEvent, rashi, nakshatra, language } = request.body as {
-      lifeEvent?: string;
-      rashi?: string;
-      nakshatra?: string;
-      language?: string;
-    };
+    const parsed = recommendPujaSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'ValidationError', issues: parsed.error.flatten() });
+    }
+    const { lifeEvent, rashi, nakshatra, language } = parsed.data;
 
     try {
       const userId = request.currentUser?.id;
@@ -257,44 +283,13 @@ export async function aiRoutes(server: FastifyInstance) {
   // anonymous visitors during the booking flow.
 
   server.post('/generate-sankalp', async (request, reply) => {
-    const {
-      devoteeName,
-      gotra,
-      pujaName,
-      deity,
-      date,
-      city,
-      purpose,
-      additionalNames,
-    } = request.body as {
-      devoteeName?: string;
-      gotra?: string;
-      pujaName?: string;
-      deity?: string;
-      date?: string;
-      city?: string;
-      purpose?: string;
-      additionalNames?: string[];
-    };
-
-    if (!devoteeName || !pujaName || !deity) {
-      return reply.status(400).send({
-        error: 'devoteeName, pujaName, and deity are required',
-      });
+    const parsed = sankalpSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'ValidationError', issues: parsed.error.flatten() });
     }
 
     try {
-      const result = await aiService.generateSankalp({
-        devoteeName,
-        gotra,
-        pujaName,
-        deity,
-        date,
-        city,
-        purpose,
-        additionalNames,
-      });
-
+      const result = await aiService.generateSankalp(parsed.data);
       return result;
     } catch (error) {
       server.log.error(error, 'Failed to generate sankalp');
@@ -329,34 +324,15 @@ export async function aiRoutes(server: FastifyInstance) {
   // ─── POST /translate — Translation ─────────────────────────────────────────
 
   server.post('/translate', async (request, reply) => {
-    const { text, sourceLanguage, targetLanguage } = request.body as {
-      text?: string;
-      sourceLanguage?: string;
-      targetLanguage?: string;
-    };
-
-    if (!text || !sourceLanguage || !targetLanguage) {
-      return reply.status(400).send({
-        error: 'text, sourceLanguage, and targetLanguage are required',
-      });
+    const parsed = translateSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'ValidationError', issues: parsed.error.flatten() });
     }
-
-    if (text.length > 5000) {
-      return reply.status(400).send({ error: 'Text too long. Maximum 5000 characters.' });
-    }
+    const { text, sourceLanguage, targetLanguage } = parsed.data;
 
     try {
-      const translatedText = await aiService.translate({
-        text,
-        sourceLanguage,
-        targetLanguage,
-      });
-
-      return {
-        translatedText,
-        sourceLanguage,
-        targetLanguage,
-      };
+      const translatedText = await aiService.translate({ text, sourceLanguage, targetLanguage });
+      return { translatedText, sourceLanguage, targetLanguage };
     } catch (error) {
       server.log.error(error, 'Failed to translate');
       return reply.status(500).send({ error: 'Failed to translate text' });

@@ -245,7 +245,7 @@ export class OnboardingService {
 
   private async createProviderProfile(userId: string, role: RoleType, data: Record<string, unknown>): Promise<void> {
     switch (role) {
-      case 'PANDIT':
+      case 'PANDIT': {
         await prisma.panditProfile.upsert({
           where: { userId },
           update: {
@@ -270,7 +270,36 @@ export class OnboardingService {
             pricePerPuja: Number(data.pricePerPuja) || 500,
           },
         });
+        // Mirror into `Priest` so getPriestId() in priest routes / payouts
+        // resolves. Without this, every priest-dashboard route throws
+        // "Priest account not found" and payouts cannot be issued.
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { fullName: true },
+        });
+        const displayName = (data.displayName as string)
+          ?? user?.fullName
+          ?? 'Pandit';
+        await prisma.priest.upsert({
+          where: { userId },
+          update: {
+            displayName,
+            specializations: (data.specialties as string[]) ?? [],
+            languages: (data.languages as string[]) ?? [],
+            experienceYears: Number(data.experience) || 0,
+            bio: data.bio as string ?? null,
+          },
+          create: {
+            userId,
+            displayName,
+            specializations: (data.specialties as string[]) ?? [],
+            languages: (data.languages as string[]) ?? [],
+            experienceYears: Number(data.experience) || 0,
+            bio: data.bio as string ?? null,
+          },
+        });
         break;
+      }
       case 'STORE_OWNER':
         await prisma.storeProfile.upsert({
           where: { userId },

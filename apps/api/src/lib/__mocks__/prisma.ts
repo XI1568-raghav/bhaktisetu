@@ -53,6 +53,7 @@ export const prismaMock = {
     findUnique: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    upsert: vi.fn(),
     count: vi.fn(),
   },
   priestPayout: {
@@ -190,6 +191,14 @@ export const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    count: vi.fn(),
+  },
+  storeOrder: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
     count: vi.fn(),
   },
   $queryRaw: vi.fn(),

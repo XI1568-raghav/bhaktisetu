@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
@@ -49,6 +50,59 @@ async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
 }
 
 /**
+ * Best-effort store-order invoice (mirrors sendPujaBookingInvoice). Called
+ * after Razorpay capture flips the order to CONFIRMED. Any failure is
+ * swallowed so payment confirmation never blocks on email/PDF errors.
+ */
+async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
+  try {
+    const order = await prisma.storeOrder.findUnique({
+      where: { id: storeOrderId },
+      include: { user: { select: { fullName: true, email: true } } },
+    });
+    if (!order || !order.user.email) return;
+    type Item = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
+    type Addr = {
+      fullName?: string; line1?: string; line2?: string; city?: string;
+      state?: string; pincode?: string; country?: string;
+    };
+    const items: Item[] = Array.isArray(order.items)
+      ? (order.items as unknown as Item[])
+      : [];
+    const lineItems = items.map((it) => ({
+      name: typeof it.name === 'string' ? it.name : (it.productId ?? 'Item'),
+      qty: Number(it.qty ?? 1),
+      priceInr: Number(it.priceAtPurchase ?? 0),
+    }));
+    const addr = order.shippingAddress as unknown as Addr;
+    const addrStr = [
+      addr?.fullName, addr?.line1, addr?.line2, addr?.city,
+      addr?.state, addr?.pincode, addr?.country,
+    ].filter(Boolean).join(', ');
+    const pdf = await generateInvoice({
+      type: 'store_order',
+      orderNumber: order.orderNumber,
+      customerName: order.user.fullName,
+      items: lineItems,
+      shippingAddress: addrStr,
+      totalInr: Number(order.totalAmountInr),
+      createdAt: order.createdAt.toISOString().slice(0, 10),
+    });
+    await sendEmail({
+      to: order.user.email,
+      subject: `Darshya tax invoice — ${order.orderNumber}`,
+      html: `<p>Namaste ${order.user.fullName},</p><p>Your tax invoice for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+      text: `Tax invoice for order ${order.orderNumber} attached.`,
+      attachments: [
+        { filename: `invoice-${order.orderNumber}.pdf`, content: pdf },
+      ],
+    });
+  } catch (err) {
+    console.warn('[payment.service] sendStoreOrderInvoice failed:', err);
+  }
+}
+
+/**
  * Insert a Commission row when a PujaBooking flips to confirmed. The
  * platform's cut (priceAmount * (1 - priest commission share)) was already
  * computed at booking-create time and stored on the booking row. We
@@ -75,14 +129,19 @@ async function writePujaCommissionOnConfirm(bookingId: string): Promise<void> {
       select: { id: true },
     });
     if (existing) return;
-    const priceNum = Number(booking.priceAmount);
-    const commissionNum = Number(booking.platformCommission);
-    const percentage = priceNum > 0 ? commissionNum / priceNum : 0;
+    // Decimal.js arithmetic — never coerce money to JS Number for the
+    // ledger. percentage column is Decimal(5,4); it gets rounded by the
+    // DB driver but the *input* must already be exact rational division.
+    const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
+    const commission = new Prisma.Decimal(booking.platformCommission as Prisma.Decimal);
+    const percentage = price.gt(0)
+      ? commission.div(price)
+      : new Prisma.Decimal(0);
     await prisma.commission.create({
       data: {
         bookingId: booking.id,
         providerId: booking.priestId,
-        amount: booking.platformCommission,
+        amount: commission,
         percentage,
         status: 'PENDING',
       },
@@ -204,10 +263,12 @@ export class PaymentService {
     });
 
     if (existingPayment && existingPayment.gatewayOrderId) {
-      // Return the existing order rather than creating a duplicate
+      // Return the existing order rather than creating a duplicate.
+      // Round to integer paise — Decimal × 100 can produce 99999.999... which
+      // Razorpay then rejects (or worse, truncates) on retry.
       return {
         orderId: existingPayment.gatewayOrderId,
-        amount: Number(booking.priceAmount) * 100,
+        amount: Math.round(Number(booking.priceAmount) * 100),
         currency: booking.currency,
         paymentId: existingPayment.id,
         razorpayKeyId: process.env.RAZORPAY_KEY_ID!,
@@ -264,13 +325,15 @@ export class PaymentService {
     razorpayPaymentId: string,
     razorpaySignature: string
   ): Promise<VerifyPaymentResult> {
-    // 1. Verify signature
+    // 1. Verify signature (timing-safe)
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
       .digest('hex');
 
-    if (expectedSignature !== razorpaySignature) {
+    const expBuf = Buffer.from(expectedSignature, 'utf8');
+    const sigBuf = Buffer.from(razorpaySignature, 'utf8');
+    if (expBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expBuf, sigBuf)) {
       throw new Error('Payment verification failed: invalid signature.');
     }
 
@@ -292,21 +355,30 @@ export class PaymentService {
       throw new Error('No booking linked to this payment.');
     }
 
-    // 3. Update payment to captured
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'captured',
-        gatewayPaymentId: razorpayPaymentId,
-      },
+    // 3+4. Capture payment and confirm booking atomically — a crash
+    // between the two updates previously left a captured Payment with a
+    // pending_payment Booking until the webhook retried.
+    const shouldConfirm = payment.booking.status === 'pending_payment';
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'captured',
+          gatewayPaymentId: razorpayPaymentId,
+        },
+      });
+      if (shouldConfirm) {
+        await tx.pujaBooking.update({
+          where: { id: payment.booking!.id },
+          data: { status: 'confirmed' },
+        });
+      }
     });
 
-    // 4. Confirm the booking if still pending
-    if (payment.booking.status === 'pending_payment') {
-      await prisma.pujaBooking.update({
-        where: { id: payment.booking.id },
-        data: { status: 'confirmed' },
-      });
+    // Side-effects (commission ledger, invoice email) run after the
+    // transaction commits so a downstream failure cannot rollback the
+    // captured payment.
+    if (shouldConfirm) {
       await writePujaCommissionOnConfirm(payment.booking.id);
       void sendPujaBookingInvoice(payment.booking.id);
     }
@@ -315,6 +387,182 @@ export class PaymentService {
       verified: true,
       bookingId: payment.booking.id,
       bookingNumber: payment.booking.bookingNumber,
+    };
+  }
+
+  /**
+   * Create a Razorpay order for a pending store order. Mirrors the puja-
+   * booking createRazorpayOrder pattern: idempotent on the existing
+   * initiated/authorized Payment row pointed to by storeOrder.paymentId,
+   * returns paise + key id for the web Razorpay checkout to consume.
+   */
+  async createStoreOrderRazorpay(
+    storeOrderId: string,
+    userId: string,
+  ): Promise<CreateOrderResult> {
+    const order = await prisma.storeOrder.findUnique({
+      where: { id: storeOrderId },
+      select: {
+        id: true, orderNumber: true, userId: true, status: true,
+        totalAmountInr: true, paymentId: true,
+      },
+    });
+    if (!order) throw new Error('Store order not found.');
+    if (order.userId !== userId) {
+      throw new Error('You are not authorized to pay for this order.');
+    }
+    if (order.status !== 'PENDING') {
+      throw new Error(
+        `Payment can only be initiated for orders in "PENDING" status. Current: "${order.status}".`,
+      );
+    }
+
+    // Idempotency: reuse existing initiated Razorpay order so a refresh
+    // mid-checkout does not duplicate Payment rows or burn Razorpay quota.
+    if (order.paymentId) {
+      const existing = await prisma.payment.findUnique({
+        where: { id: order.paymentId },
+        select: { id: true, gatewayOrderId: true, status: true, amount: true, currency: true },
+      });
+      if (
+        existing &&
+        existing.gatewayOrderId &&
+        (existing.status === 'initiated' || existing.status === 'authorized')
+      ) {
+        return {
+          orderId: existing.gatewayOrderId,
+          amount: Math.round(Number(existing.amount) * 100),
+          currency: existing.currency,
+          paymentId: existing.id,
+          razorpayKeyId: process.env.RAZORPAY_KEY_ID ?? '',
+        };
+      }
+    }
+
+    const amountInPaise = Math.round(Number(order.totalAmountInr) * 100);
+    const razorpayOrder = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt: order.orderNumber,
+      notes: {
+        storeOrderId: order.id,
+        orderNumber: order.orderNumber,
+        userId,
+      },
+    });
+
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        // bookingId stays null — Payment.bookingId is nullable specifically
+        // for non-puja payments (store orders, donations, etc.).
+        amount: order.totalAmountInr,
+        currency: 'INR',
+        paymentGateway: 'razorpay',
+        gatewayOrderId: razorpayOrder.id,
+        status: 'initiated',
+        metadata: {
+          razorpayOrderId: razorpayOrder.id,
+          receipt: order.orderNumber,
+          storeOrderId: order.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    await prisma.storeOrder.update({
+      where: { id: order.id },
+      data: { paymentId: payment.id },
+    });
+
+    return {
+      orderId: razorpayOrder.id,
+      amount: amountInPaise,
+      currency: 'INR',
+      paymentId: payment.id,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID ?? '',
+    };
+  }
+
+  /**
+   * Verify Razorpay signature for a store-order payment. On success: marks
+   * Payment captured, flips StoreOrder PENDING → CONFIRMED with a
+   * statusHistory entry, fire-and-forget invoice email. Demo gateway has
+   * no secret so signature check is skipped in that mode (matches the
+   * permissive demo path used elsewhere).
+   */
+  async verifyStoreOrderPayment(
+    razorpayOrderId: string,
+    razorpayPaymentId: string,
+    razorpaySignature: string,
+    userId: string,
+  ): Promise<{ verified: true; storeOrderId: string; orderNumber: string }> {
+    if (!isDemoPayment) {
+      const expected = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET ?? '')
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest('hex');
+      const a = Buffer.from(expected, 'utf8');
+      const b = Buffer.from(razorpaySignature, 'utf8');
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        throw new Error('Payment verification failed: invalid signature.');
+      }
+    }
+
+    const payment = await prisma.payment.findFirst({
+      where: { gatewayOrderId: razorpayOrderId },
+      include: {
+        storeOrders: {
+          select: {
+            id: true, orderNumber: true, status: true,
+            statusHistory: true, userId: true,
+          },
+        },
+      },
+    });
+    if (!payment) throw new Error('Payment record not found for the given order.');
+    const storeOrder = payment.storeOrders[0];
+    if (!storeOrder) throw new Error('No store order linked to this payment.');
+    if (storeOrder.userId !== userId) {
+      throw new Error('You are not authorized to confirm this order.');
+    }
+
+    // Atomic: capture Payment + flip StoreOrder to CONFIRMED. A crash
+    // between the two updates previously left a captured Payment with a
+    // PENDING StoreOrder (no fulfilment kicked off, money already in).
+    const shouldConfirm = storeOrder.status === 'PENDING';
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: 'captured', gatewayPaymentId: razorpayPaymentId },
+      });
+      if (shouldConfirm) {
+        const existingHistory = Array.isArray(storeOrder.statusHistory)
+          ? storeOrder.statusHistory
+          : [];
+        const historyEntry = {
+          status: 'CONFIRMED',
+          changedAt: new Date().toISOString(),
+          changedBy: userId,
+          note: 'Razorpay payment verified',
+        };
+        await tx.storeOrder.update({
+          where: { id: storeOrder.id },
+          data: {
+            status: 'CONFIRMED',
+            statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
+          },
+        });
+      }
+    });
+    if (shouldConfirm) {
+      void sendStoreOrderInvoice(storeOrder.id);
+    }
+
+    return {
+      verified: true,
+      storeOrderId: storeOrder.id,
+      orderNumber: storeOrder.orderNumber,
     };
   }
 
@@ -333,7 +581,9 @@ export class PaymentService {
       .update(JSON.stringify(payload))
       .digest('hex');
 
-    if (expectedSignature !== signature) {
+    const expBuf = Buffer.from(expectedSignature, 'utf8');
+    const sigBuf = Buffer.from(signature, 'utf8');
+    if (expBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expBuf, sigBuf)) {
       throw new Error('Webhook signature verification failed.');
     }
 

@@ -5,7 +5,10 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendEmail, donationReceiptEmail } from '../lib/email.js';
 import { generate80GReceipt } from '../lib/pdf-receipt.js';
+import { assertNotProductionDemo } from '../lib/payment-mode.js';
 import Razorpay from 'razorpay';
+
+assertNotProductionDemo('routes/donations');
 
 /**
  * Gaushala donation endpoints. Razorpay-backed payment + 80G receipt PDF
@@ -157,7 +160,13 @@ export async function donationRoutes(server: FastifyInstance) {
         .createHmac('sha256', razorpayKeySecret)
         .update(`${body.razorpay_order_id}|${body.razorpay_payment_id}`)
         .digest('hex');
-      if (expected !== body.razorpay_signature) {
+      // Timing-safe compare — `===` on hex strings leaks signature bytes
+      // through response-time deltas under load.
+      const expBuf = Buffer.from(expected, 'utf8');
+      const sigBuf = Buffer.from(body.razorpay_signature, 'utf8');
+      const sigOk =
+        expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
+      if (!sigOk) {
         await prisma.$executeRawUnsafe(
           `UPDATE donations SET status = 'failed' WHERE id = $1`,
           donation.id,

@@ -30,7 +30,14 @@ const createSessionSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(1).max(5000),
   type: z.enum(['YOGA', 'MEDITATION', 'VIPASSANA', 'PRANAYAMA', 'OTHER']).default('OTHER'),
-  scheduledAt: z.string().datetime(),
+  // Past-time guard. List endpoint already filters to gte(now) so a session
+  // created in the past would be invisible — we'd silently lose the row.
+  scheduledAt: z
+    .string()
+    .datetime()
+    .refine((s) => new Date(s).getTime() >= Date.now() - 60_000, {
+      message: 'scheduledAt cannot be in the past.',
+    }),
   durationMinutes: z.number().int().positive().max(600),
   capacity: z.number().int().positive().max(10000),
   priceInr: z.number().nonnegative(),
