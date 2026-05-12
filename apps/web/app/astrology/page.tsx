@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import AstrologyClient from './AstrologyClient';
 import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip';
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function AstrologyPage() {
  return (
  <>
- <AstrologyClient />
+ <Suspense fallback={<div className="min-h-screen" />}>
+  <AstrologyClient />
+ </Suspense>
  <ApprovedProvidersStrip
  type="astrologer"
  heading="Verified astrologers on Darshya"
