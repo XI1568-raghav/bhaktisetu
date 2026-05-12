@@ -518,7 +518,22 @@ export async function bookingRoutes(server: FastifyInstance) {
   const createOrderBodySchema = z.object({
     pujaSlug: z.string().min(1),
     templeOfferingId: z.string().uuid(),
-    scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    // Past-date guard mirrors createBookingSchema. Without it, the web
+    // wizard / Stripe NRI path would happily create a Razorpay order for
+    // yesterday's puja, which the booking service never validates again
+    // — payment captures, ledger writes, then ops gets a confused devotee.
+    scheduledDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+      .refine(
+        (d) => {
+          const requested = new Date(`${d}T00:00:00`);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return !Number.isNaN(requested.getTime()) && requested >= today;
+        },
+        { message: 'Cannot book a past date.' },
+      ),
     scheduledTime: z.string().min(1),
     devotees: z
       .array(

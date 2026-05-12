@@ -17,6 +17,11 @@ const verifyPaymentSchema = z.object({
   razorpaySignature: z.string().min(1, 'Razorpay signature is required'),
 });
 
+// Store-order verify accepts the same Razorpay handler payload but resolves
+// to a StoreOrder rather than a PujaBooking. Schema is identical; kept as a
+// separate symbol so future divergence (e.g. UPI intent flow) is local.
+const verifyStoreOrderSchema = verifyPaymentSchema;
+
 const paramsWithId = z.object({
   id: z.string().uuid(),
 });
@@ -98,6 +103,80 @@ export async function paymentRoutes(server: FastifyInstance) {
         });
       }
     }
+  );
+
+  // POST /store-orders/:id/razorpay — create a Razorpay order for a
+  // store-order checkout. Owner-gated. Mirrors /create-order.
+  server.post(
+    '/store-orders/:id/razorpay',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const { id } = paramsWithId.parse(request.params);
+        const userId = request.currentUser!.id;
+        const order = await paymentService.createStoreOrderRazorpay(id, userId);
+        return reply.status(201).send(order);
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({ error: 'Invalid order id', details: error.errors });
+        }
+        if (error.message?.includes('not found')) {
+          return reply.status(404).send({ error: error.message });
+        }
+        if (error.message?.includes('not authorized')) {
+          return reply.status(403).send({ error: error.message });
+        }
+        if (error.message?.includes('PENDING')) {
+          return reply.status(409).send({ error: error.message });
+        }
+        server.log.error(error, 'Failed to create store-order payment');
+        return reply.status(400).send({
+          error: error.message || 'Failed to create store-order payment',
+        });
+      }
+    },
+  );
+
+  // POST /store-orders/:id/verify — verify Razorpay signature for a
+  // store-order checkout, mark Payment captured + flip StoreOrder
+  // PENDING→CONFIRMED. Owner-gated; the :id is for routing/clarity only —
+  // ownership check is done against the resolved StoreOrder inside the
+  // service so a forged id can't confirm someone else's order.
+  server.post(
+    '/store-orders/:id/verify',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        paramsWithId.parse(request.params);
+        const body = verifyStoreOrderSchema.parse(request.body);
+        const userId = request.currentUser!.id;
+        const result = await paymentService.verifyStoreOrderPayment(
+          body.razorpayOrderId,
+          body.razorpayPaymentId,
+          body.razorpaySignature,
+          userId,
+        );
+        return result;
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({ error: 'Validation Error', details: error.errors });
+        }
+        if (error.message?.includes('invalid signature')) {
+          return reply.status(400).send({ error: error.message, verified: false });
+        }
+        if (error.message?.includes('not authorized')) {
+          return reply.status(403).send({ error: error.message });
+        }
+        if (error.message?.includes('not found')) {
+          return reply.status(404).send({ error: error.message });
+        }
+        server.log.error(error, 'Failed to verify store-order payment');
+        return reply.status(400).send({
+          error: error.message || 'Failed to verify store-order payment',
+          verified: false,
+        });
+      }
+    },
   );
 
   // POST /webhook - Razorpay webhook handler (no auth — uses webhook signature).

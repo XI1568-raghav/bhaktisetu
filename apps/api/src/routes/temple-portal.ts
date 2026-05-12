@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
@@ -51,17 +52,107 @@ async function userCanEditTemple(
 }
 
 export async function templePortalRoutes(server: FastifyInstance) {
+  // GET /dashboard — TempleProfile + booking/donation aggregates when the
+  // marketplace temple-profile is linkable to a real Temple row by name match
+  // (no FK exists today — see schema.prisma:779-797). Falls back to zeros if
+  // no matching Temple row.
+  server.get('/dashboard', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+
+    const profile = await prisma.templeProfile.findUnique({ where: { userId } });
+    if (!profile) {
+      return reply.send({
+        profile: null,
+        stats: { totalBookings: 0, monthBookings: 0, totalRevenueInr: 0, monthRevenueInr: 0, totalStreams: 0 },
+        recentBookings: [],
+      });
+    }
+
+    const matchedTemple = await prisma.temple.findFirst({
+      where: { name: profile.templeName },
+      select: { id: true },
+    });
+
+    if (!matchedTemple) {
+      return reply.send({
+        profile,
+        stats: {
+          totalBookings: 0, monthBookings: 0,
+          totalRevenueInr: 0, monthRevenueInr: 0,
+          totalStreams: profile.totalStreams,
+        },
+        recentBookings: [],
+      });
+    }
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const baseWhere = {
+      templeId: matchedTemple.id,
+      status: { in: [BookingStatus.confirmed, BookingStatus.completed] },
+    };
+
+    const [totalCount, monthCount, totalSum, monthSum, recent] = await Promise.all([
+      prisma.pujaBooking.count({ where: baseWhere }),
+      prisma.pujaBooking.count({ where: { ...baseWhere, createdAt: { gte: monthStart } } }),
+      prisma.pujaBooking.aggregate({ where: baseWhere, _sum: { priceAmount: true } }),
+      prisma.pujaBooking.aggregate({
+        where: { ...baseWhere, createdAt: { gte: monthStart } },
+        _sum: { priceAmount: true },
+      }),
+      prisma.pujaBooking.findMany({
+        where: { templeId: matchedTemple.id },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: {
+          user: { select: { fullName: true } },
+          pujaType: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    return reply.send({
+      profile,
+      stats: {
+        totalBookings: totalCount,
+        monthBookings: monthCount,
+        totalRevenueInr: Number(totalSum._sum?.priceAmount ?? 0),
+        monthRevenueInr: Number(monthSum._sum?.priceAmount ?? 0),
+        totalStreams: profile.totalStreams,
+      },
+      recentBookings: recent.map((b) => ({
+        id: b.id,
+        bookingNumber: b.bookingNumber,
+        devotee: b.user.fullName ?? 'Devotee',
+        pujaName: b.pujaType.name,
+        scheduledDate: b.scheduledDate,
+        priceInr: Number(b.priceAmount),
+        status: b.status,
+      })),
+    });
+  });
+
   server.get<{ Querystring: { slug?: string } }>(
     '/schedule',
     { preHandler: [authenticateUser] },
     async (request, reply) => {
-      if (!hasTempleManagerRole(request)) {
-        return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
-      }
+      // Mirror PATCH gate: read access also scoped to org membership when
+      // the temple is org-linked. Otherwise legacy TEMPLE_MANAGER fallback.
+      // Without this, any TEMPLE_MANAGER could enumerate timingInfo for
+      // every temple in the system by guessing slugs.
+      const hasManager = hasTempleManagerRole(request);
       const slug = request.query.slug;
       if (!slug) return reply.code(400).send({ error: 'slug required' });
       const temple = await prisma.temple.findUnique({ where: { slug }, select: { id: true, slug: true, name: true, timingInfo: true } });
       if (!temple) return reply.code(404).send({ error: 'Temple not found' });
+      const allowed = await userCanEditTemple(temple.id, request.currentUser!.id, hasManager);
+      if (!allowed) {
+        return reply.code(403).send({ error: 'NotAuthorizedForTemple' });
+      }
       return temple;
     },
   );

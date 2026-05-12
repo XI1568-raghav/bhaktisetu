@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
+import { assertNotProductionDemo } from '../lib/payment-mode.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -384,6 +385,11 @@ export class SubscriptionService {
     const rzpPlanId = mapToRazorpayPlanId(args.planId);
     const keyId = process.env.RAZORPAY_KEY_ID || '';
     const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+    // Reject the silent demo escape in production. Without this, an admin
+    // who left RAZORPAY_KEY_ID empty in prod would get sub_demo_* ids and
+    // a "subscription created" UX with no real Razorpay subscription, no
+    // recurring debit, and no way for finance to reconcile.
+    assertNotProductionDemo('subscription.createRazorpaySubscription');
     const isDemo = !keyId || keyId === 'rzp_test_demo' || !rzpPlanId;
 
     let subscriptionId: string;

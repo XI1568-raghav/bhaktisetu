@@ -23,16 +23,92 @@ const submitSchema = z.object({
   role: z.enum(ONBOARDING_ROLES),
 });
 
+// Per-role data schemas. Prior version was z.record(z.unknown()) which let
+// the service swallow missing required fields with silent defaults
+// ("Unnamed", "Unnamed Gaushala", price 500) and dropped certifications
+// from wellness profiles entirely. These schemas surface the gaps as 400s
+// instead of writing junk rows that admins later have to clean up.
+const optionalShortString = (max: number) =>
+  z.string().trim().max(max).optional().or(z.literal('').transform(() => undefined));
+
+const stringArray = (maxItems: number, maxLen: number) =>
+  z.array(z.string().trim().min(1).max(maxLen)).max(maxItems);
+
+const panditDataSchema = z.object({
+  displayName: z.string().trim().min(2).max(120).optional(),
+  templeName: optionalShortString(200),
+  experience: z.coerce.number().int().min(0).max(80),
+  specialties: stringArray(20, 80).default([]),
+  languages: stringArray(15, 40).default([]),
+  bio: optionalShortString(2000),
+  city: optionalShortString(80),
+  state: optionalShortString(80),
+  pricePerPuja: z.coerce.number().int().min(100, 'pricePerPuja must be at least ₹100').max(100000),
+});
+
+const storeOwnerDataSchema = z.object({
+  storeName: z.string().trim().min(2, 'storeName is required').max(200),
+  gstNumber: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][Z][0-9A-Z]$/, 'Invalid GSTIN format')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  address: optionalShortString(500),
+  city: optionalShortString(80),
+  state: optionalShortString(80),
+  categories: stringArray(20, 80).default([]),
+});
+
+const astrologerDataSchema = z.object({
+  displayName: z.string().trim().min(2, 'displayName is required').max(120),
+  specialties: stringArray(20, 80).default([]),
+  experience: z.coerce.number().int().min(0).max(80),
+  languages: stringArray(15, 40).default([]),
+  bio: optionalShortString(2000),
+  pricePerMinute: z.coerce.number().int().min(1).max(10000),
+});
+
+const wellnessDataSchema = z.object({
+  displayName: z.string().trim().min(2, 'displayName is required').max(120),
+  specialties: stringArray(20, 80).default([]),
+  certifications: stringArray(20, 200).default([]),
+  experience: z.coerce.number().int().min(0).max(80),
+  bio: optionalShortString(2000),
+  pricePerSession: z.coerce.number().int().min(100).max(100000),
+});
+
+const gaushalaDataSchema = z.object({
+  gaushalaName: z.string().trim().min(2, 'gaushalaName is required').max(200),
+  address: optionalShortString(500),
+  city: optionalShortString(80),
+  totalCows: z.coerce.number().int().min(0).max(100000),
+  description: optionalShortString(5000),
+});
+
+const templeDataSchema = z.object({
+  templeName: z.string().trim().min(2, 'templeName is required').max(200),
+  deity: optionalShortString(80),
+  city: optionalShortString(80),
+  state: optionalShortString(80),
+  address: optionalShortString(500),
+  description: optionalShortString(5000),
+});
+
 // Single-shot provider submission used by /auth/signup and the multi-step
 // /onboarding/[role] page's "Submit for Approval" button. Bypasses the
 // step machinery (start → step/1..N → submit) and instead atomically
 // upserts the role assignment and the matching role-specific profile in
 // one round trip. The profile is created with approved=false (schema
 // default), so it surfaces in /admin/approvals immediately.
-const providerSchema = z.object({
-  role: z.enum(ONBOARDING_ROLES),
-  data: z.record(z.unknown()),
-});
+const providerSchema = z.discriminatedUnion('role', [
+  z.object({ role: z.literal('PANDIT'), data: panditDataSchema }),
+  z.object({ role: z.literal('STORE_OWNER'), data: storeOwnerDataSchema }),
+  z.object({ role: z.literal('ASTROLOGER'), data: astrologerDataSchema }),
+  z.object({ role: z.literal('WELLNESS_INSTRUCTOR'), data: wellnessDataSchema }),
+  z.object({ role: z.literal('GAUSHALA_MANAGER'), data: gaushalaDataSchema }),
+  z.object({ role: z.literal('TEMPLE_MANAGER'), data: templeDataSchema }),
+]);
 
 // ─── Routes ─────────────────────────────────────────────────────────────────────
 

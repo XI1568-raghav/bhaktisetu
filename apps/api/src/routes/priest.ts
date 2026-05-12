@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { randomBytes } from 'node:crypto';
+import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { priestService } from '../services/priest.service.js';
 import { prisma } from '../lib/prisma.js';
@@ -8,6 +9,16 @@ import { BookingStatus, PayoutStatus } from '@prisma/client';
 
 const MAX_VIDEO_MB = 200;
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+
+// Pagination clamp — without this, an attacker (or a buggy client) can
+// request limit=100000 and force a full-table scrape into memory.
+const bookingsQuerySchema = z.object({
+  status: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
 
 export async function priestRoutes(server: FastifyInstance) {
   // All priest routes require authentication and priest role
@@ -43,21 +54,19 @@ export async function priestRoutes(server: FastifyInstance) {
 
   server.get('/bookings', { preHandler: priestAuth }, async (request, reply) => {
     try {
-      const { status, dateFrom, dateTo, page, limit } = request.query as {
-        status?: string;
-        dateFrom?: string;
-        dateTo?: string;
-        page?: string;
-        limit?: string;
-      };
+      const parsed = bookingsQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
+      }
+      const { status, dateFrom, dateTo, page, limit } = parsed.data;
 
       const priestId = await getPriestId(request.currentUser!.id);
       const result = await priestService.getAssignedBookings(priestId, {
         status: status as BookingStatus | undefined,
         dateFrom,
         dateTo,
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
+        page,
+        limit,
       });
 
       return result;

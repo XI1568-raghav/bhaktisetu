@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -434,7 +435,44 @@ export async function outreachWebhookRoutes(server: FastifyInstance) {
   server.post('/inbound', inboundHandler);
 
   // ── Bounce webhook (Resend / SES style) ────────────────────────────
-  server.post('/bounce-webhook', async (request, reply) => {
+  // Resend signs webhooks with Svix headers (svix-id, svix-timestamp,
+  // svix-signature) over the raw body. If RESEND_WEBHOOK_SECRET is set
+  // (format: `whsec_<base64>`) we require a valid signature; otherwise we
+  // log and reject — open bounce endpoints let any anon flip Lead.status.
+  server.post('/bounce-webhook', { config: { rawBody: true } }, async (request, reply) => {
+    const secret = process.env.RESEND_WEBHOOK_SECRET ?? '';
+    if (!secret) {
+      request.log.error('RESEND_WEBHOOK_SECRET unset — refusing /bounce-webhook to avoid anon Lead mutation');
+      return reply.code(503).send({ ok: false, error: 'webhook_unconfigured' });
+    }
+
+    const svixId = request.headers['svix-id'];
+    const svixTimestamp = request.headers['svix-timestamp'];
+    const svixSignature = request.headers['svix-signature'];
+    const rawBody = (request as unknown as { rawBody?: string }).rawBody ?? '';
+    if (!svixId || !svixTimestamp || !svixSignature || !rawBody) {
+      return reply.code(400).send({ ok: false, error: 'missing_signature' });
+    }
+
+    // svix-signature header is space-separated `v1,<base64sig>` entries.
+    // Secret is `whsec_<base64>`; HMAC SHA256 over `${id}.${ts}.${body}`.
+    const secretBytes = Buffer.from(secret.replace(/^whsec_/, ''), 'base64');
+    const signedContent = `${String(svixId)}.${String(svixTimestamp)}.${rawBody}`;
+    const expected = crypto.createHmac('sha256', secretBytes).update(signedContent).digest('base64');
+    const provided = String(svixSignature)
+      .split(' ')
+      .map((s) => s.trim())
+      .filter((s) => s.startsWith('v1,'))
+      .map((s) => s.slice(3));
+    const expBuf = Buffer.from(expected, 'utf8');
+    const sigOk = provided.some((p) => {
+      const pBuf = Buffer.from(p, 'utf8');
+      return pBuf.length === expBuf.length && crypto.timingSafeEqual(pBuf, expBuf);
+    });
+    if (!sigOk) {
+      return reply.code(401).send({ ok: false, error: 'invalid_signature' });
+    }
+
     const body = request.body as { type?: string; data?: { email_id?: string; to?: string[]; email?: string } };
     const email = body?.data?.email ?? body?.data?.to?.[0];
     if (!email) return reply.code(202).send({ ok: false });
