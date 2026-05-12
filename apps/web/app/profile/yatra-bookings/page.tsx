@@ -15,6 +15,7 @@ import {
  XCircle,
 } from 'lucide-react';
 import { formatINR, getYatraBySlug } from '../../../lib/yatra-data';
+import AuthGuard from '../../../components/AuthGuard';
 
 interface StoredBooking {
  bookingNumber: string;
@@ -29,6 +30,14 @@ interface StoredBooking {
 }
 
 export default function YatraBookingsPage() {
+ return (
+  <AuthGuard>
+   <YatraBookingsInner />
+  </AuthGuard>
+ );
+}
+
+function YatraBookingsInner() {
  const [bookings, setBookings] = useState<StoredBooking[]>([]);
  const [loaded, setLoaded] = useState(false);
 

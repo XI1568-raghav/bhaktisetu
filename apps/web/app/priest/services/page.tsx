@@ -12,6 +12,7 @@ import {
  Save,
  Loader2,
 } from 'lucide-react';
+import AuthGuard from '../../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -98,6 +99,14 @@ function generateId(): string {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function PriestServicesPage() {
+ return (
+  <AuthGuard allowedRoles={['priest', 'admin']}>
+   <PriestServicesPageContent />
+  </AuthGuard>
+ );
+}
+
+function PriestServicesPageContent() {
  const [services, setServices] = useState<PujaService[]>([]);
  const [showForm, setShowForm] = useState(false);
  const [editingId, setEditingId] = useState<string | null>(null);

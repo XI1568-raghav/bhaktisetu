@@ -25,8 +25,47 @@ import {
  Heart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { z } from 'zod';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+
+// Mirrors apps/api/src/routes/auth.ts `signupSchema`. Field constraints
+// (password length + letter/digit, fullName >= 2, email format, optional
+// phone) match the API one-for-one so we never POST a body the server
+// rejects. Role enum uses the *web* role keys (priest, gaushala_manager…)
+// because that's what the form collects; the API accepts these for
+// /signup as well, with the known web↔API alias `priest` ↔ `pandit`
+// being a pre-existing concern handled elsewhere.
+const signupSchema = z.object({
+ fullName: z.string().trim().min(2, 'Name must be at least 2 characters'),
+ email: z.string().trim().toLowerCase().email('Invalid email address'),
+ phone: z
+ .string()
+ .optional()
+ .refine(
+ (v) => !v || /^\d{10}$/.test(v),
+ 'Phone number must be 10 digits',
+ ),
+ password: z
+ .string()
+ .min(8, 'Password must be at least 8 characters')
+ .regex(/[A-Za-z]/, 'Password must contain at least one letter')
+ .regex(/[0-9]/, 'Password must contain at least one digit'),
+ role: z.enum([
+ 'devotee',
+ 'priest',
+ 'store_owner',
+ 'astrologer',
+ 'wellness_instructor',
+ 'gaushala_manager',
+ 'temple_manager',
+ ]),
+ acceptTerms: z.literal(true, {
+ errorMap: () => ({ message: 'Please accept the Terms of Service and Privacy Policy.' }),
+ }),
+});
+
+type SignupErrors = Partial<Record<'fullName' | 'email' | 'phone' | 'password' | 'role' | 'acceptTerms' | 'roleSpecific', string>>;
 
 // Map signup form's lowercase role keys to backend MarketplaceRole enum.
 // devotee never reaches submitProviderProfile (early-returned), so it's
@@ -383,6 +422,7 @@ export default function SignupPage() {
  const [acceptTerms, setAcceptTerms] = useState(false);
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState<SignupErrors>({});
  const [signupComplete, setSignupComplete] = useState(false);
 
  // Load saved state
@@ -418,71 +458,62 @@ export default function SignupPage() {
 
  // ─── Validation ───────────────────────────────────────────────────────────
 
+ // Zod-first: runs the API-mirrored signupSchema, then layers on the
+ // role-specific UI checks the backend doesn't (yet) enforce on /signup.
+ // Returns true iff the form is safe to submit; populates fieldErrors so
+ // each input can render its own message.
  const validateStep1 = (): boolean => {
- if (!formData.fullName.trim()) {
- setError('Please enter your full name.');
- return false;
+ const parsed = signupSchema.safeParse({
+ fullName: formData.fullName,
+ email: formData.email,
+ phone: formData.phone || undefined,
+ password: formData.password,
+ role: selectedRole,
+ acceptTerms,
+ });
+
+ const errs: SignupErrors = {};
+ if (!parsed.success) {
+ for (const issue of parsed.error.issues) {
+ const key = issue.path[0] as keyof SignupErrors | undefined;
+ if (key && !errs[key]) errs[key] = issue.message;
  }
- if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
- setError('Please enter a valid email address.');
- return false;
- }
- if (formData.password.length < 6) {
- setError('Password must be at least 6 characters.');
- return false;
- }
- if (!acceptTerms) {
- setError('Please accept the Terms of Service and Privacy Policy.');
- return false;
  }
 
- // Role-specific validation
+ // Role-specific UI requirements (not part of the API contract — these
+ // gate the role profile that gets POSTed to /onboarding/provider after
+ // signup succeeds).
+ let roleErr: string | undefined;
  switch (selectedRole) {
  case 'priest':
- if (!formData.experienceYears) {
- setError('Please enter your years of experience.');
- return false;
- }
- if (!formData.specialties?.length) {
- setError('Please select at least one specialty.');
- return false;
- }
+ if (!formData.experienceYears) roleErr = 'Please enter your years of experience.';
+ else if (!formData.specialties?.length) roleErr = 'Please select at least one specialty.';
  break;
  case 'store_owner':
- if (!formData.storeName?.trim()) {
- setError('Please enter your store name.');
- return false;
- }
- if (!formData.productCategories?.length) {
- setError('Please select at least one product category.');
- return false;
- }
+ if (!formData.storeName?.trim()) roleErr = 'Please enter your store name.';
+ else if (!formData.productCategories?.length) roleErr = 'Please select at least one product category.';
  break;
  case 'astrologer':
- if (!formData.specialties?.length) {
- setError('Please select at least one specialty.');
- return false;
- }
- if (!formData.languages?.length) {
- setError('Please select at least one language.');
- return false;
- }
+ if (!formData.specialties?.length) roleErr = 'Please select at least one specialty.';
+ else if (!formData.languages?.length) roleErr = 'Please select at least one language.';
  break;
  case 'wellness_instructor':
- if (!formData.wellnessType?.length) {
- setError('Please select at least one wellness type.');
- return false;
- }
+ if (!formData.wellnessType?.length) roleErr = 'Please select at least one wellness type.';
  break;
  case 'gaushala_manager':
  case 'temple_manager':
- if (!formData.organizationName?.trim()) {
- setError('Please enter your organization name.');
- return false;
- }
+ if (!formData.organizationName?.trim()) roleErr = 'Please enter your organization name.';
  break;
  }
+ if (roleErr) errs.roleSpecific = roleErr;
 
+ setFieldErrors(errs);
+ if (Object.keys(errs).length > 0) {
+ // Top-of-form banner echoes the first error so users with the
+ // password/terms field below the fold still see something.
+ setError(errs.fullName || errs.email || errs.phone || errs.password || errs.acceptTerms || errs.roleSpecific || 'Please fix the highlighted fields.');
+ return false;
+ }
  return true;
  };
 
@@ -490,6 +521,7 @@ export default function SignupPage() {
 
  const handleSubmit = async () => {
  setError('');
+ setFieldErrors({});
  if (!validateStep1()) return;
 
  setIsSubmitting(true);
@@ -858,6 +890,9 @@ export default function SignupPage() {
  onChange={(v) => updateField('fullName', v)}
  icon={User}
  />
+ {fieldErrors.fullName && (
+ <p className="-mt-3 mb-3 text-xs text-red-600">{fieldErrors.fullName}</p>
+ )}
 
  <FormInput
  id="signupEmail"
@@ -868,6 +903,9 @@ export default function SignupPage() {
  onChange={(v) => updateField('email', v)}
  icon={Mail}
  />
+ {fieldErrors.email && (
+ <p className="-mt-3 mb-3 text-xs text-red-600">{fieldErrors.email}</p>
+ )}
 
  {/* Phone */}
  <div className="mb-4">
@@ -892,6 +930,9 @@ export default function SignupPage() {
  className="flex-1 px-4 py-2.5 border border-surface-200 rounded-lg text-sm text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-300 focus:border-saffron-400 transition-colors"
  />
  </div>
+ {fieldErrors.phone && (
+ <p className="mt-1.5 text-xs text-red-600">{fieldErrors.phone}</p>
+ )}
  </div>
 
  {/* Password */}
@@ -904,7 +945,7 @@ export default function SignupPage() {
  <input
  id="signupPassword"
  type={showPassword ? 'text' : 'password'}
- placeholder="Min 6 characters"
+ placeholder="Min 8 chars, letter + digit"
  value={formData.password}
  onChange={(e) => updateField('password', e.target.value)}
  className="w-full pl-10 pr-10 py-2.5 border border-surface-200 rounded-lg text-sm text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-300 focus:border-saffron-400 transition-colors"
@@ -917,6 +958,9 @@ export default function SignupPage() {
  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
  </button>
  </div>
+ {fieldErrors.password && (
+ <p className="mt-1.5 text-xs text-red-600">{fieldErrors.password}</p>
+ )}
  </div>
 
  {/* Divider before role fields */}
@@ -935,6 +979,9 @@ export default function SignupPage() {
 
  {/* Role-specific fields */}
  {renderRoleFields()}
+ {fieldErrors.roleSpecific && (
+ <p className="-mt-2 mb-3 text-xs text-red-600">{fieldErrors.roleSpecific}</p>
+ )}
 
  {/* Terms */}
  <label className="flex items-start gap-2.5 mb-5 cursor-pointer">
@@ -951,6 +998,9 @@ export default function SignupPage() {
  <a href="/privacy" className="text-saffron-600 hover:underline">Privacy Policy</a>
  </span>
  </label>
+ {fieldErrors.acceptTerms && (
+ <p className="-mt-3 mb-3 text-xs text-red-600">{fieldErrors.acceptTerms}</p>
+ )}
 
  {/* Actions */}
  <div className="flex gap-3">

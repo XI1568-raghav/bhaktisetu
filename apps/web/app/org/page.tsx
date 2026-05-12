@@ -15,7 +15,14 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 function authHeader(): HeadersInit {
   if (typeof window === "undefined") return {};
-  const token = window.localStorage.getItem("poojly_token");
+  let token: string | null = null;
+  try {
+    const raw = window.localStorage.getItem("poojly_session");
+    if (raw) token = JSON.parse(raw)?.accessToken ?? null;
+  } catch {
+    // ignore
+  }
+  if (!token) token = window.localStorage.getItem("poojly_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

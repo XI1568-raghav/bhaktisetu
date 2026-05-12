@@ -18,6 +18,7 @@ import {
  type PlanId,
  type Plan,
 } from "../../../lib/pricing";
+import AuthGuard from "../../../components/AuthGuard";
 
 // Mock: current user's subscription state
 const MOCK_CURRENT_PLAN: PlanId = "basic";
@@ -59,6 +60,14 @@ function statusBadge(status: BillingRecord["status"]) {
 }
 
 export default function SubscriptionPage() {
+ return (
+  <AuthGuard>
+   <SubscriptionInner />
+  </AuthGuard>
+ );
+}
+
+function SubscriptionInner() {
  const [currentPlanId, setCurrentPlanId] = useState<PlanId>(MOCK_CURRENT_PLAN);
  const [showCancelModal, setShowCancelModal] = useState(false);
  const currentPlan = getPlanById(currentPlanId);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CalendarClock, Save, Loader2, CheckCircle2, Clock } from 'lucide-react';
+import AuthGuard from '../../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -37,6 +38,14 @@ const defaultAvailability: WeekAvailability = {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function AstrologerAvailabilityPage() {
+ return (
+  <AuthGuard allowedRoles={['astrologer', 'admin']}>
+   <AstrologerAvailabilityPageContent />
+  </AuthGuard>
+ );
+}
+
+function AstrologerAvailabilityPageContent() {
  const [availability, setAvailability] = useState<WeekAvailability>(defaultAvailability);
  const [saving, setSaving] = useState(false);
  const [saved, setSaved] = useState(false);

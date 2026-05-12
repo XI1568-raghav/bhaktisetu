@@ -30,6 +30,36 @@ function formatPrice(amount: number): string {
  }).format(amount);
 }
 
+// Razorpay's checkout.js is small (~70KB) but we load it on demand only on
+// the checkout page so the rest of the store stays light. Idempotent: a
+// second call resolves immediately if the global is already there.
+let razorpayScriptPromise: Promise<void> | null = null;
+function loadRazorpayScript(): Promise<void> {
+ if (typeof window === 'undefined') return Promise.resolve();
+ if ((window as unknown as { Razorpay?: unknown }).Razorpay) return Promise.resolve();
+ if (razorpayScriptPromise) return razorpayScriptPromise;
+ razorpayScriptPromise = new Promise<void>((resolve, reject) => {
+ const existing = document.querySelector<HTMLScriptElement>(
+ 'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+ );
+ if (existing) {
+ existing.addEventListener('load', () => resolve(), { once: true });
+ existing.addEventListener('error', () => reject(new Error('razorpay script load failed')), { once: true });
+ return;
+ }
+ const s = document.createElement('script');
+ s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+ s.async = true;
+ s.onload = () => resolve();
+ s.onerror = () => {
+ razorpayScriptPromise = null;
+ reject(new Error('razorpay script load failed'));
+ };
+ document.body.appendChild(s);
+ });
+ return razorpayScriptPromise;
+}
+
 // Saved addresses placeholder
 const SAVED_ADDRESSES = [
  {
@@ -132,12 +162,13 @@ function CheckoutContent() {
  typeof window !== 'undefined'
  ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
  : null;
- const res = await fetch(`${API_BASE_URL}/store/orders`, {
- method: 'POST',
- headers: {
+ const authHeaders: Record<string, string> = {
  'content-type': 'application/json',
  ...(token ? { authorization: `Bearer ${token}` } : {}),
- },
+ };
+ const res = await fetch(`${API_BASE_URL}/store/orders`, {
+ method: 'POST',
+ headers: authHeaders,
  body: JSON.stringify({
  items: items.map((it) => ({
  productId: it.product.id,
@@ -160,18 +191,132 @@ function CheckoutContent() {
  const txt = await res.text().catch(() => '');
  throw new Error(`Order failed (${res.status}) ${txt.slice(0, 120)}`);
  }
- const json = (await res.json()) as { data?: { orderNumber?: string } };
- setOrderNumber(json.data?.orderNumber ?? null);
- // TODO: launch Razorpay checkout when paymentMethod === 'razorpay' once
- // /api/v1/payments/razorpay-store-order endpoint lands. COD goes straight
- // to PENDING which fulfilment confirms manually.
+ const json = (await res.json()) as { data?: { id?: string; orderNumber?: string } };
+ const storeOrderId = json.data?.id ?? null;
+ const storeOrderNumber = json.data?.orderNumber ?? null;
+ setOrderNumber(storeOrderNumber);
+
+ // COD path: order sits in PENDING; fulfilment confirms manually.
+ if (paymentMethod === 'cod') {
  clearCart();
  setOrderPlaced(true);
+ return;
+ }
+
+ // Razorpay path. The StoreOrder row already exists in PENDING — we
+ // now create a matching Razorpay order, launch checkout, and only
+ // mark the cart cleared after the verify call confirms capture.
+ if (!storeOrderId) {
+ throw new Error('Order created but id missing — cannot start payment');
+ }
+ const rzpRes = await fetch(
+ `${API_BASE_URL}/payments/store-orders/${storeOrderId}/razorpay`,
+ { method: 'POST', headers: authHeaders },
+ );
+ if (!rzpRes.ok) {
+ const txt = await rzpRes.text().catch(() => '');
+ throw new Error(`Could not start payment (${rzpRes.status}) ${txt.slice(0, 120)}`);
+ }
+ const rzpOrder = (await rzpRes.json()) as {
+ orderId: string;
+ amount: number;
+ currency: string;
+ paymentId: string;
+ razorpayKeyId: string;
+ };
+
+ await loadRazorpayScript();
+ // Demo path: backend hands back synthetic ids and skips signature
+ // check. We still call /verify so the StoreOrder flips to CONFIRMED
+ // and the invoice fires — synthesising plausible handler args.
+ const isDemoOrder = rzpOrder.orderId.startsWith('order_demo_');
+ if (isDemoOrder) {
+ await verifyStoreOrderPayment({
+ storeOrderId,
+ razorpayOrderId: rzpOrder.orderId,
+ razorpayPaymentId: `pay_demo_${Date.now()}`,
+ razorpaySignature: 'demo',
+ authHeaders,
+ });
+ clearCart();
+ setOrderPlaced(true);
+ return;
+ }
+
+ await new Promise<void>((resolve, reject) => {
+ const Razorpay = (window as unknown as { Razorpay?: new (opts: Record<string, unknown>) => { open: () => void } }).Razorpay;
+ if (!Razorpay) {
+ reject(new Error('Razorpay checkout failed to load'));
+ return;
+ }
+ const rzp = new Razorpay({
+ key: rzpOrder.razorpayKeyId,
+ amount: rzpOrder.amount,
+ currency: rzpOrder.currency,
+ name: 'Darshya',
+ description: `Order ${storeOrderNumber ?? storeOrderId}`,
+ order_id: rzpOrder.orderId,
+ prefill: {
+ name: user?.fullName ?? '',
+ email: user?.email ?? '',
+ },
+ theme: { color: '#E16318' },
+ modal: {
+ ondismiss: () => reject(new Error('Payment cancelled')),
+ },
+ handler: async (response: {
+ razorpay_order_id: string;
+ razorpay_payment_id: string;
+ razorpay_signature: string;
+ }) => {
+ try {
+ await verifyStoreOrderPayment({
+ storeOrderId,
+ razorpayOrderId: response.razorpay_order_id,
+ razorpayPaymentId: response.razorpay_payment_id,
+ razorpaySignature: response.razorpay_signature,
+ authHeaders,
+ });
+ clearCart();
+ setOrderPlaced(true);
+ resolve();
+ } catch (verifyErr) {
+ reject(verifyErr);
+ }
+ },
+ });
+ rzp.open();
+ });
  } catch (err) {
  const msg = err instanceof Error ? err.message : 'Could not place order';
  setPlaceError(msg);
  } finally {
  setPlacing(false);
+ }
+ }
+
+ async function verifyStoreOrderPayment(args: {
+ storeOrderId: string;
+ razorpayOrderId: string;
+ razorpayPaymentId: string;
+ razorpaySignature: string;
+ authHeaders: Record<string, string>;
+ }) {
+ const verifyRes = await fetch(
+ `${API_BASE_URL}/payments/store-orders/${args.storeOrderId}/verify`,
+ {
+ method: 'POST',
+ headers: args.authHeaders,
+ body: JSON.stringify({
+ razorpayOrderId: args.razorpayOrderId,
+ razorpayPaymentId: args.razorpayPaymentId,
+ razorpaySignature: args.razorpaySignature,
+ }),
+ },
+ );
+ if (!verifyRes.ok) {
+ const txt = await verifyRes.text().catch(() => '');
+ throw new Error(`Payment verification failed (${verifyRes.status}) ${txt.slice(0, 120)}`);
  }
  }
 

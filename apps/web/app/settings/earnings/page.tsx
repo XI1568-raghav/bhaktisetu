@@ -13,6 +13,7 @@ import {
  Filter,
 } from "lucide-react";
 import { formatPrice } from "../../../lib/pricing";
+import AuthGuard from "../../../components/AuthGuard";
 
 // ── Mock data ─────────────────────────────────────────────────────────────
 
@@ -76,6 +77,14 @@ const statusStyles: Record<Transaction["status"], { bg: string; color: string }>
 };
 
 export default function EarningsPage() {
+ return (
+  <AuthGuard>
+   <EarningsInner />
+  </AuthGuard>
+ );
+}
+
+function EarningsInner() {
  const [filterType, setFilterType] = useState<Transaction["type"] | "all">("all");
 
  const totalGross = MOCK_MONTHLY.reduce((s, m) => s + m.gross, 0);
