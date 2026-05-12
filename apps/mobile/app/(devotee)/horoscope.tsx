@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -50,7 +51,14 @@ interface HoroscopeBody {
 
 export default function HoroscopeScreen() {
   const [selected, setSelected] = useState<string>('aries');
+  const [refreshing, setRefreshing] = useState(false);
   const horoscope = useDailyHoroscope(selected);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await horoscope.refetch();
+    setRefreshing(false);
+  }
   const result = (horoscope.data?.horoscope ?? null) as HoroscopeBody | null;
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
@@ -72,7 +80,10 @@ export default function HoroscopeScreen() {
         <Ionicons name="star" size={26} color={colors.amber[500]} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.signsRow}>
           {SIGNS.map((s) => {
             const isActive = selected === s.id;

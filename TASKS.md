@@ -4,19 +4,17 @@
 > Survives /compact and /clear.
 > Last updated: 2026-05-13.
 
-## HANDOFF (2026-05-13, post P0-P4 sprint)
+## HANDOFF (2026-05-13, post mobile-parity audit + UX polish)
 
-**Just finished** — 5-task priority sprint shipped in commits `e881543` + `4c48e9a` + `289dc1d`:
-- P0 security rotation runbook (`docs/security-rotation-2026-05-13.md`)
-- P1 prod render verify (4 routes 200, no prerender bail)
-- P2 Sentry+PostHog CF Pages env wiring runbook (`docs/cf-pages-env-wiring-2026-05-13.md`)
-- P3 NRI Premium landing `/nri` + MoreDropdown nav link
-- P4 demo-video Playwright spec + bash stitch script + recipe (`docs/demo-video-recipe-2026-05-13.md`)
+**Just finished** — mobile parity audit + Phase 5 polish:
+- Audit found Mobile Phase 1-5 substantially shipped (auth context, role groups, all devotee tabs wired to API, all role portals wired except shared lib screens which use lib/inbox + lib/subscription-screen). Memory `project_darshya.md` was 9 days stale; reality far ahead.
+- API tests: 401/401 green (memory said 312/501 — outdated).
+- Pull-to-refresh added to 4 screens that used raw ScrollView with React Query: `horoscope.tsx`, `upgrade.tsx`, `yatra-detail.tsx`, `darshan-player.tsx`. Form-only screens (`weddings`, `weddings-muhurat`, `kundli`) skipped — mutation-only, nothing to refetch.
 
 **Current task** — none claimed. Ledger clean.
 
 **Next 2-3 steps** (in priority order):
-1. **E5 — Mobile Phase 1 foundation + auth** (~4-5h). See `docs/mobile-plan.md`. Brings Expo app to real Supabase auth + role-aware tab gating. Blocks all later mobile parity phases.
+1. **Refresh stale memory `project_darshya.md`** — current state diverges from 9-day-old snapshot. Update with E5 done, 401/401 tests, mobile parity status.
 2. **E2 — wire FCM server key** if user pastes `FCM_SERVER_KEY` to Render. Env-or-noop, native push activates automatically.
 3. **U-action push** — nudge user to actually run the 3 runbooks (security rotation, CF Pages env paste, demo-video bash). Code is shipped; activation gated only on user dashboard clicks.
 
@@ -34,7 +32,8 @@ _(none claimed)_
 | E2 | Wire FCM server key when user provides | Paste `FCM_SERVER_KEY` to Render env. Native push will go live automatically (env-or-noop). |
 | ~~E3~~ | ~~Wire Sentry DSN to Cloudflare Pages env~~ | ✅ 2026-05-13 runbook shipped — `docs/cf-pages-env-wiring-2026-05-13.md`. User-action gate. |
 | ~~E4~~ | ~~Wire PostHog key to Cloudflare Pages env~~ | ✅ 2026-05-13 same runbook. User-action gate. |
-| E5 | Mobile Phase 1 — foundation + auth | See `docs/mobile-plan.md`. ~4-5h. |
+| ~~E5~~ | ~~Mobile Phase 1 — foundation + auth~~ | ✅ Auth context, role groups, all 5 portal tab layouts shipped. Devotee tabs wired to real API. Mock fallbacks for offline. |
+| ~~E6~~ | ~~Mobile Phase 5 — pull-to-refresh polish~~ | ✅ 2026-05-13 — horoscope/upgrade/yatra-detail/darshan-player. Other screens already use PortalScreen wrapper (built-in refresh). |
 | AR | NRI premium tier landing | ✅ 2026-05-13 — `/nri` page + nav link. Commit `e881543`. |
 
 ## Pending — user-action gates (BLOCKED on user)
@@ -56,6 +55,8 @@ _(none claimed)_
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-13 | Mobile pull-to-refresh on 4 raw-ScrollView devotee screens (E6) | (this commit) |
+| 2026-05-13 | Mobile parity audit — confirmed Phase 1-5 substantially shipped (E5) | n/a |
 | 2026-05-13 | Demo-video Playwright spec + ffmpeg stitch script + recipe doc (U10) | `4c48e9a` |
 | 2026-05-13 | NRI Premium landing page + nav link (P3 / AR) | `e881543` |
 | 2026-05-13 | Sentry + PostHog Cloudflare Pages env wiring runbook (E3+E4) | `e881543` |
@@ -65,10 +66,6 @@ _(none claimed)_
 | 2026-05-12 | AuthGuard wraps + URL filter persistence + Razorpay store-checkout | `aa0c027` |
 | 2026-05 | API P0/P1 sweep — Zod boundaries, role guards, decimal money, dashboards | `4244ced` |
 | 2026-05 | Hard-fail payment demo proxy in production (P0 #7) | `bef8b42` |
-| 2026-05 | `User.blocked` field + middleware gate (P0 #6) | `ea6b3c2` |
-| 2026-05 | Regression-lock priest payout video-proof gate (P0 #5) | `2a9e83c` |
-| 2026-05 | Booking past-date guard + priest double-booking guard | `e67efd4` |
-| 2026-04-29 | Launch readiness pass — security, tests, mobile APK, SEO | `84a179c` (squash of 20 commits) |
 
 ## Conventions for this file
 

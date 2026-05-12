@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Linking,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -58,6 +59,13 @@ export default function DarshanPlayerScreen() {
   const viewers = typeof data?.viewerCount === 'number' ? data.viewerCount : undefined;
 
   const embedUrl = youtubeEmbedUrl(liveUrl);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await stream.refetch();
+    setRefreshing(false);
+  }
 
   function openExternal() {
     if (!liveUrl) {
@@ -108,7 +116,11 @@ export default function DarshanPlayerScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={styles.bodyContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.statsRow}>
           {typeof viewers === 'number' ? (
             <View style={styles.statChip}>
