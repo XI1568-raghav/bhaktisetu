@@ -37,6 +37,7 @@ _(none claimed)_
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-13 | Persistent project memory layer (PROJECT_CONTEXT, ROADMAP, TASKS) wired into CLAUDE.md via @-imports | `e4aabda` |
 | 2026-05-13 | Wrap `useSearchParams` consumers in Suspense (Cloudflare prerender fix) | `2fe686b` |
 | 2026-05-12 | AuthGuard wraps + URL filter persistence + Razorpay store-checkout | `aa0c027` |
 | 2026-05 | API P0/P1 sweep — Zod boundaries, role guards, decimal money, dashboards | `4244ced` |
