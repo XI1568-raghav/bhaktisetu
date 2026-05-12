@@ -12,11 +12,12 @@ _(none claimed)_
 
 | # | Task | Notes |
 |---|---|---|
-| E1 | Verify Cloudflare Pages redeploy after `2fe686b` succeeds | Push happened 2026-05-13. Check `/temples`, `/astrology`, `/priest/bookings` render in prod. |
+| ~~E1~~ | ~~Verify Cloudflare Pages redeploy after `2fe686b` succeeds~~ | ✅ 2026-05-13 — all 4 routes 200, no prerender bail, API JSON live. |
 | E2 | Wire FCM server key when user provides | Paste `FCM_SERVER_KEY` to Render env. Native push will go live automatically (env-or-noop). |
-| E3 | Wire Sentry DSN to Cloudflare Pages env | Capture errors in prod web. |
-| E4 | Wire PostHog key to Cloudflare Pages env | Funnel dashboards. |
+| ~~E3~~ | ~~Wire Sentry DSN to Cloudflare Pages env~~ | ✅ 2026-05-13 runbook shipped — `docs/cf-pages-env-wiring-2026-05-13.md`. User-action gate. |
+| ~~E4~~ | ~~Wire PostHog key to Cloudflare Pages env~~ | ✅ 2026-05-13 same runbook. User-action gate. |
 | E5 | Mobile Phase 1 — foundation + auth | See `docs/mobile-plan.md`. ~4-5h. |
+| AR | NRI premium tier landing | ✅ 2026-05-13 — `/nri` page + nav link. Commit `e881543`. |
 
 ## Pending — user-action gates (BLOCKED on user)
 
@@ -31,12 +32,16 @@ _(none claimed)_
 | U7 | Rotate Supabase DB password + update Render `DATABASE_URL` | Security hygiene |
 | U8 | Unset `ALLOW_DEMO_TOKENS` on Render after investor demos | Prod hardening |
 | U9 | `REDIS_URL` paste from Upstash free tier | Cache activation (optional) |
-| U10 | Demo video MP4 stitching | Needs ffmpeg local install |
+| ~~U10~~ | ~~Demo video MP4 stitching~~ | ✅ 2026-05-13 — Playwright spec + bash stitch script + recipe doc shipped. User runs `bash scripts/build-demo-video.sh` after installing ffmpeg. |
 
 ## Recently completed
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-13 | Demo-video Playwright spec + ffmpeg stitch script + recipe doc (U10) | _pending_ |
+| 2026-05-13 | NRI Premium landing page + nav link (P3 / AR) | `e881543` |
+| 2026-05-13 | Sentry + PostHog Cloudflare Pages env wiring runbook (E3+E4) | `e881543` |
+| 2026-05-13 | Security credential rotation runbook (Resend + Supabase + ALLOW_DEMO_TOKENS) | `e881543` |
 | 2026-05-13 | Persistent project memory layer (PROJECT_CONTEXT, ROADMAP, TASKS) wired into CLAUDE.md via @-imports | `e4aabda` |
 | 2026-05-13 | Wrap `useSearchParams` consumers in Suspense (Cloudflare prerender fix) | `2fe686b` |
 | 2026-05-12 | AuthGuard wraps + URL filter persistence + Razorpay store-checkout | `aa0c027` |
