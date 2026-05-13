@@ -1,6 +1,6 @@
 'use client';
 
-import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon, MessageSquare } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon, MessageSquare, Compass } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth, getRoleLabel, getRoleDashboardPath } from '../lib/auth-context';
 
@@ -174,6 +174,18 @@ export default function NavAuthButton() {
  </a>
 
  <div className="border-t border-surface-100 mt-1 pt-1">
+ <button
+ onClick={() => {
+ setMenuOpen(false);
+ if (typeof window !== 'undefined') {
+ window.dispatchEvent(new CustomEvent('darshya:open-onboarding'));
+ }
+ }}
+ className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors"
+ >
+ <Compass className="w-4 h-4" />
+ Restart guided tour
+ </button>
  <button
  onClick={async () => {
  setMenuOpen(false);

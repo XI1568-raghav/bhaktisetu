@@ -340,7 +340,22 @@ const collections = [
  description: 'Reflections, scriptures, and devotional reading',
  gradient: 'from-ganga-blue to-tulsi-green',
  },
-];
+ {
+ name: 'Sacred Texts',
+ filterType: 'article',
+ href: '/content/books',
+ count: 3,
+ description: 'Bhagavad Gita, Ramayana, Upanishads — full reader',
+ gradient: 'from-saffron-700 to-saffron-800',
+ },
+] as Array<{
+ name: string;
+ filterType: string;
+ href?: string;
+ count: number;
+ description: string;
+ gradient: string;
+}>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -808,7 +823,7 @@ export default async function ContentPage({
  return (
  <a
  key={col.name}
- href={`/content?type=${col.filterType}`}
+ href={col.href ?? `/content?type=${col.filterType}`}
  className="group rounded-xl overflow-hidden hover:shadow-lg transition-all"
  >
  <div
@@ -825,7 +840,7 @@ export default async function ContentPage({
  {col.name}
  </h3>
  <p className="text-xs text-white/70 mt-1">
- {col.count} tracks
+ {col.href ? `${col.count} books` : `${col.count} tracks`}
  </p>
  </div>
  </div>

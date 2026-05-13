@@ -197,3 +197,6 @@ export const paginationSchema = z.object({
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
+
+// ─── Reading Progress ────────────────────────
+export * from "./reading-progress.js";

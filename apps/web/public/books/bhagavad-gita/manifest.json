@@ -1,0 +1,33 @@
+{
+  "slug": "bhagavad-gita",
+  "title": "Bhagavad Gita",
+  "titleSanskrit": "श्रीमद्भगवद्गीता",
+  "subtitle": "The Song of the Lord — Krishna's discourse to Arjuna on the field of Kurukshetra",
+  "tradition": "Vedanta · Itihasa (Mahabharata, Bhishma Parva)",
+  "language": ["sa", "en"],
+  "translator": "Sir Edwin Arnold, The Song Celestial (1885, public domain)",
+  "coverImage": "/books/bhagavad-gita/cover.svg",
+  "description": "The Bhagavad Gita is a 700-verse dialogue between Prince Arjuna and Lord Krishna, presented across 18 chapters of the Bhishma Parva of the Mahabharata. It synthesises the philosophies of Karma Yoga, Bhakti Yoga, and Jnana Yoga.",
+  "license": "Public domain English (Arnold 1885). Sanskrit verses are traditional and uncopyrighted.",
+  "structure": "chapters",
+  "chapters": [
+    { "slug": "chapter-1",  "number": 1,  "title": "Arjuna Vishada Yoga",         "titleSanskrit": "अर्जुनविषादयोगः",     "verseCount": 47, "placeholder": false, "partial": true,  "shippedVerses": 12 },
+    { "slug": "chapter-2",  "number": 2,  "title": "Sankhya Yoga",                  "titleSanskrit": "साङ्ख्ययोगः",            "verseCount": 72, "placeholder": false, "partial": true,  "shippedVerses": 12 },
+    { "slug": "chapter-3",  "number": 3,  "title": "Karma Yoga",                    "titleSanskrit": "कर्मयोगः",                "verseCount": 43, "placeholder": true },
+    { "slug": "chapter-4",  "number": 4,  "title": "Jnana Karma Sannyasa Yoga",     "titleSanskrit": "ज्ञानकर्मसंन्यासयोगः", "verseCount": 42, "placeholder": true },
+    { "slug": "chapter-5",  "number": 5,  "title": "Karma Sannyasa Yoga",           "titleSanskrit": "कर्मसंन्यासयोगः",        "verseCount": 29, "placeholder": true },
+    { "slug": "chapter-6",  "number": 6,  "title": "Dhyana Yoga",                   "titleSanskrit": "ध्यानयोगः",               "verseCount": 47, "placeholder": true },
+    { "slug": "chapter-7",  "number": 7,  "title": "Jnana Vijnana Yoga",            "titleSanskrit": "ज्ञानविज्ञानयोगः",       "verseCount": 30, "placeholder": true },
+    { "slug": "chapter-8",  "number": 8,  "title": "Akshara Brahma Yoga",           "titleSanskrit": "अक्षरब्रह्मयोगः",        "verseCount": 28, "placeholder": true },
+    { "slug": "chapter-9",  "number": 9,  "title": "Raja Vidya Raja Guhya Yoga",    "titleSanskrit": "राजविद्याराजगुह्ययोगः", "verseCount": 34, "placeholder": true },
+    { "slug": "chapter-10", "number": 10, "title": "Vibhuti Yoga",                  "titleSanskrit": "विभूतियोगः",              "verseCount": 42, "placeholder": true },
+    { "slug": "chapter-11", "number": 11, "title": "Vishvarupa Darshana Yoga",      "titleSanskrit": "विश्वरूपदर्शनयोगः",      "verseCount": 55, "placeholder": true },
+    { "slug": "chapter-12", "number": 12, "title": "Bhakti Yoga",                   "titleSanskrit": "भक्तियोगः",               "verseCount": 20, "placeholder": true },
+    { "slug": "chapter-13", "number": 13, "title": "Kshetra Kshetrajna Vibhaga",    "titleSanskrit": "क्षेत्रक्षेत्रज्ञविभागयोगः", "verseCount": 35, "placeholder": true },
+    { "slug": "chapter-14", "number": 14, "title": "Gunatraya Vibhaga Yoga",        "titleSanskrit": "गुणत्रयविभागयोगः",       "verseCount": 27, "placeholder": true },
+    { "slug": "chapter-15", "number": 15, "title": "Purushottama Yoga",             "titleSanskrit": "पुरुषोत्तमयोगः",          "verseCount": 20, "placeholder": true },
+    { "slug": "chapter-16", "number": 16, "title": "Daivasura Sampad Vibhaga Yoga", "titleSanskrit": "दैवासुरसम्पद्विभागयोगः", "verseCount": 24, "placeholder": true },
+    { "slug": "chapter-17", "number": 17, "title": "Shraddhatraya Vibhaga Yoga",    "titleSanskrit": "श्रद्धात्रयविभागयोगः",   "verseCount": 28, "placeholder": true },
+    { "slug": "chapter-18", "number": 18, "title": "Moksha Sannyasa Yoga",          "titleSanskrit": "मोक्षसंन्यासयोगः",        "verseCount": 78, "placeholder": true }
+  ]
+}

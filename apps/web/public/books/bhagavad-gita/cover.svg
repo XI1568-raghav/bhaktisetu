@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-label="Bhagavad Gita cover">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a1e0e"/>
+      <stop offset="0.5" stop-color="#b9410f"/>
+      <stop offset="1" stop-color="#e8941a"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="32%" r="40%">
+      <stop offset="0" stop-color="#fff5d4" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#fff5d4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <circle cx="300" cy="260" r="160" fill="url(#halo)"/>
+  <g stroke="#fff3c4" stroke-width="2" fill="none" opacity="0.6">
+    <circle cx="300" cy="260" r="120"/>
+    <circle cx="300" cy="260" r="92"/>
+  </g>
+  <text x="300" y="290" text-anchor="middle" font-family="Georgia, serif" font-size="72" font-weight="bold" fill="#fff5d4">ॐ</text>
+  <text x="300" y="500" text-anchor="middle" font-family="Georgia, serif" font-size="48" font-weight="bold" fill="#fff8e1" letter-spacing="2">Bhagavad Gita</text>
+  <text x="300" y="555" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#fff8e1" opacity="0.9">श्रीमद्भगवद्गीता</text>
+  <text x="300" y="640" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#ffe0a0" opacity="0.85">The Song of the Lord</text>
+  <text x="300" y="730" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#ffe0a0" opacity="0.7">18 Chapters · 700 Verses</text>
+</svg>

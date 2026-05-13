@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans, Noto_Sans_Devanagari } from "next/font/google";
+import { Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro } from "next/font/google";
 import { t } from "../lib/t";
 import {
  Flame,
@@ -29,8 +29,9 @@ import { CartProvider } from "../components/CartContext";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
-import { MobileNav } from "../components/MobileNav";
-import { MoreDropdown } from "../components/MoreDropdown";
+import { MobileNavV2 } from "../components/MobileNavV2";
+import { CategoryNav } from "../components/CategoryNav";
+import OnboardingTrigger from "../components/OnboardingTrigger";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
 import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
@@ -57,6 +58,13 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
  subsets: ["devanagari"],
  weight: ["400", "500", "600", "700"],
  variable: "--font-noto-devanagari",
+ display: "swap",
+});
+
+const crimsonPro = Crimson_Pro({
+ subsets: ["latin"],
+ weight: ["400", "500", "600", "700"],
+ variable: "--font-reader-serif",
  display: "swap",
 });
 
@@ -217,7 +225,7 @@ export default function RootLayout({
  return (
  <html
  lang="en"
- className={`${notoSans.variable} ${notoSansDevanagari.variable}`}
+ className={`${notoSans.variable} ${notoSansDevanagari.variable} ${crimsonPro.variable}`}
  >
  <head>
  {/* Resource hints — warm up connections to third-party origins we hit on nearly every page. */}
@@ -282,24 +290,9 @@ export default function RootLayout({
  </span>
  </a>
 
- {/* Desktop nav links — centered */}
+ {/* Desktop nav — 5-category mega-menu */}
  <div className="hidden md:flex items-center gap-1 mx-auto">
- {primaryLinks.map((link) => {
- const Icon = link.icon;
- return (
- <Link
- key={link.href}
- href={link.href}
- className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors whitespace-nowrap"
- >
- <Icon className="w-4 h-4" />
- {tNav(link.labelKey)}
- </Link>
- );
- })}
-
- {/* More dropdown */}
- <MoreDropdown />
+ <CategoryNav />
 
  {/* Ask Pandit — highlighted CTA */}
  <a
@@ -319,7 +312,7 @@ export default function RootLayout({
  <div className="hidden sm:block">
  <NavAuthButton />
  </div>
- <MobileNav />
+ <MobileNavV2 />
  </div>
  </nav>
  </header>
@@ -427,6 +420,7 @@ export default function RootLayout({
  </div>
  </footer>
  <DeferredClientWidgets />
+ <OnboardingTrigger />
  <Analytics />
  <GA4Script />
  <MetaPixelScript />
