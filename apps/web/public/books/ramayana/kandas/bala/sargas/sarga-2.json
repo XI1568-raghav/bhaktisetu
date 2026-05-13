@@ -1,0 +1,46 @@
+{
+  "bookSlug": "ramayana",
+  "slug": "bala/sarga-2",
+  "number": 2,
+  "title": "Origin of the Shloka",
+  "titleSanskrit": "श्लोकोत्पत्तिः",
+  "kanda": "bala",
+  "kandaName": "Bala Kanda",
+  "subtitle": "Valmiki witnesses the krauncha bird's death and the first verse arises",
+  "translator": "Manmatha Nath Dutt (1894), public domain — modernised",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "Opening 5 verses; the famous shloka (v.15 in full text) is included below.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "नारदस्य तु तद्वाक्यं श्रुत्वा वाक्यविशारदः। पूजयामास धर्मात्मा सहशिष्यो महामुनिम्॥",
+      "transliteration": "nāradasya tu tad-vākyaṁ śrutvā vākya-viśāradaḥ । pūjayāmāsa dharmātmā saha-śiṣyo mahā-munim ॥",
+      "english": "Hearing those words of Narada, the righteous one — skilled in speech — together with his disciples, paid homage to the great sage."
+    },
+    {
+      "number": 2,
+      "sanskrit": "ततो भूयस्तु धर्मात्मा वाल्मीकिः शिष्यसंयुतः। अगच्छत्तमसातीरं जाह्नव्यास्त्वविदूरतः॥",
+      "transliteration": "tato bhūyas tu dharmātmā vālmīkiḥ śiṣya-saṁyutaḥ । agacchat tamasā-tīraṁ jāhnavyās tv avidūrataḥ ॥",
+      "english": "Then the righteous Valmiki, attended by his disciples, went to the bank of the river Tamasa, not far from the Ganga."
+    },
+    {
+      "number": 3,
+      "sanskrit": "स तु तीरं समासाद्य तमसाया मुनिस्तदा। शिष्यमाह स्थितं पार्श्वे दृष्ट्वा तीर्थमकर्दमम्॥",
+      "transliteration": "sa tu tīraṁ samāsādya tamasāyā munis tadā । śiṣyam āha sthitaṁ pārśve dṛṣṭvā tīrtham akardamam ॥",
+      "english": "Reaching the bank of the Tamasa and seeing the bathing-place free of mud, the sage said to his disciple standing nearby:"
+    },
+    {
+      "number": 4,
+      "sanskrit": "अकर्दममिदं तीर्थं भरद्वाज निशामय। रमणीयं प्रसन्नाम्भु सन्मनुष्यमनो यथा॥",
+      "transliteration": "akardamam idaṁ tīrthaṁ bharadvāja niśāmaya । ramaṇīyaṁ prasannāmbhu san-manuṣya-mano yathā ॥",
+      "english": "'Behold, O Bharadvaja! This bathing-place is free of mud — its waters clear and lovely, like the mind of a virtuous man.'"
+    },
+    {
+      "number": 5,
+      "sanskrit": "मा निषाद प्रतिष्ठां त्वमगमः शाश्वतीः समाः। यत्क्रौञ्चमिथुनादेकमवधीः काममोहितम्॥",
+      "transliteration": "mā niṣāda pratiṣṭhāṁ tvam agamaḥ śāśvatīḥ samāḥ । yat krauñca-mithunād ekam avadhīḥ kāma-mohitam ॥",
+      "english": "'O hunter, mayest thou never attain abiding fame for endless years — because thou hast slain one of the krauncha-pair, distracted by love.' (This spontaneous outburst of grief — the very first shloka — gave the metre its name.)"
+    }
+  ]
+}

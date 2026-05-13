@@ -21,6 +21,7 @@ import { astrologerPortalRoutes } from './routes/astrologer-portal.js';
 import { wellnessPortalRoutes } from './routes/wellness-portal.js';
 import { gaushalaPortalRoutes } from './routes/gaushala-portal.js';
 import { userRoutes } from './routes/users.js';
+import { readingProgressRoutes } from './routes/reading-progress.js';
 import { authRoutes } from './routes/auth.js';
 import { subscriptionRoutes } from './routes/subscriptions.js';
 import { priestRoutes } from './routes/priest.js';
@@ -161,6 +162,7 @@ async function bootstrap() {
   // API v1 routes
   await server.register(authRoutes, { prefix: '/api/v1/auth' });
   await server.register(userRoutes, { prefix: '/api/v1/users' });
+  await server.register(readingProgressRoutes, { prefix: '/api/v1/me/reading-progress' });
   await server.register(templeRoutes, { prefix: '/api/v1/temples' });
   await server.register(pujaRoutes, { prefix: '/api/v1/pujas' });
   await server.register(bookingRoutes, { prefix: '/api/v1/bookings' });

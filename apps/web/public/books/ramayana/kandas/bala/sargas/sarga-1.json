@@ -1,0 +1,52 @@
+{
+  "bookSlug": "ramayana",
+  "slug": "bala/sarga-1",
+  "number": 1,
+  "title": "Narada's Account of Rama",
+  "titleSanskrit": "नारदस्य रामकथा",
+  "kanda": "bala",
+  "kandaName": "Bala Kanda",
+  "subtitle": "Sage Valmiki questions Narada about the ideal man",
+  "translator": "Manmatha Nath Dutt (1894), public domain — modernised",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "Partial transcription — opening 6 of approximately 100 shlokas. Full sarga in future update.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "तपःस्वाध्यायनिरतं तपस्वी वाग्विदां वरम्। नारदं परिपप्रच्छ वाल्मीकिर्मुनिपुङ्गवम्॥",
+      "transliteration": "tapaḥ-svādhyāya-nirataṁ tapasvī vāg-vidāṁ varam । nāradaṁ paripapraccha vālmīkir muni-puṅgavam ॥",
+      "english": "The ascetic Valmiki questioned Narada — chief of sages, ever engaged in penance and study of the Vedas, foremost of all who have command of speech."
+    },
+    {
+      "number": 2,
+      "sanskrit": "को न्वस्मिन्साम्प्रतं लोके गुणवान्कश्च वीर्यवान्। धर्मज्ञश्च कृतज्ञश्च सत्यवाक्यो दृढव्रतः॥",
+      "transliteration": "ko nv asmin sāmprataṁ loke guṇavān kaś ca vīryavān । dharmajñaś ca kṛtajñaś ca satya-vākyo dṛḍha-vrataḥ ॥",
+      "english": "'Who in this world today is truly virtuous, valiant, knowing of dharma, grateful, truthful in speech, and firm in his vows?'"
+    },
+    {
+      "number": 3,
+      "sanskrit": "चारित्रेण च को युक्तः सर्वभूतेषु को हितः। विद्वान्कः कः समर्थश्च कश्चैकप्रियदर्शनः॥",
+      "transliteration": "cāritreṇa ca ko yuktaḥ sarva-bhūteṣu ko hitaḥ । vidvān kaḥ kaḥ samarthaś ca kaś caika-priya-darśanaḥ ॥",
+      "english": "'Who is endowed with right conduct, friendly to all beings, learned, capable, and the one whose sight delights all hearts?'"
+    },
+    {
+      "number": 4,
+      "sanskrit": "आत्मवान्को जितक्रोधो द्युतिमान्कोऽनसूयकः। कस्य बिभ्यति देवाश्च जातरोषस्य संयुगे॥",
+      "transliteration": "ātmavān ko jita-krodho dyutimān ko 'nasūyakaḥ । kasya bibhyati devāś ca jāta-roṣasya saṁyuge ॥",
+      "english": "'Who is master of himself, conqueror of anger, lustrous, free from envy? Whom — when his wrath is roused in battle — do even the gods fear?'"
+    },
+    {
+      "number": 5,
+      "sanskrit": "एतदिच्छाम्यहं श्रोतुं परं कौतूहलं हि मे। महर्षे त्वं समर्थोऽसि ज्ञातुमेवंविधं नरम्॥",
+      "transliteration": "etad icchāmy ahaṁ śrotuṁ paraṁ kautūhalaṁ hi me । maharṣe tvaṁ samartho 'si jñātum evaṁ-vidhaṁ naram ॥",
+      "english": "'This I desire to hear, for great is my curiosity. O great sage, you alone are able to know of such a man.'"
+    },
+    {
+      "number": 6,
+      "sanskrit": "श्रुत्वा चैतत्त्रिलोकज्ञो वाल्मीकेर्नारदो वचः। श्रूयतामिति चामन्त्र्य प्रहृष्टो वाक्यमब्रवीत्॥",
+      "transliteration": "śrutvā caitat triloka-jño vālmīker nārado vacaḥ । śrūyatām iti cāmantrya prahṛṣṭo vākyam abravīt ॥",
+      "english": "Hearing these words of Valmiki, Narada — knower of the three worlds — replied gladly: 'Listen, and I shall tell.'"
+    }
+  ]
+}

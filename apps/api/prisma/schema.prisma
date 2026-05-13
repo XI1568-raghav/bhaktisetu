@@ -197,6 +197,9 @@ model User {
   wellnessSessionsHosted WellnessSession[]    @relation("WellnessInstructor")
   wellnessEnrollments    WellnessEnrollment[]
 
+  // Books reader
+  readingProgress ReadingProgress[]
+
   @@map("users")
 }
 
@@ -1382,4 +1385,22 @@ model KundliRequest {
   @@index([signature])
   @@index([userId])
   @@map("kundli_requests")
+}
+
+model ReadingProgress {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  bookSlug      String   @map("book_slug")
+  chapterSlug   String   @map("chapter_slug")
+  chapterNumber Int      @map("chapter_number")
+  scrollPercent Float    @default(0) @map("scroll_percent")
+  lastVerse     Int?     @map("last_verse")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookSlug])
+  @@index([userId])
+  @@map("reading_progress")
 }

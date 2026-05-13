@@ -22,6 +22,14 @@ import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '
 import { organizationJsonLd } from '../lib/jsonld';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
+import IntentTrio from '../components/home/IntentTrio';
+import ContinueJourneyCard from '../components/home/ContinueJourneyCard';
+import WorshipStrip from '../components/home/WorshipStrip';
+import WisdomStrip from '../components/home/WisdomStrip';
+import ConsultStrip from '../components/home/ConsultStrip';
+import ShopStrip from '../components/home/ShopStrip';
+import YatraStrip from '../components/home/YatraStrip';
+import TrustStrip from '../components/home/TrustStrip';
 
 export const metadata: Metadata = {
  title: "Darshya — India's Devotional Super App",
@@ -65,6 +73,10 @@ export default async function HomePage() {
    </Link>
  </div>
  <div style={{ background: 'var(--color-bg)' }}>
+
+ {/* ═══ ONBOARDING — intent trio (anon) / continue card (returning) ═══ */}
+ <ContinueJourneyCard />
+ <IntentTrio />
 
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  <section className="flex flex-col justify-center relative overflow-hidden">
@@ -556,6 +568,14 @@ export default async function HomePage() {
  </div>
  </div>
  </section>
+
+ {/* ═══ 5-CATEGORY DISCOVERY STRIPS — Worship → Wisdom → Consult → Shop → Yatra → Trust */}
+ <WorshipStrip />
+ <WisdomStrip />
+ <ConsultStrip />
+ <ShopStrip />
+ <YatraStrip />
+ <TrustStrip />
 
  </div>
  </ScrollReveal>

@@ -1,0 +1,130 @@
+import Link from 'next/link';
+import { Calendar, BookOpen, Music, Moon, ArrowRight } from 'lucide-react';
+
+type WisdomCard = {
+  href: string;
+  label: string;
+  body: string;
+  cta: string;
+  Icon: typeof Calendar;
+  accent: string;
+};
+
+const CARDS: WisdomCard[] = [
+  {
+    href: '/panchang',
+    label: "Today's Panchang",
+    body: 'Tithi, vara, nakshatra for today — auspicious timings at a glance.',
+    cta: 'Open panchang',
+    Icon: Calendar,
+    accent: 'var(--color-art-1)',
+  },
+  {
+    href: '/content/books',
+    label: 'Sacred Texts',
+    body: 'Bhagavad Gita · Ramayana · Upanishads — read with translations.',
+    cta: 'Browse texts',
+    Icon: BookOpen,
+    accent: 'var(--color-art-2)',
+  },
+  {
+    href: '/content',
+    label: 'Aarti & Mantras',
+    body: 'Listen to evening aarti, daily chalisa, and curated bhajans.',
+    cta: 'Listen now',
+    Icon: Music,
+    accent: 'var(--color-art-3)',
+  },
+];
+
+export default function WisdomStrip() {
+  return (
+    <section
+      className="py-10 md:py-12"
+      style={{ background: 'var(--color-surface)' }}
+      aria-labelledby="wisdom-strip-heading"
+    >
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header className="flex items-end justify-between gap-4 mb-5">
+          <div>
+            <p
+              className="text-xs font-medium uppercase tracking-widest mb-1"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              Wisdom
+            </p>
+            <h2
+              id="wisdom-strip-heading"
+              className="text-xl sm:text-2xl font-semibold tracking-tight"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+            >
+              Daily panchang, scriptures, audio, horoscope.
+            </h2>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          {CARDS.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              prefetch={false}
+              className="group flex flex-col rounded-xl p-4 card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ background: card.accent }}
+              >
+                <card.Icon
+                  className="w-5 h-5"
+                  style={{ color: 'var(--color-primary)' }}
+                  aria-hidden="true"
+                />
+              </div>
+              <h3
+                className="text-base font-semibold tracking-tight mb-1.5"
+                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+              >
+                {card.label}
+              </h3>
+              <p
+                className="text-xs leading-relaxed mb-4 flex-1"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                {card.body}
+              </p>
+              <span
+                className="inline-flex items-center gap-1 text-xs font-medium link-underline"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                {card.cta}{' '}
+                <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-5 flex justify-end">
+          <Link
+            href="/astrology/horoscope"
+            prefetch={false}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:shadow-sm"
+            style={{
+              background: 'var(--color-primary-highlight)',
+              color: 'var(--color-primary)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <Moon className="w-3.5 h-3.5" aria-hidden="true" />
+            Daily Horoscope
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}

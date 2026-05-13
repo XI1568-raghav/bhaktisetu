@@ -101,6 +101,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/list-gaushala', priority: 0.5 },
   ];
 
+  const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
+
   const yatraSlugs = [
     'char-dham', 'do-dham', 'jyotirlinga-yatra', 'four-dhams-india',
     'amarnath', 'vaishno-devi', 'shirdi-sai', 'tirupati-south', 'ayodhya-kashi',
@@ -175,6 +177,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   }));
 
+  const bookEntries = [
+    { url: `${BASE_URL}/content/books`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...bookSlugs.map((slug) => ({
+      url: `${BASE_URL}/content/books/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
+  ];
+
   return [
     ...topLevelEntries,
     ...secondaryEntries,
@@ -182,6 +194,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...pujaEntries,
     ...yatraEntries,
     ...yatraDestEntries,
+    ...bookEntries,
     ...hiEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];

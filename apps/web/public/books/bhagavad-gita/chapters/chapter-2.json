@@ -1,0 +1,92 @@
+{
+  "bookSlug": "bhagavad-gita",
+  "slug": "chapter-2",
+  "number": 2,
+  "title": "Sankhya Yoga",
+  "titleSanskrit": "साङ्ख्ययोगः",
+  "subtitle": "The Yoga of Knowledge — Krishna begins the teaching",
+  "translator": "Sir Edwin Arnold, The Song Celestial (1885, public domain)",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "First 12 verses shipped, including the famous 'Never the spirit was born' (v.20) and 'Born is death sure to the dying' (v.27) — these are landmarks but require careful Sanskrit verification before adding the full 72-verse text.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "सञ्जय उवाच। तं तथा कृपयाविष्टमश्रुपूर्णाकुलेक्षणम्। विषीदन्तमिदं वाक्यमुवाच मधुसूदनः॥",
+      "transliteration": "sañjaya uvāca । taṁ tathā kṛpayāviṣṭam aśru-pūrṇākulekṣaṇam । viṣīdantam idaṁ vākyam uvāca madhusūdanaḥ ॥",
+      "english": "Sanjaya: Him, filled with such compassion and such grief, with eyes tear-dimmed, despondent, in stern words the Driver, Madhusudan, thus addressed:"
+    },
+    {
+      "number": 2,
+      "sanskrit": "श्रीभगवानुवाच। कुतस्त्वा कश्मलमिदं विषमे समुपस्थितम्। अनार्यजुष्टमस्वर्ग्यमकीर्तिकरमर्जुन॥",
+      "transliteration": "śrī-bhagavān uvāca । kutas tvā kaśmalam idaṁ viṣame samupasthitam । anārya-juṣṭam asvargyam akīrti-karam arjuna ॥",
+      "english": "Krishna: How hath this weakness taken thee? Whence springs the inglorious trouble, shameful to the brave, barring the path of virtue? Nay, Arjun! Forbid it!"
+    },
+    {
+      "number": 3,
+      "sanskrit": "क्लैब्यं मा स्म गमः पार्थ नैतत्त्वय्युपपद्यते। क्षुद्रं हृदयदौर्बल्यं त्यक्त्वोत्तिष्ठ परन्तप॥",
+      "transliteration": "klaibyaṁ mā sma gamaḥ pārtha naitat tvayy upapadyate । kṣudraṁ hṛdaya-daurbalyaṁ tyaktvottiṣṭha parantapa ॥",
+      "english": "'It is not meet for thee. Cast off thy coward-fit! Wake! Be thyself! Arise, scourge of thy foes!'"
+    },
+    {
+      "number": 4,
+      "sanskrit": "अर्जुन उवाच। कथं भीष्ममहं सङ्ख्ये द्रोणं च मधुसूदन। इषुभिः प्रतियोत्स्यामि पूजार्हावरिसूदन॥",
+      "transliteration": "arjuna uvāca । kathaṁ bhīṣmam ahaṁ saṅkhye droṇaṁ ca madhusūdana । iṣubhiḥ pratiyotsyāmi pūjārhāv arisūdana ॥",
+      "english": "Arjuna: How can I, in the field of fight, shoot with my shafts on Bhishma, or on Drona — Oh, thou Slayer of the Demons! both worthy of grave reverence?"
+    },
+    {
+      "number": 5,
+      "sanskrit": "गुरूनहत्वा हि महानुभावान् श्रेयो भोक्तुं भैक्ष्यमपीह लोके। हत्वार्थकामांस्तु गुरूनिहैव भुञ्जीय भोगान् रुधिरप्रदिग्धान्॥",
+      "transliteration": "gurūn ahatvā hi mahānubhāvān śreyo bhoktuṁ bhaikṣyam apīha loke । hatvārtha-kāmāṁs tu gurūn ihaiva bhuñjīya bhogān rudhira-pradigdhān ॥",
+      "english": "'Better to live on beggar's bread with those we love alive, than taste their blood in rich feasts spread, and guiltily survive!'"
+    },
+    {
+      "number": 6,
+      "sanskrit": "न चैतद्विद्मः कतरन्नो गरीयो यद्वा जयेम यदि वा नो जयेयुः। यानेव हत्वा न जिजीविषामस्तेऽवस्थिताः प्रमुखे धार्तराष्ट्राः॥",
+      "transliteration": "na caitad vidmaḥ kataran no garīyo yad vā jayema yadi vā no jayeyuḥ । yān eva hatvā na jijīviṣāmas te 'vasthitāḥ pramukhe dhārtarāṣṭrāḥ ॥",
+      "english": "'Ah! were it worse — who knows? — to be victor or vanquished here, when those confront us angrily whose death leaves living a despair?'"
+    },
+    {
+      "number": 7,
+      "sanskrit": "कार्पण्यदोषोपहतस्वभावः पृच्छामि त्वां धर्मसम्मूढचेताः। यच्छ्रेयः स्यान्निश्चितं ब्रूहि तन्मे शिष्यस्तेऽहं शाधि मां त्वां प्रपन्नम्॥",
+      "transliteration": "kārpaṇya-doṣopahata-svabhāvaḥ pṛcchāmi tvāṁ dharma-sammūḍha-cetāḥ । yac chreyaḥ syān niścitaṁ brūhi tan me śiṣyas te 'haṁ śādhi māṁ tvāṁ prapannam ॥",
+      "english": "'My heart in weakness is, my thoughts are full of wandering. I am thy scholar, and beseech thee — speak surely what is right. Teach Thou me!'"
+    },
+    {
+      "number": 11,
+      "sanskrit": "श्रीभगवानुवाच। अशोच्यानन्वशोचस्त्वं प्रज्ञावादांश्च भाषसे। गतासूनगतासूंश्च नानुशोचन्ति पण्डिताः॥",
+      "transliteration": "śrī-bhagavān uvāca । aśocyān anvaśocas tvaṁ prajñā-vādāṁś ca bhāṣase । gatāsūn agatāsūṁś ca nānuśocanti paṇḍitāḥ ॥",
+      "english": "Krishna: Thou grievest where no grief should be! thou speak'st words lacking wisdom! for the wise in heart mourn not for those that live, nor those that die."
+    },
+    {
+      "number": 12,
+      "sanskrit": "न त्वेवाहं जातु नासं न त्वं नेमे जनाधिपाः। न चैव न भविष्यामः सर्वे वयमतः परम्॥",
+      "transliteration": "na tv evāhaṁ jātu nāsaṁ na tvaṁ neme janādhipāḥ । na caiva na bhaviṣyāmaḥ sarve vayam ataḥ param ॥",
+      "english": "Nor I, nor thou, nor any one of these, ever was not, nor ever will not be, for ever and for ever afterwards."
+    },
+    {
+      "number": 13,
+      "sanskrit": "देहिनोऽस्मिन्यथा देहे कौमारं यौवनं जरा। तथा देहान्तरप्राप्तिर्धीरस्तत्र न मुह्यति॥",
+      "transliteration": "dehino 'smin yathā dehe kaumāraṁ yauvanaṁ jarā । tathā dehāntara-prāptir dhīras tatra na muhyati ॥",
+      "english": "All that doth live, lives always! To man's frame as there come infancy and youth and age, so come there raisings-up and layings-down of other and of other life-abodes; the wise know this; nor are they undeceived."
+    },
+    {
+      "number": 20,
+      "sanskrit": "न जायते म्रियते वा कदाचिन्नायं भूत्वा भविता वा न भूयः। अजो नित्यः शाश्वतोऽयं पुराणो न हन्यते हन्यमाने शरीरे॥",
+      "transliteration": "na jāyate mriyate vā kadācin nāyaṁ bhūtvā bhavitā vā na bhūyaḥ । ajo nityaḥ śāśvato 'yaṁ purāṇo na hanyate hanyamāne śarīre ॥",
+      "english": "Never the spirit was born; the spirit shall cease to be never; never was time it was not; End and Beginning are dreams! Birthless and deathless and changeless remaineth the spirit for ever; Death hath not touched it at all, dead though the house of it seems!"
+    },
+    {
+      "number": 27,
+      "sanskrit": "जातस्य हि ध्रुवो मृत्युर्ध्रुवं जन्म मृतस्य च। तस्मादपरिहार्येऽर्थे न त्वं शोचितुमर्हसि॥",
+      "transliteration": "jātasya hi dhruvo mṛtyur dhruvaṁ janma mṛtasya ca । tasmād aparihārye 'rthe na tvaṁ śocitum arhasi ॥",
+      "english": "Nay, but as when one layeth his worn-out robes away, and, taking new ones, sayeth, 'These will I wear today!' so putteth by the spirit lightly its garb of flesh, and passeth on to take a new one. Born is death sure to the dying, and to the dead birth certain. Wherefore over the inevitable thou shouldst not grieve."
+    },
+    {
+      "number": 47,
+      "sanskrit": "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥",
+      "transliteration": "karmaṇy evādhikāras te mā phaleṣu kadācana । mā karma-phala-hetur bhūr mā te saṅgo 'stv akarmaṇi ॥",
+      "english": "Let right deeds be thy motive, not the fruit which comes from them. And live in action! Labour! Make thine acts thy piety, casting all self aside, contemning gain and merit; equable in good or evil: equability is Yog, is piety!"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-label="Ramayana cover">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1a4f"/>
+      <stop offset="0.5" stop-color="#7a2e6c"/>
+      <stop offset="1" stop-color="#c0522d"/>
+    </linearGradient>
+    <radialGradient id="halo2" cx="50%" cy="30%" r="42%">
+      <stop offset="0" stop-color="#ffe9b5" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffe9b5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg2)"/>
+  <circle cx="300" cy="250" r="170" fill="url(#halo2)"/>
+  <g fill="#ffe9b5" opacity="0.85">
+    <path d="M300 130 L320 230 L420 230 L340 285 L370 380 L300 320 L230 380 L260 285 L180 230 L280 230 Z"/>
+  </g>
+  <text x="300" y="265" text-anchor="middle" font-family="Georgia, serif" font-size="44" font-weight="bold" fill="#3a1a4f">श्री राम</text>
+  <text x="300" y="490" text-anchor="middle" font-family="Georgia, serif" font-size="52" font-weight="bold" fill="#fff5d4" letter-spacing="3">Ramayana</text>
+  <text x="300" y="545" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#fff5d4" opacity="0.9">वाल्मीकिरामायणम्</text>
+  <text x="300" y="630" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#ffe0a0" opacity="0.85">Bala Kanda — The Book of Childhood</text>
+  <text x="300" y="730" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#ffe0a0" opacity="0.7">77 Sargas</text>
+</svg>

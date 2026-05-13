@@ -513,3 +513,6 @@ export interface ContentFilterParams extends PaginationParams {
   tag?: string;
   isPremium?: boolean;
 }
+
+// ─── Books / Reader ──────────────────────────
+export * from "./books.js";
