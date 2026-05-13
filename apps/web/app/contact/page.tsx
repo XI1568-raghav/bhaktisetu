@@ -192,6 +192,8 @@ export default function ContactPage() {
                         name="name"
                         type="text"
                         placeholder="Your name"
+                        required
+                        aria-required="true"
                         className="w-full px-3 py-2 text-sm rounded-lg outline-none transition-colors"
                         style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
                       />
@@ -205,6 +207,8 @@ export default function ContactPage() {
                         name="email"
                         type="email"
                         placeholder="you@example.com"
+                        required
+                        aria-required="true"
                         className="w-full px-3 py-2 text-sm rounded-lg outline-none transition-colors"
                         style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
                       />
@@ -238,6 +242,8 @@ export default function ContactPage() {
                       name="message"
                       rows={5}
                       placeholder="Describe your query in detail..."
+                      required
+                      aria-required="true"
                       className="w-full px-3 py-2 text-sm rounded-lg outline-none transition-colors resize-y"
                       style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
                     />

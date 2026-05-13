@@ -19,25 +19,28 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
+import { organizationJsonLd } from '../lib/jsonld';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 
 export const metadata: Metadata = {
  title: "Darshya — India's Devotional Super App",
  description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
-};
-
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Darshya',
-  url: 'https://darshya.online',
-  logo: 'https://darshya.online/logo.png',
-  description: "India's devotional super-app — live darshan, puja booking with video proof, AI spiritual guidance, gaushala seva.",
-  sameAs: [
-    'https://twitter.com/darshya_app',
-    'https://www.instagram.com/darshya.online',
-  ],
+ alternates: { canonical: 'https://darshya.online' },
+ openGraph: {
+   title: "Darshya — India's Devotional Super App",
+   description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
+   url: 'https://darshya.online',
+   type: 'website',
+   // TODO: add /og-default.png (1200x630) to apps/web/public/
+   images: ['/og-default.png'],
+ },
+ twitter: {
+   card: 'summary_large_image',
+   title: "Darshya — India's Devotional Super App",
+   description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
+   images: ['/og-default.png'],
+ },
 };
 
 export default async function HomePage() {

@@ -359,27 +359,64 @@ function formatDuration(seconds: number | null): string {
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
-async function fetchContentData(type?: string, search?: string) {
+const PAGE_SIZE = 12;
+
+interface PagedContent {
+ items: ContentItem[];
+ total: number;
+ totalPages: number;
+ page: number;
+}
+
+async function fetchContentData(
+ type?: string,
+ search?: string,
+ page: number = 1,
+): Promise<PagedContent> {
+ const safePage = Math.max(1, page);
  try {
- const params: { type?: string } = {};
+ // When the user is searching, the API filter doesn't cover free-text;
+ // pull a wider window then filter + paginate locally so search works
+ // across the whole catalogue rather than just one server page.
+ if (search) {
+ const params: { type?: string; limit?: number } = { limit: 200 };
  if (type && type !== 'all') params.type = type;
  const res = await getContent(params);
- let items = res.data;
- if (search) {
  const q = search.toLowerCase();
- items = items.filter(
+ const filtered = res.data.filter(
  (i) =>
  i.title.toLowerCase().includes(q) ||
  (i.deity && i.deity.toLowerCase().includes(q)) ||
- i.tags.some((t) => t.toLowerCase().includes(q))
+ i.tags.some((t) => t.toLowerCase().includes(q)),
  );
+ const total = filtered.length;
+ const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+ const start = (safePage - 1) * PAGE_SIZE;
+ return {
+ items: filtered.slice(start, start + PAGE_SIZE),
+ total,
+ totalPages,
+ page: Math.min(safePage, totalPages),
+ };
  }
- return items;
+
+ const params: { type?: string; page: number; limit: number } = {
+ page: safePage,
+ limit: PAGE_SIZE,
+ };
+ if (type && type !== 'all') params.type = type;
+ const res = await getContent(params);
+ return {
+ items: res.data,
+ total: res.pagination?.total ?? res.data.length,
+ totalPages: Math.max(1, res.pagination?.totalPages ?? 1),
+ page: res.pagination?.page ?? safePage,
+ };
  } catch {
  let items = [...fallbackFeaturedContent, ...fallbackContentItems];
  if (type && type !== 'all') {
  items = items.filter(
- (i) => i.type.toLowerCase() === type.toLowerCase()
+ (i) => i.type.toLowerCase() === type.toLowerCase(),
  );
  }
  if (search) {
@@ -388,11 +425,32 @@ async function fetchContentData(type?: string, search?: string) {
  (i) =>
  i.title.toLowerCase().includes(q) ||
  (i.deity && i.deity.toLowerCase().includes(q)) ||
- i.tags.some((t) => t.toLowerCase().includes(q))
+ i.tags.some((t) => t.toLowerCase().includes(q)),
  );
  }
- return items;
+ const total = items.length;
+ const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+ const start = (safePage - 1) * PAGE_SIZE;
+ return {
+ items: items.slice(start, start + PAGE_SIZE),
+ total,
+ totalPages,
+ page: Math.min(safePage, totalPages),
+ };
  }
+}
+
+function buildContentHref(
+ type: string | undefined,
+ search: string | undefined,
+ page: number,
+): string {
+ const params = new URLSearchParams();
+ if (type && type !== 'all') params.set('type', type);
+ if (search) params.set('search', search);
+ if (page > 1) params.set('page', String(page));
+ const qs = params.toString();
+ return `/content${qs ? `?${qs}` : ''}`;
 }
 
 async function fetchDailyContent() {
@@ -493,11 +551,14 @@ async function DailyContentSection() {
 async function ContentListSection({
  type,
  search,
+ page,
 }: {
  type?: string;
  search?: string;
+ page: number;
 }) {
- const items = await fetchContentData(type, search);
+ const paged = await fetchContentData(type, search, page);
+ const items = paged.items;
  const activeType = type || 'all';
  const label =
  tabs.find((t) => t.id === activeType)?.label ?? 'All Content';
@@ -521,6 +582,11 @@ async function ContentListSection({
  );
  }
 
+ const currentPage = paged.page;
+ const totalPages = paged.totalPages;
+ const hasPrev = currentPage > 1;
+ const hasNext = currentPage < totalPages;
+
  return (
  <section>
  <div className="flex items-center justify-between mb-6">
@@ -528,7 +594,7 @@ async function ContentListSection({
  {search ? `Results for "${search}"` : `All ${label}`}
  </h2>
  <span className="text-sm text-surface-400">
- {items.length} item{items.length !== 1 ? 's' : ''}
+ {paged.total} item{paged.total !== 1 ? 's' : ''}
  </span>
  </div>
 
@@ -615,6 +681,51 @@ async function ContentListSection({
  </a>
  ))}
  </div>
+
+ {/* Pagination */}
+ {totalPages > 1 && (
+ <nav
+ aria-label="Content pagination"
+ className="mt-8 flex items-center justify-between border-t border-surface-100 pt-6"
+ >
+ {hasPrev ? (
+ <a
+ href={buildContentHref(type, search, currentPage - 1)}
+ rel="prev"
+ className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-surface-200 text-sm font-medium text-surface-700 hover:border-saffron-300 hover:text-saffron-600 transition-colors"
+ >
+ <ChevronRight className="w-4 h-4 rotate-180" />
+ Previous
+ </a>
+ ) : (
+ <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-100 text-sm font-medium text-surface-300 cursor-not-allowed">
+ <ChevronRight className="w-4 h-4 rotate-180" />
+ Previous
+ </span>
+ )}
+
+ <span className="text-sm text-surface-500">
+ Page <span className="font-semibold text-surface-700">{currentPage}</span>{' '}
+ of <span className="font-semibold text-surface-700">{totalPages}</span>
+ </span>
+
+ {hasNext ? (
+ <a
+ href={buildContentHref(type, search, currentPage + 1)}
+ rel="next"
+ className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-surface-200 text-sm font-medium text-surface-700 hover:border-saffron-300 hover:text-saffron-600 transition-colors"
+ >
+ Next
+ <ChevronRight className="w-4 h-4" />
+ </a>
+ ) : (
+ <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-100 text-sm font-medium text-surface-300 cursor-not-allowed">
+ Next
+ <ChevronRight className="w-4 h-4" />
+ </span>
+ )}
+ </nav>
+ )}
  </section>
  );
 }
@@ -624,10 +735,12 @@ async function ContentListSection({
 export default async function ContentPage({
  searchParams,
 }: {
- searchParams: Promise<{ type?: string; search?: string }>;
+ searchParams: Promise<{ type?: string; search?: string; page?: string }>;
 }) {
- const { type, search } = await searchParams;
+ const { type, search, page: pageParam } = await searchParams;
  const activeType = type || 'all';
+ const parsedPage = Number.parseInt(pageParam ?? '1', 10);
+ const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
  return (
  <div className="min-h-screen bg-saffron-50">
@@ -733,7 +846,7 @@ export default async function ContentPage({
  </div>
  }
  >
- <ContentListSection type={type} search={search} />
+ <ContentListSection type={type} search={search} page={page} />
  </Suspense>
  </div>
  </div>

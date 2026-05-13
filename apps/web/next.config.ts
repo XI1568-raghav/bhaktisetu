@@ -74,6 +74,17 @@ const nextConfig: NextConfig = {
   },
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
+  async redirects() {
+    // Legacy `/kundli` path. Canonical is `/astrology/kundli`.
+    // Permanent redirect preserves SEO + survives external inbound links.
+    return [
+      {
+        source: '/kundli',
+        destination: '/astrology/kundli',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     // TD8 — per-route CDN cache rules. Cloudflare honours s-maxage (CDN-only)
     // and stale-while-revalidate, while max-age controls the browser TTL.

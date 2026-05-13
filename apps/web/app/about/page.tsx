@@ -1,10 +1,28 @@
 import type { Metadata } from "next";
 import { Heart, Users, Globe, BookOpen, Flame, Shield } from "lucide-react";
+import { organizationJsonLd } from "../../lib/jsonld";
 
 export const metadata: Metadata = {
  title: "About Us",
  description:
  "Darshya bridges devotees to the divine through technology. Learn about our mission, values, and the team building India\u2019s devotional super-app.",
+ alternates: { canonical: "https://darshya.online/about" },
+ openGraph: {
+   title: "About Us | Darshya",
+   description:
+   "Darshya bridges devotees to the divine through technology. Learn about our mission, values, and the team building India\u2019s devotional super-app.",
+   url: "https://darshya.online/about",
+   type: "website",
+   // TODO: add /og-default.png (1200x630) to apps/web/public/
+   images: ["/og-default.png"],
+ },
+ twitter: {
+   card: "summary_large_image",
+   title: "About Us | Darshya",
+   description:
+   "Darshya bridges devotees to the divine through technology. Learn about our mission, values, and the team building India\u2019s devotional super-app.",
+   images: ["/og-default.png"],
+ },
 };
 
 const values = [
@@ -59,6 +77,10 @@ const milestones = [
 export default function AboutPage() {
  return (
  <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+ <script
+   type="application/ld+json"
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+ />
  {/* Hero */}
  <section
  className="relative overflow-hidden py-16 sm:py-24"
