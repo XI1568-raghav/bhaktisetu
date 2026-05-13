@@ -91,7 +91,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/help', priority: 0.5 },
     { path: '/pricing', priority: 0.5 },
     { path: '/refunds', priority: 0.5 },
-    { path: '/refund', priority: 0.5 },
     { path: '/shipping', priority: 0.5 },
     { path: '/privacy', priority: 0.5 },
     { path: '/terms', priority: 0.5 },

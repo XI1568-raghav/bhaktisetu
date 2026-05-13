@@ -281,11 +281,15 @@ export async function getContent(params?: {
  type?: string;
  deity?: string;
  language?: string;
+ page?: number;
+ limit?: number;
 }): Promise<PaginatedResponse<ContentItem>> {
  const searchParams = new URLSearchParams();
  if (params?.type) searchParams.set('type', params.type);
  if (params?.deity) searchParams.set('deity', params.deity);
  if (params?.language) searchParams.set('language', params.language);
+ if (params?.page) searchParams.set('page', String(params.page));
+ if (params?.limit) searchParams.set('limit', String(params.limit));
 
  const query = searchParams.toString();
  return serverFetch<PaginatedResponse<ContentItem>>(

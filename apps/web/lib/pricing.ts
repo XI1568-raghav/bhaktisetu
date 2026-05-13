@@ -187,15 +187,25 @@ export function getCommissionRate(role: ProviderRole, planId: PlanId): number {
  return entry.rates[planId];
 }
 
-/** Format price in INR with rupee symbol */
-export function formatPrice(amount: number): string {
+/**
+ * Format price in INR with rupee symbol.
+ * Pass `{ showCode: true }` for explicit "INR" / "USD" suffix to disambiguate
+ * `$` (could be USD/CAD/AUD) and `₹` for NRI checkout flows.
+ */
+export function formatPrice(
+ amount: number,
+ opts: { showCode?: boolean; currency?: "INR" | "USD" } = {},
+): string {
+ const { showCode = false, currency = "INR" } = opts;
  if (amount === 0) return "Free";
- return new Intl.NumberFormat("en-IN", {
+ const locale = currency === "USD" ? "en-US" : "en-IN";
+ const formatted = new Intl.NumberFormat(locale, {
  style: "currency",
- currency: "INR",
+ currency,
  minimumFractionDigits: 0,
  maximumFractionDigits: 0,
  }).format(amount);
+ return showCode ? `${formatted} ${currency}` : formatted;
 }
 
 /** Get the next upgrade plan, or null if already on Enterprise */

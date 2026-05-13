@@ -40,6 +40,8 @@ import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
 import AdSenseScript from "../components/AdSenseScript";
+import { GA4Script } from "../lib/ga4";
+import { MetaPixelScript } from "../lib/meta-pixel";
 import { getTempleHero } from "../lib/images";
 import Link from "next/link";
 import "./globals.css";
@@ -85,6 +87,7 @@ export const metadata: Metadata = {
  apple: "/favicon.svg",
  },
  manifest: "/manifest.json",
+ alternates: { canonical: "https://darshya.online" },
  openGraph: {
  type: "website",
  locale: "en_IN",
@@ -93,12 +96,15 @@ export const metadata: Metadata = {
  title: "Darshya \u2014 India\u2019s Devotional Super App",
  description:
  "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
+ // TODO: add /og-default.png (1200x630) to apps/web/public/
+ images: ["/og-default.png"],
  },
  twitter: {
  card: "summary_large_image",
  title: "Darshya \u2014 India\u2019s Devotional Super App",
  description:
  "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
+ images: ["/og-default.png"],
  },
  robots: {
  index: true,
@@ -251,6 +257,13 @@ export default function RootLayout({
  <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
  </head>
  <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]" data-locale="en">
+ {/* a11y — skip-to-main-content link, keyboard-only visible on focus. */}
+ <a
+ href="#main"
+ className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-saffron-700 focus:text-white focus:rounded-md focus:shadow-lg"
+ >
+ Skip to main content
+ </a>
  <SentryErrorBoundary>
  <AuthProvider>
  <CartProvider>
@@ -312,7 +325,7 @@ export default function RootLayout({
  </header>
 
  {/* Main content — offset for fixed nav */}
- <main className="flex-1 pt-14">{children}</main>
+ <main id="main" className="flex-1 pt-14">{children}</main>
 
  {/* ── Footer ──────────────────────────────────────────────────── */}
  <footer className="bg-[#2a2520] text-surface-400">
@@ -415,6 +428,8 @@ export default function RootLayout({
  </footer>
  <DeferredClientWidgets />
  <Analytics />
+ <GA4Script />
+ <MetaPixelScript />
  <SentryProvider />
  <AdSenseScript />
  <NotificationPrompt />
