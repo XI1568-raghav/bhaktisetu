@@ -545,3 +545,90 @@ img {
     text-shadow: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   READER THEMES — applied via [data-reader-theme] on the reader root element.
+   Crimson Pro serves as the body face (--font-reader-serif from layout.tsx).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-reader-theme] {
+  font-family: var(--font-reader-serif), Georgia, 'Crimson Pro', serif;
+  --reader-line-height: 1.75;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+[data-reader-theme="saffron"] {
+  --reader-bg: #fbf6ec;
+  --reader-surface: #fff8e9;
+  --reader-text: #3a2a14;
+  --reader-muted: #8a6b3f;
+  --reader-accent: #c4731a;
+  --reader-rule: rgba(196, 115, 26, 0.18);
+  background-color: var(--reader-bg);
+  color: var(--reader-text);
+}
+
+[data-reader-theme="sepia"] {
+  --reader-bg: #f4ecd8;
+  --reader-surface: #fbf3df;
+  --reader-text: #3a2e1a;
+  --reader-muted: #786148;
+  --reader-accent: #8a5a1f;
+  --reader-rule: rgba(122, 92, 56, 0.2);
+  background-color: var(--reader-bg);
+  color: var(--reader-text);
+}
+
+[data-reader-theme="night"] {
+  --reader-bg: #14110d;
+  --reader-surface: #1d1812;
+  --reader-text: #e8dfcf;
+  --reader-muted: #9a8d75;
+  --reader-accent: #e8a04a;
+  --reader-rule: rgba(232, 160, 74, 0.2);
+  background-color: var(--reader-bg);
+  color: var(--reader-text);
+}
+
+[data-reader-font-size="sm"] { font-size: 16px; }
+[data-reader-font-size="md"] { font-size: 18px; }
+[data-reader-font-size="lg"] { font-size: 21px; }
+[data-reader-font-size="xl"] { font-size: 24px; }
+
+[data-reader-theme] .reader-sanskrit {
+  font-family: var(--font-noto-devanagari), serif;
+  color: var(--reader-accent);
+  line-height: 1.85;
+}
+
+[data-reader-theme] .reader-translit {
+  font-style: italic;
+  color: var(--reader-muted);
+}
+
+[data-reader-theme] .reader-english {
+  color: var(--reader-text);
+  line-height: var(--reader-line-height);
+}
+
+[data-reader-theme] .reader-commentary {
+  color: var(--reader-muted);
+  font-size: 0.92em;
+  border-left: 2px solid var(--reader-rule);
+  padding-left: 0.85rem;
+  margin-top: 0.6rem;
+}
+
+[data-reader-theme] .reader-verse {
+  border-bottom: 1px solid var(--reader-rule);
+  padding: 1.25rem 0;
+}
+
+[data-reader-theme] .reader-verse:last-child { border-bottom: none; }
+
+[data-reader-theme] .reader-verse-num {
+  color: var(--reader-accent);
+  font-weight: 600;
+  font-size: 0.78em;
+  letter-spacing: 0.05em;
+}

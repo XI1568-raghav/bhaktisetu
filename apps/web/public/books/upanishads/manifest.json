@@ -1,0 +1,40 @@
+{
+  "slug": "upanishads",
+  "title": "The Principal Upanishads",
+  "titleSanskrit": "उपनिषद्",
+  "subtitle": "Selected texts from the foundational Vedantic scriptures",
+  "tradition": "Vedanta",
+  "language": ["sa", "en"],
+  "translator": "Public-domain translations (Max Müller / Sri Aurobindo, modernised)",
+  "coverImage": "/books/upanishads/cover.svg",
+  "description": "The Upanishads are the concluding portion of the Vedas, expounding the philosophy of Brahman and Atman. This collection presents three of the principal Upanishads with Sanskrit and English.",
+  "license": "Public domain (translations published before 1928).",
+  "structure": "chapters",
+  "chapters": [
+    {
+      "slug": "isha",
+      "number": 1,
+      "title": "Isha Upanishad",
+      "titleSanskrit": "ईशोपनिषद्",
+      "verseCount": 18,
+      "placeholder": false
+    },
+    {
+      "slug": "kena",
+      "number": 2,
+      "title": "Kena Upanishad",
+      "titleSanskrit": "केनोपनिषद्",
+      "verseCount": 35,
+      "placeholder": false
+    },
+    {
+      "slug": "katha",
+      "number": 3,
+      "title": "Katha Upanishad (excerpts)",
+      "titleSanskrit": "कठोपनिषद्",
+      "verseCount": 6,
+      "placeholder": true,
+      "placeholderNote": "Only the opening of Valli I is included. The full Katha Upanishad spans 6 vallis with 119 mantras; remaining text will be added in a future update."
+    }
+  ]
+}

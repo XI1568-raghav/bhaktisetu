@@ -1,0 +1,653 @@
+{
+  "slug": "ramayana",
+  "title": "Valmiki Ramayana — Bala Kanda",
+  "titleSanskrit": "वाल्मीकिरामायणम् — बालकाण्डम्",
+  "subtitle": "The Book of Childhood — birth, education, and marriage of Sri Rama",
+  "tradition": "Itihasa",
+  "language": [
+    "sa",
+    "en"
+  ],
+  "translator": "M. N. Dutt (1894) and Ralph T. H. Griffith (1870–74), public domain — adapted",
+  "coverImage": "/books/ramayana/cover.svg",
+  "description": "The Ramayana of Maharishi Valmiki is the adi-kavya — the first poem — composed in 24,000 shlokas across seven kandas. This collection presents the Bala Kanda (Book of Childhood) with 77 sargas (cantos).",
+  "license": "Public domain English (Dutt 1894 / Griffith 1870–74). Sanskrit verses are traditional and uncopyrighted.",
+  "structure": "kandas",
+  "kandas": [
+    {
+      "slug": "bala",
+      "name": "Bala Kanda",
+      "nameSanskrit": "बालकाण्डम्",
+      "sargaCount": 77,
+      "description": "Origin of the Ramayana, birth of Rama and his brothers, their education with sage Vasishtha, the journey to Mithila with Vishvamitra, and the marriage of Rama to Sita."
+    }
+  ],
+  "chapters": [
+    {
+      "slug": "bala/sarga-1",
+      "number": 1,
+      "title": "Narada's Account of Rama",
+      "titleSanskrit": "नारदस्य रामकथा",
+      "kanda": "bala",
+      "verseCount": 6,
+      "placeholder": false,
+      "partial": true
+    },
+    {
+      "slug": "bala/sarga-2",
+      "number": 2,
+      "title": "Origin of the Shloka",
+      "titleSanskrit": "श्लोकोत्पत्तिः",
+      "kanda": "bala",
+      "verseCount": 5,
+      "placeholder": false,
+      "partial": true
+    },
+    {
+      "slug": "bala/sarga-3",
+      "number": 3,
+      "title": "Valmiki's Inspiration",
+      "titleSanskrit": "वाल्मीकेस्तपः",
+      "kanda": "bala",
+      "verseCount": 4,
+      "placeholder": false,
+      "partial": true
+    },
+    {
+      "slug": "bala/sarga-4",
+      "number": 4,
+      "title": "Lava and Kusha Recite",
+      "titleSanskrit": "कुशीलवप्रवचनम्",
+      "kanda": "bala",
+      "verseCount": 4,
+      "placeholder": false,
+      "partial": true
+    },
+    {
+      "slug": "bala/sarga-5",
+      "number": 5,
+      "title": "Description of Ayodhya",
+      "titleSanskrit": "अयोध्यावर्णनम्",
+      "kanda": "bala",
+      "verseCount": 4,
+      "placeholder": false,
+      "partial": true
+    },
+    {
+      "slug": "bala/sarga-6",
+      "number": 6,
+      "title": "Sarga 6",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-7",
+      "number": 7,
+      "title": "Sarga 7",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-8",
+      "number": 8,
+      "title": "Sarga 8",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-9",
+      "number": 9,
+      "title": "Sarga 9",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-10",
+      "number": 10,
+      "title": "Sarga 10",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-11",
+      "number": 11,
+      "title": "Sarga 11",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-12",
+      "number": 12,
+      "title": "Sarga 12",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-13",
+      "number": 13,
+      "title": "Sarga 13",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-14",
+      "number": 14,
+      "title": "Sarga 14",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-15",
+      "number": 15,
+      "title": "Sarga 15",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-16",
+      "number": 16,
+      "title": "Sarga 16",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-17",
+      "number": 17,
+      "title": "Sarga 17",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-18",
+      "number": 18,
+      "title": "Sarga 18",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-19",
+      "number": 19,
+      "title": "Sarga 19",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-20",
+      "number": 20,
+      "title": "Sarga 20",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-21",
+      "number": 21,
+      "title": "Sarga 21",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-22",
+      "number": 22,
+      "title": "Sarga 22",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-23",
+      "number": 23,
+      "title": "Sarga 23",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-24",
+      "number": 24,
+      "title": "Sarga 24",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-25",
+      "number": 25,
+      "title": "Sarga 25",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-26",
+      "number": 26,
+      "title": "Sarga 26",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-27",
+      "number": 27,
+      "title": "Sarga 27",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-28",
+      "number": 28,
+      "title": "Sarga 28",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-29",
+      "number": 29,
+      "title": "Sarga 29",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-30",
+      "number": 30,
+      "title": "Sarga 30",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-31",
+      "number": 31,
+      "title": "Sarga 31",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-32",
+      "number": 32,
+      "title": "Sarga 32",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-33",
+      "number": 33,
+      "title": "Sarga 33",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-34",
+      "number": 34,
+      "title": "Sarga 34",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-35",
+      "number": 35,
+      "title": "Sarga 35",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-36",
+      "number": 36,
+      "title": "Sarga 36",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-37",
+      "number": 37,
+      "title": "Sarga 37",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-38",
+      "number": 38,
+      "title": "Sarga 38",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-39",
+      "number": 39,
+      "title": "Sarga 39",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-40",
+      "number": 40,
+      "title": "Sarga 40",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-41",
+      "number": 41,
+      "title": "Sarga 41",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-42",
+      "number": 42,
+      "title": "Sarga 42",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-43",
+      "number": 43,
+      "title": "Sarga 43",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-44",
+      "number": 44,
+      "title": "Sarga 44",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-45",
+      "number": 45,
+      "title": "Sarga 45",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-46",
+      "number": 46,
+      "title": "Sarga 46",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-47",
+      "number": 47,
+      "title": "Sarga 47",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-48",
+      "number": 48,
+      "title": "Sarga 48",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-49",
+      "number": 49,
+      "title": "Sarga 49",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-50",
+      "number": 50,
+      "title": "Sarga 50",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-51",
+      "number": 51,
+      "title": "Sarga 51",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-52",
+      "number": 52,
+      "title": "Sarga 52",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-53",
+      "number": 53,
+      "title": "Sarga 53",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-54",
+      "number": 54,
+      "title": "Sarga 54",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-55",
+      "number": 55,
+      "title": "Sarga 55",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-56",
+      "number": 56,
+      "title": "Sarga 56",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-57",
+      "number": 57,
+      "title": "Sarga 57",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-58",
+      "number": 58,
+      "title": "Sarga 58",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-59",
+      "number": 59,
+      "title": "Sarga 59",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-60",
+      "number": 60,
+      "title": "Sarga 60",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-61",
+      "number": 61,
+      "title": "Sarga 61",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-62",
+      "number": 62,
+      "title": "Sarga 62",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-63",
+      "number": 63,
+      "title": "Sarga 63",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-64",
+      "number": 64,
+      "title": "Sarga 64",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-65",
+      "number": 65,
+      "title": "Sarga 65",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-66",
+      "number": 66,
+      "title": "Sarga 66",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-67",
+      "number": 67,
+      "title": "Sarga 67",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-68",
+      "number": 68,
+      "title": "Sarga 68",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-69",
+      "number": 69,
+      "title": "Sarga 69",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-70",
+      "number": 70,
+      "title": "Sarga 70",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-71",
+      "number": 71,
+      "title": "Sarga 71",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-72",
+      "number": 72,
+      "title": "Sarga 72",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-73",
+      "number": 73,
+      "title": "Sarga 73",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-74",
+      "number": 74,
+      "title": "Sarga 74",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-75",
+      "number": 75,
+      "title": "Sarga 75",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-76",
+      "number": 76,
+      "title": "Sarga 76",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    },
+    {
+      "slug": "bala/sarga-77",
+      "number": 77,
+      "title": "Sarga 77",
+      "kanda": "bala",
+      "placeholder": true,
+      "partial": false
+    }
+  ]
+}

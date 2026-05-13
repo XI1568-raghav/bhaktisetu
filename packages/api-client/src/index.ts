@@ -167,3 +167,13 @@ export type {
   WeddingInquiry,
 } from "./hooks/wave-5.js";
 
+
+// ─── Reading progress hooks ──────────────────
+export {
+  useReadingProgress,
+  useAllReadingProgress,
+  useMergeAnonReadingProgress,
+  readingProgressKeys,
+  __testing,
+} from "./hooks/reading-progress.js";
+export type { UseReadingProgressOptions } from "./hooks/reading-progress.js";

@@ -1,0 +1,40 @@
+{
+  "bookSlug": "ramayana",
+  "slug": "bala/sarga-3",
+  "number": 3,
+  "title": "Valmiki's Inspiration",
+  "titleSanskrit": "वाल्मीकेस्तपः",
+  "kanda": "bala",
+  "kandaName": "Bala Kanda",
+  "subtitle": "Brahma appears and commands Valmiki to compose the Ramayana",
+  "translator": "Manmatha Nath Dutt (1894), public domain — modernised",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "Opening verses only. The full sarga details Brahma's visit and the divine vision granted to Valmiki to perceive Rama's entire life.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "श्रुत्वा वस्तु समग्रं तद्धर्मार्थसहितं हितम्। व्यक्तमन्वेषते भूयो यद्वृत्तं तस्य धीमतः॥",
+      "transliteration": "śrutvā vastu samagraṁ tad dharmārtha-sahitaṁ hitam । vyaktam anveṣate bhūyo yad-vṛttaṁ tasya dhīmataḥ ॥",
+      "english": "Having heard the entire story — replete with dharma, artha, and benefit — Valmiki sought further to know clearly the full life of that wise one (Rama)."
+    },
+    {
+      "number": 2,
+      "sanskrit": "उपस्पृश्योदकं सम्यङ्मुनिः स्थित्वा कृताञ्जलिः। प्राचीनाग्रेषु दर्भेषु धर्मेणान्वेषते गतिम्॥",
+      "transliteration": "upaspṛśyodakaṁ samyaṅ muniḥ sthitvā kṛtāñjaliḥ । prācīnāgreṣu darbheṣu dharmeṇānveṣate gatim ॥",
+      "english": "Sipping water and standing with folded hands on a kusha-grass seat with tips pointing east, the sage sought — through dharma — the right course."
+    },
+    {
+      "number": 3,
+      "sanskrit": "रामलक्ष्मणसीताभी राज्ञा दशरथेन च। सभार्येण सराष्ट्रेण यत्प्राप्तं तत्र तत्त्वतः॥",
+      "transliteration": "rāma-lakṣmaṇa-sītābhī rājñā daśarathena ca । sa-bhāryeṇa sa-rāṣṭreṇa yat prāptaṁ tatra tattvataḥ ॥",
+      "english": "What truly befell Rama, Lakshmana, and Sita; what befell King Dasharatha together with his queens and his realm —"
+    },
+    {
+      "number": 4,
+      "sanskrit": "हसितं भाषितं चैव गतिर्या यच्च चेष्टितम्। तत्सर्वं धर्मवीर्येण यथावत्सम्प्रपश्यति॥",
+      "transliteration": "hasitaṁ bhāṣitaṁ caiva gatir yā yac ca ceṣṭitam । tat sarvaṁ dharma-vīryeṇa yathāvat samprapaśyati ॥",
+      "english": "Their laughter and speech, their movements and every act — all of this, by the power of dharma, he beheld exactly as it had occurred."
+    }
+  ]
+}

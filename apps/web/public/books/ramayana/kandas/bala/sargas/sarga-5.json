@@ -1,0 +1,40 @@
+{
+  "bookSlug": "ramayana",
+  "slug": "bala/sarga-5",
+  "number": 5,
+  "title": "Description of Ayodhya",
+  "titleSanskrit": "अयोध्यावर्णनम्",
+  "kanda": "bala",
+  "kandaName": "Bala Kanda",
+  "subtitle": "The glory of Ayodhya, capital of King Dasharatha",
+  "translator": "Manmatha Nath Dutt (1894), public domain — modernised",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "Opening verses only — the full sarga gives an extended description of the city's prosperity.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "सर्वा पूर्वमियं येषामासीत्कृत्स्ना वसुंधरा। प्रजापतिमुपादाय नृपाणां जयशालिनाम्॥",
+      "transliteration": "sarvā pūrvam iyaṁ yeṣām āsīt kṛtsnā vasundharā । prajāpatim upādāya nṛpāṇāṁ jaya-śālinām ॥",
+      "english": "The whole earth in former times belonged to those victorious kings — beginning with Prajapati himself."
+    },
+    {
+      "number": 2,
+      "sanskrit": "येषां स सगरो नाम सागरो येन खानितः। षष्टिः पुत्रसहस्राणि यं यान्तं पर्यवारयन्॥",
+      "transliteration": "yeṣāṁ sa sagaro nāma sāgaro yena khānitaḥ । ṣaṣṭiḥ putra-sahasrāṇi yaṁ yāntaṁ paryavārayan ॥",
+      "english": "Among them was that Sagara by whom the ocean was dug out — surrounded as he marched by sixty thousand sons."
+    },
+    {
+      "number": 3,
+      "sanskrit": "इक्ष्वाकूणामिदं तेषां राज्ञां वंशे महात्मनाम्। महदुत्पन्नमाख्यानं रामायणमिति श्रुतम्॥",
+      "transliteration": "ikṣvākūṇām idaṁ teṣāṁ rājñāṁ vaṁśe mahātmanām । mahad utpannam ākhyānaṁ rāmāyaṇam iti śrutam ॥",
+      "english": "In the lineage of those great-souled kings of the Ikshvaku house arose this mighty narrative — known as the Ramayana."
+    },
+    {
+      "number": 4,
+      "sanskrit": "कोसलो नाम मुदितः स्फीतो जनपदो महान्। निविष्टः सरयूतीरे प्रभूतधनधान्यवान्॥",
+      "transliteration": "kosalo nāma muditaḥ sphīto janapado mahān । niviṣṭaḥ sarayū-tīre prabhūta-dhana-dhānyavān ॥",
+      "english": "There was a great country called Kosala, joyful and prosperous, situated on the bank of the Sarayu, abounding in wealth and grain."
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "bookSlug": "bhagavad-gita",
+  "slug": "chapter-1",
+  "number": 1,
+  "title": "Arjuna Vishada Yoga",
+  "titleSanskrit": "अर्जुनविषादयोगः",
+  "subtitle": "The Distress of Arjuna",
+  "translator": "Sir Edwin Arnold, The Song Celestial (1885, public domain)",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "First 12 verses shipped. Remaining 35 verses of Chapter 1 will be added in a future update.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "धृतराष्ट्र उवाच। धर्मक्षेत्रे कुरुक्षेत्रे समवेता युयुत्सवः। मामकाः पाण्डवाश्चैव किमकुर्वत सञ्जय॥",
+      "transliteration": "dhṛtarāṣṭra uvāca । dharma-kṣetre kuru-kṣetre samavetā yuyutsavaḥ । māmakāḥ pāṇḍavāś caiva kim akurvata sañjaya ॥",
+      "english": "Dhritarashtra spake: Ranged thus for battle on the sacred plain — On Kurukshetra — say, Sanjaya! say what wrought my people, and the Pandavas?"
+    },
+    {
+      "number": 2,
+      "sanskrit": "सञ्जय उवाच। दृष्ट्वा तु पाण्डवानीकं व्यूढं दुर्योधनस्तदा। आचार्यमुपसङ्गम्य राजा वचनमब्रवीत्॥",
+      "transliteration": "sañjaya uvāca । dṛṣṭvā tu pāṇḍavānīkaṁ vyūḍhaṁ duryodhanas tadā । ācāryam upasaṅgamya rājā vacanam abravīt ॥",
+      "english": "Sanjaya: When he beheld the host of Pandavas, Raja Duryodhana to Drona drew, and spake these words:"
+    },
+    {
+      "number": 3,
+      "sanskrit": "पश्यैतां पाण्डुपुत्राणामाचार्य महतीं चमूम्। व्यूढां द्रुपदपुत्रेण तव शिष्येण धीमता॥",
+      "transliteration": "paśyaitāṁ pāṇḍu-putrāṇām ācārya mahatīṁ camūm । vyūḍhāṁ drupada-putreṇa tava śiṣyeṇa dhīmatā ॥",
+      "english": "'Ah, Guru! see what a host of the sons of Pandu hath gathered against us — set in proud array by the son of Drupada, thy scholar wise!'"
+    },
+    {
+      "number": 4,
+      "sanskrit": "अत्र शूरा महेष्वासा भीमार्जुनसमा युधि। युयुधानो विराटश्च द्रुपदश्च महारथः॥",
+      "transliteration": "atra śūrā maheṣv-āsā bhīmārjuna-samā yudhi । yuyudhāno virāṭaś ca drupadaś ca mahā-rathaḥ ॥",
+      "english": "'Therein stand mighty bowmen, peers in war of Bhima and Arjuna; Yuyudhan, and Drupada, on his great car;'"
+    },
+    {
+      "number": 5,
+      "sanskrit": "धृष्टकेतुश्चेकितानः काशिराजश्च वीर्यवान्। पुरुजित्कुन्तिभोजश्च शैब्यश्च नरपुङ्गवः॥",
+      "transliteration": "dhṛṣṭaketuś cekitānaḥ kāśirājaś ca vīryavān । purujit kuntibhojaś ca śaibyaś ca nara-puṅgavaḥ ॥",
+      "english": "'Dhrishtaket, Chekitan, Kashi's stout lord, Purujit, Kuntibhoj, and Saivya — chiefs of men;'"
+    },
+    {
+      "number": 6,
+      "sanskrit": "युधामन्युश्च विक्रान्त उत्तमौजाश्च वीर्यवान्। सौभद्रो द्रौपदेयाश्च सर्व एव महारथाः॥",
+      "transliteration": "yudhāmanyuś ca vikrānta uttamaujāś ca vīryavān । saubhadro draupadeyāś ca sarva eva mahā-rathāḥ ॥",
+      "english": "'Yudhamanyu the bold, Uttamauj the brave; the son of Subhadra and her sons of Draupadi — all great in war.'"
+    },
+    {
+      "number": 7,
+      "sanskrit": "अस्माकं तु विशिष्टा ये तान्निबोध द्विजोत्तम। नायका मम सैन्यस्य संज्ञार्थं तान्ब्रवीमि ते॥",
+      "transliteration": "asmākaṁ tu viśiṣṭā ye tān nibodha dvijottama । nāyakā mama sainyasya saṁjñārthaṁ tān bravīmi te ॥",
+      "english": "'But thou, Brahman, of our own host the chiefest hear named, the bravest who their leaders are; their names I tell thee, that thou know them all:'"
+    },
+    {
+      "number": 8,
+      "sanskrit": "भवान्भीष्मश्च कर्णश्च कृपश्च समितिञ्जयः। अश्वत्थामा विकर्णश्च सौमदत्तिस्तथैव च॥",
+      "transliteration": "bhavān bhīṣmaś ca karṇaś ca kṛpaś ca samitiñ-jayaḥ । aśvatthāmā vikarṇaś ca saumadattis tathaiva ca ॥",
+      "english": "'Thyself the first, then Bhishma, Karna, Kripa, fierce in fight; Vikarna, Aswatthaman, the son of Somadatt;'"
+    },
+    {
+      "number": 9,
+      "sanskrit": "अन्ये च बहवः शूरा मदर्थे त्यक्तजीविताः। नानाशस्त्रप्रहरणाः सर्वे युद्धविशारदाः॥",
+      "transliteration": "anye ca bahavaḥ śūrā madarthe tyakta-jīvitāḥ । nānā-śastra-praharaṇāḥ sarve yuddha-viśāradāḥ ॥",
+      "english": "'And many another lord of life, who for my sake their lives will give, well-armed, and skilled in war's art.'"
+    },
+    {
+      "number": 10,
+      "sanskrit": "अपर्याप्तं तदस्माकं बलं भीष्माभिरक्षितम्। पर्याप्तं त्विदमेतेषां बलं भीमाभिरक्षितम्॥",
+      "transliteration": "aparyāptaṁ tad asmākaṁ balaṁ bhīṣmābhirakṣitam । paryāptaṁ tv idam eteṣāṁ balaṁ bhīmābhirakṣitam ॥",
+      "english": "'Weakest — meseems — of all our army shows, despite of Bhishma's care, that lessening band; whilst stronger every troop of these, my foes — Bhima their guard.'"
+    },
+    {
+      "number": 11,
+      "sanskrit": "अयनेषु च सर्वेषु यथाभागमवस्थिताः। भीष्ममेवाभिरक्षन्तु भवन्तः सर्व एव हि॥",
+      "transliteration": "ayaneṣu ca sarveṣu yathā-bhāgam avasthitāḥ । bhīṣmam evābhirakṣantu bhavantaḥ sarva eva hi ॥",
+      "english": "'Now, therefore — at all the gateways of the war ranged in your stations — bid each chief uphold the cause of Bhishma, ay! and Bhishma guard.'"
+    },
+    {
+      "number": 12,
+      "sanskrit": "तस्य सञ्जनयन्हर्षं कुरुवृद्धः पितामहः। सिंहनादं विनद्योच्चैः शङ्खं दध्मौ प्रतापवान्॥",
+      "transliteration": "tasya sañjanayan harṣaṁ kuru-vṛddhaḥ pitāmahaḥ । siṁha-nādaṁ vinadyoccaiḥ śaṅkhaṁ dadhmau pratāpavān ॥",
+      "english": "Then, to enhearten him, the elder of the Kurus blew his conch — loud as the lion's roar, and high its sound."
+    }
+  ]
+}

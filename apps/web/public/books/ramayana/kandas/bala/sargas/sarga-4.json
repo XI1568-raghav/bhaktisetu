@@ -1,0 +1,40 @@
+{
+  "bookSlug": "ramayana",
+  "slug": "bala/sarga-4",
+  "number": 4,
+  "title": "Lava and Kusha Recite",
+  "titleSanskrit": "कुशीलवप्रवचनम्",
+  "kanda": "bala",
+  "kandaName": "Bala Kanda",
+  "subtitle": "The twin sons of Sita learn the Ramayana and sing it before sages",
+  "translator": "Manmatha Nath Dutt (1894), public domain — modernised",
+  "placeholder": false,
+  "partial": true,
+  "partialNote": "Opening verses only.",
+  "verses": [
+    {
+      "number": 1,
+      "sanskrit": "प्राप्तराज्यस्य रामस्य वाल्मीकिर्भगवानृषिः। चकार चरितं कृत्स्नं विचित्रपदमर्थवत्॥",
+      "transliteration": "prāpta-rājyasya rāmasya vālmīkir bhagavān ṛṣiḥ । cakāra caritaṁ kṛtsnaṁ vicitra-padam arthavat ॥",
+      "english": "The blessed sage Valmiki composed the entire history of Rama — who had attained his kingdom — in verses of varied beauty, full of meaning."
+    },
+    {
+      "number": 2,
+      "sanskrit": "चतुर्विंशत्सहस्राणि श्लोकानामुक्तवानृषिः। तथा सर्गशतान्पञ्च षट्काण्डानि तथोत्तरम्॥",
+      "transliteration": "catur-viṁśat-sahasrāṇi ślokānām uktavān ṛṣiḥ । tathā sarga-śatān pañca ṣaṭ-kāṇḍāni tathottaram ॥",
+      "english": "The sage uttered twenty-four thousand shlokas, arranged in five hundred sargas, six kandas, and an Uttara-kanda."
+    },
+    {
+      "number": 3,
+      "sanskrit": "कृत्वा तु तन्महाप्राज्ञः सभविष्यं सहोत्तरम्। चिन्तयामास को न्वेतत्प्रयुञ्जीयादिति प्रभुः॥",
+      "transliteration": "kṛtvā tu tan mahāprājñaḥ sa-bhaviṣyaṁ sahottaram । cintayāmāsa ko nv etat prayuñjīyād iti prabhuḥ ॥",
+      "english": "Having composed it complete with what was to come, the great-minded master pondered: 'Who shall make this known to the world?'"
+    },
+    {
+      "number": 4,
+      "sanskrit": "तस्य चिन्तयमानस्य महर्षेर्भावितात्मनः। अगृह्णीतां ततः पादौ मुनिवेषौ कुशीलवौ॥",
+      "transliteration": "tasya cintayamānasya maharṣer bhāvitātmanaḥ । agṛhṇītāṁ tataḥ pādau muni-veṣau kuśīlavau ॥",
+      "english": "As the great sage of perfected mind reflected, Kusha and Lava — clad in the dress of ascetics — clasped his feet."
+    }
+  ]
+}
