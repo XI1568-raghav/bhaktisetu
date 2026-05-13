@@ -12,16 +12,17 @@ import {
   ArrowRight,
   Star,
 } from 'lucide-react';
+import { nriPremiumServiceJsonLd } from '../../lib/jsonld';
 
 export const metadata: Metadata = {
   title: 'NRI Premium — Stay Connected to India | Darshya',
   description:
-    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free 80G receipts, unlimited AI Pandit. ₹5000 / $60 per year.',
+    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free 80G receipts, unlimited AI Pandit. ₹5,000 INR / $60 USD per year.',
   alternates: { canonical: 'https://darshya.online/nri' },
   openGraph: {
     title: 'NRI Premium — Darshya',
     description:
-      'Annual all-access tier built for the Indian diaspora. ₹5000 / $60 per year.',
+      'Annual all-access tier built for the Indian diaspora. ₹5,000 INR / $60 USD per year.',
     url: 'https://darshya.online/nri',
     type: 'website',
     images: ['/og/nri-premium.jpg'],
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'NRI Premium — Darshya',
-    description: 'Annual all-access for the Indian diaspora. $60/yr.',
+    description: 'Annual all-access for the Indian diaspora. $60 USD / yr.',
   },
 };
 
@@ -80,7 +81,7 @@ const comparison = [
 const faqs = [
   {
     q: 'How does billing work?',
-    a: 'Annual subscription, billed once via Stripe in USD ($60). Auto-renews after 365 days; cancel anytime from /account/subscriptions.',
+    a: 'Annual subscription, billed once via Stripe in USD ($60 USD, ~₹5,000 INR equivalent). Auto-renews after 365 days; cancel anytime from /account/subscriptions.',
   },
   {
     q: 'Can I get a refund?',
@@ -107,6 +108,10 @@ const faqs = [
 export default function NriPremiumLanding() {
   return (
     <main className="bg-surface-50 min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(nriPremiumServiceJsonLd) }}
+      />
       <section className="relative overflow-hidden bg-gradient-to-br from-saffron-50 via-cream-50 to-saffron-100/30 border-b border-surface-200/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center max-w-3xl mx-auto">
@@ -127,7 +132,7 @@ export default function NriPremiumLanding() {
                 href="/auth?redirect=/upgrade"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
               >
-                Go Premium — $60/year
+                Go Premium — $60 USD / year
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
@@ -138,7 +143,7 @@ export default function NriPremiumLanding() {
               </Link>
             </div>
             <p className="text-xs text-surface-500 mt-4">
-              ₹5000 / year · cancel anytime · 14-day full refund
+              ₹5,000 INR / $60 USD per year · cancel anytime · 14-day full refund
             </p>
           </div>
         </div>
@@ -250,7 +255,7 @@ export default function NriPremiumLanding() {
             Less than a single live darshan abroad.
           </h2>
           <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
-            $60 per year. Cancel anytime. Full refund within 14 days. Your home is one click away.
+            $60 USD (~₹5,000 INR) per year. Cancel anytime. Full refund within 14 days. Your home is one click away.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link

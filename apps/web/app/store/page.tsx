@@ -3,6 +3,7 @@ import { getTranslations } from '../../lib/t';
 import { getProductImage } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
 import { listProducts } from "../../lib/medusa";
+import { storeItemListJsonLd, type StoreProductLite } from "../../lib/jsonld";
 import {
  ShoppingBag,
  Star,
@@ -31,6 +32,23 @@ export const metadata: Metadata = {
  title: "Store",
  description:
  "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits. Free delivery on orders above Rs 499.",
+ alternates: { canonical: "https://darshya.online/store" },
+ openGraph: {
+   title: "Store | Darshya",
+   description:
+   "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits.",
+   url: "https://darshya.online/store",
+   type: "website",
+   // TODO: add /og-default.png (1200x630) to apps/web/public/
+   images: ["/og-default.png"],
+ },
+ twitter: {
+   card: "summary_large_image",
+   title: "Store | Darshya",
+   description:
+   "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits.",
+   images: ["/og-default.png"],
+ },
 };
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -60,8 +78,13 @@ const categories = [
 export default async function StorePage() {
  const products = await listProducts();
  const t = await getTranslations('store');
+ const itemListJsonLd = storeItemListJsonLd(products as StoreProductLite[]);
  return (
  <div className="min-h-screen bg-surface-50">
+ <script
+   type="application/ld+json"
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+ />
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

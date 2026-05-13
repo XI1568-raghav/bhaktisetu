@@ -1,8 +1,23 @@
 import type { Metadata } from 'next';
 
+// Generic auth-segment defaults. Per-route canonical lives in each
+// route's own layout.tsx (login/signup/verify/callback) — hardcoding
+// /auth/login here would mistag signup, verify, callback as login.
 export const metadata: Metadata = {
- title: 'Sign In',
+ title: { default: 'Sign In', template: '%s | Darshya' },
  description: 'Sign in to Darshya with your phone number. Access live darshan, book pujas, and manage your spiritual journey.',
+ openGraph: {
+   title: 'Darshya — Sign In',
+   description: 'Sign in to Darshya with your phone number. Access live darshan, book pujas, and manage your spiritual journey.',
+   type: 'website',
+   images: ['/og-default.png'],
+ },
+ twitter: {
+   card: 'summary_large_image',
+   title: 'Darshya — Sign In',
+   description: 'Sign in to Darshya. Access live darshan, book pujas, and manage your spiritual journey.',
+   images: ['/og-default.png'],
+ },
 };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
