@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@poojly/ui', '@poojly/shared'],
+  transpilePackages: ['@poojly/ui', '@poojly/shared', '@poojly/api-client'],
   typescript: {
     // pnpm hoists @types/react@18 (mobile) alongside @types/react@19 (web),
     // and Next 15's webpack-side typechecker resolves to 18 for some files
@@ -74,6 +74,17 @@ const nextConfig: NextConfig = {
   },
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
+  webpack: (config) => {
+    // Workspace packages (@poojly/api-client, @poojly/shared) use NodeNext-style
+    // `./foo.js` imports in their TS source. Webpack's default resolver doesn't
+    // know to map `.js` → `.ts`. extensionAlias fixes this for bundlers.
+    config.resolve.extensionAlias = {
+      ...(config.resolve.extensionAlias ?? {}),
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs'],
+    };
+    return config;
+  },
   async redirects() {
     // Legacy `/kundli` path. Canonical is `/astrology/kundli`.
     // Permanent redirect preserves SEO + survives external inbound links.

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { AuthProvider } from "../lib/auth-context";
 import { CartProvider } from "../components/CartContext";
+import { QueryProvider } from "../components/QueryProvider";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
@@ -273,6 +274,7 @@ export default function RootLayout({
  Skip to main content
  </a>
  <SentryErrorBoundary>
+ <QueryProvider>
  <AuthProvider>
  <CartProvider>
 
@@ -429,6 +431,7 @@ export default function RootLayout({
  <NotificationPrompt />
  </CartProvider>
  </AuthProvider>
+ </QueryProvider>
  </SentryErrorBoundary>
  </body>
  </html>
