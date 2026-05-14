@@ -196,14 +196,7 @@ export function MobileNavV2() {
                               onClick={close}
                               className="flex items-center justify-between gap-2 px-3 py-3 text-sm text-surface-700 hover:bg-saffron-50/60 rounded-lg min-h-[44px]"
                             >
-                              <span className="flex items-center gap-2.5">
-                                {item.icon && (
-                                  <span aria-hidden="true" className="text-base leading-none">
-                                    {item.icon}
-                                  </span>
-                                )}
-                                <span className="font-medium">{item.label}</span>
-                              </span>
+                              <span className="font-medium">{item.label}</span>
                               <ChevronRight
                                 className="w-4 h-4 text-surface-300 shrink-0"
                                 aria-hidden="true"
