@@ -6,7 +6,7 @@ type Destination = {
   region: string;
   fromPrice: string;
   href: string;
-  gradient: string;
+  accent: string;
 };
 
 const DESTINATIONS: Destination[] = [
@@ -15,24 +15,21 @@ const DESTINATIONS: Destination[] = [
     region: 'Uttarakhand Himalayas',
     fromPrice: 'From ₹24,999',
     href: '/yatra/destinations',
-    gradient:
-      'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #93C5FD 100%)',
+    accent: 'var(--color-art-1)',
   },
   {
     name: 'Vaishno Devi',
     region: 'Katra, Jammu',
     fromPrice: 'From ₹8,499',
     href: '/yatra/destinations',
-    gradient:
-      'linear-gradient(135deg, #7C2D12 0%, #C2410C 50%, #FDBA74 100%)',
+    accent: 'var(--color-art-2)',
   },
   {
     name: 'Tirupati',
     region: 'Andhra Pradesh',
     fromPrice: 'From ₹6,999',
     href: '/yatra/destinations',
-    gradient:
-      'linear-gradient(135deg, #166534 0%, #15803D 50%, #BBF7D0 100%)',
+    accent: 'var(--color-art-3)',
   },
 ];
 
@@ -62,39 +59,55 @@ export default function YatraStrip() {
               key={d.name}
               href={d.href}
               prefetch={false}
-              className="group relative flex flex-col rounded-xl overflow-hidden card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style={{ border: '1px solid var(--color-border)' }}
+              className="group flex flex-col rounded-xl overflow-hidden card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+              }}
             >
               <div
-                className="relative h-40 flex items-end p-4"
-                style={{ background: d.gradient }}
-                aria-hidden="true"
+                className="relative h-32 sm:h-36 flex items-start justify-end p-4"
+                style={{ background: d.accent }}
               >
-                <Mountain className="absolute top-3 right-3 w-5 h-5 text-white/80" />
-                <div>
-                  <h3 className="text-white text-lg font-semibold tracking-tight">
-                    {d.name}
-                  </h3>
-                  <p className="text-white/85 text-xs mt-0.5">{d.region}</p>
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.7)' }}
+                >
+                  <Mountain
+                    className="w-5 h-5"
+                    style={{ color: 'var(--color-primary)' }}
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
-              <div
-                className="p-3 flex items-center justify-between"
-                style={{ background: 'var(--color-surface)' }}
-              >
+              <div className="p-4">
+                <h3
+                  className="text-base font-semibold tracking-tight mb-0.5"
+                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+                >
+                  {d.name}
+                </h3>
                 <p
-                  className="text-xs font-semibold"
-                  style={{ color: 'var(--color-text)' }}
+                  className="text-xs mb-3"
+                  style={{ color: 'var(--color-text-muted)' }}
                 >
-                  {d.fromPrice}
+                  {d.region}
                 </p>
-                <span
-                  className="inline-flex items-center gap-1 text-xs font-medium link-underline"
-                  style={{ color: 'var(--color-primary)' }}
-                >
-                  Explore{' '}
-                  <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-                </span>
+                <div className="flex items-center justify-between">
+                  <p
+                    className="text-xs font-semibold"
+                    style={{ color: 'var(--color-text)' }}
+                  >
+                    {d.fromPrice}
+                  </p>
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-medium link-underline"
+                    style={{ color: 'var(--color-primary)' }}
+                  >
+                    Explore{' '}
+                    <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </div>
               </div>
             </Link>
           ))}

@@ -7,7 +7,7 @@ type WorshipCard = {
   body: string;
   cta: string;
   Icon: typeof Video;
-  gradient: string;
+  accent: string;
   badge?: string;
 };
 
@@ -18,7 +18,7 @@ const CARDS: WorshipCard[] = [
     body: 'Watch live aarti from 200+ temples',
     cta: 'Watch live',
     Icon: Video,
-    gradient: 'linear-gradient(135deg, #C2410C 0%, #EA580C 60%, #FB923C 100%)',
+    accent: 'var(--color-primary-highlight)',
     badge: 'LIVE',
   },
   {
@@ -27,7 +27,7 @@ const CARDS: WorshipCard[] = [
     body: 'Rudrabhishek at Kashi · ₹1,100',
     cta: 'Book a puja',
     Icon: Flame,
-    gradient: 'linear-gradient(135deg, #B45309 0%, #D97706 60%, #F59E0B 100%)',
+    accent: 'var(--color-art-2)',
   },
   {
     href: '/gaushala',
@@ -35,7 +35,7 @@ const CARDS: WorshipCard[] = [
     body: 'Adopt a cow from ₹500/mo',
     cta: 'Sponsor seva',
     Icon: Heart,
-    gradient: 'linear-gradient(135deg, #166534 0%, #15803D 60%, #65A30D 100%)',
+    accent: 'var(--color-art-3)',
   },
   {
     href: '/donations',
@@ -43,7 +43,7 @@ const CARDS: WorshipCard[] = [
     body: 'Tax-deductible giving',
     cta: 'Donate now',
     Icon: Gift,
-    gradient: 'linear-gradient(135deg, #7C2D12 0%, #B45309 60%, #D4A76A 100%)',
+    accent: 'var(--color-art-4)',
     badge: '80G',
   },
 ];
@@ -73,33 +73,54 @@ export default function WorshipStrip() {
               key={card.href}
               href={card.href}
               prefetch={false}
-              className="group relative flex flex-col rounded-xl overflow-hidden card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style={{ border: '1px solid var(--color-border)' }}
+              className="group flex flex-col rounded-xl overflow-hidden card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+              }}
             >
               <div
-                className="relative h-28 sm:h-32 flex items-end p-3"
-                style={{ background: card.gradient }}
-                aria-hidden="true"
+                className="relative h-24 sm:h-28 flex items-end justify-between p-3"
+                style={{ background: card.accent }}
               >
-                <card.Icon className="absolute top-3 right-3 w-5 h-5 text-white/80" />
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.7)' }}
+                >
+                  <card.Icon
+                    className="w-5 h-5"
+                    style={{ color: 'var(--color-primary)' }}
+                    aria-hidden="true"
+                  />
+                </div>
                 {card.badge && (
-                  <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-white/95 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: '#0a0a0a' }}>
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full"
+                    style={{
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                    }}
+                  >
                     {card.badge === 'LIVE' && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full animate-pulse"
+                        style={{ background: '#C53030' }}
+                      />
                     )}
                     {card.badge}
                   </span>
                 )}
-                <h3 className="text-white text-base font-semibold tracking-tight">
+              </div>
+              <div className="flex-1 p-3 flex flex-col">
+                <h3
+                  className="text-base font-semibold tracking-tight mb-1"
+                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+                >
                   {card.label}
                 </h3>
-              </div>
-              <div
-                className="flex-1 p-3 flex flex-col justify-between"
-                style={{ background: 'var(--color-surface)' }}
-              >
                 <p
-                  className="text-xs leading-relaxed mb-3"
+                  className="text-xs leading-relaxed mb-3 flex-1"
                   style={{ color: 'var(--color-text-muted)' }}
                 >
                   {card.body}

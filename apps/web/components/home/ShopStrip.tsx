@@ -3,40 +3,35 @@ import { ShoppingBag, ArrowRight } from 'lucide-react';
 
 type Product = {
   name: string;
+  category: string;
   price: string;
   href: string;
-  gradient: string;
-  emoji: string;
 };
 
 const PRODUCTS: Product[] = [
   {
     name: 'Tirupati Prasad',
+    category: 'Prasad',
     price: '₹399',
     href: '/store',
-    gradient: 'linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)',
-    emoji: '🪔',
   },
   {
     name: 'Brass Krishna Murti',
+    category: 'Idols',
     price: '₹2,499',
     href: '/store',
-    gradient: 'linear-gradient(135deg, #FBBF24 0%, #B45309 100%)',
-    emoji: '🛕',
   },
   {
     name: 'Bhagavad Gita Hardcover',
+    category: 'Books',
     price: '₹599',
     href: '/store',
-    gradient: 'linear-gradient(135deg, #FCA5A5 0%, #B91C1C 100%)',
-    emoji: '📖',
   },
   {
     name: 'Tulsi Mala',
+    category: 'Sacred items',
     price: '₹299',
     href: '/store',
-    gradient: 'linear-gradient(135deg, #86EFAC 0%, #166534 100%)',
-    emoji: '📿',
   },
 ];
 
@@ -80,32 +75,38 @@ export default function ShopStrip() {
               key={p.name}
               href={p.href}
               prefetch={false}
-              className="group rounded-xl overflow-hidden card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              className="group flex flex-col rounded-xl p-4 card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               style={{
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',
               }}
             >
-              <div
-                className="aspect-square flex items-center justify-center text-5xl sm:text-6xl"
-                style={{ background: p.gradient }}
-                aria-hidden="true"
+              <p
+                className="text-[10px] sm:text-[11px] font-medium uppercase tracking-widest mb-2"
+                style={{ color: 'var(--color-text-muted)' }}
               >
-                {p.emoji}
-              </div>
-              <div className="p-2.5 sm:p-3">
+                {p.category}
+              </p>
+              <p
+                className="text-sm font-semibold leading-snug mb-3 flex-1 group-hover:underline"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  color: 'var(--color-text)',
+                }}
+              >
+                {p.name}
+              </p>
+              <div className="flex items-center justify-between">
                 <p
-                  className="text-xs sm:text-sm font-medium truncate group-hover:underline"
-                  style={{ color: 'var(--color-text)' }}
-                >
-                  {p.name}
-                </p>
-                <p
-                  className="text-xs sm:text-sm font-semibold mt-0.5"
+                  className="text-sm font-semibold"
                   style={{ color: 'var(--color-primary)' }}
                 >
                   {p.price}
                 </p>
+                <ArrowRight
+                  className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+                  style={{ color: 'var(--color-primary)' }}
+                />
               </div>
             </Link>
           ))}
