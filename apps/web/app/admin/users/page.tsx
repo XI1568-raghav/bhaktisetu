@@ -18,6 +18,7 @@ import {
   getUsers,
   patchUser,
   backendToUiRole,
+  uiToBackendRole,
   type BackendUser,
   type UiRole,
 } from '../../../lib/admin-api';
@@ -178,6 +179,19 @@ function AdminUsersPageContent() {
    }
  };
 
+ const handleRoleChange = async (userId: string, nextUiRole: UiRole) => {
+   setActionLoading(userId + '-role');
+   setError(null);
+   try {
+     await patchUser(token, userId, { roles: [uiToBackendRole[nextUiRole]] });
+     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: nextUiRole } : u)));
+   } catch (err) {
+     setError(err instanceof Error ? err.message : 'Role change failed');
+   } finally {
+     setActionLoading(null);
+   }
+ };
+
  const handleDelete = async (userId: string) => {
    setDeleteConfirm(null);
    setActionLoading(userId + '-delete');
@@ -287,9 +301,17 @@ function AdminUsersPageContent() {
  </td>
  <td className="py-3 px-4 text-surface-500 hidden md:table-cell">{user.email}</td>
  <td className="py-3 px-4">
- <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeColors[user.role] || ''}`}>
- {roleLabels[user.role] || user.role}
- </span>
+ <select
+   value={user.role}
+   onChange={(e) => handleRoleChange(user.id, e.target.value as UiRole)}
+   disabled={actionLoading === user.id + '-role'}
+   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border-0 outline-none cursor-pointer disabled:opacity-50 ${roleBadgeColors[user.role] || ''}`}
+   title="Change role"
+ >
+   {Object.entries(roleLabels).map(([value, label]) => (
+     <option key={value} value={value}>{label}</option>
+   ))}
+ </select>
  </td>
  <td className="py-3 px-4">
  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadge[user.status] || ''}`}>

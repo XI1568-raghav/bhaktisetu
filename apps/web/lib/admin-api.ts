@@ -32,6 +32,17 @@ export const backendToUiRole: Record<BackendRole, UiRole> = {
   ADMIN: 'admin',
 };
 
+export const uiToBackendRole: Record<UiRole, BackendRole> = {
+  devotee: 'DEVOTEE',
+  priest: 'PANDIT',
+  store_owner: 'STORE_OWNER',
+  astrologer: 'ASTROLOGER',
+  wellness_instructor: 'WELLNESS_INSTRUCTOR',
+  gaushala_manager: 'GAUSHALA_MANAGER',
+  temple_manager: 'TEMPLE_MANAGER',
+  admin: 'ADMIN',
+};
+
 export type BackendUser = {
   id: string;
   fullName: string;
