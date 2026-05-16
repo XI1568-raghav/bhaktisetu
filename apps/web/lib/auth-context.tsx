@@ -14,6 +14,16 @@ import { API_BASE_URL } from './api-config';
 
 export type UserRole = 'devotee' | 'priest' | 'store_owner' | 'astrologer' | 'wellness_instructor' | 'gaushala_manager' | 'temple_manager' | 'admin';
 
+// Web ↔ API role alias. API enum uses `pandit`; web uses `priest` for routing
+// (`/priest`, getRoleLabel, etc.). Convert at the network boundary only.
+function toApiRole(role: UserRole): string {
+ return role === 'priest' ? 'pandit' : role;
+}
+function fromApiRole(role: string | undefined | null): UserRole {
+ if (role === 'pandit') return 'priest';
+ return (role as UserRole) || 'devotee';
+}
+
 export interface AuthUser {
  id: string;
  phone: string;
@@ -424,7 +434,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const newSession: AuthSession = data.session;
  const newUser: AuthUser = {
  ...data.user,
- role: data.user.role || 'devotee',
+ role: fromApiRole(data.user.role),
  };
 
  setSession(newSession);
@@ -475,7 +485,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const newSession: AuthSession = data.session;
  const newUser: AuthUser = {
  ...data.user,
- role: data.user.role || 'devotee',
+ role: fromApiRole(data.user.role),
  };
 
  setSession(newSession);
@@ -500,7 +510,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const res = await fetch(`${API_BASE_URL}/auth/register`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify(data),
+ body: JSON.stringify({ ...data, role: toApiRole(data.role) }),
  });
 
  const result = await res.json();
@@ -512,7 +522,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const newSession: AuthSession = result.session;
  const newUser: AuthUser = {
  ...result.user,
- role: data.role,
+ role: fromApiRole(result.user?.role) || data.role,
  };
 
  setSession(newSession);
@@ -607,7 +617,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  avatarUrl: data.user.avatarUrl,
  preferredLanguage: data.user.preferredLanguage,
  subscriptionTier: data.user.subscriptionTier,
- role: data.user.role || user?.role || 'devotee',
+ role: data.user.role ? fromApiRole(data.user.role) : (user?.role || 'devotee'),
  };
  setUser(updatedUser);
  persistSession(session, updatedUser);
