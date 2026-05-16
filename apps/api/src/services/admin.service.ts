@@ -289,6 +289,62 @@ export class AdminService {
             isPrimary: idx === 0,
           })),
         });
+
+        // Mirror the signup-handler stub-profile seeding so /admin/approvals
+        // surfaces this user the moment an admin promotes them to a provider
+        // role. Without this the role assignment exists but the *_profiles row
+        // doesn't, leaving the approval queue silently empty.
+        const fullName = user.fullName || user.email || 'Unnamed';
+        for (const role of updates.roles) {
+          try {
+            switch (role) {
+              case 'PANDIT':
+                await prisma.panditProfile.upsert({
+                  where: { userId: id },
+                  update: {},
+                  create: { userId: id, experience: 0, specialties: [], languages: [], pricePerPuja: 500 },
+                });
+                break;
+              case 'STORE_OWNER':
+                await prisma.storeProfile.upsert({
+                  where: { userId: id },
+                  update: {},
+                  create: { userId: id, storeName: fullName, categories: [] },
+                });
+                break;
+              case 'ASTROLOGER':
+                await prisma.astrologerProfile.upsert({
+                  where: { userId: id },
+                  update: {},
+                  create: { userId: id, displayName: fullName, specialties: [], experience: 0, languages: [], pricePerMinute: 10 },
+                });
+                break;
+              case 'WELLNESS_INSTRUCTOR':
+                await prisma.wellnessProfile.upsert({
+                  where: { userId: id },
+                  update: {},
+                  create: { userId: id, displayName: fullName, specialties: [], certifications: [], experience: 0, pricePerSession: 500 },
+                });
+                break;
+              case 'GAUSHALA_MANAGER':
+                await prisma.gaushalaProfile.upsert({
+                  where: { userId: id },
+                  update: {},
+                  create: { userId: id, gaushalaName: fullName, totalCows: 0 },
+                });
+                break;
+              case 'TEMPLE_MANAGER':
+                await prisma.templeProfile.upsert({
+                  where: { userId: id },
+                  update: {},
+                  create: { userId: id, templeName: fullName },
+                });
+                break;
+            }
+          } catch {
+            // Profile upsert failure must not roll back the role assignment.
+          }
+        }
       }
 
       // If approving provider profiles
