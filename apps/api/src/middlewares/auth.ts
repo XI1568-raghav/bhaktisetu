@@ -228,10 +228,22 @@ export async function authenticateUser(
       roles,
     };
   } catch (err) {
-    request.log.error(err, 'Auth middleware error');
+    const errName = err instanceof Error ? err.name : 'UnknownError';
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errStack = err instanceof Error ? err.stack : undefined;
+    request.log.error(
+      { errName, errMsg, errStack, url: request.url },
+      'Auth middleware error',
+    );
+    // When ALLOW_AUTH_DIAGNOSTICS=true (set during triage), surface the real
+    // error name + message in the response so the operator can diagnose
+    // without Render log access. Default-deny: never leak in normal prod.
+    const diag = process.env.ALLOW_AUTH_DIAGNOSTICS === 'true';
     reply.code(500).send({
       error: 'Internal Server Error',
-      message: 'Authentication service unavailable.',
+      message: diag
+        ? `Auth failure: ${errName}: ${errMsg}`
+        : 'Authentication service unavailable.',
     });
   }
 }
