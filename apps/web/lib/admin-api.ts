@@ -101,12 +101,25 @@ function authHeaders(token: string | undefined): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Pulls the API's error message (if present) into the thrown Error so the
+// UI surfaces real diagnostics instead of bare HTTP status codes. The API
+// returns { error, message } on failures — we append message when available.
+async function describeFailure(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: string; error?: string };
+    const detail = body.message ?? body.error;
+    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+  } catch {
+    return `${fallback} (${res.status})`;
+  }
+}
+
 export async function getUsers(token: string | undefined): Promise<UsersResponse> {
   const res = await fetch(`${API_BASE_URL}/admin/users`, {
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(`Failed to load users (${res.status})`);
+    throw new Error(await describeFailure(res, 'Failed to load users'));
   }
   return (await res.json()) as UsersResponse;
 }
@@ -125,7 +138,7 @@ export async function patchUser(
     body: JSON.stringify(updates),
   });
   if (!res.ok) {
-    throw new Error(`Action failed (${res.status})`);
+    throw new Error(await describeFailure(res, 'Action failed'));
   }
 }
 
@@ -134,7 +147,7 @@ export async function getDashboard(token: string | undefined): Promise<Dashboard
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(`Failed to load dashboard (${res.status})`);
+    throw new Error(await describeFailure(res, 'Failed to load dashboard'));
   }
   return (await res.json()) as DashboardResponse;
 }
@@ -144,7 +157,7 @@ export async function getRevenue(token: string | undefined): Promise<RevenueResp
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(`Failed to load revenue (${res.status})`);
+    throw new Error(await describeFailure(res, 'Failed to load revenue'));
   }
   return (await res.json()) as RevenueResponse;
 }
