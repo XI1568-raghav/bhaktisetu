@@ -1,56 +1,43 @@
 # Tasks — Darshya
 
-> Live task ledger. Completed history in `docs/tasks-history.md`.
+> Live ledger. Completed history in `docs/tasks-history.md`.
+> User-action gates in `docs/activation-gates.md`.
 > Last updated: 2026-05-17.
 
-## HANDOFF (2026-05-17, post signup-role wire + memory trim)
+## HANDOFF (2026-05-17, post context-trim + admin role-wire)
 
-**Just finished**:
-- Signup persists primary role + stub provider profile e2e (commit `a103379`). Admin user list + approvals queue populated for all 6 provider roles.
-- Memory trim: PROJECT_CONTEXT/ROADMAP/TASKS slimmed to cut per-turn token load. Detail moved to `docs/project-context-detail.md`, `docs/roadmap-archive.md`, `docs/tasks-history.md`.
+**Shipped**:
+- Signup persists primary role + stub provider profile e2e (`a103379`).
+- Admin Users role-edit + stub provider seed on role change (`e4b2f37`).
+- Context-trim v2: disabled 9 unused plugins (notion/figma/linear/gitlab/asana/playwright/cloudflare/sentry-plugin/supabase). ~35K tokens/turn saved. **Requires Claude Code restart to apply.**
+- CLAUDE.md chain trimmed; user-action gates de-dup → `docs/activation-gates.md`.
 
-**Current task** — none claimed.
+**Active investigation**:
+- `/admin/users` + `/admin/approvals` returning 500 in prod. Possibly downstream of Render env state post-branch-switch.
 
-**Next 2-3 steps**:
-1. User runs the 3 runbooks (security rotation, CF Pages env paste, demo-video bash). Code shipped; activation gated on user dashboard clicks.
-2. **E2 — wire FCM server key** if user pastes `FCM_SERVER_KEY` to Render. Native push activates automatically.
-3. **Tripwire watch** — once PostHog wired, measure NRI Day-30 retention, blended CAC, NRI annual:per-puja ratio against `ROADMAP.md` thresholds.
+**Next**:
+1. Triage 500: check Render logs for stack trace at `/admin/users` + `/admin/approvals`.
+2. Confirm `ALLOW_DEMO_PAYMENTS=true` set on Render.
+3. Verify Survagya e2e flow once 500 resolved.
 
 ## In progress
 
-_(none claimed)_
+- Investigate admin 500s.
 
 ## Pending — engineering
 
 | # | Task | Notes |
 |---|---|---|
-| E2 | Wire FCM server key when user provides | Paste `FCM_SERVER_KEY` to Render. Native push goes live automatically (env-or-noop). |
+| E2 | Wire FCM server key on user paste | env-or-noop; native push live automatically |
 
-## Pending — user-action gates (BLOCKED on user)
+## Pending — user-action
 
-| # | Task | Why blocked |
-|---|---|---|
-| U1 | Razorpay live KYC | User submits business docs |
-| U2 | Stripe NRI KYC | US/UK/CA/AU activation |
-| U3 | Apple Developer Program ($99/yr) | User $$ |
-| U4 | Google Play Console ($25) | User $$ |
-| U5 | WhatsApp Meta Cloud API verification | Meta business profile |
-| U6 | Affiliate program signups (Amazon/Flipkart/MMT) | User application |
-| U7 | Rotate Supabase DB password + update Render `DATABASE_URL` | Security hygiene |
-| U8 | Unset `ALLOW_DEMO_TOKENS` on Render after investor demos | Prod hardening |
-| U9 | `REDIS_URL` paste from Upstash free tier | Cache activation (optional) |
+→ `docs/activation-gates.md` (U1-U15).
 
-## Recently completed (top 3 — full history in `docs/tasks-history.md`)
+## Recently completed (top 3)
 
 | Date | Task | Commit |
 |---|---|---|
-| 2026-05-17 | Persist primary role + stub provider profile on signup (admin approvals e2e) | `a103379` |
-| 2026-05-17 | Signup web↔API role enum mapping (priest↔pandit) | `8b87dfb` |
-| 2026-05-17 | AiChat first-message reply bug | `7bf0bda` |
-
-## Conventions
-
-- Add row under **Pending** when task identified, not when work starts.
-- Move to **In progress** with date + agent name on claim.
-- Move to **Recently completed** with commit SHA on done. Keep top 3 only; older history → `docs/tasks-history.md`.
-- Mark blockers `BLOCKED on X`. Don't silently leave half-done work without status.
+| 2026-05-17 | Context trim v2 + admin role-edit | settings + `e4b2f37` |
+| 2026-05-17 | Persist primary role + stub provider profile on signup | `a103379` |
+| 2026-05-17 | Signup web↔API role enum mapping | `8b87dfb` |
