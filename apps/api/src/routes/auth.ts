@@ -93,6 +93,26 @@ function makeDemoSession(email: string) {
   };
 }
 
+// Resolve a user's primary role from user_role_assignments and return it
+// in the web-facing lowercase form (`pandit`, `store_owner`, ...). Falls
+// back to 'devotee' when no assignment exists. Centralised so /me,
+// /login, /verify-otp, and Google sync all surface the same answer —
+// without this, the web layer kept treating new providers as devotees
+// because the response carried no role field.
+async function getPrimaryRoleForUser(userId: string): Promise<string> {
+  try {
+    const assignments = await prisma.userRoleAssignment.findMany({
+      where: { userId },
+      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+    });
+    const first = assignments[0];
+    if (!first) return 'devotee';
+    return first.role.toLowerCase();
+  } catch {
+    return 'devotee';
+  }
+}
+
 // ─── Helper ────────────────────────────────────────────────────────────────────
 
 /**
@@ -258,6 +278,8 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    const role = await getPrimaryRoleForUser(dbUser.id);
+
     return reply.code(200).send({
       success: true,
       message: 'OTP verified successfully',
@@ -273,6 +295,7 @@ export async function authRoutes(server: FastifyInstance) {
         phone: dbUser.phone,
         fullName: dbUser.fullName,
         email: dbUser.email,
+        role,
         avatarUrl: dbUser.avatarUrl,
         preferredLanguage: dbUser.preferredLanguage,
         subscriptionTier: dbUser.subscriptionTier,
@@ -403,6 +426,8 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    const role = await getPrimaryRoleForUser(user.id);
+
     return reply.code(200).send({
       success: true,
       user: {
@@ -410,6 +435,7 @@ export async function authRoutes(server: FastifyInstance) {
         phone: user.phone,
         email: user.email,
         fullName: user.fullName,
+        role,
         avatarUrl: user.avatarUrl,
         preferredLanguage: user.preferredLanguage,
         locationCity: user.locationCity,
@@ -493,6 +519,8 @@ export async function authRoutes(server: FastifyInstance) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
       }
 
+      const role = await getPrimaryRoleForUser(user.id);
+
       return reply.send({
         session: {
           accessToken: authData.session.access_token,
@@ -503,9 +531,7 @@ export async function authRoutes(server: FastifyInstance) {
           id: user.id,
           email: user.email,
           fullName: user.fullName,
-          // User model has no `role` column (roles live in user_role_assignments);
-          // legacy callers still expect a string here, so default to 'devotee'.
-          role: (user as unknown as { role?: string }).role || 'devotee',
+          role,
           avatarUrl: user.avatarUrl,
           preferredLanguage: user.preferredLanguage,
           subscriptionTier: user.subscriptionTier,
@@ -596,6 +622,93 @@ export async function authRoutes(server: FastifyInstance) {
           locationCity: city || undefined,
         },
       });
+
+      // Persist primary role on user_role_assignments so /admin/users
+      // surfaces the selected role and role-gated middleware (requireRole)
+      // resolves correctly on the very first request after signup.
+      // Without this, every new account read back as DEVOTEE and provider
+      // accounts could not access their portals until an admin manually
+      // patched roles via PATCH /admin/users/:id.
+      const SIGNUP_ROLE_ENUM: Record<string, 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER'> = {
+        devotee: 'DEVOTEE',
+        pandit: 'PANDIT',
+        store_owner: 'STORE_OWNER',
+        astrologer: 'ASTROLOGER',
+        wellness_instructor: 'WELLNESS_INSTRUCTOR',
+        gaushala_manager: 'GAUSHALA_MANAGER',
+        temple_manager: 'TEMPLE_MANAGER',
+      };
+      const enumRole = SIGNUP_ROLE_ENUM[role];
+      if (enumRole) {
+        try {
+          await prisma.userRoleAssignment.upsert({
+            where: { userId_role: { userId: user.id, role: enumRole } },
+            update: { isPrimary: true },
+            create: { userId: user.id, role: enumRole, isPrimary: true },
+          });
+        } catch (assignErr) {
+          // Non-fatal — surface in logs but let signup complete. User can
+          // still authenticate; admin can manually fix role if this throws.
+          request.log.warn({ err: assignErr, userId: user.id, role: enumRole }, 'role assignment upsert failed');
+        }
+
+        // Seed a stub provider profile (approved=false) so the account
+        // shows up in /admin/approvals immediately, even if the secondary
+        // /onboarding/provider call from the web signup page fails Zod or
+        // never fires (e.g. network drop after user creation). Idempotent:
+        // skipNothing — onUpdate is a no-op so a later /onboarding/provider
+        // call still overwrites with real data. Without this, providers
+        // had to manually navigate to /onboarding/[role] before admins
+        // could see them, and many never did — silent approval-queue gap.
+        try {
+          switch (enumRole) {
+            case 'PANDIT':
+              await prisma.panditProfile.upsert({
+                where: { userId: user.id },
+                update: {},
+                create: { userId: user.id, experience: 0, specialties: [], languages: [], pricePerPuja: 500 },
+              });
+              break;
+            case 'STORE_OWNER':
+              await prisma.storeProfile.upsert({
+                where: { userId: user.id },
+                update: {},
+                create: { userId: user.id, storeName: fullName || 'Unnamed Store', categories: [] },
+              });
+              break;
+            case 'ASTROLOGER':
+              await prisma.astrologerProfile.upsert({
+                where: { userId: user.id },
+                update: {},
+                create: { userId: user.id, displayName: fullName || 'Astrologer', specialties: [], experience: 0, languages: [], pricePerMinute: 10 },
+              });
+              break;
+            case 'WELLNESS_INSTRUCTOR':
+              await prisma.wellnessProfile.upsert({
+                where: { userId: user.id },
+                update: {},
+                create: { userId: user.id, displayName: fullName || 'Wellness Instructor', specialties: [], certifications: [], experience: 0, pricePerSession: 500 },
+              });
+              break;
+            case 'GAUSHALA_MANAGER':
+              await prisma.gaushalaProfile.upsert({
+                where: { userId: user.id },
+                update: {},
+                create: { userId: user.id, gaushalaName: fullName || 'Unnamed Gaushala', totalCows: 0 },
+              });
+              break;
+            case 'TEMPLE_MANAGER':
+              await prisma.templeProfile.upsert({
+                where: { userId: user.id },
+                update: {},
+                create: { userId: user.id, templeName: fullName || 'Unnamed Temple' },
+              });
+              break;
+          }
+        } catch (profileErr) {
+          request.log.warn({ err: profileErr, userId: user.id, role: enumRole }, 'stub profile upsert failed');
+        }
+      }
 
       return reply.code(201).send({
         session: authData.session
@@ -741,6 +854,8 @@ export async function authRoutes(server: FastifyInstance) {
         include: { subscription: { where: { status: 'active' }, take: 1 } },
       });
 
+      const role = await getPrimaryRoleForUser(dbUser.id);
+
       return reply.send({
         session: {
           accessToken,
@@ -752,8 +867,7 @@ export async function authRoutes(server: FastifyInstance) {
           email: dbUser.email,
           phone: dbUser.phone,
           fullName: dbUser.fullName,
-          // User has no `role` column; legacy callers still expect a string here.
-          role: (dbUser as unknown as { role?: string }).role || 'devotee',
+          role,
           avatarUrl: dbUser.avatarUrl,
           preferredLanguage: dbUser.preferredLanguage,
           subscriptionTier: dbUser.subscriptionTier,
