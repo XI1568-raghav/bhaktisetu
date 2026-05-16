@@ -314,8 +314,12 @@ export default function AiChat({
  scrollToBottom();
  }, [messages, scrollToBottom]);
 
- // Load existing conversation from localStorage
+ // Load existing conversation from localStorage when the parent switches
+ // to a different conversation. Skip when conversationId matches the one
+ // we just created locally mid-stream — otherwise the in-flight assistant
+ // placeholder + streamed tokens get wiped before the first reply renders.
  useEffect(() => {
+ if (conversationId && conversationId === currentConvId) return;
  if (conversationId) {
  const conv = getConversation(conversationId);
  if (conv) {
@@ -329,7 +333,6 @@ export default function AiChat({
  setMessages(loaded);
  setCurrentConvId(conversationId);
  } else {
- // Conversation not found in localStorage — start fresh
  setMessages([]);
  setCurrentConvId(null);
  }
@@ -337,6 +340,7 @@ export default function AiChat({
  setMessages([]);
  setCurrentConvId(null);
  }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [conversationId]);
 
  // Focus input on mount
