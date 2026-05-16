@@ -1,116 +1,88 @@
 # Darshya — Project Context
 
-> Slim index. Read this first; load deeper docs as needed.
-> Last refreshed: 2026-05-13.
+> Slim index. Load deeper docs as needed.
+> Last refreshed: 2026-05-17.
 
 ## Persistent project memory (READ AT SESSION START)
 
-These three files are the source of truth. Conversation history is NOT — it is wiped by /compact and /clear.
+Source of truth (conversation history wiped by /compact + /clear):
 
 @PROJECT_CONTEXT.md
 @ROADMAP.md
 @TASKS.md
 
 **Rules:**
-1. At session start, load `PROJECT_CONTEXT.md`, `ROADMAP.md`, `TASKS.md` and the current task. Build understanding from those files only — do not assume memory of prior chats.
-2. When you learn something long-term (architecture, cross-platform, business direction), UPDATE the matching file. Tell the user which file you updated and show a diff-style summary.
-3. Before /compact or /clear, CONSOLIDATE: update the three files, then write a short HANDOFF block (current task, just-finished, next 2-3 steps).
-4. After /compact or /clear, reload the three files and confirm understanding from them — not from old chat.
-5. Treat these files as shared memory between agents and sessions. A new engineer should onboard from these alone.
+1. At session start, load the three @-imports + current task. Build understanding from those, not prior chat.
+2. When learning long-term info (architecture, cross-platform, business direction) — UPDATE the matching file. Show diff-style summary.
+3. Before /compact or /clear — CONSOLIDATE: update the three files + write a short HANDOFF block in TASKS.md.
+4. Treat these files as shared memory across agents + sessions.
 
-## Identity
+## Identity (one-line)
 
-- **Product**: Darshya — India's devotional super-app (live darshan, puja booking with video proof, content, gaushala seva, e-commerce, astrology, wellness).
-- **Domain**: https://darshya.online
-- **Repo path**: `E:\NewClaude\bhaktisetu` (folder name is legacy; product is Darshya)
-- **Prior names**: Poojly → BhaktiSetu → Darshya. Storage keys still use `poojly_*` for backwards compat — do NOT rename without a migration.
-- **Budget**: $0. Every integration must work in free tier or no-op when env vars are absent.
+Darshya — devotional super-app at https://darshya.online. Solo founder, $0 budget. Detail in `PROJECT_CONTEXT.md`.
 
-## Tech stack (current, not aspirational)
+## Context-discipline (CRITICAL — keeps sessions long)
 
-- **Monorepo**: Turborepo + pnpm workspaces
-- **Web** (`apps/web`): Next.js 15 + React 19 + Tailwind v4 + ShadcnUI → **Cloudflare Pages**
-- **API** (`apps/api`): Fastify 5 + Prisma + PostgreSQL on **Supabase** → **Render** (free tier, no cron)
-- **Mobile** (`apps/mobile`): Expo + Expo Router (mock-only currently; see `docs/mobile-plan.md`)
-- **Admin** (`apps/admin`): port 3001
-- **Commerce**: MedusaJS headless (`apps/medusa-store`)
-- **AI**: **Groq** (Llama 3.3 70B + 3.1 8B Instant) — replaced Anthropic
-- **Payments**: Razorpay (INR) + Stripe (NRI)
-- **Streaming**: AWS IVS (web only)
-- **Realtime**: Jitsi Meet for live consultations
-- **Cache**: Upstash Redis
-- **Email**: Resend (3K/mo free)
-- **Storage**: Cloudflare R2 (10GB free, zero egress)
-- **Errors**: Sentry (5K/mo free)
-- **Analytics**: PostHog + Cloudflare Web Analytics
-- **Panchang**: `mhah-panchang` (real, not mocked)
-- **CMS**: Sanity
+These rules cap per-turn token bloat. Auto-compact at ~200K tokens; trim discipline buys ~12-15 chats per session instead of 2-3.
+
+- **Reads**: use `offset` + `limit` on Read. Never load whole files >500 lines. For unknown files, Read first 50 then targeted ranges.
+- **Searches**: use Grep with `head_limit` + targeted `glob`/`type`. For broad multi-round exploration, dispatch `Agent(subagent_type=Explore)` — keeps results out of main context.
+- **Vitest**: `--reporter=basic` not dot. Pipe through `2>&1 | tail -40` when only outcome matters. Strip ANSI on need.
+- **Type-check**: `pnpm tsc --noEmit 2>&1 | head -20`. Don't dump full output.
+- **Big work**: enter Plan mode. Don't plan in chat.
+- **Bash output**: `head` / `tail` / `Select-Object -First N` on noisy commands (git log, ls, npm install).
+- **Files written by you**: don't Read back — harness tracks state.
+- **Memory @-imports**: keep the three files ≤60 lines each. Spillover → `docs/*-detail.md`, `docs/*-archive.md`, `docs/*-history.md`.
+
+## Tech stack (current)
+
+Monorepo: Turborepo + pnpm. Web: Next 15 → CF Pages. API: Fastify 5 + Prisma → Render. DB: Supabase Postgres. Mobile: Expo 50. Commerce: MedusaJS. AI: Groq. Payments: Razorpay + Stripe. Streaming: AWS IVS. Cache: Upstash Redis. Email: Resend. Storage: R2. Errors: Sentry. Analytics: PostHog + CF. CMS: Sanity. Panchang: `mhah-panchang`.
+
+Full integration table + free-tier notes → `docs/project-context-detail.md`.
 
 ## Repo layout
 
 ```
-apps/
-  web/            Next.js 15 main site (port 3000)
-  api/            Fastify backend (port 4000)
-  admin/          Admin dashboard (port 3001)
-  mobile/         Expo app (mock-only currently)
-  medusa-store/   MedusaJS commerce engine
-packages/
-  ui/             ShadcnUI-based shared components
-  shared/         TS types, Zod validators, constants, api-endpoints
-  api-client/     React Query hooks + typed fetch client (RN-compatible)
-  analytics/      PostHog event tracking
+apps/{web,api,admin,mobile,medusa-store}
+packages/{ui,shared,api-client,analytics}
 ```
 
 ## Conventions
 
-- TypeScript strict mode
-- **Zod at every external boundary** (HTTP body, query, form). Internal code trusts types.
-- Prisma for queries; raw SQL only when measured
-- React Query (TanStack) for all frontend API calls
-- ShadcnUI base; customise via CVA
-- Files: kebab-case; components: PascalCase
-- API routes: `/api/v1/*` prefix
-- Money: `Decimal(10,2)` in DB; render via `formatPrice`; INR + USD always
-- Booking number: `BS-YYYYMMDD-XXXXX`
-- 80G receipt number: `DR-YYYYMMDD-XXXX` (4 hex)
-- **Default to no comments**. Document non-obvious WHY (constraints, prior incidents) only. Never narrate WHAT.
-- **Graceful degradation everywhere**: every integration checks env vars and returns `{skipped: true}` / no-op when absent. Never crash on missing config.
+- TS strict everywhere.
+- Zod at every external boundary; internal trusts types.
+- React Query for ALL frontend API calls.
+- Files kebab-case; components PascalCase.
+- API routes `/api/v1/*`.
+- Money `Decimal(10,2)` → `formatPrice` → INR + USD always.
+- Booking `BS-YYYYMMDD-XXXXX`; 80G `DR-YYYYMMDD-XXXX`.
+- **Default no comments**. Document non-obvious WHY only. Never narrate WHAT.
+- **Graceful degradation**: every integration env-or-noop.
 
 ## Business rules
 
-1. Video proof MANDATORY for puja bookings — priest uploads before payout
-2. NRI pricing: 9-10× domestic, configured per puja type
-3. Platform commission: 20-40% per temple, configurable
-4. Priest payout = booking price − commission, gated on Aadhaar verification
-5. Cancellation up to 24h before scheduled time
-6. Temples must be verified before going live
-7. 80G receipt requires donee 80G regn + PAN
-
-## Methodology
-
-Superpowers: Brainstorm → Plan → TDD → Execute → Review → Verify.
-- Vitest unit + Playwright E2E, co-located `*.test.ts`
-- `pnpm turbo type-check` and `pnpm turbo test` green at every phase boundary
-- Targets: 90%+ on services, 100% on validators
+In `PROJECT_CONTEXT.md`. Video proof mandatory, NRI 9-10×, commission 20-40%, etc.
 
 ## Deeper docs
 
-| File | When to read |
+| File | When |
 |---|---|
-| `docs/launch-state.md` | **Read first.** Current launch progress, recent files, open items user must provide |
+| `docs/launch-state.md` | Read first for current launch progress, recent files, open user items |
+| `docs/project-context-detail.md` | Full integrations + gotchas + recently shipped + doc map |
+| `docs/roadmap-archive.md` | Shipped phases + tripwires + future direction + revenue lines |
+| `docs/tasks-history.md` | Completed task log beyond top 3 |
 | `docs/auth-model.md` | Token formats, demo accounts, middleware ordering |
 | `docs/env-vars.md` | Every env var + behavior when absent |
-| `docs/glossary.md` | Domain terms (darshan, puja, sankalp, 80G, etc.) |
-| `docs/caveats.md` | "Do not touch unless asked" gotchas — read before refactoring |
+| `docs/glossary.md` | Domain terms |
+| `docs/caveats.md` | "Do not touch unless asked" gotchas |
 | `docs/mobile-plan.md` | Mobile parity multi-phase plan |
-| `docs/skill-workflow-map.md` | Which Claude Code skill to invoke for each business-ops workflow (marketing, content, eng-ops, product, finance, HR, legal). Read when picking how to do a task. |
+| `docs/skill-workflow-map.md` | Which Claude Code skill for which business-ops workflow |
 
 ## How future sessions should use this
 
-1. Read this file first.
+1. Read this file first; the @-imports auto-load.
 2. Run `TaskList` to see in-progress work.
-3. Load deeper docs only when relevant to the task at hand.
-4. Verify any "memory/doc says X exists" claim by reading the actual source file before recommending action.
-5. When adding a new integration, follow the env-var-or-noop pattern — see `docs/env-vars.md`.
-6. Update `docs/launch-state.md` when state materially changes. Don't let it rot.
+3. Load deeper docs only when relevant.
+4. Verify "memory says X exists" by reading current source before acting.
+5. New integration → env-or-noop pattern (`docs/env-vars.md`).
+6. Update `docs/launch-state.md` when state materially changes.
