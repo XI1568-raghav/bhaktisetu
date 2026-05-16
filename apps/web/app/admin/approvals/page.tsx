@@ -105,7 +105,17 @@ export default function AdminApprovalsPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          throw new Error(`Failed to load approvals (${res.status})`);
+          // Surface API error body so ALLOW_AUTH_DIAGNOSTICS output reaches UI.
+          let detail = '';
+          try {
+            const body = (await res.json()) as { message?: string; error?: string };
+            detail = body.message ?? body.error ?? '';
+          } catch { /* non-JSON body */ }
+          throw new Error(
+            detail
+              ? `Failed to load approvals (${res.status}): ${detail}`
+              : `Failed to load approvals (${res.status})`,
+          );
         }
         const data = (await res.json()) as { approvals: BackendApproval[]; total: number };
         if (cancelled) return;
