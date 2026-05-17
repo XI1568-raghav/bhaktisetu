@@ -111,6 +111,8 @@ async function bootstrap() {
   await server.register(cors, {
     origin: corsOrigins,
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
   // Global rate limit. Per-prefix overrides applied via onRoute hook below.
   // Per-user partition when authenticated; IP fallback for anon traffic.
