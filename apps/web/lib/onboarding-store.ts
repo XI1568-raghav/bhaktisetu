@@ -90,18 +90,35 @@ function normalize(raw: unknown): OnboardingState | null {
   };
 }
 
+// Snapshot cache — useSyncExternalStore requires getSnapshot() return a
+// stable reference when underlying data hasn't changed. Without this cache,
+// every render re-parses JSON and produces a new object, which React 18
+// detects as "getSnapshot should be cached" → infinite render loop →
+// SentryErrorBoundary fallback ("Something went wrong. Please refresh.").
+let cachedRaw: string | null = null;
+let cachedSnapshot: OnboardingState | null = null;
+
 export function getOnboarding(): OnboardingState | null {
   if (!isBrowser()) return null;
   try {
     const raw = window.localStorage.getItem(ONBOARDING_STORAGE_KEY);
-    if (!raw) return null;
+    if (raw === cachedRaw) return cachedSnapshot;
+    if (!raw) {
+      cachedRaw = null;
+      cachedSnapshot = null;
+      return null;
+    }
     const parsed = JSON.parse(raw);
     const normalized = normalize(parsed);
     if (!normalized) {
       // Bad data — sweep so subsequent reads don't keep failing.
       window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      cachedRaw = null;
+      cachedSnapshot = null;
       return null;
     }
+    cachedRaw = raw;
+    cachedSnapshot = normalized;
     return normalized;
   } catch {
     try {
@@ -109,6 +126,8 @@ export function getOnboarding(): OnboardingState | null {
     } catch {
       /* noop */
     }
+    cachedRaw = null;
+    cachedSnapshot = null;
     return null;
   }
 }
