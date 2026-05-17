@@ -9,6 +9,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
 import { registerAuthDecorators } from './middlewares/auth.js';
+import { ensureSchemaInvariants } from './lib/ensure-schema.js';
 import { templeRoutes } from './routes/temples.js';
 import { pujaRoutes } from './routes/pujas.js';
 import { bookingRoutes } from './routes/bookings.js';
@@ -83,6 +84,11 @@ const server = Fastify({
 });
 
 async function bootstrap() {
+  // Defensive schema check — replays non-idempotent migrations that the
+  // Render start command may have skipped. Runs before routes register so
+  // hot-path Prisma queries see the columns they expect.
+  await ensureSchemaInvariants(server.log);
+
   // Security plugins
   await server.register(helmet, {
     contentSecurityPolicy: false,
