@@ -22,6 +22,14 @@ type DashboardDonation = {
  paidAt: string | null;
 };
 
+type DashboardCow = {
+ id: string;
+ name: string;
+ breed: string | null;
+ ageYears: number | null;
+ healthStatus: string;
+};
+
 function formatInr(n: number): string {
  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
@@ -38,17 +46,11 @@ function relativeTime(iso: string | null): string {
  return `${d}d ago`;
 }
 
-const cowHighlights = [
- { id: 'GS-001', name: 'Kamdhenu', breed: 'Gir', status: 'Healthy', age: '4y' },
- { id: 'GS-002', name: 'Nandini', breed: 'Sahiwal', status: 'Treatment', age: '6y' },
- { id: 'GS-003', name: 'Surabhi', breed: 'Tharparkar', status: 'Healthy', age: '3y' },
- { id: 'GS-004', name: 'Ganga', breed: 'Gir', status: 'Pregnant', age: '5y' },
-];
-
 const statusColor: Record<string, string> = {
- Healthy: 'bg-green-100 text-green-700',
- Treatment: 'bg-red-100 text-red-700',
- Pregnant: 'bg-purple-100 text-purple-700',
+ healthy: 'bg-green-100 text-green-700',
+ treatment: 'bg-red-100 text-red-700',
+ pregnant: 'bg-purple-100 text-purple-700',
+ recovering: 'bg-amber-100 text-amber-700',
 };
 
 export default function GaushalaDashboard() {
@@ -57,6 +59,7 @@ export default function GaushalaDashboard() {
  const [kycReason, setKycReason] = useState<string | null>(null);
  const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
  const [recentDonations, setRecentDonations] = useState<DashboardDonation[]>([]);
+ const [recentCows, setRecentCows] = useState<DashboardCow[]>([]);
 
  useEffect(() => {
  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
@@ -69,6 +72,7 @@ export default function GaushalaDashboard() {
  const j = await r.json();
  if (j.stats) setDashStats(j.stats);
  if (Array.isArray(j.recentDonations)) setRecentDonations(j.recentDonations);
+ if (Array.isArray(j.recentCows)) setRecentCows(j.recentCows);
  } catch {
  // graceful — leave defaults
  }
@@ -170,17 +174,27 @@ export default function GaushalaDashboard() {
  </Link>
  </div>
  <div className="divide-y divide-amber-50">
- {cowHighlights.map((c) => (
+ {recentCows.length === 0 ? (
+ <div className="px-6 py-8 text-center">
+ <Beef className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+ <p className="text-sm text-gray-500">No cows registered</p>
+ <Link href="/gaushala-portal/cows" className="text-xs text-amber-600 hover:underline mt-1 inline-block">
+ + Register your first cow
+ </Link>
+ </div>
+ ) : recentCows.map((c) => (
  <div key={c.id} className="px-6 py-3 flex items-center justify-between">
  <div className="flex items-center gap-3">
- <span className="text-xl"></span>
+ <Beef className="w-5 h-5 text-amber-600" />
  <div>
  <p className="text-sm font-medium text-gray-800">{c.name}</p>
- <p className="text-xs text-gray-400">{c.breed} · {c.age} · #{c.id}</p>
+ <p className="text-xs text-gray-400">
+ {c.breed || 'Mixed'}{c.ageYears ? ` · ${c.ageYears}y` : ''}
+ </p>
  </div>
  </div>
- <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[c.status] ?? 'bg-gray-100 text-gray-600'}`}>
- {c.status}
+ <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${statusColor[c.healthStatus] ?? 'bg-gray-100 text-gray-600'}`}>
+ {c.healthStatus}
  </span>
  </div>
  ))}

@@ -1,6 +1,16 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+
+const profileUpdateSchema = z.object({
+  displayName: z.string().min(1).max(100).optional(),
+  specialties: z.array(z.string().max(50)).max(20).optional(),
+  certifications: z.array(z.string().max(100)).max(20).optional(),
+  experience: z.number().int().min(0).max(80).optional(),
+  pricePerSession: z.number().min(0).max(1000000).optional(),
+  bio: z.string().max(2000).optional(),
+});
 
 export async function wellnessPortalRoutes(server: FastifyInstance) {
   server.get('/dashboard', { preHandler: [authenticateUser] }, async (request, reply) => {
@@ -83,5 +93,37 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
         enrolled: s._count.enrollments,
       })),
     });
+  });
+
+  server.patch('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('WELLNESS_INSTRUCTOR')) {
+      return reply.code(403).send({ error: 'WELLNESS_INSTRUCTOR role required' });
+    }
+    const parsed = profileUpdateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const existing = await prisma.wellnessProfile.findUnique({ where: { userId } });
+    if (!existing) {
+      const profile = await prisma.wellnessProfile.create({
+        data: {
+          userId,
+          displayName: parsed.data.displayName ?? 'Instructor',
+          specialties: parsed.data.specialties ?? [],
+          certifications: parsed.data.certifications ?? [],
+          experience: parsed.data.experience ?? 0,
+          pricePerSession: parsed.data.pricePerSession ?? 500,
+          bio: parsed.data.bio,
+        },
+      });
+      return reply.send({ profile });
+    }
+    const profile = await prisma.wellnessProfile.update({
+      where: { userId },
+      data: parsed.data,
+    });
+    return reply.send({ profile });
   });
 }

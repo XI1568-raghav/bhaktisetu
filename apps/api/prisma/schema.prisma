@@ -1075,6 +1075,61 @@ model Donation {
   @@map("donations")
 }
 
+// ─── GAUSHALA CRUD: COWS + VOLUNTEERS + HEALTH ─────────────────────────────
+
+model Cow {
+  id            String   @id @default(uuid()) @db.Uuid
+  gaushalaId    String   @map("gaushala_id") @db.Uuid
+  tagNumber     String   @map("tag_number")
+  name          String
+  breed         String?
+  ageYears      Int?     @map("age_years")
+  gender        String   @default("female")
+  healthStatus  String   @default("healthy") @map("health_status")
+  arrivalDate   DateTime @default(now()) @map("arrival_date")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  healthRecords CowHealthRecord[]
+
+  @@unique([gaushalaId, tagNumber])
+  @@index([gaushalaId, createdAt])
+  @@map("cows")
+}
+
+model CowHealthRecord {
+  id        String   @id @default(uuid()) @db.Uuid
+  cowId     String   @map("cow_id") @db.Uuid
+  recordedAt DateTime @default(now()) @map("recorded_at")
+  recordType String  @map("record_type") // checkup, vaccination, treatment, vet_visit
+  notes     String
+  vetName   String?  @map("vet_name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cow Cow @relation(fields: [cowId], references: [id], onDelete: Cascade)
+
+  @@index([cowId, recordedAt])
+  @@map("cow_health_records")
+}
+
+model Volunteer {
+  id          String   @id @default(uuid()) @db.Uuid
+  gaushalaId  String   @map("gaushala_id") @db.Uuid
+  fullName    String   @map("full_name")
+  phone       String?
+  email       String?
+  role        String   @default("general") // general, feeding, medical, cleaning
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  active      Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([gaushalaId, active])
+  @@map("volunteers")
+}
+
 // ─── SUPPORT TICKETS ───────────────────────────────────────────────────────
 
 model SupportTicket {

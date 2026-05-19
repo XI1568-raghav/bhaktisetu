@@ -22,11 +22,17 @@ const LiveChatWidget = dynamic(() => import('./LiveChatWidget'), {
  loading: () => null,
 });
 
+const WhatsAppButton = dynamic(() => import('./WhatsAppButton'), {
+ ssr: false,
+ loading: () => null,
+});
+
 export function DeferredClientWidgets() {
  return (
  <>
  <CartDrawer />
  <LiveChatWidget />
+ <WhatsAppButton />
  </>
  );
 }

@@ -72,6 +72,12 @@ function ProviderKycContent() {
  const res = await fetch(`${API_BASE_URL}/provider-kyc`, {
  headers: { Authorization: `Bearer ${token}` },
  });
+ if (res.status === 403 || res.status === 404) {
+ // No provider role assigned yet — show empty form, not error
+ setKyc(null);
+ setLoading(false);
+ return;
+ }
  if (!res.ok) throw new Error(`Failed to load KYC (${res.status})`);
  const data = await res.json();
  setKyc(data.kyc ?? null);

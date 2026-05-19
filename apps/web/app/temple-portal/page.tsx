@@ -8,94 +8,17 @@ import Link from 'next/link';
 import {
  IndianRupee,
  TrendingUp,
- Users,
  Video,
  Flame,
  Heart,
  ArrowRight,
- Eye,
  Calendar,
- Clock,
 } from 'lucide-react';
-
-// ─── Mock Data ──────────────────────────────────────────────────
-
-const dashboardData = {
- temple: {
- name: 'Shri Kashi Vishwanath Temple',
- city: 'Varanasi',
- state: 'Uttar Pradesh',
- },
- stats: {
- darshanViewersToday: 1842,
- pujaBookingsToday: 14,
- donationsToday: 28500,
- totalDonations: 2450000,
- totalBookings: 3456,
- activePriests: 8,
- },
- recentBookings: [
- {
- id: '1',
- pujaName: 'Rudrabhishek Puja',
- devoteeName: 'Rajesh Kumar',
- date: '2026-04-16',
- time: '09:00',
- amount: 1151,
- status: 'confirmed',
- },
- {
- id: '2',
- pujaName: 'Maha Mrityunjay Jaap',
- devoteeName: 'Amit Patel',
- date: '2026-04-16',
- time: '11:00',
- amount: 702,
- status: 'in_progress',
- },
- {
- id: '3',
- pujaName: 'Satyanarayan Katha',
- devoteeName: 'Priya Singh',
- date: '2026-04-17',
- time: '10:00',
- amount: 1701,
- status: 'confirmed',
- },
- {
- id: '4',
- pujaName: 'Ganesh Puja',
- devoteeName: 'Deepak Verma',
- date: '2026-04-17',
- time: '07:30',
- amount: 501,
- status: 'confirmed',
- },
- ],
- recentDonations: [
- { id: '1', donor: 'Meera Agarwal', amount: 5100, purpose: 'Anna Daan', date: '2026-04-16T10:30:00Z' },
- { id: '2', donor: 'Suresh Pandey', amount: 2100, purpose: 'Temple Maintenance', date: '2026-04-16T09:15:00Z' },
- { id: '3', donor: 'Kavita Reddy', amount: 11000, purpose: 'Gaushala Seva', date: '2026-04-16T08:00:00Z' },
- { id: '4', donor: 'Anonymous', amount: 1100, purpose: 'General Donation', date: '2026-04-15T18:45:00Z' },
- ],
-};
 
 // ─── Helpers ────────────────────────────────────────────────────
 
 function formatCurrency(amount: number): string {
  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
-}
-
-function formatDate(dateStr: string): string {
- const d = new Date(dateStr + (dateStr.includes('T') ? '' : 'T00:00:00'));
- return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
-
-function formatTime(time: string): string {
- const parts = time.split(':').map(Number);
- const h = parts[0] ?? 0;
- const m = parts[1] ?? 0;
- return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
 function getStatusBadge(status: string) {
@@ -153,26 +76,18 @@ export default function TempleDashboard() {
   })();
  }, [session]);
 
- const data = dashboardData;
  const liveStats = api?.stats;
- const liveBookings: ApiBooking[] | null = api?.recentBookings ?? null;
- const templeName = api?.profile?.templeName ?? data.temple.name;
- const templeCity = api?.profile?.templeCity ?? data.temple.city;
- const templeState = api?.profile?.templeState ?? data.temple.state;
+ const liveBookings: ApiBooking[] = api?.recentBookings ?? [];
+ const templeName = api?.profile?.templeName ?? 'My Temple';
+ const templeCity = api?.profile?.templeCity ?? '';
+ const templeState = api?.profile?.templeState ?? '';
 
- const statCards = liveStats
- ? [
-   { label: 'Total Bookings', value: liveStats.totalBookings.toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
-   { label: 'Bookings This Month', value: liveStats.monthBookings.toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Revenue This Month', value: formatCurrency(liveStats.monthRevenueInr), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
-   { label: 'Total Revenue', value: formatCurrency(liveStats.totalRevenueInr), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
-  ]
- : [
-   { label: 'Darshan Viewers Today', value: data.stats.darshanViewersToday.toLocaleString('en-IN'), icon: Eye, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Puja Bookings Today', value: data.stats.pujaBookingsToday, icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
-   { label: 'Donations Today', value: formatCurrency(data.stats.donationsToday), icon: Heart, color: 'text-red-500', bg: 'bg-red-50' },
-   { label: 'Total Donations', value: formatCurrency(data.stats.totalDonations), icon: IndianRupee, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
-  ];
+ const statCards = [
+   { label: 'Total Bookings', value: (liveStats?.totalBookings ?? 0).toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Bookings This Month', value: (liveStats?.monthBookings ?? 0).toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Revenue This Month', value: formatCurrency(liveStats?.monthRevenueInr ?? 0), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
+   { label: 'Total Revenue', value: formatCurrency(liveStats?.totalRevenueInr ?? 0), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
+ ];
 
  return (
  <div className="space-y-6 max-w-5xl">
@@ -216,10 +131,13 @@ export default function TempleDashboard() {
  </Link>
  </div>
  <div className="divide-y divide-surface-50">
- {liveBookings ? (
-  liveBookings.length === 0 ? (
-   <p className="px-5 py-6 text-xs text-surface-400">No bookings yet.</p>
-  ) : liveBookings.map((b) => {
+ {liveBookings.length === 0 ? (
+  <div className="px-5 py-8 text-center">
+   <Flame className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+   <p className="text-sm text-surface-500">No bookings yet</p>
+   <p className="text-xs text-surface-400 mt-1">Puja bookings will appear here.</p>
+  </div>
+ ) : liveBookings.map((b) => {
    const badge = getStatusBadge(b.status);
    const d = new Date(b.scheduledDate);
    return (
@@ -241,29 +159,7 @@ export default function TempleDashboard() {
      </div>
     </div>
    );
-  })
- ) : data.recentBookings.map((booking) => {
- const badge = getStatusBadge(booking.status);
- return (
- <div key={booking.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors">
- <div className="w-10 h-10 bg-saffron-50 rounded-xl flex items-center justify-center shrink-0">
- <Flame className="w-4 h-4 text-saffron-500" />
- </div>
- <div className="flex-1 min-w-0">
- <h3 className="text-sm font-medium text-surface-800 truncate">{booking.pujaName}</h3>
- <div className="flex items-center gap-2 text-xs text-surface-400">
- <span>{booking.devoteeName}</span>
- <span>&middot;</span>
- <span>{formatDate(booking.date)} {formatTime(booking.time)}</span>
- </div>
- </div>
- <div className="text-right shrink-0">
- <p className="text-sm font-semibold text-surface-800">{formatCurrency(booking.amount)}</p>
- <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
- </div>
- </div>
- );
- })}
+  })}
  </div>
  </div>
 
@@ -275,22 +171,10 @@ export default function TempleDashboard() {
  View All <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
- <div className="divide-y divide-surface-50">
- {data.recentDonations.map((donation) => (
- <div key={donation.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors">
- <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
- <Heart className="w-4 h-4 text-red-400" />
- </div>
- <div className="flex-1 min-w-0">
- <h3 className="text-sm font-medium text-surface-800 truncate">{donation.donor}</h3>
- <p className="text-xs text-surface-400">{donation.purpose}</p>
- </div>
- <div className="text-right shrink-0">
- <p className="text-sm font-semibold text-surface-800">{formatCurrency(donation.amount)}</p>
- <p className="text-[10px] text-surface-400">{formatDate(donation.date)}</p>
- </div>
- </div>
- ))}
+ <div className="px-5 py-8 text-center">
+ <Heart className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+ <p className="text-sm text-surface-500">No donations yet</p>
+ <p className="text-xs text-surface-400 mt-1">Donations from devotees will appear here.</p>
  </div>
  </div>
  </div>

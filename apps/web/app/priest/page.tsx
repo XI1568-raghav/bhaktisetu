@@ -52,73 +52,16 @@ interface DashboardData {
  }>;
 }
 
-// ─── Fallback Data ──────────────────────────────────────────────
+// ─── Zero-state defaults (new providers start at 0) ──────────────
 
-const fallbackDashboard: DashboardData = {
- priest: {
- id: '1',
- displayName: 'Pandit Ramesh Sharma',
- avatarUrl: null,
- ratingAvg: 4.8,
- ratingCount: 156,
- },
- earnings: {
- total: 185600,
- thisMonth: 24500,
- pending: 8400,
- },
- bookings: {
- total: 234,
- upcoming: 5,
- completed: 218,
- },
- upcomingBookings: [
- {
- id: '1',
- bookingNumber: 'BS-20260416-34521',
- status: 'priest_assigned',
- scheduledDate: '2026-04-16',
- scheduledTimeSlot: '09:00',
- devoteeNames: [{ name: 'Rajesh Kumar' }, { name: 'Sunita Kumar' }],
- priestPayout: 805,
- temple: { id: '1', name: 'Shri Kashi Vishwanath Temple', city: 'Varanasi' },
- pujaType: { id: '1', name: 'Rudrabhishek Puja' },
- },
- {
- id: '2',
- bookingNumber: 'BS-20260417-29874',
- status: 'priest_assigned',
- scheduledDate: '2026-04-17',
- scheduledTimeSlot: '07:30',
- devoteeNames: [{ name: 'Amit Patel' }],
- priestPayout: 490,
- temple: { id: '1', name: 'Shri Kashi Vishwanath Temple', city: 'Varanasi' },
- pujaType: { id: '2', name: 'Maha Mrityunjay Jaap' },
- },
- {
- id: '3',
- bookingNumber: 'BS-20260418-18432',
- status: 'confirmed',
- scheduledDate: '2026-04-18',
- scheduledTimeSlot: '10:00',
- devoteeNames: [{ name: 'Priya Singh' }, { name: 'Vikram Singh' }, { name: 'Ananya Singh' }],
- priestPayout: 1190,
- temple: { id: '1', name: 'Shri Kashi Vishwanath Temple', city: 'Varanasi' },
- pujaType: { id: '3', name: 'Satyanarayan Katha' },
- },
- {
- id: '4',
- bookingNumber: 'BS-20260420-12098',
- status: 'priest_assigned',
- scheduledDate: '2026-04-20',
- scheduledTimeSlot: '06:00',
- devoteeNames: [{ name: 'Deepak Verma' }],
- priestPayout: 665,
- temple: { id: '2', name: 'Trimbakeshwar Temple', city: 'Nashik' },
- pujaType: { id: '4', name: 'Ganesh Atharvashirsha Path' },
- },
- ],
-};
+function zeroDashboard(displayName: string): DashboardData {
+ return {
+ priest: { id: '', displayName, avatarUrl: null, ratingAvg: 0, ratingCount: 0 },
+ earnings: { total: 0, thisMonth: 0, pending: 0 },
+ bookings: { total: 0, upcoming: 0, completed: 0 },
+ upcomingBookings: [],
+ };
+}
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -155,7 +98,7 @@ function getStatusBadge(status: string) {
 // ─── Component ──────────────────────────────────────────────────
 
 export default function PriestDashboard() {
- const { session } = useAuth();
+ const { session, user } = useAuth();
  const [data, setData] = useState<DashboardData | null>(null);
  const [loading, setLoading] = useState(true);
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
@@ -163,6 +106,7 @@ export default function PriestDashboard() {
 
  useEffect(() => {
  async function fetchDashboard() {
+ const displayName = user?.fullName || user?.email?.split('@')[0] || 'Pandit';
  try {
  const res = await fetch(`${API_BASE_URL}/priest/dashboard`, {
  headers: { Authorization: `Bearer ${session?.accessToken}` },
@@ -170,10 +114,10 @@ export default function PriestDashboard() {
  if (res.ok) {
  setData(await res.json());
  } else {
- throw new Error('API unavailable');
+ setData(zeroDashboard(displayName));
  }
  } catch {
- setData(fallbackDashboard);
+ setData(zeroDashboard(displayName));
  } finally {
  setLoading(false);
  }

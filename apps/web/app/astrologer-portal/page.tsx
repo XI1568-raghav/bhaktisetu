@@ -11,96 +11,21 @@ import {
  Users,
  MessageSquare,
  ArrowRight,
- Phone,
- Video,
  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
 
-// ─── Mock Data ──────────────────────────────────────────────────
+// ─── Zero-state defaults ────────────────────────────────────────
 
-const dashboardData = {
- astrologer: {
- name: 'Acharya Vikram Shastri',
- rating: 4.9,
- ratingCount: 342,
- },
- stats: {
- consultationsToday: 6,
- totalConsultations: 1248,
- earningsToday: 4800,
- earningsThisMonth: 68500,
- totalEarnings: 524000,
- activeClients: 89,
- },
- upcomingSessions: [
- {
- id: '1',
- clientName: 'Rohit Sharma',
- type: 'Kundli Reading',
- mode: 'video',
- scheduledAt: '2026-04-16T14:00:00',
- duration: 30,
- rate: 800,
- },
- {
- id: '2',
- clientName: 'Neha Gupta',
- type: 'Marriage Compatibility',
- mode: 'call',
- scheduledAt: '2026-04-16T15:30:00',
- duration: 45,
- rate: 1200,
- },
- {
- id: '3',
- clientName: 'Suresh Pandey',
- type: 'Career Consultation',
- mode: 'chat',
- scheduledAt: '2026-04-16T17:00:00',
- duration: 20,
- rate: 500,
- },
- {
- id: '4',
- clientName: 'Anjali Mishra',
- type: 'Gemstone Recommendation',
- mode: 'video',
- scheduledAt: '2026-04-17T10:00:00',
- duration: 30,
- rate: 800,
- },
- ],
+const ZERO_STATS = {
+ consultationsToday: 0,
+ totalConsultations: 0,
+ earningsToday: 0,
+ earningsThisMonth: 0,
+ totalEarnings: 0,
+ activeClients: 0,
 };
-
-// ─── Helpers ────────────────────────────────────────────────────
-
-function formatCurrency(amount: number): string {
- return new Intl.NumberFormat('en-IN', {
- style: 'currency',
- currency: 'INR',
- maximumFractionDigits: 0,
- }).format(amount);
-}
-
-function formatTime(dateStr: string): string {
- const d = new Date(dateStr);
- return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatDate(dateStr: string): string {
- const d = new Date(dateStr);
- return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
-
-function getModeIcon(mode: string) {
- switch (mode) {
- case 'video': return Video;
- case 'call': return Phone;
- default: return MessageSquare;
- }
-}
 
 // ─── Component ──────────────────────────────────────────────────
 
@@ -121,8 +46,8 @@ type ApiAstroDashboard = {
 };
 
 export default function AstrologerDashboard() {
- const { session } = useAuth();
- const data = dashboardData;
+ const { session, user } = useAuth();
+ const displayName = user?.fullName || 'Astrologer';
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
  const [api, setApi] = useState<ApiAstroDashboard | null>(null);
@@ -173,10 +98,10 @@ export default function AstrologerDashboard() {
    { label: 'Rating', value: liveStats.rating ? liveStats.rating.toFixed(1) : '—', icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
   ]
   : [
-   { label: 'Today\'s Sessions', value: data.stats.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Total Consultations', value: data.stats.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
-   { label: 'Active Clients', value: data.stats.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
-   { label: 'Rating', value: `${data.astrologer.rating} (${data.astrologer.ratingCount})`, icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
+   { label: 'Today\'s Sessions', value: ZERO_STATS.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Total Consultations', value: ZERO_STATS.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
+   { label: 'Active Clients', value: ZERO_STATS.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Rating', value: '—', icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
   ];
 
  return (
@@ -184,7 +109,7 @@ export default function AstrologerDashboard() {
  {/* Welcome */}
  <div>
  <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
- Namaste, {data.astrologer.name.split(' ')[0]}!
+ Namaste, {displayName.split(' ')[0]}!
  </h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
  <p className="text-surface-500">Your astrology practice at a glance.</p>
@@ -195,9 +120,9 @@ export default function AstrologerDashboard() {
  <MyProviderProfileCard role="ASTROLOGER" onboardingSlug="astrologer" publicListingType="astrologer" />
 
  <EarningsCard
- totalPaid={liveStats?.totalEarningsInr ?? data.stats.totalEarnings}
- thisMonth={liveStats?.earningsMonthInr ?? data.stats.earningsThisMonth}
- pending={liveStats?.earningsTodayInr ?? data.stats.earningsToday}
+ totalPaid={liveStats?.totalEarningsInr ?? ZERO_STATS.totalEarnings}
+ thisMonth={liveStats?.earningsMonthInr ?? ZERO_STATS.earningsThisMonth}
+ pending={liveStats?.earningsTodayInr ?? ZERO_STATS.earningsToday}
  />
 
  {/* Quick Stats */}
@@ -228,42 +153,10 @@ export default function AstrologerDashboard() {
  </Link>
  </div>
 
- <div className="divide-y divide-surface-50">
- {api && api.upcomingSessions.length === 0 ? (
-  <p className="px-5 py-6 text-xs text-surface-400">No upcoming sessions. Live consultations will appear here once Consultation persistence ships.</p>
- ) : data.upcomingSessions.map((session) => {
- const ModeIcon = getModeIcon(session.mode);
- return (
- <div key={session.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors">
- <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
- <ModeIcon className="w-5 h-5 text-purple-500" />
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 mb-0.5">
- <h3 className="text-sm font-semibold text-surface-800 truncate">{session.clientName}</h3>
- <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 capitalize">
- {session.mode}
- </span>
- </div>
- <p className="text-xs text-surface-500">{session.type}</p>
- <div className="flex items-center gap-3 mt-1 text-xs text-surface-400">
- <span className="flex items-center gap-1">
- <Calendar className="w-3 h-3" />
- {formatDate(session.scheduledAt)} at {formatTime(session.scheduledAt)}
- </span>
- <span className="flex items-center gap-1">
- <Clock className="w-3 h-3" />
- {session.duration} min
- </span>
- </div>
- </div>
- <div className="text-right shrink-0">
- <p className="text-sm font-bold text-surface-800">{formatCurrency(session.rate)}</p>
- <p className="text-xs text-surface-400">Rate</p>
- </div>
- </div>
- );
- })}
+ <div className="px-5 py-8 text-center">
+ <Calendar className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+ <p className="text-sm text-surface-500">No upcoming sessions</p>
+ <p className="text-xs text-surface-400 mt-1">Bookings will appear here once devotees consult you.</p>
  </div>
  </div>
 
