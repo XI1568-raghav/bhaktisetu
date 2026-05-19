@@ -356,9 +356,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  return;
  }
 
- // Check if token is expired (with 60-second buffer)
- const now = Math.floor(Date.now() / 1000);
- if (storedSession.expiresAt && storedSession.expiresAt < now + 60) {
+ // Check if token is expired (60-second buffer). `expiresAt` is stored in
+ // MILLISECONDS (signup writes `expires_at * 1000`), so compare in ms.
+ // Legacy sessions may carry a seconds-value — treat <1e12 as seconds.
+ const nowMs = Date.now();
+ const expMs =
+ storedSession.expiresAt && storedSession.expiresAt < 1e12
+ ? storedSession.expiresAt * 1000
+ : storedSession.expiresAt;
+ if (expMs && expMs < nowMs + 60_000) {
  // Token expired or about to expire — refresh it
  const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
@@ -390,6 +396,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  loadSession();
  }, [persistSession]);
+
+ // Proactive refresh while the tab stays open. Supabase access tokens
+ // last ~1h; we refresh ~5 min before expiry so long single-page sessions
+ // (gaushala dashboard, etc.) never hit a 401 mid-action.
+ useEffect(() => {
+ if (!session || session.accessToken.startsWith('demo-')) return;
+ const expMs =
+ session.expiresAt && session.expiresAt < 1e12
+ ? session.expiresAt * 1000
+ : session.expiresAt;
+ if (!expMs) return;
+ const refreshAt = expMs - 5 * 60_000;
+ const delay = Math.max(refreshAt - Date.now(), 10_000);
+ const timer = setTimeout(async () => {
+ try {
+ const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ refreshToken: session.refreshToken }),
+ });
+ if (res.ok) {
+ const data = await res.json();
+ if (data?.session && user) {
+ setSession(data.session);
+ persistSession(data.session, user);
+ }
+ }
+ } catch {
+ // Silent — next API call's own retry path will surface if still bad.
+ }
+ }, delay);
+ return () => clearTimeout(timer);
+ }, [session, user, persistSession]);
 
  /**
  * Sends OTP to the given phone number.
