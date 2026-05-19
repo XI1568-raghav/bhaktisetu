@@ -108,22 +108,22 @@ function Content() {
   };
 
   if (loading) {
-    return <div className="p-8 flex items-center gap-2 text-amber-700"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
+    return <div className="p-8 flex items-center gap-2 text-[var(--color-text-muted)]"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
   }
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-amber-900">Gaushala Profile</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Gaushala Profile</h1>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-6">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-5">Manager Details</h2>
+      <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
+        <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-5">Manager Details</h2>
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 rounded-full bg-amber-200 flex items-center justify-center text-amber-800 text-2xl font-bold">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
             {(user?.fullName ?? 'G').charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-lg">{user?.fullName ?? '—'}</p>
-            <p className="text-amber-600 text-sm">Gaushala Manager</p>
+            <p className="font-semibold text-[var(--color-text)] text-lg">{user?.fullName ?? '—'}</p>
+            <p className="text-[var(--color-primary)] text-sm">Gaushala Manager</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -132,10 +132,10 @@ function Content() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-6">
+      <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
         <div className="flex items-center gap-2 mb-5">
-          <Building2 className="w-4 h-4 text-amber-600" />
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Gaushala Information</h2>
+          <Building2 className="w-4 h-4 text-[var(--color-primary)]" />
+          <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest">Gaushala Information</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Editable label="Gaushala Name *" value={form.gaushalaName} onChange={(v) => setForm((p) => ({ ...p, gaushalaName: v }))} />
@@ -144,19 +144,19 @@ function Content() {
             <Editable label="Address" value={form.address} onChange={(v) => setForm((p) => ({ ...p, address: v }))} />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">Description</label>
+            <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1.5 block">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               rows={4}
-              className="w-full px-3 py-2 text-sm border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 flex items-center gap-2 text-red-600 text-xs bg-red-50 px-3 py-2 rounded-lg">
-            <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+          <div className="mt-4 flex items-start gap-2 text-xs px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-px" /> <span>{error}</span>
           </div>
         )}
 
@@ -164,7 +164,7 @@ function Content() {
           <button
             onClick={handleSave}
             disabled={saving || !form.gaushalaName.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-amber-800 text-white rounded-lg text-sm font-medium hover:bg-amber-900 disabled:opacity-60"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
           >
             {saving ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
@@ -173,36 +173,36 @@ function Content() {
             ) : 'Save Changes'}
           </button>
           {saved && (
-            <span className="text-sm text-green-600 flex items-center gap-1.5">
+            <span className="text-sm text-[#3f6b1f] flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" /> Profile updated
             </span>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-6">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-5">Verification Documents</h2>
+      <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
+        <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-5">Verification Documents</h2>
         {kyc ? (
           <div className="space-y-3">
             <DocRow label="PAN" value={kyc.panNumber} verified={!!kyc.panNumber} />
             <DocRow label="Aadhaar" value={kyc.aadhaarNumber ? `XXXX-XXXX-${String(kyc.aadhaarNumber).slice(-4)}` : null} verified={!!kyc.aadhaarNumber} />
             <DocRow label="Address Proof" value={kyc.addressProofUrl ? 'Uploaded' : null} verified={!!kyc.addressProofUrl} />
             <DocRow label="Selfie" value={kyc.selfieUrl ? 'Uploaded' : null} verified={!!kyc.selfieUrl} />
-            <div className="mt-4 pt-4 border-t border-amber-100">
-              <p className="text-xs text-gray-500 mb-1">Status: <span className={`font-medium ${kyc.verified ? 'text-green-700' : kyc.rejectionReason ? 'text-red-700' : 'text-amber-700'}`}>
+            <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+              <p className="text-xs text-[var(--color-text-muted)] mb-1">Status: <span className={`font-medium ${kyc.verified ? 'text-[#3f6b1f]' : kyc.rejectionReason ? 'text-[#943b19]' : 'text-[var(--color-primary)]'}`}>
                 {kyc.verified ? 'Verified' : kyc.rejectionReason ? 'Rejected' : 'Pending review'}
               </span></p>
-              {kyc.rejectionReason && <p className="text-xs text-red-600 mt-1">{kyc.rejectionReason}</p>}
-              <a href="/provider/kyc" className="inline-flex items-center gap-1.5 mt-3 text-xs text-amber-700 hover:text-amber-900 font-medium">
+              {kyc.rejectionReason && <p className="text-xs text-[#943b19] mt-1">{kyc.rejectionReason}</p>}
+              <a href="/provider/kyc" className="inline-flex items-center gap-1.5 mt-3 text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium">
                 <Upload className="w-3.5 h-3.5" /> Manage KYC documents →
               </a>
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
-            <FileText className="w-10 h-10 mx-auto text-amber-300 mb-3" />
-            <p className="text-sm text-gray-500 mb-3">No verification documents submitted yet.</p>
-            <a href="/provider/kyc" className="inline-flex items-center gap-1.5 text-sm text-amber-700 hover:text-amber-900 font-medium">
+            <FileText className="w-10 h-10 mx-auto text-[var(--color-text-faint)] mb-3" />
+            <p className="text-sm text-[var(--color-text-muted)] mb-3">No verification documents submitted yet.</p>
+            <a href="/provider/kyc" className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium">
               <Upload className="w-4 h-4" /> Submit KYC documents →
             </a>
           </div>
@@ -215,10 +215,10 @@ function Content() {
 function ReadOnly({ label, value, icon: Icon }: { label: string; value: string | null | undefined; icon?: any }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-gray-400 uppercase tracking-wide">{label}</label>
-      <div className="flex items-center gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-100">
-        {Icon && <Icon className="w-4 h-4 text-amber-600 shrink-0" />}
-        <span className="text-sm text-gray-700">{value ?? '—'}</span>
+      <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">{label}</label>
+      <div className="flex items-center gap-2.5 p-3 bg-[var(--color-surface-offset)] rounded-lg border border-[var(--color-border)]">
+        {Icon && <Icon className="w-4 h-4 text-[var(--color-primary)] shrink-0" />}
+        <span className="text-sm text-[var(--color-text)]">{value ?? '—'}</span>
       </div>
     </div>
   );
@@ -227,11 +227,11 @@ function ReadOnly({ label, value, icon: Icon }: { label: string; value: string |
 function Editable({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-gray-400 uppercase tracking-wide">{label}</label>
+      <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm bg-white border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+        className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
       />
     </div>
   );
@@ -239,13 +239,13 @@ function Editable({ label, value, onChange }: { label: string; value: string; on
 
 function DocRow({ label, value, verified }: { label: string; value: string | null; verified: boolean }) {
   return (
-    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100">
+    <div className="flex items-center justify-between p-3 bg-[var(--color-surface-offset)] rounded-lg border border-[var(--color-border)]">
       <div>
-        <p className="text-sm font-medium text-gray-800">{label}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{value ?? 'Not submitted'}</p>
+        <p className="text-sm font-medium text-[var(--color-text)]">{label}</p>
+        <p className="text-xs text-[var(--color-text-faint)] mt-0.5">{value ?? 'Not submitted'}</p>
       </div>
       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-        verified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+        verified ? 'bg-[#e7f0e0] text-[#3f6b1f]' : 'bg-[var(--color-surface)] text-[var(--color-text-faint)] border border-[var(--color-border)]'
       }`}>
         {verified ? 'Submitted' : 'Pending'}
       </span>

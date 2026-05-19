@@ -27,10 +27,10 @@ type HealthRecord = {
 };
 
 const statusConfig: Record<string, { color: string; badge: string }> = {
-  healthy: { color: 'border-green-200', badge: 'bg-green-100 text-green-700' },
-  treatment: { color: 'border-red-200', badge: 'bg-red-100 text-red-700' },
-  pregnant: { color: 'border-purple-200', badge: 'bg-purple-100 text-purple-700' },
-  recovering: { color: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
+  healthy: { color: 'border-[var(--color-border)]', badge: 'bg-[#e7f0e0] text-[#3f6b1f]' },
+  treatment: { color: 'border-[#f59e54]', badge: 'bg-[#fef2e8] text-[#943b19]' },
+  pregnant: { color: 'border-[var(--color-border)]', badge: 'bg-[var(--color-primary-highlight)] text-[var(--color-primary-active)]' },
+  recovering: { color: 'border-[var(--color-border)]', badge: 'bg-[var(--color-primary-highlight)] text-[var(--color-primary-active)]' },
 };
 
 const statuses = ['All', 'healthy', 'treatment', 'pregnant', 'recovering'];
@@ -201,17 +201,17 @@ function CowsPageContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-amber-900">Cow Registry</h1>
-          <p className="text-amber-700 text-sm mt-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Cow Registry</h1>
+          <p className="text-[var(--color-text-muted)] text-sm mt-1">
             {cows.length} cows registered
             {needsAttention > 0 && (
-              <span className="ml-2 text-red-600 font-medium">· {needsAttention} need attention</span>
+              <span className="ml-2 font-medium text-[#943b19]">· {needsAttention} need attention</span>
             )}
           </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] transition-colors"
         >
           <Plus className="w-4 h-4" />
           Register Cow
@@ -220,12 +220,12 @@ function CowsPageContent() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-faint)]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, breed, or tag..."
-            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="pl-9 pr-4 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg w-64 focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
           />
         </div>
         {statuses.map((s) => (
@@ -234,8 +234,8 @@ function CowsPageContent() {
             onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
               filter === s
-                ? 'bg-amber-800 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-amber-50'
+                ? 'bg-[var(--color-primary)] text-white'
+                : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-primary-highlight)]'
             }`}
           >
             {s}
@@ -244,24 +244,24 @@ function CowsPageContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-amber-700"><Loader2 className="w-4 h-4 animate-spin" /> Loading cows…</div>
+        <div className="flex items-center gap-2 text-[var(--color-text-muted)]"><Loader2 className="w-4 h-4 animate-spin" /> Loading cows…</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((c) => {
-            const cfg = statusConfig[c.healthStatus] ?? { color: 'border-gray-200', badge: 'bg-gray-100 text-gray-700' };
+            const cfg = statusConfig[c.healthStatus] ?? { color: 'border-[var(--color-border)]', badge: 'bg-[var(--color-surface-offset)] text-[var(--color-text-muted)]' };
             return (
               <div
                 key={c.id}
-                className={`bg-white rounded-2xl p-5 shadow-sm border ${cfg.color} hover:shadow-md transition-shadow`}
+                className={`bg-[var(--color-surface)] rounded-xl p-5 shadow-sm border ${cfg.color} hover:shadow-md transition-shadow`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center bg-amber-100">
-                      <Beef className="w-5 h-5 text-amber-700" />
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary-highlight)' }}>
+                      <Beef className="w-5 h-5 text-[var(--color-primary-active)]" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{c.name}</p>
-                      <p className="text-xs text-gray-400">{c.tagNumber} · {c.breed ?? 'Unknown breed'}</p>
+                      <p className="font-semibold text-[var(--color-text)]">{c.name}</p>
+                      <p className="text-xs text-[var(--color-text-faint)]">{c.tagNumber} · {c.breed ?? 'Unknown breed'}</p>
                     </div>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${cfg.badge}`}>
@@ -270,23 +270,23 @@ function CowsPageContent() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-amber-50 rounded-lg px-3 py-2">
-                    <p className="text-amber-600 mb-0.5">Age</p>
-                    <p className="font-medium text-gray-800">{c.ageYears != null ? `${c.ageYears}y` : '—'}</p>
+                  <div className="bg-[var(--color-surface-offset)] rounded-lg px-3 py-2">
+                    <p className="text-[var(--color-text-muted)] mb-0.5">Age</p>
+                    <p className="font-medium text-[var(--color-text)]">{c.ageYears != null ? `${c.ageYears}y` : '—'}</p>
                   </div>
-                  <div className="bg-amber-50 rounded-lg px-3 py-2">
-                    <p className="text-amber-600 mb-0.5">Gender</p>
-                    <p className="font-medium text-gray-800 capitalize">{c.gender}</p>
+                  <div className="bg-[var(--color-surface-offset)] rounded-lg px-3 py-2">
+                    <p className="text-[var(--color-text-muted)] mb-0.5">Gender</p>
+                    <p className="font-medium text-[var(--color-text)] capitalize">{c.gender}</p>
                   </div>
-                  <div className="bg-amber-50 rounded-lg px-3 py-2 col-span-2">
-                    <p className="text-amber-600 mb-0.5">Arrival</p>
-                    <p className="font-medium text-gray-800">{new Date(c.arrivalDate).toLocaleDateString('en-IN')}</p>
+                  <div className="bg-[var(--color-surface-offset)] rounded-lg px-3 py-2 col-span-2">
+                    <p className="text-[var(--color-text-muted)] mb-0.5">Arrival</p>
+                    <p className="font-medium text-[var(--color-text)]">{new Date(c.arrivalDate).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => openDetail(c)}
-                  className="mt-3 w-full text-xs text-amber-700 hover:text-amber-900 font-medium py-1 text-center border-t border-amber-100 pt-3"
+                  className="mt-3 w-full text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium py-1 text-center border-t border-[var(--color-border)] pt-3"
                 >
                   View Health Details →
                 </button>
@@ -294,12 +294,12 @@ function CowsPageContent() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="col-span-3 text-center py-12 bg-white rounded-2xl border border-amber-100">
-              <Beef className="w-10 h-10 mx-auto text-amber-300 mb-3" />
-              <p className="text-gray-500 text-sm mb-3">No cows registered yet.</p>
+            <div className="col-span-3 text-center py-12 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+              <Beef className="w-10 h-10 mx-auto text-[var(--color-text-faint)] mb-3" />
+              <p className="text-[var(--color-text-muted)] text-sm mb-3">No cows registered yet.</p>
               <button
                 onClick={() => setShowModal(true)}
-                className="text-amber-700 hover:text-amber-900 text-sm font-medium"
+                className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] text-sm font-medium"
               >
                 + Register your first cow
               </button>
@@ -309,11 +309,11 @@ function CowsPageContent() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42, 37, 32, 0.55)' }}>
+          <div className="rounded-xl shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-amber-900">Register New Cow</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-lg font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Register New Cow</h2>
+              <button onClick={() => setShowModal(false)} className="text-[var(--color-text-faint)] hover:text-[var(--color-text)]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -323,22 +323,22 @@ function CowsPageContent() {
               <Field label="Breed" value={newCow.breed} onChange={(v) => setNewCow((p) => ({ ...p, breed: v }))} placeholder="Gir, Sahiwal, Tharparkar…" />
               <Field label="Age (years)" value={newCow.ageYears} onChange={(v) => setNewCow((p) => ({ ...p, ageYears: v }))} placeholder="e.g. 4" type="number" />
               <div>
-                <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">Gender</label>
+                <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1 block">Gender</label>
                 <select
                   value={newCow.gender}
                   onChange={(e) => setNewCow((p) => ({ ...p, gender: e.target.value as 'female' | 'male' }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                 >
                   <option value="female">Female</option>
                   <option value="male">Male</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">Health Status</label>
+                <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1 block">Health Status</label>
                 <select
                   value={newCow.healthStatus}
                   onChange={(e) => setNewCow((p) => ({ ...p, healthStatus: e.target.value as any }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                 >
                   <option value="healthy">Healthy</option>
                   <option value="treatment">Treatment</option>
@@ -348,8 +348,8 @@ function CowsPageContent() {
               </div>
               <Field label="Notes" value={newCow.notes} onChange={(v) => setNewCow((p) => ({ ...p, notes: v }))} placeholder="Optional" />
               {registerError && (
-                <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 px-3 py-2 rounded-lg">
-                  <AlertCircle className="w-4 h-4 shrink-0" /> {registerError}
+                <div className="flex items-start gap-2 text-xs px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-px" /> <span>{registerError}</span>
                 </div>
               )}
             </div>
@@ -357,7 +357,7 @@ function CowsPageContent() {
               <button
                 onClick={handleRegister}
                 disabled={registering || registered}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-800 text-white rounded-lg text-sm font-medium hover:bg-amber-900 transition-colors disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-60"
               >
                 {registering ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Registering…</>
@@ -367,7 +367,7 @@ function CowsPageContent() {
               </button>
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2.5 border border-amber-200 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors"
+                className="px-4 py-2.5 border border-[var(--color-border)] text-[var(--color-primary)] rounded-lg text-sm font-medium hover:bg-[var(--color-primary-highlight)] transition-colors"
               >
                 Cancel
               </button>
@@ -377,14 +377,14 @@ function CowsPageContent() {
       )}
 
       {detailCow && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42, 37, 32, 0.55)' }}>
+          <div className="rounded-xl shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-amber-900">{detailCow.name}</h2>
-                <p className="text-xs text-gray-500">{detailCow.tagNumber} · {detailCow.breed ?? '—'}</p>
+                <h2 className="text-lg font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>{detailCow.name}</h2>
+                <p className="text-xs text-[var(--color-text-muted)]">{detailCow.tagNumber} · {detailCow.breed ?? '—'}</p>
               </div>
-              <button onClick={() => setDetailCow(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setDetailCow(null)} className="text-[var(--color-text-faint)] hover:text-[var(--color-text)]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -395,12 +395,12 @@ function CowsPageContent() {
               <Stat label="Status" value={detailCow.healthStatus} />
             </div>
 
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Add Health Record</h3>
-            <div className="space-y-3 mb-5 p-4 bg-amber-50 rounded-xl">
+            <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-3">Add Health Record</h3>
+            <div className="space-y-3 mb-5 p-4 rounded-xl bg-[var(--color-surface-offset)] border border-[var(--color-border)]">
               <select
                 value={newRecord.recordType}
                 onChange={(e) => setNewRecord((p) => ({ ...p, recordType: e.target.value as any }))}
-                className="w-full px-3 py-2 text-sm border border-amber-200 rounded-lg bg-white"
+                className="w-full px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
               >
                 <option value="checkup">Checkup</option>
                 <option value="vaccination">Vaccination</option>
@@ -411,39 +411,39 @@ function CowsPageContent() {
                 value={newRecord.vetName}
                 onChange={(e) => setNewRecord((p) => ({ ...p, vetName: e.target.value }))}
                 placeholder="Vet name (optional)"
-                className="w-full px-3 py-2 text-sm border border-amber-200 rounded-lg bg-white"
+                className="w-full px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
               />
               <textarea
                 value={newRecord.notes}
                 onChange={(e) => setNewRecord((p) => ({ ...p, notes: e.target.value }))}
                 placeholder="Notes *"
                 rows={3}
-                className="w-full px-3 py-2 text-sm border border-amber-200 rounded-lg bg-white"
+                className="w-full px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
               />
               <button
                 onClick={addHealthRecord}
                 disabled={savingRecord || !newRecord.notes.trim()}
-                className="px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 disabled:opacity-60"
+                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
               >
                 {savingRecord ? 'Saving…' : 'Add Record'}
               </button>
             </div>
 
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">History</h3>
+            <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-3">History</h3>
             {detailLoading ? (
-              <p className="text-sm text-gray-500">Loading…</p>
+              <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>
             ) : detailRecords.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-6">No health records yet.</p>
+              <p className="text-sm text-[var(--color-text-faint)] text-center py-6">No health records yet.</p>
             ) : (
               <div className="space-y-2">
                 {detailRecords.map((r) => (
-                  <div key={r.id} className="border border-amber-100 rounded-lg p-3 text-sm">
+                  <div key={r.id} className="border border-[var(--color-border)] rounded-lg p-3 text-sm">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-amber-900 capitalize">{r.recordType.replace('_', ' ')}</span>
-                      <span className="text-xs text-gray-400">{new Date(r.recordedAt).toLocaleDateString('en-IN')}</span>
+                      <span className="font-medium text-[var(--color-text)] capitalize">{r.recordType.replace('_', ' ')}</span>
+                      <span className="text-xs text-[var(--color-text-faint)]">{new Date(r.recordedAt).toLocaleDateString('en-IN')}</span>
                     </div>
-                    {r.vetName && <p className="text-xs text-gray-500 mb-1">Vet: {r.vetName}</p>}
-                    <p className="text-gray-700">{r.notes}</p>
+                    {r.vetName && <p className="text-xs text-[var(--color-text-muted)] mb-1">Vet: {r.vetName}</p>}
+                    <p className="text-[var(--color-text)]">{r.notes}</p>
                   </div>
                 ))}
               </div>
@@ -458,13 +458,13 @@ function CowsPageContent() {
 function Field({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <div>
-      <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">{label}</label>
+      <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1 block">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+        className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
       />
     </div>
   );
@@ -472,9 +472,9 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: { label: 
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-amber-50 rounded-lg px-3 py-2">
-      <p className="text-amber-600 mb-0.5 text-[10px] uppercase tracking-wide">{label}</p>
-      <p className="font-medium text-gray-800 capitalize">{value}</p>
+    <div className="bg-[var(--color-surface-offset)] rounded-lg px-3 py-2 border border-[var(--color-border)]">
+      <p className="text-[var(--color-text-muted)] mb-0.5 text-[10px] uppercase tracking-wide">{label}</p>
+      <p className="font-medium text-[var(--color-text)] capitalize">{value}</p>
     </div>
   );
 }
