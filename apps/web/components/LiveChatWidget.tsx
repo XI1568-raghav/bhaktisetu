@@ -41,13 +41,16 @@ export function LiveChatWidget() {
  const [escalated, setEscalated] = useState(false);
  const scrollRef = useRef<HTMLDivElement>(null);
 
- // Hide on portal/admin pages
+ // Hide on portal/admin pages — WhatsApp is the single support channel for providers
  const hidden =
  pathname?.startsWith('/admin') ||
  pathname?.startsWith('/astrologer-portal') ||
  pathname?.startsWith('/temple-portal') ||
  pathname?.startsWith('/store-admin') ||
- pathname?.startsWith('/wellness-portal');
+ pathname?.startsWith('/wellness-portal') ||
+ pathname?.startsWith('/gaushala-portal') ||
+ pathname?.startsWith('/priest') ||
+ pathname?.startsWith('/provider-kyc');
 
  useEffect(() => {
  if (scrollRef.current) {
