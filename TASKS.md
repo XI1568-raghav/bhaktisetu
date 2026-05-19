@@ -4,15 +4,20 @@
 > User-action gates in `docs/activation-gates.md`.
 > Last updated: 2026-05-19.
 
-## HANDOFF (2026-05-19, post P1-P4 provider portal overhaul)
+## HANDOFF (2026-05-19, post auth-cascade fix)
 
-**Shipped** (`bcadee6`):
-- P1 — Dashboard stats default to zero on empty profile for all 6 provider roles. Dynamic growth from real Prisma aggregates.
-- P2 — PATCH /profile across astrologer/wellness/gaushala portals; FE rewired (drop localStorage stubs).
-- P3 — Gaushala cows + volunteers full CRUD (API routes + Prisma models + migration + FE pages). Register/View Health/Add Volunteer modals all wired.
-- P4 — Verification documents widget now reads `/provider-kyc` (PAN/Aadhaar masked/AddressProof/Selfie) replacing 4-doc hardcoded list.
-- Site-wide WhatsApp click-to-chat button (z-59, below cart z-60) with greeting prefill.
-- CORS: explicit methods + allowedHeaders to unblock PATCH preflight (`6f8ca24`).
+**Shipped** (`9e87aca`):
+- Root-cause fix: `authenticateUser` looked up Prisma user by phone only — email signups (no phone) 401'd everywhere. Patched to id→email→phone fallback. Unblocks KYC load, profile save, cow add, volunteer add, gaushala onboarding submit.
+- Added GET `/api/v1/gaushala-portal/donations` (status mapping pending→created, received→paid).
+- Rewrote `gaushala-portal/donations` page on real API. Dropped D001-D008 dummy + 3 fake campaigns.
+
+**Prior ship** (`bcadee6`, `4ae5573`):
+- P1 — Dashboard stats zero-default for all 6 provider roles.
+- P2 — PATCH /profile across astrologer/wellness/gaushala portals.
+- P3 — Gaushala cows + volunteers full CRUD (routes + Prisma models + migration + FE).
+- P4 — Verification documents widget on `/provider-kyc`.
+- Site-wide WhatsApp click-to-chat (z-59).
+- CORS: explicit methods + allowedHeaders (`6f8ca24`).
 
 **Migration to deploy**: `20260519000000_gaushala_cows_volunteers` — creates `cows`, `cow_health_records`, `volunteers` tables. Render `start` script runs `prisma migrate deploy` auto.
 
