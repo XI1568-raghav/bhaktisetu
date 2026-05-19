@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Video, Flame, BookOpen, Sparkles, Compass, MapPin, Globe2, type LucideIcon } from 'lucide-react';
 import {
   ONBOARDING_LANGUAGE_KEY,
   type OnboardingIntent,
@@ -16,16 +16,16 @@ type Props = {
 
 const INTENT_OPTIONS: {
   key: OnboardingIntent;
-  emoji: string;
+  icon: LucideIcon;
   title: string;
   caption: string;
   href: string | null;
 }[] = [
-  { key: 'darshan', emoji: '🎥', title: 'Live Darshan', caption: 'Watch from home', href: '/darshan' },
-  { key: 'puja', emoji: '🔥', title: 'Book a Puja', caption: 'At a temple', href: '/pujas' },
-  { key: 'wisdom', emoji: '📖', title: 'Read & Learn', caption: 'Scriptures, more', href: '/content' },
-  { key: 'consult', emoji: '🙏', title: 'Talk to a Pandit', caption: 'AI guidance', href: '/ask-pandit' },
-  { key: 'explore', emoji: '✨', title: 'Just exploring', caption: 'Show me around', href: null },
+  { key: 'darshan', icon: Video, title: 'Live Darshan', caption: 'Watch from home', href: '/darshan' },
+  { key: 'puja', icon: Flame, title: 'Book a Puja', caption: 'At a temple', href: '/pujas' },
+  { key: 'wisdom', icon: BookOpen, title: 'Read & Learn', caption: 'Scriptures, more', href: '/content' },
+  { key: 'consult', icon: Sparkles, title: 'Talk to a Pandit', caption: 'AI guidance', href: '/ask-pandit' },
+  { key: 'explore', icon: Compass, title: 'Just exploring', caption: 'Show me around', href: null },
 ];
 
 const LANG_OPTIONS: {
@@ -42,9 +42,9 @@ const LANG_OPTIONS: {
   { code: 'mr', label: 'Marathi', native: 'मराठी', active: false },
 ];
 
-const NRI_OPTIONS: { value: boolean; emoji: string; title: string; caption: string }[] = [
-  { value: false, emoji: '🇮🇳', title: 'India', caption: 'Pay in INR' },
-  { value: true, emoji: '🌍', title: 'Outside India', caption: 'NRI / Diaspora' },
+const NRI_OPTIONS: { value: boolean; icon: LucideIcon; title: string; caption: string }[] = [
+  { value: false, icon: MapPin, title: 'India', caption: 'Pay in INR' },
+  { value: true, icon: Globe2, title: 'Outside India', caption: 'NRI / Diaspora' },
 ];
 
 function track(event: string, props: Record<string, unknown> = {}): void {
@@ -278,27 +278,39 @@ function Step1({
       </p>
 
       <div className="grid grid-cols-2 gap-3 mt-6">
-        {INTENT_OPTIONS.map((opt, idx) => (
-          <button
-            key={opt.key}
-            type="button"
-            onClick={() => onPick(opt.key)}
-            aria-pressed={selected === opt.key}
-            className={
-              (idx === INTENT_OPTIONS.length - 1 ? 'col-span-2 sm:col-span-2 ' : '') +
-              'flex flex-col items-start gap-1 p-4 text-left rounded-xl border transition-all ' +
-              (selected === opt.key
-                ? 'border-saffron-500 bg-saffron-50 shadow-sm'
-                : 'border-surface-200 hover:border-saffron-300 hover:bg-saffron-50/40')
-            }
-          >
-            <span className="text-2xl" aria-hidden="true">
-              {opt.emoji}
-            </span>
-            <span className="text-sm font-semibold text-surface-800">{opt.title}</span>
-            <span className="text-xs text-surface-500">{opt.caption}</span>
-          </button>
-        ))}
+        {INTENT_OPTIONS.map((opt, idx) => {
+          const Icon = opt.icon;
+          const isSelected = selected === opt.key;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => onPick(opt.key)}
+              aria-pressed={isSelected}
+              className={
+                (idx === INTENT_OPTIONS.length - 1 ? 'col-span-2 sm:col-span-2 ' : '') +
+                'flex flex-col items-start gap-2 p-4 text-left rounded-xl border transition-all ' +
+                (isSelected
+                  ? 'border-saffron-500 bg-saffron-50 shadow-sm'
+                  : 'border-surface-200 hover:border-saffron-300 hover:bg-saffron-50/40')
+              }
+            >
+              <span
+                aria-hidden="true"
+                className={
+                  'inline-flex items-center justify-center w-10 h-10 rounded-lg ' +
+                  (isSelected
+                    ? 'bg-saffron-500/15 text-saffron-700'
+                    : 'bg-surface-100 text-surface-600')
+                }
+              >
+                <Icon className="w-5 h-5" />
+              </span>
+              <span className="text-sm font-semibold text-surface-800">{opt.title}</span>
+              <span className="text-xs text-surface-500">{opt.caption}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex items-center justify-between mt-6">
@@ -425,26 +437,38 @@ function Step3({
       </p>
 
       <div className="grid grid-cols-2 gap-3 mt-6">
-        {NRI_OPTIONS.map((opt) => (
-          <button
-            key={String(opt.value)}
-            type="button"
-            onClick={() => onPick(opt.value)}
-            aria-pressed={selected === opt.value}
-            className={
-              'flex flex-col items-start gap-1 p-4 text-left rounded-xl border transition-all ' +
-              (selected === opt.value
-                ? 'border-saffron-500 bg-saffron-50 shadow-sm'
-                : 'border-surface-200 hover:border-saffron-300 hover:bg-saffron-50/40')
-            }
-          >
-            <span className="text-2xl" aria-hidden="true">
-              {opt.emoji}
-            </span>
-            <span className="text-sm font-semibold text-surface-800">{opt.title}</span>
-            <span className="text-xs text-surface-500">{opt.caption}</span>
-          </button>
-        ))}
+        {NRI_OPTIONS.map((opt) => {
+          const Icon = opt.icon;
+          const isSelected = selected === opt.value;
+          return (
+            <button
+              key={String(opt.value)}
+              type="button"
+              onClick={() => onPick(opt.value)}
+              aria-pressed={isSelected}
+              className={
+                'flex flex-col items-start gap-2 p-4 text-left rounded-xl border transition-all ' +
+                (isSelected
+                  ? 'border-saffron-500 bg-saffron-50 shadow-sm'
+                  : 'border-surface-200 hover:border-saffron-300 hover:bg-saffron-50/40')
+              }
+            >
+              <span
+                aria-hidden="true"
+                className={
+                  'inline-flex items-center justify-center w-10 h-10 rounded-lg ' +
+                  (isSelected
+                    ? 'bg-saffron-500/15 text-saffron-700'
+                    : 'bg-surface-100 text-surface-600')
+                }
+              >
+                <Icon className="w-5 h-5" />
+              </span>
+              <span className="text-sm font-semibold text-surface-800">{opt.title}</span>
+              <span className="text-xs text-surface-500">{opt.caption}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex items-center justify-between mt-6">
