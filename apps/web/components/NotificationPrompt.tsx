@@ -110,6 +110,14 @@ export function NotificationPrompt() {
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Could not enable notifications');
       setState('error');
+      // Persist dismiss so denied users aren't re-prompted on every navigation
+      try {
+        localStorage.setItem(DISMISS_KEY, String(Date.now()));
+      } catch {
+        /* ignore */
+      }
+      // Auto-hide error toast after 6s — it's informational, not actionable
+      window.setTimeout(() => setState('hidden'), 6000);
     }
   };
 
