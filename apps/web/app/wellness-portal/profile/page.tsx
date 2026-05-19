@@ -148,8 +148,8 @@ function Content() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">My Profile</h1>
-          <p className="text-surface-500 mt-1">Manage your wellness instructor profile</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>My Profile</h1>
+          <p className="text-[var(--color-text-muted)] mt-1">Manage your wellness instructor profile</p>
         </div>
         <button
           onClick={handleSave}
@@ -162,12 +162,12 @@ function Content() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">
-          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+        <div className="flex items-start gap-2 text-sm px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{error}</span>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-surface-100 p-6 flex items-center gap-6">
+      <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 flex items-center gap-6">
         <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
           <UserCircle className="w-12 h-12 text-emerald-400" />
         </div>
@@ -187,7 +187,7 @@ function Content() {
           type="text"
           value={profile.displayName}
           onChange={(e) => updateField('displayName', e.target.value)}
-          className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          className="w-full px-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
         />
       </Card>
 
@@ -197,7 +197,7 @@ function Content() {
           onChange={(e) => updateField('bio', e.target.value)}
           rows={4}
           placeholder="Tell students about your background and teaching philosophy…"
-          className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 resize-none"
+          className="w-full px-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 resize-none"
         />
       </Card>
 
@@ -207,7 +207,7 @@ function Content() {
             type="number"
             value={profile.experience}
             onChange={(e) => updateField('experience', Math.max(0, parseInt(e.target.value) || 0))}
-            className="w-24 px-3 py-2.5 border border-surface-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            className="w-24 px-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
           <span className="text-sm text-surface-600">years</span>
         </div>
@@ -221,7 +221,7 @@ function Content() {
               type="number"
               value={profile.pricePerSession}
               onChange={(e) => updateField('pricePerSession', Math.max(0, parseFloat(e.target.value) || 0))}
-              className="w-32 pl-9 pr-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              className="w-32 pl-9 pr-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
             />
           </div>
           <span className="text-sm text-surface-600">per session (INR)</span>
@@ -265,9 +265,9 @@ function Content() {
 
 function Card({ title, icon: Icon, children }: { title: string; icon?: any; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-surface-100 p-5">
-      <h3 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
-        {Icon && <Icon className="w-4 h-4 text-surface-400" />} {title}
+    <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
+      <h3 className="font-semibold text-[var(--color-text)] mb-4 flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-[var(--color-text-muted)]" />} {title}
       </h3>
       {children}
     </div>
