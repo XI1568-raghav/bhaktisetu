@@ -853,7 +853,7 @@ function BookingDetailContent() {
  support@darshya.online
  </a>{' '}
  or call{' '}
- <a href="tel:+919037049955" className="font-medium text-saffron-600 hover:underline">
+ <a href="tel:+919255109400" className="font-medium text-saffron-600 hover:underline">
  +91 80-BHAKTI-00
  </a>
  .

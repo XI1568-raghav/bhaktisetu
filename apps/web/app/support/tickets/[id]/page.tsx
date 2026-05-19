@@ -295,7 +295,7 @@ export default function TicketDetailPage() {
  Browse FAQ →
  </Link>
  <a
- href="tel:+919037049955"
+ href="tel:+919255109400"
  className="block text-sm text-saffron-700 hover:text-saffron-800 mb-1.5"
  >
  Call support →

@@ -234,7 +234,7 @@ export default function HelpPage() {
  Contact Support
  </a>
  <a
- href="https://wa.me/919037049955"
+ href="https://wa.me/919255109400"
  target="_blank"
  rel="noopener noreferrer"
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
