@@ -180,12 +180,23 @@ export async function authenticateUser(
       return;
     }
 
-    // Look up the user in our Prisma database
-    const dbUser = await prisma.user.findFirst({
-      where: {
-        phone: supabaseUser.phone ?? '',
-      },
+    // Look up the user in our Prisma database. Signup writes
+    // `User.id = supabaseUser.id`, so id-match is authoritative.
+    // Fall back to email (email/password signups) and finally phone
+    // (legacy OTP signups) so any signup path resolves.
+    let dbUser = await prisma.user.findUnique({
+      where: { id: supabaseUser.id },
     });
+    if (!dbUser && supabaseUser.email) {
+      dbUser = await prisma.user.findUnique({
+        where: { email: supabaseUser.email.toLowerCase() },
+      });
+    }
+    if (!dbUser && supabaseUser.phone) {
+      dbUser = await prisma.user.findFirst({
+        where: { phone: supabaseUser.phone },
+      });
+    }
 
     if (!dbUser) {
       reply.code(401).send({

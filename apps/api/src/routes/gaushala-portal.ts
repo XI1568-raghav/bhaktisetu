@@ -14,6 +14,42 @@ const profileUpdateSchema = z.object({
 // for the rationale). All aggregates here filter on `gaushalaId = currentUser.id`.
 
 export async function gaushalaPortalRoutes(server: FastifyInstance) {
+  // Paginated donations list for /gaushala-portal/donations.
+  server.get('/donations', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('GAUSHALA_MANAGER')) {
+      return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
+    }
+    const q = request.query as { status?: string; limit?: string };
+    const limit = Math.min(Number(q.limit) || 100, 500);
+    const statusMap: Record<string, 'created' | 'paid' | 'failed'> = {
+      pending: 'created',
+      received: 'paid',
+      failed: 'failed',
+    };
+    const mapped = q.status ? statusMap[q.status.toLowerCase()] : undefined;
+    const where: any = { gaushalaId: userId, ...(mapped ? { status: mapped } : {}) };
+    const donations = await prisma.donation.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { user: { select: { fullName: true, email: true } } },
+    });
+    return reply.send({
+      donations: donations.map((d) => ({
+        id: d.id,
+        donor: d.user?.fullName ?? 'Anonymous',
+        email: d.user?.email ?? null,
+        amountInr: Number(d.amountInr),
+        status: d.status, // created | paid | failed
+        receiptNumber: d.receiptNumber ?? null,
+        createdAt: d.createdAt,
+        paidAt: d.paidAt,
+      })),
+    });
+  });
+
   server.get('/dashboard', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
     const roles = request.currentUser!.roles ?? [];
