@@ -18,10 +18,10 @@ type Volunteer = {
 };
 
 const roleColors: Record<string, string> = {
-  general: 'bg-amber-100 text-amber-700',
-  feeding: 'bg-green-100 text-green-700',
-  medical: 'bg-blue-100 text-blue-700',
-  cleaning: 'bg-purple-100 text-purple-700',
+  general: 'bg-[var(--color-primary-highlight)] text-[var(--color-primary-active)]',
+  feeding: 'bg-[#e7f0e0] text-[#3f6b1f]',
+  medical: 'bg-[#fde2cf] text-[#943b19]',
+  cleaning: 'bg-[var(--color-surface-offset)] text-[var(--color-text-muted)]',
 };
 
 export default function VolunteersPage() {
@@ -157,12 +157,12 @@ function VolunteersContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-amber-900">Volunteers</h1>
-          <p className="text-sm mt-1 text-amber-700">{activeCount} active volunteer{activeCount === 1 ? '' : 's'}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Volunteers</h1>
+          <p className="text-sm mt-1 text-[var(--color-text-muted)]">{activeCount} active volunteer{activeCount === 1 ? '' : 's'}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors text-white bg-amber-800 hover:bg-amber-900"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]"
         >
           <UserPlus className="w-4 h-4" />
           Add Volunteer
@@ -177,12 +177,12 @@ function VolunteersContent() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-faint)]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, role, phone…"
-            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-72 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="pl-9 pr-4 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg w-72 focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
           />
         </div>
         {(['All', 'Active', 'Inactive'] as const).map((s) => (
@@ -191,8 +191,8 @@ function VolunteersContent() {
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               statusFilter === s
-                ? 'bg-amber-800 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-amber-50'
+                ? 'bg-[var(--color-primary)] text-white'
+                : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-primary-highlight)]'
             }`}
           >
             {s}
@@ -201,29 +201,29 @@ function VolunteersContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-amber-700"><Loader2 className="w-4 h-4 animate-spin" /> Loading volunteers…</div>
+        <div className="flex items-center gap-2 text-[var(--color-text-muted)]"><Loader2 className="w-4 h-4 animate-spin" /> Loading volunteers…</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((v) => (
-            <div key={v.id} className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
+            <div key={v.id} className="bg-[var(--color-surface)] rounded-xl p-5 shadow-sm border border-[var(--color-border)] hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-amber-200 rounded-full flex items-center justify-center text-amber-800 font-bold text-lg">
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
                     {v.fullName.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{v.fullName}</p>
-                    <p className="text-xs text-gray-400">Joined {new Date(v.joinedAt).toLocaleDateString('en-IN')}</p>
+                    <p className="font-semibold text-[var(--color-text)]">{v.fullName}</p>
+                    <p className="text-xs text-[var(--color-text-faint)]">Joined {new Date(v.joinedAt).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${roleColors[v.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${roleColors[v.role] ?? 'bg-[var(--color-surface-offset)] text-[var(--color-text-muted)]'}`}>
                     {v.role}
                   </span>
                   <button
                     onClick={() => toggleActive(v)}
                     className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer ${
-                      v.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      v.active ? 'bg-[#e7f0e0] text-[#3f6b1f]' : 'bg-[var(--color-surface-offset)] text-[var(--color-text-faint)]'
                     }`}
                   >
                     {v.active ? 'Active' : 'Inactive'}
@@ -231,40 +231,40 @@ function VolunteersContent() {
                 </div>
               </div>
 
-              <div className="space-y-2 text-xs text-gray-600 mb-3">
+              <div className="space-y-2 text-xs text-[var(--color-text-muted)] mb-3">
                 {v.phone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <Phone className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
                     <span>{v.phone}</span>
                   </div>
                 )}
                 {v.email && (
                   <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <Mail className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
                     <span>{v.email}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <Calendar className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
                   <span>{new Date(v.joinedAt).toLocaleDateString('en-IN')}</span>
                 </div>
               </div>
 
-              {v.notes && <p className="text-xs text-gray-500 italic border-t border-amber-50 pt-2 mb-2">{v.notes}</p>}
+              {v.notes && <p className="text-xs text-[var(--color-text-muted)] italic border-t border-[var(--color-border)] pt-2 mb-2">{v.notes}</p>}
 
               <button
                 onClick={() => remove(v)}
-                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700"
+                className="flex items-center gap-1 text-xs text-[#943b19] hover:text-[#7d2f14]"
               >
                 <Trash2 className="w-3 h-3" /> Remove
               </button>
             </div>
           ))}
           {filtered.length === 0 && (
-            <div className="col-span-3 text-center py-12 bg-white rounded-2xl border border-amber-100">
-              <HandHeart className="w-10 h-10 mx-auto text-amber-300 mb-3" />
-              <p className="text-gray-500 text-sm mb-3">No volunteers yet.</p>
-              <button onClick={() => setShowModal(true)} className="text-amber-700 hover:text-amber-900 text-sm font-medium">
+            <div className="col-span-3 text-center py-12 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+              <HandHeart className="w-10 h-10 mx-auto text-[var(--color-text-faint)] mb-3" />
+              <p className="text-[var(--color-text-muted)] text-sm mb-3">No volunteers yet.</p>
+              <button onClick={() => setShowModal(true)} className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] text-sm font-medium">
                 + Add your first volunteer
               </button>
             </div>
@@ -273,11 +273,11 @@ function VolunteersContent() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42, 37, 32, 0.55)' }}>
+          <div className="rounded-xl shadow-lg w-full max-w-md p-6 bg-[var(--color-surface)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-amber-900">Add Volunteer</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-lg font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Add Volunteer</h2>
+              <button onClick={() => setShowModal(false)} className="text-[var(--color-text-faint)] hover:text-[var(--color-text)]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -286,11 +286,11 @@ function VolunteersContent() {
               <Field label="Phone" value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} placeholder="+91 98765 43210" />
               <Field label="Email" value={form.email} onChange={(v) => setForm((p) => ({ ...p, email: v }))} placeholder="optional" />
               <div>
-                <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">Role</label>
+                <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1 block">Role</label>
                 <select
                   value={form.role}
                   onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as any }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                 >
                   <option value="general">General</option>
                   <option value="feeding">Feeding</option>
@@ -300,8 +300,8 @@ function VolunteersContent() {
               </div>
               <Field label="Notes" value={form.notes} onChange={(v) => setForm((p) => ({ ...p, notes: v }))} placeholder="Optional" />
               {error && (
-                <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 px-3 py-2 rounded-lg">
-                  <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+                <div className="flex items-start gap-2 text-xs px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-px" /> <span>{error}</span>
                 </div>
               )}
             </div>
@@ -309,13 +309,13 @@ function VolunteersContent() {
               <button
                 onClick={handleAdd}
                 disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-800 text-white rounded-lg text-sm font-medium hover:bg-amber-900 disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
               >
                 {saving ? (<><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>) : 'Add Volunteer'}
               </button>
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2.5 border border-amber-200 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50"
+                className="px-4 py-2.5 border border-[var(--color-border)] text-[var(--color-primary)] rounded-lg text-sm font-medium hover:bg-[var(--color-primary-highlight)]"
               >
                 Cancel
               </button>
@@ -329,10 +329,10 @@ function VolunteersContent() {
 
 function StatCard({ label, value, Icon }: { label: string; value: number; Icon: any }) {
   return (
-    <div className="rounded-xl p-5 border bg-white border-amber-100">
-      <Icon className="w-5 h-5 mb-3 text-amber-700" />
-      <p className="text-xl font-semibold tracking-tight text-gray-900">{value}</p>
-      <p className="text-xs mt-1 text-gray-500">{label}</p>
+    <div className="rounded-xl p-5 border bg-[var(--color-surface)] border-[var(--color-border)]">
+      <Icon className="w-5 h-5 mb-3 text-[var(--color-primary)]" />
+      <p className="text-xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>{value}</p>
+      <p className="text-xs mt-1 text-[var(--color-text-muted)]">{label}</p>
     </div>
   );
 }
@@ -340,12 +340,12 @@ function StatCard({ label, value, Icon }: { label: string; value: number; Icon: 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div>
-      <label className="text-xs text-gray-500 uppercase tracking-wide mb-1 block">{label}</label>
+      <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1 block">{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+        className="w-full px-3 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
       />
     </div>
   );

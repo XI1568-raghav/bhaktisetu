@@ -24,9 +24,9 @@ const statusLabel: Record<Donation['status'], string> = {
 };
 
 const statusStyles: Record<Donation['status'], string> = {
-  paid: 'bg-green-100 text-green-700',
-  created: 'bg-yellow-100 text-yellow-700',
-  failed: 'bg-red-100 text-red-700',
+  paid: 'bg-[#e7f0e0] text-[#3f6b1f]',
+  created: 'bg-[var(--color-primary-highlight)] text-[var(--color-primary-active)]',
+  failed: 'bg-[#fef2e8] text-[#943b19]',
 };
 
 const filters: Array<{ key: 'all' | Donation['status']; label: string }> = [
@@ -138,8 +138,8 @@ function DonationsPageContent() {
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-amber-900">Donations</h1>
-          <p className="text-amber-700 text-sm mt-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Donations</h1>
+          <p className="text-[var(--color-text-muted)] text-sm mt-1">
             Total received: ₹{totalReceived.toLocaleString('en-IN')} · This month: ₹
             {monthReceived.toLocaleString('en-IN')}
           </p>
@@ -147,22 +147,22 @@ function DonationsPageContent() {
         <button
           onClick={exportCsv}
           disabled={filtered.length === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white rounded-lg text-sm hover:bg-amber-900 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
           Export CSV
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-amber-50 flex flex-wrap items-center gap-3">
+      <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--color-border)] flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-faint)]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search donor, email or receipt..."
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>
           {filters.map((f) => (
@@ -171,8 +171,8 @@ function DonationsPageContent() {
               onClick={() => setStatusFilter(f.key)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 statusFilter === f.key
-                  ? 'bg-amber-700 text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-amber-50'
+                  ? 'bg-[var(--color-primary)] text-white'
+                  : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-primary-highlight)]'
               }`}
             >
               {f.label}
@@ -181,38 +181,38 @@ function DonationsPageContent() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-amber-700">
+          <div className="flex items-center justify-center py-16 text-[var(--color-text-muted)]">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
             Loading donations...
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center py-16 text-red-600">
-            <AlertCircle className="w-5 h-5 mr-2" />
-            {error}
+          <div className="mx-6 my-8 flex items-start gap-2 text-sm px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-px" />
+            <span>{error}</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-amber-50">
+              <thead className="bg-[var(--color-surface-offset)]">
                 <tr>
                   {['Donor', 'Email', 'Amount', 'Status', 'Receipt', 'Date'].map((h) => (
                     <th
                       key={h}
-                      className="px-5 py-3 text-left text-xs font-semibold text-amber-800 uppercase tracking-wider"
+                      className="px-5 py-3 text-left text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider"
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-amber-50">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {filtered.map((d) => {
                   const when = d.paidAt ?? d.createdAt;
                   return (
-                    <tr key={d.id} className="hover:bg-amber-50/60 transition-colors">
-                      <td className="px-5 py-3 font-medium text-gray-800">{d.donor}</td>
-                      <td className="px-5 py-3 text-gray-500 text-xs">{d.email ?? '—'}</td>
-                      <td className="px-5 py-3 font-semibold text-amber-700">
+                    <tr key={d.id} className="hover:bg-[var(--color-primary-highlight)]/40 transition-colors">
+                      <td className="px-5 py-3 font-medium text-[var(--color-text)]">{d.donor}</td>
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">{d.email ?? '—'}</td>
+                      <td className="px-5 py-3 font-semibold text-[var(--color-primary)]">
                         ₹{d.amountInr.toLocaleString('en-IN')}
                       </td>
                       <td className="px-5 py-3">
@@ -222,10 +222,10 @@ function DonationsPageContent() {
                           {statusLabel[d.status]}
                         </span>
                       </td>
-                      <td className="px-5 py-3 font-mono text-xs text-gray-500">
+                      <td className="px-5 py-3 font-mono text-xs text-[var(--color-text-muted)]">
                         {d.receiptNumber ?? '—'}
                       </td>
-                      <td className="px-5 py-3 text-gray-500 text-xs">
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">
                         {new Date(when).toLocaleDateString('en-IN')}
                       </td>
                     </tr>
@@ -233,7 +233,7 @@ function DonationsPageContent() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-gray-400 text-sm">
+                    <td colSpan={6} className="px-5 py-12 text-center text-[var(--color-text-faint)] text-sm">
                       {donations.length === 0
                         ? 'No donations yet. Share your gaushala page to start receiving seva.'
                         : 'No donations match these filters.'}

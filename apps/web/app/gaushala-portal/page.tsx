@@ -47,10 +47,10 @@ function relativeTime(iso: string | null): string {
 }
 
 const statusColor: Record<string, string> = {
- healthy: 'bg-green-100 text-green-700',
- treatment: 'bg-red-100 text-red-700',
- pregnant: 'bg-purple-100 text-purple-700',
- recovering: 'bg-amber-100 text-amber-700',
+ healthy: 'bg-[#e7f0e0] text-[#3f6b1f]',
+ treatment: 'bg-[#fef2e8] text-[#943b19]',
+ pregnant: 'bg-[var(--color-primary-highlight)] text-[var(--color-primary-active)]',
+ recovering: 'bg-[var(--color-primary-highlight)] text-[var(--color-primary-active)]',
 };
 
 export default function GaushalaDashboard() {
@@ -143,57 +143,57 @@ export default function GaushalaDashboard() {
  {/* Two-column */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Recent Donations */}
- <div className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
- <div className="px-6 py-4 border-b border-amber-50 flex items-center justify-between">
- <h2 className="font-semibold text-amber-900">Recent Donations</h2>
- <Link href="/gaushala-portal/donations" className="text-xs text-amber-600 hover:underline">
+ <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] overflow-hidden">
+ <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+ <h2 className="font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Recent Donations</h2>
+ <Link href="/gaushala-portal/donations" className="text-xs text-[var(--color-primary)] hover:underline">
  View all →
  </Link>
  </div>
- <div className="divide-y divide-amber-50">
+ <div className="divide-y divide-[var(--color-border)]">
  {recentDonations.length === 0 ? (
- <p className="px-6 py-6 text-xs text-gray-400">No donations yet.</p>
+ <p className="px-6 py-6 text-xs text-[var(--color-text-faint)]">No donations yet.</p>
  ) : recentDonations.map((d) => (
  <div key={d.id} className="px-6 py-3 flex items-center justify-between">
  <div>
- <p className="text-sm font-medium text-gray-800">{d.donor}</p>
- <p className="text-xs text-gray-400">Gau Seva · {relativeTime(d.paidAt)}</p>
+ <p className="text-sm font-medium text-[var(--color-text)]">{d.donor}</p>
+ <p className="text-xs text-[var(--color-text-faint)]">Gau Seva · {relativeTime(d.paidAt)}</p>
  </div>
- <span className="text-sm font-semibold text-amber-700">{formatInr(d.amountInr)}</span>
+ <span className="text-sm font-semibold text-[var(--color-primary)]">{formatInr(d.amountInr)}</span>
  </div>
  ))}
  </div>
  </div>
 
  {/* Cow Registry Preview */}
- <div className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
- <div className="px-6 py-4 border-b border-amber-50 flex items-center justify-between">
- <h2 className="font-semibold text-amber-900">Cow Registry</h2>
- <Link href="/gaushala-portal/cows" className="text-xs text-amber-600 hover:underline">
+ <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] overflow-hidden">
+ <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+ <h2 className="font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Cow Registry</h2>
+ <Link href="/gaushala-portal/cows" className="text-xs text-[var(--color-primary)] hover:underline">
  View all →
  </Link>
  </div>
- <div className="divide-y divide-amber-50">
+ <div className="divide-y divide-[var(--color-border)]">
  {recentCows.length === 0 ? (
  <div className="px-6 py-8 text-center">
- <Beef className="w-10 h-10 text-gray-300 mx-auto mb-3" />
- <p className="text-sm text-gray-500">No cows registered</p>
- <Link href="/gaushala-portal/cows" className="text-xs text-amber-600 hover:underline mt-1 inline-block">
+ <Beef className="w-10 h-10 text-[var(--color-text-faint)] mx-auto mb-3" />
+ <p className="text-sm text-[var(--color-text-muted)]">No cows registered</p>
+ <Link href="/gaushala-portal/cows" className="text-xs text-[var(--color-primary)] hover:underline mt-1 inline-block">
  + Register your first cow
  </Link>
  </div>
  ) : recentCows.map((c) => (
  <div key={c.id} className="px-6 py-3 flex items-center justify-between">
  <div className="flex items-center gap-3">
- <Beef className="w-5 h-5 text-amber-600" />
+ <Beef className="w-5 h-5 text-[var(--color-primary)]" />
  <div>
- <p className="text-sm font-medium text-gray-800">{c.name}</p>
- <p className="text-xs text-gray-400">
+ <p className="text-sm font-medium text-[var(--color-text)]">{c.name}</p>
+ <p className="text-xs text-[var(--color-text-faint)]">
  {c.breed || 'Mixed'}{c.ageYears ? ` · ${c.ageYears}y` : ''}
  </p>
  </div>
  </div>
- <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${statusColor[c.healthStatus] ?? 'bg-gray-100 text-gray-600'}`}>
+ <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${statusColor[c.healthStatus] ?? 'bg-[var(--color-surface-offset)] text-[var(--color-text-muted)]'}`}>
  {c.healthStatus}
  </span>
  </div>
