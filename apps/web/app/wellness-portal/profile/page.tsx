@@ -2,239 +2,274 @@
 
 import { useState, useEffect } from 'react';
 import {
- UserCircle,
- Star,
- Save,
- Loader2,
- CheckCircle2,
- BookOpen,
- Award,
- Languages,
- Leaf,
+  UserCircle, Star, Save, Loader2, CheckCircle2, BookOpen, Award, Leaf, IndianRupee, AlertCircle,
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
-
-// ─── Types ──────────────────────────────────────────────────────
+import { useAuth } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
 
 interface WellnessProfile {
- displayName: string;
- bio: string;
- experienceYears: number;
- certifications: string[];
- specialties: string[];
- languages: string[];
+  displayName: string;
+  bio: string;
+  experience: number;
+  certifications: string[];
+  specialties: string[];
+  pricePerSession: number;
+  rating: number;
+  approved: boolean;
 }
 
-const STORAGE_KEY = 'poojly_wellness_profile';
-
 const ALL_CERTIFICATIONS = [
- 'RYT-200 (Yoga Alliance)', 'RYT-500 (Yoga Alliance)', 'E-RYT 200',
- 'YACEP (Yoga Alliance)', 'Ayurveda Practitioner', 'Vipassana Teacher',
- 'Mindfulness-Based Stress Reduction (MBSR)', 'Pranic Healing Certified',
- 'Reiki Master', 'Sound Healing Certified', 'Naturopathy Diploma',
+  'RYT-200 (Yoga Alliance)', 'RYT-500 (Yoga Alliance)', 'E-RYT 200',
+  'YACEP (Yoga Alliance)', 'Ayurveda Practitioner', 'Vipassana Teacher',
+  'Mindfulness-Based Stress Reduction (MBSR)', 'Pranic Healing Certified',
+  'Reiki Master', 'Sound Healing Certified', 'Naturopathy Diploma',
 ];
 
 const ALL_SPECIALTIES = [
- 'Hatha Yoga', 'Ashtanga Yoga', 'Vinyasa Flow', 'Kundalini Yoga',
- 'Yin Yoga', 'Pranayama', 'Meditation', 'Vipassana', 'Yoga Nidra',
- 'Sound Healing', 'Ayurveda', 'Yoga Therapy', 'Chair Yoga',
- 'Pre-natal Yoga', 'Kids Yoga',
+  'Hatha Yoga', 'Ashtanga Yoga', 'Vinyasa Flow', 'Kundalini Yoga',
+  'Yin Yoga', 'Pranayama', 'Meditation', 'Vipassana', 'Yoga Nidra',
+  'Sound Healing', 'Ayurveda', 'Yoga Therapy', 'Chair Yoga',
+  'Pre-natal Yoga', 'Kids Yoga',
 ];
 
-const ALL_LANGUAGES = [
- 'Hindi', 'English', 'Sanskrit', 'Tamil', 'Telugu', 'Kannada',
- 'Bengali', 'Gujarati', 'Marathi', 'Malayalam',
-];
-
-const defaultProfile: WellnessProfile = {
- displayName: 'Guru Ananda Sharma',
- bio: 'Dedicated yoga practitioner and teacher for over 20 years. Trained in Rishikesh at the Sivananda Yoga Vedanta Centre. I believe yoga is not just exercise but a path to spiritual awakening. My classes blend traditional asanas with pranayama and meditation for a holistic experience.',
- experienceYears: 20,
- certifications: ['RYT-500 (Yoga Alliance)', 'E-RYT 200', 'Vipassana Teacher', 'Ayurveda Practitioner'],
- specialties: ['Hatha Yoga', 'Pranayama', 'Meditation', 'Vipassana', 'Yoga Nidra', 'Yoga Therapy'],
- languages: ['Hindi', 'English', 'Sanskrit'],
+const emptyProfile: WellnessProfile = {
+  displayName: '',
+  bio: '',
+  experience: 0,
+  certifications: [],
+  specialties: [],
+  pricePerSession: 500,
+  rating: 0,
+  approved: false,
 };
 
-// ─── Component ──────────────────────────────────────────────────
-
 export default function WellnessProfilePage() {
- return (
-  <AuthGuard allowedRoles={['wellness_instructor', 'admin']}>
-   <WellnessProfilePageContent />
-  </AuthGuard>
- );
+  return (
+    <AuthGuard allowedRoles={['wellness_instructor', 'admin']}>
+      <Content />
+    </AuthGuard>
+  );
 }
 
-function WellnessProfilePageContent() {
- const [profile, setProfile] = useState<WellnessProfile>(defaultProfile);
- const [saving, setSaving] = useState(false);
- const [saved, setSaved] = useState(false);
+function Content() {
+  const { user, session } = useAuth();
+  const [profile, setProfile] = useState<WellnessProfile>(emptyProfile);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
- useEffect(() => {
- const stored = localStorage.getItem(STORAGE_KEY);
- if (stored) setProfile(JSON.parse(stored));
- }, []);
+  const token = session?.accessToken;
 
- function updateField<K extends keyof WellnessProfile>(key: K, value: WellnessProfile[K]) {
- setProfile((prev) => ({ ...prev, [key]: value }));
- setSaved(false);
- }
+  useEffect(() => {
+    if (!token) {
+      setProfile((p) => ({ ...p, displayName: user?.fullName ?? '' }));
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      try {
+        const r = await fetch(`${API_BASE_URL}/wellness-portal/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.profile) {
+            setProfile({
+              displayName: j.profile.displayName ?? user?.fullName ?? '',
+              bio: j.profile.bio ?? '',
+              experience: j.profile.experience ?? 0,
+              certifications: j.profile.certifications ?? [],
+              specialties: j.profile.specialties ?? [],
+              pricePerSession: Number(j.profile.pricePerSession ?? 500),
+              rating: j.profile.rating ?? 0,
+              approved: j.profile.approved ?? false,
+            });
+          } else {
+            setProfile((p) => ({ ...p, displayName: user?.fullName ?? '' }));
+          }
+        }
+      } catch {
+        // graceful
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [token, user]);
 
- function toggleItem(key: 'certifications' | 'specialties' | 'languages', item: string) {
- const current = profile[key];
- updateField(key, current.includes(item) ? current.filter((i) => i !== item) : [...current, item]);
- }
+  function updateField<K extends keyof WellnessProfile>(key: K, value: WellnessProfile[K]) {
+    setProfile((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+  }
 
- function handleSave() {
- setSaving(true);
- setTimeout(() => {
- localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
- setSaving(false);
- setSaved(true);
- setTimeout(() => setSaved(false), 3000);
- }, 500);
- }
+  function toggleItem(key: 'certifications' | 'specialties', item: string) {
+    const current = profile[key];
+    updateField(key, current.includes(item) ? current.filter((i) => i !== item) : [...current, item]);
+  }
 
- return (
- <div className="space-y-6 max-w-3xl">
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-2xl font-bold text-surface-800">My Profile</h1>
- <p className="text-surface-500 mt-1">Manage your wellness instructor profile</p>
- </div>
- <button
- onClick={handleSave}
- disabled={saving}
- className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
- >
- {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
- {saved ? 'Saved!' : 'Save Changes'}
- </button>
- </div>
+  const handleSave = async () => {
+    if (!token) { setError('Not signed in'); return; }
+    if (!profile.displayName.trim()) { setError('Display name required'); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const r = await fetch(`${API_BASE_URL}/wellness-portal/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          displayName: profile.displayName,
+          bio: profile.bio || undefined,
+          experience: profile.experience,
+          certifications: profile.certifications,
+          specialties: profile.specialties,
+          pricePerSession: profile.pricePerSession,
+        }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        setError(j.error ?? `Failed (${r.status})`);
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setError('Network error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
- {/* Avatar */}
- <div className="bg-white rounded-xl border border-surface-100 p-6 flex items-center gap-6">
- <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
- <UserCircle className="w-12 h-12 text-emerald-400" />
- </div>
- <div>
- <h2 className="text-xl font-bold text-surface-800">{profile.displayName}</h2>
- <p className="text-sm text-surface-500">{profile.experienceYears} years experience</p>
- <div className="flex items-center gap-1 mt-1">
- <Star className="w-4 h-4 text-temple-gold fill-temple-gold" />
- <span className="text-sm font-medium text-surface-700">4.8</span>
- <span className="text-xs text-surface-400">(218 reviews)</span>
- </div>
- </div>
- </div>
+  if (loading) {
+    return <div className="p-8 flex items-center gap-2 text-emerald-700"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>;
+  }
 
- {/* Name */}
- <div className="bg-white rounded-xl border border-surface-100 p-5">
- <h3 className="font-semibold text-surface-800 mb-4">Display Name</h3>
- <input
- type="text"
- value={profile.displayName}
- onChange={(e) => updateField('displayName', e.target.value)}
- className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
- />
- </div>
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-surface-800">My Profile</h1>
+          <p className="text-surface-500 mt-1">Manage your wellness instructor profile</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+          {saved ? 'Saved!' : 'Save Changes'}
+        </button>
+      </div>
 
- {/* Bio */}
- <div className="bg-white rounded-xl border border-surface-100 p-5">
- <h3 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
- <BookOpen className="w-4 h-4 text-surface-400" /> Bio
- </h3>
- <textarea
- value={profile.bio}
- onChange={(e) => updateField('bio', e.target.value)}
- rows={4}
- className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 resize-none"
- placeholder="Tell students about your background and teaching philosophy..."
- />
- </div>
+      {error && (
+        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">
+          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+        </div>
+      )}
 
- {/* Experience */}
- <div className="bg-white rounded-xl border border-surface-100 p-5">
- <h3 className="font-semibold text-surface-800 mb-4">Experience</h3>
- <div className="flex items-center gap-3">
- <input
- type="number"
- value={profile.experienceYears}
- onChange={(e) => updateField('experienceYears', Math.max(0, parseInt(e.target.value) || 0))}
- className="w-24 px-3 py-2.5 border border-surface-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-200"
- />
- <span className="text-sm text-surface-600">years</span>
- </div>
- </div>
+      <div className="bg-white rounded-xl border border-surface-100 p-6 flex items-center gap-6">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
+          <UserCircle className="w-12 h-12 text-emerald-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-surface-800">{profile.displayName || user?.fullName || 'Instructor'}</h2>
+          <p className="text-sm text-surface-500">{profile.experience} years experience</p>
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            <span className="text-sm font-medium text-surface-700">{profile.rating.toFixed(1)}</span>
+            <span className="text-xs text-surface-400">{profile.approved ? '(approved)' : '(pending approval)'}</span>
+          </div>
+        </div>
+      </div>
 
- {/* Certifications */}
- <div className="bg-white rounded-xl border border-surface-100 p-5">
- <h3 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
- <Award className="w-4 h-4 text-surface-400" /> Certifications
- </h3>
- <div className="flex flex-wrap gap-2">
- {ALL_CERTIFICATIONS.map((cert) => {
- const selected = profile.certifications.includes(cert);
- return (
- <button
- key={cert}
- onClick={() => toggleItem('certifications', cert)}
- className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
- selected ? 'bg-emerald-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
- }`}
- >
- {cert}
- </button>
- );
- })}
- </div>
- </div>
+      <Card title="Display Name">
+        <input
+          type="text"
+          value={profile.displayName}
+          onChange={(e) => updateField('displayName', e.target.value)}
+          className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+        />
+      </Card>
 
- {/* Specialties */}
- <div className="bg-white rounded-xl border border-surface-100 p-5">
- <h3 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
- <Leaf className="w-4 h-4 text-surface-400" /> Specialties
- </h3>
- <div className="flex flex-wrap gap-2">
- {ALL_SPECIALTIES.map((spec) => {
- const selected = profile.specialties.includes(spec);
- return (
- <button
- key={spec}
- onClick={() => toggleItem('specialties', spec)}
- className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
- selected ? 'bg-saffron-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
- }`}
- >
- {spec}
- </button>
- );
- })}
- </div>
- </div>
+      <Card title="Bio" icon={BookOpen}>
+        <textarea
+          value={profile.bio}
+          onChange={(e) => updateField('bio', e.target.value)}
+          rows={4}
+          placeholder="Tell students about your background and teaching philosophy…"
+          className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 resize-none"
+        />
+      </Card>
 
- {/* Languages */}
- <div className="bg-white rounded-xl border border-surface-100 p-5">
- <h3 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
- <Languages className="w-4 h-4 text-surface-400" /> Languages
- </h3>
- <div className="flex flex-wrap gap-2">
- {ALL_LANGUAGES.map((lang) => {
- const selected = profile.languages.includes(lang);
- return (
- <button
- key={lang}
- onClick={() => toggleItem('languages', lang)}
- className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
- selected ? 'bg-blue-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
- }`}
- >
- {lang}
- </button>
- );
- })}
- </div>
- </div>
- </div>
- );
+      <Card title="Experience">
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            value={profile.experience}
+            onChange={(e) => updateField('experience', Math.max(0, parseInt(e.target.value) || 0))}
+            className="w-24 px-3 py-2.5 border border-surface-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          />
+          <span className="text-sm text-surface-600">years</span>
+        </div>
+      </Card>
+
+      <Card title="Price per Session" icon={IndianRupee}>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+            <input
+              type="number"
+              value={profile.pricePerSession}
+              onChange={(e) => updateField('pricePerSession', Math.max(0, parseFloat(e.target.value) || 0))}
+              className="w-32 pl-9 pr-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            />
+          </div>
+          <span className="text-sm text-surface-600">per session (INR)</span>
+        </div>
+      </Card>
+
+      <Card title="Certifications" icon={Award}>
+        <div className="flex flex-wrap gap-2">
+          {ALL_CERTIFICATIONS.map((c) => (
+            <button
+              key={c}
+              onClick={() => toggleItem('certifications', c)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                profile.certifications.includes(c) ? 'bg-emerald-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card title="Specialties" icon={Leaf}>
+        <div className="flex flex-wrap gap-2">
+          {ALL_SPECIALTIES.map((s) => (
+            <button
+              key={s}
+              onClick={() => toggleItem('specialties', s)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                profile.specialties.includes(s) ? 'bg-amber-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function Card({ title, icon: Icon, children }: { title: string; icon?: any; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-xl border border-surface-100 p-5">
+      <h3 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-surface-400" />} {title}
+      </h3>
+      {children}
+    </div>
+  );
 }

@@ -1,6 +1,16 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+
+const profileUpdateSchema = z.object({
+  displayName: z.string().min(1).max(100).optional(),
+  specialties: z.array(z.string().max(50)).max(20).optional(),
+  experience: z.number().int().min(0).max(80).optional(),
+  languages: z.array(z.string().max(30)).max(20).optional(),
+  pricePerMinute: z.number().min(0).max(100000).optional(),
+  bio: z.string().max(2000).optional(),
+});
 
 // No persistent Consultation model — Jitsi rooms are ephemeral (see consultation.ts).
 // Stats below derive from AstrologerProfile counters maintained elsewhere; sessions
@@ -32,5 +42,37 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       },
       upcomingSessions: [],
     });
+  });
+
+  server.patch('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('ASTROLOGER')) {
+      return reply.code(403).send({ error: 'ASTROLOGER role required' });
+    }
+    const parsed = profileUpdateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
+    if (!existing) {
+      const profile = await prisma.astrologerProfile.create({
+        data: {
+          userId,
+          displayName: parsed.data.displayName ?? 'Astrologer',
+          specialties: parsed.data.specialties ?? [],
+          languages: parsed.data.languages ?? [],
+          experience: parsed.data.experience ?? 0,
+          pricePerMinute: parsed.data.pricePerMinute ?? 10,
+          bio: parsed.data.bio,
+        },
+      });
+      return reply.send({ profile });
+    }
+    const profile = await prisma.astrologerProfile.update({
+      where: { userId },
+      data: parsed.data,
+    });
+    return reply.send({ profile });
   });
 }
