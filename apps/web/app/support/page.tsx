@@ -48,11 +48,11 @@ export default function SupportPage() {
  {/* Quick contact row */}
  <div className="mt-8 flex flex-wrap justify-center gap-3">
  <a
- href="tel:+919037049955"
+ href="tel:+919255109400"
  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-surface-200 hover:border-saffron-400 hover:shadow-sm transition-all text-sm font-medium text-surface-700"
  >
  <Phone className="w-4 h-4 text-saffron-600" />
- +91 90370 49955
+ +91 92551 09400
  </a>
  <a
  href="mailto:support@darshya.online"
@@ -62,7 +62,7 @@ export default function SupportPage() {
  support@darshya.online
  </a>
  <a
- href="https://wa.me/919037049955"
+ href="https://wa.me/919255109400"
  target="_blank"
  rel="noreferrer"
  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-surface-200 hover:border-saffron-400 hover:shadow-sm transition-all text-sm font-medium text-surface-700"
