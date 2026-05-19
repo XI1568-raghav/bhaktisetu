@@ -2,33 +2,40 @@
 
 > Live ledger. Completed history in `docs/tasks-history.md`.
 > User-action gates in `docs/activation-gates.md`.
-> Last updated: 2026-05-17.
+> Last updated: 2026-05-19.
 
-## HANDOFF (2026-05-17, post context-trim + admin role-wire)
+## HANDOFF (2026-05-19, post P1-P4 provider portal overhaul)
 
-**Shipped**:
-- Signup persists primary role + stub provider profile e2e (`a103379`).
-- Admin Users role-edit + stub provider seed on role change (`e4b2f37`).
-- Context-trim v2: disabled 9 unused plugins (notion/figma/linear/gitlab/asana/playwright/cloudflare/sentry-plugin/supabase). ~35K tokens/turn saved. **Requires Claude Code restart to apply.**
-- CLAUDE.md chain trimmed; user-action gates de-dup → `docs/activation-gates.md`.
+**Shipped** (`bcadee6`):
+- P1 — Dashboard stats default to zero on empty profile for all 6 provider roles. Dynamic growth from real Prisma aggregates.
+- P2 — PATCH /profile across astrologer/wellness/gaushala portals; FE rewired (drop localStorage stubs).
+- P3 — Gaushala cows + volunteers full CRUD (API routes + Prisma models + migration + FE pages). Register/View Health/Add Volunteer modals all wired.
+- P4 — Verification documents widget now reads `/provider-kyc` (PAN/Aadhaar masked/AddressProof/Selfie) replacing 4-doc hardcoded list.
+- Site-wide WhatsApp click-to-chat button (z-59, below cart z-60) with greeting prefill.
+- CORS: explicit methods + allowedHeaders to unblock PATCH preflight (`6f8ca24`).
+
+**Migration to deploy**: `20260519000000_gaushala_cows_volunteers` — creates `cows`, `cow_health_records`, `volunteers` tables. Render `start` script runs `prisma migrate deploy` auto.
 
 **Active investigation**:
-- `/admin/users` + `/admin/approvals` returning 500 in prod. Possibly downstream of Render env state post-branch-switch.
+- `/admin/users` + `/admin/approvals` returning 500 in prod (from prior handoff, not addressed this session).
 
 **Next**:
-1. Triage 500: check Render logs for stack trace at `/admin/users` + `/admin/approvals`.
-2. Confirm `ALLOW_DEMO_PAYMENTS=true` set on Render.
-3. Verify Survagya e2e flow once 500 resolved.
+1. Push to origin → Render API + CF Pages auto-deploy.
+2. Verify migration ran on Supabase (cows/volunteers tables exist).
+3. Smoke-test register cow, add volunteer, edit profile across 3 roles in prod.
+4. Triage admin 500 (still open from prior handoff).
+5. Confirm `ALLOW_DEMO_PAYMENTS=true` on Render.
 
 ## In progress
 
-- Investigate admin 500s.
+- (nothing — handoff fresh)
 
 ## Pending — engineering
 
 | # | Task | Notes |
 |---|---|---|
 | E2 | Wire FCM server key on user paste | env-or-noop; native push live automatically |
+| E3 | Triage admin /users + /approvals 500s | check Render logs; possibly env regression |
 
 ## Pending — user-action
 
@@ -38,6 +45,6 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-19 | P1-P4 provider portal overhaul (CRUD + KYC + WhatsApp) | `bcadee6` |
 | 2026-05-17 | Context trim v2 + admin role-edit | settings + `e4b2f37` |
 | 2026-05-17 | Persist primary role + stub provider profile on signup | `a103379` |
-| 2026-05-17 | Signup web↔API role enum mapping | `8b87dfb` |
