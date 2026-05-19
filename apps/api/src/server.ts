@@ -21,6 +21,8 @@ import { templePortalRoutes } from './routes/temple-portal.js';
 import { astrologerPortalRoutes } from './routes/astrologer-portal.js';
 import { wellnessPortalRoutes } from './routes/wellness-portal.js';
 import { gaushalaPortalRoutes } from './routes/gaushala-portal.js';
+import { gaushalaCowsRoutes } from './routes/gaushala-cows.js';
+import { gaushalaVolunteersRoutes } from './routes/gaushala-volunteers.js';
 import { userRoutes } from './routes/users.js';
 import { readingProgressRoutes } from './routes/reading-progress.js';
 import { authRoutes } from './routes/auth.js';
@@ -197,6 +199,8 @@ async function bootstrap() {
   await server.register(astrologerPortalRoutes, { prefix: '/api/v1/astrologer-portal' });
   await server.register(wellnessPortalRoutes, { prefix: '/api/v1/wellness-portal' });
   await server.register(gaushalaPortalRoutes, { prefix: '/api/v1/gaushala-portal' });
+  await server.register(gaushalaCowsRoutes, { prefix: '/api/v1/gaushala-portal' });
+  await server.register(gaushalaVolunteersRoutes, { prefix: '/api/v1/gaushala-portal' });
   await server.register(supportRoutes, { prefix: '/api/v1/support' });
   await server.register(searchRoutes, { prefix: '/api/v1/search' });
   await server.register(consultationRoutes, { prefix: '/api/v1/consultation' });

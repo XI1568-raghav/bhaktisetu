@@ -11,70 +11,9 @@ import {
  Clock,
  ArrowRight,
  Leaf,
- Star,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
-
-// ─── Mock Data ──────────────────────────────────────────────────
-
-const dashboardData = {
- instructor: {
- name: 'Guru Ananda Sharma',
- rating: 4.8,
- ratingCount: 218,
- },
- stats: {
- upcomingSessions: 4,
- totalSessions: 856,
- activeStudents: 67,
- totalStudents: 234,
- earningsThisMonth: 42500,
- totalEarnings: 384000,
- },
- upcomingSessions: [
- {
- id: '1',
- title: 'Morning Hatha Yoga',
- type: 'group',
- scheduledAt: '2026-04-17T06:00:00',
- duration: 60,
- enrolled: 12,
- maxCapacity: 20,
- price: 200,
- },
- {
- id: '2',
- title: 'Pranayama & Meditation',
- type: 'group',
- scheduledAt: '2026-04-17T08:00:00',
- duration: 45,
- enrolled: 8,
- maxCapacity: 15,
- price: 150,
- },
- {
- id: '3',
- title: 'Private Yoga Therapy',
- type: 'private',
- scheduledAt: '2026-04-17T10:30:00',
- duration: 90,
- enrolled: 1,
- maxCapacity: 1,
- price: 1500,
- },
- {
- id: '4',
- title: 'Evening Meditation Circle',
- type: 'group',
- scheduledAt: '2026-04-17T18:00:00',
- duration: 30,
- enrolled: 15,
- maxCapacity: 25,
- price: 100,
- },
- ],
-};
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -119,8 +58,8 @@ type ApiWellnessDashboard = {
 };
 
 export default function WellnessDashboard() {
- const { session } = useAuth();
- const data = dashboardData;
+ const { session, user } = useAuth();
+ const displayName = user?.fullName || 'Instructor';
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
  const [api, setApi] = useState<ApiWellnessDashboard | null>(null);
@@ -163,31 +102,20 @@ export default function WellnessDashboard() {
  }, [session]);
 
  const liveStats = api?.stats;
- const statCards = liveStats
-  ? [
-   { label: 'Upcoming Sessions', value: liveStats.upcomingSessions, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-   { label: 'Total Students', value: liveStats.totalStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-  ]
-  : [
-   { label: 'Upcoming Sessions', value: data.stats.upcomingSessions, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-   { label: 'Active Students', value: data.stats.activeStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-  ];
+ const statCards = [
+  { label: 'Upcoming Sessions', value: liveStats?.upcomingSessions ?? 0, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { label: 'Total Students', value: liveStats?.totalStudents ?? 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+ ];
 
  return (
  <div className="space-y-6 max-w-5xl">
  {/* Welcome */}
  <div>
  <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
- Namaste, {data.instructor.name.split(' ').pop()}!
+ Namaste, {displayName.split(' ').pop()}!
  </h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
- <p className="text-surface-500">
- Your wellness practice overview.
- <span className="ml-2 inline-flex items-center gap-1 text-sm">
- <Star className="w-3.5 h-3.5 text-temple-gold fill-temple-gold" />
- {data.instructor.rating} ({data.instructor.ratingCount} reviews)
- </span>
- </p>
+ <p className="text-surface-500">Your wellness practice overview.</p>
  <KycStatusBadge state={kycState} reason={kycReason} />
  </div>
  </div>
@@ -195,8 +123,8 @@ export default function WellnessDashboard() {
  <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />
 
  <EarningsCard
- totalPaid={liveStats?.totalEarningsInr ?? data.stats.totalEarnings}
- thisMonth={liveStats?.monthEarningsInr ?? data.stats.earningsThisMonth}
+ totalPaid={liveStats?.totalEarningsInr ?? 0}
+ thisMonth={liveStats?.monthEarningsInr ?? 0}
  pending={null}
  />
 
@@ -231,10 +159,13 @@ export default function WellnessDashboard() {
  </div>
 
  <div className="divide-y divide-surface-50">
- {api ? (
-  api.upcomingSessions.length === 0 ? (
-   <p className="px-5 py-6 text-xs text-surface-400">No upcoming sessions scheduled.</p>
-  ) : api.upcomingSessions.map((s) => (
+ {(!api || api.upcomingSessions.length === 0) ? (
+  <div className="px-5 py-8 text-center">
+   <CalendarDays className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+   <p className="text-sm text-surface-500">No upcoming sessions</p>
+   <p className="text-xs text-surface-400 mt-1">Create a session to start accepting enrollments.</p>
+  </div>
+ ) : api.upcomingSessions.map((s) => (
    <div key={s.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors">
     <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
      <Leaf className="w-5 h-5 text-emerald-500" />
@@ -261,44 +192,7 @@ export default function WellnessDashboard() {
      <p className="text-xs text-surface-400">per person</p>
     </div>
    </div>
-  ))
- ) : data.upcomingSessions.map((session) => (
- <div key={session.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors">
- <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
- <Leaf className="w-5 h-5 text-emerald-500" />
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 mb-0.5">
- <h3 className="text-sm font-semibold text-surface-800 truncate">{session.title}</h3>
- <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
- session.type === 'private'
- ? 'bg-purple-100 text-purple-700'
- : 'bg-emerald-100 text-emerald-700'
- }`}>
- {session.type}
- </span>
- </div>
- <div className="flex items-center gap-3 text-xs text-surface-400">
- <span className="flex items-center gap-1">
- <CalendarDays className="w-3 h-3" />
- {formatDate(session.scheduledAt)} at {formatTime(session.scheduledAt)}
- </span>
- <span className="flex items-center gap-1">
- <Clock className="w-3 h-3" />
- {session.duration} min
- </span>
- <span className="flex items-center gap-1">
- <Users className="w-3 h-3" />
- {session.enrolled}/{session.maxCapacity}
- </span>
- </div>
- </div>
- <div className="text-right shrink-0">
- <p className="text-sm font-bold text-surface-800">{formatCurrency(session.price)}</p>
- <p className="text-xs text-surface-400">per person</p>
- </div>
- </div>
- ))}
+  ))}
  </div>
  </div>
 
