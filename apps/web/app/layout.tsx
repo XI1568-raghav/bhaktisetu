@@ -409,7 +409,8 @@ export default function RootLayout({
  <Mail className="w-3.5 h-3.5" /> support@darshya.online
  </span>
  <span className="flex items-center gap-1.5">
- <Phone className="w-3.5 h-3.5" /> +91 90370 49955
+ <Phone className="w-3.5 h-3.5" />
+ <a href="tel:+919255109400" className="hover:text-saffron-400 transition-colors">+91 92551 09400</a>
  </span>
  <span className="flex items-center gap-1.5">
  <MapPin className="w-3.5 h-3.5" /> Bengaluru, India
