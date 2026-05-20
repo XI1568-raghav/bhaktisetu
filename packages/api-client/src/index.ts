@@ -168,6 +168,34 @@ export type {
 } from "./hooks/wave-5.js";
 
 
+// ─── Portal dashboard hooks ─────────────────
+export {
+  useAstrologerDashboard,
+  useStoreAdminDashboard,
+  useStoreAdminReviews,
+  useStoreAdminRevenue,
+  useGaushalaDashboard,
+  useGaushalaPortalDonations,
+  useGaushalaVolunteers,
+  useTempleDashboard,
+  useTemplePortalDonations,
+  useWellnessDashboard,
+  useWellnessStudents,
+} from "./hooks/portals.js";
+export type {
+  AstrologerDashboardResponse,
+  StoreAdminDashboardResponse,
+  StoreAdminReviewsResponse,
+  StoreAdminRevenueResponse,
+  GaushalaDashboardResponse,
+  GaushalaDonationsResponse,
+  GaushalaVolunteersResponse,
+  TempleDashboardResponse,
+  TempleDonationsResponse,
+  WellnessDashboardResponse,
+  WellnessStudentsResponse,
+} from "./hooks/portals.js";
+
 // ─── Reading progress hooks ──────────────────
 export {
   useReadingProgress,
