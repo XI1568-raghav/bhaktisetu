@@ -183,7 +183,7 @@ export async function darshanRoutes(server: FastifyInstance) {
               templeId: t.id,
               playbackUrl,
               status: 'live' as const,
-              viewerCount: stream?.viewerCount ?? Math.floor(Math.random() * 500) + 100,
+              viewerCount: stream?.viewerCount ?? fallback?.viewerCount ?? 0,
               peakViewers: stream?.peakViewers ?? 0,
               isPremium: stream?.isPremium ?? false,
               scheduledStart: null,
@@ -217,7 +217,7 @@ export async function darshanRoutes(server: FastifyInstance) {
       templeId: s.id,
       playbackUrl: s.playbackUrl,
       status: 'live' as const,
-      viewerCount: s.viewerCount + Math.floor(Math.random() * 500),
+      viewerCount: s.viewerCount,
       peakViewers: s.peakViewers,
       isPremium: false,
       scheduledStart: null,
@@ -301,7 +301,7 @@ export async function darshanRoutes(server: FastifyInstance) {
         recentVideoTitle: feed.title,
         youtubeChannelId: hardcoded.youtubeChannelId,
         thumbnailUrl: hardcoded.thumbnailUrl,
-        viewerCount: hardcoded.viewerCount + Math.floor(Math.random() * 500),
+        viewerCount: hardcoded.viewerCount,
         startedAt: new Date(Date.now() - 3600000).toISOString(),
       };
     }
