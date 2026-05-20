@@ -1,114 +1,67 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useProducts } from '@poojly/api-client';
-import { PortalScreen, Section, StatCard } from '../../lib/portal-screen';
+import { useStoreAdminRevenue } from '@poojly/api-client';
+import { PortalScreen, Section, StatCard, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-const SERIES = [
-  { day: 'Mon', value: 24500 },
-  { day: 'Tue', value: 31800 },
-  { day: 'Wed', value: 28100 },
-  { day: 'Thu', value: 36400 },
-  { day: 'Fri', value: 42600 },
-  { day: 'Sat', value: 51200 },
-  { day: 'Sun', value: 47900 },
-];
-
-const FALLBACK_TOP = [
-  { name: 'Brass Ganesha Idol', revenue: 49980 },
-  { name: 'Premium Rudraksha Mala', revenue: 38970 },
-  { name: 'Puja Thali Set', revenue: 26970 },
-  { name: 'Bhagavad Gita', revenue: 13960 },
-];
+function inr(v: number | undefined): string {
+  return `₹${(v ?? 0).toLocaleString('en-IN')}`;
+}
 
 export default function StoreRevenue() {
-  const productsQuery = useProducts();
+  const revenueQuery = useStoreAdminRevenue();
   const [refreshing, setRefreshing] = useState(false);
 
-  const total = SERIES.reduce((a, b) => a + b.value, 0);
-  const max = Math.max(...SERIES.map((s) => s.value));
-
-  const products = productsQuery.data?.products ?? [];
-  const topProducts = products.length > 0
-    ? products.slice(0, 4).map((p, i) => ({
-        name: p.title ?? p.name ?? 'Product',
-        revenue: Math.round((p.price ?? 0) * (10 - i * 2)),
-      }))
-    : FALLBACK_TOP;
+  const totals = revenueQuery.data?.totals ?? {};
+  const topProducts = revenueQuery.data?.topProducts ?? [];
 
   async function onRefresh() {
     setRefreshing(true);
-    await productsQuery.refetch();
+    await revenueQuery.refetch();
     setRefreshing(false);
   }
 
   return (
     <PortalScreen
       title="Revenue"
-      subtitle="Last 7 days"
+      subtitle="Lifetime aggregates"
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
       <View style={{ flexDirection: 'row' }}>
-        <StatCard
-          label="7-Day Total"
-          value={`₹${total.toLocaleString('en-IN')}`}
-          accent={colors.green[600]}
-        />
+        <StatCard label="Today" value={inr(totals.todayInr)} accent={colors.green[600]} />
         <View style={{ width: spacing.sm }} />
-        <StatCard
-          label="Best Day"
-          value={`₹${max.toLocaleString('en-IN')}`}
-          hint="Saturday"
-        />
+        <StatCard label="This Month" value={inr(totals.monthInr)} />
+      </View>
+      <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+        <StatCard label="This Year" value={inr(totals.yearInr)} accent={colors.saffron[600]} />
       </View>
 
-      <Section title="Daily Trend">
-        <View style={styles.chartCard}>
-          <View style={styles.chart}>
-            {SERIES.map((s) => {
-              const height = (s.value / max) * 110;
-              return (
-                <View key={s.day} style={styles.barColumn}>
-                  <View style={[styles.bar, { height }]} />
-                  <Text style={styles.barLabel}>{s.day}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      </Section>
-
       <Section title="Top Products">
-        {topProducts.map((p, i) => (
-          <View key={`${p.name}-${i}`} style={styles.topRow}>
-            <Text style={styles.rank}>#{i + 1}</Text>
-            <Text style={styles.topName} numberOfLines={1}>{p.name}</Text>
-            <Text style={styles.topRevenue}>₹{p.revenue.toLocaleString('en-IN')}</Text>
-          </View>
-        ))}
+        {revenueQuery.isLoading ? (
+          <EmptyHint text="Loading revenue…" />
+        ) : revenueQuery.isError ? (
+          <EmptyHint text="Could not load revenue. Pull to refresh." />
+        ) : topProducts.length === 0 ? (
+          <EmptyHint text="No paid orders yet — top products will appear once orders flow." />
+        ) : (
+          topProducts.map((p, i) => (
+            <View key={p.id} style={styles.topRow}>
+              <Text style={styles.rank}>#{i + 1}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.topName} numberOfLines={1}>{p.name}</Text>
+                <Text style={styles.topSold}>{p.sold} sold</Text>
+              </View>
+              <Text style={styles.topRevenue}>{inr(p.revenueInr)}</Text>
+            </View>
+          ))
+        )}
       </Section>
     </PortalScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  chartCard: {
-    backgroundColor: colors.white,
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.stone[100],
-  },
-  chart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 140,
-    gap: spacing.sm,
-  },
-  barColumn: { flex: 1, alignItems: 'center' },
-  bar: { width: '70%', backgroundColor: colors.saffron[500], borderRadius: 4 },
-  barLabel: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 6, fontWeight: '600' },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -126,6 +79,7 @@ const styles = StyleSheet.create({
     color: colors.saffron[600],
     width: 30,
   },
-  topName: { flex: 1, fontSize: fontSize.base, color: colors.stone[800], fontWeight: '600' },
+  topName: { fontSize: fontSize.base, color: colors.stone[800], fontWeight: '600' },
+  topSold: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
   topRevenue: { fontSize: fontSize.base, fontWeight: '700', color: colors.green[600] },
 });

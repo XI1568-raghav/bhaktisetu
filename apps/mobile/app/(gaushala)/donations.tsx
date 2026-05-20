@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { useGaushalas } from '@poojly/api-client';
+import { useGaushalaPortalDonations } from '@poojly/api-client';
 import {
   PortalScreen,
   Section,
@@ -10,42 +10,35 @@ import {
 } from '../../lib/portal-screen';
 import { colors, spacing } from '../../lib/theme';
 
-interface Donation {
-  id: string;
-  donor: string;
-  type: 'feeding' | 'adoption' | 'medical' | 'general';
-  amount: number;
-  date: string;
-  recurring?: boolean;
+function relTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  if (days < 1) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
 
-const FALLBACK: Donation[] = [
-  { id: '1', donor: 'Anjali S.', type: 'adoption', amount: 1100, date: 'Today', recurring: true },
-  { id: '2', donor: 'Ramesh K.', type: 'feeding', amount: 251, date: 'Today' },
-  { id: '3', donor: 'Priya M.', type: 'general', amount: 5000, date: 'Yesterday' },
-  { id: '4', donor: 'Vikram B.', type: 'medical', amount: 3500, date: '2 days ago' },
-  { id: '5', donor: 'Anonymous', type: 'feeding', amount: 501, date: '3 days ago' },
-  { id: '6', donor: 'Devotee Family', type: 'adoption', amount: 1100, date: '5 days ago', recurring: true },
-];
-
-const TYPE_COLOR: Record<Donation['type'], string> = {
-  feeding: colors.green[600],
-  adoption: colors.saffron[600],
-  medical: colors.red[600],
-  general: colors.stone[600],
+const STATUS_COLOR: Record<string, string> = {
+  paid: colors.green[600],
+  received: colors.green[600],
+  created: colors.amber[600],
+  pending: colors.amber[600],
+  failed: colors.red[600],
 };
 
 export default function GaushalaDonations() {
-  const gaushalasQuery = useGaushalas();
+  const donationsQuery = useGaushalaPortalDonations();
   const [refreshing, setRefreshing] = useState(false);
 
-  const donations = FALLBACK;
-  const total = donations.reduce((a, d) => a + d.amount, 0);
-  const recurring = donations.filter((d) => d.recurring).length;
+  const donations = donationsQuery.data?.donations ?? [];
+  const monthTotal = donations
+    .filter((d) => (d.status ?? '').toLowerCase() === 'paid' || (d.status ?? '').toLowerCase() === 'received')
+    .reduce((a, d) => a + (d.amountInr ?? 0), 0);
 
   async function onRefresh() {
     setRefreshing(true);
-    await gaushalasQuery.refetch();
+    await donationsQuery.refetch();
     setRefreshing(false);
   }
 
@@ -57,24 +50,33 @@ export default function GaushalaDonations() {
       onRefresh={onRefresh}
     >
       <View style={{ flexDirection: 'row' }}>
-        <StatCard label="This Month" value={`₹${total.toLocaleString('en-IN')}`} accent={colors.green[600]} />
-        <View style={{ width: spacing.sm }} />
-        <StatCard label="Recurring" value={recurring} hint="active" accent={colors.saffron[700]} />
+        <StatCard
+          label="Paid Total"
+          value={`₹${monthTotal.toLocaleString('en-IN')}`}
+          accent={colors.green[600]}
+        />
       </View>
 
       <Section title="Recent Donations">
-        {donations.length === 0 ? (
+        {donationsQuery.isLoading ? (
+          <EmptyHint text="Loading donations…" />
+        ) : donationsQuery.isError ? (
+          <EmptyHint text="Could not load donations. Pull to refresh." />
+        ) : donations.length === 0 ? (
           <EmptyHint text="No donations recorded yet." />
         ) : (
-          donations.map((d) => (
-            <ListRow
-              key={d.id}
-              primary={`${d.donor}${d.recurring ? ' (recurring)' : ''}`}
-              secondary={`${d.type.toUpperCase()} • ${d.date}`}
-              trailing={`₹${d.amount.toLocaleString('en-IN')}`}
-              status={{ label: d.type, color: TYPE_COLOR[d.type] }}
-            />
-          ))
+          donations.map((d) => {
+            const status = (d.status ?? 'created').toLowerCase();
+            return (
+              <ListRow
+                key={d.id}
+                primary={d.donor ?? 'Anonymous'}
+                secondary={`${d.receiptNumber ?? 'No receipt'} • ${relTime(d.createdAt)}`}
+                trailing={`₹${(d.amountInr ?? 0).toLocaleString('en-IN')}`}
+                status={{ label: status, color: STATUS_COLOR[status] ?? colors.stone[600] }}
+              />
+            );
+          })
         )}
       </Section>
     </PortalScreen>

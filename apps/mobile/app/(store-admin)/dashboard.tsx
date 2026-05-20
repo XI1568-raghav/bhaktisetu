@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { useProducts } from '@poojly/api-client';
+import { useProducts, useStoreAdminDashboard } from '@poojly/api-client';
 import {
   PortalScreen,
   Section,
@@ -11,23 +11,23 @@ import {
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing } from '../../lib/theme';
 
-const FALLBACK_STATS = {
-  todaySales: 12450,
-  todayOrders: 8,
-  monthSales: 245600,
-  lowStock: 3,
-};
+function inr(v: number | undefined): string {
+  return `₹${(v ?? 0).toLocaleString('en-IN')}`;
+}
 
 export default function StoreDashboard() {
   const productsQuery = useProducts();
+  const dashboardQuery = useStoreAdminDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
   const products = productsQuery.data?.products ?? [];
   const productCount = products.length;
+  const stats = dashboardQuery.data?.stats ?? {};
+  const recentOrders = dashboardQuery.data?.recentOrders ?? [];
 
   async function onRefresh() {
     setRefreshing(true);
-    await productsQuery.refetch();
+    await Promise.all([productsQuery.refetch(), dashboardQuery.refetch()]);
     setRefreshing(false);
   }
 
@@ -41,21 +41,18 @@ export default function StoreDashboard() {
       <View style={{ flexDirection: 'row' }}>
         <StatCard
           label="Today Sales"
-          value={`₹${FALLBACK_STATS.todaySales.toLocaleString('en-IN')}`}
+          value={inr(stats.todaySales)}
           accent={colors.green[600]}
         />
         <View style={{ width: spacing.sm }} />
-        <StatCard label="Orders" value={FALLBACK_STATS.todayOrders} hint="today" />
+        <StatCard label="Orders" value={stats.todayOrders ?? 0} hint="today" />
       </View>
       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
-        <StatCard
-          label="This Month"
-          value={`₹${FALLBACK_STATS.monthSales.toLocaleString('en-IN')}`}
-        />
+        <StatCard label="This Month" value={inr(stats.monthSales)} />
         <View style={{ width: spacing.sm }} />
         <StatCard
           label="Low Stock"
-          value={FALLBACK_STATS.lowStock}
+          value={stats.lowStock ?? 0}
           hint="items"
           accent={colors.red[600]}
         />
@@ -63,6 +60,23 @@ export default function StoreDashboard() {
 
       <Section title="Messages">
         <MessagesEntry roleGroup="store-admin" />
+      </Section>
+
+      <Section title="Recent Orders">
+        {dashboardQuery.isLoading ? (
+          <EmptyHint text="Loading orders…" />
+        ) : recentOrders.length === 0 ? (
+          <EmptyHint text="No paid orders yet." />
+        ) : (
+          recentOrders.slice(0, 5).map((o) => (
+            <ListRow
+              key={o.id}
+              primary={`${o.id} • ${o.customer ?? 'Customer'}`}
+              secondary={o.status ?? ''}
+              trailing={inr(o.amount)}
+            />
+          ))
+        )}
       </Section>
 
       <Section title="Catalogue Snapshot">
