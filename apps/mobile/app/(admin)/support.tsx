@@ -1,25 +1,59 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useAdminPendingApprovals } from '@poojly/api-client';
+import { useAdminPendingApprovals, useSupportTickets } from '@poojly/api-client';
 import { PortalScreen, Section, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+
+// Server's SupportTicketStatus enum is UPPER_SNAKE (OPEN/IN_PROGRESS/RESOLVED/CLOSED).
+// We translate to the lower-snake variant the UI uses so existing
+// chip/colour wiring keeps working.
+type UiStatus = 'open' | 'in_progress' | 'resolved';
+type UiPriority = 'low' | 'medium' | 'high';
 
 interface Ticket {
   id: string;
   subject: string;
   user: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'open' | 'in_progress' | 'resolved';
+  priority: UiPriority;
+  status: UiStatus;
   createdAt: string;
 }
 
-const FALLBACK: Ticket[] = [
-  { id: 'T-1041', subject: 'Booking refund not received', user: 'Anjali S.', priority: 'high', status: 'open', createdAt: '2h ago' },
-  { id: 'T-1040', subject: 'Cannot upload Aadhaar (priest)', user: 'Pandit Sharma', priority: 'medium', status: 'in_progress', createdAt: '4h ago' },
-  { id: 'T-1039', subject: 'NRI payment failed for puja', user: 'Ramesh K. (US)', priority: 'high', status: 'open', createdAt: '6h ago' },
-  { id: 'T-1038', subject: 'Profile photo not updating', user: 'Priya M.', priority: 'low', status: 'resolved', createdAt: '1 day ago' },
-  { id: 'T-1037', subject: 'Stream buffering on iOS', user: 'Vikram B.', priority: 'medium', status: 'in_progress', createdAt: '1 day ago' },
-];
+interface RawTicket {
+  id: string;
+  ticketNumber?: string | null;
+  subject: string;
+  status?: string;
+  priority?: string;
+  createdAt: string;
+  userId?: string;
+}
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diffMs = Date.now() - then;
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function normalizeStatus(raw: string | undefined): UiStatus {
+  const s = (raw ?? '').toUpperCase();
+  if (s === 'IN_PROGRESS' || s === 'WAITING_ON_USER') return 'in_progress';
+  if (s === 'RESOLVED' || s === 'CLOSED') return 'resolved';
+  return 'open';
+}
+
+function normalizePriority(raw: string | undefined): UiPriority {
+  const s = (raw ?? '').toUpperCase();
+  if (s === 'HIGH' || s === 'URGENT') return 'high';
+  if (s === 'LOW') return 'low';
+  return 'medium';
+}
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -36,23 +70,34 @@ const STATUS_COLOR: Record<Ticket['status'], string> = {
 
 export default function AdminSupport() {
   const approvalsQuery = useAdminPendingApprovals();
+  const ticketsQuery = useSupportTickets({ all: true });
   const [filter, setFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const tickets = FALLBACK;
+  const tickets: Ticket[] = ((ticketsQuery.data?.data as RawTicket[] | undefined) ?? []).map((t) => ({
+    id: t.ticketNumber ?? t.id.slice(0, 8),
+    subject: t.subject,
+    user: t.userId ? `User ${t.userId.slice(0, 6)}` : '—',
+    priority: normalizePriority(t.priority),
+    status: normalizeStatus(t.status),
+    createdAt: relativeTime(t.createdAt),
+  }));
   const filtered = filter === 'all' ? tickets : tickets.filter((t) => t.status === filter);
   const pendingApprovals = approvalsQuery.data?.total ?? 0;
+  const unresolvedCount = tickets.filter((t) => t.status !== 'resolved').length;
 
   async function onRefresh() {
     setRefreshing(true);
-    await approvalsQuery.refetch();
+    await Promise.all([approvalsQuery.refetch(), ticketsQuery.refetch()]);
     setRefreshing(false);
   }
 
   return (
     <PortalScreen
       title="Support"
-      subtitle={`${tickets.filter((t) => t.status !== 'resolved').length} unresolved • ${pendingApprovals} provider approvals pending`}
+      subtitle={ticketsQuery.isLoading
+        ? 'Loading tickets…'
+        : `${unresolvedCount} unresolved • ${pendingApprovals} provider approvals pending`}
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
@@ -73,8 +118,12 @@ export default function AdminSupport() {
       </ScrollView>
 
       <Section title="Tickets">
-        {filtered.length === 0 ? (
-          <EmptyHint text="No tickets match this filter." />
+        {ticketsQuery.isLoading ? (
+          <EmptyHint text="Loading tickets…" />
+        ) : ticketsQuery.isError ? (
+          <EmptyHint text="Could not load tickets. Pull to refresh." />
+        ) : filtered.length === 0 ? (
+          <EmptyHint text={tickets.length === 0 ? 'No support tickets yet.' : 'No tickets match this filter.'} />
         ) : (
           filtered.map((t) => (
             <ListRow
