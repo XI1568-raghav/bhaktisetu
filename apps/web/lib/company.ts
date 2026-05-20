@@ -52,10 +52,17 @@ export const COMPANY = {
    * answerable. Until then, the Contact page omits the phone block
    * entirely and points users at email + ticket form.
    */
-  HAS_PHONE_SUPPORT_VERIFIED: false,
+  HAS_PHONE_SUPPORT_VERIFIED: true,
 
   /** Filled when HAS_PHONE_SUPPORT_VERIFIED becomes true. */
-  phones: null as null | Array<{
+  phones: [
+    {
+      region: 'India (founder direct)',
+      flag: '🇮🇳',
+      phone: '+91 92551 09400',
+      hours: 'Mon – Sat, 9:00 AM – 7:00 PM IST',
+    },
+  ] as null | Array<{
     region: string;
     flag: string;
     phone: string;
