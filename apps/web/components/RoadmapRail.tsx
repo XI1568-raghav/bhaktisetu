@@ -1,8 +1,35 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { CheckCircle2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  Sunrise,
+  Building2,
+  Sparkles,
+  ShieldCheck,
+  Cog,
+  Radio,
+  Telescope,
+} from 'lucide-react';
+
+export type MilestoneIconKey =
+  | 'sunrise'
+  | 'building'
+  | 'sparkles'
+  | 'shield'
+  | 'cog'
+  | 'radio'
+  | 'telescope';
+
+const ICONS = {
+  sunrise: Sunrise,
+  building: Building2,
+  sparkles: Sparkles,
+  shield: ShieldCheck,
+  cog: Cog,
+  radio: Radio,
+  telescope: Telescope,
+} as const;
 
 export interface Milestone {
   when: string;
@@ -10,7 +37,7 @@ export interface Milestone {
   title: string;
   body: string;
   status: 'shipped' | 'now' | 'planned' | 'vision';
-  icon: LucideIcon;
+  icon: MilestoneIconKey;
   accent: string;
   bgFrom: string;
   bgTo: string;
@@ -243,7 +270,7 @@ function RailCard({
   index: number;
   total: number;
 }) {
-  const Icon = m.icon;
+  const Icon = ICONS[m.icon];
   return (
     <article
       className="shrink-0 rounded-3xl border bg-white p-7 transition-all duration-500 ease-out"
@@ -384,7 +411,7 @@ function MobileStack({ milestones }: { milestones: Milestone[] }) {
       />
       <ol className="space-y-5">
         {milestones.map((m, i) => {
-          const Icon = m.icon;
+          const Icon = ICONS[m.icon];
           const active = i === activeIdx;
           return (
             <li
