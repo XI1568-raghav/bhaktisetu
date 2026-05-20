@@ -155,6 +155,7 @@ describe('AdminService.getDashboard', () => {
       { id: 't1', userId: 'u', type: 'BOOKING', amount: 1000, status: 'COMPLETED', createdAt: new Date('2026-04-10') },
       { id: 't2', userId: 'u', type: 'SUBSCRIPTION', amount: 500, status: 'COMPLETED', createdAt: new Date('2026-04-09') },
     ]);
+    prismaMock.transaction.aggregate.mockResolvedValue({ _sum: { amount: 1500 } });
     prismaMock.panditProfile.count.mockResolvedValue(1);
     prismaMock.storeProfile.count.mockResolvedValue(2);
     prismaMock.astrologerProfile.count.mockResolvedValue(0);

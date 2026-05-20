@@ -114,14 +114,47 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
   }
 }
 
-export async function getUsers(token: string | undefined): Promise<UsersResponse> {
-  const res = await fetch(`${API_BASE_URL}/admin/users`, {
+export async function getUsers(
+  token: string | undefined,
+  params?: { limit?: number; page?: number; role?: string; search?: string },
+): Promise<UsersResponse> {
+  const qs = new URLSearchParams();
+  if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+  if (params?.page !== undefined) qs.set('page', String(params.page));
+  if (params?.role) qs.set('role', params.role);
+  if (params?.search) qs.set('search', params.search);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  const res = await fetch(`${API_BASE_URL}/admin/users${suffix}`, {
     headers: authHeaders(token),
   });
   if (!res.ok) {
     throw new Error(await describeFailure(res, 'Failed to load users'));
   }
   return (await res.json()) as UsersResponse;
+}
+
+export type PendingApprovalsResponse = {
+  approvals: Array<{
+    id: string;
+    userId: string;
+    role: string;
+    profileName: string;
+    city: string | null;
+    createdAt: string;
+  }>;
+  total: number;
+};
+
+export async function getPendingApprovals(
+  token: string | undefined,
+): Promise<PendingApprovalsResponse> {
+  const res = await fetch(`${API_BASE_URL}/admin/pending-approvals`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await describeFailure(res, 'Failed to load approvals'));
+  }
+  return (await res.json()) as PendingApprovalsResponse;
 }
 
 export async function patchUser(

@@ -43,6 +43,19 @@ const createSessionSchema = z.object({
   priceInr: z.number().nonnegative(),
 });
 
+// Instructor edit — every field optional. scheduledAt may push into past for
+// CANCELLED clean-up so we relax the past-time refine here.
+const updateSessionSchema = z.object({
+  title: z.string().min(3).max(200).optional(),
+  description: z.string().min(1).max(5000).optional(),
+  type: z.enum(['YOGA', 'MEDITATION', 'VIPASSANA', 'PRANAYAMA', 'OTHER']).optional(),
+  scheduledAt: z.string().datetime().optional(),
+  durationMinutes: z.number().int().positive().max(600).optional(),
+  capacity: z.number().int().positive().max(10000).optional(),
+  priceInr: z.number().nonnegative().optional(),
+  status: z.enum(['SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']).optional(),
+});
+
 const updateRoomSchema = z.object({
   roomUrl: z.string().url(),
 });
@@ -93,6 +106,79 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         },
       });
       return reply.code(201).send({ data: serializeSession(session) });
+    }
+  );
+
+  // GET /sessions/mine — instructor's own sessions (all statuses, all dates)
+  server.get(
+    '/sessions/mine',
+    { preHandler: [authenticateUser, requireRole('WELLNESS_INSTRUCTOR')] },
+    async (request, reply) => {
+      const instructorId = request.currentUser!.id;
+      const sessions = await prisma.wellnessSession.findMany({
+        where: { instructorId },
+        orderBy: { scheduledAt: 'desc' },
+        take: 500,
+        include: { _count: { select: { enrollments: { where: { status: { in: ['PAID', 'ATTENDED'] } } } } } },
+      });
+      const data = sessions.map((s) => ({
+        ...serializeSession(s),
+        enrolled: s._count.enrollments,
+      }));
+      return reply.send({ data });
+    }
+  );
+
+  // PATCH /sessions/:id — instructor edits their own session
+  server.patch(
+    '/sessions/:id',
+    { preHandler: [authenticateUser, requireRole('WELLNESS_INSTRUCTOR')] },
+    async (request, reply) => {
+      const params = sessionIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid session id' });
+      const body = updateSessionSchema.safeParse(request.body ?? {});
+      if (!body.success) {
+        return reply
+          .code(400)
+          .send({ error: 'Invalid request body', details: body.error.flatten() });
+      }
+      const session = await prisma.wellnessSession.findUnique({ where: { id: params.data.id } });
+      if (!session) return reply.code(404).send({ error: 'Session not found' });
+      const userId = request.currentUser!.id;
+      if (session.instructorId !== userId && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Only the instructor can edit this session' });
+      }
+      const data: Record<string, unknown> = {};
+      if (body.data.title !== undefined) data.title = body.data.title;
+      if (body.data.description !== undefined) data.description = body.data.description;
+      if (body.data.type !== undefined) data.type = body.data.type;
+      if (body.data.scheduledAt !== undefined) data.scheduledAt = new Date(body.data.scheduledAt);
+      if (body.data.durationMinutes !== undefined) data.durationMinutes = body.data.durationMinutes;
+      if (body.data.capacity !== undefined) data.capacity = body.data.capacity;
+      if (body.data.priceInr !== undefined) data.priceInr = body.data.priceInr;
+      if (body.data.status !== undefined) data.status = body.data.status;
+      const updated = await prisma.wellnessSession.update({ where: { id: session.id }, data });
+      return reply.send({ data: serializeSession(updated) });
+    }
+  );
+
+  // DELETE /sessions/:id — instructor removes their own session
+  server.delete(
+    '/sessions/:id',
+    { preHandler: [authenticateUser, requireRole('WELLNESS_INSTRUCTOR')] },
+    async (request, reply) => {
+      const params = sessionIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid session id' });
+      const session = await prisma.wellnessSession.findUnique({ where: { id: params.data.id } });
+      if (!session) return reply.code(404).send({ error: 'Session not found' });
+      const userId = request.currentUser!.id;
+      if (session.instructorId !== userId && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Only the instructor can delete this session' });
+      }
+      // Cascade-clean enrollments first so we don't hit FK constraints.
+      await prisma.wellnessEnrollment.deleteMany({ where: { sessionId: session.id } });
+      await prisma.wellnessSession.delete({ where: { id: session.id } });
+      return reply.send({ ok: true });
     }
   );
 
