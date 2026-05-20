@@ -61,6 +61,9 @@ Bundle covers waves W1-W8 from earlier handoffs:
 - DO NOT touch Razorpay/Stripe live keys
 - Agents NOT run `pnpm install`, NOT push to git — main thread owns verification + commit
 
+### Future plans reference
+Full forward view: `docs/future-plans.md` (consolidates roadmap-archive + activation-gates + mobile-plan). Near-term engineering: E2/E9/E10 in TASKS.md. Q3 candidates + 8 revenue lines + long-term bets + tripwires + mobile remaining all in one glance.
+
 ## 2026-05-20c — E7/E8 follow-ups (W6-W8)
 
 **Shipped** (uncommitted). 3 agents. tsc clean both packages. 92/92 touched-file tests pass.
