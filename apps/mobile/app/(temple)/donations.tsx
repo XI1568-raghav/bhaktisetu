@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { useTemples } from '@poojly/api-client';
+import { useTemplePortalDonations } from '@poojly/api-client';
 import {
   PortalScreen,
   Section,
@@ -10,71 +10,75 @@ import {
 } from '../../lib/portal-screen';
 import { colors, spacing } from '../../lib/theme';
 
-interface Donation {
-  id: string;
-  donor: string;
-  type: 'cash' | 'chadhava' | 'annadan' | 'pratishtha';
-  amount: number;
-  date: string;
-  note?: string;
+function relTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  if (days < 1) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
 
-const FALLBACK: Donation[] = [
-  { id: '1', donor: 'Anonymous', type: 'cash', amount: 5100, date: 'Today, 9:42 AM' },
-  { id: '2', donor: 'Anjali S.', type: 'chadhava', amount: 251, date: 'Today, 8:15 AM', note: 'Flowers + diya' },
-  { id: '3', donor: 'Ramesh K.', type: 'annadan', amount: 1100, date: 'Yesterday', note: '50 plates' },
-  { id: '4', donor: 'Priya M.', type: 'cash', amount: 11000, date: '2 days ago' },
-  { id: '5', donor: 'Vikram B.', type: 'pratishtha', amount: 25000, date: '3 days ago', note: 'Murti pratishtha' },
-  { id: '6', donor: 'Devotee Family', type: 'chadhava', amount: 501, date: '4 days ago' },
-];
-
-const TYPE_COLOR: Record<Donation['type'], string> = {
-  cash: colors.green[600],
-  chadhava: colors.saffron[600],
-  annadan: colors.amber[500],
-  pratishtha: colors.red[600],
+const STATUS_COLOR: Record<string, string> = {
+  paid: colors.green[600],
+  created: colors.amber[600],
+  failed: colors.red[600],
 };
 
 export default function TempleDonations() {
-  const templesQuery = useTemples();
+  const donationsQuery = useTemplePortalDonations();
   const [refreshing, setRefreshing] = useState(false);
 
-  const donations = FALLBACK;
-  const total = donations.reduce((a, d) => a + d.amount, 0);
-  const today = donations.filter((d) => d.date.startsWith('Today')).reduce((a, d) => a + d.amount, 0);
+  const donations = donationsQuery.data?.donations ?? [];
+  const paidTotal = donations
+    .filter((d) => (d.status ?? '').toLowerCase() === 'paid')
+    .reduce((a, d) => a + (d.amountInr ?? 0), 0);
+
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const todayTotal = donations
+    .filter((d) => (d.status ?? '').toLowerCase() === 'paid' && new Date(d.createdAt) >= dayStart)
+    .reduce((a, d) => a + (d.amountInr ?? 0), 0);
 
   async function onRefresh() {
     setRefreshing(true);
-    await templesQuery.refetch();
+    await donationsQuery.refetch();
     setRefreshing(false);
   }
 
   return (
     <PortalScreen
       title="Donations"
-      subtitle={`₹${total.toLocaleString('en-IN')} this month`}
+      subtitle={`₹${paidTotal.toLocaleString('en-IN')} paid total`}
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
       <View style={{ flexDirection: 'row' }}>
-        <StatCard label="Today" value={`₹${today.toLocaleString('en-IN')}`} accent={colors.green[600]} />
+        <StatCard label="Today" value={`₹${todayTotal.toLocaleString('en-IN')}`} accent={colors.green[600]} />
         <View style={{ width: spacing.sm }} />
-        <StatCard label="This Month" value={`₹${total.toLocaleString('en-IN')}`} accent={colors.saffron[700]} />
+        <StatCard label="All Paid" value={`₹${paidTotal.toLocaleString('en-IN')}`} accent={colors.saffron[700]} />
       </View>
 
       <Section title="Recent Donations">
-        {donations.length === 0 ? (
+        {donationsQuery.isLoading ? (
+          <EmptyHint text="Loading donations…" />
+        ) : donationsQuery.isError ? (
+          <EmptyHint text="Could not load donations. Pull to refresh." />
+        ) : donations.length === 0 ? (
           <EmptyHint text="No donations recorded yet." />
         ) : (
-          donations.map((d) => (
-            <ListRow
-              key={d.id}
-              primary={`${d.donor} • ${d.type.toUpperCase()}`}
-              secondary={`${d.date}${d.note ? ` • ${d.note}` : ''}`}
-              trailing={`₹${d.amount.toLocaleString('en-IN')}`}
-              status={{ label: d.type, color: TYPE_COLOR[d.type] }}
-            />
-          ))
+          donations.map((d) => {
+            const status = (d.status ?? 'created').toLowerCase();
+            return (
+              <ListRow
+                key={d.id}
+                primary={d.donor ?? 'Anonymous'}
+                secondary={`${d.receiptNumber ?? 'No receipt'} • ${relTime(d.createdAt)}`}
+                trailing={`₹${(d.amountInr ?? 0).toLocaleString('en-IN')}`}
+                status={{ label: status, color: STATUS_COLOR[status] ?? colors.stone[600] }}
+              />
+            );
+          })
         )}
       </Section>
     </PortalScreen>
