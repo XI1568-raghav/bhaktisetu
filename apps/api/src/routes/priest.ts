@@ -7,6 +7,29 @@ import { prisma } from '../lib/prisma.js';
 import { presignR2Upload, r2 } from '../lib/r2.js';
 import { BookingStatus, PayoutStatus } from '@prisma/client';
 
+// Zod gates for the pandit-owned puja offering CRUD. Hoisted to module
+// scope so tests can import them via __testing without spinning a server.
+const priestOfferingCreateSchema = z.object({
+  name: z.string().min(2).max(200),
+  description: z.string().max(5000).optional(),
+  deity: z.string().min(1).max(120),
+  basePrice: z.number().nonnegative(),
+  durationMinutes: z.number().int().min(5).max(600),
+  isActive: z.boolean().optional(),
+  // Slot capacity (E7 follow-up). availableSlots accepts either an array
+  // of "HH:MM" strings or an array of {time,label} objects — same shape
+  // as TemplePujaOffering.availableSlots so the public /bookings/slots
+  // endpoint can reuse its label renderer.
+  maxBookingsPerSlot: z.number().int().min(1).max(1000).optional(),
+  availableSlots: z.array(z.unknown()).max(200).optional(),
+});
+const priestOfferingUpdateSchema = priestOfferingCreateSchema.partial();
+
+export const __testing = {
+  priestOfferingCreateSchema,
+  priestOfferingUpdateSchema,
+};
+
 const MAX_VIDEO_MB = 200;
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
@@ -26,16 +49,41 @@ export async function priestRoutes(server: FastifyInstance) {
 
   /**
    * Helper: resolve priest ID from the authenticated user.
+   * Auto-upserts a Priest row from PanditProfile if missing — signup creates
+   * PanditProfile, but Priest is only created via /onboarding/provider, so
+   * pandits who skipped onboarding (e.g. marketplace-v2 signup) would 400
+   * on every priest endpoint without this backfill.
    */
   async function getPriestId(userId: string): Promise<string> {
     const priest = await prisma.priest.findUnique({
       where: { userId },
       select: { id: true },
     });
-    if (!priest) {
+    if (priest) return priest.id;
+
+    const profile = await prisma.panditProfile.findUnique({
+      where: { userId },
+      select: { id: true, experience: true, specialties: true, languages: true, bio: true },
+    });
+    if (!profile) {
       throw new Error('Priest account not found.');
     }
-    return priest.id;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true },
+    });
+    const created = await prisma.priest.create({
+      data: {
+        userId,
+        displayName: user?.fullName ?? 'Pandit',
+        specializations: profile.specialties ?? [],
+        languages: profile.languages ?? [],
+        experienceYears: profile.experience ?? 0,
+        bio: profile.bio ?? null,
+      },
+      select: { id: true },
+    });
+    return created.id;
   }
 
   // ─── GET /dashboard ─────────────────────────────────────────────────────────
@@ -255,6 +303,185 @@ export async function priestRoutes(server: FastifyInstance) {
       const priestId = await getPriestId(request.currentUser!.id);
       const updated = await priestService.updateProfile(priestId, body);
       return { message: 'Profile updated successfully.', profile: updated };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // ─── GET /reviews ───────────────────────────────────────────────────────────
+  // Reviews authored by devotees about this priest. The Review.providerId
+  // column stores the User UUID of the provider (not Priest.id) — mirrors
+  // the ratings.ts convention. Empty array when none.
+
+  server.get('/reviews', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const userId = request.currentUser!.id;
+      const rows = await prisma.review.findMany({
+        where: { providerId: userId, providerType: 'PANDIT' },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+      return reply.send({
+        reviews: rows.map((r) => ({
+          id: r.id,
+          userId: r.userId,
+          providerId: r.providerId,
+          providerType: r.providerType,
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.createdAt.toISOString(),
+        })),
+        total: rows.length,
+      });
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // ─── Pandit-owned puja offerings ────────────────────────────────────────────
+  // Distinct from the temple-anchored PujaType catalog: each row here is
+  // authored by a single priest and surfaced on their public profile.
+  // basePrice is Decimal(10,2); serialise as string to preserve precision
+  // across JSON (matches the admin commissions pattern).
+
+  const offeringCreateSchema = priestOfferingCreateSchema;
+  const offeringUpdateSchema = priestOfferingUpdateSchema;
+
+  function serializeOffering(o: {
+    id: string;
+    priestId: string;
+    name: string;
+    description: string | null;
+    deity: string;
+    basePrice: { toString(): string };
+    durationMinutes: number;
+    isActive: boolean;
+    maxBookingsPerSlot?: number;
+    availableSlots?: unknown;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: o.id,
+      priestId: o.priestId,
+      name: o.name,
+      description: o.description,
+      deity: o.deity,
+      basePrice: o.basePrice.toString(),
+      durationMinutes: o.durationMinutes,
+      isActive: o.isActive,
+      maxBookingsPerSlot: o.maxBookingsPerSlot ?? 1,
+      availableSlots: o.availableSlots ?? null,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt,
+    };
+  }
+
+  // GET /pujas — list the authenticated priest's offerings
+  server.get('/pujas', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const priestId = await getPriestId(request.currentUser!.id);
+      const offerings = await prisma.priestPujaOffering.findMany({
+        where: { priestId },
+        orderBy: { createdAt: 'desc' },
+      });
+      return { offerings: offerings.map(serializeOffering) };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // POST /pujas — create
+  server.post('/pujas', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const parsed = offeringCreateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+      }
+      const priestId = await getPriestId(request.currentUser!.id);
+      const offering = await prisma.priestPujaOffering.create({
+        data: {
+          priestId,
+          name: parsed.data.name,
+          description: parsed.data.description ?? null,
+          deity: parsed.data.deity,
+          basePrice: parsed.data.basePrice,
+          durationMinutes: parsed.data.durationMinutes,
+          isActive: parsed.data.isActive ?? true,
+          maxBookingsPerSlot: parsed.data.maxBookingsPerSlot ?? 1,
+          availableSlots: (parsed.data.availableSlots ?? null) as any,
+        },
+      });
+      return reply.code(201).send({ offering: serializeOffering(offering) });
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // PATCH /pujas/:id — update; 403 if not owner
+  server.patch('/pujas/:id', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const parsed = offeringUpdateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+      }
+      const priestId = await getPriestId(request.currentUser!.id);
+      const existing = await prisma.priestPujaOffering.findUnique({ where: { id } });
+      if (!existing) return reply.code(404).send({ error: 'Offering not found' });
+      if (existing.priestId !== priestId) {
+        return reply.code(403).send({ error: 'You do not own this offering.' });
+      }
+      const data: Record<string, unknown> = {};
+      if (parsed.data.name !== undefined) data.name = parsed.data.name;
+      if (parsed.data.description !== undefined) data.description = parsed.data.description;
+      if (parsed.data.deity !== undefined) data.deity = parsed.data.deity;
+      if (parsed.data.basePrice !== undefined) data.basePrice = parsed.data.basePrice;
+      if (parsed.data.durationMinutes !== undefined) data.durationMinutes = parsed.data.durationMinutes;
+      if (parsed.data.isActive !== undefined) data.isActive = parsed.data.isActive;
+      if (parsed.data.maxBookingsPerSlot !== undefined)
+        data.maxBookingsPerSlot = parsed.data.maxBookingsPerSlot;
+      if (parsed.data.availableSlots !== undefined)
+        data.availableSlots = parsed.data.availableSlots;
+      const offering = await prisma.priestPujaOffering.update({ where: { id }, data });
+      return reply.send({ offering: serializeOffering(offering) });
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // DELETE /pujas/:id — owner only
+  server.delete('/pujas/:id', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      const existing = await prisma.priestPujaOffering.findUnique({ where: { id } });
+      if (!existing) return reply.code(404).send({ error: 'Offering not found' });
+      if (existing.priestId !== priestId) {
+        return reply.code(403).send({ error: 'You do not own this offering.' });
+      }
+      await prisma.priestPujaOffering.delete({ where: { id } });
+      return reply.send({ ok: true });
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // PATCH /pujas/:id/toggle-active — flip isActive
+  server.patch('/pujas/:id/toggle-active', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      const existing = await prisma.priestPujaOffering.findUnique({ where: { id } });
+      if (!existing) return reply.code(404).send({ error: 'Offering not found' });
+      if (existing.priestId !== priestId) {
+        return reply.code(403).send({ error: 'You do not own this offering.' });
+      }
+      const offering = await prisma.priestPujaOffering.update({
+        where: { id },
+        data: { isActive: !existing.isActive },
+      });
+      return reply.send({ offering: serializeOffering(offering) });
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
     }

@@ -14,6 +14,8 @@ import {
  ArrowRight,
  BadgeCheck,
  Flame,
+ Languages,
+ Award,
 } from 'lucide-react';
 import {
  marriageTypes,
@@ -21,8 +23,17 @@ import {
  marriageCoreRites,
  marriageAddOns,
  marriageTestimonials,
- weddingPandits,
 } from '../../../lib/home-pujas';
+import { getPublicPriests, type PriestSummary } from '../../../lib/pandit-api';
+
+const MARRIAGE_KEYWORDS = ['marriage', 'wedding', 'vivah', 'kalyanam', 'anand karaj'];
+
+function panditInitials(name: string): string {
+ const parts = name.trim().split(/\s+/);
+ const first = parts[0]?.charAt(0) ?? '';
+ const last = parts.length > 1 ? parts[parts.length - 1]?.charAt(0) ?? '' : '';
+ return (first + last).toUpperCase() || 'P';
+}
 
 export const metadata: Metadata = {
  title: 'Book a Pandit for Your Wedding — Darshya',
@@ -30,7 +41,14 @@ export const metadata: Metadata = {
  'Sampoorna vivah sanskar by Vedic-certified pandits. Hindu Vivah, Arya Samaj, South Indian Kalyanam, Anand Karaj. Starting ₹11,000.',
 };
 
-export default function MarriagePage() {
+export default async function MarriagePage() {
+ const allPriests = await getPublicPriests();
+ const filtered = allPriests.filter((p) => {
+ const haystack = [...p.specializations, p.bio ?? ''].join(' ').toLowerCase();
+ return MARRIAGE_KEYWORDS.some((k) => haystack.includes(k));
+ });
+ const weddingPriests: PriestSummary[] = (filtered.length > 0 ? filtered : allPriests).slice(0, 6);
+ const usingFallback = filtered.length === 0 && allPriests.length > 0;
  return (
  <div className="min-h-screen bg-surface-50">
  {/* ── Breadcrumb ─────────────────────────────────────────────── */}
@@ -247,64 +265,98 @@ export default function MarriagePage() {
  <div className="flex items-end justify-between mb-10">
  <div>
  <h2 className="text-3xl md:text-4xl font-bold text-surface-800 tracking-tight">
- Featured wedding pandits
+ {usingFallback ? 'Featured pandits' : 'Featured wedding pandits'}
  </h2>
- <p className="mt-2 text-surface-500">Vedic-certified officiants across India.</p>
+ <p className="mt-2 text-surface-500">
+ {usingFallback
+ ? 'Top verified pandits on Darshya. Reach out about your wedding ceremony.'
+ : 'Vedic-certified officiants across India.'}
+ </p>
  </div>
  </div>
 
+ {weddingPriests.length === 0 ? (
+ <div className="rounded-2xl border border-dashed border-surface-200 p-12 text-center bg-white">
+ <Users className="w-12 h-12 text-saffron-300 mx-auto mb-3" />
+ <h3 className="text-lg font-semibold text-surface-800 mb-2">
+ Verified pandits coming soon
+ </h3>
+ <p className="text-sm text-surface-500 max-w-md mx-auto">
+ We are onboarding Vedic-certified wedding pandits. New profiles will appear here shortly.
+ </p>
+ </div>
+ ) : (
  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
- {weddingPandits.map((p) => (
+ {weddingPriests.map((p) => (
  <Link
  key={p.id}
- href={`/pujas/pandits/${p.id}`}
+ href={`/pandits/${p.id}`}
  className="group bg-white border border-[var(--color-border)] rounded-xl p-6 hover:shadow-warm-md hover:-translate-y-0.5 transition-all"
  >
  <div className="flex items-start gap-4 mb-4">
- <div
- className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
- style={{ background: p.avatarBg }}
- >
- {p.initials}
+ {p.avatarUrl ? (
+ // eslint-disable-next-line @next/next/no-img-element
+ <img
+ src={p.avatarUrl}
+ alt={p.displayName}
+ className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+ />
+ ) : (
+ <div className="w-16 h-16 rounded-xl bg-saffron-100 flex items-center justify-center text-saffron-700 font-bold text-lg flex-shrink-0">
+ {panditInitials(p.displayName)}
  </div>
+ )}
  <div className="flex-1 min-w-0">
  <div className="flex items-start gap-1.5">
- <div className="font-bold text-surface-800 group-hover:text-saffron-600 transition-colors">
- {p.name}
+ <div className="font-bold text-surface-800 group-hover:text-saffron-600 transition-colors truncate">
+ {p.displayName}
  </div>
+ {p.isVerified && (
  <BadgeCheck className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
+ )}
  </div>
- <div className="text-xs text-surface-500">{p.title}</div>
+ {p.specializations.length > 0 && (
+ <div className="text-xs text-surface-500 truncate">
+ {p.specializations.slice(0, 2).join(' · ')}
+ </div>
+ )}
  <div className="flex items-center gap-2 mt-1.5 text-xs">
+ {p.ratingCount > 0 ? (
+ <>
  <Star className="w-3.5 h-3.5 text-temple-gold fill-temple-gold" />
- <span className="font-semibold text-surface-700">{p.rating}</span>
- <span className="text-surface-400">({p.reviewCount})</span>
+ <span className="font-semibold text-surface-700">{p.ratingAvg.toFixed(1)}</span>
+ <span className="text-surface-400">({p.ratingCount})</span>
+ </>
+ ) : (
+ <span className="text-surface-400">New</span>
+ )}
  </div>
  </div>
  </div>
 
  <div className="space-y-1.5 text-xs text-surface-600 mb-4">
+ {p.experienceYears > 0 && (
  <div className="flex items-center gap-1.5">
- <Heart className="w-3.5 h-3.5 text-vermillion-500" />
- {p.weddingsPerformed}+ weddings performed
+ <Award className="w-3.5 h-3.5 text-vermillion-500" />
+ {p.experienceYears}+ years experience
  </div>
+ )}
+ {p.languages.length > 0 && (
  <div className="flex items-center gap-1.5">
- <MapPin className="w-3.5 h-3.5 text-surface-400" />
- Based in {p.city}, travels across India
- </div>
- <div className="flex items-center gap-1.5">
- <Users className="w-3.5 h-3.5 text-surface-400" />
+ <Languages className="w-3.5 h-3.5 text-surface-400" />
  {p.languages.slice(0, 4).join(', ')}
+ </div>
+ )}
+ <div className="flex items-center gap-1.5">
+ <Flame className="w-3.5 h-3.5 text-saffron-500" />
+ {p.offeringCount} puja service{p.offeringCount === 1 ? '' : 's'}
  </div>
  </div>
 
  <div className="pt-4 border-t border-[var(--color-divider)] flex items-center justify-between">
- <div className="text-sm">
- <span className="text-surface-400">Wedding from </span>
- <span className="font-semibold text-surface-800">
- ₹{(p.pricing.marriage?.basic ?? 11000).toLocaleString('en-IN')}
+ <span className="text-xs text-surface-500">
+ {p.isVerified ? 'Verified pandit' : 'Profile under review'}
  </span>
- </div>
  <span className="text-xs font-semibold text-saffron-600 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
  View profile <ArrowRight className="w-3.5 h-3.5" />
  </span>
@@ -312,6 +364,7 @@ export default function MarriagePage() {
  </Link>
  ))}
  </div>
+ )}
  </div>
  </section>
 

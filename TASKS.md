@@ -1,55 +1,31 @@
 # Tasks — Darshya
 
-> Live ledger. Completed history in `docs/tasks-history.md`.
-> User-action gates in `docs/activation-gates.md`.
-> Last updated: 2026-05-19.
-
-## HANDOFF (2026-05-19, post auth-cascade fix)
-
-**Shipped** (`9e87aca`):
-- Root-cause fix: `authenticateUser` looked up Prisma user by phone only — email signups (no phone) 401'd everywhere. Patched to id→email→phone fallback. Unblocks KYC load, profile save, cow add, volunteer add, gaushala onboarding submit.
-- Added GET `/api/v1/gaushala-portal/donations` (status mapping pending→created, received→paid).
-- Rewrote `gaushala-portal/donations` page on real API. Dropped D001-D008 dummy + 3 fake campaigns.
-
-**Prior ship** (`bcadee6`, `4ae5573`):
-- P1 — Dashboard stats zero-default for all 6 provider roles.
-- P2 — PATCH /profile across astrologer/wellness/gaushala portals.
-- P3 — Gaushala cows + volunteers full CRUD (routes + Prisma models + migration + FE).
-- P4 — Verification documents widget on `/provider-kyc`.
-- Site-wide WhatsApp click-to-chat (z-59).
-- CORS: explicit methods + allowedHeaders (`6f8ca24`).
-
-**Migration to deploy**: `20260519000000_gaushala_cows_volunteers` — creates `cows`, `cow_health_records`, `volunteers` tables. Render `start` script runs `prisma migrate deploy` auto.
-
-**Active investigation**:
-- `/admin/users` + `/admin/approvals` returning 500 in prod (from prior handoff, not addressed this session).
-
-**Next**:
-1. Push to origin → Render API + CF Pages auto-deploy.
-2. Verify migration ran on Supabase (cows/volunteers tables exist).
-3. Smoke-test register cow, add volunteer, edit profile across 3 roles in prod.
-4. Triage admin 500 (still open from prior handoff).
-5. Confirm `ALLOW_DEMO_PAYMENTS=true` on Render.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-21.
 
 ## In progress
 
-- (nothing — handoff fresh)
+- (nothing — W6-W8 just shipped, see `docs/handoff.md` 2026-05-20c)
 
 ## Pending — engineering
 
 | # | Task | Notes |
 |---|---|---|
-| E2 | Wire FCM server key on user paste | env-or-noop; native push live automatically |
-| E3 | Triage admin /users + /approvals 500s | check Render logs; possibly env regression |
+| E2 | Wire FCM server key on user paste | env-or-noop, user-paste required |
+| E9 | TODO(W8): embedded Stripe Elements | clientSecret-only fallback (mirrors pujas page gap) |
+| E10 | `getPublicPriests({ specialization?, deity? })` server-side filter | API enhancement, client-side filter works for now |
 
 ## Pending — user-action
 
 → `docs/activation-gates.md` (U1-U15).
 
-## Recently completed (top 3)
+**Prod migrations applied 2026-05-21** via `prisma db execute` against poojly Supabase. Verified via `apps/api/scripts/check-prod-tables.mjs` — 5/5 tables, 14/14 columns, `donations.gaushala_id` nullable. All 4 shipped.
+
+## Recently completed (top 5)
 
 | Date | Task | Commit |
 |---|---|---|
-| 2026-05-19 | P1-P4 provider portal overhaul (CRUD + KYC + WhatsApp) | `bcadee6` |
-| 2026-05-17 | Context trim v2 + admin role-edit | settings + `e4b2f37` |
-| 2026-05-17 | Persist primary role + stub provider profile on signup | `a103379` |
+| 2026-05-20 | W6-W8: E7 BE bundle + home-puja grids + dual-currency offering checkout | uncommitted |
+| 2026-05-20 | W1-W5: admin fix + 4 P0 + 4 P1 endpoints + booking checkout + pujas merge | uncommitted |
+| 2026-05-20 | Real-numbers admin + pandit puja chain | uncommitted |
+| 2026-05-19 | Auth-cascade fix + gaushala donations real API | `9e87aca` |
+| 2026-05-19 | P1-P4 provider portal overhaul | `bcadee6` |

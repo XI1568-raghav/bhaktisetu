@@ -44,89 +44,10 @@ interface PayoutSummary {
 
 // ─── Fallback ───────────────────────────────────────────────────
 
-const fallbackPayouts: PayoutItem[] = [
- {
- id: '1',
- amount: 805,
- status: 'completed',
- payoutMethod: 'bank_transfer',
- payoutReference: 'UTR123456789',
- processedAt: '2026-04-14T10:30:00Z',
- createdAt: '2026-04-13T10:30:00Z',
- booking: {
- id: '1',
- bookingNumber: 'BS-20260410-34521',
- pujaType: { name: 'Rudrabhishek Puja' },
- temple: { name: 'Shri Kashi Vishwanath Temple' },
- },
- },
- {
- id: '2',
- amount: 490,
- status: 'completed',
- payoutMethod: 'bank_transfer',
- payoutReference: 'UTR987654321',
- processedAt: '2026-04-12T08:15:00Z',
- createdAt: '2026-04-11T08:15:00Z',
- booking: {
- id: '2',
- bookingNumber: 'BS-20260408-29874',
- pujaType: { name: 'Maha Mrityunjay Jaap' },
- temple: { name: 'Shri Kashi Vishwanath Temple' },
- },
- },
- {
- id: '3',
- amount: 1190,
- status: 'processing',
- payoutMethod: 'bank_transfer',
- payoutReference: null,
- processedAt: null,
- createdAt: '2026-04-14T14:20:00Z',
- booking: {
- id: '3',
- bookingNumber: 'BS-20260413-18432',
- pujaType: { name: 'Satyanarayan Katha' },
- temple: { name: 'Shri Kashi Vishwanath Temple' },
- },
- },
- {
- id: '4',
- amount: 665,
- status: 'pending',
- payoutMethod: 'bank_transfer',
- payoutReference: null,
- processedAt: null,
- createdAt: '2026-04-15T09:45:00Z',
- booking: {
- id: '4',
- bookingNumber: 'BS-20260414-12098',
- pujaType: { name: 'Ganesh Atharvashirsha Path' },
- temple: { name: 'Trimbakeshwar Temple' },
- },
- },
- {
- id: '5',
- amount: 805,
- status: 'completed',
- payoutMethod: 'bank_transfer',
- payoutReference: 'UTR112233445',
- processedAt: '2026-04-08T11:30:00Z',
- createdAt: '2026-04-07T11:30:00Z',
- booking: {
- id: '5',
- bookingNumber: 'BS-20260405-09876',
- pujaType: { name: 'Rudrabhishek Puja' },
- temple: { name: 'Shri Kashi Vishwanath Temple' },
- },
- },
-];
+// Fallback removed - show empty state instead of fakes.
+const fallbackPayouts: PayoutItem[] = [];
 
-const fallbackSummary: PayoutSummary = {
- totalEarned: 185600,
- pending: 8400,
- lastPayout: { amount: 805, date: '2026-04-14T10:30:00Z' },
-};
+const fallbackSummary: PayoutSummary = { totalEarned: 0, pending: 0, lastPayout: null };
 
 // ─── Helpers ────────────────────────────────────────────────────
 
