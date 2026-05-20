@@ -11,31 +11,28 @@ import {
   ArrowRight,
   Linkedin,
   Mail,
-  MapPin,
-  Briefcase,
-  GraduationCap,
   Quote,
   Sunrise,
   Building2,
   ShieldCheck,
   Cog,
-  CheckCircle2,
   Radio,
   Telescope,
   Star,
 } from 'lucide-react';
 import { organizationJsonLd } from '../../lib/jsonld';
 import ScrollReveal from '../../components/ScrollReveal';
+import RoadmapRail, { type Milestone } from '../../components/RoadmapRail';
 
 export const metadata: Metadata = {
   title: 'About Darshya · The story, the founders, the road ahead',
   description:
-    "Darshya is built by Raghav Sindhwani (Sr. AI PM at Bounteous) and Atishey Jain (SDE2 at Amazon) to give every devotee an honest, video-verified bridge to India's temples, priests, and traditions.",
+    'Darshya is built by Raghav Sindhwani and Atishey Jain to give every devotee an honest, video-verified bridge to India\'s temples, priests, and traditions.',
   alternates: { canonical: 'https://darshya.online/about' },
   openGraph: {
     title: 'About Darshya · Two founders, one stubborn idea',
     description:
-      'An honest devotional super-app for India and the diaspora. Video proof, fair priest payouts, no middlemen.',
+      'An honest devotional super-app for India and the diaspora. Video proof. Fair priest payouts. No middlemen.',
     type: 'website',
     url: 'https://darshya.online/about',
     images: ['/og-default.png'],
@@ -52,59 +49,32 @@ const founders = [
   {
     name: 'Raghav Sindhwani',
     role: 'Co-founder · Product & AI',
-    location: 'Bengaluru, India',
-    photo: '/team/raghav.jpg',
-    initials: 'RS',
+    location: 'Bengaluru',
+    photo: '/team/raghav.svg',
     accent: '#b87333',
     accentSoft: '#f3e6d6',
-    headline: 'AI & Digital Product Leader · Ex-Xebia · PSPO certified',
-    bio:
-      'Six years shipping B2B and B2C AI products across SaaS, banking, and telecom — collectively north of $20M in delivered work. Now Senior AI Product Manager at Bounteous, after rising from intern to Senior Consultant over five years at Xebia.',
-    quote:
-      'My parents wanted a puja done at a specific temple back home. WhatsApp screenshots from a broker were not enough. That is the gap Darshya is closing.',
-    work: [
-      { year: '2024 → now', org: 'Bounteous', role: 'Senior AI Product Manager' },
-      { year: '2019 → 2024', org: 'Xebia', role: 'Intern → Senior Consultant (Product)' },
-    ],
-    education: [
-      { year: '', org: 'Thapar Institute of Engineering & Technology', role: 'B.Tech, Computer Science' },
-    ],
+    headline: 'AI product leader. Six years shipping for the diaspora.',
+    bio: 'Senior AI Product Manager at Bounteous. Spent the last several years putting AI products in front of real customers — and decided to turn that craft toward something his own family could feel.',
     threads: [
-      'Owns product, AI, and shipping cadence',
-      'Personally onboards the first 1,000 devotees',
-      'PSPO-certified · 6+ years in enterprise AI delivery',
+      'Owns product, AI, and the weekly shipping cadence',
+      'Talks to every devotee personally for the first 1,000 bookings',
     ],
     linkedin: 'https://www.linkedin.com/in/raghav-sindhwani',
   },
   {
     name: 'Atishey Jain',
     role: 'Co-founder · Engineering',
-    location: 'Hyderabad, India',
+    location: 'Hyderabad',
     photo: '/team/atishey.svg',
-    initials: 'AJ',
     accent: '#2d5544',
     accentSoft: '#dbe7df',
-    headline: 'SDE2 · Distributed Systems · Logistics Routing & Ad Platforms',
-    bio:
-      'Software Development Engineer II at Amazon since 2020, building high-scale, low-latency platforms across logistics routing and ad serving. Wanted to be a software engineer since the 6th grade — went through Scaler Academy as a mentor-favorite, then took a 4× pay jump into Amazon.',
-    quote:
-      'A booking that says "completed" but cannot be replayed on video is a lie. The system has to make lying impossible — not unlikely.',
-    work: [
-      { year: '2024 → now', org: 'Amazon', role: 'SDE II' },
-      { year: '2022 → 2024', org: 'Amazon', role: 'SDE I' },
-      { year: '2020 → 2022', org: 'Amazon', role: 'Programmer Analyst' },
-      { year: '2019 → 2020', org: 'PromptCloud', role: 'Software Engineer' },
-    ],
-    education: [
-      { year: '2019 → 2020', org: 'Scaler Academy', role: 'Software Engineering' },
-      { year: '2015 → 2019', org: 'PES University, Bangalore', role: 'B.Tech, Computer Science' },
-    ],
+    headline: 'Builds systems that can be trusted at 3 am.',
+    bio: 'Software engineer at Amazon, working on high-scale, low-latency platforms. Believes a booking that says "completed" but cannot be replayed on video is a lie — and the system should make lying impossible, not just unlikely.',
     threads: [
-      'Owns API, payments, video pipeline, infra',
-      'Defines how priest payouts settle',
-      'Scaler Academy mentor · LeetCode atishey17',
+      'Owns the platform, payments, and video pipeline',
+      'Defines how priests get paid the moment proof is in',
     ],
-    linkedin: 'https://www.linkedin.com/in/atishey-jain',
+    linkedin: 'https://www.linkedin.com/in/-atishey-jain/',
   },
 ];
 
@@ -117,83 +87,97 @@ const principles = [
   {
     icon: Heart,
     title: 'Priest paid first',
-    body: 'Pandit payouts are calculated transparently — price minus a fair platform commission — and gated only on Aadhaar verification. We do not hold money to optimise our float.',
+    body: 'Pandit payouts are calculated transparently — price minus a fair platform commission. We do not hold money to optimise our float.',
   },
   {
     icon: Compass,
     title: 'NRI without exploitation',
-    body: 'Yes, NRI pricing is higher than domestic — that is how we fund seva for temples that need it. But the multiplier is documented (9–10×), not hidden, and every rupee above cost is traceable.',
+    body: 'Yes, NRI pricing is higher than domestic — that is how we fund seva for temples that need it. The multiplier is documented (9–10×), not hidden.',
   },
   {
     icon: Globe2,
     title: 'Built for the diaspora',
-    body: 'Sankalp, gotra, nakshatra — written into the booking flow as first-class concepts. A devotee in San Jose books the same way as one in Varanasi.',
+    body: 'Sankalp, gotra, nakshatra — first-class concepts in the booking flow. A devotee in San Jose books the same way as one in Varanasi.',
   },
 ];
 
-const roadmap = [
+const roadmap: Milestone[] = [
   {
-    when: 'Jan 2026',
-    phase: 'Spark',
-    title: 'Two founders. One shared problem.',
-    body: 'Raghav and Atishey wrote the first commit on the same day. The problem was concrete: aging parents back home wanting puja done at specific temples, and no honest way to verify it happened. WhatsApp screenshots from random brokers were not enough.',
+    when: 'January 2026',
+    phase: 'The Spark',
+    title: 'Two friends. One quiet ache for their families.',
+    body: 'We had both watched our parents pay strangers for prayers they could never verify. A receipt. Sometimes a single photo. Often nothing. We thought a software company built by people who actually ship for a living could do better. The first commit went in that month.',
     status: 'shipped',
     icon: Sunrise,
     accent: '#b87333',
+    bgFrom: 'rgba(184,115,51,0.18)',
+    bgTo: 'rgba(250,249,246,0.0)',
   },
   {
-    when: 'Feb 2026',
+    when: 'February 2026',
     phase: 'Foundation',
-    title: 'Auth, temples, pandits, video proof — wired end-to-end',
-    body: 'JWT auth (web cookies + mobile secure-store). Prisma + Supabase Postgres for 200+ temples and verified pandits. S3 video uploads with priest sign-off. Razorpay (domestic) + Stripe (NRI) live end-to-end.',
+    title: 'Our first 200 temples opened their doors.',
+    body: 'We sat with temple administrators and priests across India. By the end of the month, 200 temples were listed, every priest was verified by name and photograph, and the very first video-proof puja went out to a devotee in Toronto.',
     status: 'shipped',
     icon: Building2,
-    accent: '#b87333',
+    accent: '#c4814a',
+    bgFrom: 'rgba(196,129,74,0.18)',
+    bgTo: 'rgba(250,249,246,0.0)',
   },
   {
-    when: 'Mar 2026',
+    when: 'March 2026',
     phase: 'Breadth',
-    title: 'The super-app takes shape',
-    body: 'Live darshan with HD streams from real temple YouTube channels. AI Pandit (Gita Q&A) with prompt caching. Astrology consultations. Wellness instructors. Dharmic Yatra (Char Dham, 12 Jyotirlingas) with verified yatra companions.',
+    title: 'Every devotional thread, under one quiet roof.',
+    body: 'Live darshan from real temples. A free AI Pandit for Gita questions. Astrologers and wellness teachers you could actually book. Char Dham and the twelve Jyotirlingas as guided yatras. The super-app stopped being a deck and started being a place people came back to.',
     status: 'shipped',
     icon: Sparkles,
-    accent: '#b87333',
+    accent: '#d99738',
+    bgFrom: 'rgba(217,151,56,0.20)',
+    bgTo: 'rgba(250,249,246,0.0)',
   },
   {
-    when: 'Apr 2026',
-    phase: 'Trust layer',
-    title: 'Gaushala seva, 80G receipts, real numbers everywhere',
-    body: 'Gaushala donations with 80G tax receipts wired to the right legal entities. Removed every mock number we could find. Started shipping admin dashboards with real Prisma queries — not pretty fakes.',
+    when: 'April 2026',
+    phase: 'Trust',
+    title: 'Gaushala seva with real 80G receipts.',
+    body: 'Every donation now flows to the correct legal entity. Every receipt is real, deductible, and downloadable on the spot. We also ripped out every placeholder number from our admin dashboards — what you see is what is actually happening, today.',
     status: 'shipped',
     icon: ShieldCheck,
-    accent: '#b87333',
+    accent: '#a88454',
+    bgFrom: 'rgba(168,132,84,0.18)',
+    bgTo: 'rgba(250,249,246,0.0)',
   },
   {
     when: 'May 2026',
     phase: 'Now shipping',
-    title: 'Mobile parity + role portals + payments hardening',
-    body: 'Expo 50 app reaching parity with web for all 8 role groups (devotee, pandit, store-owner, astrologer, wellness, gaushala, temple-manager, admin). FCM push for booking events. Stripe Connect for NRI flows. Webhooks idempotent.',
+    title: 'The mobile app, and a portal for every person who serves.',
+    body: 'Devotee, priest, store owner, astrologer, wellness teacher, gaushala manager, temple administrator, admin — every person who keeps a corner of the seva running now has their own clean, native experience on iOS and Android. This is what we are putting in production this month.',
     status: 'now',
     icon: Cog,
     accent: '#d99738',
+    bgFrom: 'rgba(217,151,56,0.28)',
+    bgTo: 'rgba(184,115,51,0.10)',
   },
   {
     when: 'Q3 2026',
     phase: 'Next',
-    title: 'Antim Sanskar coordination · commerce · retention',
-    body: 'Antim Sanskar (last-rites coordination) at city level with on-call coordinators. MedusaJS commerce backend for puja samagri, idols, and books. Day-30 retention loops for devotees and recurring sankalp subscriptions for the diaspora.',
+    title: 'Antim Sanskar, samagri delivery, daily-habit subscriptions.',
+    body: 'Coordinated last-rites support at city level for families who cannot fly back in time. A clean way to order puja samagri, idols, and books and have them at your door. And gentle daily-habit subscriptions for the devotees who want one small thing every morning.',
     status: 'planned',
     icon: Radio,
     accent: '#7a6452',
+    bgFrom: 'rgba(122,100,82,0.18)',
+    bgTo: 'rgba(250,249,246,0.0)',
   },
   {
     when: '2027',
     phase: 'Vision',
-    title: 'Every temple. Every diaspora. One bridge.',
-    body: 'Every verified Indian temple discoverable in one place. Live darshan in 4K from 1,000+ temples. AI Pandit answering in 12 Indian languages. Astrology and wellness powered by humans first, AI second. Becoming, quietly, the most-trusted devotional brand on the internet.',
+    title: 'Every temple worth visiting, on one quiet map.',
+    body: 'A thousand temples streaming live. A pandit who can answer in any of the twelve major Indian languages. Astrology and wellness powered by humans first, AI second. And — quietly — becoming the most-trusted devotional brand on the internet.',
     status: 'vision',
     icon: Telescope,
     accent: '#5a8a5a',
+    bgFrom: 'rgba(90,138,90,0.20)',
+    bgTo: 'rgba(250,249,246,0.0)',
   },
 ];
 
@@ -203,13 +187,6 @@ const shipped = [
   { value: '9–10×', label: 'NRI multiplier · documented' },
   { value: '100%', label: 'Bookings with video proof' },
 ];
-
-const STATUS_LABEL: Record<string, string> = {
-  shipped: 'Shipped',
-  now: 'Shipping now',
-  planned: 'Planned',
-  vision: 'Vision',
-};
 
 export default function AboutPage() {
   return (
@@ -240,7 +217,7 @@ export default function AboutPage() {
             className="pointer-events-none absolute -right-40 top-32 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(45,85,68,0.10),_transparent_70%)]"
           />
 
-          <div className="relative mx-auto max-w-6xl px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">
+          <div className="relative mx-auto max-w-6xl px-6 pt-20 pb-20 sm:pt-24 sm:pb-24">
             <div
               data-reveal="up"
               className="inline-flex items-center gap-2 rounded-full border border-saffron-200/60 bg-white/70 px-3 py-1 text-xs font-medium text-saffron-700 backdrop-blur"
@@ -268,19 +245,15 @@ export default function AboutPage() {
 
             <p
               data-reveal="up"
-              className="mt-8 max-w-2xl text-lg leading-relaxed text-surface-600 sm:text-xl"
+              className="mt-7 max-w-2xl text-lg leading-relaxed text-surface-600 sm:text-xl"
             >
-              Darshya is being built by{' '}
-              <span className="font-medium text-surface-800">Raghav Sindhwani</span>{' '}
-              and{' '}
-              <span className="font-medium text-surface-800">Atishey Jain</span>{' '}
-              to give every devotee — in India and across the world — an honest,
-              traceable bridge to the temples, priests, and traditions they grew
-              up with. No screenshots. No middlemen. No broken promises about
-              whether a puja actually happened.
+              Darshya is being built to give every devotee — in India and across
+              the world — an honest, traceable bridge to the temples, priests, and
+              traditions they grew up with. No screenshots. No middlemen. No
+              broken promises about whether a puja actually happened.
             </p>
 
-            <div data-reveal="up" className="mt-10 flex flex-wrap items-center gap-3">
+            <div data-reveal="up" className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href="#founders"
                 className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-saffron-700"
@@ -294,31 +267,9 @@ export default function AboutPage() {
               >
                 See the roadmap
               </Link>
-              <div className="ml-1 flex items-center -space-x-2">
-                {founders.map((f) => (
-                  <div
-                    key={f.name}
-                    className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-[#faf9f6]"
-                    style={{ background: f.accentSoft }}
-                    title={f.name}
-                  >
-                    <Image
-                      src={f.photo}
-                      alt={f.name}
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 object-cover"
-                      unoptimized
-                    />
-                  </div>
-                ))}
-                <span className="ml-3 text-xs text-surface-500">
-                  the only two phones that ring
-                </span>
-              </div>
             </div>
 
-            <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
+            <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
               {shipped.map((n, i) => (
                 <div
                   key={n.label}
@@ -340,7 +291,7 @@ export default function AboutPage() {
 
         {/* ─── Origin story ─────────────────────────────────────────────── */}
         <section className="relative border-b border-surface-200/60 bg-white">
-          <div className="mx-auto grid max-w-6xl gap-12 px-6 py-20 sm:py-28 md:grid-cols-12">
+          <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-20 md:grid-cols-12">
             <div data-reveal="up" className="md:col-span-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-saffron-700">
                 Why Darshya
@@ -348,50 +299,41 @@ export default function AboutPage() {
               <h2 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-surface-900 sm:text-4xl">
                 The internet has a thousand puja sites.
                 <br />
-                <span className="text-saffron-700">Almost none of them tell the truth.</span>
+                <span className="text-saffron-700">Almost none tell the truth.</span>
               </h2>
             </div>
 
-            <div
-              data-reveal="up"
-              data-delay="2"
-              className="md:col-span-8 md:pl-6"
-            >
+            <div data-reveal="up" data-delay="2" className="md:col-span-8 md:pl-6">
               <div className="space-y-5 text-base leading-[1.75] text-surface-700 sm:text-lg">
                 <p>
-                  We started Darshya in January 2026 because we had both watched
-                  our parents pay strangers on WhatsApp for pujas they could
-                  never independently verify. A booking confirmation, a
-                  receipt, sometimes a single still photo. Often nothing.
+                  We started Darshya in January 2026 because we had both watched our
+                  parents pay strangers on WhatsApp for pujas they could never
+                  independently verify. A booking confirmation. A receipt. Sometimes a
+                  single still photo. Often nothing.
                 </p>
                 <p>
-                  The Indian devotional internet had grown comfortable selling
-                  faith without proof — and a generation of NRIs were paying
-                  premium prices into that gap, hoping it had been done right.
-                </p>
-                <p>
-                  We thought a software company built by two people who actually
-                  shipped systems for a living could do better. Make video
-                  proof the floor, not the upsell. Pay the priest first.
-                  Document the NRI premium instead of hiding it. Show the
-                  devotee the same thing we would want our own parents to see.
+                  The Indian devotional internet had grown comfortable selling faith
+                  without proof — and a generation of NRIs were paying premium prices
+                  into that gap, hoping it had been done right.
                 </p>
                 <p className="font-medium text-surface-900">
-                  That is the entire pitch. Everything below is just the work
-                  of getting there.
+                  We thought we could do better. Make video proof the floor, not the
+                  upsell. Pay the priest first. Document the NRI premium instead of
+                  hiding it. Show every devotee the same thing we would want our own
+                  parents to see.
                 </p>
               </div>
 
-              <figure className="mt-10 rounded-2xl border border-surface-200 bg-[#fbfaf6] p-7">
+              <figure className="mt-8 rounded-2xl border border-surface-200 bg-[#fbfaf6] p-6 sm:p-7">
                 <Quote
-                  className="h-6 w-6 text-saffron-600"
+                  className="h-5 w-5 text-saffron-600"
                   strokeWidth={1.5}
                   aria-hidden
                 />
                 <blockquote className="mt-3 font-display text-xl leading-relaxed text-surface-800 sm:text-2xl">
-                  &ldquo;The simplest test of a devotional product is whether
-                  you&apos;d feel comfortable booking it for your own grandmother.
-                  Everything we build has to pass that test.&rdquo;
+                  &ldquo;The simplest test of a devotional product is whether you would
+                  feel comfortable booking it for your own grandmother. Everything we
+                  build has to pass that test.&rdquo;
                 </blockquote>
                 <figcaption className="mt-4 text-sm text-surface-500">
                   — Founding note, January 2026
@@ -409,24 +351,19 @@ export default function AboutPage() {
           <div
             aria-hidden
             data-parallax="-0.04"
-            className="pointer-events-none absolute -left-32 top-20 h-[480px] w-[480px] rounded-full bg-[radial-gradient(circle,_rgba(184,115,51,0.08),_transparent_70%)]"
+            className="pointer-events-none absolute -left-32 top-20 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(184,115,51,0.08),_transparent_70%)]"
           />
-          <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28">
-            <div data-reveal="up" className="mb-14 max-w-3xl">
+          <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-20">
+            <div data-reveal="up" className="mb-10 max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-saffron-700">
                 The team
               </p>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-surface-900 sm:text-4xl">
-                You should know exactly who is building this.
+                The two phones that ring when something breaks.
               </h2>
-              <p className="mt-4 text-base leading-relaxed text-surface-600 sm:text-lg">
-                Most devotional apps don&apos;t tell you who is on the other end
-                of the booking. We do. If something breaks, these are the two
-                phones that ring.
-              </p>
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2">
               {founders.map((f, idx) => (
                 <article
                   key={f.name}
@@ -440,112 +377,77 @@ export default function AboutPage() {
                     style={{ background: f.accent }}
                   />
 
-                  <div className="grid gap-0 sm:grid-cols-5">
-                    {/* portrait */}
+                  <div className="flex items-center gap-5 p-6 sm:p-7">
                     <div
-                      className="relative col-span-2 min-h-[260px] overflow-hidden sm:min-h-0"
+                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-1"
                       style={{
-                        background: `linear-gradient(160deg, ${f.accentSoft}, #ffffff 80%)`,
+                        background: f.accentSoft,
+                        borderColor: `${f.accent}33`,
                       }}
                     >
                       <Image
                         src={f.photo}
                         alt={f.name}
-                        width={520}
-                        height={620}
-                        className="absolute inset-0 h-full w-full object-cover"
+                        width={160}
+                        height={160}
+                        className="h-20 w-20 object-cover"
                         unoptimized
                       />
-                      <div
-                        aria-hidden
-                        className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent sm:h-20"
-                      />
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider opacity-90">
-                          <MapPin className="h-3 w-3" />
-                          {f.location}
-                        </div>
-                      </div>
                     </div>
-
-                    {/* body */}
-                    <div className="col-span-3 p-6 sm:p-7">
-                      <h3 className="font-display text-2xl font-semibold tracking-tight text-surface-900">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display text-xl font-semibold tracking-tight text-surface-900 sm:text-2xl">
                         {f.name}
                       </h3>
                       <p
-                        className="mt-1 text-sm font-medium"
+                        className="mt-0.5 text-sm font-medium"
                         style={{ color: f.accent }}
                       >
-                        {f.role}
+                        {f.role} · {f.location}
                       </p>
-                      <p className="mt-2 text-[13px] leading-snug text-surface-500">
+                      <p className="mt-1 text-[12px] leading-snug text-surface-500">
                         {f.headline}
                       </p>
+                    </div>
+                  </div>
 
-                      <p className="mt-5 text-sm leading-relaxed text-surface-700">
-                        {f.bio}
-                      </p>
+                  <div className="px-6 pb-6 sm:px-7 sm:pb-7">
+                    <p className="text-[15px] leading-relaxed text-surface-700">
+                      {f.bio}
+                    </p>
 
-                      <blockquote
-                        className="mt-5 rounded-lg border-l-2 px-4 py-2 text-sm italic leading-relaxed text-surface-600"
-                        style={{
-                          borderColor: f.accent,
-                          background: `${f.accent}0c`,
-                        }}
+                    <ul className="mt-5 space-y-1.5">
+                      {f.threads.map((t) => (
+                        <li
+                          key={t}
+                          className="flex items-start gap-2 text-[13px] text-surface-600"
+                        >
+                          <span
+                            aria-hidden
+                            className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full"
+                            style={{ background: f.accent }}
+                          />
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-6 flex items-center gap-3 border-t border-surface-200/70 pt-4">
+                      <a
+                        href={f.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-surface-200 px-3 py-1.5 text-xs font-medium text-surface-700 transition-all hover:border-saffron-300 hover:text-saffron-700"
                       >
-                        &ldquo;{f.quote}&rdquo;
-                      </blockquote>
-
-                      <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                        <FounderTimeline
-                          icon={Briefcase}
-                          title="Work"
-                          items={f.work}
-                          accent={f.accent}
-                        />
-                        <FounderTimeline
-                          icon={GraduationCap}
-                          title="Education"
-                          items={f.education}
-                          accent={f.accent}
-                        />
-                      </div>
-
-                      <ul className="mt-6 space-y-1.5">
-                        {f.threads.map((t) => (
-                          <li
-                            key={t}
-                            className="flex items-start gap-2 text-[13px] text-surface-600"
-                          >
-                            <span
-                              aria-hidden
-                              className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full"
-                              style={{ background: f.accent }}
-                            />
-                            {t}
-                          </li>
-                        ))}
-                      </ul>
-
-                      <div className="mt-6 flex items-center gap-3 border-t border-surface-200/70 pt-5">
-                        <a
-                          href={f.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-md border border-surface-200 px-3 py-1.5 text-xs font-medium text-surface-700 transition-all hover:border-saffron-300 hover:text-saffron-700"
-                        >
-                          <Linkedin className="h-3.5 w-3.5" />
-                          LinkedIn
-                        </a>
-                        <a
-                          href={`mailto:${f.name.split(' ')[0]!.toLowerCase()}@darshya.online`}
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-surface-500 transition-colors hover:text-saffron-700"
-                        >
-                          <Mail className="h-3.5 w-3.5" />
-                          {f.name.split(' ')[0]!.toLowerCase()}@darshya.online
-                        </a>
-                      </div>
+                        <Linkedin className="h-3.5 w-3.5" />
+                        LinkedIn
+                      </a>
+                      <a
+                        href={`mailto:${f.name.split(' ')[0]!.toLowerCase()}@darshya.online`}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-surface-500 transition-colors hover:text-saffron-700"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        {f.name.split(' ')[0]!.toLowerCase()}@darshya.online
+                      </a>
                     </div>
                   </div>
                 </article>
@@ -556,8 +458,8 @@ export default function AboutPage() {
 
         {/* ─── Principles ──────────────────────────────────────────────── */}
         <section className="relative border-b border-surface-200/60 bg-white">
-          <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
-            <div data-reveal="up" className="mb-12 max-w-2xl">
+          <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+            <div data-reveal="up" className="mb-10 max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-saffron-700">
                 What we won&apos;t compromise on
               </p>
@@ -565,7 +467,7 @@ export default function AboutPage() {
                 Four rules. Written before the first commit.
               </h2>
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {principles.map((p, idx) => {
                 const Icon = p.icon;
                 return (
@@ -573,17 +475,17 @@ export default function AboutPage() {
                     key={p.title}
                     data-reveal="cascade"
                     data-delay={String(idx + 1)}
-                    className="group relative overflow-hidden rounded-2xl border border-surface-200/70 bg-[#fbfaf6] p-7 transition-all hover:-translate-y-0.5 hover:border-saffron-300/60 hover:bg-white hover:shadow-[0_14px_28px_-14px_rgba(0,0,0,0.10)]"
+                    className="group relative overflow-hidden rounded-2xl border border-surface-200/70 bg-[#fbfaf6] p-6 transition-all hover:-translate-y-0.5 hover:border-saffron-300/60 hover:bg-white hover:shadow-[0_14px_28px_-14px_rgba(0,0,0,0.10)]"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-700 transition-colors group-hover:bg-saffron-600 group-hover:text-white">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-700 transition-colors group-hover:bg-saffron-600 group-hover:text-white">
                         <Icon className="h-5 w-5" strokeWidth={1.75} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-display text-lg font-semibold text-surface-900">
                           {p.title}
                         </h3>
-                        <p className="mt-2 text-sm leading-relaxed text-surface-600">
+                        <p className="mt-1.5 text-sm leading-relaxed text-surface-600">
                           {p.body}
                         </p>
                       </div>
@@ -595,157 +497,40 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ─── Roadmap ─────────────────────────────────────────────────── */}
+        {/* ─── Roadmap (interactive sticky-pin rail) ───────────────────── */}
         <section
           id="roadmap"
-          className="relative scroll-mt-20 overflow-hidden border-b border-surface-200/60 bg-[#fbfaf6]"
+          className="relative scroll-mt-20 border-b border-surface-200/60 bg-[#faf9f6]"
         >
-          <div
-            aria-hidden
-            data-parallax="-0.05"
-            className="pointer-events-none absolute right-0 top-1/4 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,_rgba(184,115,51,0.10),_transparent_70%)]"
-          />
-          <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28">
-            <div data-reveal="up" className="mb-16 max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-saffron-700">
-                The journey
-              </p>
-              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-surface-900 sm:text-4xl">
-                From the first commit to the long horizon.
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-surface-600 sm:text-lg">
-                Scroll through where Darshya has been, where it is shipping
-                right now, and where we are taking it. Every milestone is a
-                real commit, a real launch, or a real plan — not a wishlist.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-2 text-[11px] font-medium uppercase tracking-wider">
-                <LegendDot color="#b87333" label="Shipped" />
-                <LegendDot color="#d99738" label="Shipping now" pulse />
-                <LegendDot color="#7a6452" label="Planned" />
-                <LegendDot color="#5a8a5a" label="Vision" />
-              </div>
-            </div>
+          {/* Mobile copy header */}
+          <div className="mx-auto max-w-6xl px-6 pt-14 md:hidden">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-saffron-700">
+              The journey
+            </p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-surface-900">
+              From the first commit to the long horizon.
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-surface-600">
+              Scroll through where Darshya has been, where it is shipping now,
+              and where we are taking it.
+            </p>
+          </div>
 
-            {/* alternating two-column rail */}
-            <div className="relative">
-              <div
-                aria-hidden
-                className="absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-saffron-200 via-saffron-300/60 to-saffron-100 md:left-1/2 md:-translate-x-px"
-              />
+          {/* Mobile vertical stack lives inside RoadmapRail; desktop sticky-pin too. */}
+          <div className="md:mt-0 mt-8 md:mb-0 mb-16 md:px-0 px-6">
+            <RoadmapRail milestones={roadmap} />
+          </div>
 
-              <ol className="space-y-12 md:space-y-16">
-                {roadmap.map((r, idx) => {
-                  const Icon = r.icon;
-                  const onRight = idx % 2 === 1;
-                  return (
-                    <li
-                      key={r.when}
-                      data-reveal="up"
-                      style={{ transitionDelay: `${Math.min(idx * 60, 280)}ms` }}
-                      className="relative"
-                    >
-                      <div
-                        className={`grid gap-6 md:grid-cols-2 md:gap-12 ${
-                          onRight ? 'md:[&>*:first-child]:order-2' : ''
-                        }`}
-                      >
-                        {/* card */}
-                        <div
-                          className={`pl-12 md:pl-0 ${
-                            onRight ? 'md:pl-10' : 'md:pr-10 md:text-right'
-                          }`}
-                        >
-                          <div className="rounded-2xl border border-surface-200/70 bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-16px_rgba(0,0,0,0.10)] sm:p-7">
-                            <div
-                              className={`flex flex-wrap items-center gap-2 ${
-                                onRight ? '' : 'md:justify-end'
-                              }`}
-                            >
-                              <span
-                                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-                                style={{
-                                  background: `${r.accent}1c`,
-                                  color: r.accent,
-                                }}
-                              >
-                                {r.phase}
-                              </span>
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-400">
-                                {r.when}
-                              </span>
-                              {r.status === 'now' && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-green-700">
-                                  <span className="relative flex h-1.5 w-1.5">
-                                    <span className="absolute inset-0 animate-ping rounded-full bg-green-400 opacity-75" />
-                                    <span className="relative h-1.5 w-1.5 rounded-full bg-green-500" />
-                                  </span>
-                                  Live
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="mt-3 font-display text-xl font-semibold leading-snug tracking-tight text-surface-900 sm:text-2xl">
-                              {r.title}
-                            </h3>
-                            <p className="mt-3 text-sm leading-relaxed text-surface-600 sm:text-[15px]">
-                              {r.body}
-                            </p>
-                            <div
-                              className={`mt-5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider ${
-                                onRight ? '' : 'md:flex md:justify-end'
-                              }`}
-                              style={{ color: r.accent }}
-                            >
-                              {r.status === 'shipped' && (
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                              )}
-                              {STATUS_LABEL[r.status]}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* spacer / icon halo for other column on md+ */}
-                        <div className="hidden md:block" aria-hidden />
-                      </div>
-
-                      {/* node on the rail */}
-                      <span
-                        aria-hidden
-                        className="absolute left-0 top-2 flex h-[38px] w-[38px] items-center justify-center rounded-full border-2 bg-[#faf9f6] md:left-1/2 md:-translate-x-1/2 md:h-[44px] md:w-[44px]"
-                        style={{ borderColor: r.accent }}
-                      >
-                        <Icon
-                          className="h-4 w-4 md:h-5 md:w-5"
-                          style={{ color: r.accent }}
-                          strokeWidth={1.75}
-                        />
-                        {r.status === 'now' && (
-                          <span
-                            aria-hidden
-                            className="absolute inset-0 -m-1 animate-ping rounded-full opacity-40"
-                            style={{ background: r.accent }}
-                          />
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-
-            <div
-              data-reveal="up"
-              className="mx-auto mt-16 max-w-2xl rounded-2xl border border-saffron-200/60 bg-white px-6 py-7 text-center shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
-            >
-              <Star
-                className="mx-auto h-5 w-5 text-saffron-600"
-                strokeWidth={1.75}
-                aria-hidden
-              />
-              <p className="mt-3 font-display text-lg font-medium leading-relaxed text-surface-800 sm:text-xl">
-                The roadmap is not a wishlist. Every shipped item is in production
-                today at <span className="text-saffron-700">darshya.online</span>.
-              </p>
-            </div>
+          <div className="mx-auto max-w-3xl px-6 pb-20 pt-4 text-center md:pt-8">
+            <Star
+              className="mx-auto h-5 w-5 text-saffron-600"
+              strokeWidth={1.75}
+              aria-hidden
+            />
+            <p className="mt-3 font-display text-lg font-medium leading-relaxed text-surface-800 sm:text-xl">
+              The roadmap is not a wishlist. Every shipped item is in production
+              today at <span className="text-saffron-700">darshya.online</span>.
+            </p>
           </div>
         </section>
 
@@ -760,7 +545,7 @@ export default function AboutPage() {
             data-parallax="0.08"
             className="pointer-events-none absolute -bottom-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(217,151,56,0.22),_transparent_65%)]"
           />
-          <div className="relative mx-auto max-w-4xl px-6 py-20 text-center sm:py-28">
+          <div className="relative mx-auto max-w-4xl px-6 py-16 text-center sm:py-20">
             <div
               data-reveal="up"
               className="inline-flex items-center gap-2 rounded-full border border-saffron-400/30 bg-saffron-500/10 px-3 py-1 text-xs font-medium text-saffron-300"
@@ -807,66 +592,5 @@ export default function AboutPage() {
         </section>
       </div>
     </ScrollReveal>
-  );
-}
-
-function FounderTimeline({
-  icon: Icon,
-  title,
-  items,
-  accent,
-}: {
-  icon: typeof Briefcase;
-  title: string;
-  items: { year: string; org: string; role: string }[];
-  accent: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-surface-500">
-        <Icon className="h-3 w-3" style={{ color: accent }} />
-        {title}
-      </div>
-      <ul className="mt-2 space-y-2">
-        {items.map((item) => (
-          <li key={`${item.org}-${item.role}`} className="text-[13px] leading-snug">
-            <div className="font-medium text-surface-800">{item.org}</div>
-            <div className="text-surface-500">{item.role}</div>
-            {item.year && (
-              <div className="mt-0.5 text-[11px] text-surface-400">{item.year}</div>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function LegendDot({
-  color,
-  label,
-  pulse,
-}: {
-  color: string;
-  label: string;
-  pulse?: boolean;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-white px-2.5 py-1 text-surface-600">
-      <span className="relative flex h-2 w-2">
-        {pulse && (
-          <span
-            aria-hidden
-            className="absolute inset-0 animate-ping rounded-full opacity-60"
-            style={{ background: color }}
-          />
-        )}
-        <span
-          className="relative h-2 w-2 rounded-full"
-          style={{ background: color }}
-        />
-      </span>
-      {label}
-    </span>
   );
 }
