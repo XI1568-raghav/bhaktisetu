@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 
+export const runtime = 'edge';
+
 type Props = { params: Promise<{ id: string }> };
 
 // Legacy route. The curated `home-pujas.ts` profiles (p1-p8, w1-w5) are

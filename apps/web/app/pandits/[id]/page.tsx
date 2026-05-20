@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { getPublicPriest, type Offering } from '../../../lib/pandit-api';
 
+export const runtime = 'edge';
+
 interface PageProps {
  params: Promise<{ id: string }>;
 }
