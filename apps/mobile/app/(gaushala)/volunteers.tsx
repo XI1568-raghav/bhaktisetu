@@ -20,7 +20,7 @@ export default function Volunteers() {
   const volunteersQuery = useGaushalaVolunteers();
   const [refreshing, setRefreshing] = useState(false);
 
-  const volunteers = volunteersQuery.data?.volunteers ?? [];
+  const volunteers = (volunteersQuery.data?.volunteers ?? []).filter((v) => v.active !== false);
   const total = volunteers.length;
 
   async function onRefresh() {
@@ -51,7 +51,7 @@ export default function Volunteers() {
           volunteers.map((v) => (
             <ListRow
               key={v.id}
-              primary={`${v.name}${v.skill ? ` • ${v.skill}` : ''}`}
+              primary={`${v.fullName}${v.role ? ` • ${v.role}` : ''}`}
               secondary={v.phone ?? 'No phone'}
               trailing={formatJoined(v.joinedAt)}
               trailingHint="joined"
