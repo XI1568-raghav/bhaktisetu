@@ -8,6 +8,23 @@
 
 > Post-`/clear` continuity: `docs/operational-context.md` covers every external service + key + deploy mechanism. `docs/future-plans.md` covers roadmap + gates. This block + TASKS.md In progress = current state.
 
+### 2026-05-21 follow-up — CF Pages build red→green
+
+After c9d9288 push, CF Pages failed 3 builds (c9d9288 / fbe310e / a5e9542) with:
+```
+The following routes were not configured to run with the Edge Runtime:
+  - /pandits/[id]
+  - /pujas/pandits/[id]
+```
+
+Root cause: c9d9288 added 2 dynamic pandit routes (`ƒ` server-rendered) without `export const runtime = 'edge'`. `@cloudflare/next-on-pages` rejects any `ƒ` route missing the edge export.
+
+Fix (`f948e0d`): one-line `export const runtime = 'edge';` added to both files. Verified `pandit-api.ts` (only dep) is pure fetch wrapper → edge-safe.
+
+Caveat docced (`d63d660`): added "Every new dynamic route MUST export `runtime = 'edge'`" entry to `docs/caveats.md` so future agents don't repeat. Rule + historic break referenced.
+
+HEAD now `d63d660`. CF Pages auto-rebuilding green.
+
 ### Prod DB migrations applied
 Project: poojly Supabase (`hlkvfarvfblhzhhnhtbp.supabase.co`, ap-northeast-1 pooler).
 

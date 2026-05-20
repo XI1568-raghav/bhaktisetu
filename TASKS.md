@@ -4,7 +4,7 @@
 
 ## In progress
 
-- (nothing — c9d9288 shipped to origin/main + prod migrations live. See `docs/handoff.md` 2026-05-21.)
+- (nothing — c9d9288 shipped, CF Pages build fixed via `f948e0d`, caveat doc `d63d660`. See `docs/handoff.md` 2026-05-21.)
 
 ## Pending — engineering
 
@@ -24,6 +24,9 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-21 | docs(caveats): every dynamic route needs `runtime = 'edge'` for CF Pages | `d63d660` |
+| 2026-05-21 | fix(web): edge runtime on `/pandits/[id]` + `/pujas/pandits/[id]` → CF Pages green | `f948e0d` |
+| 2026-05-21 | docs/operational-context.md — every service + key + deploy mechanism | `1ec7745` |
 | 2026-05-21 | W1-W8 bundle shipped + 4 prod migrations applied + verified (5 tbl/14 col/6 FK) | `c9d9288` |
 | 2026-05-20 | W6-W8: E7 BE bundle + home-puja grids + dual-currency offering checkout | (in c9d9288) |
 | 2026-05-20 | W1-W5: admin fix + 4 P0 + 4 P1 endpoints + booking checkout + pujas merge | (in c9d9288) |
