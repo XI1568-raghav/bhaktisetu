@@ -4,7 +4,7 @@
 
 ## In progress
 
-- (nothing — W6-W8 just shipped, see `docs/handoff.md` 2026-05-20c)
+- (nothing — c9d9288 shipped to origin/main + prod migrations live. See `docs/handoff.md` 2026-05-21.)
 
 ## Pending — engineering
 
@@ -24,8 +24,8 @@
 
 | Date | Task | Commit |
 |---|---|---|
-| 2026-05-20 | W6-W8: E7 BE bundle + home-puja grids + dual-currency offering checkout | uncommitted |
-| 2026-05-20 | W1-W5: admin fix + 4 P0 + 4 P1 endpoints + booking checkout + pujas merge | uncommitted |
-| 2026-05-20 | Real-numbers admin + pandit puja chain | uncommitted |
+| 2026-05-21 | W1-W8 bundle shipped + 4 prod migrations applied + verified (5 tbl/14 col/6 FK) | `c9d9288` |
+| 2026-05-20 | W6-W8: E7 BE bundle + home-puja grids + dual-currency offering checkout | (in c9d9288) |
+| 2026-05-20 | W1-W5: admin fix + 4 P0 + 4 P1 endpoints + booking checkout + pujas merge | (in c9d9288) |
+| 2026-05-20 | Real-numbers admin + pandit puja chain | (in c9d9288) |
 | 2026-05-19 | Auth-cascade fix + gaushala donations real API | `9e87aca` |
-| 2026-05-19 | P1-P4 provider portal overhaul | `bcadee6` |

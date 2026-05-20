@@ -2,6 +2,65 @@
 
 > Append-only. Newest first. Lazy-loaded (not in CLAUDE.md @-imports).
 
+## 2026-05-21 — Prod migrations + ship commit c9d9288
+
+**Status**: shipped to origin/main. Render API + CF Pages auto-deploying.
+
+### Prod DB migrations applied
+Project: poojly Supabase (`hlkvfarvfblhzhhnhtbp.supabase.co`, ap-northeast-1 pooler).
+
+Method: `prisma db execute --url $DIRECT_URL --file <migration.sql>` per migration (used DIRECT_URL not pooled, supports DDL). `_prisma_migrations` tracker table empty — schema applied directly, Supabase dashboard "Last migration: No migrations" is expected (cosmetic only).
+
+Applied:
+- `20260520000000_priest_puja_offerings` — NEW (table created)
+- `20260520010000_admin_p0_p1_bundle` — idempotent IF NOT EXISTS (all cols added)
+- `20260520020000_e7_followups` — idempotent (FK cols + nullable gaushala_id)
+- `20260519000000_gaushala_cows_volunteers` — SKIPPED: tables already on prod from earlier direct DDL (verified all 3 present: cows, cow_health_records, volunteers)
+
+### Verification artefact
+`apps/api/scripts/check-prod-tables.mjs` — reads `.env.production` (parses inline, no dotenv dep), connects via Prisma to DIRECT_URL, checks tables + columns + FKs + row counts. Re-runnable anytime. Output 2026-05-21:
+- TABLES 5/5 ✓ (cows, cow_health_records, volunteers, priest_puja_offerings, store_products)
+- COLUMNS 14/14 ✓ (users.blocked*, astrologer_profiles.availability, temple_puja_offerings.nri_price+assigned_priest_id, live_darshan_streams.title/description/camera_location, puja_bookings.priest_puja_offering_id, reviews.product_id, donations.temple_id, priest_puja_offerings.max_bookings_per_slot/available_slots)
+- FKs 6/6 ✓
+- donations.gaushala_id nullable ✓
+- Row counts: 32 users, 20 temples, 3 priests, 25 temple offerings, 6 bookings. priest_puja_offerings/store_products/donations = 0 (new feature tables, no seed).
+
+### Pre-existing test gap surfaced + fixed
+`admin.service.test.ts:167` was failing — W2 change switched `getDashboard` revenue to `prisma.transaction.aggregate({...})` but the mock setup at `src/lib/__mocks__/prisma.ts:93` lacked `transaction.aggregate`. Without it, try-catch in `getDashboard` caught undefined-mock error → fell back to MOCK_USERS demo dashboard → totalUsers=8 not 100. Fix: added `aggregate: vi.fn()` to transaction block in mock + `mockResolvedValue({ _sum: { amount: 1500 } })` to test. All 476/476 green now.
+
+### Commit c9d9288 (35 files)
+Bundle covers waves W1-W8 from earlier handoffs:
+- 3 new migrations + schema.prisma updates
+- 6 new API routes (priests-public, store-admin, +tests for store-admin/priest-pujas/temple-portal-crud)
+- 9 existing API routes touched (admin, bookings, payment, priest, store, temple-portal, wellness-portal, wellness-sessions, astrologer-portal, server)
+- 5 new web lib files (astrologer-api, pandit-api, store-admin-api, temple-api, wellness-api)
+- 16 web pages migrated off localStorage to real APIs
+- checkout/offering/[offeringId] dual-currency flow
+- pujas/home-puja/[slug] + pujas/marriage dynamic grids
+- pujas/pandits/[id] legacy redirect to /pandits
+- TASKS.md trimmed, docs/handoff.md created, .gitignore added `*.bak-*`
+
+### Pending engineering (carried)
+- **E2**: FCM server key paste — env-or-noop, requires user paste
+- **E9**: Embedded Stripe Elements for clientSecret-only fallback (TODO W8, mirrors pujas page gap; current path uses Stripe Checkout URL redirect)
+- **E10**: `getPublicPriests({ specialization?, deity? })` server-side filter — client-side keyword filter on specializations+bio works; server filter would reduce payload
+
+### Pre-existing test debt (NOT blocking)
+`apps/web/__tests__/*` + `vitest.setup.ts` — missing `@testing-library/react` types. Same errors every tsc run. Pre-existing across all recent commits. Fix needs `pnpm install @testing-library/react -D` in web. Out of scope for current work.
+
+### User next steps
+1. Smoke-test prod: admin /users + /approvals (was 500ing), booking checkout, dual-currency NRI flow (Stripe USD with non-IST timezone)
+2. Monitor Render + CF Pages deploy
+3. Eventually rotate Resend key `re_46d7rTF7_7DygN1pnEpG3T5Cmi5cMnvB3` (LEAKED in git history per standing memory)
+
+### Standing constraints (carry forward)
+- Don't rename poojly_* keys, package.json names, storage prefixes
+- Don't WebFetch darshya.online (CF 403)
+- Demo-token branch in API auth gated by `NODE_ENV !== 'production' || ALLOW_DEMO_TOKENS === 'true'` — unset on Render after demos
+- DO NOT enable `ALLOW_DEMO_PAYMENTS` or any test/skip-payment branch
+- DO NOT touch Razorpay/Stripe live keys
+- Agents NOT run `pnpm install`, NOT push to git — main thread owns verification + commit
+
 ## 2026-05-20c — E7/E8 follow-ups (W6-W8)
 
 **Shipped** (uncommitted). 3 agents. tsc clean both packages. 92/92 touched-file tests pass.
