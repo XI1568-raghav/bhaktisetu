@@ -1,1 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b87333" stop-opacity="0.22"/><stop offset="1" stop-color="#b87333" stop-opacity="0.08"/></linearGradient></defs><rect width="80" height="80" fill="url(#g)"/><text x="40" y="50" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-weight="600" font-size="26" fill="#b87333">RS</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 620" width="520" height="620" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a1e0d"/>
+      <stop offset="0.55" stop-color="#7a3f1a"/>
+      <stop offset="1" stop-color="#b87333"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.7" cy="0.3" r="0.7">
+      <stop offset="0" stop-color="#f5d68a" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#f5d68a" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="0.9" fill="#ffffff" fill-opacity="0.06"/>
+    </pattern>
+  </defs>
+  <rect width="520" height="620" fill="url(#bg)"/>
+  <rect width="520" height="620" fill="url(#dots)"/>
+  <rect width="520" height="620" fill="url(#glow)"/>
+  <g transform="translate(260 310)">
+    <text text-anchor="middle" dominant-baseline="middle" font-family="Georgia, 'Times New Roman', serif" font-size="200" font-weight="600" fill="#fbf5e8" letter-spacing="-8">RS</text>
+  </g>
+  <g transform="translate(260 470)" text-anchor="middle" font-family="-apple-system, 'Segoe UI', sans-serif" fill="#fbf5e8">
+    <text font-size="16" letter-spacing="4" font-weight="500" fill-opacity="0.88">RAGHAV · SINDHWANI</text>
+    <text y="30" font-size="12" letter-spacing="2.5" fill-opacity="0.62">PRODUCT &amp; AI · BENGALURU</text>
+  </g>
+  <g transform="translate(40 580)" fill="#fbf5e8" fill-opacity="0.6">
+    <rect width="40" height="2"/>
+  </g>
+</svg>
