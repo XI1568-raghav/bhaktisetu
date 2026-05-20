@@ -120,6 +120,29 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
     });
   });
 
+  server.get('/volunteers', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('GAUSHALA_MANAGER')) {
+      return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
+    }
+    const volunteers = await prisma.volunteer.findMany({
+      where: { gaushalaId: userId, active: true },
+      orderBy: { joinedAt: 'desc' },
+      take: 100,
+    });
+    return reply.send({
+      volunteers: volunteers.map((v) => ({
+        id: v.id,
+        name: v.fullName,
+        phone: v.phone ?? undefined,
+        skill: v.role,
+        joinedAt: v.joinedAt,
+        // No hours-tracking table yet — omit field, mobile shows '—'.
+      })),
+    });
+  });
+
   server.patch('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
     const roles = request.currentUser!.roles ?? [];
