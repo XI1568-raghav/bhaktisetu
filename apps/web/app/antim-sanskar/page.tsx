@@ -132,14 +132,14 @@ export default function AntimSanskarPage() {
               Talk to a Coordinator
             </Link>
             <a
-              href="tel:+919999999999"
+              href="tel:+919255109400"
               className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-all"
               style={{
                 border: '1px solid var(--color-border)',
                 color: 'var(--color-text)',
               }}
             >
-              Call 24x7
+              Call +91 92551 09400
             </a>
           </div>
           <p
