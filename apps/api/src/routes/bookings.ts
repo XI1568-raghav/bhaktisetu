@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, Prisma } from '@prisma/client';
 import { bookingService } from '../services/booking.service.js';
 import { paymentService } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
@@ -754,6 +754,351 @@ export async function bookingRoutes(server: FastifyInstance) {
         server.log.error(error, 'Failed to create Stripe NRI booking order');
         return reply.status(400).send({
           error: error.message || 'Failed to create Stripe booking order',
+        });
+      }
+    },
+  );
+
+  // POST /from-offering - Book a PriestPujaOffering (priest-authored catalog,
+  // distinct from the temple-anchored TemplePujaOffering used by /create-order).
+  //
+  // PujaBooking schema requires templeId + pujaTypeId + templePujaOfferingId
+  // (all non-null FKs) — PriestPujaOffering has none of them. We resolve the
+  // priest's first verified TemplePriest binding to anchor templeId + use any
+  // active TemplePujaOffering at that temple for templePujaOfferingId. The
+  // real PriestPujaOffering id is persisted on the new
+  // priestPujaOfferingId FK (migration 20260520020000) so the priest portal
+  // + admin can read it back without parsing JSON markers.
+  //
+  // NRI flow (rule #2): if user.isNri is true (or country override sent),
+  // bill in USD via Stripe at basePrice * 9. Otherwise INR via Razorpay.
+  //
+  // Slot capacity: if offering.availableSlots is set, the scheduledTime
+  // must match one of the slots and that slot must not exceed
+  // offering.maxBookingsPerSlot for the requested date.
+  const fromOfferingBodySchema = z.object({
+    offeringId: z.string().uuid(),
+    scheduledDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+      .refine(
+        (d) => {
+          const requested = new Date(`${d}T00:00:00`);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return !Number.isNaN(requested.getTime()) && requested >= today;
+        },
+        { message: 'Cannot book a past date.' },
+      ),
+    scheduledTime: z.string().min(1),
+    devotees: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          gotra: z.string().optional(),
+          nakshatra: z.string().optional(),
+        }),
+      )
+      .min(1)
+      .max(5),
+    sankalp: z.string().optional(),
+    specialInstructions: z.string().optional(),
+    prasadDelivery: z.boolean().optional().default(false),
+    // Force the NRI/USD path even when user.isNri is false. Lets the web
+    // booking page expose a "Pay in USD" toggle for travellers without
+    // flipping the persistent profile flag.
+    currency: z.enum(['INR', 'USD']).optional(),
+    deliveryAddress: z
+      .object({
+        fullName: z.string().min(1),
+        line1: z.string().min(1),
+        line2: z.string().optional(),
+        city: z.string().min(1),
+        state: z.string().min(1),
+        pincode: z.string().regex(/^\d{6}$/),
+        phone: z.string().regex(/^[6-9]\d{9}$/),
+      })
+      .optional(),
+  });
+  // NRI multiplier for priest-offering pricing. Business rule #2 (NRI
+  // pricing 9-10× domestic) — we pick 9x as the lower bound; temple-side
+  // offerings already use PujaType.nriPrice which is set explicitly.
+  const NRI_USD_MULTIPLIER = 9;
+
+  server.post(
+    '/from-offering',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const body = fromOfferingBodySchema.parse(request.body);
+        const userId = request.currentUser!.id;
+
+        // 1. Resolve offering + priest (must be active + verified priest).
+        const offering = await prisma.priestPujaOffering.findUnique({
+          where: { id: body.offeringId },
+          include: {
+            priest: {
+              select: {
+                id: true,
+                isVerified: true,
+                status: true,
+                temples: {
+                  where: { temple: { isVerified: true } },
+                  orderBy: [{ isPrimary: 'desc' }, { joinedAt: 'asc' }],
+                  select: {
+                    templeId: true,
+                    temple: { select: { id: true, isVerified: true } },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+        });
+        if (!offering) {
+          return reply.status(404).send({ error: 'Priest puja offering not found.' });
+        }
+        if (!offering.isActive) {
+          return reply
+            .status(409)
+            .send({ error: 'This puja offering is currently inactive.' });
+        }
+        if (
+          !offering.priest.isVerified ||
+          offering.priest.status !== 'active'
+        ) {
+          return reply
+            .status(409)
+            .send({ error: 'Priest is not currently available for bookings.' });
+        }
+
+        // 2. Resolve the priest's anchor temple + any active TemplePujaOffering.
+        const templeBinding = offering.priest.temples[0];
+        if (!templeBinding) {
+          return reply.status(409).send({
+            error:
+              'This pandit is not yet associated with a verified temple; ' +
+              'priest-direct bookings require a temple binding for payouts. ' +
+              'Please contact support@darshya.online.',
+          });
+        }
+        const anchorOffering = await prisma.templePujaOffering.findFirst({
+          where: { templeId: templeBinding.templeId, isActive: true },
+          select: { id: true, templeId: true, pujaTypeId: true },
+        });
+        if (!anchorOffering) {
+          return reply.status(409).send({
+            error:
+              'Pandit\'s home temple has no active puja offerings to anchor ' +
+              'this booking. Please contact support@darshya.online.',
+          });
+        }
+
+        // 3. Resolve pricing. Business rule #2: NRI pay 9-10× domestic.
+        // The booking row's priceAmount/currency reflects the actual amount
+        // we will bill (INR via Razorpay or USD via Stripe). The commission
+        // ledger ratios (30/70) stay the same regardless of currency since
+        // the priest payout is settled in the same currency the devotee
+        // paid in (handled downstream).
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { isNri: true },
+        });
+        if (!user) {
+          return reply.status(404).send({ error: 'User not found.' });
+        }
+        const wantsUsd = body.currency === 'USD' || (!body.currency && user.isNri);
+        const basePrice = new Prisma.Decimal(offering.basePrice.toString());
+        // basePrice * 9 for NRI USD. Decimal arithmetic so we never lose
+        // precision; .toDecimalPlaces(2) trims any fractional rounding.
+        const usdAmount = wantsUsd
+          ? basePrice.mul(new Prisma.Decimal(NRI_USD_MULTIPLIER)).toDecimalPlaces(2)
+          : null;
+        const priceAmount = wantsUsd ? usdAmount! : basePrice;
+        const currency = wantsUsd ? 'USD' : 'INR';
+        const platformCommission = priceAmount.mul(new Prisma.Decimal('0.30'));
+        const priestPayoutAmount = priceAmount.mul(new Prisma.Decimal('0.70'));
+
+        // 3b. Slot capacity enforcement. Skip when the priest hasn't
+        // configured availableSlots — back-compat with offerings created
+        // before the slot-capacity migration. When configured, the
+        // scheduledTime must match a defined slot, and that slot's booking
+        // count for the day must be below maxBookingsPerSlot.
+        const rawSlots = offering.availableSlots as unknown;
+        const slotTimes: string[] = Array.isArray(rawSlots)
+          ? (rawSlots as unknown[]).map((s) =>
+              typeof s === 'string' ? s : ((s as { time?: string })?.time ?? ''),
+            ).filter((t) => t.length > 0)
+          : [];
+        if (slotTimes.length > 0) {
+          if (!slotTimes.includes(body.scheduledTime)) {
+            return reply.status(409).send({
+              error: `Slot ${body.scheduledTime} is not offered. Available slots: ${slotTimes.join(', ')}.`,
+            });
+          }
+          const slotBooked = await prisma.pujaBooking.count({
+            where: {
+              priestPujaOfferingId: offering.id,
+              scheduledDate: new Date(body.scheduledDate),
+              scheduledTimeSlot: body.scheduledTime,
+              status: { notIn: ['cancelled', 'refunded'] },
+            },
+          });
+          if (slotBooked >= offering.maxBookingsPerSlot) {
+            return reply.status(409).send({
+              error: `Slot ${body.scheduledTime} is fully booked (${slotBooked}/${offering.maxBookingsPerSlot}).`,
+            });
+          }
+        }
+
+        // 4. Optional prasad delivery address (mirrors /create-order).
+        let prasadAddressId: string | undefined;
+        if (body.prasadDelivery && body.deliveryAddress) {
+          const addr = await prisma.userAddress
+            .create({
+              data: {
+                userId,
+                label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
+                line1: body.deliveryAddress.line1,
+                line2: body.deliveryAddress.line2 ?? null,
+                city: body.deliveryAddress.city,
+                state: body.deliveryAddress.state,
+                pincode: body.deliveryAddress.pincode,
+              },
+              select: { id: true },
+            })
+            .catch(() => null);
+          prasadAddressId = addr?.id;
+        }
+
+        // 5. Generate booking number (retry on collision, same pattern as
+        // booking.service.generateBookingNumber).
+        const generateBookingNumber = (): string => {
+          const now = new Date();
+          const yyyy = now.getFullYear();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const dd = String(now.getDate()).padStart(2, '0');
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let r = '';
+          for (let i = 0; i < 5; i++) {
+            r += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return `BS-${yyyy}${mm}${dd}-${r}`;
+        };
+        let bookingNumber = generateBookingNumber();
+        for (let i = 0; i < 5; i++) {
+          const existing = await prisma.pujaBooking.findUnique({
+            where: { bookingNumber },
+            select: { id: true },
+          });
+          if (!existing) break;
+          bookingNumber = generateBookingNumber();
+        }
+
+        // 6. Persist the booking. The PriestPujaOffering FK
+        // (migration 20260520020000) replaces the previous JSON marker.
+        const booking = await prisma.pujaBooking.create({
+          data: {
+            bookingNumber,
+            userId,
+            templeId: anchorOffering.templeId,
+            pujaTypeId: anchorOffering.pujaTypeId,
+            templePujaOfferingId: anchorOffering.id,
+            priestPujaOfferingId: offering.id,
+            priestId: offering.priest.id,
+            scheduledDate: new Date(body.scheduledDate),
+            scheduledTimeSlot: body.scheduledTime,
+            devoteeNames: body.devotees as Prisma.InputJsonValue,
+            sankalpDetails: body.sankalp ?? null,
+            specialInstructions: body.specialInstructions ?? null,
+            priceAmount,
+            currency,
+            platformCommission,
+            priestPayout: priestPayoutAmount,
+            status: 'pending_payment',
+            prasadDeliveryRequested: body.prasadDelivery,
+            prasadDeliveryAddressId: prasadAddressId ?? null,
+          },
+          select: {
+            id: true,
+            bookingNumber: true,
+            status: true,
+            priceAmount: true,
+            currency: true,
+            scheduledDate: true,
+            scheduledTimeSlot: true,
+            createdAt: true,
+          },
+        });
+
+        // 7. Create the payment order. USD → Stripe; INR → Razorpay.
+        // createStripeOrder normally reads PujaType.nriPrice; we pass an
+        // explicit USD override so it bills basePrice * 9 instead of the
+        // anchor temple-puja's nriPrice.
+        if (wantsUsd) {
+          const stripe = await paymentService.createStripeOrder(
+            booking.id,
+            userId,
+            { usdAmountOverride: Number(usdAmount) },
+          );
+          return reply.status(201).send({
+            orderId: booking.id,
+            bookingId: booking.id,
+            bookingNumber: booking.bookingNumber,
+            stripePaymentIntentId: stripe.paymentIntentId,
+            clientSecret: stripe.clientSecret,
+            amount: stripe.amount,
+            currency: stripe.currency,
+            stripePublishableKey: stripe.publishableKey,
+            demo: stripe.demo,
+            booking: {
+              id: booking.id,
+              bookingNumber: booking.bookingNumber,
+              status: booking.status,
+              priceAmount: booking.priceAmount.toString(),
+              currency: booking.currency,
+              scheduledDate: booking.scheduledDate,
+              scheduledTimeSlot: booking.scheduledTimeSlot,
+              offeringId: offering.id,
+              offeringName: offering.name,
+              priestId: offering.priest.id,
+            },
+          });
+        }
+
+        const order = await paymentService.createRazorpayOrder(booking.id, userId);
+
+        return reply.status(201).send({
+          orderId: booking.id,
+          bookingId: booking.id,
+          bookingNumber: booking.bookingNumber,
+          razorpayOrderId: order.orderId,
+          amount: order.amount,
+          currency: order.currency,
+          razorpayKeyId: order.razorpayKeyId,
+          booking: {
+            id: booking.id,
+            bookingNumber: booking.bookingNumber,
+            status: booking.status,
+            priceAmount: booking.priceAmount.toString(),
+            currency: booking.currency,
+            scheduledDate: booking.scheduledDate,
+            scheduledTimeSlot: booking.scheduledTimeSlot,
+            offeringId: offering.id,
+            offeringName: offering.name,
+            priestId: offering.priest.id,
+          },
+        });
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: 'Validation Error',
+            details: error.errors,
+          });
+        }
+        server.log.error(error, 'Failed to create offering-based booking');
+        return reply.status(400).send({
+          error: error.message || 'Failed to create offering-based booking',
         });
       }
     },

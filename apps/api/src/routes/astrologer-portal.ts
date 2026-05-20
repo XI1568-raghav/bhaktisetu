@@ -12,6 +12,20 @@ const profileUpdateSchema = z.object({
   bio: z.string().max(2000).optional(),
 });
 
+// Availability is intentionally free-form JSON so the portal can iterate on
+// the slot shape without a migration. Cap at 64KB to prevent abuse.
+const availabilityUpdateSchema = z.object({
+  availability: z.unknown().refine((v) => {
+    try {
+      return JSON.stringify(v).length <= 64 * 1024;
+    } catch {
+      return false;
+    }
+  }, 'availability JSON exceeds 64KB cap'),
+});
+
+export const __testing = { profileUpdateSchema, availabilityUpdateSchema };
+
 // No persistent Consultation model — Jitsi rooms are ephemeral (see consultation.ts).
 // Stats below derive from AstrologerProfile counters maintained elsewhere; sessions
 // + earnings remain 0 until a Consultation table lands.
@@ -74,5 +88,43 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       data: parsed.data,
     });
     return reply.send({ profile });
+  });
+
+  // ─── PATCH /availability ────────────────────────────────────────────────────
+  // Free-form weekly availability blob (see schema.prisma comment). Replaces
+  // the previous value wholesale — partial merging is a UI concern.
+
+  server.patch('/availability', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('ASTROLOGER')) {
+      return reply.code(403).send({ error: 'ASTROLOGER role required' });
+    }
+    const parsed = availabilityUpdateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
+    if (!existing) {
+      // Mirror PATCH /profile's auto-create behaviour so a fresh astrologer
+      // can set availability before completing profile onboarding.
+      const profile = await prisma.astrologerProfile.create({
+        data: {
+          userId,
+          displayName: 'Astrologer',
+          specialties: [],
+          languages: [],
+          experience: 0,
+          pricePerMinute: 10,
+          availability: parsed.data.availability as object,
+        },
+      });
+      return reply.send({ availability: profile.availability });
+    }
+    const profile = await prisma.astrologerProfile.update({
+      where: { userId },
+      data: { availability: parsed.data.availability as object },
+    });
+    return reply.send({ availability: profile.availability });
   });
 }

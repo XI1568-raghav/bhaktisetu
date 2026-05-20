@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
 import { storeService } from '../services/store.service.js';
+import { prisma } from '../lib/prisma.js';
 
 export async function storeRoutes(server: FastifyInstance) {
   // ─── GET /products ──────────────────────────────────────────────────────────
@@ -111,6 +112,60 @@ export async function storeRoutes(server: FastifyInstance) {
     const userId = request.currentUser!.id;
     const cart = storeService.getCart(userId);
     return { cart };
+  });
+
+  // ─── GET /reviews ───────────────────────────────────────────────────────────
+  // Per-SKU reviews scoped to the authenticated store owner. Now joins on
+  // Review.productId (migration 20260520020000) against store_products
+  // owned by this owner's StoreProfile. Provider-level (STORE-typed)
+  // reviews remain readable via the same query — a per-store review row
+  // with productId=null still surfaces because the OR matches.
+  server.get('/reviews', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('STORE_OWNER')) {
+      return reply.code(403).send({ error: 'STORE_OWNER role required' });
+    }
+    const storeProfile = await prisma.storeProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    // Pull SKU ids upfront so the main query stays a single roundtrip
+    // with a simple IN filter (Prisma can't express "join then filter on
+    // parent column" in one go without raw SQL).
+    const productIds = storeProfile
+      ? (await prisma.storeProduct.findMany({
+          where: { storeProfileId: storeProfile.id },
+          select: { id: true },
+        })).map((p) => p.id)
+      : [];
+    const reviews = await prisma.review.findMany({
+      where: {
+        OR: [
+          { providerId: userId, providerType: 'STORE' },
+          ...(productIds.length > 0 ? [{ productId: { in: productIds } }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        product: { select: { id: true, name: true } },
+      },
+    });
+    return reply.send({
+      reviews: reviews.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        providerId: r.providerId,
+        providerType: r.providerType,
+        productId: r.productId,
+        productName: r.product?.name ?? null,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      total: reviews.length,
+    });
   });
 
   // ─── POST /cart/checkout ────────────────────────────────────────────────────

@@ -174,6 +174,7 @@ export default function NavAuthButton() {
  </a>
 
  <div className="border-t border-surface-100 mt-1 pt-1">
+ {role !== 'admin' && (
  <button
  onClick={() => {
  setMenuOpen(false);
@@ -186,6 +187,7 @@ export default function NavAuthButton() {
  <Compass className="w-4 h-4" />
  Restart guided tour
  </button>
+ )}
  <button
  onClick={async () => {
  setMenuOpen(false);

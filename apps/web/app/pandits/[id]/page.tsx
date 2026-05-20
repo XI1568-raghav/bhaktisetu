@@ -1,228 +1,224 @@
-export const runtime = 'edge';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, MapPin, Star, Languages, Award, Calendar, IndianRupee } from 'lucide-react';
-import ProviderBadge, { RatingDisplay } from '../../../components/provider/ProviderBadge';
-
+import {
+ ArrowLeft,
+ Star,
+ BadgeCheck,
+ Languages,
+ Award,
+ Clock,
+ IndianRupee,
+ Flame,
+} from 'lucide-react';
+import { getPublicPriest, type Offering } from '../../../lib/pandit-api';
 
 interface PageProps {
  params: Promise<{ id: string }>;
 }
 
-function resolveApiBase(): string {
- const candidate = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
- return candidate.endsWith('/api/v1') ? candidate : `${candidate.replace(/\/$/, '')}/api/v1`;
+function initials(name: string): string {
+ const parts = name.trim().split(/\s+/);
+ const first = parts[0]?.charAt(0) ?? '';
+ const last = parts.length > 1 ? parts[parts.length - 1]?.charAt(0) ?? '' : '';
+ return (first + last).toUpperCase() || 'P';
 }
 
-interface PanditDetail {
- id: string;
- userId: string;
- templeName?: string | null;
- experience?: number;
- specialties?: string[];
- languages?: string[];
- bio?: string | null;
- city?: string | null;
- state?: string | null;
- rating?: number;
- ratingAvg?: number;
- ratingCount?: number;
- aadhaarVerified?: boolean;
- totalPujas?: number;
- pricePerPuja?: number | string;
- reviews?: Array<{
- id: string;
- rating: number;
- comment: string | null;
- createdAt: string;
- }>;
-}
-
-async function getPandit(id: string): Promise<PanditDetail | null> {
- try {
- const res = await fetch(`${resolveApiBase()}/providers/pandit/${id}`, {
- next: { revalidate: 60, tags: [`pandit-${id}`] },
- });
- if (!res.ok) return null;
- const data = await res.json();
- return (data.provider as PanditDetail) ?? null;
- } catch {
- return null;
- }
+function formatCurrency(amount: number): string {
+ return new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+ }).format(amount);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
  const { id } = await params;
- const pandit = await getPandit(id);
- if (!pandit) return { title: 'Pandit · Darshya' };
- const name = pandit.templeName || 'Verified Pandit';
+ const priest = await getPublicPriest(id);
+ if (!priest) return { title: 'Pandit · Darshya' };
  return {
- title: `${name} · Verified Pandit on Darshya`,
- description: pandit.bio?.slice(0, 160) ?? `Book a puja with ${name} on Darshya. Verified pandit, transparent pricing, video proof.`,
+  title: `${priest.displayName} · Verified Pandit on Darshya`,
+  description:
+   priest.bio?.slice(0, 160) ??
+   `Book authentic pujas with ${priest.displayName} on Darshya. Verified pandit, transparent pricing.`,
  };
+}
+
+function OfferingCard({
+ panditId,
+ offering,
+}: {
+ panditId: string;
+ offering: Offering;
+}) {
+ const price = parseFloat(offering.basePrice);
+ return (
+  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5 hover:border-saffron-200 transition-colors">
+   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+    <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center shrink-0">
+     <Flame className="w-5 h-5 text-saffron-500" />
+    </div>
+    <div className="flex-1 min-w-0">
+     <div className="flex flex-wrap items-center gap-2 mb-1">
+      <h3 className="text-base font-semibold text-surface-800">
+       {offering.name}
+      </h3>
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-saffron-50 text-saffron-700">
+       {offering.deity}
+      </span>
+     </div>
+     {offering.description && (
+      <p className="text-sm text-surface-500 mt-1 leading-relaxed">
+       {offering.description}
+      </p>
+     )}
+     <div className="flex items-center gap-4 mt-3 text-sm text-surface-600">
+      <span className="inline-flex items-center gap-1 font-medium text-surface-800">
+       <IndianRupee className="w-3.5 h-3.5" />
+       {formatCurrency(price).replace('₹', '')}
+      </span>
+      <span className="inline-flex items-center gap-1 text-surface-500">
+       <Clock className="w-3.5 h-3.5" />
+       {offering.durationMinutes} min
+      </span>
+     </div>
+    </div>
+    <div className="shrink-0">
+     <Link
+      href={`/checkout/offering/${offering.id}`}
+      className="inline-flex items-center justify-center px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+     >
+      Book This Puja
+     </Link>
+    </div>
+   </div>
+  </div>
+ );
 }
 
 export default async function PanditDetailPage({ params }: PageProps) {
  const { id } = await params;
- const pandit = await getPandit(id);
+ const priest = await getPublicPriest(id);
 
- if (!pandit) notFound();
-
- const name = pandit.templeName || 'Verified Pandit';
- const price = Number(pandit.pricePerPuja);
- const priceLabel = Number.isFinite(price) && price > 0 ? `₹${price.toLocaleString('en-IN')}` : null;
- const rating = typeof pandit.rating === 'number' && pandit.rating > 0 ? pandit.rating.toFixed(1) : null;
+ if (!priest) notFound();
 
  return (
- <div className="min-h-screen bg-[var(--color-bg)]">
- <div className="max-w-4xl mx-auto px-4 py-6">
- <Link
- href="/pandits"
- className="inline-flex items-center gap-2 text-sm text-surface-500 hover:text-surface-700 mb-6"
- >
- <ArrowLeft className="w-4 h-4" />
- All pandits
- </Link>
+  <div className="min-h-screen bg-[var(--color-bg)]">
+   <div className="max-w-4xl mx-auto px-4 py-6">
+    <Link
+     href="/pandits"
+     className="inline-flex items-center gap-2 text-sm text-surface-500 hover:text-surface-700 mb-6"
+    >
+     <ArrowLeft className="w-4 h-4" />
+     All pandits
+    </Link>
 
- {/* Header card */}
- <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-6 mb-6">
- <div className="flex flex-col sm:flex-row gap-5">
- <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
- <span className="text-2xl font-bold text-saffron-700">
- {name.charAt(0).toUpperCase()}
- </span>
- </div>
- <div className="flex-1 min-w-0">
- <h1 className="text-2xl font-semibold text-surface-800 mb-1">{name}</h1>
- <div className="mb-2">
- <ProviderBadge
- aadhaarVerified={pandit.aadhaarVerified}
- ratingAvg={pandit.ratingAvg ?? pandit.rating}
- ratingCount={pandit.ratingCount ?? pandit.totalPujas}
- />
- </div>
- <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-surface-500 mb-3">
- {pandit.city && (
- <span className="inline-flex items-center gap-1">
- <MapPin className="w-3.5 h-3.5" />
- {pandit.city}
- {pandit.state ? `, ${pandit.state}` : ''}
- </span>
- )}
- {typeof pandit.experience === 'number' && pandit.experience > 0 && (
- <span className="inline-flex items-center gap-1">
- <Calendar className="w-3.5 h-3.5" />
- {pandit.experience}+ years experience
- </span>
- )}
- <RatingDisplay
- avg={pandit.ratingAvg ?? pandit.rating}
- count={pandit.ratingCount ?? pandit.totalPujas}
- size="sm"
- />
- {!pandit.ratingCount && rating && pandit.totalPujas ? (
- <span className="inline-flex items-center gap-1">
- <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
- <span className="font-medium text-surface-700">{rating}</span>
- <span className="text-surface-400">({pandit.totalPujas} pujas)</span>
- </span>
- ) : null}
- </div>
- {pandit.bio && (
- <p className="text-sm text-surface-600 leading-relaxed">{pandit.bio}</p>
- )}
- </div>
- </div>
- </div>
+    {/* Hero card */}
+    <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-6 mb-6">
+     <div className="flex flex-col sm:flex-row gap-5">
+      {priest.avatarUrl ? (
+       // eslint-disable-next-line @next/next/no-img-element
+       <img
+        src={priest.avatarUrl}
+        alt={priest.displayName}
+        className="w-20 h-20 rounded-full object-cover shrink-0"
+       />
+      ) : (
+       <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
+        <span className="text-2xl font-bold text-saffron-700">
+         {initials(priest.displayName)}
+        </span>
+       </div>
+      )}
+      <div className="flex-1 min-w-0">
+       <div className="flex items-center gap-2 mb-2">
+        <h1 className="text-2xl font-semibold text-surface-800">
+         {priest.displayName}
+        </h1>
+        {priest.isVerified && (
+         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-saffron-50 text-saffron-700 text-xs font-medium rounded-full">
+          <BadgeCheck className="w-3.5 h-3.5" />
+          Verified
+         </span>
+        )}
+       </div>
+       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-surface-500 mb-3">
+        {priest.ratingCount > 0 ? (
+         <span className="inline-flex items-center gap-1">
+          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+          <span className="font-medium text-surface-700">
+           {priest.ratingAvg.toFixed(1)}
+          </span>
+          <span className="text-surface-400">
+           ({priest.ratingCount} review{priest.ratingCount === 1 ? '' : 's'})
+          </span>
+         </span>
+        ) : (
+         <span className="text-surface-400">New pandit · No reviews yet</span>
+        )}
+        {priest.experienceYears > 0 && (
+         <span className="inline-flex items-center gap-1">
+          <Award className="w-3.5 h-3.5" />
+          {priest.experienceYears}+ years experience
+         </span>
+        )}
+        {priest.languages.length > 0 && (
+         <span className="inline-flex items-center gap-1">
+          <Languages className="w-3.5 h-3.5" />
+          {priest.languages.join(', ')}
+         </span>
+        )}
+       </div>
+       {priest.bio && (
+        <p className="text-sm text-surface-600 leading-relaxed">
+         {priest.bio}
+        </p>
+       )}
+      </div>
+     </div>
+    </div>
 
- {/* Specialties + languages */}
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
- {pandit.specialties && pandit.specialties.length > 0 && (
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <h2 className="text-sm font-semibold text-surface-700 mb-3 inline-flex items-center gap-2">
- <Award className="w-4 h-4 text-saffron-600" />
- Specialties
- </h2>
- <div className="flex flex-wrap gap-2">
- {pandit.specialties.map((s) => (
- <span
- key={s}
- className="px-3 py-1 bg-saffron-50 text-saffron-700 text-xs rounded-full"
- >
- {s}
- </span>
- ))}
- </div>
- </div>
- )}
- {pandit.languages && pandit.languages.length > 0 && (
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <h2 className="text-sm font-semibold text-surface-700 mb-3 inline-flex items-center gap-2">
- <Languages className="w-4 h-4 text-saffron-600" />
- Languages
- </h2>
- <div className="flex flex-wrap gap-2">
- {pandit.languages.map((l) => (
- <span
- key={l}
- className="px-3 py-1 bg-surface-100 text-surface-700 text-xs rounded-full"
- >
- {l}
- </span>
- ))}
- </div>
- </div>
- )}
- </div>
+    {/* Specializations */}
+    {priest.specializations.length > 0 && (
+     <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5 mb-6">
+      <h2 className="text-sm font-semibold text-surface-700 mb-3 inline-flex items-center gap-2">
+       <Award className="w-4 h-4 text-saffron-600" />
+       Specializations
+      </h2>
+      <div className="flex flex-wrap gap-2">
+       {priest.specializations.map((s) => (
+        <span
+         key={s}
+         className="px-3 py-1 bg-saffron-50 text-saffron-700 text-xs rounded-full"
+        >
+         {s}
+        </span>
+       ))}
+      </div>
+     </div>
+    )}
 
- {/* Pricing + book CTA */}
- {priceLabel && (
- <div className="bg-saffron-50 border border-saffron-200 rounded-xl p-5 flex items-center justify-between mb-6">
- <div>
- <p className="text-xs text-saffron-700 mb-0.5">Starting from</p>
- <p className="text-2xl font-semibold text-saffron-800 inline-flex items-center">
- <IndianRupee className="w-5 h-5" />
- {priceLabel.replace('₹', '')}
- <span className="ml-1 text-sm font-normal text-saffron-700">/ puja</span>
- </p>
- </div>
- <Link
- href={`/pujas?panditId=${pandit.id}`}
- className="px-5 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
- >
- Book a Puja
- </Link>
- </div>
- )}
-
- {/* Reviews */}
- {pandit.reviews && pandit.reviews.length > 0 && (
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <h2 className="text-sm font-semibold text-surface-700 mb-4">Recent reviews</h2>
- <div className="space-y-4">
- {pandit.reviews.slice(0, 5).map((r) => (
- <div key={r.id} className="border-b border-surface-100 last:border-b-0 pb-3 last:pb-0">
- <div className="flex items-center gap-2 mb-1">
- <div className="inline-flex items-center gap-0.5">
- {Array.from({ length: 5 }).map((_, i) => (
- <Star
- key={i}
- className={`w-3.5 h-3.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-surface-200'}`}
- />
- ))}
- </div>
- <span className="text-xs text-surface-500">
- {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
- </span>
- </div>
- {r.comment && <p className="text-sm text-surface-600">{r.comment}</p>}
- </div>
- ))}
- </div>
- </div>
- )}
- </div>
- </div>
+    {/* Puja Services */}
+    <div className="mb-6">
+     <h2 className="text-lg font-semibold text-surface-800 mb-3 inline-flex items-center gap-2">
+      <Flame className="w-5 h-5 text-saffron-500" />
+      Puja Services Offered
+     </h2>
+     {priest.offerings.length === 0 ? (
+      <div className="rounded-xl border border-dashed border-surface-200 p-8 text-center bg-[var(--color-surface)]">
+       <p className="text-sm text-surface-500">
+        This pandit hasn&apos;t listed any pujas yet.
+       </p>
+      </div>
+     ) : (
+      <div className="space-y-3">
+       {priest.offerings.map((o) => (
+        <OfferingCard key={o.id} panditId={priest.id} offering={o} />
+       ))}
+      </div>
+     )}
+    </div>
+   </div>
+  </div>
  );
 }

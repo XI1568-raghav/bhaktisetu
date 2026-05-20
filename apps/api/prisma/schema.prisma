@@ -259,6 +259,7 @@ model Temple {
   pujaOfferings TemplePujaOffering[]
   bookings      PujaBooking[]
   darshanStream LiveDarshanStream[]
+  donations     Donation[]
 
   @@index([slug])
   @@index([city])
@@ -288,12 +289,45 @@ model Priest {
   createdAt          DateTime                 @default(now()) @map("created_at")
   updatedAt          DateTime                 @updatedAt @map("updated_at")
 
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  temples  TemplePriest[]
-  bookings PujaBooking[]
-  payouts  PriestPayout[]
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  temples              TemplePriest[]
+  bookings             PujaBooking[]
+  payouts              PriestPayout[]
+  offerings            PriestPujaOffering[]
+  assignedTemplePujas  TemplePujaOffering[] @relation("AssignedTemplePujas")
 
   @@map("priests")
+}
+
+// Pandit-owned puja offerings — a separate catalog from PujaType. Each
+// row is authored by a single Priest and surfaced on their public
+// profile. Bookings against these offerings are out of scope for the
+// initial cut; the existing PujaBooking model still requires templeId
+// and points at temple-anchored PujaType rows.
+model PriestPujaOffering {
+  id                 String   @id @default(uuid()) @db.Uuid
+  priestId           String   @map("priest_id") @db.Uuid
+  name               String
+  description        String?
+  deity              String
+  basePrice          Decimal  @map("base_price") @db.Decimal(10, 2)
+  durationMinutes    Int      @map("duration_minutes")
+  isActive           Boolean  @default(true) @map("is_active")
+  // Slot capacity model (mirrors TemplePujaOffering). Defaults to 1 so
+  // priest catalogs stay strict (one devotee per slot) until configured.
+  maxBookingsPerSlot Int      @default(1) @map("max_bookings_per_slot")
+  // Free-form slot list. Same shape as TemplePujaOffering.availableSlots —
+  // either an array of "HH:MM" strings or {time,label} objects.
+  availableSlots     Json?    @map("available_slots")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  priest   Priest        @relation(fields: [priestId], references: [id], onDelete: Cascade)
+  bookings PujaBooking[]
+
+  @@index([priestId])
+  @@index([isActive])
+  @@map("priest_puja_offerings")
 }
 
 model TemplePriest {
@@ -345,15 +379,23 @@ model TemplePujaOffering {
   templeId           String   @map("temple_id") @db.Uuid
   pujaTypeId         String   @map("puja_type_id") @db.Uuid
   priceOverride      Decimal? @map("price_override") @db.Decimal(10, 2)
+  // Temple manager–set NRI price override. When null the public puja
+  // detail falls back to PujaType.nriPrice (business rule #2: 9-10× INR).
+  nriPrice           Decimal? @map("nri_price") @db.Decimal(10, 2)
+  // Temple manager pins a specific priest to this puja offering. SET NULL
+  // on priest deletion so the offering survives staff turnover.
+  assignedPriestId   String?  @map("assigned_priest_id") @db.Uuid
   availableSlots     Json     @default("[]") @map("available_slots")
   maxBookingsPerSlot Int      @default(5) @map("max_bookings_per_slot")
   isActive           Boolean  @default(true) @map("is_active")
 
-  temple   Temple        @relation(fields: [templeId], references: [id], onDelete: Cascade)
-  pujaType PujaType      @relation(fields: [pujaTypeId], references: [id], onDelete: Cascade)
-  bookings PujaBooking[]
+  temple         Temple        @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  pujaType       PujaType      @relation(fields: [pujaTypeId], references: [id], onDelete: Cascade)
+  assignedPriest Priest?       @relation("AssignedTemplePujas", fields: [assignedPriestId], references: [id], onDelete: SetNull)
+  bookings       PujaBooking[]
 
   @@unique([templeId, pujaTypeId])
+  @@index([assignedPriestId])
   @@map("temple_puja_offerings")
 }
 
@@ -365,6 +407,10 @@ model PujaBooking {
   pujaTypeId              String        @map("puja_type_id") @db.Uuid
   priestId                String?       @map("priest_id") @db.Uuid
   templePujaOfferingId    String        @map("temple_puja_offering_id") @db.Uuid
+  // Set when the booking originated from POST /bookings/from-offering
+  // (pandit-direct catalog). Null for regular temple-anchored bookings.
+  // SET NULL on offering delete so booking history survives.
+  priestPujaOfferingId    String?       @map("priest_puja_offering_id") @db.Uuid
   scheduledDate           DateTime      @map("scheduled_date") @db.Date
   scheduledTimeSlot       String        @map("scheduled_time_slot")
   devoteeNames            Json          @map("devotee_names")
@@ -387,12 +433,13 @@ model PujaBooking {
   createdAt               DateTime      @default(now()) @map("created_at")
   updatedAt               DateTime      @updatedAt @map("updated_at")
 
-  user               User               @relation(fields: [userId], references: [id])
-  temple             Temple             @relation(fields: [templeId], references: [id])
-  pujaType           PujaType           @relation(fields: [pujaTypeId], references: [id])
-  priest             Priest?            @relation(fields: [priestId], references: [id])
-  templePujaOffering TemplePujaOffering @relation(fields: [templePujaOfferingId], references: [id])
-  prasadAddress      UserAddress?       @relation(fields: [prasadDeliveryAddressId], references: [id])
+  user               User                @relation(fields: [userId], references: [id])
+  temple             Temple              @relation(fields: [templeId], references: [id])
+  pujaType           PujaType            @relation(fields: [pujaTypeId], references: [id])
+  priest             Priest?             @relation(fields: [priestId], references: [id])
+  templePujaOffering TemplePujaOffering  @relation(fields: [templePujaOfferingId], references: [id])
+  priestPujaOffering PriestPujaOffering? @relation(fields: [priestPujaOfferingId], references: [id], onDelete: SetNull)
+  prasadAddress      UserAddress?        @relation(fields: [prasadDeliveryAddressId], references: [id])
   payments           Payment[]
   priestPayouts      PriestPayout[]
 
@@ -401,6 +448,7 @@ model PujaBooking {
   @@index([status])
   @@index([scheduledDate])
   @@index([templeId, scheduledDate, status])
+  @@index([priestPujaOfferingId])
   @@map("puja_bookings")
 }
 
@@ -519,6 +567,11 @@ model LiveDarshanStream {
   youtubeVideoId   String?        @map("youtube_video_id")
   youtubeChannelId String?        @map("youtube_channel_id")
   attribution      String?
+  // Temple manager–authored display fields. Title + description surface in
+  // public darshan list; cameraLocation is a free-form room hint.
+  title            String?
+  description      String?
+  cameraLocation   String?        @map("camera_location")
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
@@ -647,25 +700,25 @@ model UserRoleAssignment {
 }
 
 model PanditProfile {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @unique @map("user_id") @db.Uuid
-  templeName      String?   @map("temple_name")
-  experience      Int       @default(0)
-  specialties     String[]
-  languages       String[]
-  aadhaarVerified Boolean   @default(false) @map("aadhaar_verified")
-  rating          Float     @default(0)
-  totalPujas      Int       @default(0) @map("total_pujas")
-  pricePerPuja    Decimal   @default(500) @map("price_per_puja") @db.Decimal(10, 2)
-  bio             String?
-  city            String?
-  state           String?
-  availability    Json?
-  approved        Boolean   @default(false)
-  approvedAt      DateTime? @map("approved_at")
-  availableForAntyeshti Boolean @default(false) @map("available_for_antyeshti")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @unique @map("user_id") @db.Uuid
+  templeName            String?   @map("temple_name")
+  experience            Int       @default(0)
+  specialties           String[]
+  languages             String[]
+  aadhaarVerified       Boolean   @default(false) @map("aadhaar_verified")
+  rating                Float     @default(0)
+  totalPujas            Int       @default(0) @map("total_pujas")
+  pricePerPuja          Decimal   @default(500) @map("price_per_puja") @db.Decimal(10, 2)
+  bio                   String?
+  city                  String?
+  state                 String?
+  availability          Json?
+  approved              Boolean   @default(false)
+  approvedAt            DateTime? @map("approved_at")
+  availableForAntyeshti Boolean   @default(false) @map("available_for_antyeshti")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
   @@index([city])
   @@index([approved])
@@ -678,24 +731,24 @@ model PanditProfile {
 //   pending_coordinator → coordinator_called → pandit_assigned →
 //   in_progress → completed | cancelled
 model AntimSanskarBooking {
-  id                  String   @id @default(uuid()) @db.Uuid
-  bookingNumber       String   @unique @map("booking_number")
-  deceasedName        String   @map("deceased_name")
-  contactName         String   @map("contact_name")
-  contactPhone        String   @map("contact_phone")
-  contactRelation     String?  @map("contact_relation")
-  city                String
-  preferredGhat       String?  @map("preferred_ghat")
-  preferredDate       DateTime @map("preferred_date") @db.Date
-  packageTier         String   @map("package_tier")
-  packagePriceInr     Int      @map("package_price_inr")
-  asthiVisarjanRiver  String?  @map("asthi_visarjan_river")
-  notes               String?
-  userId              String?  @map("user_id") @db.Uuid
-  status              String   @default("pending_coordinator")
-  assignedPanditId    String?  @map("assigned_pandit_id") @db.Uuid
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid()) @db.Uuid
+  bookingNumber      String   @unique @map("booking_number")
+  deceasedName       String   @map("deceased_name")
+  contactName        String   @map("contact_name")
+  contactPhone       String   @map("contact_phone")
+  contactRelation    String?  @map("contact_relation")
+  city               String
+  preferredGhat      String?  @map("preferred_ghat")
+  preferredDate      DateTime @map("preferred_date") @db.Date
+  packageTier        String   @map("package_tier")
+  packagePriceInr    Int      @map("package_price_inr")
+  asthiVisarjanRiver String?  @map("asthi_visarjan_river")
+  notes              String?
+  userId             String?  @map("user_id") @db.Uuid
+  status             String   @default("pending_coordinator")
+  assignedPanditId   String?  @map("assigned_pandit_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@index([city])
   @@index([preferredDate])
@@ -720,9 +773,36 @@ model StoreProfile {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  products StoreProduct[]
+
   @@index([city])
   @@index([approved])
   @@map("store_profiles")
+}
+
+// Store-owner managed product catalog. Distinct from the seeded
+// storeService.getProducts() catalog in store.service.ts — that one is
+// hand-curated and shipped with the app; this table is per-owner CRUD.
+model StoreProduct {
+  id             String   @id @default(uuid()) @db.Uuid
+  storeProfileId String   @map("store_profile_id") @db.Uuid
+  name           String
+  description    String?
+  price          Decimal  @db.Decimal(10, 2)
+  imageUrl       String?  @map("image_url")
+  category       String?
+  stock          Int      @default(0)
+  sku            String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  storeProfile StoreProfile @relation(fields: [storeProfileId], references: [id], onDelete: Cascade)
+  reviews      Review[]
+
+  @@index([storeProfileId])
+  @@index([isActive])
+  @@map("store_products")
 }
 
 model AstrologerProfile {
@@ -736,6 +816,10 @@ model AstrologerProfile {
   pricePerMinute     Decimal  @default(10) @map("price_per_minute") @db.Decimal(10, 2)
   totalConsultations Int      @default(0) @map("total_consultations")
   bio                String?
+  // Free-form weekly availability blob, e.g.
+  // { mon: ["09:00-12:00","14:00-17:00"], tue: [], ... }. Schema-loose
+  // so the portal can iterate without a migration.
+  availability       Json?
   approved           Boolean  @default(false)
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
@@ -851,12 +935,19 @@ model Review {
   userId       String       @map("user_id") @db.Uuid
   providerId   String       @map("provider_id") @db.Uuid
   providerType ProviderType @map("provider_type")
+  // Set when the review is per-SKU (store flow). For provider-level reviews
+  // (pandit/astrologer/wellness) this stays null and providerId+providerType
+  // identifies the target.
+  productId    String?      @map("product_id") @db.Uuid
   rating       Int
   comment      String?
   createdAt    DateTime     @default(now()) @map("created_at")
 
+  product StoreProduct? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@index([providerId])
   @@index([userId])
+  @@index([productId])
   @@map("reviews")
 }
 
@@ -1055,11 +1146,17 @@ enum WellnessEnrollmentStatus {
 model Donation {
   id                String         @id
   userId            String         @map("user_id") @db.Uuid
-  // Gaushala identifier provided by the client. Stored as a string to
-  // accommodate gaushala_profiles.user_id (a UUID) without forcing a
-  // hard FK — gaushalas may be deleted while donation history must
-  // remain for tax-receipt traceability.
-  gaushalaId        String         @map("gaushala_id")
+  // Polymorphic donee. Exactly one of (gaushalaId, templeId) is non-null
+  // per row (enforced at the app layer, not the DB — see migration
+  // 20260520020000 for the rationale).
+  //
+  // gaushalaId is a stringified gaushala_profiles.user_id (no FK — see
+  // schema note above; gaushalas may be deleted while donation history
+  // must remain for tax-receipt traceability). templeId is a real UUID
+  // FK on temples(id) with ON DELETE SET NULL so receipts survive temple
+  // removal.
+  gaushalaId        String?        @map("gaushala_id")
+  templeId          String?        @map("temple_id") @db.Uuid
   amountInr         Decimal        @map("amount_inr") @db.Decimal(10, 2)
   razorpayOrderId   String         @unique @map("razorpay_order_id")
   razorpayPaymentId String?        @map("razorpay_payment_id")
@@ -1068,28 +1165,30 @@ model Donation {
   createdAt         DateTime       @default(now()) @map("created_at")
   paidAt            DateTime?      @map("paid_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  temple Temple? @relation(fields: [templeId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([gaushalaId, createdAt])
+  @@index([templeId, createdAt])
   @@map("donations")
 }
 
 // ─── GAUSHALA CRUD: COWS + VOLUNTEERS + HEALTH ─────────────────────────────
 
 model Cow {
-  id            String   @id @default(uuid()) @db.Uuid
-  gaushalaId    String   @map("gaushala_id") @db.Uuid
-  tagNumber     String   @map("tag_number")
-  name          String
-  breed         String?
-  ageYears      Int?     @map("age_years")
-  gender        String   @default("female")
-  healthStatus  String   @default("healthy") @map("health_status")
-  arrivalDate   DateTime @default(now()) @map("arrival_date")
-  notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  gaushalaId   String   @map("gaushala_id") @db.Uuid
+  tagNumber    String   @map("tag_number")
+  name         String
+  breed        String?
+  ageYears     Int?     @map("age_years")
+  gender       String   @default("female")
+  healthStatus String   @default("healthy") @map("health_status")
+  arrivalDate  DateTime @default(now()) @map("arrival_date")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   healthRecords CowHealthRecord[]
 
@@ -1099,13 +1198,13 @@ model Cow {
 }
 
 model CowHealthRecord {
-  id        String   @id @default(uuid()) @db.Uuid
-  cowId     String   @map("cow_id") @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  cowId      String   @map("cow_id") @db.Uuid
   recordedAt DateTime @default(now()) @map("recorded_at")
-  recordType String  @map("record_type") // checkup, vaccination, treatment, vet_visit
-  notes     String
-  vetName   String?  @map("vet_name")
-  createdAt DateTime @default(now()) @map("created_at")
+  recordType String   @map("record_type") // checkup, vaccination, treatment, vet_visit
+  notes      String
+  vetName    String?  @map("vet_name")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   cow Cow @relation(fields: [cowId], references: [id], onDelete: Cascade)
 
@@ -1114,17 +1213,17 @@ model CowHealthRecord {
 }
 
 model Volunteer {
-  id          String   @id @default(uuid()) @db.Uuid
-  gaushalaId  String   @map("gaushala_id") @db.Uuid
-  fullName    String   @map("full_name")
-  phone       String?
-  email       String?
-  role        String   @default("general") // general, feeding, medical, cleaning
-  joinedAt    DateTime @default(now()) @map("joined_at")
-  active      Boolean  @default(true)
-  notes       String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid()) @db.Uuid
+  gaushalaId String   @map("gaushala_id") @db.Uuid
+  fullName   String   @map("full_name")
+  phone      String?
+  email      String?
+  role       String   @default("general") // general, feeding, medical, cleaning
+  joinedAt   DateTime @default(now()) @map("joined_at")
+  active     Boolean  @default(true)
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@index([gaushalaId, active])
   @@map("volunteers")

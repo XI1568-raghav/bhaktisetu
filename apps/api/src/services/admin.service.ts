@@ -9,6 +9,9 @@ import {
 
 interface UserFilters {
   role?: string;
+  // `status` was historically accepted but User has no status column —
+  // applying it would 500 every /admin/users call. The router still
+  // forwards it for backward compat; we ignore it here.
   status?: string;
   search?: string;
   page?: number;
@@ -395,23 +398,35 @@ export class AdminService {
 
   async getDashboard(): Promise<DashboardStats> {
     try {
-      const [totalUsers, roleAssignments, subscriptions, transactions] = await Promise.all([
-        prisma.user.count(),
-        prisma.userRoleAssignment.findMany(),
-        prisma.marketplaceSubscription.count({ where: { status: 'ACTIVE' } }),
-        prisma.transaction.findMany({
-          where: { status: 'COMPLETED' },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        }),
-      ]);
+      // `totalRevenue` is MTD — the admin dashboard label reads "Revenue
+      // (this month)" and the previous "sum of last 10 transactions"
+      // implementation was misleading once volume crossed ~10/day.
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const [totalUsers, roleAssignments, subscriptions, recentTransactions, mtdRevenueAgg] =
+        await Promise.all([
+          prisma.user.count(),
+          prisma.userRoleAssignment.findMany(),
+          prisma.marketplaceSubscription.count({ where: { status: 'ACTIVE' } }),
+          prisma.transaction.findMany({
+            where: { status: 'COMPLETED' },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          }),
+          prisma.transaction.aggregate({
+            where: { status: 'COMPLETED', createdAt: { gte: monthStart } },
+            _sum: { amount: true },
+          }),
+        ]);
 
       const usersByRole: Record<string, number> = {};
       for (const ra of roleAssignments) {
         usersByRole[ra.role] = (usersByRole[ra.role] ?? 0) + 1;
       }
 
-      const totalRevenue = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+      const totalRevenue = Number(mtdRevenueAgg._sum.amount ?? 0);
+      const transactions = recentTransactions;
 
       // Count pending approvals across all profile types
       const [pendingPandits, pendingStores, pendingAstrologers, pendingWellness, pendingGaushalas, pendingTemples] =
@@ -532,12 +547,26 @@ export class AdminService {
         prisma.templeProfile.findMany({ where: { approved: false } }),
       ]);
 
+      // PanditProfile has no display-name column — `templeName` is a
+      // legacy nullable field that historically held a free-form
+      // descriptor and is null on every signup-stub profile. Resolve
+      // the real name from the joined User row, falling back through
+      // bio → "Unnamed Pandit". Without this the admin queue showed
+      // every fresh pandit as "Unnamed Pandit" forever.
+      const panditUsers = await prisma.user.findMany({
+        where: { id: { in: pandits.map((p) => p.userId) } },
+        select: { id: true, fullName: true },
+      });
+      const panditUserName = new Map(panditUsers.map((u) => [u.id, u.fullName] as const));
+
       const approvals: PendingApproval[] = [
         ...pandits.map((p) => ({
           id: p.id,
           userId: p.userId,
           role: 'PANDIT' as const,
-          profileName: p.templeName ?? 'Unnamed Pandit',
+          profileName:
+            panditUserName.get(p.userId) ||
+            (p.bio ? p.bio.slice(0, 40) : 'Unnamed Pandit'),
           city: p.city,
           createdAt: p.createdAt.toISOString(),
         })),

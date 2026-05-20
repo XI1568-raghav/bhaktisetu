@@ -913,6 +913,7 @@ export class PaymentService {
   async createStripeOrder(
     bookingId: string,
     userId: string,
+    options?: { usdAmountOverride?: number },
   ): Promise<{
     orderId: string;
     paymentIntentId: string;
@@ -946,7 +947,11 @@ export class PaymentService {
       );
     }
 
-    const usdAmount = Number(booking.pujaType.nriPrice);
+    // Allow priest-offering bookings to pass an explicit USD amount
+    // (basePrice * 9 per rule #2) since they don't go through PujaType.
+    // For temple-anchored bookings the override is omitted and we fall
+    // back to the PujaType.nriPrice column.
+    const usdAmount = options?.usdAmountOverride ?? Number(booking.pujaType.nriPrice);
     if (!usdAmount || usdAmount <= 0) {
       throw new Error('Puja does not have a valid NRI (USD) price configured.');
     }

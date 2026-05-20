@@ -95,6 +95,69 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
     });
   });
 
+  // ─── GET /students ──────────────────────────────────────────────────────────
+  // Distinct devotees who have paid for any of this instructor's wellness
+  // sessions. Empty array OK when there are no paid enrollments yet.
+
+  server.get('/students', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('WELLNESS_INSTRUCTOR')) {
+      return reply.code(403).send({ error: 'WELLNESS_INSTRUCTOR role required' });
+    }
+
+    const enrollments = await prisma.wellnessEnrollment.findMany({
+      where: {
+        session: { instructorId: userId },
+        status: { in: ['PAID', 'ATTENDED'] },
+      },
+      orderBy: { enrolledAt: 'desc' },
+      take: 500,
+      select: {
+        userId: true,
+        status: true,
+        enrolledAt: true,
+        attendedAt: true,
+        session: { select: { id: true, title: true, scheduledAt: true } },
+        user: { select: { id: true, fullName: true, email: true, phone: true } },
+      },
+    });
+
+    // Collapse to one row per devotee with their most recent session and
+    // a session count — UI list wants "student" cards, not raw enrollments.
+    const byUser = new Map<string, {
+      id: string;
+      fullName: string;
+      email: string | null;
+      phone: string | null;
+      sessionCount: number;
+      lastEnrolledAt: Date;
+      lastSession: { id: string; title: string; scheduledAt: Date };
+      hasAttended: boolean;
+    }>();
+    for (const e of enrollments) {
+      const existing = byUser.get(e.userId);
+      if (existing) {
+        existing.sessionCount += 1;
+        existing.hasAttended = existing.hasAttended || e.status === 'ATTENDED';
+      } else {
+        byUser.set(e.userId, {
+          id: e.user.id,
+          fullName: e.user.fullName,
+          email: e.user.email,
+          phone: e.user.phone,
+          sessionCount: 1,
+          lastEnrolledAt: e.enrolledAt,
+          lastSession: e.session,
+          hasAttended: e.status === 'ATTENDED',
+        });
+      }
+    }
+
+    const students = Array.from(byUser.values());
+    return reply.send({ students, total: students.length });
+  });
+
   server.patch('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
     const roles = request.currentUser!.roles ?? [];

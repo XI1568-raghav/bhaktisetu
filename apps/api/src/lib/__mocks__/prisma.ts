@@ -93,6 +93,7 @@ export const prismaMock = {
   transaction: {
     create: vi.fn(),
     findMany: vi.fn(),
+    aggregate: vi.fn(),
   },
   userRoleAssignment: {
     findFirst: vi.fn(),
