@@ -6,6 +6,8 @@
 
 **Status**: shipped to origin/main. Render API + CF Pages auto-deploying.
 
+> Post-`/clear` continuity: `docs/operational-context.md` covers every external service + key + deploy mechanism. `docs/future-plans.md` covers roadmap + gates. This block + TASKS.md In progress = current state.
+
 ### Prod DB migrations applied
 Project: poojly Supabase (`hlkvfarvfblhzhhnhtbp.supabase.co`, ap-northeast-1 pooler).
 

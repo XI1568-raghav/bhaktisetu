@@ -22,6 +22,7 @@ Repo `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — n
 | `docs/claude-discipline.md` | Context-discipline rules + plugin policy |
 | `docs/activation-gates.md` | U1-U15 user-action blockers |
 | `docs/future-plans.md` | Single-glance: near-term + Q3 candidates + revenue + tripwires + mobile remaining |
+| `docs/operational-context.md` | Every external service + key location + deploy mechanism (Render/CF/Supabase/Razorpay/Stripe/cron) |
 | `docs/launch-state.md` | Current launch progress, recent files, open items |
 | `docs/project-context-detail.md` | Full integrations + gotchas + recently shipped |
 | `docs/roadmap-archive.md` | Shipped phases + tripwires + future direction |
