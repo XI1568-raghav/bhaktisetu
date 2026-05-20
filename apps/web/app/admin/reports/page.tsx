@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
  TrendingUp,
  Users,
@@ -16,77 +16,75 @@ import {
   getDashboard,
   getRevenue,
   getUsers,
+  getReports,
   rowsToCsv,
   downloadCsv,
+  type ReportsResponse,
 } from '../../../lib/admin-api';
 
-// ── Mock visualisation data ───────────────────────────────────────────────────
-// The charts below remain hard-coded for the reports landing surface; only
-// the export buttons hit live endpoints. Wire-through of charts is a follow-up
-// once `/admin/dashboard` returns the matching time-series shape.
-
-const userGrowth = [
- { month: 'Nov 25', users: 6200 },
- { month: 'Dec 25', users: 7100 },
- { month: 'Jan 26', users: 8400 },
- { month: 'Feb 26', users: 9600 },
- { month: 'Mar 26', users: 11200 },
- { month: 'Apr 26', users: 12847 },
-];
-
-const maxUsers = Math.max(...userGrowth.map((m) => m.users));
-
-const bookingStats = [
- { label: 'Total Bookings', value: '8,432', change: '+15.2%' },
- { label: 'Completed', value: '7,156', change: '+12.8%' },
- { label: 'In Progress', value: '842', change: '+24.1%' },
- { label: 'Cancelled', value: '434', change: '-3.2%' },
-];
-
-const popularPujas = [
- { name: 'Satyanarayan Puja', bookings: 1245, revenue: 'Rs. 18.7L', rating: 4.9 },
- { name: 'Rudrabhishek', bookings: 892, revenue: 'Rs. 15.6L', rating: 4.8 },
- { name: 'Griha Pravesh Puja', bookings: 756, revenue: 'Rs. 12.1L', rating: 4.7 },
- { name: 'Navgraha Shanti', bookings: 634, revenue: 'Rs. 10.8L', rating: 4.8 },
- { name: 'Kaal Sarp Dosh Nivaran', bookings: 578, revenue: 'Rs. 9.2L', rating: 4.6 },
- { name: 'Sunderkand Path', bookings: 445, revenue: 'Rs. 5.3L', rating: 4.9 },
- { name: 'Vastu Shanti', bookings: 389, revenue: 'Rs. 7.8L', rating: 4.5 },
- { name: 'Maha Mrityunjay Jaap', bookings: 312, revenue: 'Rs. 6.2L', rating: 4.7 },
-];
-
-const maxBookings = Math.max(...popularPujas.map((p) => p.bookings));
-
-const popularServices = [
- { name: 'Kundli Analysis', type: 'Astrology', sessions: 892, rating: 4.7 },
- { name: 'Hatha Yoga', type: 'Wellness', sessions: 678, rating: 4.9 },
- { name: 'Pranayama Course', type: 'Wellness', sessions: 534, rating: 4.8 },
- { name: 'Match Making', type: 'Astrology', sessions: 456, rating: 4.6 },
- { name: 'Meditation Class', type: 'Wellness', sessions: 423, rating: 4.8 },
-];
-
-const geographicDistribution = [
- { state: 'Uttar Pradesh', users: 2845, pct: 22.1 },
- { state: 'Maharashtra', users: 2120, pct: 16.5 },
- { state: 'Delhi NCR', users: 1680, pct: 13.1 },
- { state: 'Gujarat', users: 1234, pct: 9.6 },
- { state: 'Rajasthan', users: 998, pct: 7.8 },
- { state: 'Madhya Pradesh', users: 876, pct: 6.8 },
- { state: 'Tamil Nadu', users: 756, pct: 5.9 },
- { state: 'Karnataka', users: 645, pct: 5.0 },
- { state: 'Bihar', users: 534, pct: 4.2 },
- { state: 'Others', users: 1159, pct: 9.0 },
-];
-
-const maxStatePct = Math.max(...geographicDistribution.map((g) => g.pct));
-
 type ExportType = 'users' | 'revenue' | 'all';
+
+// Indian-locale grouping ("12,847") for headline numbers. Tiny helper so
+// every cell on this page renders the same way without sprinkling
+// `.toLocaleString('en-IN')` everywhere.
+function inr(n: number): string {
+  return n.toLocaleString('en-IN');
+}
+
+// Show "Rs. 18.7L" / "Rs. 1.2Cr" — matches the older mock format that
+// designers signed off on, but driven by real DB revenue sums.
+function revenueShort(amountInr: number): string {
+  if (amountInr >= 1_00_00_000) {
+    return `Rs. ${(amountInr / 1_00_00_000).toFixed(1)}Cr`;
+  }
+  if (amountInr >= 1_00_000) {
+    return `Rs. ${(amountInr / 1_00_000).toFixed(1)}L`;
+  }
+  if (amountInr >= 1_000) {
+    return `Rs. ${(amountInr / 1_000).toFixed(1)}K`;
+  }
+  return `Rs. ${amountInr}`;
+}
+
+function formatChange(changePct: number | null): { label: string; positive: boolean } {
+  if (changePct === null) {
+    return { label: '—', positive: true };
+  }
+  const sign = changePct >= 0 ? '+' : '';
+  return { label: `${sign}${changePct}% vs last month`, positive: changePct >= 0 };
+}
 
 export default function AdminReportsPage() {
   const { session } = useAuth();
   const token = session?.accessToken;
 
+  const [reports, setReports] = useState<ReportsResponse | null>(null);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportsError, setReportsError] = useState<string | null>(null);
+
   const [exportLoading, setExportLoading] = useState<ExportType | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReportsLoading(true);
+    setReportsError(null);
+    getReports(token)
+      .then((data) => {
+        if (!cancelled) setReports(data);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setReportsError(err instanceof Error ? err.message : 'Failed to load reports');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setReportsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const today = () => new Date().toISOString().slice(0, 10);
 
@@ -178,6 +176,28 @@ export default function AdminReportsPage() {
     }
   };
 
+  const maxUsers = reports && reports.userGrowth.length > 0
+    ? Math.max(...reports.userGrowth.map((m) => m.users), 1)
+    : 1;
+  const maxBookings = reports && reports.popularPujas.length > 0
+    ? Math.max(...reports.popularPujas.map((p) => p.bookings), 1)
+    : 1;
+  const maxStatePct = reports && reports.geographicDistribution.length > 0
+    ? Math.max(...reports.geographicDistribution.map((g) => g.pct), 1)
+    : 1;
+
+  // Headline trend pill ("+X% in 6 months"). Computed from the first and
+  // last user-growth datapoints. Hidden when we lack two endpoints or the
+  // start value was zero (division-by-zero / vanity inflation).
+  const userGrowthTrend = (() => {
+    if (!reports || reports.userGrowth.length < 2) return null;
+    const first = reports.userGrowth[0]!.users;
+    const last = reports.userGrowth[reports.userGrowth.length - 1]!.users;
+    if (first <= 0) return null;
+    const pct = ((last - first) / first) * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}% in 6 months`;
+  })();
+
  return (
  <div className="space-y-6">
  {/* Header */}
@@ -217,24 +237,38 @@ export default function AdminReportsPage() {
    </div>
  )}
 
+ {reportsError && (
+   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+     {reportsError}
+   </div>
+ )}
+
+ {reportsLoading ? (
+   <div className="flex items-center justify-center py-20 text-surface-500 text-sm">
+     <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading live reports…
+   </div>
+ ) : (
+ <>
  {/* User growth chart */}
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
  <div className="flex items-center justify-between mb-4">
  <h2 className="text-sm font-semibold text-surface-800 flex items-center gap-2">
  <Users className="w-4 h-4 text-blue-500" /> User Growth
  </h2>
+ {userGrowthTrend && (
  <span className="text-xs text-green-600 font-medium flex items-center gap-0.5">
- <TrendingUp className="w-3 h-3" /> +107% in 6 months
+ <TrendingUp className="w-3 h-3" /> {userGrowthTrend}
  </span>
+ )}
  </div>
+ {reports && reports.userGrowth.length > 0 ? (
  <div className="flex items-end gap-4 h-48 px-2">
- {userGrowth.map((m) => {
+ {reports.userGrowth.map((m) => {
  const height = (m.users / maxUsers) * 100;
+ const label = m.users >= 1000 ? `${(m.users / 1000).toFixed(1)}K` : String(m.users);
  return (
  <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
- <span className="text-xs font-semibold text-surface-800">
- {(m.users / 1000).toFixed(1)}K
- </span>
+ <span className="text-xs font-semibold text-surface-800">{label}</span>
  <div className="w-full bg-surface-100 rounded-t-md relative" style={{ height: '150px' }}>
  <div
  className="absolute bottom-0 w-full bg-blue-500 rounded-t-md transition-all duration-500"
@@ -246,20 +280,28 @@ export default function AdminReportsPage() {
  );
  })}
  </div>
+ ) : (
+ <p className="text-xs text-surface-500 py-8 text-center">No user growth data yet.</p>
+ )}
  </div>
 
  {/* Booking stats */}
+ {reports && reports.bookingStats.length > 0 ? (
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
- {bookingStats.map((stat) => (
+ {reports.bookingStats.map((stat) => {
+ const change = formatChange(stat.changePct);
+ return (
  <div key={stat.label} className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)]">
  <p className="text-xs text-surface-500">{stat.label}</p>
- <p className="text-xl font-bold text-surface-800 mt-1">{stat.value}</p>
- <span className={`text-xs font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
- {stat.change} vs last month
+ <p className="text-xl font-bold text-surface-800 mt-1">{inr(stat.value)}</p>
+ <span className={`text-xs font-medium ${change.positive ? 'text-green-600' : 'text-red-600'}`}>
+ {change.label}
  </span>
  </div>
- ))}
+ );
+ })}
  </div>
+ ) : null}
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Popular pujas */}
@@ -270,8 +312,8 @@ export default function AdminReportsPage() {
  </h2>
  </div>
  <div className="p-5 space-y-3">
- {popularPujas.map((puja, i) => (
- <div key={puja.name} className="flex items-center gap-3">
+ {reports && reports.popularPujas.length > 0 ? reports.popularPujas.map((puja, i) => (
+ <div key={puja.pujaTypeId} className="flex items-center gap-3">
  <span className="text-xs font-bold text-surface-400 w-5 text-right">{i + 1}</span>
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between mb-1">
@@ -285,14 +327,18 @@ export default function AdminReportsPage() {
  />
  </div>
  <div className="flex items-center gap-3 mt-1">
- <span className="text-xs text-surface-500">{puja.revenue}</span>
+ <span className="text-xs text-surface-500">{revenueShort(puja.revenueInr)}</span>
+ {puja.avgRating !== null && (
  <span className="text-xs text-amber-600 flex items-center gap-0.5">
- <Star className="w-3 h-3" /> {puja.rating}
+ <Star className="w-3 h-3" /> {puja.avgRating}
  </span>
+ )}
  </div>
  </div>
  </div>
- ))}
+ )) : (
+ <p className="text-xs text-surface-500 py-6 text-center">No puja bookings yet.</p>
+ )}
  </div>
  </div>
 
@@ -305,6 +351,7 @@ export default function AdminReportsPage() {
  <BarChart3 className="w-4 h-4 text-purple-500" /> Popular Services
  </h2>
  </div>
+ {reports && reports.popularServices.length > 0 ? (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
  <thead>
@@ -316,8 +363,8 @@ export default function AdminReportsPage() {
  </tr>
  </thead>
  <tbody>
- {popularServices.map((s, i) => (
- <tr key={s.name} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}>
+ {reports.popularServices.map((s, i) => (
+ <tr key={s.id} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}>
  <td className="py-2.5 px-5 font-medium text-surface-800">{s.name}</td>
  <td className="py-2.5 px-4">
  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.type === 'Astrology' ? 'bg-purple-50 text-purple-700' : 'bg-teal-50 text-teal-700'}`}>
@@ -325,14 +372,19 @@ export default function AdminReportsPage() {
  </span>
  </td>
  <td className="py-2.5 px-4 text-right text-surface-600">{s.sessions}</td>
- <td className="py-2.5 px-5 text-right text-amber-600 font-medium flex items-center justify-end gap-0.5">
- <Star className="w-3 h-3" /> {s.rating}
+ <td className="py-2.5 px-5 text-right text-amber-600 font-medium">
+ <span className="inline-flex items-center justify-end gap-0.5">
+ <Star className="w-3 h-3" /> {s.rating !== null ? s.rating.toFixed(1) : '—'}
+ </span>
  </td>
  </tr>
  ))}
  </tbody>
  </table>
  </div>
+ ) : (
+ <p className="text-xs text-surface-500 py-6 px-5 text-center">No service activity yet.</p>
+ )}
  </div>
 
  {/* Geographic distribution */}
@@ -340,13 +392,14 @@ export default function AdminReportsPage() {
  <h2 className="text-sm font-semibold text-surface-800 flex items-center gap-2 mb-4">
  <MapPin className="w-4 h-4 text-red-500" /> Geographic Distribution
  </h2>
+ {reports && reports.geographicDistribution.length > 0 ? (
  <div className="space-y-2.5">
- {geographicDistribution.map((g) => (
+ {reports.geographicDistribution.map((g) => (
  <div key={g.state}>
  <div className="flex items-center justify-between text-sm mb-0.5">
  <span className="text-surface-600">{g.state}</span>
  <span className="text-surface-800 font-medium text-xs">
- {g.users.toLocaleString('en-IN')} ({g.pct}%)
+ {inr(g.users)} ({g.pct}%)
  </span>
  </div>
  <div className="w-full h-1.5 bg-surface-100 rounded-full overflow-hidden">
@@ -358,9 +411,14 @@ export default function AdminReportsPage() {
  </div>
  ))}
  </div>
+ ) : (
+ <p className="text-xs text-surface-500 py-6 text-center">No location data captured yet.</p>
+ )}
  </div>
  </div>
  </div>
+ </>
+ )}
  </div>
  );
 }

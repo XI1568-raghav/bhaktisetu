@@ -191,6 +191,17 @@ export async function adminRoutes(server: FastifyInstance) {
     return revenue;
   });
 
+  // ─── GET /reports — Aggregated charts for /admin/reports ────────────────────
+  // Replaces the hardcoded constants the reports page used to render. All
+  // numbers are derived from live tables (User, PujaBooking, PujaType,
+  // WellnessEnrollment, ChatConversation). Empty arrays on DB failure so the
+  // UI surfaces "no data yet" instead of fabricated charts.
+
+  server.get('/reports', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const reports = await adminService.getReports();
+    return reports;
+  });
+
   // ─── GET /pending-approvals — Providers awaiting approval ───────────────────
 
   server.get('/pending-approvals', { preHandler: adminPreHandlers }, async (request, reply) => {

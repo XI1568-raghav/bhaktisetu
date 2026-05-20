@@ -1,3 +1,4 @@
+import type { BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import {
   sendEmail,
@@ -61,6 +62,27 @@ interface PendingApproval {
   profileName: string;
   city: string | null;
   createdAt: string;
+}
+
+interface ReportsResponse {
+  generatedAt: string;
+  userGrowth: Array<{ month: string; users: number }>;
+  bookingStats: Array<{ label: string; value: number; changePct: number | null }>;
+  popularPujas: Array<{
+    pujaTypeId: string;
+    name: string;
+    bookings: number;
+    revenueInr: number;
+    avgRating: number | null;
+  }>;
+  popularServices: Array<{
+    id: string;
+    name: string;
+    type: 'Astrology' | 'Wellness';
+    sessions: number;
+    rating: number | null;
+  }>;
+  geographicDistribution: Array<{ state: string; users: number; pct: number }>;
 }
 
 // ─── Mock Data ──────────────────────────────────────────────────────────────────
@@ -532,6 +554,206 @@ export class AdminService {
           { plan: 'BASIC', role: 'PANDIT', count: 5, totalAmount: 4995 },
           { plan: 'PRO', role: 'ASTROLOGER', count: 3, totalAmount: 8997 },
         ],
+      };
+    }
+  }
+
+  async getReports(): Promise<ReportsResponse> {
+    const now = new Date();
+    const generatedAt = now.toISOString();
+
+    try {
+      // ─── 1. User growth (last 6 calendar months) ─────────────────────────
+      const months: Array<{ start: Date; end: Date; label: string }> = [];
+      for (let i = 5; i >= 0; i -= 1) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const label = start.toLocaleString('en-US', { month: 'short' }) +
+          ' ' + String(start.getFullYear()).slice(2);
+        months.push({ start, end, label });
+      }
+
+      const userCounts = await Promise.all(
+        months.map((m) =>
+          prisma.user.count({ where: { createdAt: { lt: m.end } } }),
+        ),
+      );
+      const userGrowth = months.map((m, i) => ({
+        month: m.label,
+        users: userCounts[i] ?? 0,
+      }));
+
+      // ─── 2. Booking stats (MTD vs previous month, all statuses) ──────────
+      const monthStart = months[months.length - 1]!.start;
+      const prevMonthStart = months[months.length - 2]?.start ?? monthStart;
+      const prevMonthEnd = monthStart;
+
+      const statusGroups: Array<[string, BookingStatus[]]> = [
+        ['Total Bookings', ['pending_payment', 'confirmed', 'priest_assigned', 'in_progress', 'completed', 'video_uploaded', 'delivered']],
+        ['Completed', ['completed', 'video_uploaded', 'delivered']],
+        ['In Progress', ['confirmed', 'priest_assigned', 'in_progress']],
+        ['Cancelled', ['cancelled', 'refunded']],
+      ];
+
+      const bookingStats = await Promise.all(
+        statusGroups.map(async ([label, statuses]) => {
+          const [thisMonth, lastMonth] = await Promise.all([
+            prisma.pujaBooking.count({
+              where: { status: { in: statuses }, createdAt: { gte: monthStart } },
+            }),
+            prisma.pujaBooking.count({
+              where: {
+                status: { in: statuses },
+                createdAt: { gte: prevMonthStart, lt: prevMonthEnd },
+              },
+            }),
+          ]);
+          const totalToDate = await prisma.pujaBooking.count({
+            where: { status: { in: statuses } },
+          });
+          const changePct = lastMonth === 0
+            ? (thisMonth > 0 ? null : 0)
+            : Number((((thisMonth - lastMonth) / lastMonth) * 100).toFixed(1));
+          return { label, value: totalToDate, changePct };
+        }),
+      );
+
+      // ─── 3. Popular pujas (top 8 by booking count) ───────────────────────
+      const pujaAgg = await prisma.pujaBooking.groupBy({
+        by: ['pujaTypeId'],
+        _count: { _all: true },
+        _sum: { priceAmount: true },
+        _avg: { rating: true },
+        orderBy: { _count: { pujaTypeId: 'desc' } },
+        take: 8,
+      });
+      const pujaTypes = await prisma.pujaType.findMany({
+        where: { id: { in: pujaAgg.map((p) => p.pujaTypeId) } },
+        select: { id: true, name: true },
+      });
+      const pujaNameMap = new Map(pujaTypes.map((p) => [p.id, p.name] as const));
+      const popularPujas = pujaAgg.map((p) => ({
+        pujaTypeId: p.pujaTypeId,
+        name: pujaNameMap.get(p.pujaTypeId) ?? 'Unknown Puja',
+        bookings: p._count._all,
+        revenueInr: Number(p._sum.priceAmount ?? 0),
+        avgRating: p._avg.rating !== null
+          ? Number(p._avg.rating.toFixed(1))
+          : null,
+      }));
+
+      // ─── 4. Popular services (wellness sessions + astrologer convos) ─────
+      const wellnessAgg = await prisma.wellnessEnrollment.groupBy({
+        by: ['sessionId'],
+        _count: { _all: true },
+        where: { status: { in: ['PAID', 'ATTENDED'] } },
+        orderBy: { _count: { sessionId: 'desc' } },
+        take: 4,
+      });
+      const wellnessSessions = await prisma.wellnessSession.findMany({
+        where: { id: { in: wellnessAgg.map((w) => w.sessionId) } },
+        select: { id: true, title: true, instructorId: true },
+      });
+      const wellnessInstructorIds = wellnessSessions.map((s) => s.instructorId);
+      const wellnessProfiles = await prisma.wellnessProfile.findMany({
+        where: { userId: { in: wellnessInstructorIds } },
+        select: { userId: true, rating: true },
+      });
+      const wellnessRatingMap = new Map(
+        wellnessProfiles.map((p) => [p.userId, p.rating] as const),
+      );
+      const wellnessRows = wellnessAgg
+        .map((w) => {
+          const session = wellnessSessions.find((s) => s.id === w.sessionId);
+          if (!session) return null;
+          return {
+            id: w.sessionId,
+            name: session.title,
+            type: 'Wellness' as const,
+            sessions: w._count._all,
+            rating: wellnessRatingMap.get(session.instructorId) ?? null,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      const astroAgg = await prisma.chatConversation.groupBy({
+        by: ['providerId'],
+        _count: { _all: true },
+        where: { kind: 'astrology' },
+        orderBy: { _count: { providerId: 'desc' } },
+        take: 4,
+      });
+      const astrologerProfiles = await prisma.astrologerProfile.findMany({
+        where: { userId: { in: astroAgg.map((a) => a.providerId) } },
+        select: { userId: true, displayName: true, rating: true },
+      });
+      const astroProfileMap = new Map(
+        astrologerProfiles.map((p) => [p.userId, p] as const),
+      );
+      const astroRows = astroAgg
+        .map((a) => {
+          const prof = astroProfileMap.get(a.providerId);
+          if (!prof) return null;
+          return {
+            id: a.providerId,
+            name: prof.displayName,
+            type: 'Astrology' as const,
+            sessions: a._count._all,
+            rating: prof.rating,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      const popularServices = [...astroRows, ...wellnessRows]
+        .sort((a, b) => b.sessions - a.sessions)
+        .slice(0, 5);
+
+      // ─── 5. Geographic distribution (top 10 by User.locationState) ───────
+      const stateAgg = await prisma.user.groupBy({
+        by: ['locationState'],
+        _count: { _all: true },
+        where: { locationState: { not: null } },
+        orderBy: { _count: { locationState: 'desc' } },
+      });
+      const totalGeoUsers = stateAgg.reduce((sum, s) => sum + s._count._all, 0);
+      const top10 = stateAgg.slice(0, 10);
+      const otherCount = stateAgg.slice(10).reduce((sum, s) => sum + s._count._all, 0);
+      const geographicDistribution: ReportsResponse['geographicDistribution'] =
+        top10.map((s) => ({
+          state: s.locationState!,
+          users: s._count._all,
+          pct: totalGeoUsers > 0
+            ? Number(((s._count._all / totalGeoUsers) * 100).toFixed(1))
+            : 0,
+        }));
+      if (otherCount > 0) {
+        geographicDistribution.push({
+          state: 'Others',
+          users: otherCount,
+          pct: totalGeoUsers > 0
+            ? Number(((otherCount / totalGeoUsers) * 100).toFixed(1))
+            : 0,
+        });
+      }
+
+      return {
+        generatedAt,
+        userGrowth,
+        bookingStats,
+        popularPujas,
+        popularServices,
+        geographicDistribution,
+      };
+    } catch {
+      // DB unreachable — return empty shape rather than mock numbers so the
+      // UI can render its "no data yet" states instead of fictional charts.
+      return {
+        generatedAt,
+        userGrowth: [],
+        bookingStats: [],
+        popularPujas: [],
+        popularServices: [],
+        geographicDistribution: [],
       };
     }
   }

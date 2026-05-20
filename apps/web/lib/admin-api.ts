@@ -195,6 +195,37 @@ export async function getRevenue(token: string | undefined): Promise<RevenueResp
   return (await res.json()) as RevenueResponse;
 }
 
+export type ReportsResponse = {
+  generatedAt: string;
+  userGrowth: Array<{ month: string; users: number }>;
+  bookingStats: Array<{ label: string; value: number; changePct: number | null }>;
+  popularPujas: Array<{
+    pujaTypeId: string;
+    name: string;
+    bookings: number;
+    revenueInr: number;
+    avgRating: number | null;
+  }>;
+  popularServices: Array<{
+    id: string;
+    name: string;
+    type: 'Astrology' | 'Wellness';
+    sessions: number;
+    rating: number | null;
+  }>;
+  geographicDistribution: Array<{ state: string; users: number; pct: number }>;
+};
+
+export async function getReports(token: string | undefined): Promise<ReportsResponse> {
+  const res = await fetch(`${API_BASE_URL}/admin/reports`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    throw new Error(await describeFailure(res, 'Failed to load reports'));
+  }
+  return (await res.json()) as ReportsResponse;
+}
+
 // ─── CSV helpers ────────────────────────────────────────────────────────────
 
 function escapeCsvCell(value: unknown): string {
