@@ -4,6 +4,14 @@ import { z } from 'zod';
 import { generateText, DEMO_MODE } from '../integrations/claude.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import {
+  sendEmail,
+  supportTicketAlertEmail,
+  supportTicketReceivedEmail,
+  supportTicketReplyEmail,
+} from '../lib/email.js';
+
+const SUPPORT_INBOX = process.env.SUPPORT_INBOX_EMAIL ?? 'support@darshya.online';
 
 const chatSchema = z.object({
   message: z.string().min(1).max(2000),
@@ -432,6 +440,39 @@ export async function supportRoutes(server: FastifyInstance) {
         priority: parsed.data.priority,
       },
     });
+
+    // Fire-and-forget email notifications. Never block ticket creation.
+    void (async () => {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, phone: true, fullName: true },
+        });
+        const alert = supportTicketAlertEmail({
+          ticketNumber: ticket.ticketNumber,
+          subject: ticket.subject,
+          body: ticket.body,
+          category: ticket.category,
+          priority: ticket.priority,
+          userName: user?.fullName ?? 'Devotee',
+          userEmail: user?.email ?? '(no email)',
+          userPhone: user?.phone,
+          ticketId: ticket.id,
+        });
+        await sendEmail({ to: SUPPORT_INBOX, subject: alert.subject, html: alert.html, text: alert.text });
+        if (user?.email) {
+          const ack = supportTicketReceivedEmail({
+            userName: user.fullName ?? 'Devotee',
+            ticketNumber: ticket.ticketNumber,
+            subject: ticket.subject,
+          });
+          await sendEmail({ to: user.email, subject: ack.subject, html: ack.html, text: ack.text });
+        }
+      } catch (err) {
+        request.log?.warn({ err, ticketId: ticket.id }, 'support ticket email failed');
+      }
+    })();
+
     return reply.code(201).send({ data: ticket });
   });
 
@@ -509,6 +550,43 @@ export async function supportRoutes(server: FastifyInstance) {
           data: { status: 'IN_PROGRESS' },
         });
       }
+
+      // Notify the other side. Admin reply (non-internal) → email the ticket owner.
+      // Devotee reply → alert the support inbox.
+      void (async () => {
+        try {
+          if (admin && !isInternal) {
+            const owner = await prisma.user.findUnique({
+              where: { id: ticket.userId },
+              select: { email: true, fullName: true },
+            });
+            if (owner?.email) {
+              const reply = supportTicketReplyEmail({
+                userName: owner.fullName ?? 'Devotee',
+                ticketNumber: ticket.ticketNumber,
+                subject: ticket.subject,
+                replyBody: body.data.body,
+              });
+              await sendEmail({ to: owner.email, subject: reply.subject, html: reply.html, text: reply.text });
+            }
+          } else if (!admin) {
+            const author = await prisma.user.findUnique({
+              where: { id: userId },
+              select: { email: true, fullName: true },
+            });
+            const alert = supportTicketReplyEmail({
+              userName: 'Support',
+              ticketNumber: ticket.ticketNumber,
+              subject: `${ticket.subject} (devotee reply)`,
+              replyBody: `From ${author?.fullName ?? 'devotee'} <${author?.email ?? '(no email)'}>:\n\n${body.data.body}`,
+            });
+            await sendEmail({ to: SUPPORT_INBOX, subject: alert.subject, html: alert.html, text: alert.text });
+          }
+        } catch (err) {
+          request.log?.warn({ err, messageId: message.id }, 'support ticket reply email failed');
+        }
+      })();
+
       return reply.code(201).send({ data: message });
     }
   );

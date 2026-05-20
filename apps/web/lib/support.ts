@@ -630,7 +630,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['contact', 'phone', 'call'],
  reply:
- 'Reach us at: +91-80-6900-9000 (8am–11pm IST), ️ support@darshya.online, or WhatsApp +91 98765 43210. For urgent booking issues, best to open a ticket at /support.',
+ 'Reach us at: +91 92551 09400 (Mon–Sat 9am–7pm IST), support@darshya.online, or WhatsApp +91 92551 09400. For urgent booking issues, best to open a ticket at /support.',
  },
  {
  keywords: ['temple', 'which temple', 'temples'],
