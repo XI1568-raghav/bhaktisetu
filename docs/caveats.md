@@ -34,6 +34,26 @@ Despite the filename, `apps/api/src/lib/r2.ts` is now a **Supabase Storage** ada
 **Why**: Magic-link landing must be fast and globally close to the user.
 **Don't**: Import Node-only APIs (`fs`, `crypto.createHmac`, `Buffer` polyfill issues, etc.). Anything HMAC-related stays server-side at `/api/v1/auth/magic-link/verify`.
 
+### Every new dynamic route MUST export `runtime = 'edge'`
+
+`@cloudflare/next-on-pages` rejects any non-static (`ƒ` in `next build` output) route that doesn't export `export const runtime = 'edge'`. Build fails with:
+
+```
+The following routes were not configured to run with the Edge Runtime:
+  - /your/dynamic/[id]
+```
+
+**Why**: CF Pages runs serverless functions on Workers (V8 isolates), not Node. Static (`○`) and SSG (`●`) routes are fine without it — only `ƒ` server-rendered-on-demand routes need the export.
+
+**Rule**: When adding a new `app/.../[param]/page.tsx` (or any route hitting `fetch` at request time / using `searchParams`), include at top:
+```ts
+export const runtime = 'edge';
+```
+
+**Don't**: Import Node-only APIs in edge routes (`fs`, `path`, `child_process`, `node:*`, Prisma client). Plain `fetch` wrappers are edge-safe.
+
+**Historic break**: `c9d9288` shipped `/pandits/[id]` + `/pujas/pandits/[id]` without it → CF Pages deploy red until `f948e0d`.
+
 ## Data / external
 
 ### 80G placeholder PAN `AAAGD1234F`
