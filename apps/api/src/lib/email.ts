@@ -169,6 +169,74 @@ export function providerRejectedEmail(params: {
   };
 }
 
+export function supportTicketAlertEmail(params: {
+  ticketNumber: string;
+  subject: string;
+  body: string;
+  category: string;
+  priority: string;
+  userName: string;
+  userEmail: string;
+  userPhone?: string | null;
+  ticketId: string;
+}): { subject: string; html: string; text: string } {
+  const { ticketNumber, subject, body, category, priority, userName, userEmail, userPhone, ticketId } = params;
+  const adminUrl = `https://darshya.online/admin/support/${ticketId}`;
+  return {
+    subject: `[${priority}] New support ticket ${ticketNumber}: ${subject}`,
+    html: shell(`
+      <h1>New support ticket</h1>
+      <p><strong>Ticket:</strong> ${ticketNumber}<br>
+      <strong>Subject:</strong> ${subject}<br>
+      <strong>Category:</strong> ${category} &nbsp; <strong>Priority:</strong> ${priority}</p>
+      <p><strong>From:</strong> ${userName} &lt;${userEmail}&gt;${userPhone ? ` · ${userPhone}` : ''}</p>
+      <p><strong>Message:</strong></p>
+      <p style="white-space:pre-wrap;background:#fbf7f1;padding:12px;border-radius:8px;">${body.replace(/</g, '&lt;')}</p>
+      <a class="btn" href="${adminUrl}">Open in admin</a>
+    `),
+    text: `New support ticket ${ticketNumber}\nSubject: ${subject}\nCategory: ${category} | Priority: ${priority}\nFrom: ${userName} <${userEmail}>${userPhone ? ` · ${userPhone}` : ''}\n\n${body}\n\nOpen: ${adminUrl}`,
+  };
+}
+
+export function supportTicketReceivedEmail(params: {
+  userName: string;
+  ticketNumber: string;
+  subject: string;
+}): { subject: string; html: string; text: string } {
+  const { userName, ticketNumber, subject } = params;
+  return {
+    subject: `We've received your request — ticket ${ticketNumber}`,
+    html: shell(`
+      <h1>Namaste ${userName}, we've got your message</h1>
+      <p>Your support ticket has been logged. Our team typically replies within 24 hours.</p>
+      <p><strong>Ticket:</strong> ${ticketNumber}<br>
+      <strong>Subject:</strong> ${subject}</p>
+      <a class="btn" href="https://darshya.online/support/tickets/${ticketNumber}">View ticket status</a>
+      <p style="font-size:12px;color:#999;">Reply to this email to add more details, or call +91 9255109400 (Mon–Sat 9am–7pm IST).</p>
+    `),
+    text: `Namaste ${userName},\n\nWe've received your support request.\nTicket: ${ticketNumber}\nSubject: ${subject}\n\nOur team replies within 24 hours.\nTrack: https://darshya.online/support/tickets/${ticketNumber}\nOr call +91 9255109400 (Mon–Sat 9am–7pm IST).`,
+  };
+}
+
+export function supportTicketReplyEmail(params: {
+  userName: string;
+  ticketNumber: string;
+  subject: string;
+  replyBody: string;
+}): { subject: string; html: string; text: string } {
+  const { userName, ticketNumber, subject, replyBody } = params;
+  return {
+    subject: `Reply on your ticket ${ticketNumber}: ${subject}`,
+    html: shell(`
+      <h1>Namaste ${userName}, you have a new reply</h1>
+      <p>Our team has responded on your support ticket.</p>
+      <p style="white-space:pre-wrap;background:#fbf7f1;padding:12px;border-radius:8px;">${replyBody.replace(/</g, '&lt;')}</p>
+      <a class="btn" href="https://darshya.online/support/tickets/${ticketNumber}">Open ticket</a>
+    `),
+    text: `Namaste ${userName},\n\nNew reply on ticket ${ticketNumber} — ${subject}\n\n${replyBody}\n\nOpen: https://darshya.online/support/tickets/${ticketNumber}`,
+  };
+}
+
 export function donationReceiptEmail(params: {
   donorName: string;
   amount: string;
