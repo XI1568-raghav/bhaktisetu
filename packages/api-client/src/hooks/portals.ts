@@ -154,11 +154,16 @@ export function useGaushalaPortalDonations() {
 export interface GaushalaVolunteersResponse {
   volunteers?: Array<{
     id: string;
-    name: string;
-    phone?: string;
-    skill?: string;
+    gaushalaId: string;
+    fullName: string;
+    phone?: string | null;
+    email?: string | null;
+    role?: string;
+    active?: boolean;
+    notes?: string | null;
     joinedAt?: string;
-    hoursThisMonth?: number;
+    createdAt?: string;
+    updatedAt?: string;
   }>;
 }
 
