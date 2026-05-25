@@ -81,6 +81,7 @@ import { lessonsRoutes } from './routes/lessons.js';
 import { gurukulsRoutes } from './routes/gurukuls.js';
 import { gurukulApplicationsRoutes } from './routes/gurukul-applications.js';
 import { gurukulPortalRoutes } from './routes/gurukul-portal.js';
+import { adminGurukulsRoutes } from './routes/admin-gurukuls.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
 
 const server = Fastify({
@@ -248,6 +249,7 @@ async function bootstrap() {
   await server.register(gurukulsRoutes, { prefix: '/api/v1/gurukuls' });
   await server.register(gurukulApplicationsRoutes, { prefix: '/api/v1/gurukul-applications' });
   await server.register(gurukulPortalRoutes, { prefix: '/api/v1/gurukul-portal' });
+  await server.register(adminGurukulsRoutes, { prefix: '/api/v1/admin/gurukuls' });
   await server.register(knowledgeRoutes, { prefix: '/api/v1/knowledge' });
 
   // Start server

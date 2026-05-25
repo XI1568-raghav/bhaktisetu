@@ -79,7 +79,7 @@ export default function ApplicationsClient() {
   if (!isAuthenticated) {
     return (
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-surface-600">Please <Link href="/auth/signin" className="text-saffron-700 font-semibold">sign in</Link> to view applications.</p>
+        <p className="text-surface-600">Please <Link href="/auth/login" className="text-saffron-700 font-semibold">sign in</Link> to view applications.</p>
       </main>
     );
   }

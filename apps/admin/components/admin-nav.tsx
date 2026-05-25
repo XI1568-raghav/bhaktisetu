@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/leads", label: "Leads" },
   { href: "/leads-conversion", label: "Conversion" },
   { href: "/temples", label: "Temples" },
+  { href: "/gurukuls", label: "Gurukuls" },
   { href: "/broadcast", label: "Broadcast" },
   { href: "/content-queue", label: "Content queue" },
   { href: "/donations-export", label: "80G export" },
