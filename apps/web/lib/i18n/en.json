@@ -21,7 +21,14 @@
     "signup": "Sign up",
     "logout": "Log out",
     "account": "Account",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "sanskrit": "Sanskrit",
+    "ved": "Vedas",
+    "sanatan": "Sanatan Dharma",
+    "learnSanskrit": "Learn Sanskrit",
+    "gurukuls": "Gurukuls",
+    "becomeGurukul": "Register a gurukul",
+    "gurukulPortal": "Gurukul portal"
   },
   "common": {
     "book": "Book",
