@@ -26,6 +26,7 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-25 | feat: sample gurukul seed + admin moderation + signin fix | pending |
 | 2026-05-25 | feat: knowledge hub + gurukul marketplace + admissions (188 files, 3 migrations applied to prod) | `bda6a0b` |
 | 2026-05-21 | docs(caveats): every dynamic route needs `runtime = 'edge'` for CF Pages | `d63d660` |
 | 2026-05-21 | fix(web): edge runtime on `/pandits/[id]` + `/pujas/pandits/[id]` → CF Pages green | `f948e0d` |
