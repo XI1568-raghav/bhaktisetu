@@ -2,6 +2,45 @@
 
 > Append-only. Newest first. Lazy-loaded (not in CLAUDE.md @-imports).
 
+## 2026-05-25 — Knowledge Hub + Gurukul Marketplace shipped (`bda6a0b`)
+
+**Status**: shipped to origin/main (`27284f6..bda6a0b`). 3 prod migrations applied + verified. CF Pages env flags pending user flip (U16).
+
+### What shipped
+
+- **Knowledge Hub** (95 MDX articles across sanskrit/ved/sanatan) — per-category SSG + edge `/search` (prebuilt JSON index via `pnpm run prebuild`) + 3-lesson Sanskrit starter track w/ progress/streak/badges. Spec `docs/superpowers/specs/2026-05-21-knowledge-hub-design.md`, plan `docs/superpowers/plans/2026-05-21-knowledge-hub-plan.md`.
+- **Gurukul Marketplace + Admissions** — public directory (search/filter) + program detail + DPDP-compliant application form (minor→parent applicantType + guardian consent enforced via zod refine) + owner registration + portal (gurukul list + applications inbox w/ forward/accept/reject). Spec `docs/superpowers/specs/2026-05-21-gurukul-marketplace-design.md`.
+- **Mobile parity** — 8 new screens registered in `(devotee)/_layout.tsx` (knowledge hub/category/article, learn-sanskrit, lesson, gurukuls, gurukul-detail, gurukul-apply).
+
+### Build + test
+
+- Web: green (after `pandit-api.ts:getPublicPriests` wrapped in try/catch — was failing prerender on ECONNREFUSED).
+- API vitest: 493/493 green across 36 files (post-fix on `gurukul-applications.test.ts`: schema refine tightened to require `applicantType='parent'` when `studentAgeYears<18`).
+- Mobile tsc: clean (theme.ts extended amber/green to full 50-900 ranges).
+
+### Migrations applied to prod (poojly Supabase via DIRECT_URL)
+
+1. `20260521000000_lessons_streaks_badges` → `user_lesson_progress`, `user_streaks`, `user_badges`. (Spec docs originally said `lessons_progress`/`learning_streaks`/`learning_badges` — wrong, fixed in spec + plan.)
+2. `20260521010000_gurukuls` → `gurukuls`, `gurukul_programs`.
+3. `20260521020000_gurukul_applications` → `gurukul_applications` + status enum.
+
+`apps/api/scripts/check-prod-tables.mjs` extended with 6 new table names + 13 new column checks. All green: 11/11 tables, 28/28 columns, 6/6 FKs.
+
+### Pending user-action (U16)
+
+Set Cloudflare Pages env vars + rebuild:
+- `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true`
+- `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- Optional Render: `KNOWLEDGE_CONTENT_DIR` (defaults to `apps/web/content`; only override if API container ships MDX separately).
+
+Until flag flip, web nav hides hub + gurukul entries. API + DB are already live.
+
+### Manual smoke not performed
+
+CF Pages deploy gated on U16 flag flip. Once live, smoke = `/sanskrit` index loads, `/search` returns hits, `/gurukuls` loads + filter works, `/gurukuls/apply/[programId]` POST as minor without parent → 400 (DPDP block).
+
+---
+
 ## 2026-05-21 — Prod migrations + ship commit c9d9288
 
 **Status**: shipped to origin/main. Render API + CF Pages auto-deploying.

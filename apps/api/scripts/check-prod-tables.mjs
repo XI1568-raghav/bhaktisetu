@@ -11,6 +11,9 @@ const prisma = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
 const tables = [
   'cows', 'cow_health_records', 'volunteers',
   'priest_puja_offerings', 'store_products',
+  // 2026-05-21 — Knowledge Hub + Gurukul Marketplace
+  'user_lesson_progress', 'user_streaks', 'user_badges',
+  'gurukuls', 'gurukul_programs', 'gurukul_applications',
 ];
 const cols = [
   ['users', 'blocked'],
@@ -27,6 +30,21 @@ const cols = [
   ['donations', 'temple_id'],
   ['priest_puja_offerings', 'max_bookings_per_slot'],
   ['priest_puja_offerings', 'available_slots'],
+  // 2026-05-21 — Knowledge Hub
+  ['user_lesson_progress', 'lesson_id'],
+  ['user_lesson_progress', 'score'],
+  ['user_streaks', 'current_days'],
+  ['user_streaks', 'longest_days'],
+  ['user_badges', 'badge_key'],
+  // 2026-05-21 — Gurukul Marketplace
+  ['gurukuls', 'slug'],
+  ['gurukuls', 'owner_id'],
+  ['gurukuls', 'is_verified'],
+  ['gurukul_programs', 'gurukul_id'],
+  ['gurukul_applications', 'program_id'],
+  ['gurukul_applications', 'applicant_type'],
+  ['gurukul_applications', 'status'],
+  ['gurukul_applications', 'consent_signed'],
 ];
 
 const tableRows = await prisma.$queryRawUnsafe(
