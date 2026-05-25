@@ -2,6 +2,28 @@
 
 > Append-only. Newest first. Lazy-loaded (not in CLAUDE.md @-imports).
 
+## 2026-05-25 — Sample gurukul seed + admin moderation + signin fix
+
+**Status**: ready to commit. Builds on `bda6a0b`. Addresses user report on `/auth/signin` infinite loading + "no sample gurukul, admin verify also needed, sigup as gurukuls also needed".
+
+### What shipped
+
+- **3 sample verified gurukuls + 8 programs** seeded into prod via `apps/api/scripts/seed-sample-gurukuls.sql` (idempotent `ON CONFLICT(slug) DO UPDATE` + delete/reinsert programs). Sampurnanand Sanskrit Vidyalaya (Varanasi/Advaita), Poornaprajna Vidyapeetha (Bengaluru/Dvaita), Parmarth Niketan Rishikul (Rishikesh/Smarta). `ownerId = NULL` (samples have no owner).
+- **Admin moderation** — new Fastify route `apps/api/src/routes/admin-gurukuls.ts` (`GET /` filter by `?status=pending|verified|all`, `PATCH /:id/verify`, `PATCH /:id/active`), gated by `authenticateUser + requireRole('admin')`. Mounted at `/api/v1/admin/gurukuls`. Admin web at `apps/admin/app/gurukuls/page.tsx` + `GurukulModerationClient.tsx` (filter tabs, verify/unverify, show/hide). Nav link added to `admin-nav.tsx`.
+- **Owner signup** — no schema change needed. Existing `/become-gurukul` form (any signed-in devotee) sets `Gurukul.ownerId = currentUser.id`; `/gurukul-portal` lists their gurukuls via `/api/v1/gurukuls/mine/list`. End-to-end works without role enum extension.
+- **Signin route fix** — 4 web client files referenced dead `/auth/signin` (real route is `/auth/login`). Caused infinite loading screen reported in user image. Fixed: `BecomeGurukulClient`, `GurukulPortalClient`, `applications/ApplicationsClient`, `gurukuls/apply/[programId]/ApplyClient`.
+
+### Build + test
+
+- API tsc: clean. API vitest: 493/493 green (37 files).
+- Admin tsc: clean.
+
+### Migrations
+
+None new. Seed SQL only (data, not schema).
+
+---
+
 ## 2026-05-25 — Knowledge Hub + Gurukul Marketplace shipped (`bda6a0b`)
 
 **Status**: shipped to origin/main (`27284f6..bda6a0b`). 3 prod migrations applied + verified. CF Pages env flags pending user flip (U16).

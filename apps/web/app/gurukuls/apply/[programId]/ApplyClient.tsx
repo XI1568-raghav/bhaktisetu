@@ -86,7 +86,7 @@ export default function ApplyClient({ programId }: { programId: string }) {
 
       {!isAuthenticated && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-4">
-          Please <Link href="/auth/signin" className="text-saffron-700 font-semibold">sign in</Link> to apply.
+          Please <Link href="/auth/login" className="text-saffron-700 font-semibold">sign in</Link> to apply.
         </div>
       )}
 
