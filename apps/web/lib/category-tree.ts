@@ -55,8 +55,33 @@ export const CATEGORY_TREE: Category[] = [
   {
     key: 'wisdom',
     label: 'Wisdom',
-    tagline: 'Daily panchang, scriptures, audio, horoscope.',
+    tagline: 'Knowledge hub, daily panchang, scriptures, learning paths.',
     items: [
+      {
+        label: 'Sanskrit',
+        href: '/sanskrit',
+        description: 'Grammar, devanagari script, classical literature.',
+      },
+      {
+        label: 'Vedas',
+        href: '/ved',
+        description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda explained.',
+      },
+      {
+        label: 'Sanatan Dharma',
+        href: '/sanatan',
+        description: 'Philosophy, practices, festivals, and history.',
+      },
+      {
+        label: 'Learn Sanskrit',
+        href: '/learn-sanskrit',
+        description: 'Daily micro-lessons with quizzes and streaks.',
+      },
+      {
+        label: 'Gurukuls',
+        href: '/gurukuls',
+        description: 'Traditional gurukuls — discover and apply.',
+      },
       {
         label: 'Panchang',
         href: '/panchang',

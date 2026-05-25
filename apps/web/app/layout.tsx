@@ -160,6 +160,11 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  { href: "/yatra", t: "footer", key: "dharmicYatra" },
  { href: "/panchang", t: "nav", key: "panchang" },
  { href: "/wellness", t: "nav", key: "wellness" },
+ { href: "/sanskrit", t: "nav", key: "sanskrit" },
+ { href: "/ved", t: "nav", key: "ved" },
+ { href: "/sanatan", t: "nav", key: "sanatan" },
+ { href: "/learn-sanskrit", t: "nav", key: "learnSanskrit" },
+ { href: "/gurukuls", t: "nav", key: "gurukuls" },
  ],
  },
  {
@@ -179,6 +184,8 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  { href: "/become-astrologer", t: "footer", key: "becomeAstrologer" },
  { href: "/become-wellness", t: "footer", key: "teachYoga" },
  { href: "/list-gaushala", t: "footer", key: "listGaushala" },
+ { href: "/become-gurukul", t: "nav", key: "becomeGurukul" },
+ { href: "/gurukul-portal", t: "nav", key: "gurukulPortal" },
  ],
  },
  {
