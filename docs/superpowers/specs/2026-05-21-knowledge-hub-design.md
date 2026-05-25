@@ -18,7 +18,7 @@ Out (deferred): authoring UI, audio/video, comments, multi-language, premium gat
 - **Web**: SSG per-category index + `[slug]` reader at `/sanskrit`, `/ved`, `/sanatan`. Search at `/search` is edge runtime + client component fetching `/search-index.json` (prebuilt by `scripts/build-search-index.mjs` via `prebuild` npm hook).
 - **API**: `/api/v1/knowledge/:category` + `/api/v1/knowledge/:category/:slug` read MDX from `apps/web/content/` (env override `KNOWLEDGE_CONTENT_DIR`). Returns empty arrays when content dir absent (prod-safe).
 - **Mobile**: `(devotee)/knowledge.tsx` hub → `knowledge-category.tsx` → `knowledge-article.tsx` (inline RN markdown renderer for h1-h3, bullets, quotes, paragraphs).
-- **Lessons**: Catalog statically defined in mobile (`lesson.tsx` CATALOG dict). Progress via `POST /api/v1/lessons/complete { lessonId, score }`. List + streak via `GET /api/v1/lessons`. Tables `lessons_progress`, `learning_streaks`, `learning_badges` (migration `20260521000000`).
+- **Lessons**: Catalog statically defined in mobile (`lesson.tsx` CATALOG dict). Progress via `POST /api/v1/lessons/complete { lessonId, score }`. List + streak via `GET /api/v1/lessons`. Tables `user_lesson_progress`, `user_streaks`, `user_badges` (migration `20260521000000`).
 
 ## Data flow
 

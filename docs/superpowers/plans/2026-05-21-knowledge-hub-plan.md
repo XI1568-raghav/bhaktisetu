@@ -4,7 +4,7 @@
 
 ## Phases (all completed)
 
-1. **DB** — migration `20260521000000_lessons_streaks_badges`: `lessons_progress`, `learning_streaks`, `learning_badges`. Prisma model + relation on `User`.
+1. **DB** — migration `20260521000000_lessons_streaks_badges`: `user_lesson_progress`, `user_streaks`, `user_badges`. Prisma model + relation on `User`.
 2. **API** — `apps/api/src/routes/knowledge.ts` (file-system MDX reader, env-or-noop), `apps/api/src/routes/lessons.ts` (progress/streak/badge). Registered in `server.ts`.
 3. **Content** — 95 MDX articles seeded across `apps/web/content/{sanskrit,ved,sanatan}/`. 3 starter Sanskrit lessons baked into mobile catalog.
 4. **Web** — per-category index pages, `[slug]` reader, `/search` (edge wrapper + client component reading prebuilt JSON), `/learn-sanskrit` + `/learn-sanskrit/lesson/[id]`. Prebuild script in `package.json`.

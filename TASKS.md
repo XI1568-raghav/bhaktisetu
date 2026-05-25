@@ -1,10 +1,10 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-21.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-25.
 
 ## In progress
 
-- (nothing — c9d9288 shipped, CF Pages build fixed via `f948e0d`, caveat doc `d63d660`. See `docs/handoff.md` 2026-05-21.)
+- (nothing — `bda6a0b` shipped Knowledge Hub + Gurukul Marketplace 2026-05-25. 3 prod migrations applied + verified (11/11 tables, 28/28 columns). See `docs/handoff.md` 2026-05-25.)
 
 ## Pending — engineering
 
@@ -18,12 +18,15 @@
 
 → `docs/activation-gates.md` (U1-U15).
 
-**Prod migrations applied 2026-05-21** via `prisma db execute` against poojly Supabase. Verified via `apps/api/scripts/check-prod-tables.mjs` — 5/5 tables, 14/14 columns, `donations.gaushala_id` nullable. All 4 shipped.
+**U16 (new):** Flip Cloudflare Pages env vars `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` and `NEXT_PUBLIC_GURUKUL_ENABLED=true`, then rebuild. (Optional: `KNOWLEDGE_CONTENT_DIR` on Render if API container ships MDX.)
+
+**Prod migrations applied 2026-05-25** via `prisma db execute` against poojly Supabase. Verified via `apps/api/scripts/check-prod-tables.mjs` — 11/11 tables, 28/28 columns, 6/6 FKs. 7 total shipped now (5 prior + 3 fresh: lessons/streaks/badges + 2 gurukul migrations).
 
 ## Recently completed (top 5)
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-25 | feat: knowledge hub + gurukul marketplace + admissions (188 files, 3 migrations applied to prod) | `bda6a0b` |
 | 2026-05-21 | docs(caveats): every dynamic route needs `runtime = 'edge'` for CF Pages | `d63d660` |
 | 2026-05-21 | fix(web): edge runtime on `/pandits/[id]` + `/pujas/pandits/[id]` → CF Pages green | `f948e0d` |
 | 2026-05-21 | docs/operational-context.md — every service + key + deploy mechanism | `1ec7745` |

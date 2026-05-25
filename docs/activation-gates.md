@@ -22,3 +22,4 @@ These gates block live activation. Each requires user action (KYC, paid signup, 
 | U13 | Demo MP4 capture run | Install ffmpeg + Playwright Chromium; `bash scripts/build-demo-video.sh` | Razorpay/Stripe/Meta KYC + investor outreach | `docs/demo-video-recipe-2026-05-13.md` |
 | U14 | `REDIS_URL` paste from Upstash free tier | Sign up + paste | Cache activation (optional) | — |
 | U15 | `ALLOW_DEMO_PAYMENTS=true` until U1 | Render env — set to keep API alive | API boot in prod | — |
+| U16 | Flip `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true` on CF Pages, then rebuild | CF Pages env vars + redeploy | Surfaces Knowledge Hub + Gurukul Marketplace nav | `docs/handoff.md` 2026-05-25 |
