@@ -77,6 +77,11 @@ import { orgsRoutes } from './routes/orgs.js';
 import { marketplaceV2Routes, marketplaceAdminRoutes } from './routes/marketplace-v2.js';
 import { csrMatchRoutes } from './routes/csr-match.js';
 import { antimSanskarRoutes } from './routes/antim-sanskar.js';
+import { lessonsRoutes } from './routes/lessons.js';
+import { gurukulsRoutes } from './routes/gurukuls.js';
+import { gurukulApplicationsRoutes } from './routes/gurukul-applications.js';
+import { gurukulPortalRoutes } from './routes/gurukul-portal.js';
+import { knowledgeRoutes } from './routes/knowledge.js';
 
 const server = Fastify({
   logger: {
@@ -239,6 +244,11 @@ async function bootstrap() {
   await server.register(marketplaceAdminRoutes, { prefix: '/api/v1/admin/marketplace' });
   await server.register(csrMatchRoutes, { prefix: '/api/v1/csr-match' });
   await server.register(antimSanskarRoutes, { prefix: '/api/v1/antim-sanskar' });
+  await server.register(lessonsRoutes, { prefix: '/api/v1/lessons' });
+  await server.register(gurukulsRoutes, { prefix: '/api/v1/gurukuls' });
+  await server.register(gurukulApplicationsRoutes, { prefix: '/api/v1/gurukul-applications' });
+  await server.register(gurukulPortalRoutes, { prefix: '/api/v1/gurukul-portal' });
+  await server.register(knowledgeRoutes, { prefix: '/api/v1/knowledge' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;

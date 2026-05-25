@@ -159,12 +159,16 @@ export async function getMyReviews(token: string | undefined): Promise<PriestRev
 // ─── Public (server-side fetch) ─────────────────────────────────────────────
 
 export async function getPublicPriests(): Promise<PriestSummary[]> {
-  const res = await fetch(`${API_BASE_URL}/priests`, {
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) return [];
-  const data = (await res.json()) as { priests: PriestSummary[] };
-  return data.priests ?? [];
+  try {
+    const res = await fetch(`${API_BASE_URL}/priests`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { priests: PriestSummary[] };
+    return data.priests ?? [];
+  } catch {
+    return [];
+  }
 }
 
 // Returns null on 404 (priest not verified / not active) so the caller can
