@@ -140,6 +140,15 @@ export default function TabLayout() {
       <Tabs.Screen name="weddings" options={{ href: null, title: 'Weddings' }} />
       <Tabs.Screen name="weddings-muhurat" options={{ href: null, title: 'Muhurat' }} />
       <Tabs.Screen name="upgrade" options={{ href: null, title: 'Upgrade' }} />
+      {/* Knowledge + Gurukul journeys — hidden, reached via push */}
+      <Tabs.Screen name="knowledge" options={{ href: null, title: 'Knowledge' }} />
+      <Tabs.Screen name="knowledge-category" options={{ href: null, title: 'Knowledge Category' }} />
+      <Tabs.Screen name="knowledge-article" options={{ href: null, title: 'Article' }} />
+      <Tabs.Screen name="learn-sanskrit" options={{ href: null, title: 'Learn Sanskrit' }} />
+      <Tabs.Screen name="lesson" options={{ href: null, title: 'Lesson' }} />
+      <Tabs.Screen name="gurukuls" options={{ href: null, title: 'Gurukuls' }} />
+      <Tabs.Screen name="gurukul-detail" options={{ href: null, title: 'Gurukul' }} />
+      <Tabs.Screen name="gurukul-apply" options={{ href: null, title: 'Apply' }} />
     </Tabs>
     </RoleGuard>
   );

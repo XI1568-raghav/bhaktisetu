@@ -200,6 +200,13 @@ model User {
   // Books reader
   readingProgress ReadingProgress[]
 
+  // Sanskrit lessons + gurukul marketplace (added 2026-05-21)
+  lessonProgress       UserLessonProgress[]
+  streak               UserStreak?
+  badges               UserBadge[]
+  ownedGurukuls        Gurukul[]            @relation("GurukulOwner")
+  gurukulApplications  GurukulApplication[]
+
   @@map("users")
 }
 
@@ -1557,4 +1564,128 @@ model ReadingProgress {
   @@unique([userId, bookSlug])
   @@index([userId])
   @@map("reading_progress")
+}
+
+// ─── Sanskrit lessons + streaks + badges (added 2026-05-21) ────────────────────
+
+model UserLessonProgress {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  lessonId    String   @map("lesson_id")
+  score       Int      @default(0)
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("user_lesson_progress")
+}
+
+model UserStreak {
+  userId        String   @id @map("user_id") @db.Uuid
+  currentDays   Int      @default(0) @map("current_days")
+  longestDays   Int      @default(0) @map("longest_days")
+  lastActiveDay DateTime @map("last_active_day") @db.Date
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_streaks")
+}
+
+model UserBadge {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  badgeKey String   @map("badge_key")
+  earnedAt DateTime @default(now()) @map("earned_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeKey])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// ─── Gurukul marketplace (added 2026-05-21) ────────────────────────────────────
+
+model Gurukul {
+  id              String   @id @default(uuid()) @db.Uuid
+  slug            String   @unique
+  name            String
+  description     String
+  city            String
+  state           String
+  country         String   @default("IN")
+  websiteUrl      String?  @map("website_url")
+  contactEmail    String   @map("contact_email")
+  contactVerified Boolean  @default(false) @map("contact_verified")
+  contactPhone    String?  @map("contact_phone")
+  tradition       String
+  isResidential   Boolean  @default(false) @map("is_residential")
+  isOnline        Boolean  @default(false) @map("is_online")
+  acceptsMinors   Boolean  @default(false) @map("accepts_minors")
+  isVerified      Boolean  @default(false) @map("is_verified")
+  isActive        Boolean  @default(true) @map("is_active")
+  ownerId         String?  @map("owner_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  owner    User?            @relation("GurukulOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  programs GurukulProgram[]
+
+  @@index([state, city])
+  @@index([tradition])
+  @@map("gurukuls")
+}
+
+model GurukulProgram {
+  id             String   @id @default(uuid()) @db.Uuid
+  gurukulId      String   @map("gurukul_id") @db.Uuid
+  name           String
+  durationMonths Int      @map("duration_months")
+  modeOfStudy    String   @map("mode_of_study")
+  ageMin         Int      @default(0) @map("age_min")
+  ageMax         Int      @default(0) @map("age_max")
+  description    String
+  feeAnnualInr   Int?     @map("fee_annual_inr")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  gurukul      Gurukul              @relation(fields: [gurukulId], references: [id], onDelete: Cascade)
+  applications GurukulApplication[]
+
+  @@index([gurukulId])
+  @@map("gurukul_programs")
+}
+
+model GurukulApplication {
+  id                   String    @id @default(uuid()) @db.Uuid
+  programId            String    @map("program_id") @db.Uuid
+  applicantUserId      String    @map("applicant_user_id") @db.Uuid
+  applicantType        String    @map("applicant_type")
+  studentName          String    @map("student_name")
+  studentAgeYears      Int       @map("student_age_years")
+  studentEmail         String?   @map("student_email")
+  guardianName         String?   @map("guardian_name")
+  guardianRelation     String?   @map("guardian_relation")
+  guardianPhone        String?   @map("guardian_phone")
+  guardianAadhaarLast4 String?   @map("guardian_aadhaar_last4")
+  consentSigned        Boolean   @default(false) @map("consent_signed")
+  consentSignedAt      DateTime? @map("consent_signed_at")
+  statement            String
+  status               String    @default("submitted")
+  forwardedAt          DateTime? @map("forwarded_at")
+  decisionAt           DateTime? @map("decision_at")
+  decisionNote         String?   @map("decision_note")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  program GurukulProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [applicantUserId], references: [id], onDelete: Cascade)
+
+  @@index([programId, status])
+  @@index([applicantUserId])
+  @@map("gurukul_applications")
 }
