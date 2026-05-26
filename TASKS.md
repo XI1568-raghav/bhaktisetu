@@ -26,6 +26,7 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-26 | feat(mobile): gurukul owner parity — become-gurukul + portal screens (89/89 smoke) | `d170b39` |
 | 2026-05-25 | feat: sample gurukul seed + admin moderation + signin fix | pending |
 | 2026-05-25 | feat: knowledge hub + gurukul marketplace + admissions (188 files, 3 migrations applied to prod) | `bda6a0b` |
 | 2026-05-21 | docs(caveats): every dynamic route needs `runtime = 'edge'` for CF Pages | `d63d660` |
