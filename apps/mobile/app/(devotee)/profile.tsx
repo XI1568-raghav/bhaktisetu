@@ -138,6 +138,20 @@ const ONBOARD_OPTIONS: OnboardOption[] = [
     icon: 'paw',
     href: '/(onboard)/list-gaushala',
   },
+  {
+    id: 'gurukul',
+    label: 'Register your gurukul',
+    subtitle: 'Admission inquiries from India + diaspora',
+    icon: 'school',
+    href: '/(onboard)/become-gurukul',
+  },
+  {
+    id: 'gurukul-portal',
+    label: 'Gurukul portal',
+    subtitle: 'Manage listings + admission applications',
+    icon: 'briefcase',
+    href: '/(devotee)/gurukul-portal',
+  },
 ];
 
 function LinkRow({ link, onPress }: { link: QuickLink; onPress?: () => void }) {

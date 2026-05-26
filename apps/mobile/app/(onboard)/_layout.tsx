@@ -14,6 +14,7 @@ export default function OnboardLayout() {
       <Stack.Screen name="become-astrologer" />
       <Stack.Screen name="become-wellness" />
       <Stack.Screen name="list-gaushala" />
+      <Stack.Screen name="become-gurukul" />
       <Stack.Screen name="waitlist" />
     </Stack>
   );
