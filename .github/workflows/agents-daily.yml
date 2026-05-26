@@ -1,4 +1,4 @@
-name: Agent fleet — daily
+name: Agent fleet - daily
 
 # Runs the full daily agent set: SEO, content, lead-gen, growth, social, onboarding, PR.
 # Each writes a report to docs/agent-reports/. Workflow commits the artifacts back.

@@ -1,4 +1,4 @@
-name: Agent fleet — health smoke (6h)
+name: Agent fleet - health smoke (6h)
 
 # Hits prod every 6h with full role smoke. Writes timestamped report.
 # Free tier: ~3 min/run × 4/day × 30 = 360 min/month.
