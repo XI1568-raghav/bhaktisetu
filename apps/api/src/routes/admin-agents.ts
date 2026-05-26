@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 // Agent fleet artifact reader. Lists recent markdown reports from
@@ -8,7 +8,22 @@ import { authenticateUser, requireRole } from '../middlewares/auth.js';
 // written by the GH Actions agent fleet (scripts/agents/*.mjs) and
 // committed back to repo, so they're available in the deployed image.
 
-const REPORT_DIR = join(process.cwd(), 'docs', 'agent-reports');
+// Resolve report dir across deploy targets:
+//   - dev: cwd = repo root → docs/agent-reports
+//   - Render: cwd = apps/api → ../../docs/agent-reports
+//   - explicit override: AGENT_REPORTS_DIR
+function resolveReportDir(): string {
+  if (process.env.AGENT_REPORTS_DIR) return process.env.AGENT_REPORTS_DIR;
+  const candidates = [
+    join(process.cwd(), 'docs', 'agent-reports'),
+    resolve(process.cwd(), '..', '..', 'docs', 'agent-reports'),
+    resolve(process.cwd(), '..', 'docs', 'agent-reports'),
+  ];
+  for (const c of candidates) if (existsSync(c)) return c;
+  return candidates[0]!;
+}
+
+const REPORT_DIR = resolveReportDir();
 
 function safeList() {
   if (!existsSync(REPORT_DIR)) return [];
