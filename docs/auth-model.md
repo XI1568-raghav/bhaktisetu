@@ -39,13 +39,13 @@ All passwords: `demo123`.
 | Email | Role | Lands on |
 |---|---|---|
 | `devotee@demo.com` | devotee | `/dashboard` |
-| `pandit@demo.com` | priest | `/portal/priest/dashboard` |
-| `store@demo.com` | store-admin | `/portal/store/dashboard` |
-| `astro@demo.com` | astrologer | `/portal/astrologer/dashboard` |
-| `wellness@demo.com` | wellness | `/portal/wellness/dashboard` |
-| `gaushala@demo.com` | gaushala | `/portal/gaushala/dashboard` |
-| `temple@demo.com` | temple | `/portal/temple/dashboard` |
-| `admin@demo.com` | admin | `/portal/admin/dashboard` |
+| `pandit@demo.com` | priest | `/priest` |
+| `store@demo.com` | store_owner | `/store-admin` |
+| `astro@demo.com` | astrologer | `/astrologer-portal` |
+| `wellness@demo.com` | wellness_instructor | `/wellness-portal` |
+| `gaushala@demo.com` | gaushala_manager | `/gaushala-portal` |
+| `temple@demo.com` | temple_manager | `/temple-portal` |
+| `admin@demo.com` | admin | `/admin` |
 
 The role → dashboard path mapping is `getRoleDashboardPath()` in `apps/web/lib/auth-context.tsx`. Mobile parity work mirrors this with Expo Router groups (see `docs/mobile-plan.md`).
 
@@ -55,3 +55,7 @@ The role → dashboard path mapping is `getRoleDashboardPath()` in `apps/web/lib
 - `poojly_user` — user profile snapshot
 
 The `poojly_` prefix is legacy from rebrand. **Do not rename** without a migration path — every existing browser would log out.
+
+## Smoke test
+
+`node apps/api/scripts/smoke-all-roles.mjs` logs in each demo account, hits every role's dashboard + API surfaces, verifies perms enforcement + admin mutation. 88/88 green on prod 2026-05-26.
