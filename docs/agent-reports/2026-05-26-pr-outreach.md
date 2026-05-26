@@ -91,4 +91,4 @@ Thanks,
 - **Substack**: optional — monthly investor update made public
 
 ---
-*Agent: pr-outreach · timestamp: 2026-05-26T19:22:16.604Z*
+*Agent: pr-outreach · timestamp: 2026-05-26T21:29:54.830Z*
