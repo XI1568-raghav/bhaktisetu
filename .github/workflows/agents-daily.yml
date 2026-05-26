@@ -1,0 +1,53 @@
+name: Agent fleet — daily
+
+# Runs the full daily agent set: SEO, content, lead-gen, growth, social, onboarding, PR.
+# Each writes a report to docs/agent-reports/. Workflow commits the artifacts back.
+# Free tier: ~1 min/day = 30 min/month against 2000-min ceiling.
+
+on:
+  schedule:
+    # 03:30 UTC = 09:00 IST — fits founder morning review
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Optional: comma-separated agent names to run (default: all daily)'
+        required: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run agent fleet (daily set)
+        env:
+          API_BASE: ${{ secrets.API_BASE_URL || 'https://api.darshya.online' }}
+          WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          AGENTS="${{ github.event.inputs.only }}"
+          if [ -z "$AGENTS" ]; then
+            node scripts/agents/run-all.mjs seo-audit content-pipeline lead-gen growth-metrics social-queue onboarding-drip pr-outreach
+          else
+            node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
+          fi
+
+      - name: Commit reports
+        run: |
+          git config user.name "darshya-agent-bot"
+          git config user.email "agents@darshya.online"
+          git add docs/agent-reports/ || true
+          if git diff --cached --quiet; then
+            echo "No new agent artifacts to commit."
+          else
+            git commit -m "chore(agents): daily fleet run $(date -u +%Y-%m-%d)"
+            git push
+          fi

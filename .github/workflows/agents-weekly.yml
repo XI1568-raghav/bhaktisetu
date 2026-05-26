@@ -1,0 +1,40 @@
+name: Agent fleet — weekly
+
+# Investor pipeline refresh + deep audits. Monday 04:00 UTC = 09:30 IST.
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run weekly agents
+        env:
+          API_BASE: ${{ secrets.API_BASE_URL || 'https://api.darshya.online' }}
+          WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
+        run: node scripts/agents/run-all.mjs investor-pipeline pr-outreach
+
+      - name: Commit reports
+        run: |
+          git config user.name "darshya-agent-bot"
+          git config user.email "agents@darshya.online"
+          git pull --rebase --autostash || true
+          git add docs/agent-reports/ || true
+          if git diff --cached --quiet; then
+            echo "No artifact change."
+          else
+            git commit -m "chore(agents): weekly run $(date -u +%Y-%m-%d)"
+            git push
+          fi
