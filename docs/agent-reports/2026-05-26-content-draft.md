@@ -1,27 +1,27 @@
-# Content Drafts — 2026-05-26 (Wed)
+# Content Drafts — 2026-05-26 (Tue)
 
 > Daily knowledge pipeline. 3 drafts/day: deity-of-day, Veda angle, Sanatan theme. Plus a Sanskrit shloka card.
 
-## Today's deity (Ganesha)
+## Today's deity (Hanuman)
 
-**Title suggestion**: "Lord Ganesha — significance, practices for Wedday, and free chants"
+**Title suggestion**: "Lord Hanuman — significance, practices for Tueday, and free chants"
 
 **Outline**:
-1. Why devotees worship Lord Ganesha on Wedday (scriptural source)
+1. Why devotees worship Lord Hanuman on Tueday (scriptural source)
 2. Daily 5-min practice (mantra + visualization)
-3. Free downloadable: Ganapati Atharvashirsha, Sankashti vrat
+3. Free downloadable: Hanuman Chalisa, Sundara Kanda, Bajrang Baan
 4. Live darshan link — temples on Darshya broadcasting today
 5. CTA: book a custom puja with a verified pandit (₹999 starting)
 
-**Target keyword cluster**: `lord ganesha worship`, `Wedday puja`, `ganapati atharvashirsha meaning`
+**Target keyword cluster**: `lord hanuman worship`, `Tueday puja`, `hanuman chalisa meaning`
 
-**Recommended slug**: `/sanatan/ganesha-wedday-guide`
+**Recommended slug**: `/sanatan/hanuman-tueday-guide`
 
 ---
 
 ## Veda angle
 
-**Title suggestion**: "Atharvaveda household sukthas — beginner-friendly walkthrough"
+**Title suggestion**: "Samaveda chant traditions — beginner-friendly walkthrough"
 
 **Outline**:
 1. What it is (one paragraph, no Sanskrit jargon until defined)
@@ -31,15 +31,15 @@
 5. Reading order if user wants to go deeper
 6. CTA: enroll in Darshya's free Sanskrit foundations (10 lessons)
 
-**Target keyword cluster**: `atharvaveda household sukthas`, `learn ved online`, `vedic knowledge for beginners`
+**Target keyword cluster**: `samaveda chant traditions`, `learn ved online`, `vedic knowledge for beginners`
 
-**Recommended slug**: `/ved/atharvaveda-household-sukthas`
+**Recommended slug**: `/ved/samaveda-chant-traditions`
 
 ---
 
 ## Sanatan theme
 
-**Title suggestion**: "Varna — original meaning vs colonial mistranslation — civilizational perspective"
+**Title suggestion**: "Ashramas of life — civilizational perspective"
 
 **Outline**:
 1. Hook (a misconception or modern question)
@@ -49,19 +49,19 @@
 5. Further reading
 6. CTA: subscribe to Darshya weekly digest
 
-**Target keyword cluster**: `varna — original meaning vs colonial mistranslation`, `sanatan dharma meaning`, `hindu philosophy explained`
+**Target keyword cluster**: `ashramas of life`, `sanatan dharma meaning`, `hindu philosophy explained`
 
-**Recommended slug**: `/sanatan/varna-original-meaning-vs-colonial-mistranslation`
+**Recommended slug**: `/sanatan/ashramas-of-life`
 
 ---
 
 ## Shloka card (social asset)
 
-> **सत्यमेव जयते**
+> **वसुधैव कुटुम्बकम्**
 >
-> — Mundaka Upanishad 3.1.6
+> — Maha Upanishad 6.71
 >
-> *Truth alone triumphs.*
+> *The whole world is one family.*
 
 **Use for**: Instagram + Twitter + WhatsApp status. Pair with deity-of-day banner.
 

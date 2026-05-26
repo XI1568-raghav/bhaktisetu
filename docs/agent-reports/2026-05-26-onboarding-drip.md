@@ -277,4 +277,4 @@ Group classes 70% take-home. 1:1 80% take-home.
 5. Track opens + clicks via Resend webhook → `/api/v1/webhooks/resend`
 
 ---
-*Agent: onboarding-drip · timestamp: 2026-05-26T19:22:16.511Z*
+*Agent: onboarding-drip · timestamp: 2026-05-26T21:29:54.792Z*
