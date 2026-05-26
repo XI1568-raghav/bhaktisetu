@@ -1,0 +1,41 @@
+name: Agent fleet — health smoke (6h)
+
+# Hits prod every 6h with full role smoke. Writes timestamped report.
+# Free tier: ~3 min/run × 4/day × 30 = 360 min/month.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run health smoke
+        env:
+          API_BASE: ${{ secrets.API_BASE_URL || 'https://api.darshya.online' }}
+          WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
+        run: node scripts/agents/health-smoke.mjs
+
+      - name: Commit report
+        run: |
+          git config user.name "darshya-agent-bot"
+          git config user.email "agents@darshya.online"
+          git pull --rebase --autostash || true
+          git add docs/agent-reports/ || true
+          if git diff --cached --quiet; then
+            echo "No artifact change."
+          else
+            git commit -m "chore(agents): health smoke $(date -u +%Y-%m-%dT%H)"
+            git push
+          fi

@@ -22,6 +22,7 @@ import {
   Send,
   ListChecks,
   Star,
+  Bot,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -39,6 +40,7 @@ const sidebarLinks = [
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
   { href: '/admin/revenue', label: 'Revenue', icon: IndianRupee },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/admin/agents', label: 'Agents', icon: Bot },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
