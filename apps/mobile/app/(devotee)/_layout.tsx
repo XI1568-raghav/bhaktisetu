@@ -149,6 +149,7 @@ export default function TabLayout() {
       <Tabs.Screen name="gurukuls" options={{ href: null, title: 'Gurukuls' }} />
       <Tabs.Screen name="gurukul-detail" options={{ href: null, title: 'Gurukul' }} />
       <Tabs.Screen name="gurukul-apply" options={{ href: null, title: 'Apply' }} />
+      <Tabs.Screen name="gurukul-portal" options={{ href: null, title: 'Gurukul Portal' }} />
     </Tabs>
     </RoleGuard>
   );

@@ -41,6 +41,7 @@ const roleEndpoints = {
     '/api/v1/me/reading-progress',
     '/api/v1/notifications/vapid-public-key',
     '/api/v1/gurukuls/mine/list',
+    '/api/v1/gurukul-portal/applications',
     '/api/v1/lessons',
   ],
   priest: [
