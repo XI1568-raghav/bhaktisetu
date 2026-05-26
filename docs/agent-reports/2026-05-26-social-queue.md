@@ -27,10 +27,10 @@ Truth alone triumphs.
 ### 2. 2026-05-26 · 13:00 IST · practice
 
 ```
-5-minute morning practice for Wednesday:
+5-minute morning practice for Tuesday:
 
 1. Light a diya
-2. Chant Om Namo Narayanaya (108x)
+2. Chant Om Gam Ganapataye Namah (108x)
 3. Offer fresh water
 4. 2 min of silence
 
@@ -120,10 +120,10 @@ Truth alone triumphs.
 ### 9. 2026-05-28 · 19:00 IST · practice
 
 ```
-5-minute morning practice for Friday:
+5-minute morning practice for Thursday:
 
 1. Light a diya
-2. Chant Om Sham Shanaishcharaya Namah (108x)
+2. Chant Om Hreem Mahalakshmyai Namah (108x)
 3. Offer fresh water
 4. 2 min of silence
 
@@ -213,10 +213,10 @@ Truth alone triumphs.
 ### 16. 2026-05-31 · 9:00 IST · practice
 
 ```
-5-minute morning practice for Monday:
+5-minute morning practice for Sunday:
 
 1. Light a diya
-2. Chant Om Hanumate Namah (108x)
+2. Chant Om Namah Shivaya (108x)
 3. Offer fresh water
 4. 2 min of silence
 
@@ -311,4 +311,4 @@ Building Darshya in public — week update:
 - [ ] DM 5 followers who liked the founder-update post
 
 ---
-*Agent: social-queue · timestamp: 2026-05-26T19:22:16.419Z*
+*Agent: social-queue · timestamp: 2026-05-26T21:29:54.757Z*
