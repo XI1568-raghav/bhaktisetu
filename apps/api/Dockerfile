@@ -8,6 +8,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/api ./apps/api
 COPY packages ./packages
 COPY tooling ./tooling
+COPY docs ./docs
 
 # Install deps + generate Prisma client
 RUN pnpm install --frozen-lockfile --prod=false
