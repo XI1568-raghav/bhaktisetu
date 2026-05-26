@@ -20,7 +20,9 @@
 
 **U16 (new):** Flip Cloudflare Pages env vars `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` and `NEXT_PUBLIC_GURUKUL_ENABLED=true`, then rebuild. (Optional: `KNOWLEDGE_CONTENT_DIR` on Render if API container ships MDX.)
 
-**U17 (new):** Set GitHub repo secrets so agent fleet can run: `API_BASE_URL=https://api.darshya.online`, `WEB_BASE_URL=https://darshya.online`, optionally `RESEND_API_KEY`. Then trigger Actions → `Agent fleet — daily` → Run workflow once to verify. After first run, reports appear under `docs/agent-reports/` and at `/admin/agents`.
+**U17 DONE 2026-05-27** — secrets set, default branch flipped main, fleet verified green (c4a1495, 6 reports).
+
+**U18 (new):** Set `CRON_AUTH_TOKEN` GH secret (matching Render env) so daily-cron workflow stops failing. If not set in Render either: generate `openssl rand -hex 32` + set both places. Currently daily-cron exits 1 at precheck.
 
 **Prod migrations applied 2026-05-25** via `prisma db execute` against poojly Supabase. Verified via `apps/api/scripts/check-prod-tables.mjs` — 11/11 tables, 28/28 columns, 6/6 FKs. 7 total shipped now (5 prior + 3 fresh: lessons/streaks/badges + 2 gurukul migrations).
 
