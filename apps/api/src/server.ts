@@ -62,6 +62,7 @@ import { wellnessSessionRoutes } from './routes/wellness-sessions.js';
 import { outreachWebhookRoutes, outreachAdminRoutes } from './routes/outreach-webhook.js';
 import { outreachTrackingRoutes } from './routes/outreach-tracking.js';
 import { adminLeadsRoutes } from './routes/admin-leads.js';
+import { adminAgentsRoutes } from './routes/admin-agents.js';
 import { adminTemplesRoutes } from './routes/admin-temples.js';
 import { adminBookingsRoutes } from './routes/admin-bookings.js';
 import { adminLeadConversionRoutes } from './routes/admin-lead-conversion.js';
@@ -251,6 +252,7 @@ async function bootstrap() {
   await server.register(gurukulPortalRoutes, { prefix: '/api/v1/gurukul-portal' });
   await server.register(adminGurukulsRoutes, { prefix: '/api/v1/admin/gurukuls' });
   await server.register(knowledgeRoutes, { prefix: '/api/v1/knowledge' });
+  await server.register(adminAgentsRoutes, { prefix: '/api/v1/admin/agents' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
