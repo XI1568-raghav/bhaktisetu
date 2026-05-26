@@ -2,6 +2,30 @@
 
 > Append-only. Newest first. Lazy-loaded (not in CLAUDE.md @-imports).
 
+## 2026-05-26 — Mobile gurukul owner parity
+
+**Status**: shipped `d170b39`. Closes web↔mobile parity gap for gurukul owner flow.
+
+### What shipped
+
+- `apps/mobile/app/(onboard)/become-gurukul.tsx` — authenticated registration form. Basic details + contact + mode toggles + programs[] array. POSTs `/api/v1/gurukuls` with Bearer, redirects to `/gurukul-portal`. Mirrors web `BecomeGurukulClient`.
+- `apps/mobile/app/(devotee)/gurukul-portal.tsx` — tabbed portal: "Gurukuls" (owned listings + verify status) + "Applications" (admission inbox with Forward/Accept/Reject via `PATCH /api/v1/gurukul-portal/applications/:id`). Pull-to-refresh.
+- Registered in `(onboard)/_layout.tsx` + `(devotee)/_layout.tsx` (href:null).
+- Two new entries in profile `ONBOARD_OPTIONS` so users can reach both screens.
+- Smoke now covers `/gurukuls/mine/list` + `/gurukul-portal/applications` for devotee → **89/89 pass on prod**.
+
+### Test results
+
+- Mobile `tsc --noEmit` exit 0.
+- API vitest 493/493 across 37 files.
+- Prod smoke 89/89 (8 roles × ~5 endpoints + 16 web pages + 15 public API + perms + admin mutation).
+
+### Known caveats
+
+- gurukul-portal lives inside `(devotee)` group which has `RoleGuard allowedRoles={['devotee']}`. Non-devotee roles (pandit/astrologer/etc) can register a gurukul on web but on mobile must use devotee role. Acceptable for now since devotee is the default; gurukul ownership is anyway via `Gurukul.ownerId` FK and not coupled to role.
+
+---
+
 ## 2026-05-25 — Sample gurukul seed + admin moderation + signin fix
 
 **Status**: ready to commit. Builds on `bda6a0b`. Addresses user report on `/auth/signin` infinite loading + "no sample gurukul, admin verify also needed, sigup as gurukuls also needed".
