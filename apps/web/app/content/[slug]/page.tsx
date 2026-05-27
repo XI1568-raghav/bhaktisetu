@@ -1,5 +1,16 @@
-export const runtime = 'edge';
 import type { Metadata } from 'next';
+
+export const dynamicParams = false;
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return [
+    'hanuman-chalisa', 'shiv-tandav-stotram', 'gayatri-mantra', 'mahamrityunjaya-mantra',
+    'aditya-hridayam', 'durga-saptashati', 'vishnu-sahasranama', 'lalita-sahasranama',
+    'shri-suktam', 'rudri-path', 'sundara-kanda', 'bhaja-govindam',
+  ].map((slug) => ({ slug }));
+}
+
 import {
  Heart,
  Share2,

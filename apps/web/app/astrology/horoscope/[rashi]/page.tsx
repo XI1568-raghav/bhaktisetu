@@ -17,8 +17,11 @@ import {
 } from 'lucide-react';
 import { RASHIS, getRashi, pujasForRashi } from '../../../../lib/rashis';
 
-export const runtime = 'edge';
-export const revalidate = 3600;
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return RASHIS.map((r) => ({ rashi: r.rashi }));
+}
 
 interface Params {
   params: { rashi: string };

@@ -1,5 +1,10 @@
-export const runtime = 'edge';
 import type { Metadata } from "next";
+
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return Object.keys(allCows).map((id) => ({ id }));
+}
+
 import { IMAGES } from "../../../lib/images";
 import {
  Heart,
