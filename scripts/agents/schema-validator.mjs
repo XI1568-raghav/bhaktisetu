@@ -10,6 +10,8 @@ const TARGETS = [
   { url: '/nakshatra', expected: ['ItemList'] },
   { url: '/muhurat', expected: ['ItemList'] },
   { url: '/rashi', expected: ['ItemList'] },
+  { url: '/vrat', expected: ['ItemList'] },
+  { url: '/vrat/ekadashi', expected: ['BreadcrumbList', 'Article'] },
   { url: '/faqs', expected: ['FAQPage'] },
   { url: '/pilgrimage', expected: ['ItemList'] },
   { url: '/pilgrimage/char-dham', expected: ['BreadcrumbList', 'TouristTrip'] },
