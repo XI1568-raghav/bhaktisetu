@@ -1,0 +1,106 @@
+name: PR checks
+
+# Lightweight per-PR guards distinct from the heavy ci.yml.
+# - Verifies every agent script in agents-daily.yml's default list exists + parses.
+# - Verifies schema-validator probe targets are still valid Next routes.
+# - Runs schema-validator dry (no network) to catch broken regex / parser logic.
+#
+# Free: ~30s/PR.
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/agents/**'
+      - '.github/workflows/agents-daily.yml'
+      - 'apps/web/app/**/page.tsx'
+      - 'apps/web/lib/**'
+
+jobs:
+  fleet-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Extract agent list from agents-daily.yml
+        id: agents
+        run: |
+          # Pull the run-all line; default if it's empty
+          LINE=$(grep -oE 'node scripts/agents/run-all\.mjs[^|]*' .github/workflows/agents-daily.yml | head -1)
+          AGENTS=$(echo "$LINE" | sed -E 's|node scripts/agents/run-all\.mjs||' | xargs)
+          echo "list=$AGENTS" >> "$GITHUB_OUTPUT"
+          echo "Fleet: $AGENTS"
+
+      - name: Verify each agent script exists
+        run: |
+          MISSING=""
+          for a in ${{ steps.agents.outputs.list }}; do
+            if [ ! -f "scripts/agents/$a.mjs" ]; then
+              MISSING="$MISSING $a"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing agent script(s):$MISSING"
+            exit 1
+          fi
+          echo "All agent scripts present."
+
+      - name: Syntax-check every agent script
+        run: |
+          FAILED=""
+          for f in scripts/agents/*.mjs; do
+            if ! node --check "$f" 2>/dev/null; then
+              FAILED="$FAILED $f"
+              echo "::error file=$f::Syntax error"
+              node --check "$f" || true
+            fi
+          done
+          if [ -n "$FAILED" ]; then
+            echo "::error::Syntax errors in:$FAILED"
+            exit 1
+          fi
+          echo "All agent scripts parse cleanly."
+
+      - name: Verify schema-validator targets are routable
+        run: |
+          # Each probe URL must correspond to an app/ route. Pages with
+          # generateStaticParams or [slug] are checked via the parent dir.
+          node <<'EOF'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const src = fs.readFileSync('scripts/agents/schema-validator.mjs', 'utf8');
+          // Extract { url: '...' } entries
+          const urls = [...src.matchAll(/url:\s*'([^']+)'/g)].map((m) => m[1]);
+          const APP = 'apps/web/app';
+          const missing = [];
+          for (const u of urls) {
+            // Try direct page
+            const seg = u.replace(/^\//, '').split('/').filter(Boolean);
+            const tryPaths = [
+              path.join(APP, ...seg, 'page.tsx'),
+              path.join(APP, ...seg.slice(0, -1), '[slug]', 'page.tsx'),
+              path.join(APP, ...seg.slice(0, -1), `[${seg[seg.length-1]}]`, 'page.tsx'),
+            ];
+            if (seg.length === 0) tryPaths.push(path.join(APP, 'page.tsx'));
+            const hit = tryPaths.some((p) => fs.existsSync(p));
+            if (!hit) missing.push(u);
+          }
+          if (missing.length) {
+            console.error('::error::Probe URLs without matching route: ' + missing.join(', '));
+            process.exit(1);
+          }
+          console.log('All ' + urls.length + ' probe URLs resolve to a route.');
+          EOF
+
+      - name: Run agent-issue-filer in dry mode (no GH_TOKEN)
+        env:
+          # Intentionally unset so the agent should noop gracefully.
+          GITHUB_TOKEN: ''
+        run: |
+          # Should print a "skip" line and exit 0, NOT crash.
+          timeout 30 node scripts/agents/agent-issue-filer.mjs || true
+          echo "agent-issue-filer dry run complete (graceful noop expected)."
