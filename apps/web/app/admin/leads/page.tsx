@@ -106,6 +106,8 @@ export default function AdminLeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [importBusy, setImportBusy] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [decisionReason, setDecisionReason] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -181,6 +183,28 @@ export default function AdminLeadsPage() {
       setNoteInput('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Note failed');
+    }
+  };
+
+  const transitionStatus = async (newStatus: LeadStatus, sendEmail: boolean) => {
+    if (!selected || !token) return;
+    setStatusBusy(true);
+    try {
+      const r = await authFetch<{ lead: LeadDetail }>(
+        token,
+        `/admin/leads/${selected.id}/status`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status: newStatus, sendEmail, reason: decisionReason.trim() }),
+        }
+      );
+      setSelected({ ...selected, ...r.lead });
+      setLeads((prev) => prev.map((l) => (l.id === r.lead.id ? { ...l, status: r.lead.status } : l)));
+      setDecisionReason('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Status update failed');
+    } finally {
+      setStatusBusy(false);
     }
   };
 
@@ -430,6 +454,43 @@ export default function AdminLeadsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <h3 className="mt-6 mb-2 text-sm font-semibold text-surface-800">Decision</h3>
+            <div className="space-y-2 mb-2">
+              <input
+                type="text"
+                placeholder="Reason or welcome note (sent in email)"
+                value={decisionReason}
+                onChange={(e) => setDecisionReason(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg"
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => transitionStatus('CONVERTED', true)}
+                  disabled={statusBusy || selected.status === 'CONVERTED'}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-green-600 text-white disabled:opacity-50"
+                >
+                  Approve + send welcome
+                </button>
+                <button
+                  onClick={() => transitionStatus('UNSUBSCRIBED', true)}
+                  disabled={statusBusy || selected.status === 'UNSUBSCRIBED'}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white disabled:opacity-50"
+                >
+                  Reject + send note
+                </button>
+                <button
+                  onClick={() => transitionStatus('QUEUED', false)}
+                  disabled={statusBusy}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-100 text-surface-700 disabled:opacity-50"
+                >
+                  Queue for outreach
+                </button>
+              </div>
+              <p className="text-[10px] text-surface-500">
+                Approve transitions status to CONVERTED + emails sign-in link. Reject emails a polite decline. Queue is internal-only (no email).
+              </p>
             </div>
 
             <h3 className="mt-6 mb-2 text-sm font-semibold text-surface-800">Notes</h3>

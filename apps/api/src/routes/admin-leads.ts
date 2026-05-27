@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { runDailyOps } from '../jobs/master-cron.js';
+import { sendEmail } from '../lib/email.js';
 
 // Lead pipeline + Outreach + Waitlist admin routes.
 //
@@ -37,6 +38,12 @@ const importBodySchema = z.object({
 
 const noteBodySchema = z.object({
   note: z.string().min(1),
+});
+
+const statusBodySchema = z.object({
+  status: z.enum(['NEW', 'QUEUED', 'EMAILED', 'REPLIED', 'CONVERTED', 'BOUNCED', 'UNSUBSCRIBED']),
+  sendEmail: z.boolean().optional().default(false),
+  reason: z.string().max(500).optional().default(''),
 });
 
 type LeadModel = {
@@ -378,6 +385,58 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
       } catch (err) {
         request.log.error({ err }, 'append note failed');
         return reply.code(500).send({ error: 'Failed to append note' });
+      }
+    }
+  );
+
+  // ─── PATCH /admin/leads/:id/status ───────────────────────────────────────
+  // Transition lead status (e.g. NEW → CONVERTED for verified astrologer).
+  // Optional welcome email on CONVERTED, optional reject email on UNSUBSCRIBED.
+  server.patch<{ Params: { id: string } }>(
+    '/leads/:id/status',
+    { preHandler: adminPreHandlers },
+    async (request, reply) => {
+      const parsed = statusBodySchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
+      }
+      const lead = leadModel();
+      if (!lead) return reply.code(503).send({ error: 'Lead model not available yet' });
+      try {
+        const existing = await lead.findUnique({ where: { id: request.params.id } });
+        if (!existing) return reply.code(404).send({ error: 'Lead not found' });
+        const author = request.currentUser?.email ?? 'admin';
+        const stamp = new Date().toISOString();
+        const noteLine = `[${stamp} ${author}] status → ${parsed.data.status}${parsed.data.reason ? ` (${parsed.data.reason})` : ''}`;
+        const updated = await lead.update({
+          where: { id: request.params.id },
+          data: {
+            status: parsed.data.status,
+            notes: `${noteLine}\n${(existing as { notes?: string | null }).notes ?? ''}`,
+          },
+        });
+        if (parsed.data.sendEmail && existing.email) {
+          const roleLabel = String(existing.role || 'partner').toLowerCase().replace('_', ' ');
+          const isApproval = parsed.data.status === 'CONVERTED';
+          const isReject = parsed.data.status === 'UNSUBSCRIBED' || parsed.data.status === 'BOUNCED';
+          if (isApproval) {
+            await sendEmail({
+              to: existing.email,
+              subject: `You're verified on Darshya as a ${roleLabel}`,
+              html: `<p>Namaste ${existing.name},</p><p>Your application to join Darshya as a <strong>${roleLabel}</strong> has been approved. Sign in at <a href="https://darshya.online/auth/sign-in">darshya.online</a> to set up your profile and start taking bookings.</p>${parsed.data.reason ? `<p>Note from our team: ${parsed.data.reason}</p>` : ''}<p>— Darshya partnerships team</p>`,
+            }).catch(() => null);
+          } else if (isReject) {
+            await sendEmail({
+              to: existing.email,
+              subject: `Update on your Darshya ${roleLabel} application`,
+              html: `<p>Namaste ${existing.name},</p><p>Thank you for your interest in joining Darshya. After review, we are unable to onboard your application at this time.</p>${parsed.data.reason ? `<p>${parsed.data.reason}</p>` : ''}<p>You may reapply once the gaps below are addressed. Reach us at partnerships@darshya.online for clarification.</p><p>— Darshya partnerships team</p>`,
+            }).catch(() => null);
+          }
+        }
+        return { lead: updated };
+      } catch (err) {
+        request.log.error({ err }, 'status mutation failed');
+        return reply.code(500).send({ error: 'Failed to update status' });
       }
     }
   );
