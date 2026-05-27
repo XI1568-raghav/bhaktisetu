@@ -124,6 +124,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/changelog', priority: 0.5 },
     { path: '/press', priority: 0.5 },
     { path: '/deity', priority: 0.8 },
+    { path: '/festival', priority: 0.9 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -200,6 +201,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Festival pages — drive massive seasonal traffic spikes.
+  const { festivalSlugs } = await import('../lib/festivals');
+  const festivalEntries = festivalSlugs().map((slug) => ({
+    url: `${BASE_URL}/festival/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.85,
+  }));
+
   // Hindi entry — only the landing page is genuinely translated today.
   // Listing untranslated /hi/* pages here would mislead Google + hurt SEO
   // (thin/duplicate content penalty). Expand this array only when real
@@ -247,6 +257,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...yatraEntries,
     ...yatraDestEntries,
     ...deityEntries,
+    ...festivalEntries,
     ...bookEntries,
     ...hiEntries,
     ...shlokaEntries,
