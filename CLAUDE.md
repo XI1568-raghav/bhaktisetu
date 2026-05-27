@@ -30,4 +30,5 @@ Repo `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — n
 | `docs/auth-model.md` | Token formats, demo accounts, middleware ordering |
 | `docs/env-vars.md` | Every env var + behavior when absent |
 | `docs/caveats.md` | "Do not touch unless asked" gotchas |
+| `docs/cf-worker-budget.md` | CF Pages 3 MiB worker limit — READ before adding `runtime='edge'` |
 | `docs/mobile-plan.md` | Mobile parity multi-phase plan |
