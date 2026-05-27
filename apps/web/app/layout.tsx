@@ -176,8 +176,8 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  {
  titleKey: "content",
  links: [
- { href: "/content?tab=aarti", t: "terms", key: "aarti" },
- { href: "/content?tab=chalisa", t: "terms", key: "chalisa" },
+ { href: "/aarti", t: "terms", key: "aarti" },
+ { href: "/chalisa", t: "terms", key: "chalisa" },
  { href: "/content?tab=mantra", t: "terms", key: "mantra" },
  { href: "/content?tab=bhajan", t: "terms", key: "bhajan" },
  ],
