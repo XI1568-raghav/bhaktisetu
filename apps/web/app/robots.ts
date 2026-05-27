@@ -34,6 +34,7 @@ export default function robots(): MetadataRoute.Robots {
           '/chalisa/',
           '/today',
           '/gift',
+          '/pilgrimage/',
         ],
         disallow: [
           '/api/',
