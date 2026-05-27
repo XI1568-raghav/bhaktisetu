@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const runtime = 'edge';
 export const revalidate = 3600; // 1h — GH unauth limit is 60 req/hr; 1h cache safe.
 
 export const metadata: Metadata = {

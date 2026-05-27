@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
-export const runtime = 'edge';
 
 // Viral feature: shareable shloka card generator (Day 31-60 plan).
 // User types Devanagari + optional translit/meaning/source -> live preview

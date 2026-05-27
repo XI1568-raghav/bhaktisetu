@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Music, Clock, ArrowRight } from 'lucide-react';
 import { AARTIS } from '../../lib/aartis';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DASHAVATAR, YUGA_ORDER, YUGA_LABELS, type AvatarYuga } from '../../lib/dashavatar';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

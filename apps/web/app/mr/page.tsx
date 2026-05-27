@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { LangLanding } from '../../components/LangLanding';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'दर्श्या — भारताचे आध्यात्मिक सुपर अ‍ॅप',

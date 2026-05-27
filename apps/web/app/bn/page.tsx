@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { LangLanding } from '../../components/LangLanding';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'দর্শ্যা — ভারতের আধ্যাত্মিক সুপার অ্যাপ',

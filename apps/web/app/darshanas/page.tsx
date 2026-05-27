@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DARSHANAS, TOTAL_DARSHANAS, PAIR_LABELS, PAIR_ORDER, type DarshanaPair } from '../../lib/darshanas';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

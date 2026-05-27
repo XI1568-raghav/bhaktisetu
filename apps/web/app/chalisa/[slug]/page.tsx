@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { BookOpen, Clock, ChevronRight, ArrowRight, CheckCircle2, ExternalLink } from 'lucide-react';
 import { CHALISAS, getChalisa } from '../../../lib/chalisas';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 interface Params {
