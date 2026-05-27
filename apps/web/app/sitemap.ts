@@ -138,6 +138,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/vrat', priority: 0.85 },
     { path: '/chants', priority: 0.85 },
     { path: '/sankalp', priority: 0.85 },
+    { path: '/tirth', priority: 0.9 },
     { path: '/why-darshya', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
@@ -346,6 +347,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const { tirthaSlugs } = await import('../lib/tirthas');
+  const tirthaEntries = tirthaSlugs().map((slug) => ({
+    url: `${BASE_URL}/tirth/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -405,6 +414,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...rashiProfileEntries,
     ...vratEntries,
     ...chantEntries,
+    ...tirthaEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
