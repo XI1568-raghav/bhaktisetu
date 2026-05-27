@@ -6,7 +6,6 @@ import { API_BASE_URL } from '../../lib/api-config';
 import { useAuth } from '../../lib/auth-context';
 import EmailCapture from '../../components/EmailCapture';
 
-export const runtime = 'edge';
 
 interface ReferralMeResponse {
   code: string;

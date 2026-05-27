@@ -5,7 +5,6 @@ import { NAKSHATRAS } from '../../lib/nakshatras';
 import { RASHIS } from '../../lib/rashis';
 import { SankalpClient } from './SankalpClient';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

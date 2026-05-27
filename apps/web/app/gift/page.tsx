@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { Heart, MessageCircle, Video, Gift, Globe, ShieldCheck } from 'lucide-react';
 import { GiftPujaForm } from './GiftPujaForm';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
