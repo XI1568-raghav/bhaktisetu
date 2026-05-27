@@ -4,7 +4,27 @@
 
 ## In progress
 
-- (nothing — P0-P4 batch shipped 2026-05-27 morning: 5 new pages + 3 new agents + E10 server filter + sitemap repair. See HANDOFF block below.)
+- (nothing — P5-P9 ship batch shipped 2026-05-27 afternoon: /city + /blog reader + /pujas/[slug]/temples + NextFestivalStrip + CI cascade fix. See HANDOFF P5-P9 block below.)
+
+## HANDOFF 2026-05-27 (P5-P9 autonomous batch)
+
+**Shipped:**
+
+1. **CI cascade fix** (`.github/workflows/ci.yml`, 19ca6c0) — extended `--filter=!@poojly/remotion-pitch` to lint/type-check/test (was Build-only). turbo `dependsOn: ^build` was cascading remotion render into every job.
+2. **`/city` programmatic-SEO** (c75c617) — 10 sacred cities (Varanasi, Mumbai, Delhi, Tirupati, Haridwar, Rishikesh, Ujjain, Ayodhya, Dwarka, Puri). Each gets famous temples (live API w/ static fallback), popular pujas, deity tags, nearby yatra. schema.org/Place + PostalAddress JSON-LD. Sitemap + robots + footer + i18n surfacing. Long-tail: "puja in {city}", "temples in {city}".
+3. **Live blog reader** (1b85d97) — `/blog` index + `/blog/[slug]` now read agent drafts from `docs/agent-reports/blog-drafts/` via GH contents API (1h cache). BlogPosting JSON-LD per post. Sitemap fans out per draft. Tolerant fallback to coming-soon state.
+4. **`/pujas/[slug]/temples` mirror** (4d355d4) — cross-direction of `/temples/[slug]/pujas`. "where to do {puja}", "best temple for rudrabhishek". Sorted by trustScore desc. Sitemap flatMap per puja slug. Detail page gets "Compare all →" link.
+5. **NextFestivalStrip on home** (0c0090c) — above-the-fold countdown card between hero + our-story. Days-until badge, festival name + sanskrit + deity, direct "Book {first puja}" CTA + "Learn more" link.
+
+**Stats**: 5 new pages, 1 new component, sitemap depth roughly doubled (city × 10 + blog × N + puja-temples × ~12).
+
+**User-pending (unchanged from prior batch):**
+
+- **U18** `CRON_AUTH_TOKEN` GH secret
+- **U19** `INDEXNOW_KEY` GH secret + `darshya.online/<key>.txt`
+- **Rotate Resend key** `***REMOVED***`
+- **U16** flip CF `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- **U1-U15** → `docs/activation-gates.md`
 
 ## HANDOFF 2026-05-27 (P0-P4 autonomous batch — pushed 9bdef89)
 
@@ -85,6 +105,12 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-27 | feat(home): NextFestivalStrip above-the-fold countdown | `0c0090c` |
+| 2026-05-27 | feat(seo): /pujas/[slug]/temples mirror — best temples per puja | `4d355d4` |
+| 2026-05-27 | feat(blog): live blog reader from agent drafts on GitHub | `1b85d97` |
+| 2026-05-27 | feat(seo): /city programmatic-SEO (10 sacred cities) | `c75c617` |
+| 2026-05-27 | fix(ci): exclude remotion-pitch from lint/type-check/test (cascade) | `19ca6c0` |
+| 2026-05-27 | feat: P5-P6 batch — /deity + /festival programmatic-SEO + ad12fb0 footer surfacing | `4c4614b` `48f5b6d` `ad12fb0` |
 | 2026-05-27 | feat: P0-P4 batch — /changelog + /press + /temples/[slug]/pujas + /hi + 3 agents (review-harvest, competitor-watch, rss-to-thread) + E10 server filter + feed cleanup + sitemap repair | `9bdef89` |
 | 2026-05-27 | feat: overnight batch — referrals MVP + 4 new agents + dynamic OG + lighthouse cron + email capture + shloka-card generator + /og/default + /launch + daily-cron soft-fail | pending |
 | 2026-05-27 | feat: agent fleet (9 agents) + CEO roadmap + /admin/agents + 3 GH workflows | pending |
