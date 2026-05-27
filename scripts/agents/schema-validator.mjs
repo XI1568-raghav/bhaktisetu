@@ -25,6 +25,7 @@ const TARGETS = [
   { url: '/tirth', expected: ['ItemList'] },
   { url: '/tirth/kashi-vishwanath', expected: ['BreadcrumbList', 'Place'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
