@@ -9,7 +9,7 @@ export const metadata: Metadata = {
    description: 'Sign in to Darshya. Access live darshan, book pujas, and manage your spiritual journey.',
    url: 'https://darshya.online/auth/login',
    type: 'website',
-   images: ['/og-default.png'],
+   images: ['/og/default'],
  },
 };
 

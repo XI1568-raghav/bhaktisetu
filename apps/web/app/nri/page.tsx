@@ -13,6 +13,7 @@ import {
   Star,
 } from 'lucide-react';
 import { nriPremiumServiceJsonLd } from '../../lib/jsonld';
+import EmailCapture from '../../components/EmailCapture';
 
 export const metadata: Metadata = {
   title: 'NRI Premium — Stay Connected to India | Darshya',
@@ -246,6 +247,15 @@ export default function NriPremiumLanding() {
             </details>
           ))}
         </div>
+      </section>
+
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <EmailCapture
+          source="nri-landing"
+          title="Not ready to subscribe yet?"
+          subtitle="Get our NRI festival calendar + a $10 trial credit when we launch your country premium tier."
+          cta="Notify me"
+        />
       </section>
 
       <section className="bg-saffron-700 text-white">

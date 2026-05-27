@@ -62,7 +62,7 @@ import { wellnessSessionRoutes } from './routes/wellness-sessions.js';
 import { outreachWebhookRoutes, outreachAdminRoutes } from './routes/outreach-webhook.js';
 import { outreachTrackingRoutes } from './routes/outreach-tracking.js';
 import { adminLeadsRoutes } from './routes/admin-leads.js';
-import { adminAgentsRoutes } from './routes/admin-agents.js';
+import { adminAgentsRoutes, publicAgentFeedRoutes } from './routes/admin-agents.js';
 import { adminTemplesRoutes } from './routes/admin-temples.js';
 import { adminBookingsRoutes } from './routes/admin-bookings.js';
 import { adminLeadConversionRoutes } from './routes/admin-lead-conversion.js';
@@ -84,6 +84,7 @@ import { gurukulApplicationsRoutes } from './routes/gurukul-applications.js';
 import { gurukulPortalRoutes } from './routes/gurukul-portal.js';
 import { adminGurukulsRoutes } from './routes/admin-gurukuls.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
+import { referralsRoutes } from './routes/referrals.js';
 
 const server = Fastify({
   logger: {
@@ -253,6 +254,8 @@ async function bootstrap() {
   await server.register(adminGurukulsRoutes, { prefix: '/api/v1/admin/gurukuls' });
   await server.register(knowledgeRoutes, { prefix: '/api/v1/knowledge' });
   await server.register(adminAgentsRoutes, { prefix: '/api/v1/admin/agents' });
+  await server.register(publicAgentFeedRoutes, { prefix: '/api/v1/public/agents' });
+  await server.register(referralsRoutes, { prefix: '/api/v1/referrals' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;

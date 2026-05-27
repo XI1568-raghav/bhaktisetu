@@ -1,0 +1,85 @@
+name: Lighthouse - weekly
+
+# Runs LHCI against the top public pages every Monday 04:00 UTC (09:30 IST).
+# Writes scores to docs/agent-reports/YYYY-MM-DD-lighthouse.md so they show
+# up alongside the rest of the agent fleet in /admin/agents.
+#
+# Free: ~3 min/run × 4 runs/month = 12 min against 2000-min ceiling.
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install lhci
+        run: npm install -g @lhci/cli@0.13.x
+
+      - name: Run Lighthouse audits
+        env:
+          WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
+        run: |
+          mkdir -p .lighthouseci docs/agent-reports
+          URLS=(
+            "/"
+            "/temples"
+            "/pujas"
+            "/darshan"
+            "/content"
+            "/store"
+            "/donations"
+            "/refer"
+            "/shlokas"
+          )
+          DATE=$(date -u +%Y-%m-%d)
+          REPORT="docs/agent-reports/${DATE}-lighthouse.md"
+          echo "# Lighthouse weekly — ${DATE}" > "$REPORT"
+          echo "" >> "$REPORT"
+          echo "| URL | Perf | A11y | BP | SEO |" >> "$REPORT"
+          echo "|---|---|---|---|---|" >> "$REPORT"
+          for path in "${URLS[@]}"; do
+            url="${WEB_BASE}${path}"
+            echo "→ $url"
+            # Single-run audit (CI minutes cost-sensitive). preset=desktop.
+            lhci collect --url="$url" --numberOfRuns=1 --settings.preset=desktop || true
+            # Parse the most recent json result.
+            latest=$(ls -t .lighthouseci/lhr-*.json 2>/dev/null | head -1 || true)
+            if [ -n "$latest" ] && [ -f "$latest" ]; then
+              perf=$(node -e "console.log(Math.round((require('./$latest').categories.performance?.score||0)*100))")
+              a11y=$(node -e "console.log(Math.round((require('./$latest').categories.accessibility?.score||0)*100))")
+              bp=$(node -e "console.log(Math.round((require('./$latest').categories['best-practices']?.score||0)*100))")
+              seo=$(node -e "console.log(Math.round((require('./$latest').categories.seo?.score||0)*100))")
+              echo "| ${path} | ${perf} | ${a11y} | ${bp} | ${seo} |" >> "$REPORT"
+              # Clean for next iteration.
+              rm -f .lighthouseci/lhr-*.json .lighthouseci/manifest.json 2>/dev/null || true
+            else
+              echo "| ${path} | - | - | - | - |" >> "$REPORT"
+            fi
+          done
+          echo "" >> "$REPORT"
+          echo "_Desktop preset · single run · ${WEB_BASE}_" >> "$REPORT"
+          echo "$REPORT generated"
+
+      - name: Commit lighthouse report
+        run: |
+          git config user.name "darshya-agent-bot"
+          git config user.email "agents@darshya.online"
+          git add docs/agent-reports/ || true
+          if git diff --cached --quiet; then
+            echo "No new lighthouse artifact to commit."
+          else
+            git commit -m "chore(lighthouse): weekly audit $(date -u +%Y-%m-%d)"
+            git push
+          fi

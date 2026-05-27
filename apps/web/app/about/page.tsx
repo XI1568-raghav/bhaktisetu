@@ -29,13 +29,13 @@ export const metadata: Metadata = {
       'An honest devotional super-app for India and the diaspora. Video proof. Fair priest payouts. No middlemen.',
     type: 'website',
     url: 'https://darshya.online/about',
-    images: ['/og-default.png'],
+    images: ['/og/default'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'About Darshya',
     description: 'Two founders, one stubborn idea: video-verified bhakti.',
-    images: ['/og-default.png'],
+    images: ['/og/default'],
   },
 };
 

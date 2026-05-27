@@ -32,10 +32,11 @@ jobs:
           API_BASE: ${{ secrets.API_BASE_URL || 'https://api.darshya.online' }}
           WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
         run: |
           AGENTS="${{ github.event.inputs.only }}"
           if [ -z "$AGENTS" ]; then
-            node scripts/agents/run-all.mjs seo-audit content-pipeline lead-gen growth-metrics social-queue onboarding-drip pr-outreach
+            node scripts/agents/run-all.mjs seo-audit content-pipeline lead-gen growth-metrics social-queue onboarding-drip pr-outreach broken-link gsc-submitter founder-tweet-draft content-publisher
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
           fi
