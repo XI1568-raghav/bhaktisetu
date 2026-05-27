@@ -7,6 +7,11 @@ import { notFound } from 'next/navigation';
 import { FESTIVALS, getFestival } from '../../../lib/festivals';
 
 export const revalidate = 86400;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return FESTIVALS.map((f) => ({ slug: f.slug }));
+}
 
 interface Params {
   params: { slug: string };

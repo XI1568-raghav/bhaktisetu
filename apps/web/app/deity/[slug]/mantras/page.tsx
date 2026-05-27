@@ -7,6 +7,11 @@ import { getDeity, DEITIES } from '../../../../lib/deities';
 import { getMantrasForDeity, deitiesWithMantras } from '../../../../lib/deity-mantras';
 
 export const revalidate = 86400;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return deitiesWithMantras().map((slug) => ({ slug }));
+}
 
 interface Params {
   params: { slug: string };

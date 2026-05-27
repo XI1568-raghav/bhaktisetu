@@ -9,6 +9,11 @@ import { getPujaTypes } from '../../../lib/api';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
 
 export const revalidate = 3600;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return DEITIES.map((d) => ({ slug: d.slug }));
+}
 
 interface Params {
   params: { slug: string };
