@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { UPANISHADS, upanishadSlugs, getUpanishad } from '../../../lib/upanishads';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 

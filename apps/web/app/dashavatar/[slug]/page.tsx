@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DASHAVATAR, avatarSlugs, getAvatar, YUGA_LABELS } from '../../../lib/dashavatar';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 
