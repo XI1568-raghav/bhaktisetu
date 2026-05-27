@@ -21,6 +21,10 @@ export default function robots(): MetadataRoute.Robots {
           '/astrology/',
           '/blog/',
           '/hi',
+          '/ta',
+          '/te',
+          '/bn',
+          '/mr',
           '/changelog',
           '/press',
           '/launch',
@@ -29,6 +33,7 @@ export default function robots(): MetadataRoute.Robots {
           '/aarti/',
           '/chalisa/',
           '/today',
+          '/gift',
         ],
         disallow: [
           '/api/',

@@ -129,6 +129,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/aarti', priority: 0.8 },
     { path: '/chalisa', priority: 0.8 },
     { path: '/today', priority: 0.9 },
+    { path: '/gift', priority: 0.95 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -283,24 +284,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     blogEntries = [];
   }
 
-  // Hindi entry — only the landing page is genuinely translated today.
-  // Listing untranslated /hi/* pages here would mislead Google + hurt SEO
-  // (thin/duplicate content penalty). Expand this array only when real
-  // Devanagari pages ship.
-  const hiEntries = [
-    {
-      url: `${BASE_URL}/hi`,
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-      alternates: {
-        languages: {
-          en: `${BASE_URL}/`,
-          hi: `${BASE_URL}/hi`,
-        },
-      },
-    },
-  ];
+  // Lang landing pages — only landing is genuinely translated per lang.
+  // Listing untranslated /lang/* pages would mislead Google + hurt SEO
+  // (thin/duplicate content penalty). Expand only when real translated
+  // sub-pages ship.
+  const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
+  const langAlternates = {
+    en: `${BASE_URL}/`,
+    hi: `${BASE_URL}/hi`,
+    ta: `${BASE_URL}/ta`,
+    te: `${BASE_URL}/te`,
+    bn: `${BASE_URL}/bn`,
+    mr: `${BASE_URL}/mr`,
+  };
+  const langEntries = langCodes.map((code) => ({
+    url: `${BASE_URL}/${code}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+    alternates: { languages: langAlternates },
+  }));
 
   const bookEntries = [
     { url: `${BASE_URL}/content/books`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
@@ -338,7 +341,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...rashiEntries,
     ...blogEntries,
     ...bookEntries,
-    ...hiEntries,
+    ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];

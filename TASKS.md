@@ -4,7 +4,52 @@
 
 ## In progress
 
-- (nothing — P10-P14 batch shipped 2026-05-27 evening: /aarti + /chalisa + /deity mantras subpage + 15 cities + 20 festivals + /today daily hub + 2 new agents + markdown render upgrade. See HANDOFF P10-P14 block below.)
+- (nothing — E9 + P15-P20 batch shipped 2026-05-27 late evening: Stripe Elements, IVS mobile, gift-puja NRI, yatra inquiry commerce, astrologer status PATCH, 3 new agents, 4 new lang landings. See HANDOFF E9+P15-P20 block below.)
+
+## HANDOFF 2026-05-27 (E9 + P15-P20 autonomous batch)
+
+**Shipped (unattended, per "complete all E9 + P15-P20" directive):**
+
+1. **E9 — Embedded Stripe Elements** (`apps/web/components/StripeClientSecretCheckout.tsx` + `apps/web/app/checkout/offering/[offeringId]/page.tsx` + `apps/web/app/checkout/success/page.tsx`)
+   - clientSecret-only fallback when full Elements provider not bundled
+   - Polite degradation if Stripe.js not loaded → existing mailto fallback retained
+   - Success page reads PaymentIntent ref + booking number from query string
+2. **P15 — Mobile IVS player port** (`apps/mobile/app/(devotee)/darshan-player.tsx`)
+   - Web IVS player parity for mobile devotee app — HLS playback via Expo AV
+   - Graceful fallback to thumbnail + "Watch on web" CTA if stream offline
+3. **P16 — Gift-puja NRI → recipient WhatsApp delivery** (`apps/api/src/routes/gift-puja.ts` + `apps/web/app/gift/`)
+   - Sender (NRI) picks puja + temple, enters recipient name/phone, pays in USD
+   - On success: WhatsApp message to recipient with booking number + video proof link
+   - 80G receipt issued to sender's PAN
+4. **P17 — Yatra package commerce** (`apps/api/src/routes/yatra-inquiry.ts` + `apps/web/app/yatra/[slug]/book/page.tsx`)
+   - Real POST `/api/v1/yatra-inquiry/` replacing setTimeout mock
+   - Reference IDs `YTR-YYYYMMDD-HEX8`, buyer contact form, traveler count, package tier
+   - Stores to `yatra-inquiries` localStorage for buyer + DB row for ops
+5. **P18 — Astrologer onboarding (verified)** (`apps/api/src/routes/admin-leads.ts` + `apps/web/app/admin/leads/page.tsx`)
+   - PATCH `/leads/:id/status` w/ zod-validated status enum + optional sendEmail
+   - Admin decision panel: Approve+welcome (green) / Reject+note (red) / Queue (neutral)
+   - Welcome HTML on CONVERTED; polite decline on UNSUBSCRIBED/BOUNCED — both via existing Resend env-or-noop sendEmail
+   - No Prisma schema change — reuses Lead enum
+6. **P19 — 3 new fleet agents** (wired into agents-daily.yml default run-all)
+   - `keyword-rank-tracker` — 25 seed keywords, DuckDuckGo Lite SERP scrape, 90-day rolling state, top-10 wins + 24h movers
+   - `x-engagement-digest` — Nitter RSS (3 mirror rotation), classifies issue/question/praise/comparison, dedups last 500 tweet IDs
+   - `weekly-investor-update` — Sunday-only (FORCE=1 override), git log + 7d agent reports + WoW keyword delta → investor markdown
+7. **P20 — i18n expansion** (Tamil + Telugu + Bengali + Marathi landing pages)
+   - Shared `components/LangLanding.tsx` shell takes all strings as props — DRY across 5 langs
+   - `/ta` `/te` `/bn` `/mr` each: `runtime = 'edge'`, full hreflang alternates (5 langs + en), translated hero/features/NRI/footer
+   - Updated `/hi` + `/` (root) alternates to list all 6 langs
+   - Sitemap consolidated `hiEntries` → `langEntries` (5 codes × shared alternates map)
+   - robots allow `/ta` `/te` `/bn` `/mr`
+
+**Stats**: 1 mobile screen, 4 new lang landing pages (+ shared component), 2 new API routes (gift-puja, yatra-inquiry), 1 admin PATCH endpoint, 2 admin UI panels, 3 new fleet agents (now 19 daily), 1 new Stripe Elements component, 1 checkout success page.
+
+**User-pending (unchanged):**
+
+- **U18** `CRON_AUTH_TOKEN` GH secret
+- **U19** `INDEXNOW_KEY` GH secret + `darshya.online/<key>.txt`
+- **Rotate Resend key** `re_***REMOVED***`
+- **U16** flip CF `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- **U1-U15** → `docs/activation-gates.md`
 
 ## HANDOFF 2026-05-27 (P10-P14 autonomous batch — pushed 5b91a52 + ab9a8e2 + 919862b)
 

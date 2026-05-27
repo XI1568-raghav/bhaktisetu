@@ -46,6 +46,9 @@ type BookingData = {
  companionDays: number;
  // Step 4
  travelers: Traveler[];
+ // Step 5 — buyer contact for inquiry / invoice
+ buyerEmail: string;
+ buyerPhone: string;
 };
 
 const STEPS = ['Trip', 'Package', 'Add-ons', 'Travelers', 'Review'];
@@ -68,9 +71,14 @@ export default function BookYatraPage() {
  { name: '', age: '', gender: 'male', idProof: '' },
  { name: '', age: '', gender: 'female', idProof: '' },
  ],
+ buyerEmail: '',
+ buyerPhone: '',
  }));
  const [submitting, setSubmitting] = useState(false);
  const [submitted, setSubmitted] = useState(false);
+ const [referenceId, setReferenceId] = useState<string | null>(null);
+ const [buyerName, setBuyerName] = useState('');
+ const [submitError, setSubmitError] = useState<string | null>(null);
 
  // Persist to localStorage
  useEffect(() => {
@@ -152,32 +160,70 @@ export default function BookYatraPage() {
  return true;
  })();
 
- function handlePay() {
+ const canSubmitInquiry = buyerName.trim().length > 1 && /.+@.+\..+/.test(data.buyerEmail);
+
+ async function handlePay() {
  if (!yatra) return;
  const currentYatra = yatra;
  setSubmitting(true);
- // Mock Razorpay
- setTimeout(() => {
- const bookingNumber = `BS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 90000 + 10000)}`;
+ setSubmitError(null);
+
+ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.darshya.online';
+ const totalInr = priceBreakdown.total;
+ const totalUsd = Math.round((totalInr / 83) * 100) / 100;
+
+ const payload = {
+ yatraSlug: currentYatra.slug,
+ yatraTitle: currentYatra.title,
+ packageTier: data.packageTier,
+ startDate: data.startDate,
+ pickupCity: data.pickupCity,
+ travelersCount: data.travelersCount,
+ travelers: data.travelers.map((t) => ({ name: t.name, age: t.age, gender: t.gender })),
+ totalInr,
+ totalUsd,
+ buyer: {
+ name: buyerName,
+ email: data.buyerEmail,
+ phone: data.buyerPhone,
+ country: 'India',
+ },
+ notes: `Add-ons: ${Object.entries(data.addOns).filter(([, v]) => v).map(([k]) => k).join(', ') || 'none'}`,
+ };
+
  try {
- const existing = JSON.parse(localStorage.getItem('yatra-bookings') || '[]');
+ const res = await fetch(`${API_BASE}/api/v1/yatra-inquiry/`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(payload),
+ });
+ if (!res.ok) throw new Error(`HTTP ${res.status}`);
+ const json = (await res.json()) as { referenceId: string; ok: boolean };
+
+ try {
+ const existing = JSON.parse(localStorage.getItem('yatra-inquiries') || '[]');
  existing.push({
- bookingNumber,
+ referenceId: json.referenceId,
  yatraSlug: currentYatra.slug,
  yatraTitle: currentYatra.title,
  startDate: data.startDate,
  travelers: data.travelersCount,
  packageTier: data.packageTier,
- total: priceBreakdown.total,
- status: 'confirmed',
+ total: totalInr,
+ status: 'inquiry-received',
  createdAt: new Date().toISOString(),
  });
- localStorage.setItem('yatra-bookings', JSON.stringify(existing));
+ localStorage.setItem('yatra-inquiries', JSON.stringify(existing));
  localStorage.removeItem(`yatra-booking-${currentYatra.slug}`);
  } catch {}
- setSubmitting(false);
+
+ setReferenceId(json.referenceId);
  setSubmitted(true);
- }, 1500);
+ } catch (err) {
+ setSubmitError('Could not reach our yatra desk. Email yatra@darshya.online directly or try again in a minute.');
+ } finally {
+ setSubmitting(false);
+ }
  }
 
  if (submitted) {
@@ -187,17 +233,19 @@ export default function BookYatraPage() {
  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--color-primary-highlight)' }}>
  <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
  </div>
- <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Booking confirmed</h1>
+ <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Inquiry received</h1>
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
- Your {yatra.title} is booked. Our team will call within 24 hours to confirm documents and finalize your departure plan.
+ Our yatra desk will confirm hotel + transport availability for {yatra.title} and email your final invoice within 24 hours.
  </p>
  <div className="p-4 rounded-xl mb-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Amount paid</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Reference ID</p>
+ <p className="text-lg font-mono font-semibold mb-2" style={{ color: 'var(--color-text)' }}>{referenceId ?? '—'}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Quote</p>
  <p className="text-xl font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</p>
  </div>
  <div className="flex items-center justify-center gap-3">
  <Link href="/profile/yatra-bookings" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
- View my bookings
+ View my inquiries
  </Link>
  <Link href="/yatra" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
  Browse more
@@ -520,20 +568,63 @@ export default function BookYatraPage() {
  </div>
  </div>
 
+ <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Your contact</p>
+ <p className="text-[11px] mb-3" style={{ color: 'var(--color-text-muted)' }}>
+ Our yatra desk confirms hotel + transport availability and emails final invoice within 24h. No card needed now.
+ </p>
+ <div className="grid sm:grid-cols-2 gap-3">
+ <div>
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Your name</label>
+ <input
+ value={buyerName}
+ onChange={(e) => setBuyerName(e.target.value)}
+ className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
+ placeholder="Full name"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ </div>
+ <div>
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Email</label>
+ <input
+ type="email"
+ value={data.buyerEmail}
+ onChange={(e) => setData({ ...data, buyerEmail: e.target.value })}
+ className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
+ placeholder="you@example.com"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ </div>
+ <div className="sm:col-span-2">
+ <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Phone / WhatsApp (optional)</label>
+ <input
+ value={data.buyerPhone}
+ onChange={(e) => setData({ ...data, buyerPhone: e.target.value })}
+ className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none"
+ placeholder="+91 ..."
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ />
+ </div>
+ </div>
+ </div>
+
  <button
  onClick={handlePay}
- disabled={submitting}
+ disabled={submitting || !canSubmitInquiry}
  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg text-white btn-press disabled:opacity-60"
  style={{ background: 'var(--color-primary)' }}
  >
  {submitting ? (
- <><Loader2 className="w-4 h-4 animate-spin" /> Processing payment...</>
+ <><Loader2 className="w-4 h-4 animate-spin" /> Sending inquiry...</>
  ) : (
- <><CreditCard className="w-4 h-4" /> Pay {formatINR(priceBreakdown.total)} with Razorpay</>
+ <><CreditCard className="w-4 h-4" /> Request booking · {formatINR(priceBreakdown.total)}</>
  )}
  </button>
+ {submitError && (
+ <p className="text-[11px] text-center" style={{ color: 'var(--color-status-danger, #b91c1c)' }}>{submitError}</p>
+ )}
  <p className="text-[11px] text-center" style={{ color: 'var(--color-text-faint)' }}>
- Secured by Razorpay · UPI / Card / Netbanking · Mock payment for demo
+ Payment link emailed after our team confirms availability. No charge now.
  </p>
  </div>
  )}

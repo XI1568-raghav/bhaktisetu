@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     languages: {
       en: 'https://darshya.online/',
       hi: 'https://darshya.online/hi',
+      ta: 'https://darshya.online/ta',
+      te: 'https://darshya.online/te',
+      bn: 'https://darshya.online/bn',
+      mr: 'https://darshya.online/mr',
     },
   },
   openGraph: {
