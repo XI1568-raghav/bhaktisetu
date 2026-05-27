@@ -133,6 +133,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/pilgrimage', priority: 0.9 },
     { path: '/faqs', priority: 0.8 },
     { path: '/nakshatra', priority: 0.85 },
+    { path: '/muhurat', priority: 0.85 },
     { path: '/feed.xml', priority: 0.3 },
   ];
 
@@ -308,6 +309,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  const { muhuratSlugs } = await import('../lib/muhurats');
+  const muhuratEntries = muhuratSlugs().map((slug) => ({
+    url: `${BASE_URL}/muhurat/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -363,6 +372,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bookEntries,
     ...pilgrimageEntries,
     ...nakshatraEntries,
+    ...muhuratEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
