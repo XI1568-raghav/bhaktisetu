@@ -18,7 +18,7 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 // react-native-webview is optional — Expo Go ships it, bare RN may not.
 // We require() it lazily so a missing module gracefully degrades to "Open in YouTube".
-let WebViewComp: React.ComponentType<{ source: { uri: string }; style?: object; allowsFullscreenVideo?: boolean; mediaPlaybackRequiresUserAction?: boolean }> | null = null;
+let WebViewComp: React.ComponentType<{ source: { uri?: string; html?: string; baseUrl?: string }; style?: object; allowsFullscreenVideo?: boolean; mediaPlaybackRequiresUserAction?: boolean; allowsInlineMediaPlayback?: boolean; originWhitelist?: string[] }> | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   WebViewComp = (require('react-native-webview') as { WebView: typeof WebViewComp }).WebView;
@@ -35,6 +35,38 @@ function youtubeEmbedUrl(rawUrl: string | undefined): string | null {
     return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&playsinline=1`;
   }
   return rawUrl.startsWith('http') ? rawUrl : null;
+}
+
+// HLS/IVS playback via inline WebView HTML using hls.js (cached on jsdelivr).
+// Native iOS/Safari WebViews play HLS natively; Android WebView needs hls.js shim.
+function isHlsUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return /\.m3u8(\?|$)/i.test(url) || /ivs\..*amazonaws\.com/i.test(url);
+}
+
+function hlsHtml(streamUrl: string): string {
+  const esc = streamUrl.replace(/"/g, '&quot;');
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>html,body{margin:0;background:#000;height:100%}video{width:100%;height:100%;object-fit:contain;background:#000}</style>
+</head><body>
+<video id="v" autoplay playsinline controls muted></video>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<script>
+(function(){
+  var v=document.getElementById('v');
+  var src="${esc}";
+  if(v.canPlayType('application/vnd.apple.mpegurl')){
+    v.src=src;
+  } else if(window.Hls && Hls.isSupported()){
+    var h=new Hls({lowLatencyMode:true,liveSyncDuration:2});
+    h.loadSource(src); h.attachMedia(v);
+  } else {
+    document.body.innerHTML='<div style="color:#fff;padding:20px;font-family:sans-serif">HLS unsupported on this device. <a style="color:#fb923c" href="'+src+'">Open stream</a></div>';
+  }
+  setTimeout(function(){v.muted=false;v.play().catch(function(){});},800);
+})();
+</script>
+</body></html>`;
 }
 
 export default function DarshanPlayerScreen() {
@@ -59,6 +91,7 @@ export default function DarshanPlayerScreen() {
   const viewers = typeof data?.viewerCount === 'number' ? data.viewerCount : undefined;
 
   const embedUrl = youtubeEmbedUrl(liveUrl);
+  const hlsMode = isHlsUrl(liveUrl);
   const [refreshing, setRefreshing] = useState(false);
 
   async function onRefresh() {
@@ -94,6 +127,15 @@ export default function DarshanPlayerScreen() {
       <View style={styles.player}>
         {stream.isLoading && !data ? (
           <ActivityIndicator color={colors.white} size="large" />
+        ) : hlsMode && liveUrl && WebViewComp ? (
+          <WebViewComp
+            source={{ html: hlsHtml(liveUrl), baseUrl: 'https://darshya.online' }}
+            style={styles.webview}
+            allowsFullscreenVideo
+            allowsInlineMediaPlayback
+            mediaPlaybackRequiresUserAction={false}
+            originWhitelist={['*']}
+          />
         ) : embedUrl && WebViewComp ? (
           <WebViewComp
             source={{ uri: embedUrl }}

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { StripeClientSecretCheckout } from '../../../../components/StripeClientSecretCheckout';
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // Lifted verbatim from /pujas/[slug]/book — keep the two flows
@@ -118,6 +119,7 @@ export default function OfferingCheckoutPage() {
   const [paymentError, setPaymentError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingNumber, setBookingNumber] = useState('');
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
 
   // NRI / USD checkout toggle. Mirrors the pujas/[slug]/book heuristic:
   // browser timezone outside Asia/Kolkata → diaspora user, default to
@@ -414,18 +416,12 @@ export default function OfferingCheckoutPage() {
         return;
       }
 
-      // Edge case: server returned a clientSecret but no hosted URL.
-      // Auto-open mailto so the user doesn't have to compose; booking row
-      // stays orphaned 24h tops since support replies same-day.
+      // clientSecret-only path: mount embedded Stripe Elements.
+      // Falls back to mailto if NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY missing
+      // (handled inside StripeClientSecretCheckout).
       const bk = data.bookingNumber ?? data.orderId;
-      const subject = encodeURIComponent(`Stripe payment link needed — ${bk}`);
-      const body = encodeURIComponent(
-        `Hi Darshya team,\n\nMy booking ${bk} was created but Stripe Checkout did not redirect. Please send me a secure payment link.\n\nThank you.`,
-      );
-      setPaymentError(
-        `Stripe checkout could not redirect on this device. We have created your booking (${bk}) and queued it. Please email support@darshya.online — opening your mail client now.`,
-      );
-      window.location.href = `mailto:support@darshya.online?subject=${subject}&body=${body}`;
+      setBookingNumber(bk);
+      setStripeClientSecret(data.clientSecret as string);
       setPaymentLoading(false);
     } catch (err: any) {
       setPaymentError(err.message || 'Something went wrong. Please try again.');
@@ -677,6 +673,26 @@ export default function OfferingCheckoutPage() {
           <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <p className="text-sm text-red-700">{paymentError}</p>
+          </div>
+        )}
+
+        {stripeClientSecret && (
+          <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+            <p className="mb-3 text-xs uppercase tracking-wide text-surface-500">
+              Secure card payment — {bookingNumber}
+            </p>
+            <StripeClientSecretCheckout
+              clientSecret={stripeClientSecret}
+              bookingNumber={bookingNumber}
+              returnUrl={typeof window !== 'undefined' ? `${window.location.origin}/checkout/success?bk=${encodeURIComponent(bookingNumber)}` : '/'}
+              onMailtoFallback={(bk) => {
+                const subject = encodeURIComponent(`Stripe payment link needed — ${bk}`);
+                const body = encodeURIComponent(
+                  `Hi Darshya team,\n\nMy booking ${bk} was created but embedded Stripe Elements could not load. Please send me a secure payment link.\n\nThank you.`,
+                );
+                window.location.href = `mailto:support@darshya.online?subject=${subject}&body=${body}`;
+              }}
+            />
           </div>
         )}
 

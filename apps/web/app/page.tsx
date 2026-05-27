@@ -36,7 +36,17 @@ export const metadata: Metadata = {
  title: "Darshya — India's Devotional Super App",
  description:
    'Live darshan from sacred temples, online puja booking with verified pandits, daily panchang, Vedic astrology, Sanskrit lessons, gaushala donations and AI spiritual guidance — your complete Sanatan Dharma companion.',
- alternates: { canonical: 'https://darshya.online' },
+ alternates: {
+   canonical: 'https://darshya.online',
+   languages: {
+     en: 'https://darshya.online/',
+     hi: 'https://darshya.online/hi',
+     ta: 'https://darshya.online/ta',
+     te: 'https://darshya.online/te',
+     bn: 'https://darshya.online/bn',
+     mr: 'https://darshya.online/mr',
+   },
+ },
  openGraph: {
    title: "Darshya — India's Devotional Super App",
    description:
