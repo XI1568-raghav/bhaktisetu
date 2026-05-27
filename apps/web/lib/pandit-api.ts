@@ -158,11 +158,19 @@ export async function getMyReviews(token: string | undefined): Promise<PriestRev
 
 // ─── Public (server-side fetch) ─────────────────────────────────────────────
 
-export async function getPublicPriests(): Promise<PriestSummary[]> {
+export interface PublicPriestsQuery {
+  specialization?: string;
+  deity?: string;
+}
+
+export async function getPublicPriests(q: PublicPriestsQuery = {}): Promise<PriestSummary[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/priests`, {
-      next: { revalidate: 300 },
-    });
+    const params = new URLSearchParams();
+    if (q.specialization) params.set('specialization', q.specialization);
+    if (q.deity) params.set('deity', q.deity);
+    const qs = params.toString();
+    const url = qs ? `${API_BASE_URL}/priests?${qs}` : `${API_BASE_URL}/priests`;
+    const res = await fetch(url, { next: { revalidate: 300 } });
     if (!res.ok) return [];
     const data = (await res.json()) as { priests: PriestSummary[] };
     return data.priests ?? [];

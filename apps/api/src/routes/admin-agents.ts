@@ -91,7 +91,8 @@ export async function adminAgentsRoutes(server: FastifyInstance) {
 // safeList already whitelists `YYYY-MM-DD-<agent>.md` and excludes `_*`.
 export async function publicAgentFeedRoutes(server: FastifyInstance) {
   server.get('/feed', async () => {
-    const items = safeList().slice(0, 12);
+    // Only dated reports — strip README + other unsorted docs.
+    const items = safeList().filter((it) => /^\d{4}-\d{2}-\d{2}$/.test(it.date)).slice(0, 12);
     const enriched = items.map((it) => {
       let title = it.agent.replace(/-/g, ' ');
       let excerpt = '';

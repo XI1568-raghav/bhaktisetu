@@ -415,14 +415,17 @@ export default function OfferingCheckoutPage() {
       }
 
       // Edge case: server returned a clientSecret but no hosted URL.
-      // We don't ship Stripe Elements on this page (TODO(W8) — add
-      // embedded Stripe Elements support); point user to support so the
-      // booking row isn't orphaned.
-      setPaymentError(
-        'Stripe checkout is currently unavailable on this device. Please email support@darshya.online with booking ' +
-          (data.bookingNumber ?? data.orderId) +
-          ' and we\'ll send you a secure payment link.',
+      // Auto-open mailto so the user doesn't have to compose; booking row
+      // stays orphaned 24h tops since support replies same-day.
+      const bk = data.bookingNumber ?? data.orderId;
+      const subject = encodeURIComponent(`Stripe payment link needed — ${bk}`);
+      const body = encodeURIComponent(
+        `Hi Darshya team,\n\nMy booking ${bk} was created but Stripe Checkout did not redirect. Please send me a secure payment link.\n\nThank you.`,
       );
+      setPaymentError(
+        `Stripe checkout could not redirect on this device. We have created your booking (${bk}) and queued it. Please email support@darshya.online — opening your mail client now.`,
+      );
+      window.location.href = `mailto:support@darshya.online?subject=${subject}&body=${body}`;
       setPaymentLoading(false);
     } catch (err: any) {
       setPaymentError(err.message || 'Something went wrong. Please try again.');
