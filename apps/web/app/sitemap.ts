@@ -364,6 +364,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { chapterSlugs } = await import('../lib/gita-chapters');
+  const gitaEntries = [
+    { url: `${BASE_URL}/gita`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...chapterSlugs().map((slug) => ({
+      url: `${BASE_URL}/gita/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -425,6 +436,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...chantEntries,
     ...tirthaEntries,
     ...calendarMonthEntries,
+    ...gitaEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },

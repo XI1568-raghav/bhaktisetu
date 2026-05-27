@@ -26,6 +26,8 @@ const TARGETS = [
   { url: '/tirth/kashi-vishwanath', expected: ['BreadcrumbList', 'Place'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/gita', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/gita/karma-yoga', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
