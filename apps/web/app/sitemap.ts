@@ -356,6 +356,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const calendarMonthSlugs = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const calendarMonthEntries = calendarMonthSlugs.map((slug) => ({
+    url: `${BASE_URL}/calendar/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -416,6 +424,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...vratEntries,
     ...chantEntries,
     ...tirthaEntries,
+    ...calendarMonthEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
