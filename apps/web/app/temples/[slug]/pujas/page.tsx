@@ -7,8 +7,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTempleBySlug } from '../../../../lib/api';
 
-export const runtime = 'edge';
+export const dynamicParams = false;
 export const revalidate = 3600;
+
+const SEED_TEMPLE_SLUGS = [
+  'kashi-vishwanath', 'tirumala-tirupati', 'siddhivinayak', 'somnath',
+  'jagannath-puri', 'golden-temple', 'meenakshi-temple', 'kedarnath',
+  'badrinath', 'akshardham', 'mahakaleshwar', 'dwarkadhish',
+  'rameshwaram', 'vaishno-devi',
+];
+
+export function generateStaticParams() {
+  return SEED_TEMPLE_SLUGS.map((slug) => ({ slug }));
+}
 
 interface Params {
   params: { slug: string };

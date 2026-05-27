@@ -5,8 +5,18 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export const runtime = 'edge';
+export const dynamicParams = false;
 export const revalidate = 3600;
+
+const SEED_PUJA_SLUGS = [
+  'rudrabhishek', 'satyanarayan-puja', 'navgraha-puja', 'ganesh-puja',
+  'lakshmi-puja', 'maha-mrityunjaya', 'sundarkand-path', 'kaal-sarp-dosh',
+  'mangal-dosh', 'vivah-puja', 'griha-pravesh', 'navaratri-puja',
+];
+
+export function generateStaticParams() {
+  return SEED_PUJA_SLUGS.map((slug) => ({ slug }));
+}
 
 const API_BASE = process.env.API_URL || 'http://localhost:4000/api/v1';
 

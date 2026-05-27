@@ -8,8 +8,12 @@ import { getCity, CITIES } from '../../../lib/cities';
 import { getTemples } from '../../../lib/api';
 import { getDeity } from '../../../lib/deities';
 
-export const runtime = 'edge';
+export const dynamicParams = false;
 export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return CITIES.map((c) => ({ slug: c.slug }));
+}
 
 interface Params {
   params: { slug: string };

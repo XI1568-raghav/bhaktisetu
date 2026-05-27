@@ -1,4 +1,15 @@
-export const runtime = 'edge';
+export const dynamicParams = false;
+export const revalidate = 300;
+export function generateStaticParams() {
+  return [
+    'somnath-gujarat', 'somnath', 'tirumala-tirupati', 'tirupati',
+    'golden-temple-amritsar', 'golden-temple', 'shirdi-sai-baba', 'shirdi',
+    'kashi-vishwanath-varanasi', 'kashi-vishwanath',
+    'siddhivinayak-mumbai', 'siddhivinayak',
+    'mahakaleshwar-ujjain', 'mahakaleshwar',
+    'vaishno-devi', 'jagannath-puri',
+  ].map((id) => ({ id }));
+}
 import type { Metadata } from 'next';
 import {
  MapPin,
