@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+export const runtime = 'edge';
 export const dynamicParams = false;
 export const revalidate = 3600;
 
