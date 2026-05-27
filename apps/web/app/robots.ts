@@ -46,6 +46,7 @@ export default function robots(): MetadataRoute.Robots {
           '/calendar',
           '/gita/',
           '/ramayana/',
+          '/upanishads/',
           '/why-darshya',
         ],
         disallow: [

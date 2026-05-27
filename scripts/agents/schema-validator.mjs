@@ -30,6 +30,8 @@ const TARGETS = [
   { url: '/gita/karma-yoga', expected: ['BreadcrumbList', 'Article'] },
   { url: '/ramayana', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/ramayana/sundara-kanda', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/upanishads', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/upanishads/mandukya-upanishad', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
