@@ -39,6 +39,7 @@ export default function robots(): MetadataRoute.Robots {
           '/nakshatra/',
           '/muhurat/',
           '/rashi/',
+          '/vrat/',
           '/why-darshya',
         ],
         disallow: [
