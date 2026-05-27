@@ -32,10 +32,13 @@ jobs:
         run: pnpm --filter @poojly/api exec prisma generate
 
       - name: Lint
-        run: pnpm turbo lint
+        # Both lint and type-check have dependsOn ^build per turbo.json, which
+        # transitively tries to render the remotion-pitch MP4 (--concurrency=4
+        # fails on GH 2-core). Excluding it here is consistent with build/test.
+        run: pnpm turbo lint --filter=!@poojly/remotion-pitch
 
       - name: Type Check
-        run: pnpm turbo type-check
+        run: pnpm turbo type-check --filter=!@poojly/remotion-pitch
 
   test:
     name: Test
@@ -59,7 +62,9 @@ jobs:
         run: pnpm --filter @poojly/api exec prisma generate
 
       - name: Run Tests
-        run: pnpm turbo test
+        # remotion-pitch test depends on build (turbo.json), which renders
+        # a 60s MP4 that needs >2 CPU cores. Skip the whole package in CI.
+        run: pnpm turbo test --filter=!@poojly/remotion-pitch
 
   build:
     name: Build
