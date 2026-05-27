@@ -38,6 +38,8 @@ const TARGETS = [
   { url: '/samskaras/upanayana', expected: ['BreadcrumbList', 'Article'] },
   { url: '/puranas', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/puranas/bhagavata-purana', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/darshanas', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/darshanas/vedanta', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
