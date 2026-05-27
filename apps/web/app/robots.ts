@@ -47,6 +47,7 @@ export default function robots(): MetadataRoute.Robots {
           '/gita/',
           '/ramayana/',
           '/upanishads/',
+          '/yoga-sutras/',
           '/why-darshya',
         ],
         disallow: [
