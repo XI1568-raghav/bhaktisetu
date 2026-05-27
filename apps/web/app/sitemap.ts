@@ -130,6 +130,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/chalisa', priority: 0.8 },
     { path: '/today', priority: 0.9 },
     { path: '/gift', priority: 0.95 },
+    { path: '/pilgrimage', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
 
@@ -289,6 +290,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Listing untranslated /lang/* pages would mislead Google + hurt SEO
   // (thin/duplicate content penalty). Expand only when real translated
   // sub-pages ship.
+  const { circuitSlugs } = await import('../lib/pilgrimage-circuits');
+  const pilgrimageEntries = circuitSlugs().map((slug) => ({
+    url: `${BASE_URL}/pilgrimage/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -342,6 +351,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...rashiEntries,
     ...blogEntries,
     ...bookEntries,
+    ...pilgrimageEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
