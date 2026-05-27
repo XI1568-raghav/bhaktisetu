@@ -36,11 +36,13 @@ const PRESETS = [
   },
 ];
 
+const DEFAULT_PRESET = PRESETS[0]!;
+
 export default function ShlokaCardGenerator() {
-  const [text, setText] = useState(PRESETS[0].text);
-  const [translit, setTranslit] = useState(PRESETS[0].translit);
-  const [meaning, setMeaning] = useState(PRESETS[0].meaning);
-  const [source, setSource] = useState(PRESETS[0].source);
+  const [text, setText] = useState(DEFAULT_PRESET.text);
+  const [translit, setTranslit] = useState(DEFAULT_PRESET.translit);
+  const [meaning, setMeaning] = useState(DEFAULT_PRESET.meaning);
+  const [source, setSource] = useState(DEFAULT_PRESET.source);
   const [copied, setCopied] = useState(false);
 
   const ogUrl = useMemo(() => {

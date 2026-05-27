@@ -16,10 +16,13 @@ import { createElement, type ReactElement } from 'react';
 declare global {
   interface Window {
     posthog?: {
+      init: (key: string, opts: Record<string, unknown>) => void;
       capture: (name: string, props?: Record<string, unknown>) => void;
       identify: (id: string, props?: Record<string, unknown>) => void;
       reset: () => void;
       register: (props: Record<string, unknown>) => void;
+      getFeatureFlag: (key: string) => boolean | string | undefined;
+      onFeatureFlags: (cb: () => void) => () => void;
       people?: { set: (props: Record<string, unknown>) => void };
     };
   }
