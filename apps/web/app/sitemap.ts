@@ -375,6 +375,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { kandaSlugs } = await import('../lib/ramayana-kandas');
+  const ramayanaEntries = [
+    { url: `${BASE_URL}/ramayana`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...kandaSlugs().map((slug) => ({
+      url: `${BASE_URL}/ramayana/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -437,6 +448,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...tirthaEntries,
     ...calendarMonthEntries,
     ...gitaEntries,
+    ...ramayanaEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
