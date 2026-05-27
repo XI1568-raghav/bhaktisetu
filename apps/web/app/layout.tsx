@@ -276,8 +276,13 @@ export default function RootLayout({
  <CloudflareAnalytics />
 
  <link rel="alternate" hrefLang="en" href="https://darshya.online" />
- <link rel="alternate" hrefLang="hi" href="https://darshya.online?lang=hi" />
+ <link rel="alternate" hrefLang="hi" href="https://darshya.online/hi" />
+ <link rel="alternate" hrefLang="ta" href="https://darshya.online/ta" />
+ <link rel="alternate" hrefLang="te" href="https://darshya.online/te" />
+ <link rel="alternate" hrefLang="bn" href="https://darshya.online/bn" />
+ <link rel="alternate" hrefLang="mr" href="https://darshya.online/mr" />
  <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
+ <link rel="alternate" type="application/rss+xml" title="Darshya — RSS" href="https://darshya.online/feed.xml" />
 
  {/* Site-wide JSON-LD: Organization + WebSite (SearchAction). Per-page JSON-LD
      (Article, Product, Event, Place) is injected by the page itself. */}
@@ -427,8 +432,21 @@ export default function RootLayout({
  ))}
  </div>
 
+ {/* Lang switcher — surfaces translated landings */}
+ <div className="mt-14 pt-8 border-t border-surface-800/60">
+ <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
+ <span className="text-surface-600">Read in:</span>
+ <Link href="/" className="hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
+ <Link href="/hi" className="hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
+ <Link href="/ta" className="hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
+ <Link href="/te" className="hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
+ <Link href="/bn" className="hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
+ <Link href="/mr" className="hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
+ </div>
+ </div>
+
  {/* Contact info */}
- <div className="mt-14 pt-8 border-t border-surface-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+ <div className="mt-8 pt-6 border-t border-surface-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
  <div className="flex flex-wrap items-center gap-6 text-sm text-surface-500">
  <span className="flex items-center gap-1.5">
  <Mail className="w-3.5 h-3.5" /> support@darshya.online
