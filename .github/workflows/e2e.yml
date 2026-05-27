@@ -1,10 +1,17 @@
 name: E2E (Playwright)
 
+# Free-tier budget: only PRs + weekly schedule + manual. Push trigger removed
+# (was ~15 min × every push = ~900 min/mo). See docs/free-tier-budgets.md.
+
 on:
   pull_request:
-    branches: [main, develop, rebrand/darshya]
-  push:
-    branches: [main, rebrand/darshya]
+    branches: [main, develop]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  schedule:
+    # Weekly Sun 04:00 UTC. Catches prod regression independent of pushes.
+    - cron: '0 4 * * 0'
   workflow_dispatch:
     inputs:
       base_url:
@@ -21,7 +28,6 @@ jobs:
     name: Playwright against ${{ inputs.base_url || 'https://darshya.online' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # Don't fail the whole pipeline if the live site is down — soft-fail signal.
     continue-on-error: true
     env:
       PLAYWRIGHT_BASE_URL: ${{ inputs.base_url || 'https://darshya.online' }}

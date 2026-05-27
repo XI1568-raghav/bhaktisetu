@@ -1,13 +1,11 @@
 name: Deploy Web to Cloudflare Pages
 
+# Free-tier: manual-only. CF Pages git integration deploys on push to main
+# from the CF dashboard side (free 500 builds/mo). This workflow duplicated
+# the build and burned ~6 min/push of GH Actions cap. Keep for emergency
+# manual redeploy from the Actions tab. See docs/free-tier-budgets.md.
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 
 jobs:
