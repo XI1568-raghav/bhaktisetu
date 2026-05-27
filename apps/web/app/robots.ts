@@ -28,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
           '/shlokas/',
           '/aarti/',
           '/chalisa/',
+          '/today',
         ],
         disallow: [
           '/api/',
