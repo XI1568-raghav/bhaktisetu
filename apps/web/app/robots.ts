@@ -44,6 +44,7 @@ export default function robots(): MetadataRoute.Robots {
           '/sankalp',
           '/tirth/',
           '/calendar',
+          '/gita/',
           '/why-darshya',
         ],
         disallow: [
