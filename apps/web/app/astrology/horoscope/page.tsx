@@ -508,13 +508,21 @@ export default function HoroscopePage() {
  </div>
  </div>
 
- <div className="text-center pt-2">
+ <div className="text-center pt-2 space-y-2">
+ <Link
+ href={`/astrology/horoscope/${h.rashi}`}
+ className="inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-700 hover:text-saffron-800 transition-colors"
+ >
+ Full {h.rashiEnglish} page + recommended pujas <ArrowRight className="w-4 h-4" />
+ </Link>
+ <div>
  <Link
  href="/astrology/chat"
  className="inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700 transition-colors"
  >
  Ask AI Astrologer for Detailed Reading <ArrowRight className="w-4 h-4" />
  </Link>
+ </div>
  </div>
  </div>
  )}
