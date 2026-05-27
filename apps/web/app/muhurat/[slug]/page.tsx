@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MUHURATS, muhuratSlugs, getMuhurat } from '../../../lib/muhurats';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 

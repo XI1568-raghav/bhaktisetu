@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VRATS, vratSlugs, getVrat } from '../../../lib/vrats';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 
