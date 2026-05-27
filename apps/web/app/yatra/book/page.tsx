@@ -1,8 +1,7 @@
 'use client';
-export const runtime = 'edge';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
  ChevronLeft,
@@ -20,7 +19,7 @@ import {
  Loader2,
  CheckCircle2,
 } from 'lucide-react';
-import { getYatraBySlug, formatINR } from '../../../../lib/yatra-data';
+import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
 
 type Traveler = {
  name: string;
@@ -53,9 +52,9 @@ type BookingData = {
 
 const STEPS = ['Trip', 'Package', 'Add-ons', 'Travelers', 'Review'];
 
-export default function BookYatraPage() {
- const params = useParams<{ slug: string }>();
+function BookYatraInner() {
  const searchParams = useSearchParams();
+ const params = { slug: (searchParams.get('slug') ?? '') as string };
  const router = useRouter();
  const yatra = getYatraBySlug(params.slug);
 
@@ -743,5 +742,13 @@ function Row({ label, value }: { label: string; value: string }) {
  <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
  <span className="font-medium" style={{ color: 'var(--color-text)' }}>{value}</span>
  </div>
+ );
+}
+
+export default function BookYatraPage() {
+ return (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#faf7f0]"><div className="text-surface-500">Loading…</div></div>}>
+   <BookYatraInner />
+  </Suspense>
  );
 }

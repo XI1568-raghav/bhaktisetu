@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
  ArrowLeft,
  Send,
@@ -36,8 +35,9 @@ import {
  timeAgo,
 } from '../../../../components/support/badges';
 
-export default function TicketDetailPage() {
- const params = useParams<{ id: string }>();
+function TicketDetailInner() {
+ const sp = useSearchParams();
+ const id = sp.get('id') ?? '';
  const router = useRouter();
  const { session } = useAuth();
  const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -51,11 +51,11 @@ export default function TicketDetailPage() {
  let cancelled = false;
  (async () => {
  try {
- const t = await getTicketById(session?.accessToken, params.id);
+ const t = await getTicketById(session?.accessToken, id);
  if (!cancelled) setTicket(t);
  } catch (err) {
  if (!cancelled) {
- const fallback = getUserTicket(params.id);
+ const fallback = getUserTicket(id);
  if (fallback) setTicket(fallback);
  setError(err instanceof Error ? err.message : 'Failed to load ticket');
  }
@@ -66,7 +66,7 @@ export default function TicketDetailPage() {
  return () => {
  cancelled = true;
  };
- }, [params.id, session?.accessToken]);
+ }, [id, session?.accessToken]);
 
  const sendReply = async () => {
  if (!ticket || !reply.trim()) return;
@@ -356,5 +356,13 @@ function MessageBubble({ message }: { message: TicketMessage }) {
  </div>
  </div>
  </div>
+ );
+}
+
+export default function TicketDetailPage() {
+ return (
+  <Suspense fallback={<div className="p-8 text-sm text-surface-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading ticket…</div>}>
+   <TicketDetailInner />
+  </Suspense>
  );
 }

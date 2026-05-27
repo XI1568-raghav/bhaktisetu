@@ -1,8 +1,7 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
  ArrowLeft,
@@ -37,11 +36,11 @@ function formatPrice(amount: number): string {
 
 // ─── Component ──────────────────────────────────────────────────
 
-export default function ProductDetailPage() {
- const params = useParams();
+function ProductDetailInner() {
+ const sp = useSearchParams();
  const router = useRouter();
  const { addItem } = useCart();
- const handle = params.handle as string;
+ const handle = (sp.get('handle') ?? '') as string;
 
  const [quantity, setQuantity] = useState(1);
  const [added, setAdded] = useState(false);
@@ -372,5 +371,13 @@ export default function ProductDetailPage() {
  )}
  </div>
  </div>
+ );
+}
+
+export default function ProductDetailPage() {
+ return (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-surface-500">Loading…</div></div>}>
+   <ProductDetailInner />
+  </Suspense>
  );
 }
