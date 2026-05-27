@@ -22,6 +22,8 @@ const TARGETS = [
   { url: '/rashi/aries', expected: ['BreadcrumbList', 'Article'] },
   { url: '/why-darshya', expected: ['WebPage'] },
   { url: '/sankalp', expected: ['BreadcrumbList'] },
+  { url: '/tirth', expected: ['ItemList'] },
+  { url: '/tirth/kashi-vishwanath', expected: ['BreadcrumbList', 'Place'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
