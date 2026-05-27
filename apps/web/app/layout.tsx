@@ -444,6 +444,8 @@ export default function RootLayout({
  <span className="text-surface-700">·</span>
  <Link href="/muhurat" className="hover:text-saffron-400 transition-colors">Muhurat Guide</Link>
  <span className="text-surface-700">·</span>
+ <Link href="/vrat" className="hover:text-saffron-400 transition-colors">Vrats Guide</Link>
+ <span className="text-surface-700">·</span>
  <Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link>
  <span className="text-surface-700">·</span>
  <Link href="/today" className="hover:text-saffron-400 transition-colors">Today&apos;s Panchang</Link>

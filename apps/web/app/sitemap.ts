@@ -135,6 +135,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/nakshatra', priority: 0.85 },
     { path: '/muhurat', priority: 0.85 },
     { path: '/rashi', priority: 0.85 },
+    { path: '/vrat', priority: 0.85 },
     { path: '/why-darshya', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
@@ -327,6 +328,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
+  const { vratSlugs } = await import('../lib/vrats');
+  const vratEntries = vratSlugs().map((slug) => ({
+    url: `${BASE_URL}/vrat/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -384,6 +393,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...nakshatraEntries,
     ...muhuratEntries,
     ...rashiProfileEntries,
+    ...vratEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
