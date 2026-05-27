@@ -132,6 +132,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/gift', priority: 0.95 },
     { path: '/pilgrimage', priority: 0.9 },
     { path: '/faqs', priority: 0.8 },
+    { path: '/nakshatra', priority: 0.85 },
     { path: '/feed.xml', priority: 0.3 },
   ];
 
@@ -299,6 +300,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { nakshatraSlugs } = await import('../lib/nakshatras');
+  const nakshatraEntries = nakshatraSlugs().map((slug) => ({
+    url: `${BASE_URL}/nakshatra/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -353,6 +362,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...blogEntries,
     ...bookEntries,
     ...pilgrimageEntries,
+    ...nakshatraEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
