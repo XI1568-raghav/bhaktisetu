@@ -36,6 +36,8 @@ const TARGETS = [
   { url: '/yoga-sutras/sadhana-pada', expected: ['BreadcrumbList', 'Article'] },
   { url: '/samskaras', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/samskaras/upanayana', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/puranas', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/puranas/bhagavata-purana', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },

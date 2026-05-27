@@ -419,6 +419,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { puranaSlugs } = await import('../lib/puranas');
+  const puranaEntries = [
+    { url: `${BASE_URL}/puranas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...puranaSlugs().map((slug) => ({
+      url: `${BASE_URL}/puranas/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -485,6 +496,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...upanishadEntries,
     ...yogaSutraEntries,
     ...samskaraEntries,
+    ...puranaEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
