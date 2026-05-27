@@ -441,6 +441,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { vedaSlugs } = await import('../lib/vedas');
+  const vedaEntries = [
+    { url: `${BASE_URL}/vedas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.95 },
+    ...vedaSlugs().map((slug) => ({
+      url: `${BASE_URL}/vedas/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.9,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -509,6 +520,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...samskaraEntries,
     ...puranaEntries,
     ...darshanaEntries,
+    ...vedaEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
