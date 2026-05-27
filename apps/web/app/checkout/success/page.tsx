@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 
 import Link from 'next/link';
 import { CheckCircle2, Video, Mail } from 'lucide-react';
