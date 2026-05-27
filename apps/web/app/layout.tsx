@@ -454,6 +454,8 @@ export default function RootLayout({
  <span className="text-surface-700">·</span>
  <Link href="/calendar" className="hover:text-saffron-400 transition-colors">Hindu Calendar 2026</Link>
  <span className="text-surface-700">·</span>
+ <Link href="/nava-graha" className="hover:text-saffron-400 transition-colors">9 Nava-Graha</Link>
+ <span className="text-surface-700">·</span>
  <Link href="/gita" className="hover:text-saffron-400 transition-colors">Bhagavad Gita</Link>
  <span className="text-surface-700">·</span>
  <Link href="/ramayana" className="hover:text-saffron-400 transition-colors">Ramayana 7 Kandas</Link>
