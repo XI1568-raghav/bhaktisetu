@@ -408,6 +408,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { samskaraSlugs } = await import('../lib/samskaras');
+  const samskaraEntries = [
+    { url: `${BASE_URL}/samskaras`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.85 },
+    ...samskaraSlugs().map((slug) => ({
+      url: `${BASE_URL}/samskaras/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -473,6 +484,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...ramayanaEntries,
     ...upanishadEntries,
     ...yogaSutraEntries,
+    ...samskaraEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
