@@ -30,6 +30,7 @@ import ShopStrip from '../components/home/ShopStrip';
 import YatraStrip from '../components/home/YatraStrip';
 import TrustStrip from '../components/home/TrustStrip';
 import EmailCapture from '../components/EmailCapture';
+import NextFestivalStrip from '../components/home/NextFestivalStrip';
 
 export const metadata: Metadata = {
  title: "Darshya — India's Devotional Super App",
@@ -174,6 +175,9 @@ export default async function HomePage() {
  <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-text-faint)' }} />
  </div>
  </section>
+
+ {/* ═══ NEXT FESTIVAL — countdown + book CTA ═══════════════════════ */}
+ <NextFestivalStrip />
 
  {/* ═══ OUR STORY — wipe-in timeline ════════════════════════════════ */}
  <section className="py-8 md:py-10" style={{ background: 'var(--color-surface)' }}>
