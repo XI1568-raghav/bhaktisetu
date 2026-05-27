@@ -12,6 +12,8 @@ const TARGETS = [
   { url: '/rashi', expected: ['ItemList'] },
   { url: '/vrat', expected: ['ItemList'] },
   { url: '/vrat/ekadashi', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/chants', expected: ['ItemList'] },
+  { url: '/chants/gayatri-mantra', expected: ['BreadcrumbList', 'Article'] },
   { url: '/faqs', expected: ['FAQPage'] },
   { url: '/pilgrimage', expected: ['ItemList'] },
   { url: '/pilgrimage/char-dham', expected: ['BreadcrumbList', 'TouristTrip'] },
