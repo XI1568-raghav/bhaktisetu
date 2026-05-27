@@ -51,6 +51,39 @@ When `[id]/page.tsx` is `'use client'` + edge (auth shell + dynamic param), the 
 - `/store/view` (was `/store/[handle]`)
 - `/priest/bookings/view`, `/admin/support/view`, `/admin/users/view`, `/bookings/view`, `/onboarding/view`
 
+## SSG pattern (preferred over view-pattern for SSR dynamic routes)
+
+When `[slug]/page.tsx` is server component (no `'use client'`) reading data via fetch or static lib + has a finite known slug set: convert to SSG. Page becomes `●` (prerendered per param at build), drops out of worker entirely.
+
+**Steps:**
+1. Drop `export const runtime = 'edge';`.
+2. Add:
+   ```ts
+   export const dynamicParams = false;        // 404 unknown slugs (must)
+   export const revalidate = 3600;            // ISR refresh interval
+   export function generateStaticParams() {
+     return [...].map((slug) => ({ slug }));  // every valid slug
+   }
+   ```
+3. Keep `await fetch(..., { next: { revalidate } })` — runs at build + per-revalidate.
+4. `await params` style (Next 15 async) works either way.
+
+**Currently-SSG dynamic routes** (DO NOT add `runtime='edge'` back — bloats worker):
+
+| Route | Source of slug set |
+|---|---|
+| `/temples/[slug]` | `Object.keys(TEMPLE_DETAILS)` + fallback list |
+| `/temples/[slug]/pujas` | hardcoded SEED_TEMPLE_SLUGS (14) |
+| `/pujas/[slug]` | hardcoded 14 puja slugs |
+| `/pujas/[slug]/temples` | hardcoded SEED_PUJA_SLUGS (12) |
+| `/darshan/[id]` | `Object.keys(CHANNEL_BY_SLUG)` (16) |
+| `/content/[slug]` | hardcoded 12 sacred-text slugs |
+| `/gaushala/[id]` | `Object.keys(allCows)` |
+| `/city/[slug]` | `CITIES.map(c => c.slug)` |
+| `/astrology/horoscope/[rashi]` | `RASHIS.map(r => r.rashi)` (12) |
+
+**Trade-off:** Adding new slug requires editing the route file + redeploying. Not a content team workflow — but acceptable for solo-founder $0-budget constraint. Live API still adds the slug; only the SSR shell needs updating.
+
 ## `_redirects` order rule
 
 CF evaluates top-to-bottom, **first match wins**. Named placeholders (`:name`) match a single segment. Wildcards (`*` / `:splat`) match multi-segment.
@@ -94,6 +127,33 @@ CF Pages free tier doesn't expose detailed build logs to non-paid users. If `Bui
 - `prismjs` — none used; keep it that way
 - `date-fns` — use `Intl.DateTimeFormat` + native Date
 - Server-only deps: `@prisma/client`, `pg`, `redis` (these belong in `apps/api/`)
+
+## When the "Cloudflare Pages" check stays red
+
+There are TWO independent deploy paths and they fail differently:
+
+1. **CF Pages git integration (primary)** — CF's dashboard side, posts the
+   `Cloudflare Pages` check directly. Runs on every push to main from CF
+   infra. Counts against CF's 500-builds/mo free cap, NOT GH Actions.
+2. **`deploy-web.yml`** — was redundant; now manual-only. When it ran on
+   push, it `wrangler pages deploy`-ed the local build. When GH Actions
+   billing failed, this workflow precheck-failed → status appeared as
+   workflow red, NOT as CF Pages red. Easy to confuse.
+
+**Diagnosis order:**
+
+1. `gh run list --workflow=deploy-web.yml --limit 5` — is this red?
+   If yes, look for `"The job was not started because recent account
+   payments have failed"` in the run annotation. That's GH Actions
+   billing — fix at https://github.com/settings/billing/spending_limit.
+2. If GH workflows are green but the `Cloudflare Pages` check is red,
+   then CF git integration itself failed. Hit the CF dashboard.
+3. If both timestamps on the CF check match to the second
+   (`gh api repos/:owner/:repo/commits/<sha>/check-runs`), CF rejected at
+   queue (quota, project paused, webhook broken). NOT a code issue.
+
+**Bundle size diagnosis is still valid** — see "Forbidden in edge routes"
+above. But before assuming bundle, confirm the deploy actually ran.
 
 ## Failure modes seen
 

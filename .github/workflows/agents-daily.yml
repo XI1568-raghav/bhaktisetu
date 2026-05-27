@@ -1,8 +1,8 @@
-name: Agent fleet - daily
+name: Agent fleet - daily (critical 6)
 
-# Runs the full daily agent set: SEO, content, lead-gen, growth, social, onboarding, PR.
-# Each writes a report to docs/agent-reports/. Workflow commits the artifacts back.
-# Free tier: ~1 min/day = 30 min/month against 2000-min ceiling.
+# Daily critical-only set. Rest moved to agents-weekly.yml to fit free tier.
+# Free tier: ~2 min/day = 60 min/month against 2000-min ceiling.
+# See docs/free-tier-budgets.md.
 
 on:
   schedule:
@@ -36,7 +36,10 @@ jobs:
         run: |
           AGENTS="${{ github.event.inputs.only }}"
           if [ -z "$AGENTS" ]; then
-            node scripts/agents/run-all.mjs seo-audit content-pipeline lead-gen growth-metrics social-queue onboarding-drip pr-outreach broken-link gsc-submitter founder-tweet-draft content-publisher review-harvest competitor-watch rss-to-thread seo-internal-linker competitor-feature-watcher keyword-rank-tracker x-engagement-digest weekly-investor-update uptime-pinger schema-validator backlinks-monitor agent-issue-filer weekly-digest
+            # Critical daily: uptime, broken-link, founder-tweet, content-pub,
+            # agent-issue-filer, weekly-digest (Sun-only internal). All others
+            # moved to agents-weekly.yml. See docs/free-tier-budgets.md.
+            node scripts/agents/run-all.mjs uptime-pinger broken-link founder-tweet-draft content-publisher agent-issue-filer weekly-digest
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
           fi

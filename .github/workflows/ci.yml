@@ -1,19 +1,35 @@
 name: CI
 
+# Single-job CI. Free-tier budget: ~4 min/run (was ~11 min as 3 jobs × pnpm install).
+# Path-filtered so docs-only commits don't burn minutes. See docs/free-tier-budgets.md.
+
 on:
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'TASKS.md'
+      - 'ROADMAP.md'
+      - 'PROJECT_CONTEXT.md'
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'TASKS.md'
+      - 'ROADMAP.md'
+      - 'PROJECT_CONTEXT.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & Type Check
+  verify:
+    name: Lint + Type + Test + Build
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
 
@@ -32,65 +48,15 @@ jobs:
         run: pnpm --filter @poojly/api exec prisma generate
 
       - name: Lint
-        # Both lint and type-check have dependsOn ^build per turbo.json, which
-        # transitively tries to render the remotion-pitch MP4 (--concurrency=4
-        # fails on GH 2-core). Excluding it here is consistent with build/test.
         run: pnpm turbo lint --filter=!@poojly/remotion-pitch
 
       - name: Type Check
         run: pnpm turbo type-check --filter=!@poojly/remotion-pitch
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: lint-and-typecheck
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma Client
-        run: pnpm --filter @poojly/api exec prisma generate
-
-      - name: Run Tests
-        # remotion-pitch test depends on build (turbo.json), which renders
-        # a 60s MP4 that needs >2 CPU cores. Skip the whole package in CI.
+      - name: Test
         run: pnpm turbo test --filter=!@poojly/remotion-pitch
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: lint-and-typecheck
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma Client
-        run: pnpm --filter @poojly/api exec prisma generate
-
-      - name: Build All
-        # remotion-pitch is a 60s MP4 render — wasteful + fails on GH 2-core
-        # runners with --concurrency=4. Render locally via `pnpm --filter
-        # @poojly/remotion-pitch ship` when the reel changes.
+      - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch
 
       - name: Upload Build Artifacts

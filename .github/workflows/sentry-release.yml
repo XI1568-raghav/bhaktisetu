@@ -1,11 +1,15 @@
 name: Sentry Release Tracking
 
+# Free-tier: tag-only trigger (was every push to main = ~15 min × push).
+# Cut ~900 min/mo. Cut a release tag (`git tag v0.x.y && git push --tags`)
+# when you want a Sentry release. See docs/free-tier-budgets.md.
+
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
-# TD7: tag a Sentry release per commit, upload sourcemaps for web/api/mobile,
+# TD7: tag a Sentry release per tag, upload sourcemaps for web/api/mobile,
 # and record a deploy. Skips gracefully when SENTRY_AUTH_TOKEN is absent.
 jobs:
   release:
