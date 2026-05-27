@@ -2,17 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-
-declare global {
-  interface Window {
-    posthog?: {
-      init: (key: string, opts: Record<string, unknown>) => void;
-      capture: (event: string, props?: Record<string, unknown>) => void;
-      getFeatureFlag: (key: string) => boolean | string | undefined;
-      onFeatureFlags: (cb: () => void) => () => void;
-    };
-  }
-}
+// Window.posthog type comes from lib/posthog.ts (single source of truth).
 
 export function Analytics() {
   return (
