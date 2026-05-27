@@ -452,6 +452,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { avatarSlugs } = await import('../lib/dashavatar');
+  const dashavatarEntries = [
+    { url: `${BASE_URL}/dashavatar`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...avatarSlugs().map((slug) => ({
+      url: `${BASE_URL}/dashavatar/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -521,6 +532,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...puranaEntries,
     ...darshanaEntries,
     ...vedaEntries,
+    ...dashavatarEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
