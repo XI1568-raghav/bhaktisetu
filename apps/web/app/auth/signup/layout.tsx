@@ -9,7 +9,7 @@ export const metadata: Metadata = {
    description: 'Sign up for Darshya. Free account — book pujas, watch live darshan, claim 80G receipts, get AI spiritual guidance.',
    url: 'https://darshya.online/auth/signup',
    type: 'website',
-   images: ['/og-default.png'],
+   images: ['/og/default'],
  },
 };
 

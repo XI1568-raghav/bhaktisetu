@@ -39,15 +39,14 @@ export const metadata: Metadata = {
    "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits.",
    url: "https://darshya.online/store",
    type: "website",
-   // TODO: add /og-default.png (1200x630) to apps/web/public/
-   images: ["/og-default.png"],
+   images: ["/og/default"],
  },
  twitter: {
    card: "summary_large_image",
    title: "Store | Darshya",
    description:
    "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits.",
-   images: ["/og-default.png"],
+   images: ["/og/default"],
  },
 };
 

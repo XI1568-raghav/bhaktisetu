@@ -29,9 +29,9 @@ import {
 export const revalidate = 600;
 
 export const metadata: Metadata = {
- title: "Pujas",
+ title: "Book Online Pujas at Verified Indian Temples",
  description:
- "Book authentic pujas at renowned temples across India. Verified pandits, live streaming, prasad delivery. Choose from a curated catalogue of sacred rituals.",
+ "Book authentic pujas at renowned temples across India. Verified pandits, live video streaming, prasad delivery to your doorstep, and dual INR/USD pricing for NRIs. Choose from a curated catalogue of sacred Hindu rituals.",
 };
 
 const categories = [

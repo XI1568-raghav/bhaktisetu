@@ -37,6 +37,7 @@ import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown
 import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
 import { NotificationPrompt } from "../components/NotificationPrompt";
+import { ReferralCapture } from "../components/ReferralCapture";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
@@ -44,7 +45,9 @@ import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
 import AdSenseScript from "../components/AdSenseScript";
 import { GA4Script } from "../lib/ga4";
 import { MetaPixelScript } from "../lib/meta-pixel";
+import { PostHogScript } from "../lib/posthog";
 import { getTempleHero } from "../lib/images";
+import { organizationJsonLd, webSiteJsonLd } from "../lib/jsonld";
 import Link from "next/link";
 import "./globals.css";
 
@@ -105,15 +108,15 @@ export const metadata: Metadata = {
  title: "Darshya \u2014 India\u2019s Devotional Super App",
  description:
  "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
- // TODO: add /og-default.png (1200x630) to apps/web/public/
- images: ["/og-default.png"],
+ // TODO: add /og/default (1200x630) to apps/web/public/
+ images: ["/og/default"],
  },
  twitter: {
  card: "summary_large_image",
  title: "Darshya \u2014 India\u2019s Devotional Super App",
  description:
  "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
- images: ["/og-default.png"],
+ images: ["/og/default"],
  },
  robots: {
  index: true,
@@ -270,7 +273,19 @@ export default function RootLayout({
  <CloudflareAnalytics />
 
  <link rel="alternate" hrefLang="en" href="https://darshya.online" />
+ <link rel="alternate" hrefLang="hi" href="https://darshya.online?lang=hi" />
  <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
+
+ {/* Site-wide JSON-LD: Organization + WebSite (SearchAction). Per-page JSON-LD
+     (Article, Product, Event, Place) is injected by the page itself. */}
+ <script
+   type="application/ld+json"
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+ />
+ <script
+   type="application/ld+json"
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
+ />
  </head>
  <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]" data-locale="en">
  {/* a11y — skip-to-main-content link, keyboard-only visible on focus. */}
@@ -434,9 +449,11 @@ export default function RootLayout({
  <Analytics />
  <GA4Script />
  <MetaPixelScript />
+ <PostHogScript />
  <SentryProvider />
  <AdSenseScript />
  <NotificationPrompt />
+ <ReferralCapture />
  </CartProvider>
  </AuthProvider>
  </QueryProvider>

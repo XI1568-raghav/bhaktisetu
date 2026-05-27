@@ -107,10 +107,13 @@ export async function generateMetadata({
      ? (apiImages[0] as string)
      : (apiImages[0] as { url?: string } | undefined)?.url
    : undefined;
+ // Dynamic branded card — reflects live name + deity + location.
+ const dynamicOg = `https://darshya.online/og/temple/${slug}`;
  const ogImage =
    firstApiImage ||
    (rich ? getTempleHero(slug) : undefined) ||
-   getDeityImage((deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-'));
+   getDeityImage((deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-')) ||
+   dynamicOg;
 
  const url = `https://darshya.online/temples/${slug}`;
  const title = `${name} — ${location}`;

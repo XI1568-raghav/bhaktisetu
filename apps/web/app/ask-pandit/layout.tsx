@@ -11,15 +11,14 @@ export const metadata: Metadata = {
    'Get instant Vedic astrology answers from AI Pandit. Free consultation on horoscope, kundli, muhurat, and more.',
   url: 'https://darshya.online/ask-pandit',
   type: 'website',
-  // TODO: add /og-default.png (1200x630) to apps/web/public/
-  images: ['/og-default.png'],
+  images: ['/og/default'],
  },
  twitter: {
   card: 'summary_large_image',
   title: 'Ask a Pandit — Free AI Astrology Consultation | Darshya',
   description:
    'Get instant Vedic astrology answers from AI Pandit. Free consultation on horoscope, kundli, muhurat, and more.',
-  images: ['/og-default.png'],
+  images: ['/og/default'],
  },
 };
 

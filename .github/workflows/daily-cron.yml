@@ -21,8 +21,8 @@ jobs:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
         run: |
           if [ -z "$CRON_AUTH_TOKEN" ] || [ -z "$API_BASE_URL" ]; then
-            echo "::error::Missing CRON_AUTH_TOKEN or API_BASE_URL secret"
-            exit 1
+            echo "::warning::Skipping daily cron — set CRON_AUTH_TOKEN and API_BASE_URL secrets to enable (gate U18)."
+            exit 0
           fi
           # -f makes curl exit non-zero on HTTP 4xx/5xx so the job fails
           # visibly rather than silently swallowing errors.
