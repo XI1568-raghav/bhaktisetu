@@ -8,7 +8,6 @@ import { getDeity, DEITIES } from '../../../lib/deities';
 import { getPujaTypes } from '../../../lib/api';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
 
-export const runtime = 'edge';
 export const revalidate = 3600;
 
 interface Params {

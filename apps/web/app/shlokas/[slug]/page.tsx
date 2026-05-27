@@ -7,7 +7,6 @@ import { articleJsonLd, breadcrumbJsonLd } from '../../../lib/jsonld';
 // Edge runtime required for CF Pages (see docs/caveats.md). Edge + static
 // generation are mutually exclusive in Next 15, so generateStaticParams is
 // intentionally omitted — pages are rendered on-demand per request.
-export const runtime = 'edge';
 
 export async function generateMetadata({
   params,

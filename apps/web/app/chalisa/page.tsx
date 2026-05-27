@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 import { CHALISAS } from '../../lib/chalisas';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

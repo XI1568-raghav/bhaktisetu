@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTempleBySlug } from '../../../../lib/api';
 
-export const runtime = 'edge';
 export const revalidate = 3600;
 
 interface Params {

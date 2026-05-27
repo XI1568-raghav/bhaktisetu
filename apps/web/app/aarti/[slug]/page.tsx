@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { Music, Clock, ChevronRight, ArrowRight, Flame } from 'lucide-react';
 import { AARTIS, getAarti } from '../../../lib/aartis';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 interface Params {

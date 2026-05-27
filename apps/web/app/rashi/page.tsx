@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { RASHI_PROFILES } from '../../lib/rashi-profiles';
 import { getRashi } from '../../lib/rashis';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
