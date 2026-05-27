@@ -8,22 +8,10 @@ import { notFound } from 'next/navigation';
 import { getTempleBySlug } from '../../../../lib/api';
 
 export const runtime = 'edge';
-export const dynamicParams = false;
 export const revalidate = 3600;
 
-const SEED_TEMPLE_SLUGS = [
-  'kashi-vishwanath', 'tirumala-tirupati', 'siddhivinayak', 'somnath',
-  'jagannath-puri', 'golden-temple', 'meenakshi-temple', 'kedarnath',
-  'badrinath', 'akshardham', 'mahakaleshwar', 'dwarkadhish',
-  'rameshwaram', 'vaishno-devi',
-];
-
-export function generateStaticParams() {
-  return SEED_TEMPLE_SLUGS.map((slug) => ({ slug }));
-}
-
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 function fmtINR(s: string): string {
@@ -32,21 +20,22 @@ function fmtINR(s: string): string {
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params;
   try {
-    const t = await getTempleBySlug(params.slug);
+    const t = await getTempleBySlug(slug);
     const name = t.name;
     const city = t.city || '';
     const count = t.pujaOfferings?.filter((o) => o.isActive).length || 0;
     return {
       title: `${name} pujas — book online${count > 0 ? ` (${count} options)` : ''}`,
       description: `Book ${name}${city ? `, ${city}` : ''} pujas online with verified pandits, video proof and 80G receipts. NRI lane available.`,
-      alternates: { canonical: `https://darshya.online/temples/${params.slug}/pujas` },
+      alternates: { canonical: `https://darshya.online/temples/${slug}/pujas` },
       openGraph: {
         title: `${name} pujas — book online`,
         description: `${count} active puja options. Verified, video-proof, 80G.`,
-        url: `https://darshya.online/temples/${params.slug}/pujas`,
+        url: `https://darshya.online/temples/${slug}/pujas`,
         type: 'website',
-        images: [`/og/temple/${params.slug}`],
+        images: [`/og/temple/${slug}`],
       },
     };
   } catch {
@@ -55,7 +44,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function TemplePujasPage({ params }: Params) {
-  const temple = await getTempleBySlug(params.slug).catch(() => null);
+  const { slug } = await params;
+  const temple = await getTempleBySlug(slug).catch(() => null);
   if (!temple) notFound();
 
   const offerings = (temple.pujaOfferings || []).filter((o) => o.isActive);
@@ -85,7 +75,7 @@ export default async function TemplePujasPage({ params }: Params) {
         <span className="mx-2">/</span>
         <Link href="/temples" className="hover:text-saffron-700">Temples</Link>
         <span className="mx-2">/</span>
-        <Link href={`/temples/${params.slug}`} className="hover:text-saffron-700">{temple.name}</Link>
+        <Link href={`/temples/${slug}`} className="hover:text-saffron-700">{temple.name}</Link>
         <span className="mx-2">/</span>
         <span className="text-surface-900">Pujas</span>
       </nav>
@@ -104,7 +94,7 @@ export default async function TemplePujasPage({ params }: Params) {
       {offerings.length === 0 ? (
         <div className="rounded-lg border border-surface-200 bg-surface-50 p-6 text-center">
           <p className="text-surface-700 mb-4">No active puja offerings yet for this temple.</p>
-          <Link href={`/temples/${params.slug}`} className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700">
+          <Link href={`/temples/${slug}`} className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700">
             View temple page →
           </Link>
         </div>
@@ -146,7 +136,7 @@ export default async function TemplePujasPage({ params }: Params) {
         <p className="mb-3">
           <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, an 80G donation receipt where applicable, and a verified pandit gated on Aadhaar.
         </p>
-        <Link href={`/temples/${params.slug}`} className="text-saffron-700 hover:underline">
+        <Link href={`/temples/${slug}`} className="text-saffron-700 hover:underline">
           ← Back to {temple.name}
         </Link>
       </footer>

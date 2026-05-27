@@ -8,19 +8,15 @@ import { getMantrasForDeity, deitiesWithMantras } from '../../../../lib/deity-ma
 
 export const runtime = 'edge';
 export const revalidate = 86400;
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-  return deitiesWithMantras().map((slug) => ({ slug }));
-}
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const d = getDeity(params.slug);
-  const mantras = getMantrasForDeity(params.slug);
+  const { slug } = await params;
+  const d = getDeity(slug);
+  const mantras = getMantrasForDeity(slug);
   if (!d || mantras.length === 0) return { title: 'Mantras — Darshya' };
   return {
     title: `${d.name} Mantras — Sanskrit, Meaning, Benefits — Darshya`,
@@ -47,9 +43,10 @@ const TYPE_LABELS: Record<string, string> = {
   praise: 'Praise / Stotra',
 };
 
-export default function DeityMantrasPage({ params }: Params) {
-  const d = getDeity(params.slug);
-  const mantras = getMantrasForDeity(params.slug);
+export default async function DeityMantrasPage({ params }: Params) {
+  const { slug } = await params;
+  const d = getDeity(slug);
+  const mantras = getMantrasForDeity(slug);
   if (!d || mantras.length === 0) notFound();
 
   const otherDeities = DEITIES.filter(
