@@ -170,12 +170,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]);
 
-  const pujaEntries = pujaSlugs.map((slug) => ({
-    url: `${BASE_URL}/pujas/${slug}`,
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }));
+  const pujaEntries = pujaSlugs.flatMap((slug) => [
+    {
+      url: `${BASE_URL}/pujas/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    // Programmatic-SEO mirror — "where to book {puja}" long-tail.
+    {
+      url: `${BASE_URL}/pujas/${slug}/temples`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+  ]);
 
   const yatraEntries = yatraSlugs.map((slug) => ({
     url: `${BASE_URL}/yatra/${slug}`,

@@ -534,10 +534,18 @@ export default async function PujaDetailPage({
 
  {/* Temples Offering This Puja */}
  <div className="rounded-xl border border-surface-100 bg-white p-6">
- <h2 className="mb-6 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
+ <div className="mb-6 flex items-center justify-between gap-3">
+ <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
  <MapPin className="h-5 w-5 text-saffron-500" />
  Available at {puja.temples.length} Temple{puja.temples.length !== 1 ? 's' : ''}
  </h2>
+ <Link
+ href={`/pujas/${puja.slug}/temples`}
+ className="text-sm font-semibold text-saffron-700 hover:underline whitespace-nowrap"
+ >
+ Compare all →
+ </Link>
+ </div>
  <div className="space-y-4">
  {puja.temples.map((temple) => {
  const price = temple.priceOverride || puja.basePrice;
