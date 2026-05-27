@@ -3,7 +3,7 @@
 import { spawnSync } from 'node:child_process';
 
 const agents = process.argv.slice(2);
-const ALL = ['seo-audit', 'content-pipeline', 'lead-gen', 'investor-pipeline', 'growth-metrics', 'social-queue', 'onboarding-drip', 'pr-outreach', 'health-smoke'];
+const ALL = ['seo-audit', 'content-pipeline', 'lead-gen', 'investor-pipeline', 'growth-metrics', 'social-queue', 'onboarding-drip', 'pr-outreach', 'health-smoke', 'broken-link', 'gsc-submitter', 'founder-tweet-draft', 'content-publisher'];
 const list = agents.length ? agents : ALL;
 
 let failed = 0;

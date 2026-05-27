@@ -7,7 +7,7 @@ const CORE_PAGES = [
   '/', '/pujas', '/temples', '/gurukuls', '/become-gurukul',
   '/sanskrit', '/ved', '/sanatan', '/learn-sanskrit',
   '/about', '/contact', '/pricing',
-  '/astrology/horoscope', '/astrology/kundli', '/astrology/panchang',
+  '/astrology', '/astrology/horoscope', '/astrology/kundli', '/panchang',
   '/yatra', '/weddings/muhurat',
 ];
 

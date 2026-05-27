@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
-import { organizationJsonLd } from '../lib/jsonld';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
@@ -30,24 +29,27 @@ import ConsultStrip from '../components/home/ConsultStrip';
 import ShopStrip from '../components/home/ShopStrip';
 import YatraStrip from '../components/home/YatraStrip';
 import TrustStrip from '../components/home/TrustStrip';
+import EmailCapture from '../components/EmailCapture';
 
 export const metadata: Metadata = {
  title: "Darshya — India's Devotional Super App",
- description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
+ description:
+   'Live darshan from sacred temples, online puja booking with verified pandits, daily panchang, Vedic astrology, Sanskrit lessons, gaushala donations and AI spiritual guidance — your complete Sanatan Dharma companion.',
  alternates: { canonical: 'https://darshya.online' },
  openGraph: {
    title: "Darshya — India's Devotional Super App",
-   description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
+   description:
+     'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit & Vedic learning, gaushala donations and AI pandit guidance — one app for daily devotional practice.',
    url: 'https://darshya.online',
    type: 'website',
-   // TODO: add /og-default.png (1200x630) to apps/web/public/
-   images: ['/og-default.png'],
+   images: ['/og/default'],
  },
  twitter: {
    card: 'summary_large_image',
    title: "Darshya — India's Devotional Super App",
-   description: 'Live darshan, puja booking, AI spiritual guidance, and more.',
-   images: ['/og-default.png'],
+   description:
+     'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit & Vedic learning, gaushala donations and AI pandit guidance.',
+   images: ['/og/default'],
  },
 };
 
@@ -56,10 +58,6 @@ export default async function HomePage() {
  const tCommon = await getTranslations('common');
  return (
  <ScrollReveal>
- <script
-   type="application/ld+json"
-   dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
- />
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
  {/* Sticky early-access banner — pinned just below the fixed nav. */}
  <div
@@ -576,6 +574,16 @@ export default async function HomePage() {
  <ShopStrip />
  <YatraStrip />
  <TrustStrip />
+
+ {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
+ <section className="max-w-3xl mx-auto px-4 py-12">
+ <EmailCapture
+ source="home-hero"
+ title="Daily panchang in your inbox"
+ subtitle="Tithi, nakshatra, festival reminders + launch credits — free forever, unsubscribe any time."
+ cta="Get free panchang"
+ />
+ </section>
 
  </div>
  </ScrollReveal>

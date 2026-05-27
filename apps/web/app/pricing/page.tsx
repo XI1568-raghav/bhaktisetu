@@ -20,9 +20,9 @@ import {
 } from "../../lib/pricing";
 
 export const metadata: Metadata = {
- title: "Pricing",
+ title: "Pricing — Free & Paid Plans for Devotees and Providers",
  description:
- "Simple, transparent pricing for devotees and service providers. Browse free or grow your devotional business with Darshya.",
+ "Simple, transparent pricing for devotees, pandits, store owners, astrologers, gaushalas and gurukuls. Browse Darshya free or grow your devotional business with low-commission paid plans built for India and NRI audiences.",
 };
 
 const roleIcons: Record<string, React.ElementType> = {

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getTemples, getPujaTypes } from '../lib/api';
+import { SHLOKAS } from '../lib/shlokas';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -99,6 +100,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/become-astrologer', priority: 0.5 },
     { path: '/become-wellness', priority: 0.5 },
     { path: '/list-gaushala', priority: 0.5 },
+    // Knowledge + gurukul (Layer M)
+    { path: '/sanskrit', priority: 0.8 },
+    { path: '/ved', priority: 0.8 },
+    { path: '/sanatan', priority: 0.8 },
+    { path: '/learn-sanskrit', priority: 0.8 },
+    { path: '/gurukuls', priority: 0.9 },
+    { path: '/become-gurukul', priority: 0.6 },
+    // Conversion + revenue surfaces
+    { path: '/donations', priority: 0.8 },
+    { path: '/ask-pandit', priority: 0.8 },
+    { path: '/nri', priority: 0.9 },
+    { path: '/upgrade', priority: 0.7 },
+    { path: '/waitlist', priority: 0.6 },
+    // Support
+    { path: '/support', priority: 0.5 },
+    { path: '/support/faq', priority: 0.5 },
+    { path: '/credits', priority: 0.3 },
+    { path: '/refer', priority: 0.7 },
+    { path: '/shloka-card', priority: 0.7 },
+    { path: '/launch', priority: 0.6 },
+    { path: '/updates', priority: 0.5 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -187,6 +209,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const shlokaEntries = [
+    { url: `${BASE_URL}/shlokas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.8 },
+    ...SHLOKAS.map((s) => ({
+      url: `${BASE_URL}/shlokas/${s.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
   return [
     ...topLevelEntries,
     ...secondaryEntries,
@@ -196,6 +228,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...yatraDestEntries,
     ...bookEntries,
     ...hiEntries,
+    ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];
 }

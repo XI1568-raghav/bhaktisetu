@@ -358,6 +358,67 @@ const STATEMENTS: string[] = [
   `CREATE INDEX IF NOT EXISTS "org_invites_org_id_idx" ON "org_invites" ("org_id")`,
   `ALTER TABLE "temples" ADD COLUMN IF NOT EXISTS "org_id" UUID`,
   `CREATE INDEX IF NOT EXISTS "temples_org_id_idx" ON "temples" ("org_id")`,
+
+  // Referrals (migration 20260527000000_referrals) — defensive replay so
+  // Render boots without a manual `prisma db execute` step.
+  `DO $$ BEGIN
+    CREATE TYPE "ReferralClaimStatus" AS ENUM ('pending', 'signed_up', 'qualifying', 'rewarded', 'void');
+  EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `CREATE TABLE IF NOT EXISTS "referral_codes" (
+    "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "user_id"    UUID NOT NULL,
+    "code"       TEXT NOT NULL,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'referral_codes_user_id_key') THEN
+      ALTER TABLE "referral_codes" ADD CONSTRAINT "referral_codes_user_id_key" UNIQUE ("user_id");
+    END IF;
+  END $$`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'referral_codes_code_key') THEN
+      ALTER TABLE "referral_codes" ADD CONSTRAINT "referral_codes_code_key" UNIQUE ("code");
+    END IF;
+  END $$`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'referral_codes_user_id_fkey') THEN
+      ALTER TABLE "referral_codes" ADD CONSTRAINT "referral_codes_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `CREATE TABLE IF NOT EXISTS "referral_claims" (
+    "id"              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "code_id"         UUID NOT NULL,
+    "referrer_id"     UUID NOT NULL,
+    "referee_id"      UUID,
+    "booking_id"      UUID,
+    "status"          "ReferralClaimStatus" NOT NULL DEFAULT 'pending',
+    "reward_amount"   DECIMAL(10,2),
+    "reward_currency" TEXT,
+    "created_at"      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updated_at"      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "rewarded_at"     TIMESTAMPTZ
+  )`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'referral_claims_code_id_fkey') THEN
+      ALTER TABLE "referral_claims" ADD CONSTRAINT "referral_claims_code_id_fkey"
+        FOREIGN KEY ("code_id") REFERENCES "referral_codes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'referral_claims_referrer_id_fkey') THEN
+      ALTER TABLE "referral_claims" ADD CONSTRAINT "referral_claims_referrer_id_fkey"
+        FOREIGN KEY ("referrer_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'referral_claims_referee_id_fkey') THEN
+      ALTER TABLE "referral_claims" ADD CONSTRAINT "referral_claims_referee_id_fkey"
+        FOREIGN KEY ("referee_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `CREATE INDEX IF NOT EXISTS "referral_claims_referrer_id_status_idx" ON "referral_claims" ("referrer_id", "status")`,
+  `CREATE INDEX IF NOT EXISTS "referral_claims_referee_id_idx" ON "referral_claims" ("referee_id")`,
 ];
 
 export async function ensureSchemaInvariants(

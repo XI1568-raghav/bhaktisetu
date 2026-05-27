@@ -245,7 +245,9 @@ export async function generateMetadata({
  const firstPujaImage = puja.images && puja.images.length > 0 ? puja.images[0]?.url : undefined;
  const pujaCatalogImage = getPujaImage(slug);
  const deitySlug = (puja.deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-');
- const ogImage = firstPujaImage || pujaCatalogImage || getDeityImage(deitySlug);
+ // Dynamic branded card — always available, reflects live title + price.
+ const dynamicOg = `https://darshya.online/og/puja/${slug}`;
+ const ogImage = firstPujaImage || pujaCatalogImage || getDeityImage(deitySlug) || dynamicOg;
 
  return {
    title,

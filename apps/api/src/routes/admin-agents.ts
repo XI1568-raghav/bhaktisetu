@@ -84,3 +84,33 @@ export async function adminAgentsRoutes(server: FastifyInstance) {
     return { recent: safeList().slice(0, 20) };
   });
 }
+
+// Public feed of agent activity for /updates trust page.
+// No auth. Returns up to 12 most-recent reports with title (first H1),
+// 600-char excerpt + agent name + date. Path-traversal safe because
+// safeList already whitelists `YYYY-MM-DD-<agent>.md` and excludes `_*`.
+export async function publicAgentFeedRoutes(server: FastifyInstance) {
+  server.get('/feed', async () => {
+    const items = safeList().slice(0, 12);
+    const enriched = items.map((it) => {
+      let title = it.agent.replace(/-/g, ' ');
+      let excerpt = '';
+      try {
+        const raw = readFileSync(join(REPORT_DIR, it.file), 'utf8');
+        const h1 = raw.match(/^#\s+(.+)$/m);
+        if (h1) title = h1[1]!.slice(0, 120);
+        excerpt = raw
+          .replace(/^#.*$/gm, '')
+          .replace(/`{3}[\s\S]*?`{3}/g, '')
+          .replace(/[*_>`#-]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 600);
+      } catch {
+        /* file vanished between list + read - skip */
+      }
+      return { file: it.file, date: it.date, agent: it.agent, title, excerpt };
+    });
+    return { items: enriched, total: enriched.length };
+  });
+}

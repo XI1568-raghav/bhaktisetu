@@ -207,6 +207,12 @@ model User {
   ownedGurukuls        Gurukul[]            @relation("GurukulOwner")
   gurukulApplications  GurukulApplication[]
 
+  // Referral system (added 2026-05-27) — one shareable code per user; multiple
+  // claims tracked per outbound + inbound side.
+  referralCode         ReferralCode?
+  referralsMade        ReferralClaim[]      @relation("ReferralReferrer")
+  referralsClaimed     ReferralClaim[]      @relation("ReferralReferee")
+
   @@map("users")
 }
 
@@ -1688,4 +1694,51 @@ model GurukulApplication {
   @@index([programId, status])
   @@index([applicantUserId])
   @@map("gurukul_applications")
+}
+
+// Referral system (added 2026-05-27).
+// One ReferralCode per user (deterministic, shareable). Each click + signup
+// generates a ReferralClaim. When the referee completes a paid booking the
+// claim moves to `rewarded` and ₹100 credit is granted both sides — actual
+// payout uses the existing wallet/coupon flow (TBD); for now we just record.
+model ReferralCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  claims  ReferralClaim[]
+
+  @@map("referral_codes")
+}
+
+enum ReferralClaimStatus {
+  pending      // cookie captured, no signup yet
+  signed_up    // referee created account
+  qualifying   // referee placed first booking, not paid
+  rewarded     // referee paid, both sides credited
+  void         // self-refer / fraud / expired
+}
+
+model ReferralClaim {
+  id            String              @id @default(uuid()) @db.Uuid
+  codeId        String              @map("code_id") @db.Uuid
+  referrerId    String              @map("referrer_id") @db.Uuid
+  refereeId     String?             @map("referee_id") @db.Uuid
+  bookingId     String?             @map("booking_id") @db.Uuid
+  status        ReferralClaimStatus @default(pending)
+  rewardAmount  Decimal?            @map("reward_amount") @db.Decimal(10, 2)
+  rewardCurrency String?            @map("reward_currency")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  rewardedAt    DateTime?           @map("rewarded_at")
+
+  code     ReferralCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  referrer User         @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee  User?        @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: SetNull)
+
+  @@index([referrerId, status])
+  @@index([refereeId])
+  @@map("referral_claims")
 }
