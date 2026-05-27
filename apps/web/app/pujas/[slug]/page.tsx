@@ -1,5 +1,17 @@
-export const runtime = 'edge';
 import type { Metadata } from 'next';
+
+export const dynamicParams = false;
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return [
+    'rudrabhishek', 'satyanarayan-puja', 'navgraha-puja', 'ganesh-puja',
+    'lakshmi-puja', 'maha-mrityunjaya', 'sundarkand-path', 'kaal-sarp-dosh',
+    'mangal-dosh', 'vivah-puja', 'griha-pravesh', 'navaratri-puja',
+    'maha-aarti', 'durga-puja',
+  ].map((slug) => ({ slug }));
+}
+
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {

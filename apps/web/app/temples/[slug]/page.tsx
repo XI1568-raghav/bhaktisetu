@@ -1,4 +1,5 @@
-export const runtime = 'edge';
+export const dynamicParams = false;
+export const revalidate = 3600;
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -35,6 +36,19 @@ import {
 } from '../../../lib/temple-details';
 import TempleHeartShareButtons from '../../../components/TempleHeartShareButtons';
 import AnalyticsEvent from '../../../components/AnalyticsEvent';
+import { TEMPLE_DETAILS } from '../../../lib/temple-details';
+
+export function generateStaticParams() {
+  const fallback = [
+    'kashi-vishwanath', 'tirumala-tirupati', 'siddhivinayak', 'somnath',
+    'jagannath-puri', 'golden-temple', 'meenakshi-temple', 'kedarnath',
+    'badrinath', 'akshardham', 'mahakaleshwar', 'dwarkadhish',
+    'rameshwaram', 'vaishno-devi',
+  ];
+  const known = Object.keys(TEMPLE_DETAILS);
+  const all = Array.from(new Set([...known, ...fallback]));
+  return all.map((slug) => ({ slug }));
+}
 
 // ──────────────────────────────────────────────────────────────
 // Fallback temple from API (when no rich detail exists)
