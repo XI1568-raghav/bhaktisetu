@@ -1,9 +1,7 @@
 'use client';
-export const runtime = 'edge';
 
-
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
  ArrowRight,
  ArrowLeft,
@@ -462,9 +460,9 @@ const TEMPLE_SERVICES = ['Darshan Streaming', 'Puja Booking', 'Prasad Delivery',
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function OnboardingPage() {
- const params = useParams();
- const roleParam = params.role as string;
+function OnboardingInner() {
+ const sp = useSearchParams();
+ const roleParam = sp.get('role') ?? '';
 
  // Normalize role
  const role: OnboardingRole | null = (() => {
@@ -1164,5 +1162,13 @@ export default function OnboardingPage() {
  </div>
  </div>
  </div>
+ );
+}
+
+export default function OnboardingPage() {
+ return (
+ <Suspense fallback={<div className="p-8 text-sm text-surface-500">Loading…</div>}>
+ <OnboardingInner />
+ </Suspense>
  );
 }

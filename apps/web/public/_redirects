@@ -5,3 +5,16 @@
 /og/puja/*           /logo.svg     302
 /og/shloka           /logo.svg     302
 /og/temple/*         /logo.svg     302
+
+# View-pattern for heavy 'use client' [id] routes — preserves bookmarks while
+# dropping per-id edge functions from the worker bundle.
+/priest/bookings/view   /priest/bookings/view             200
+/priest/bookings/*      /priest/bookings/view?id=:splat   302
+/admin/support/view     /admin/support/view               200
+/admin/support/*        /admin/support/view?id=:splat     302
+/admin/users/view       /admin/users/view                 200
+/admin/users/*          /admin/users/view?id=:splat       302
+/bookings/view          /bookings/view                    200
+/bookings/*             /bookings/view?id=:splat          302
+/onboarding/view        /onboarding/view                  200
+/onboarding/*           /onboarding/view?role=:splat      302
