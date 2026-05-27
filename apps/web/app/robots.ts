@@ -53,6 +53,7 @@ export default function robots(): MetadataRoute.Robots {
           '/darshanas/',
           '/vedas/',
           '/dashavatar/',
+          '/sapta-rishis/',
           '/why-darshya',
         ],
         disallow: [
