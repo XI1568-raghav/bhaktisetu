@@ -220,6 +220,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  // Blog posts — pulled from GH at build/revalidate, tolerant of API failure.
+  let blogEntries: { url: string; lastModified: Date; changeFrequency: 'weekly'; priority: number }[] = [];
+  try {
+    const { listBlogPosts } = await import('../lib/blog-posts');
+    const posts = await listBlogPosts();
+    blogEntries = posts.map((p) => ({
+      url: `${BASE_URL}/blog/${p.slug}`,
+      lastModified: new Date(p.date),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+  } catch {
+    blogEntries = [];
+  }
+
   // Hindi entry — only the landing page is genuinely translated today.
   // Listing untranslated /hi/* pages here would mislead Google + hurt SEO
   // (thin/duplicate content penalty). Expand this array only when real
@@ -269,6 +284,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...deityEntries,
     ...festivalEntries,
     ...cityEntries,
+    ...blogEntries,
     ...bookEntries,
     ...hiEntries,
     ...shlokaEntries,
