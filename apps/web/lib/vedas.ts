@@ -1,0 +1,182 @@
+export type Veda = {
+  number: number;
+  slug: string;
+  name: string;
+  sanskrit: string;
+  iast: string;
+  meaning: string;
+  approxDate: string;
+  totalMantras: number;
+  mandalaOrKandaCount: number;
+  mandalaLabel: string;
+  shakhasExtant: number;
+  shakhasOriginal: number;
+  principalDeities: string[];
+  primaryFocus: string;
+  associatedPriest: string;
+  associatedPriestRole: string;
+  summary: string;
+  fourParts: {
+    samhita: string;
+    brahmana: string;
+    aranyaka: string;
+    upanishad: string;
+  };
+  principalUpanishads: string[];
+  famousHymns: { name: string; reference: string; significance: string }[];
+  oralPreservation: string;
+  modernRelevance: string;
+  bestKnownFor: string;
+};
+
+export const VEDAS: Veda[] = [
+  {
+    number: 1,
+    slug: 'rigveda',
+    name: 'Rigveda',
+    sanskrit: 'ऋग्वेद',
+    iast: 'Ṛgveda',
+    meaning: 'Veda of praise / hymn',
+    approxDate: 'c. 1500–1200 BCE (oldest stratum); some hymns possibly older',
+    totalMantras: 10552,
+    mandalaOrKandaCount: 10,
+    mandalaLabel: 'mandalas (books)',
+    shakhasExtant: 2,
+    shakhasOriginal: 21,
+    principalDeities: ['Indra', 'Agni', 'Soma', 'Varuna', 'Mitra', 'Ushas', 'Surya', 'Maruts', 'Ashvins'],
+    primaryFocus: 'Mantras of praise (rich) addressed to the cosmic powers, recited at the yajna by the hotr priest.',
+    associatedPriest: 'Hotr',
+    associatedPriestRole: 'The hotr is the priest who recites the Rigvedic invocations during the yajna, calling the devas by name to the sacrificial ground.',
+    summary: 'The Rigveda is the oldest surviving sacred text of the Indo-European world and the foundation of all later Hindu thought. It is a collection of 1,028 hymns (suktas) totalling roughly 10,552 mantras, organized into ten mandalas. Mandalas 2–7 are the oldest "family books," each preserved by a single rishi-lineage (Gritsamada, Vishvamitra, Vamadeva, Atri, Bharadvaja, Vasishtha). Mandalas 1 and 10 are later compilations, and Mandala 9 is given entirely to the soma-pavamana hymns. The hymns are not theological treatises — they are liturgical, addressed directly to Indra, Agni, Soma, Varuna, and Ushas, asking for protection, wealth, sons, soma-rapture, and right-order (rita). It is here that the Purusha Sukta (10.90), the Nasadiya Sukta on the unknowability of creation (10.129), and the Gayatri mantra (3.62.10) first appear.',
+    fourParts: {
+      samhita: 'The collection of the 1,028 hymns themselves, arranged in 10 mandalas, totalling ~10,552 mantras.',
+      brahmana: 'Aitareya Brahmana and Kausitaki (Sankhayana) Brahmana — prose works explaining the meaning, occasion, and ritual application of every hymn.',
+      aranyaka: 'Aitareya Aranyaka and Kausitaki Aranyaka — "forest texts," intended for ascetic recitation away from settled life.',
+      upanishad: 'Aitareya Upanishad and Kausitaki Upanishad — embedded within their aranyakas, teaching brahman as pure consciousness.',
+    },
+    principalUpanishads: ['Aitareya Upanishad', 'Kausitaki Upanishad'],
+    famousHymns: [
+      { name: 'Gayatri Mantra', reference: 'RV 3.62.10', significance: 'The most recited mantra in living Hinduism, daily sandhya-vandana of every initiated brahmana for ~3000 years.' },
+      { name: 'Purusha Sukta', reference: 'RV 10.90', significance: 'The cosmic self-sacrifice from which the world and the four varnas emerge — foundational for both Vedanta and later social theory.' },
+      { name: 'Nasadiya Sukta', reference: 'RV 10.129', significance: '"Then there was neither being nor non-being…" — the famous hymn of creation that refuses to assert what cannot be known.' },
+      { name: 'Hiranyagarbha Sukta', reference: 'RV 10.121', significance: '"The golden womb arose in the beginning…" — the cosmic embryo as first cause.' },
+      { name: 'Mandukya Sukta (Frogs)', reference: 'RV 7.103', significance: 'A monsoon hymn comparing chanting brahmanas to croaking frogs — one of the earliest pieces of self-aware Vedic humour.' },
+    ],
+    oralPreservation: 'The Rigveda has been preserved by oral transmission across roughly 3,000 years with essentially zero textual drift, thanks to the pada-patha and the eleven recitation patterns (samhita, pada, krama, jata, mala, sikha, rekha, dhvaja, danda, ratha, ghana). UNESCO inscribed Vedic chant on its Representative List of the Intangible Cultural Heritage of Humanity in 2008.',
+    modernRelevance: 'Every Hindu samskara — from upanayana to vivaha to antyeshti — still uses Rigvedic mantras. The Gayatri remains the single most-recited sacred utterance in the world. The Rigveda is also the primary Indo-European linguistic document, central to historical-comparative linguistics.',
+    bestKnownFor: 'Oldest layer of Veda + Gayatri Mantra + 1,028 hymns',
+  },
+  {
+    number: 2,
+    slug: 'samaveda',
+    name: 'Samaveda',
+    sanskrit: 'सामवेद',
+    iast: 'Sāmaveda',
+    meaning: 'Veda of melody / chant',
+    approxDate: 'c. 1200–1000 BCE',
+    totalMantras: 1875,
+    mandalaOrKandaCount: 2,
+    mandalaLabel: 'ganas (song-books)',
+    shakhasExtant: 3,
+    shakhasOriginal: 1000,
+    principalDeities: ['Soma', 'Indra', 'Agni'],
+    primaryFocus: 'Melodic chanting (saman) at the soma sacrifice, sung by the udgatr priest.',
+    associatedPriest: 'Udgatr',
+    associatedPriestRole: 'The udgatr is the chanting priest at the soma yajna. Where the hotr recites and the adhvaryu acts, the udgatr sings — and his songs are drawn almost entirely from the Samaveda.',
+    summary: 'The Samaveda is, in textual content, almost entirely a re-arrangement of Rigvedic verses (about 1,800 of its 1,875 mantras are Rigvedic) — but with the crucial addition of melody. It is the world\'s oldest surviving notated song-book. The verses are organized for liturgical singing during the soma yajna in two parts: the purvarcika (the "earlier collection," verses arranged by deity) and the uttararcika (the "later collection," verses arranged by the order of the soma ritual). Three extant shakhas survive: Kauthuma, Ranayaniya, and Jaiminiya, each with its own notation system. Indian classical music — both Hindustani and Carnatic — traces its scale, intonation, and gandharva-tradition directly back to Samavedic chant.',
+    fourParts: {
+      samhita: 'The 1,875 mantras, divided into purvarcika (deity-arranged) and uttararcika (ritual-arranged).',
+      brahmana: 'Tandya (Panchavimsha) Brahmana, Shadvimsha Brahmana, Jaiminiya Brahmana — prose elaborating the soma yajna.',
+      aranyaka: 'Jaiminiya Upanishad Brahmana / Talavakara Aranyaka.',
+      upanishad: 'Chandogya Upanishad (one of the principal ten) and Kena Upanishad — both among the most philosophically influential texts in the entire Vedic corpus.',
+    },
+    principalUpanishads: ['Chandogya Upanishad', 'Kena Upanishad'],
+    famousHymns: [
+      { name: 'Pavamana Sukta', reference: 'SV passim (drawn from RV mandala 9)', significance: 'The hymns of the soma-juice purifying itself through the woollen filter — central to the soma sacrifice.' },
+      { name: 'Tad eva agnis', reference: 'SV / RV cross-referenced', significance: '"That alone is Agni, that alone is Aditya, that alone is Vayu" — early monistic intuition.' },
+    ],
+    oralPreservation: 'The Samaveda preserves the world\'s oldest documented system of musical notation, using specific symbols above the syllables to mark seven notes (krushta, prathama, dvitiya, tritiya, chaturtha, mandra, atisvarya). The Jaiminiya tradition of Kerala is one of the rarest living musical lineages on earth.',
+    modernRelevance: 'Indian classical music\'s seven svaras (sa-re-ga-ma-pa-dha-ni) descend from the Samavedic notation. Bharata\'s Natya Shastra treats Samaveda as the literal source of music. ISKCON kirtans, gandharva-veda performances, and most temple chanting traditions remain Samavedic in lineage.',
+    bestKnownFor: 'The veda of melody — root of Indian classical music + Chandogya Upanishad',
+  },
+  {
+    number: 3,
+    slug: 'yajurveda',
+    name: 'Yajurveda',
+    sanskrit: 'यजुर्वेद',
+    iast: 'Yajurveda',
+    meaning: 'Veda of sacrificial formula / yajus',
+    approxDate: 'c. 1200–1000 BCE',
+    totalMantras: 1975,
+    mandalaOrKandaCount: 40,
+    mandalaLabel: 'adhyayas (Shukla recension chapters)',
+    shakhasExtant: 6,
+    shakhasOriginal: 109,
+    principalDeities: ['Prajapati', 'Rudra', 'Vishnu', 'Indra', 'Agni'],
+    primaryFocus: 'Prose formulae (yajus) muttered by the adhvaryu priest while physically performing the yajna actions.',
+    associatedPriest: 'Adhvaryu',
+    associatedPriestRole: 'The adhvaryu is the priest of action — he builds the altar, kindles the fire, presses the soma, and pours the offerings. The Yajurveda is his manual.',
+    summary: 'The Yajurveda is the practical handbook of the yajna. Where the Rigveda gives the praise and the Samaveda gives the melody, the Yajurveda gives the actual prose formulae that the adhvaryu mutters as he performs each physical step of the sacrifice. It exists in two great recensions whose difference is one of the most distinctive features of the Vedic corpus: the Krishna ("Black") Yajurveda, in which mantras and prose-commentary are interleaved in the samhita itself, and the Shukla ("White") Yajurveda, in which the samhita is pure mantra and the commentary is shifted to the Shatapatha Brahmana. The most influential Krishna-shakha is the Taittiriya (preserving the Maha-Narayana Upanishad and the Sri Rudram). The Shukla recension preserves the Vajasaneyi Samhita and the world-historically important Shatapatha Brahmana of Yajnavalkya, which contains the Brihadaranyaka Upanishad.',
+    fourParts: {
+      samhita: 'Two main recensions — Krishna (Taittiriya, Maitrayani, Katha, Kapishthala) interleaves mantra + prose; Shukla (Vajasaneyi: Madhyandina + Kanva) keeps the samhita pure mantra.',
+      brahmana: 'Taittiriya Brahmana (Krishna); Shatapatha Brahmana (Shukla) — the largest and most philosophically rich brahmana in the entire Vedic corpus.',
+      aranyaka: 'Taittiriya Aranyaka (Krishna); Brihad Aranyaka (Shukla).',
+      upanishad: 'Taittiriya, Katha, Maha-Narayana, Shvetashvatara (Krishna); Brihadaranyaka, Isha (Shukla) — six of the ten principal Upanishads.',
+    },
+    principalUpanishads: ['Brihadaranyaka Upanishad', 'Isha Upanishad', 'Taittiriya Upanishad', 'Katha Upanishad', 'Shvetashvatara Upanishad', 'Maha-Narayana Upanishad'],
+    famousHymns: [
+      { name: 'Sri Rudram (Namakam + Chamakam)', reference: 'TS 4.5 + 4.7 (Krishna)', significance: 'The most important Shaiva mantra in living tradition; daily abhishekam at every Shiva temple from Kashi to Rameswaram.' },
+      { name: 'Purusha Sukta (Yajurvedic expansion)', reference: 'VS 31', significance: 'Yajurvedic expanded version of the Rigvedic Purusha Sukta, used in vishnu-puja and narayana-suktam recitation.' },
+      { name: 'Maha-Mrityunjaya Mantra', reference: 'TS 1.8.6 / RV 7.59.12 (cross)', significance: '"Tryambakam yajamahe" — the great healing mantra recited for protection from untimely death.' },
+      { name: 'Shanti Mantra (Sahanavavatu)', reference: 'TU / Brahmanand Valli', significance: 'Opening peace-invocation of the Taittiriya Upanishad recited at the start of every guru-shishya session.' },
+    ],
+    oralPreservation: 'Six shakhas survive in active recitation today (Taittiriya, Maitrayani, Katha, Kapishthala in Krishna; Madhyandina, Kanva in Shukla) — more than any other Veda. Each preserves not just the text but the specific prose-prose contour rules that distinguish brahmana from samhita.',
+    modernRelevance: 'The Yajurveda is the most living of the Vedas in active temple practice. Every Shiva temple\'s daily Rudram-Chamakam abhishekam, every Vishnu temple\'s Purusha Sukta puja, every brahmana\'s sandhya-vandana sankalpa, and the entire grhya-sutra ritual system descend from Yajurvedic prose.',
+    bestKnownFor: 'Veda of ritual action + Sri Rudram + Brihadaranyaka Upanishad',
+  },
+  {
+    number: 4,
+    slug: 'atharvaveda',
+    name: 'Atharvaveda',
+    sanskrit: 'अथर्ववेद',
+    iast: 'Atharvaveda',
+    meaning: 'Veda of the rishi Atharvan / Veda of practical formulae',
+    approxDate: 'c. 1200–1000 BCE; some material later',
+    totalMantras: 5977,
+    mandalaOrKandaCount: 20,
+    mandalaLabel: 'kandas (books)',
+    shakhasExtant: 2,
+    shakhasOriginal: 9,
+    principalDeities: ['Varuna', 'Indra', 'Rudra', 'Skambha', 'Prithvi'],
+    primaryFocus: 'Mantras for daily life — healing, protection, prosperity, kingship — supervised by the brahmin priest who watches all three other priests.',
+    associatedPriest: 'Brahmin',
+    associatedPriestRole: 'The brahmin (in the technical Vedic sense) is the supervising priest at the yajna. He says little aloud, but he silently mends every error of the hotr, udgatr, and adhvaryu using Atharvavedic knowledge.',
+    summary: 'The Atharvaveda is the fourth Veda, and the most distinctive in tone. Where the first three are concerned almost entirely with the great soma yajna and the cosmic powers, the Atharvaveda turns to the texture of daily life — healing chants for fevers, jaundice, snakebite, hair loss; love charms and counter-charms; protective mantras for kings, warriors, cattle, fields, and pregnant women; speculative hymns on the cosmic pillar (skambha), time (kala), and the breath (prana). It is also the Veda most closely associated with Ayurveda — many of the world\'s oldest medical formulae are preserved here. It is preserved in two living recensions, the Shaunaka (longer, the standard text) and the Paippalada (independently preserved in Odisha and Kashmir, often with distinct readings).',
+    fourParts: {
+      samhita: 'The 5,977 mantras in 20 kandas — Shaunaka recension is the textus receptus; Paippalada is independently preserved in Odisha.',
+      brahmana: 'Gopatha Brahmana — the only surviving brahmana of the Atharvaveda.',
+      aranyaka: 'No formal aranyaka survives; later texts function in that role.',
+      upanishad: 'Mundaka, Mandukya, Prashna — three of the ten principal Upanishads, and many of the so-called "minor" Upanishads including the Atharvashiras, Atharvasikha, and Brahmavidya groups.',
+    },
+    principalUpanishads: ['Mundaka Upanishad', 'Mandukya Upanishad', 'Prashna Upanishad'],
+    famousHymns: [
+      { name: 'Prithvi Sukta', reference: 'AV 12.1', significance: '63-verse "Hymn to the Earth" — the world\'s oldest ecological prayer, often called the Vedic environmental manifesto.' },
+      { name: 'Skambha Sukta', reference: 'AV 10.7', significance: '"On what does the cosmic pillar stand?" — a speculative hymn anticipating Upanishadic brahman-inquiry.' },
+      { name: 'Kala Sukta', reference: 'AV 19.53–54', significance: 'Hymn to Time as the first cause — one of the earliest preserved philosophical reflections on time.' },
+      { name: 'Vivaha Sukta', reference: 'AV 14', significance: 'The wedding mantras still recited at every traditional Hindu vivaha samskara.' },
+    ],
+    oralPreservation: 'The Shaunaka shakha is recited across India; the Paippalada shakha was thought lost until manuscript copies were recovered in Odisha and Kashmir in the 20th century. Active study of both has revived dramatically since 2000 through Sringeri, Tirupati, and Banaras institutions.',
+    modernRelevance: 'Ayurveda treats the Atharvaveda as its Vedic root. Hindu wedding ceremonies, house-warming (vastu-shanti), naming, and most daily protective stotras descend from Atharvavedic mantras. The Prithvi Sukta is widely recited in contemporary ecological and Earth-Day liturgies.',
+    bestKnownFor: 'Veda of healing + daily life + Prithvi Sukta',
+  },
+];
+
+export const TOTAL_MANTRAS = VEDAS.reduce((sum, v) => sum + v.totalMantras, 0);
+
+export function vedaSlugs(): string[] {
+  return VEDAS.map((v) => v.slug);
+}
+
+export function getVeda(slug: string): Veda | undefined {
+  return VEDAS.find((v) => v.slug === slug);
+}
