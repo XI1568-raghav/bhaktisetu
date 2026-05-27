@@ -44,6 +44,8 @@ const TARGETS = [
   { url: '/vedas/rigveda', expected: ['BreadcrumbList', 'Article'] },
   { url: '/dashavatar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/dashavatar/krishna', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/sapta-rishis', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/sapta-rishis/vasishtha', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },

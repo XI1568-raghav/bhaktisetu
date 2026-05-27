@@ -472,6 +472,8 @@ export default function RootLayout({
  <span className="text-surface-700">·</span>
  <Link href="/dashavatar" className="hover:text-saffron-400 transition-colors">10 Avatars of Vishnu</Link>
  <span className="text-surface-700">·</span>
+ <Link href="/sapta-rishis" className="hover:text-saffron-400 transition-colors">7 Sapta Rishis</Link>
+ <span className="text-surface-700">·</span>
  <Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link>
  <span className="text-surface-700">·</span>
  <Link href="/today" className="hover:text-saffron-400 transition-colors">Today&apos;s Panchang</Link>

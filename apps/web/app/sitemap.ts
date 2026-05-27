@@ -463,6 +463,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { rishiSlugs } = await import('../lib/sapta-rishis');
+  const saptaRishiEntries = [
+    { url: `${BASE_URL}/sapta-rishis`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...rishiSlugs().map((slug) => ({
+      url: `${BASE_URL}/sapta-rishis/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -533,6 +544,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...darshanaEntries,
     ...vedaEntries,
     ...dashavatarEntries,
+    ...saptaRishiEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
