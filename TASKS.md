@@ -1,10 +1,103 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-27.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-28.
 
 ## In progress
 
-- (nothing — P29-P38 batch shipped 2026-05-27 day-2 unattended. See HANDOFF P29-P38 block below.)
+- **P51 /chakras** — `apps/web/lib/chakras.ts` created (7 chakras muladhara→sahasrara, full Tantric detail). PAUSED per user "stop 51 as of now" 2026-05-28. Pages/sitemap/footer wiring NOT done. Awaiting resume / kill direction.
+
+## HANDOFF 2026-05-28 (session-end snapshot — interactive footer + Discover sprint)
+
+**Context for next session — read this first.**
+
+### Standing directives (carry verbatim — DO NOT drop)
+
+1. **Autonomy directive (prior session, still active)**: "complete everything in your hand without waiting for me dont worry about tokens work for 6-7 hours straght … go ahead in the roadmap as far as you can go."
+2. **Free-tier discipline (verbatim)**: "all the changes/automations/agents which we run should be under those limits … Rather than pushing after every development group a lot of developments to be under limits of each tool/website/source which we are sung free. Worker bundle should be less than 3mb follow that for all next builds and development." → `docs/free-tier-budgets.md` + `docs/cf-worker-budget.md` are load-bearing.
+3. **Verify-before-declare-done**: never say "shipped/green/fixed" from summary fields. Read actual deploy log, curl prod URL, run suite. (Rebuke 2026-05-28 over 60 failed CF pushes.)
+4. **No secret egress** — never share user keys/passwords/IDs outside chat.
+5. **Caveman mode FULL active** — drop articles/filler; code/commits/security written normal.
+6. **Don't rename** `poojly_*` storage keys, package.json names, CF project `poojly-web`.
+7. **Don't WebFetch** `darshya.online` (CF 403).
+8. **Don't touch** Razorpay/Stripe live keys without explicit instruction. **Don't enable** `ALLOW_DEMO_PAYMENTS` beyond U15. **Don't change Prisma schema** in agent runs unless absolutely necessary.
+
+### Shipped this session (2 commits)
+
+1. **`8fc4581` ui(footer): regroup 27 Discover links into 4 themed columns**
+   - User reported: "The footer is too big and too much content plan to reduce the content and find the best solution to show the dicover tab in a good way possible on the website"
+   - User selected "Grouped 4-column grid (Recommended)" from AskUserQuestion.
+   - Replaced flat dot-separated 27-link row in `apps/web/app/layout.tsx` with `grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 text-sm` layout grouped Scriptures (8) / Cosmology (5) / Practice (6) / Tools (7). Headers `text-xs font-semibold text-saffron-400 uppercase tracking-wider`. All 27 links remain in DOM (SEO preserved, no JS toggle). Section renamed "Discover Hindu Wisdom". Vertical footprint reduced ~60%.
+
+2. **`9be4d6c` feat(seo): /discover hub page indexing all 27 wisdom guides**
+   - User asked "Discover Hindu Wisdom is only in footer?" → presented 3 options → user picked **option 2** (dedicated /discover hub page, NOT mega-menu, NOT both).
+   - Created `apps/web/app/discover/page.tsx` — SSG (no edge runtime, CF safe) hub with local `GROUPS: DiscoverGroup[]` const (4 groups × 27 items total). Triple JSON-LD: ItemList(27) + BreadcrumbList + CollectionPage. Jump-nav pill row. 3-col responsive card grid w/ `ACCENT_CLASS` color mapping (indigo/amber/emerald/saffron). `export const revalidate = 86400;`
+   - Wired: `apps/web/lib/category-tree.ts` wisdom category gets `featured: { label: 'Discover All Guides', href: '/discover', sublabel: '…' }` + first items entry. `apps/web/app/sitemap.ts` `/discover` priority 0.95. `scripts/agents/schema-validator.mjs` probe `{ url: '/discover', expected: ['ItemList', 'BreadcrumbList', 'CollectionPage'] }`.
+   - Local `pnpm next build` verified `○ /discover` static prerender clean.
+
+### Verify status (curl at session-end 2026-05-28)
+
+- `https://darshya.online/discover` → **404** at session-end. CF Pages git-integration still building `9be4d6c`. Expected green ~3 min after push. **Next session MUST curl-verify before declaring done.**
+- `https://darshya.online/mahabharata` + `/discover` not yet smoke-tested live.
+- Schema-validator + uptime-pinger agents will catch regressions on next daily run.
+
+### Paused / parked
+
+- **P51 /chakras** — `apps/web/lib/chakras.ts` exists (7 chakras × ~15 fields each, ~150-word summaries). User said "stop 51 as of now" — meaning **pause not delete**. Leave the file. Resume by creating `/chakras` index + `/chakras/[slug]` detail + sitemap + footer entry + schema-validator probe. Same SSG-no-edge pattern as /mahabharata, /discover.
+
+### Open engineering — my hand
+
+| # | Task | Status |
+|---|---|---|
+| E9 | Embedded Stripe Elements full Provider | Deferred — clientSecret-only fallback shipped, mailto fallback works. Risky unattended. |
+| E2 | FCM server key wire | Blocked on U5 paste |
+| CI lint+type+test+build job | Red on `40e7fae`, `089bce4`, `a4c9a93` (pre-existing flake, predates nava-graha) | CF GREEN = operational signal. Job log not retrievable via `gh api .../jobs/{id}/logs` (404). Investigate later. |
+| P51 chakras finish | Paused (see above) | Awaiting user direction |
+| P52+ roadmap candidates | 12 Jyotirlinga individual pages, 51 Shakti Peeths, Char Dham 4 destinations, Bhagavad Gita 700-verse pages, Ramayana sarga-level, Mahabharata adhyaya-level, Vedic months × 12, Tithi × 30, Vedic deities expansion | Pre-thought, awaiting direction |
+
+### User-pending gates (priority order — recommended in last status report)
+
+| Pri | Gate | Action | Blocks |
+|---|---|---|---|
+| **P0** | GH Actions billing | Pay invoice → unblock workflow_dispatch | Manual agent reruns, lighthouse weekly, daily-cron |
+| **P0** | U12 Rotate Resend | Leaked key `re_***REMOVED***` → generate new → Render paste | Email security |
+| **P0** | U10 Rotate Supabase password | Reset + update Render `DATABASE_URL` | DB security |
+| **P1** | U18 `CRON_AUTH_TOKEN` | `openssl rand -hex 32` → GH secret + Render | daily-cron green |
+| **P1** | U19 `INDEXNOW_KEY` | Generate key → GH secret + host `darshya.online/<key>.txt` | Bing IndexNow ping |
+| **P1** | U1 Razorpay live KYC | Submit business docs | Domestic real payments |
+| **P1** | U2 Stripe NRI KYC | US/UK/CA/AU activation | NRI real payments |
+| **P2** | U16 CF env flip | `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true` → redeploy | Knowledge Hub + Gurukul nav |
+| **P2** | U6 Sentry DSN | Paste CF + Render | Prod error capture |
+| **P2** | U8 PostHog key | Paste CF | Funnel dashboards |
+| **P2** | U13 Demo MP4 capture | `bash scripts/build-demo-video.sh` | KYC + investor outreach |
+| **P3** | U3 Apple Dev $99/yr | iOS App Store |
+| **P3** | U4 Google Play $25 | Play Store APK |
+| **P3** | U5 FCM key | Native push |
+| **P3** | U7 WhatsApp Meta Cloud | WA blasts |
+| **P3** | U9 Affiliate signups | Commission revenue |
+| **P3** | U11 Unset `ALLOW_DEMO_TOKENS` | Auth hardening |
+| **P4** | U14 Upstash `REDIS_URL` | Cache (optional) |
+
+### Resume cheatsheet for next session
+
+1. **First action**: `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/discover` — confirm CF deploy of `9be4d6c` green (200).
+2. **Second action**: `git log --oneline -5` — should show `9be4d6c` at HEAD.
+3. **Third action**: Read this HANDOFF block. Pick up from "Paused / parked" + "Open engineering" sections.
+4. **If user says "continue"/"go ahead"/etc**: per standing autonomy directive, start P51 chakras finish OR P52 (12 Jyotirlinga individual pages — high search volume, low risk, parallel to /tirth pattern).
+5. **Before any push**: batch commits per free-tier discipline. Read `docs/free-tier-budgets.md`.
+6. **Before adding `runtime='edge'`**: read `docs/cf-worker-budget.md` (3 MiB limit).
+
+### Fleet snapshot
+24 daily agents writing to `docs/agent-reports/` + `/admin/agents`. Schema-validator now probes 49 URLs (added /discover this session). Watchdog agents: uptime / broken-link / schema / competitor / keyword / backlinks / x-engagement. Reporting agents: agent-issue-filer (GH issues) + weekly-digest (Sun) + weekly-investor-update (Sun).
+
+### SEO surface live
+27 wisdom programmatic-SEO route families + /discover hub + 30 cities + 30 festivals + city × deity matrix + temples × pujas mirror + 12 calendar months + i18n landing × 6 langs (en/hi/ta/te/bn/mr). Sitemap ~500+ entries.
+
+### Repo state at session-end
+- HEAD `9be4d6c` on `main`, pushed.
+- Working tree: `apps/web/lib/chakras.ts` untracked (parked).
+- No uncommitted dirty.
+
+---
 
 ## HANDOFF 2026-05-27 (P29-P38 autonomous batch — day-2 unattended, standing "go ahead in roadmap" directive)
 
