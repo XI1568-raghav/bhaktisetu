@@ -35,6 +35,7 @@ export default function robots(): MetadataRoute.Robots {
           '/today',
           '/gift',
           '/pilgrimage/',
+          '/faqs',
         ],
         disallow: [
           '/api/',
