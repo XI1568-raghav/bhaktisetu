@@ -34,6 +34,8 @@ const TARGETS = [
   { url: '/upanishads/mandukya-upanishad', expected: ['BreadcrumbList', 'Article'] },
   { url: '/yoga-sutras', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/yoga-sutras/sadhana-pada', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/samskaras', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/samskaras/upanayana', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
