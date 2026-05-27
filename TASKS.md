@@ -4,7 +4,34 @@
 
 ## In progress
 
-- (nothing — overnight batch shipped 2026-05-27: referrals MVP + 4 new agents + dynamic OG + lighthouse cron + email capture. See HANDOFF block below.)
+- (nothing — P0-P4 batch shipped 2026-05-27 morning: 5 new pages + 3 new agents + E10 server filter + sitemap repair. See HANDOFF block below.)
+
+## HANDOFF 2026-05-27 (P0-P4 autonomous batch — pushed 9bdef89)
+
+**Shipped (unattended, per "go ahead and complete p0 to p4 end to end"):**
+
+1. **`/changelog`** (`apps/web/app/changelog/page.tsx`) — every GH commit, public, hourly. Edge runtime, revalidate 3600. Type-tags feat/fix/agent/chore/docs. Linked from `/updates`.
+2. **`/press`** (`apps/web/app/press/page.tsx`) — press kit: one-liner, elevator, logo block, 8 facts rows, 4 contact mailtos (press/partnerships/investors/founder), 4 further-reading links. Sitemap entry added.
+3. **`/temples/[slug]/pujas`** (`apps/web/app/temples/[slug]/pujas/page.tsx`) — programmatic-SEO route, one file fans out to N temples. ItemList JSON-LD schema, filters active offerings, `${count} options` in title. Linked from sitemap (flatMap per templeSlug).
+4. **`/hi`** (`apps/web/app/hi/page.tsx`) — real Devanagari landing replacing the prior fake 10 `/hi/*` sitemap entries. `lang="hi"`, hreflang alternates, 6 feature cards, NRI section. Other routes link back to canonical English (no thin-content penalty).
+5. **3 new agents** (auto-discovered by `/admin/agents`, scheduled in `agents-daily.yml`):
+   - `review-harvest` — HN Algolia + Reddit JSON scanner for 5 queries (darshya, sri mandir alternative, etc). Dedup by URL, writes markdown table.
+   - `competitor-watch` — RSS diff against Sri Mandir / AppsForBharat / AstroSage / Utsav. State file `_competitor-watch-state.json`, only reports new posts.
+   - `rss-to-thread` — generates X thread + LinkedIn post from today's agent reports. 7 tweets, emoji-tagged per agent type.
+6. **E10 server-side filter** (`apps/api/src/routes/priests-public.ts`) — `getPublicPriests({ specialization, deity })`. Prisma `has:` on string[] + `some:` on offerings relation. Client `apps/web/lib/pandit-api.ts` typed query param.
+7. **Public feed cleanup** (`apps/api/src/routes/admin-agents.ts`) — README + undated docs no longer leak into `/updates`. Regex gate `/^\d{4}-\d{2}-\d{2}$/.test(it.date)`.
+8. **PostHog type unification** (`apps/web/lib/posthog.ts`) — merged duplicate `declare global { Window.posthog }` blocks (root cause of recent CI TS2717 + TS2532). `components/Analytics.tsx` now consumes the single source of truth.
+9. **Sitemap repair** — removed 10 fake `/hi/*` URLs pointing nowhere. Added single real `/hi` + `/changelog` + `/press` + per-temple `/pujas` long-tail entries.
+
+**Deferred:** E9 (Stripe Elements embedded) — too risky for unattended. Improved fallback now auto-opens `mailto:support@darshya.online` pre-filled with booking number when checkout redirect fails.
+
+**User-pending (unchanged since overnight batch):**
+
+- **U18** `CRON_AUTH_TOKEN` GH secret
+- **U19** `INDEXNOW_KEY` GH secret + `darshya.online/<key>.txt`
+- **Rotate Resend key** `re_46d7rTF7_7DygN1pnEpG3T5Cmi5cMnvB3`
+- **U16** flip CF `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- **U1-U15** → `docs/activation-gates.md`
 
 ## HANDOFF 2026-05-27 (overnight autonomous batch)
 
@@ -40,8 +67,7 @@
 | # | Task | Notes |
 |---|---|---|
 | E2 | Wire FCM server key on user paste | env-or-noop, user-paste required |
-| E9 | TODO(W8): embedded Stripe Elements | clientSecret-only fallback (mirrors pujas page gap) |
-| E10 | `getPublicPriests({ specialization?, deity? })` server-side filter | API enhancement, client-side filter works for now |
+| E9 | TODO(W8): embedded Stripe Elements | mailto fallback shipped 2026-05-27; full Elements integration still pending |
 
 ## Pending — user-action
 
@@ -59,6 +85,7 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-27 | feat: P0-P4 batch — /changelog + /press + /temples/[slug]/pujas + /hi + 3 agents (review-harvest, competitor-watch, rss-to-thread) + E10 server filter + feed cleanup + sitemap repair | `9bdef89` |
 | 2026-05-27 | feat: overnight batch — referrals MVP + 4 new agents + dynamic OG + lighthouse cron + email capture + shloka-card generator + /og/default + /launch + daily-cron soft-fail | pending |
 | 2026-05-27 | feat: agent fleet (9 agents) + CEO roadmap + /admin/agents + 3 GH workflows | pending |
 | 2026-05-26 | feat(mobile): gurukul owner parity — become-gurukul + portal screens (89/89 smoke) | `d170b39` |
