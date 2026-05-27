@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { RASHI_PROFILES, rashiProfileSlugs, getRashiProfile } from '../../../lib/rashi-profiles';
 import { getRashi, pujasForRashi } from '../../../lib/rashis';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 

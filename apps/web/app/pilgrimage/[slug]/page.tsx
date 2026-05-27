@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CIRCUITS, getCircuit, circuitSlugs } from '../../../lib/pilgrimage-circuits';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export async function generateStaticParams() {

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SAMSKARAS, samskaraSlugs, getSamskara, STAGE_LABELS } from '../../../lib/samskaras';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 
