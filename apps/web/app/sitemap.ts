@@ -134,6 +134,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/faqs', priority: 0.8 },
     { path: '/nakshatra', priority: 0.85 },
     { path: '/muhurat', priority: 0.85 },
+    { path: '/why-darshya', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
 
