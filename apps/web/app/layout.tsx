@@ -460,6 +460,8 @@ export default function RootLayout({
  <span className="text-surface-700">·</span>
  <Link href="/ramayana" className="hover:text-saffron-400 transition-colors">Ramayana 7 Kandas</Link>
  <span className="text-surface-700">·</span>
+ <Link href="/mahabharata" className="hover:text-saffron-400 transition-colors">Mahabharata 18 Parvas</Link>
+ <span className="text-surface-700">·</span>
  <Link href="/upanishads" className="hover:text-saffron-400 transition-colors">10 Principal Upanishads</Link>
  <span className="text-surface-700">·</span>
  <Link href="/yoga-sutras" className="hover:text-saffron-400 transition-colors">Patanjali Yoga Sutras</Link>
