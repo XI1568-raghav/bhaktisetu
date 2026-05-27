@@ -432,8 +432,32 @@ export default function RootLayout({
  ))}
  </div>
 
+ {/* Discover — surfaces programmatic-SEO routes for crawlers + users */}
+ <div className="mt-12 pt-6 border-t border-surface-800/60">
+ <h3 className="text-xs font-semibold text-surface-300 mb-3 uppercase tracking-widest text-center">
+ Discover
+ </h3>
+ <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
+ <Link href="/nakshatra" className="hover:text-saffron-400 transition-colors">27 Nakshatras</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/muhurat" className="hover:text-saffron-400 transition-colors">Muhurat Guide</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/today" className="hover:text-saffron-400 transition-colors">Today&apos;s Panchang</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/faqs" className="hover:text-saffron-400 transition-colors">FAQs</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/why-darshya" className="hover:text-saffron-400 transition-colors">Why Darshya</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/gift" className="hover:text-saffron-400 transition-colors">Gift a Puja</Link>
+ <span className="text-surface-700">·</span>
+ <Link href="/shloka-card" className="hover:text-saffron-400 transition-colors">Shloka Cards</Link>
+ </div>
+ </div>
+
  {/* Lang switcher — surfaces translated landings */}
- <div className="mt-14 pt-8 border-t border-surface-800/60">
+ <div className="mt-10 pt-8 border-t border-surface-800/60">
  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
  <span className="text-surface-600">Read in:</span>
  <Link href="/" className="hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
