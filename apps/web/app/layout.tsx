@@ -170,6 +170,7 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  { href: "/gurukuls", t: "nav", key: "gurukuls" },
  { href: "/deity", t: "nav", key: "deity" },
  { href: "/festival", t: "nav", key: "festival" },
+ { href: "/city", t: "nav", key: "city" },
  ],
  },
  {
