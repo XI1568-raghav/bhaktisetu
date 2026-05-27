@@ -83,7 +83,10 @@ jobs:
         run: pnpm --filter @poojly/api exec prisma generate
 
       - name: Build All
-        run: pnpm turbo build
+        # remotion-pitch is a 60s MP4 render — wasteful + fails on GH 2-core
+        # runners with --concurrency=4. Render locally via `pnpm --filter
+        # @poojly/remotion-pitch ship` when the reel changes.
+        run: pnpm turbo build --filter=!@poojly/remotion-pitch
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
