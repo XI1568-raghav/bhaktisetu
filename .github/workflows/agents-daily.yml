@@ -36,7 +36,7 @@ jobs:
         run: |
           AGENTS="${{ github.event.inputs.only }}"
           if [ -z "$AGENTS" ]; then
-            node scripts/agents/run-all.mjs seo-audit content-pipeline lead-gen growth-metrics social-queue onboarding-drip pr-outreach broken-link gsc-submitter founder-tweet-draft content-publisher review-harvest competitor-watch rss-to-thread seo-internal-linker competitor-feature-watcher keyword-rank-tracker x-engagement-digest weekly-investor-update uptime-pinger
+            node scripts/agents/run-all.mjs seo-audit content-pipeline lead-gen growth-metrics social-queue onboarding-drip pr-outreach broken-link gsc-submitter founder-tweet-draft content-publisher review-harvest competitor-watch rss-to-thread seo-internal-linker competitor-feature-watcher keyword-rank-tracker x-engagement-digest weekly-investor-update uptime-pinger schema-validator backlinks-monitor
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
           fi
