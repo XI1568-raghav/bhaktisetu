@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
           '/store/',
           '/darshan/',
           '/deity/',
+          '/festival/',
           '/yatra/',
           '/blog/',
           '/hi',
