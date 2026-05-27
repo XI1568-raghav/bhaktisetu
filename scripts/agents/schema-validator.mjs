@@ -21,6 +21,7 @@ const TARGETS = [
   { url: '/muhurat/brahma-muhurta', expected: ['BreadcrumbList', 'Article'] },
   { url: '/rashi/aries', expected: ['BreadcrumbList', 'Article'] },
   { url: '/why-darshya', expected: ['WebPage'] },
+  { url: '/sankalp', expected: ['BreadcrumbList'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },

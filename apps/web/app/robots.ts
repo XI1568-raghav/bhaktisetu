@@ -41,6 +41,7 @@ export default function robots(): MetadataRoute.Robots {
           '/rashi/',
           '/vrat/',
           '/chants/',
+          '/sankalp',
           '/why-darshya',
         ],
         disallow: [
