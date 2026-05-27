@@ -4,7 +4,41 @@
 
 ## In progress
 
-- (nothing — P21-P28 batch shipped 2026-05-27 overnight: RSS feed, uptime-pinger, pilgrimage circuits, FAQ hub, 27 nakshatras, 10 muhurats, why-darshya comparison, 2 new agents, footer Discover row. See HANDOFF P21-P28 block below.)
+- (nothing — P29-P38 batch shipped 2026-05-27 day-2 unattended. See HANDOFF P29-P38 block below.)
+
+## HANDOFF 2026-05-27 (P29-P38 autonomous batch — day-2 unattended, standing "go ahead in roadmap" directive)
+
+**Shipped (10 commits b8983bf → cd2e701):**
+
+1. **P29 — agent-issue-filer** (`b8983bf`) — scans 7 watchdog agents (uptime/broken-link/schema/competitor/keyword/backlinks/x-engagement), classifies P0/P1/P2 severity, files single rolling GH issue per signal type w/ idempotent dedup body, env-or-noop on missing `GITHUB_TOKEN`. Wired into agents-daily run-all (fleet now 20 daily).
+
+2. **P30 — /rashi 12 zodiac profile pages** (`61d0baa`) — `lib/rashis.ts` (12 entries × sanskrit/element/lord/symbol/lucky-days/colors/gems/mantra/career/health/compatibility/famousNatives), `/rashi` index w/ ItemList + element grid color coding (fire/earth/air/water), `/rashi/[slug]` detail w/ BreadcrumbList + Article JSON-LD, prev/next, link to /astrology/horoscope/[rashi].
+
+3. **P31 — /vrat 10 fasting tradition pages** (`4914b7c`) — `lib/vrats.ts` (10 entries: ekadashi, pradosh, sankashti, mangalvar, somvar, shivratri, karva-chauth, jaya-parvati, vat-purnima, hartalika × frequency/deity/tithi/duration/permitted-foods/forbidden/ritual-steps/benefits/who-observes). Index w/ ItemList + frequency badges. Detail w/ BreadcrumbList + Article. Link to /pujas + /chants.
+
+4. **P32 — /chants 12 standalone Sanskrit mantras** (`c923e82`) — `lib/chants.ts` (gayatri, mahamrityunjaya, om-namah-shivaya, om-namo-bhagavate-vasudevaya, hare-krishna, ganesh-mantra, hanuman-mantra, durga-mantra, lakshmi-mantra, saraswati-mantra, navagraha-shanti, gita-jayanti × sanskrit/transliteration/translation/origin/best-time/repetitions/benefits/how-to). Index ItemList + recitation-time tags. Detail BreadcrumbList + Article. Cross-link aarti/shlokas.
+
+5. **P33 — weekly-digest agent** (`5d48c78`) — Sunday-only (FORCE=1) internal founder dashboard. Reads latest reports + state files from 6 watchdog agents. buildActionItems() P0/P1/P2 classifier. Output sections: TL;DR / Action items / Health snapshot / SEO rank-loss watchlist / Fleet activity. Wired into agents-daily (fleet now 21 daily).
+
+6. **P34 — /sankalp interactive Vedic vow generator** (`9c81ef1`) — `lib/sankalp.ts` (15 gotras, 10 intent presets, TITHI/MASA/VAARA Devanagari maps, transliteration helpers, buildSankalp returns {sanskritFull, iastFull, englishFull}). Server page w/ HowTo + BreadcrumbList JSON-LD + 4-step recite guide. Client `SankalpClient.tsx` ('use client') form: name/gotra/city/nakshatra/rashi/intent → 3 output cards (saffron/gray-mono/emerald) w/ Copy buttons + recommended pujas. Relative imports (tsconfig `@/*` → `./src/*`, not `lib/`).
+
+7. **P35 — pr-checks workflow** (`b241962`) — paths-filtered (scripts/agents/**, agents-daily.yml, web pages, lib/) integrity guard. Steps: agent list extracted from workflow via grep+sed → file-exists check, `node --check` on every .mjs, inline node script extracts schema-validator probe URLs via regex → resolves each to a Next route (page.tsx / [slug]/page.tsx / [param]/page.tsx variants), dry-run agent-issue-filer w/ empty GITHUB_TOKEN to confirm graceful noop. Locally validated 23 probes, 0 missing, 24 scripts parse.
+
+8. **P36 — /tirth 12 single-destination pilgrim guides** (`ee93e1a`) — `lib/tirthas.ts` (kashi-vishwanath, tirupati-balaji, vaishno-devi, somnath, jagannath-puri, amarnath, rameswaram, badrinath, kedarnath, dwarka, mahakaleshwar-ujjain, ayodhya-ram-mandir × ~22 fields incl. category/state/presiding/established/bestSeason/timings/waitTime/howToReach/airport/railway/whereToStay/whatToOffer/primaryPujas/dressCode/photoPolicy/significance/legend/modernRelevance/nearbyTirthas/vipDarshanAvailable/onlineBookingAvailable/estimatedDailyVisitors). Index grouped by category (shaiva/vaishnava/shakti) w/ ItemList. Detail w/ BreadcrumbList + Place(PostalAddress) JSON-LD, 4-stat grid, legend saffron card, how-to-reach emerald, where-to-stay indigo, dress+photo amber, nearby grid, prev/next.
+
+9. **P37 — /calendar Hindu festival calendar 2026** (`c23e97f`) — `apps/web/app/calendar/page.tsx` month-by-month grouped view of all 30 FESTIVALS. byMonth Map grouping, MONTH_NAMES + MONTH_SANSKRIT arrays, getDayOfWeek helper, jump-nav pill row, date-card (saffron-100) + content layout, today highlight (saffron-400 border) + past dim (opacity-70), fasting+bookable-puja badges. ItemList(Event) + BreadcrumbList JSON-LD. Related-tools card to /today, /vrat, /muhurat, /pujas.
+
+10. **P38 — /calendar/[month] 12 SEO sub-routes** (`cd2e701`) — generateStaticParams + dynamicParams=false fan-out january..december. Per-month metadata w/ count, season+sanskrit context, focus blurb. Date-card grid reuses FESTIVALS data + today highlight + past dim. ItemList(Event) + BreadcrumbList JSON-LD. Prev/next nav (mod 12 wrap), jump-to-month palette, today+vrat cross-links. Sitemap: 12 entries priority 0.85. Schema-validator: +/calendar/march probe. Targets long-tail "hindu festivals {month} 2026".
+
+**Stats P29-P38**: 3 new fleet agents (agent-issue-filer, weekly-digest, +existing pr-checks workflow), 7 new programmatic-SEO route families (/rashi 12 + /vrat 10 + /chants 12 + /sankalp 1 + /tirth 12 + /calendar 1 + /calendar/[month] 12 = 60 new pages), 1 CI integrity workflow, footer Discover row extended w/ sankalp+tirth+calendar. Schema-validator probes 14 → 23. Fleet 19 → 24 daily agents.
+
+**User-pending (unchanged):**
+
+- **U18** `CRON_AUTH_TOKEN` GH secret
+- **U19** `INDEXNOW_KEY` GH secret + `darshya.online/<key>.txt`
+- **Rotate Resend key** `***REMOVED***`
+- **U16** flip CF `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- **U1-U15** → `docs/activation-gates.md`
 
 ## HANDOFF 2026-05-27 (P21-P28 autonomous batch — overnight)
 
