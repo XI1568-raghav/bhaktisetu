@@ -10,7 +10,6 @@ import { FESTIVALS, nextFestival } from '../../lib/festivals';
 import { DEITY_MANTRAS } from '../../lib/deity-mantras';
 import { getDeity } from '../../lib/deities';
 
-export const runtime = 'edge';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {

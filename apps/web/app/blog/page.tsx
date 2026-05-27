@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ArrowRight, Mail, Sparkles } from 'lucide-react';
 import { listBlogPosts } from '../../lib/blog-posts';
 
-export const runtime = 'edge';
 export const revalidate = 3600; // GH unauth: 60/hr — 1h cache safe.
 
 export const metadata: Metadata = {
