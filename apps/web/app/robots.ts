@@ -37,6 +37,7 @@ export default function robots(): MetadataRoute.Robots {
           '/pilgrimage/',
           '/faqs',
           '/nakshatra/',
+          '/muhurat/',
         ],
         disallow: [
           '/api/',
