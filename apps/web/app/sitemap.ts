@@ -229,6 +229,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  // Per-rashi horoscope pages — long-tail "{rashi} horoscope today".
+  const { rashiSlugs } = await import('../lib/rashis');
+  const rashiEntries = rashiSlugs().map((slug) => ({
+    url: `${BASE_URL}/astrology/horoscope/${slug}`,
+    lastModified: now,
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
+  }));
+
   // Blog posts — pulled from GH at build/revalidate, tolerant of API failure.
   let blogEntries: { url: string; lastModified: Date; changeFrequency: 'weekly'; priority: number }[] = [];
   try {
@@ -293,6 +302,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...deityEntries,
     ...festivalEntries,
     ...cityEntries,
+    ...rashiEntries,
     ...blogEntries,
     ...bookEntries,
     ...hiEntries,
