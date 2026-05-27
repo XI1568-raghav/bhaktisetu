@@ -1,7 +1,7 @@
 'use client';
-export const runtime = 'edge';
 
-import { useMemo, useState, use } from 'react';
+import { Suspense, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
  CheckCircle,
@@ -20,7 +20,7 @@ import {
  Sparkles,
  Lock,
 } from 'lucide-react';
-import { homePujaCategories, homePandits, type Pandit } from '../../../../../lib/home-pujas';
+import { homePujaCategories, homePandits, type Pandit } from '../../../../lib/home-pujas';
 
 type StepId = 1 | 2 | 3 | 4 | 5;
 
@@ -38,12 +38,8 @@ const timeSlots = [
  { id: 'evening', label: 'Evening', window: '5:00 PM – 8:00 PM' },
 ];
 
-export default function BookHomePuja({
- params,
-}: {
- params: Promise<{ slug: string }>;
-}) {
- const { slug } = use(params);
+function BookHomePujaInner() {
+ const slug = (useSearchParams().get('slug') ?? '') as string;
  const category = useMemo(
  () => homePujaCategories.find((c) => c.slug === slug),
  [slug],
@@ -631,5 +627,13 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
  <span className="text-surface-500">{label}</span>
  <span className="font-medium text-surface-800 text-right max-w-[60%]">{value}</span>
  </div>
+ );
+}
+
+export default function BookHomePuja() {
+ return (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-surface-500">Loading…</div></div>}>
+   <BookHomePujaInner />
+  </Suspense>
  );
 }

@@ -18,3 +18,32 @@
 /bookings/*             /bookings/view?id=:splat          302
 /onboarding/view        /onboarding/view                  200
 /onboarding/*           /onboarding/view?role=:splat      302
+/support/tickets/view   /support/tickets/view             200
+/support/tickets/*      /support/tickets/view?id=:splat   302
+# /pujas/:slug/book — keep static /pujas/home-puja/book + /pujas/book + /pujas/marriage/book intact, redirect anything else.
+/pujas/book                  /pujas/book                                200
+/pujas/home-puja/book        /pujas/home-puja/book                      200
+/pujas/marriage/book         /pujas/marriage/book                       200
+/pujas/home-puja/:slug/book  /pujas/home-puja/book?slug=:slug           302
+/pujas/:slug/book            /pujas/book?slug=:slug                     302
+
+# /yatra/:slug/book — only one static sibling here.
+/yatra/book                  /yatra/book                                200
+/yatra/:slug/book            /yatra/book?slug=:slug                     302
+
+# /checkout/offering — flat single-segment param after /offering.
+/checkout/offering           /checkout/offering                         200
+/checkout/offering/:id       /checkout/offering?id=:id                  302
+
+# /astrology/:id — keep sibling routes (chat, horoscope, kundli, view) static; only refuse to swallow them.
+/astrology/view              /astrology/view                            200
+/astrology/chat              /astrology/chat                            200
+/astrology/kundli            /astrology/kundli                          200
+/astrology/horoscope/*       /astrology/horoscope/:splat                200
+/astrology/:id               /astrology/view?id=:id                     302
+
+# /store/:handle — keep cart + checkout + view static; only swallow product handles.
+/store/view                  /store/view                                200
+/store/cart                  /store/cart                                200
+/store/checkout              /store/checkout                            200
+/store/:handle               /store/view?handle=:handle                 302
