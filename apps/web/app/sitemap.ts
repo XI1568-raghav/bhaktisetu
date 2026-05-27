@@ -397,6 +397,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { padaSlugs } = await import('../lib/yoga-sutras');
+  const yogaSutraEntries = [
+    { url: `${BASE_URL}/yoga-sutras`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...padaSlugs().map((slug) => ({
+      url: `${BASE_URL}/yoga-sutras/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -461,6 +472,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...gitaEntries,
     ...ramayanaEntries,
     ...upanishadEntries,
+    ...yogaSutraEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },

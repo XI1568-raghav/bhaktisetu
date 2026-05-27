@@ -32,6 +32,8 @@ const TARGETS = [
   { url: '/ramayana/sundara-kanda', expected: ['BreadcrumbList', 'Article'] },
   { url: '/upanishads', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/upanishads/mandukya-upanishad', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/yoga-sutras', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/yoga-sutras/sadhana-pada', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
