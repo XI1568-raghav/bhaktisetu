@@ -32,6 +32,8 @@ const TARGETS = [
   { url: '/gita/karma-yoga', expected: ['BreadcrumbList', 'Article'] },
   { url: '/ramayana', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/ramayana/sundara-kanda', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/mahabharata', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/mahabharata/bhishma-parva', expected: ['BreadcrumbList', 'Article'] },
   { url: '/upanishads', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/upanishads/mandukya-upanishad', expected: ['BreadcrumbList', 'Article'] },
   { url: '/yoga-sutras', expected: ['ItemList', 'BreadcrumbList'] },

@@ -395,6 +395,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { parvaSlugs } = await import('../lib/mahabharata-parvas');
+  const mahabharataEntries = [
+    { url: `${BASE_URL}/mahabharata`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...parvaSlugs().map((slug) => ({
+      url: `${BASE_URL}/mahabharata/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const { upanishadSlugs } = await import('../lib/upanishads');
   const upanishadEntries = [
     { url: `${BASE_URL}/upanishads`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
@@ -547,6 +558,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...navaGrahaEntries,
     ...gitaEntries,
     ...ramayanaEntries,
+    ...mahabharataEntries,
     ...upanishadEntries,
     ...yogaSutraEntries,
     ...samskaraEntries,
