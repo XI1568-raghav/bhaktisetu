@@ -128,6 +128,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/city', priority: 0.9 },
     { path: '/aarti', priority: 0.8 },
     { path: '/chalisa', priority: 0.8 },
+    { path: '/today', priority: 0.9 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
