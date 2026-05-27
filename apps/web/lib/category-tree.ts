@@ -56,7 +56,13 @@ export const CATEGORY_TREE: Category[] = [
     key: 'wisdom',
     label: 'Wisdom',
     tagline: 'Knowledge hub, daily panchang, scriptures, learning paths.',
+    featured: { label: 'Discover All Guides', href: '/discover', sublabel: 'Index of 27 wisdom guides' },
     items: [
+      {
+        label: 'Discover All Guides',
+        href: '/discover',
+        description: 'Index of all 27 Hindu wisdom guides — scriptures, cosmology, practice, tools.',
+      },
       {
         label: 'Sanskrit',
         href: '/sanskrit',
