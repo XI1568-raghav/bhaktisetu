@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { CheckCircle2, Video, Mail } from 'lucide-react';
 
+export const runtime = 'edge';
+
 export const metadata = {
   title: 'Payment received — Darshya',
   description: 'Your puja booking is confirmed.',

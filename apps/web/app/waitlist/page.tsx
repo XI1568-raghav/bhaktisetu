@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import WaitlistForm from './WaitlistForm';
 
+export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'Early-access waitlist',

@@ -6,6 +6,7 @@ import { ChevronRight, Repeat, Sparkles, BookOpen } from 'lucide-react';
 import { getDeity, DEITIES } from '../../../../lib/deities';
 import { getMantrasForDeity, deitiesWithMantras } from '../../../../lib/deity-mantras';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 export const dynamicParams = false;
 
