@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FESTIVALS, getFestival } from '../../../lib/festivals';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 interface Params {

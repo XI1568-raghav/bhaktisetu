@@ -4,7 +4,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'दर्शया — भारत का आध्यात्मिक सुपर-ऐप',

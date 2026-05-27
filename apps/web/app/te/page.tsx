@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { LangLanding } from '../../components/LangLanding';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'దర్శ్యా — భారతదేశం యొక్క ఆధ్యాత్మిక సూపర్ యాప్',

@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DEITIES } from '../../lib/deities';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'Hindu deities — pujas, mantras, temples by deity',
