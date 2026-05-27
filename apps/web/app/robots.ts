@@ -18,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
           '/festival/',
           '/city/',
           '/yatra/',
+          '/astrology/',
           '/blog/',
           '/hi',
           '/changelog',
