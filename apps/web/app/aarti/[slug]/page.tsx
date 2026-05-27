@@ -6,6 +6,11 @@ import { Music, Clock, ChevronRight, ArrowRight, Flame } from 'lucide-react';
 import { AARTIS, getAarti } from '../../../lib/aartis';
 
 export const revalidate = 86400;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return AARTIS.map((a) => ({ slug: a.slug }));
+}
 
 interface Params {
   params: { slug: string };

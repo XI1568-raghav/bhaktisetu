@@ -6,6 +6,11 @@ import { BookOpen, Clock, ChevronRight, ArrowRight, CheckCircle2, ExternalLink }
 import { CHALISAS, getChalisa } from '../../../lib/chalisas';
 
 export const revalidate = 86400;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return CHALISAS.map((c) => ({ slug: c.slug }));
+}
 
 interface Params {
   params: { slug: string };
