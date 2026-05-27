@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CITIES } from '../../lib/cities';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'Pujas and temples by city — Varanasi, Mumbai, Tirupati & more',
