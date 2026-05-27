@@ -219,6 +219,395 @@ export const FESTIVALS: FestivalInfo[] = [
     significance:
       'Thanksgiving to Surya for sustaining life. Considered most physically demanding Hindu vrat.',
   },
+  {
+    slug: 'makar-sankranti',
+    name: 'Makar Sankranti',
+    sanskrit: 'मकर संक्रांति',
+    date2026: '2026-01-14',
+    deity: 'Surya',
+    description:
+      'Sun\'s transition into Capricorn (Makar Rashi) — first solar festival of the year. Marks end of inauspicious Dakshinayana, beginning of Uttarayana. Kite-flying, sesame sweets (til-gur), Ganga snan.',
+    rituals: [
+      'Holy dip in Ganga (Prayagraj, Haridwar)',
+      'Til-gur ladoo sharing (forgive past disputes)',
+      'Donation to brahmins and the poor',
+      'Surya Namaskar at sunrise',
+    ],
+    pujasAvailable: ['surya-puja', 'navgraha-puja'],
+    fastingType: 'partial',
+    significance:
+      'Kumbh Mela snan begins. Bhishma Pitamah chose this day to leave his body. Pongal in Tamil Nadu, Lohri in Punjab same week.',
+  },
+  {
+    slug: 'vasant-panchami',
+    name: 'Vasant Panchami',
+    sanskrit: 'वसंत पंचमी',
+    date2026: '2026-01-23',
+    deity: 'Saraswati',
+    deitySlug: 'saraswati',
+    description:
+      'Arrival of spring and birthday of Goddess Saraswati. Students place books at her feet for blessings. Wear yellow. Auspicious for vidyarambham (starting child\'s first lessons).',
+    rituals: [
+      'Saraswati pujan with white flowers',
+      'Place books, pens, instruments at altar',
+      'Vidyarambham for young children (write first alphabet)',
+      'Wear yellow, eat kesari rice',
+    ],
+    pujasAvailable: ['saraswati-puja'],
+    fastingType: 'none',
+    significance:
+      'Considered most auspicious day for starting any education or learning. Wedding muhurat without panchang lookup (abujh muhurat).',
+  },
+  {
+    slug: 'maha-kumbh',
+    name: 'Maha Kumbh Mela',
+    sanskrit: 'महाकुंभ मेला',
+    date2026: '2027-01-14',
+    deity: 'Various (river deities)',
+    description:
+      'World\'s largest religious gathering — held every 12 years at Prayagraj, Haridwar, Ujjain, Nashik. Next Maha Kumbh Prayagraj 2027 expected to draw 40+ crore pilgrims over 45 days.',
+    rituals: [
+      'Shahi Snan on key tithis (Makar Sankranti, Mauni Amavasya, etc)',
+      'Naga sadhu darshan',
+      'Triveni Sangam dip',
+      'Daan to sadhus and brahmins',
+    ],
+    pujasAvailable: ['ganga-snan-sankalp'],
+    fastingType: 'partial',
+    significance:
+      'Inscribed by UNESCO 2017 as Intangible Cultural Heritage. Single snan at Sangam during Kumbh believed equivalent to a lifetime of merit.',
+  },
+  {
+    slug: 'akshaya-tritiya',
+    name: 'Akshaya Tritiya',
+    sanskrit: 'अक्षय तृतीया',
+    date2026: '2026-04-19',
+    deity: 'Vishnu / Lakshmi',
+    deitySlug: 'lakshmi',
+    description:
+      'Day of inexhaustible (akshaya) prosperity. Any new venture, purchase (especially gold), donation made today is believed to multiply. Treta Yuga began on this day.',
+    rituals: [
+      'Buy gold or silver',
+      'Lakshmi-Narayan pujan',
+      'Donate water pots, fans, food (summer relief)',
+      'Start new business / investment',
+    ],
+    pujasAvailable: ['lakshmi-puja', 'satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Char Dham yatra opens (Yamunotri, Gangotri, Kedarnath, Badrinath portals open). Ved Vyasa began dictating Mahabharata. Sudama met Krishna.',
+  },
+  {
+    slug: 'narasimha-jayanti',
+    name: 'Narasimha Jayanti',
+    sanskrit: 'नृसिंह जयंती',
+    date2026: '2026-05-19',
+    deity: 'Lord Narasimha',
+    deitySlug: 'vishnu',
+    description:
+      'Appearance day of Narasimha — Vishnu\'s lion-headed avatar who killed Hiranyakashipu to protect devotee Prahlad. Fast from sunrise to sunset, break at dusk.',
+    rituals: [
+      'Narasimha Kavach path',
+      'Sankalpa for protection from enemies',
+      'Til mixed with water offered at evening sandhya',
+      'Donate red cloth, sweets to brahmins',
+    ],
+    pujasAvailable: ['narasimha-puja', 'satyanarayan-puja'],
+    fastingType: 'full',
+    significance:
+      'Most powerful protective deity in Vaishnavism. Devotees with bhuta-pishacha doshas and enemy troubles seek refuge in Narasimha mantra.',
+  },
+  {
+    slug: 'jagannath-rath-yatra',
+    name: 'Jagannath Rath Yatra',
+    sanskrit: 'रथ यात्रा',
+    date2026: '2026-07-15',
+    deity: 'Lord Jagannath',
+    deitySlug: 'krishna',
+    description:
+      'Annual chariot procession at Puri — only festival where the deity comes out of the temple to meet devotees. Three massive wooden chariots pulled 3 km by lakhs of devotees.',
+    rituals: [
+      'Snan Yatra (ritual bath) 15 days prior',
+      'Pulling the chariot ropes (any caste/creed)',
+      'Mahaprasad consumption',
+      'Bahuda Yatra (return journey) 9 days later',
+    ],
+    pujasAvailable: ['jagannath-puja', 'satyanarayan-puja'],
+    fastingType: 'partial',
+    significance:
+      'Touching the rath rope grants liberation. ISKCON has replicated this in 100+ cities globally including London, NYC, Sydney.',
+  },
+  {
+    slug: 'guru-poornima',
+    name: 'Guru Poornima',
+    sanskrit: 'गुरु पूर्णिमा',
+    date2026: '2026-07-29',
+    deity: 'Ved Vyasa / Guru',
+    description:
+      'Honors the guru who removes darkness (gu) and brings light (ru). Marks birthday of Ved Vyasa, compiler of Vedas, Mahabharata. Disciples touch guru\'s feet, offer dakshina.',
+    rituals: [
+      'Vyasa Puja at home or ashram',
+      'Touch guru\'s feet and offer dakshina',
+      'Recite Guru Stotram',
+      'Chaturmas vrat begins for sadhus',
+    ],
+    pujasAvailable: ['satyanarayan-puja', 'guru-puja'],
+    fastingType: 'partial',
+    significance:
+      'Buddha gave his first sermon on this day. Shiva became Adi Guru, teaching Saptarishis. Chaturmas (4-month rainy retreat) begins.',
+  },
+  {
+    slug: 'nag-panchami',
+    name: 'Nag Panchami',
+    sanskrit: 'नाग पंचमी',
+    date2026: '2026-08-08',
+    deity: 'Sarpa (serpent deities)',
+    description:
+      'Worship of snake deities (Nag devta). Offer milk and turmeric at snake holes/idols. Believed to ward off snake-bite fears and dispel Kaal Sarp dosh from birth chart.',
+    rituals: [
+      'Offer milk to snake idol or anthill',
+      'Nag stotra path',
+      'No cutting/digging/cooking of bhindi (okra) — considered taboo',
+      'Donate to snake-charmers or wildlife trusts',
+    ],
+    pujasAvailable: ['kaal-sarp-dosh', 'navgraha-puja'],
+    fastingType: 'partial',
+    significance:
+      'Primary remedy day for Kaal Sarp dosh. Trimbakeshwar Jyotirlinga in Nashik is most powerful venue for Nag puja.',
+  },
+  {
+    slug: 'raksha-bandhan',
+    name: 'Raksha Bandhan',
+    sanskrit: 'रक्षाबंधन',
+    date2026: '2026-08-19',
+    deity: 'None (sibling bond)',
+    description:
+      'Sister ties rakhi (sacred thread) on brother\'s wrist; brother vows lifelong protection. Diaspora celebration is massive — rakhis posted/couriered globally weeks in advance.',
+    rituals: [
+      'Aarti and tilak before tying rakhi',
+      'Brother gives gift / cash to sister',
+      'Family meal with sweet kheer',
+    ],
+    pujasAvailable: ['satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Originated from Indra-Sachi episode in Bhavishya Purana. Krishna-Draupadi rakhi narrative is most-cited example.',
+  },
+  {
+    slug: 'onam',
+    name: 'Onam',
+    sanskrit: 'ओणम',
+    date2026: '2026-08-26',
+    deity: 'King Mahabali / Vamana',
+    deitySlug: 'vishnu',
+    description:
+      'Kerala\'s 10-day harvest festival celebrating return of beloved king Mahabali. Floral rangoli (pookalam), 26-dish vegetarian feast (sadhya), snake-boat races, Thiruvonam climax.',
+    rituals: [
+      'Pookalam (flower carpet) for 10 days',
+      'Sadhya feast on Thiruvonam day',
+      'Vamana avatar puja',
+      'Vallam Kali (snake boat race) participation',
+    ],
+    pujasAvailable: ['vamana-puja', 'satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'State festival of Kerala — celebrated by Hindus, Christians, Muslims alike. Diaspora Onam in Gulf, US is grand-scale community event.',
+  },
+  {
+    slug: 'pitru-paksha',
+    name: 'Pitru Paksha',
+    sanskrit: 'पितृ पक्ष',
+    date2026: '2026-09-26',
+    deity: 'Ancestors (pitru)',
+    description:
+      '16-day period for ancestor (shraadh) rituals. Tarpan and pind-daan offered daily. Considered inauspicious for new ventures, weddings, purchases. Gaya is the most powerful venue.',
+    rituals: [
+      'Daily tarpan with til-jal at sunrise',
+      'Brahmin bhojan on tithi of departed ancestor',
+      'Pind-daan at Gaya (Vishnupad temple)',
+      'Crow-feeding (kakabali) on shraadh tithi',
+    ],
+    pujasAvailable: ['pitru-paksha-shraadh', 'navgraha-puja'],
+    fastingType: 'none',
+    significance:
+      'Three pind-daan at Gaya frees 7 generations of ancestors from pitru rin. Most-booked ritual on devotional platforms during these 16 days.',
+  },
+  {
+    slug: 'dussehra',
+    name: 'Dussehra / Vijayadashami',
+    sanskrit: 'दशहरा / विजयादशमी',
+    date2026: '2026-10-19',
+    deity: 'Durga / Rama',
+    description:
+      'Celebrates Rama\'s victory over Ravana and Durga\'s victory over Mahishasura. Effigies of Ravana, Meghnath, Kumbhakarna burned at sunset. Auspicious for new beginnings (Shastra puja, vidyarambh).',
+    rituals: [
+      'Ravan Dahan at sunset',
+      'Shastra Puja (worship of tools and weapons)',
+      'Vidyarambh for children (alphabet writing)',
+      'Aparajita puja for victory',
+    ],
+    pujasAvailable: ['durga-puja', 'shastra-puja', 'satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Mysore Dussehra and Kullu Dussehra are GI-tagged events. Considered abujh muhurat — any work begun today succeeds.',
+  },
+  {
+    slug: 'karwa-chauth',
+    name: 'Karwa Chauth',
+    sanskrit: 'करवा चौथ',
+    date2026: '2026-11-01',
+    deity: 'Shiva / Parvati / Moon',
+    description:
+      'Wives fast nirjala (no food, no water) from sunrise to moonrise, praying for husband\'s longevity. Moon sighted through a sieve before breaking fast — husband offers first water.',
+    rituals: [
+      'Sargi consumed before sunrise (gifted by mother-in-law)',
+      'Group katha listening with karwa pot',
+      'Chand darshan through sieve at moonrise',
+      'Husband offers water to break fast',
+    ],
+    pujasAvailable: ['karwa-chauth-puja', 'satyanarayan-puja'],
+    fastingType: 'full',
+    significance:
+      'Most-observed fast by married Hindu women in North India. Bollywood has cemented its diaspora popularity globally.',
+  },
+  {
+    slug: 'dhanteras',
+    name: 'Dhanteras',
+    sanskrit: 'धनतेरस',
+    date2026: '2026-11-06',
+    deity: 'Dhanvantari / Lakshmi / Kubera',
+    deitySlug: 'lakshmi',
+    description:
+      'First day of Diwali week. Worship of Dhanvantari (god of Ayurveda) and Lakshmi. Buying gold, silver, utensils, brooms today believed to multiply wealth 13-fold.',
+    rituals: [
+      'Buy gold, silver, or new utensil',
+      'Yamadeepdan (oil lamp facing south) at sunset',
+      'Lakshmi-Kubera pujan in evening',
+      'Aushadhi (medicine) puja for health',
+    ],
+    pujasAvailable: ['lakshmi-puja', 'kubera-puja'],
+    fastingType: 'none',
+    significance:
+      'India\'s peak retail day — single largest day of gold sales nationally. Auspicious abujh muhurat.',
+  },
+  {
+    slug: 'govardhan-puja',
+    name: 'Govardhan Puja',
+    sanskrit: 'गोवर्धन पूजा',
+    date2026: '2026-11-09',
+    deity: 'Krishna / Govardhan',
+    deitySlug: 'krishna',
+    description:
+      'Annakut — day after Diwali. Commemorates Krishna lifting Govardhan hill to shelter Vrindavan from Indra\'s wrath. 56-item bhog (chappan bhog) offered to Krishna; cow worship central.',
+    rituals: [
+      'Govardhan hill replica in cow-dung at home',
+      'Chappan bhog (56-item offering) preparation',
+      'Cow puja with kumkum, garlands, jaggery',
+      'Parikrama of Govardhan replica',
+    ],
+    pujasAvailable: ['krishna-puja', 'go-puja'],
+    fastingType: 'none',
+    significance:
+      'Vrindavan Govardhan parikrama (21 km) draws 5 lakh devotees. ISKCON Govardhan Puja serves chappan bhog at 100+ temples globally.',
+  },
+  {
+    slug: 'bhai-dooj',
+    name: 'Bhai Dooj',
+    sanskrit: 'भाई दूज',
+    date2026: '2026-11-10',
+    deity: 'Yama / Yamuna (sibling bond)',
+    description:
+      'Sister applies tilak on brother\'s forehead and prays for his long life. Originates from Yama-Yamuna myth. Brother gives gifts. Marks the close of Diwali week.',
+    rituals: [
+      'Sister applies tilak with kumkum + akshat',
+      'Aarti and sweets',
+      'Brother gives money or gift',
+      'Yamraj puja by women in some regions',
+    ],
+    pujasAvailable: ['satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Yama visited his sister Yamuna; she fed him sweets — he blessed: any brother who visits sister today gains long life.',
+  },
+  {
+    slug: 'tulsi-vivah',
+    name: 'Tulsi Vivah',
+    sanskrit: 'तुलसी विवाह',
+    date2026: '2026-11-21',
+    deity: 'Tulsi / Vishnu (Shaligram)',
+    deitySlug: 'vishnu',
+    description:
+      'Ceremonial wedding of Tulsi (basil plant) to Shaligram (Vishnu). Marks end of Chaturmas — wedding season can resume. Full Hindu wedding rituals performed for the plant.',
+    rituals: [
+      'Mandap around tulsi pot',
+      'Shaligram brought as groom',
+      'Phera (circumambulation) with mantras',
+      'Bhog of sugarcane, amla, til',
+    ],
+    pujasAvailable: ['tulsi-puja', 'satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'End of Chaturmas — auspicious functions, weddings resume. Tulsi-Shaligram marriage equivalent to performing daughter\'s kanyadaan (great punya).',
+  },
+  {
+    slug: 'kartik-purnima',
+    name: 'Kartik Purnima',
+    sanskrit: 'कार्तिक पूर्णिमा',
+    date2026: '2026-11-24',
+    deity: 'Shiva / Vishnu / Kartikeya',
+    description:
+      'Full moon of Kartik month. Dev Diwali — gods descend to bathe in Ganga at Varanasi. Lakhs of diyas lit on ghats. Shiva killed Tripurasura — also called Tripuri Purnima.',
+    rituals: [
+      'Ganga snan at Varanasi, Haridwar, Prayagraj',
+      'Light 365 diyas (one per day of year)',
+      'Tulsi puja and parikrama',
+      'Annadaan and brahmin bhojan',
+    ],
+    pujasAvailable: ['ganga-snan-sankalp', 'satyanarayan-puja'],
+    fastingType: 'partial',
+    significance:
+      'Dev Diwali at Varanasi is one of most photographed religious events globally. Sikh community marks Guru Nanak Jayanti same day.',
+  },
+  {
+    slug: 'vivah-panchami',
+    name: 'Vivah Panchami',
+    sanskrit: 'विवाह पंचमी',
+    date2026: '2026-11-24',
+    deity: 'Rama / Sita',
+    deitySlug: 'rama',
+    description:
+      'Wedding anniversary of Lord Rama and Sita. Massive celebrations at Janakpur (Nepal) and Ayodhya. Marriage of unmarried devotees gets a divine boost when done on or near this day.',
+    rituals: [
+      'Ram-Sita vivah katha recitation',
+      'Sundarkand path',
+      'Tilak ceremony reenactment',
+      'Annadan in Rama-Sita\'s name',
+    ],
+    pujasAvailable: ['sundarkand-path', 'satyanarayan-puja'],
+    fastingType: 'partial',
+    significance:
+      'Considered most auspicious day for fixing wedding date / engagement. Avoided as actual wedding day in some regions (separation theme).',
+  },
+  {
+    slug: 'mokshada-ekadashi',
+    name: 'Mokshada Ekadashi (Gita Jayanti)',
+    sanskrit: 'मोक्षदा एकादशी',
+    date2026: '2026-12-19',
+    deity: 'Krishna',
+    deitySlug: 'krishna',
+    description:
+      'Krishna delivered the Bhagavad Gita to Arjuna on the Kurukshetra battlefield on this day. Recitation of Gita today liberates ancestors (mokshada = bestower of moksha).',
+    rituals: [
+      'Full Bhagavad Gita parayan (18 chapters)',
+      'Ekadashi nirjala vrat',
+      'Donate Gita copies to devotees',
+      'Tarpan in name of departed ancestors',
+    ],
+    pujasAvailable: ['gita-path', 'satyanarayan-puja'],
+    fastingType: 'full',
+    significance:
+      'Most powerful Ekadashi for ancestor liberation. ISKCON Gita Daan campaign distributes lakhs of free Gitas globally on this day.',
+  },
 ];
 
 export function getFestival(slug: string): FestivalInfo | undefined {
