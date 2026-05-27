@@ -432,63 +432,58 @@ export default function RootLayout({
  ))}
  </div>
 
- {/* Discover — surfaces programmatic-SEO routes for crawlers + users */}
+ {/* Discover — programmatic-SEO routes grouped by theme. All links rendered in DOM (SEO preserved). */}
  <div className="mt-12 pt-6 border-t border-surface-800/60">
- <h3 className="text-xs font-semibold text-surface-300 mb-3 uppercase tracking-widest text-center">
- Discover
+ <h3 className="text-xs font-semibold text-surface-300 mb-5 uppercase tracking-widest text-center">
+ Discover Hindu Wisdom
  </h3>
- <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
- <Link href="/nakshatra" className="hover:text-saffron-400 transition-colors">27 Nakshatras</Link>
- <span className="text-surface-700">·</span>
- <Link href="/rashi" className="hover:text-saffron-400 transition-colors">12 Rashis</Link>
- <span className="text-surface-700">·</span>
- <Link href="/muhurat" className="hover:text-saffron-400 transition-colors">Muhurat Guide</Link>
- <span className="text-surface-700">·</span>
- <Link href="/vrat" className="hover:text-saffron-400 transition-colors">Vrats Guide</Link>
- <span className="text-surface-700">·</span>
- <Link href="/chants" className="hover:text-saffron-400 transition-colors">Famous Chants</Link>
- <span className="text-surface-700">·</span>
- <Link href="/sankalp" className="hover:text-saffron-400 transition-colors">Sankalp Generator</Link>
- <span className="text-surface-700">·</span>
- <Link href="/tirth" className="hover:text-saffron-400 transition-colors">Sacred Tirthas</Link>
- <span className="text-surface-700">·</span>
- <Link href="/calendar" className="hover:text-saffron-400 transition-colors">Hindu Calendar 2026</Link>
- <span className="text-surface-700">·</span>
- <Link href="/nava-graha" className="hover:text-saffron-400 transition-colors">9 Nava-Graha</Link>
- <span className="text-surface-700">·</span>
- <Link href="/gita" className="hover:text-saffron-400 transition-colors">Bhagavad Gita</Link>
- <span className="text-surface-700">·</span>
- <Link href="/ramayana" className="hover:text-saffron-400 transition-colors">Ramayana 7 Kandas</Link>
- <span className="text-surface-700">·</span>
- <Link href="/mahabharata" className="hover:text-saffron-400 transition-colors">Mahabharata 18 Parvas</Link>
- <span className="text-surface-700">·</span>
- <Link href="/upanishads" className="hover:text-saffron-400 transition-colors">10 Principal Upanishads</Link>
- <span className="text-surface-700">·</span>
- <Link href="/yoga-sutras" className="hover:text-saffron-400 transition-colors">Patanjali Yoga Sutras</Link>
- <span className="text-surface-700">·</span>
- <Link href="/samskaras" className="hover:text-saffron-400 transition-colors">16 Samskaras</Link>
- <span className="text-surface-700">·</span>
- <Link href="/puranas" className="hover:text-saffron-400 transition-colors">18 Mahapuranas</Link>
- <span className="text-surface-700">·</span>
- <Link href="/darshanas" className="hover:text-saffron-400 transition-colors">6 Darshanas</Link>
- <span className="text-surface-700">·</span>
- <Link href="/vedas" className="hover:text-saffron-400 transition-colors">4 Vedas</Link>
- <span className="text-surface-700">·</span>
- <Link href="/dashavatar" className="hover:text-saffron-400 transition-colors">10 Avatars of Vishnu</Link>
- <span className="text-surface-700">·</span>
- <Link href="/sapta-rishis" className="hover:text-saffron-400 transition-colors">7 Sapta Rishis</Link>
- <span className="text-surface-700">·</span>
- <Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link>
- <span className="text-surface-700">·</span>
- <Link href="/today" className="hover:text-saffron-400 transition-colors">Today&apos;s Panchang</Link>
- <span className="text-surface-700">·</span>
- <Link href="/faqs" className="hover:text-saffron-400 transition-colors">FAQs</Link>
- <span className="text-surface-700">·</span>
- <Link href="/why-darshya" className="hover:text-saffron-400 transition-colors">Why Darshya</Link>
- <span className="text-surface-700">·</span>
- <Link href="/gift" className="hover:text-saffron-400 transition-colors">Gift a Puja</Link>
- <span className="text-surface-700">·</span>
- <Link href="/shloka-card" className="hover:text-saffron-400 transition-colors">Shloka Cards</Link>
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 text-sm">
+ <div>
+ <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Scriptures</h4>
+ <ul className="space-y-1.5 text-surface-500">
+ <li><Link href="/gita" className="hover:text-saffron-400 transition-colors">Bhagavad Gita</Link></li>
+ <li><Link href="/ramayana" className="hover:text-saffron-400 transition-colors">Ramayana 7 Kandas</Link></li>
+ <li><Link href="/mahabharata" className="hover:text-saffron-400 transition-colors">Mahabharata 18 Parvas</Link></li>
+ <li><Link href="/upanishads" className="hover:text-saffron-400 transition-colors">10 Upanishads</Link></li>
+ <li><Link href="/vedas" className="hover:text-saffron-400 transition-colors">4 Vedas</Link></li>
+ <li><Link href="/puranas" className="hover:text-saffron-400 transition-colors">18 Puranas</Link></li>
+ <li><Link href="/darshanas" className="hover:text-saffron-400 transition-colors">6 Darshanas</Link></li>
+ <li><Link href="/yoga-sutras" className="hover:text-saffron-400 transition-colors">Yoga Sutras</Link></li>
+ </ul>
+ </div>
+ <div>
+ <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Cosmology</h4>
+ <ul className="space-y-1.5 text-surface-500">
+ <li><Link href="/nakshatra" className="hover:text-saffron-400 transition-colors">27 Nakshatras</Link></li>
+ <li><Link href="/rashi" className="hover:text-saffron-400 transition-colors">12 Rashis</Link></li>
+ <li><Link href="/nava-graha" className="hover:text-saffron-400 transition-colors">9 Nava-Graha</Link></li>
+ <li><Link href="/dashavatar" className="hover:text-saffron-400 transition-colors">10 Avatars of Vishnu</Link></li>
+ <li><Link href="/sapta-rishis" className="hover:text-saffron-400 transition-colors">7 Sapta Rishis</Link></li>
+ </ul>
+ </div>
+ <div>
+ <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Practice</h4>
+ <ul className="space-y-1.5 text-surface-500">
+ <li><Link href="/chants" className="hover:text-saffron-400 transition-colors">Famous Chants</Link></li>
+ <li><Link href="/vrat" className="hover:text-saffron-400 transition-colors">Vrats Guide</Link></li>
+ <li><Link href="/muhurat" className="hover:text-saffron-400 transition-colors">Muhurat Guide</Link></li>
+ <li><Link href="/tirth" className="hover:text-saffron-400 transition-colors">Sacred Tirthas</Link></li>
+ <li><Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link></li>
+ <li><Link href="/samskaras" className="hover:text-saffron-400 transition-colors">16 Samskaras</Link></li>
+ </ul>
+ </div>
+ <div>
+ <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Tools</h4>
+ <ul className="space-y-1.5 text-surface-500">
+ <li><Link href="/sankalp" className="hover:text-saffron-400 transition-colors">Sankalp Generator</Link></li>
+ <li><Link href="/today" className="hover:text-saffron-400 transition-colors">Today&apos;s Panchang</Link></li>
+ <li><Link href="/calendar" className="hover:text-saffron-400 transition-colors">Hindu Calendar 2026</Link></li>
+ <li><Link href="/shloka-card" className="hover:text-saffron-400 transition-colors">Shloka Cards</Link></li>
+ <li><Link href="/gift" className="hover:text-saffron-400 transition-colors">Gift a Puja</Link></li>
+ <li><Link href="/faqs" className="hover:text-saffron-400 transition-colors">FAQs</Link></li>
+ <li><Link href="/why-darshya" className="hover:text-saffron-400 transition-colors">Why Darshya</Link></li>
+ </ul>
+ </div>
  </div>
  </div>
 
