@@ -440,6 +440,8 @@ export default function RootLayout({
  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
  <Link href="/nakshatra" className="hover:text-saffron-400 transition-colors">27 Nakshatras</Link>
  <span className="text-surface-700">·</span>
+ <Link href="/rashi" className="hover:text-saffron-400 transition-colors">12 Rashis</Link>
+ <span className="text-surface-700">·</span>
  <Link href="/muhurat" className="hover:text-saffron-400 transition-colors">Muhurat Guide</Link>
  <span className="text-surface-700">·</span>
  <Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link>

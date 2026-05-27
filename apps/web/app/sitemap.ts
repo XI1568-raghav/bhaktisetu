@@ -134,6 +134,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/faqs', priority: 0.8 },
     { path: '/nakshatra', priority: 0.85 },
     { path: '/muhurat', priority: 0.85 },
+    { path: '/rashi', priority: 0.85 },
     { path: '/why-darshya', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
@@ -318,6 +319,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
+  const { rashiProfileSlugs } = await import('../lib/rashi-profiles');
+  const rashiProfileEntries = rashiProfileSlugs().map((slug) => ({
+    url: `${BASE_URL}/rashi/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -374,6 +383,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...pilgrimageEntries,
     ...nakshatraEntries,
     ...muhuratEntries,
+    ...rashiProfileEntries,
     ...langEntries,
     ...shlokaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
