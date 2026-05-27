@@ -123,6 +123,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/updates', priority: 0.5 },
     { path: '/changelog', priority: 0.5 },
     { path: '/press', priority: 0.5 },
+    { path: '/deity', priority: 0.8 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -190,6 +191,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Deity programmatic-SEO pages — long-tail "{deity} puja online".
+  const { deitySlugs } = await import('../lib/deities');
+  const deityEntries = deitySlugs().map((slug) => ({
+    url: `${BASE_URL}/deity/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
   // Hindi entry — only the landing page is genuinely translated today.
   // Listing untranslated /hi/* pages here would mislead Google + hurt SEO
   // (thin/duplicate content penalty). Expand this array only when real
@@ -236,6 +246,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...pujaEntries,
     ...yatraEntries,
     ...yatraDestEntries,
+    ...deityEntries,
     ...bookEntries,
     ...hiEntries,
     ...shlokaEntries,
