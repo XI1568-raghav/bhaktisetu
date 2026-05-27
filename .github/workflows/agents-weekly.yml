@@ -1,6 +1,9 @@
 name: Agent fleet - weekly
 
-# Investor pipeline refresh + deep audits. Monday 04:00 UTC = 09:30 IST.
+# Weekly batch: investor pipeline + PR outreach + 18 agents moved from daily
+# (SEO, content, growth, social, onboarding, competitor, keyword, schema, etc).
+# Free tier: ~10 min/run × 4/mo = 40 min/month. See docs/free-tier-budgets.md.
+# Monday 04:00 UTC = 09:30 IST.
 
 on:
   schedule:
@@ -10,7 +13,7 @@ on:
 jobs:
   weekly:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
@@ -24,7 +27,17 @@ jobs:
         env:
           API_BASE: ${{ secrets.API_BASE_URL || 'https://api.darshya.online' }}
           WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
-        run: node scripts/agents/run-all.mjs investor-pipeline pr-outreach
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          node scripts/agents/run-all.mjs \
+            investor-pipeline pr-outreach \
+            seo-audit content-pipeline lead-gen growth-metrics \
+            social-queue onboarding-drip gsc-submitter \
+            review-harvest competitor-watch rss-to-thread \
+            seo-internal-linker competitor-feature-watcher \
+            keyword-rank-tracker x-engagement-digest \
+            weekly-investor-update schema-validator backlinks-monitor
 
       - name: Commit reports
         run: |

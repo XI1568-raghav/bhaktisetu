@@ -31,4 +31,5 @@ Repo `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — n
 | `docs/env-vars.md` | Every env var + behavior when absent |
 | `docs/caveats.md` | "Do not touch unless asked" gotchas |
 | `docs/cf-worker-budget.md` | CF Pages 3 MiB worker limit — READ before adding `runtime='edge'` |
+| `docs/free-tier-budgets.md` | **READ before any new workflow/cron/integration/SDK.** GH Actions 2000 min/mo + CF builds 500/mo + Resend 100/day + Supabase 500MB + Render 750hr + commit batching + per-agent throttle rules. Last incident 2026-05-28. |
 | `docs/mobile-plan.md` | Mobile parity multi-phase plan |

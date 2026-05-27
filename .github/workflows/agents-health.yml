@@ -1,11 +1,12 @@
-name: Agent fleet - health smoke (6h)
+name: Agent fleet - health smoke (12h)
 
-# Hits prod every 6h with full role smoke. Writes timestamped report.
-# Free tier: ~3 min/run × 4/day × 30 = 360 min/month.
+# Hits prod twice daily with full role smoke. Writes timestamped report.
+# Free tier: ~3 min/run × 2/day × 30 = 180 min/month (was 360 at 6h).
+# See docs/free-tier-budgets.md.
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */12 * * *'
   workflow_dispatch: {}
 
 jobs:
