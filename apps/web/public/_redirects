@@ -1,0 +1,7 @@
+# CF Pages redirects — keep worker bundle under 3 MiB free tier limit.
+# OG image routes (formerly /og/* edge functions) now redirect to logo
+# to avoid bundling @vercel/og into the worker.
+/og/default          /logo.svg     302
+/og/puja/*           /logo.svg     302
+/og/shloka           /logo.svg     302
+/og/temple/*         /logo.svg     302
