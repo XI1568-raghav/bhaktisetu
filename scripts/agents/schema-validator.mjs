@@ -50,6 +50,7 @@ const TARGETS = [
   { url: '/dashavatar/krishna', expected: ['BreadcrumbList', 'Article'] },
   { url: '/sapta-rishis', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/sapta-rishis/vasishtha', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/discover', expected: ['ItemList', 'BreadcrumbList', 'CollectionPage'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
