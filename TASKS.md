@@ -4,7 +4,94 @@
 
 ## In progress
 
-- (nothing — E9 + P15-P20 batch shipped 2026-05-27 late evening: Stripe Elements, IVS mobile, gift-puja NRI, yatra inquiry commerce, astrologer status PATCH, 3 new agents, 4 new lang landings. See HANDOFF E9+P15-P20 block below.)
+- (nothing — P21-P28 batch shipped 2026-05-27 overnight: RSS feed, uptime-pinger, pilgrimage circuits, FAQ hub, 27 nakshatras, 10 muhurats, why-darshya comparison, 2 new agents, footer Discover row. See HANDOFF P21-P28 block below.)
+
+## HANDOFF 2026-05-27 (P21-P28 autonomous batch — overnight)
+
+**Shipped (unattended, continuing standing "go ahead in the roadmap" directive):**
+
+1. **P21 — RSS feed + uptime-pinger** (committed in prior turn batch)
+   - `/feed.xml` route — RSS 2.0, edge runtime, top 30 blog posts, 30min revalidate
+   - `<link rel="alternate" type="application/rss+xml">` in layout head
+   - `scripts/agents/uptime-pinger.mjs` — 14 critical surfaces (home, pujas, temples, darshan, panchang, nri, gift, today, sitemap, feed, robots, api-health, api-temples, api-pujas) w/ SLOW/ERROR/DOWN classification, AbortSignal.timeout 10s + 200ms serial gap
+
+2. **P22 — /pilgrimage programmatic-SEO** (committed in prior turn batch)
+   - `lib/pilgrimage-circuits.ts` — 8 canonical circuits (Char Dham, 12 Jyotirlinga, Do Dham, Shakti Peeth, Pancha Bhoota, Ashta Vinayak, Sapta Puri, Panch Kedar)
+   - `/pilgrimage` index + `/pilgrimage/[slug]` detail w/ BreadcrumbList + TouristTrip JSON-LD, related circuits
+
+3. **P23 — /faqs FAQ hub** (74710b9)
+   - `lib/faqs.ts` — 5 groups (puja-booking, live-darshan, pricing-refunds, nri-specific, yatra) ~20 Qs, 30-80 word answers (Google rich-snippet eligibility)
+   - Native `<details>` accordions, jump-nav, FAQPage JSON-LD
+
+4. **P24 — /nakshatra programmatic-SEO** (f3b82e8)
+   - `lib/nakshatras.ts` — all 27 Vedic lunar mansions (lord/deity/gana/rashi/qualities/career/compatibility/spiritualPractice)
+   - Index w/ ItemList JSON-LD + 27-card grid w/ gana color tags
+   - Detail w/ BreadcrumbList + Article JSON-LD, prev/next nav
+
+5. **P25 — /muhurat programmatic-SEO** (5855eb0)
+   - `lib/muhurats.ts` — 10 muhurats across 3 categories: daily auspicious (Brahma/Abhijit/Pradosh/Amrit Kaal), inauspicious (Rahu/Yamaganda/Gulika Kalam), life-event (Vivah/Griha Pravesh/Mundan)
+   - 3-section color-coded index, detail w/ best-for/avoid grids + calculation method + modern application
+
+6. **P26 — /why-darshya competitor comparison** (94c5b16)
+   - 14-row feature table vs Sri Mandir / Utsav / AstroSage w/ ✓/~/✗/N/A legend
+   - 4 pillar non-negotiables + honest "where competitors lead" section
+   - Targets "darshya vs sri mandir", "best puja booking app", "sri mandir alternative"
+
+7. **P27 — 2 new fleet agents** (0ab25f9, fleet now 22 daily)
+   - `schema-validator` — probes 14 high-value pages, extracts JSON-LD, validates required schema.org fields (BreadcrumbList itemListElement, FAQPage mainEntity, Article headline, etc), surfaces parse errors + missing types
+   - `backlinks-monitor` — DuckDuckGo scrape for external mentions, 3 queries, dedup + diff vs `_backlinks-monitor-state.json`, surfaces new + lost referring domains
+
+8. **P28 — footer Discover row** (09c1616)
+   - 8 programmatic-SEO routes surfaced for crawlers + users above lang switcher
+   - Routes: /nakshatra, /muhurat, /pilgrimage, /today, /faqs, /why-darshya, /gift, /shloka-card
+   - Intentionally English-only (avoids bloating 6 i18n dict files)
+
+**Stats**: 4 new programmatic-SEO route families (/pilgrimage 8 slugs + /nakshatra 27 + /muhurat 10 + /faqs static + /why-darshya), 1 RSS route, 3 new agents (uptime, schema, backlinks), 1 footer Discover row, ~75 new sitemap entries.
+
+**User-pending (unchanged):**
+
+- **U18** `CRON_AUTH_TOKEN` GH secret
+- **U19** `INDEXNOW_KEY` GH secret + `darshya.online/<key>.txt`
+- **Rotate Resend key** `re_46d7rTF7_7DygN1pnEpG3T5Cmi5cMnvB3`
+- **U16** flip CF `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- **U1-U15** → `docs/activation-gates.md`
+
+## HANDOFF 2026-05-27 (E9 + P15-P20 autonomous batch)
+
+**Shipped (unattended, per "complete all E9 + P15-P20" directive):**
+
+1. **E9 — Embedded Stripe Elements** (`apps/web/components/StripeClientSecretCheckout.tsx` + `apps/web/app/checkout/offering/[offeringId]/page.tsx` + `apps/web/app/checkout/success/page.tsx`)
+   - clientSecret-only fallback when full Elements provider not bundled
+   - Polite degradation if Stripe.js not loaded → existing mailto fallback retained
+   - Success page reads PaymentIntent ref + booking number from query string
+2. **P15 — Mobile IVS player port** (`apps/mobile/app/(devotee)/darshan-player.tsx`)
+   - Web IVS player parity for mobile devotee app — HLS playback via Expo AV
+   - Graceful fallback to thumbnail + "Watch on web" CTA if stream offline
+3. **P16 — Gift-puja NRI → recipient WhatsApp delivery** (`apps/api/src/routes/gift-puja.ts` + `apps/web/app/gift/`)
+   - Sender (NRI) picks puja + temple, enters recipient name/phone, pays in USD
+   - On success: WhatsApp message to recipient with booking number + video proof link
+   - 80G receipt issued to sender's PAN
+4. **P17 — Yatra package commerce** (`apps/api/src/routes/yatra-inquiry.ts` + `apps/web/app/yatra/[slug]/book/page.tsx`)
+   - Real POST `/api/v1/yatra-inquiry/` replacing setTimeout mock
+   - Reference IDs `YTR-YYYYMMDD-HEX8`, buyer contact form, traveler count, package tier
+   - Stores to `yatra-inquiries` localStorage for buyer + DB row for ops
+5. **P18 — Astrologer onboarding (verified)** (`apps/api/src/routes/admin-leads.ts` + `apps/web/app/admin/leads/page.tsx`)
+   - PATCH `/leads/:id/status` w/ zod-validated status enum + optional sendEmail
+   - Admin decision panel: Approve+welcome (green) / Reject+note (red) / Queue (neutral)
+   - Welcome HTML on CONVERTED; polite decline on UNSUBSCRIBED/BOUNCED — both via existing Resend env-or-noop sendEmail
+   - No Prisma schema change — reuses Lead enum
+6. **P19 — 3 new fleet agents** (wired into agents-daily.yml default run-all)
+   - `keyword-rank-tracker` — 25 seed keywords, DuckDuckGo Lite SERP scrape, 90-day rolling state, top-10 wins + 24h movers
+   - `x-engagement-digest` — Nitter RSS (3 mirror rotation), classifies issue/question/praise/comparison, dedups last 500 tweet IDs
+   - `weekly-investor-update` — Sunday-only (FORCE=1 override), git log + 7d agent reports + WoW keyword delta → investor markdown
+7. **P20 — i18n expansion** (Tamil + Telugu + Bengali + Marathi landing pages)
+   - Shared `components/LangLanding.tsx` shell takes all strings as props — DRY across 5 langs
+   - `/ta` `/te` `/bn` `/mr` each: `runtime = 'edge'`, full hreflang alternates (5 langs + en), translated hero/features/NRI/footer
+   - Updated `/hi` + `/` (root) alternates to list all 6 langs
+   - Sitemap consolidated `hiEntries` → `langEntries` (5 codes × shared alternates map)
+   - robots allow `/ta` `/te` `/bn` `/mr`
+
+**Stats**: 1 mobile screen, 4 new lang landing pages (+ shared component), 2 new API routes (gift-puja, yatra-inquiry), 1 admin PATCH endpoint, 2 admin UI panels, 3 new fleet agents (now 19 daily), 1 new Stripe Elements component, 1 checkout success page.
 
 ## HANDOFF 2026-05-27 (E9 + P15-P20 autonomous batch)
 
