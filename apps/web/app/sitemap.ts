@@ -139,6 +139,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/chants', priority: 0.85 },
     { path: '/sankalp', priority: 0.85 },
     { path: '/tirth', priority: 0.9 },
+    { path: '/calendar', priority: 0.9 },
     { path: '/why-darshya', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
