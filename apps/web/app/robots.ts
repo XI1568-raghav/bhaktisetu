@@ -49,6 +49,7 @@ export default function robots(): MetadataRoute.Robots {
           '/upanishads/',
           '/yoga-sutras/',
           '/samskaras/',
+          '/puranas/',
           '/why-darshya',
         ],
         disallow: [
