@@ -140,6 +140,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/sankalp', priority: 0.85 },
     { path: '/tirth', priority: 0.9 },
     { path: '/calendar', priority: 0.9 },
+    { path: '/nava-graha', priority: 0.9 },
     { path: '/why-darshya', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
@@ -364,6 +365,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { navaGrahaSlugs } = await import('../lib/nava-grahas');
+  const navaGrahaEntries = navaGrahaSlugs().map((slug) => ({
+    url: `${BASE_URL}/nava-graha/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const { chapterSlugs } = await import('../lib/gita-chapters');
   const gitaEntries = [
     { url: `${BASE_URL}/gita`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
@@ -535,6 +544,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...chantEntries,
     ...tirthaEntries,
     ...calendarMonthEntries,
+    ...navaGrahaEntries,
     ...gitaEntries,
     ...ramayanaEntries,
     ...upanishadEntries,
