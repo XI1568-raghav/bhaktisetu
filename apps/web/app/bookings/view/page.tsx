@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
  ChevronRight,
  ChevronLeft,
@@ -177,8 +176,8 @@ function getPrasadStatusLabel(status: PrasadTracking['status']) {
 // ─── Component ──────────────────────────────────────────────────
 
 function BookingDetailContent() {
- const params = useParams();
- const bookingId = params.id as string;
+ const sp = useSearchParams();
+ const bookingId = sp.get('id') ?? '';
  const { session } = useAuth();
 
  const [booking, setBooking] = useState<BookingDetail | null>(null);
@@ -896,8 +895,10 @@ function DetailRow({
 
 export default function BookingDetailPage() {
  return (
+ <Suspense fallback={<div className="p-8 text-sm text-surface-500">Loading…</div>}>
  <AuthGuard>
  <BookingDetailContent />
  </AuthGuard>
+ </Suspense>
  );
 }

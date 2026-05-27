@@ -1,8 +1,7 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
  ArrowLeft,
@@ -23,8 +22,6 @@ import {
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
-
-// ─── Types ──────────────────────────────────────────────────────
 
 interface BookingDetail {
  id: string;
@@ -48,8 +45,6 @@ interface BookingDetail {
  pujaType: { id: string; name: string; durationMinutes: number; description: string };
  user: { fullName: string; phone: string };
 }
-
-// ─── Helpers ────────────────────────────────────────────────────
 
 function formatCurrency(amount: number): string {
  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
@@ -79,13 +74,11 @@ function getStatusConfig(status: string) {
  return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600', description: '' };
 }
 
-// ─── Component ──────────────────────────────────────────────────
-
-export default function PriestBookingDetailPage() {
- const params = useParams();
+function PriestBookingDetailInner() {
+ const sp = useSearchParams();
  const router = useRouter();
  const { session } = useAuth();
- const bookingId = params.id as string;
+ const bookingId = sp.get('id') ?? '';
 
  const [booking, setBooking] = useState<BookingDetail | null>(null);
  const [loading, setLoading] = useState(true);
@@ -121,7 +114,7 @@ export default function PriestBookingDetailPage() {
  }
 
  useEffect(() => {
- if (session?.accessToken) {
+ if (session?.accessToken && bookingId) {
  fetchBooking();
  } else {
  setLoading(false);
@@ -146,34 +139,6 @@ export default function PriestBookingDetailPage() {
  const body = await res.text().catch(() => '');
  throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
  }
- // Re-fetch to get server-truth state instead of guessing.
- await fetchBooking();
- } catch (e) {
- const msg = e instanceof Error ? e.message : 'Network error';
- setActionError(msg);
- } finally {
- setActionLoading(false);
- }
- }
-
- async function handleVideoUpload() {
- if (!booking || !videoUrl.trim()) return;
- setActionLoading(true);
- setActionError(null);
- try {
- const res = await fetch(`${API_BASE_URL}/priest/bookings/${booking.id}/video`, {
- method: 'POST',
- headers: {
- Authorization: `Bearer ${session?.accessToken ?? ''}`,
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify({ videoUrl: videoUrl.trim() }),
- });
- if (!res.ok) {
- const body = await res.text().catch(() => '');
- throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
- }
- setVideoSubmitted(true);
  await fetchBooking();
  } catch (e) {
  const msg = e instanceof Error ? e.message : 'Network error';
@@ -218,7 +183,6 @@ export default function PriestBookingDetailPage() {
 
  return (
  <div className="space-y-6 max-w-4xl">
- {/* Back nav */}
  <Link
  href="/priest/bookings"
  className="inline-flex items-center gap-2 text-sm text-surface-500 hover:text-saffron-600 transition-colors"
@@ -233,7 +197,6 @@ export default function PriestBookingDetailPage() {
  </div>
  )}
 
- {/* Header */}
  <div className="bg-white rounded-xl border border-surface-100 p-6">
  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
  <div className="w-14 h-14 bg-saffron-50 rounded-xl flex items-center justify-center">
@@ -255,11 +218,8 @@ export default function PriestBookingDetailPage() {
  )}
  </div>
 
- {/* Booking Info */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- {/* Left: Details */}
  <div className="space-y-6">
- {/* Temple & Schedule */}
  <div className="bg-white rounded-xl border border-surface-100 p-5">
  <h2 className="font-semibold text-surface-800 mb-4">Schedule & Location</h2>
  <div className="space-y-3">
@@ -286,7 +246,6 @@ export default function PriestBookingDetailPage() {
  </div>
  </div>
 
- {/* Devotees */}
  <div className="bg-white rounded-xl border border-surface-100 p-5">
  <h2 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
  <Users className="w-4 h-4 text-surface-400" />
@@ -320,9 +279,7 @@ export default function PriestBookingDetailPage() {
  </div>
  </div>
 
- {/* Right: Actions & Payment */}
  <div className="space-y-6">
- {/* Action Section */}
  <div className="bg-white rounded-xl border border-surface-100 p-5">
  <h2 className="font-semibold text-surface-800 mb-4">Actions</h2>
 
@@ -401,7 +358,6 @@ export default function PriestBookingDetailPage() {
  View uploaded video
  </a>
  )}
- {/* Video preview placeholder */}
  <div className="bg-surface-100 rounded-xl aspect-video flex items-center justify-center">
  <div className="text-center">
  <Video className="w-10 h-10 text-surface-300 mx-auto mb-2" />
@@ -430,7 +386,6 @@ export default function PriestBookingDetailPage() {
  )}
  </div>
 
- {/* Price Breakdown */}
  <div className="bg-white rounded-xl border border-surface-100 p-5">
  <h2 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
  <IndianRupee className="w-4 h-4 text-surface-400" />
@@ -452,7 +407,6 @@ export default function PriestBookingDetailPage() {
  </div>
  </div>
 
- {/* Communication Placeholder */}
  <div className="bg-white rounded-xl border border-surface-100 p-5">
  <h2 className="font-semibold text-surface-800 mb-4 flex items-center gap-2">
  <MessageSquare className="w-4 h-4 text-surface-400" />
@@ -471,5 +425,13 @@ export default function PriestBookingDetailPage() {
  </div>
  </div>
  </div>
+ );
+}
+
+export default function PriestBookingDetailPage() {
+ return (
+ <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-saffron-500" /></div>}>
+ <PriestBookingDetailInner />
+ </Suspense>
  );
 }

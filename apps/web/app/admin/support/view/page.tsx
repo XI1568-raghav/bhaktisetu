@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
  ArrowLeft,
  Send,
@@ -45,8 +44,9 @@ import {
 
 const AGENT_OPTIONS = ['Priya S.', 'Arjun K.', 'Neha R.', 'Rahul M.', 'Kavita B.'];
 
-export default function AdminTicketDetailPage() {
- const params = useParams<{ id: string }>();
+function AdminTicketDetailInner() {
+ const sp = useSearchParams();
+ const id = sp.get('id') ?? '';
  const { session } = useAuth();
  const [ticket, setTicket] = useState<Ticket | null>(null);
  const [loading, setLoading] = useState(true);
@@ -61,11 +61,11 @@ export default function AdminTicketDetailPage() {
  let cancelled = false;
  (async () => {
  try {
- const t = await getTicketById(session?.accessToken, params.id);
+ const t = await getTicketById(session?.accessToken, id);
  if (!cancelled) setTicket(t);
  } catch (err) {
  if (!cancelled) {
- const fallback = SAMPLE_ADMIN_TICKETS.find((t) => t.id === params.id);
+ const fallback = SAMPLE_ADMIN_TICKETS.find((t) => t.id === id);
  if (fallback) setTicket(fallback);
  setError(err instanceof Error ? err.message : 'Failed to load ticket');
  }
@@ -76,7 +76,9 @@ export default function AdminTicketDetailPage() {
  return () => {
  cancelled = true;
  };
- }, [params.id, session?.accessToken]);
+ }, [id, session?.accessToken]);
+
+
 
  const sendReply = async () => {
  if (!ticket || !reply.trim()) return;
@@ -392,6 +394,14 @@ export default function AdminTicketDetailPage() {
  </div>
  </div>
  </div>
+ );
+}
+
+export default function AdminTicketDetailPage() {
+ return (
+ <Suspense fallback={<div className="flex items-center gap-2 text-sm text-surface-500 p-8"><Loader2 className="w-4 h-4 animate-spin" /> Loading ticket…</div>}>
+ <AdminTicketDetailInner />
+ </Suspense>
  );
 }
 
