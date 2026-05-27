@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
@@ -17,9 +16,9 @@ import {
   Shield,
   Video,
 } from 'lucide-react';
-import { useAuth } from '../../../../lib/auth-context';
-import { API_BASE_URL } from '../../../../lib/api-config';
-import { StripeClientSecretCheckout } from '../../../../components/StripeClientSecretCheckout';
+import { useAuth } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
+import { StripeClientSecretCheckout } from '../../../components/StripeClientSecretCheckout';
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // Lifted verbatim from /pujas/[slug]/book — keep the two flows
@@ -84,9 +83,9 @@ const DEFAULT_SLOTS = [
   { value: '18:00', label: 'Evening (6:00 PM)' },
 ];
 
-export default function OfferingCheckoutPage() {
-  const params = useParams();
-  const offeringId = params.offeringId as string;
+function OfferingCheckoutInner() {
+  const sp = useSearchParams();
+  const offeringId = (sp.get('id') ?? '') as string;
   const { user, session, isAuthenticated } = useAuth();
 
   // Auth gate — redirect to login the moment we know there's no session.
@@ -750,5 +749,13 @@ export default function OfferingCheckoutPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function OfferingCheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#faf7f0]"><div className="text-surface-500">Loading…</div></div>}>
+      <OfferingCheckoutInner />
+    </Suspense>
   );
 }

@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { getAstrologerImage } from '../../../lib/images';
 import {
  Star,
@@ -167,9 +166,9 @@ const similarAstrologers = [
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
-export default function AstrologerDetailPage() {
- const params = useParams();
- const id = params?.id as string;
+function AstrologerDetailInner() {
+ const sp = useSearchParams();
+ const id = (sp.get('id') ?? '') as string;
 
  const astrologer = allAstrologers[id] || allAstrologers['astro_001']!;
 
@@ -552,5 +551,13 @@ export default function AstrologerDetailPage() {
  </div>
  </div>
  </div>
+ );
+}
+
+export default function AstrologerDetailPage() {
+ return (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#fefcf7]"><div className="text-surface-500">Loading…</div></div>}>
+   <AstrologerDetailInner />
+  </Suspense>
  );
 }

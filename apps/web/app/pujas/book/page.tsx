@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
  ChevronRight,
  ChevronLeft,
@@ -40,8 +39,8 @@ import {
  Sparkles,
  RefreshCw,
 } from 'lucide-react';
-import { useAuth } from '../../../../lib/auth-context';
-import { API_BASE_URL } from '../../../../lib/api-config';
+import { useAuth } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -307,10 +306,9 @@ const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
 
 // ─── Component ──────────────────────────────────────────────────
 
-export default function PujaBookingPage() {
- const params = useParams();
+function PujaBookingInner() {
  const searchParams = useSearchParams();
- const slug = params.slug as string;
+ const slug = (searchParams.get('slug') ?? '') as string;
  const preselectedTemple = searchParams.get('temple') || '';
  const { user, session, isAuthenticated } = useAuth();
 
@@ -2005,5 +2003,13 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
  <span className="shrink-0 text-surface-500">{label}</span>
  <span className="text-right font-medium text-surface-700">{value}</span>
  </div>
+ );
+}
+
+export default function PujaBookingPage() {
+ return (
+  <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-saffron-500" /></div>}>
+   <PujaBookingInner />
+  </Suspense>
  );
 }
