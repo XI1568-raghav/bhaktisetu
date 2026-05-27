@@ -26,6 +26,8 @@ export default function robots(): MetadataRoute.Robots {
           '/launch',
           '/updates',
           '/shlokas/',
+          '/aarti/',
+          '/chalisa/',
         ],
         disallow: [
           '/api/',
