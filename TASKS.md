@@ -4,7 +4,41 @@
 
 ## In progress
 
-- (nothing — P5-P9 ship batch shipped 2026-05-27 afternoon: /city + /blog reader + /pujas/[slug]/temples + NextFestivalStrip + CI cascade fix. See HANDOFF P5-P9 block below.)
+- (nothing — P10-P14 batch shipped 2026-05-27 evening: /aarti + /chalisa + /deity mantras subpage + 15 cities + 20 festivals + /today daily hub + 2 new agents + markdown render upgrade. See HANDOFF P10-P14 block below.)
+
+## HANDOFF 2026-05-27 (P10-P14 autonomous batch — pushed 5b91a52 + ab9a8e2 + 919862b)
+
+**Shipped (unattended, per "complete last pending item and complete p10-14 end to end"):**
+
+1. **P10 /aarti + /chalisa + /deity/[slug]/mantras** (5b91a52)
+   - `/aarti` index + `/aarti/[slug]` — full aarti collection w/ Sanskrit, transliteration, meaning. Article JSON-LD.
+   - `/chalisa` index + `/chalisa/[slug]` — chalisa verse collection w/ benefits.
+   - `/deity/[slug]/mantras` — per-deity mantra subpage. Beej/gayatri/moola/panchakshari etc, with how-to-recite + cross-links to aarti/chalisa/shlokas. Conditional link from /deity/[slug] when mantraCount > 0.
+   - Sitemap/robots/footer updated. Edge runtime + revalidate 86400.
+2. **P11 city + festival expansion** (ab9a8e2)
+   - Cities: 10 → 25 (added Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Ahmedabad, Jaipur, Mathura, Vrindavan, Shirdi, Amritsar, Guruvayur, Madurai, Rameswaram, Gaya).
+   - Festivals: 10 → 30 (added Makar Sankranti, Vasant Panchami, Maha Kumbh, Akshaya Tritiya, Narasimha Jayanti, Rath Yatra, Guru Poornima, Nag Panchami, Raksha Bandhan, Onam, Pitru Paksha, Dussehra, Karwa Chauth, Dhanteras, Govardhan Puja, Bhai Dooj, Tulsi Vivah, Kartik Purnima, Vivah Panchami, Mokshada Ekadashi).
+   - No sitemap edit needed — citySlugs/festivalSlugs auto-fan-out.
+3. **P12 /today daily devotion hub** (919862b)
+   - Day-of-week deity (Vaar Devata) map, today's mantra, today's panchang, next festival countdown, 3-CTA grid, upcoming festivals (days 0-60, top 8).
+   - Tolerant panchang fetch (graceful degradation if API cold).
+4. **P13 2 new fleet agents** (919862b, wired into agents-daily.yml)
+   - `seo-internal-linker` — inbound-link graph for ~25 high-value targets across 15 seed surfaces. Surfaces orphans + weak pages with linking suggestions.
+   - `competitor-feature-watcher` — fingerprints H1-H3 + prices on 6 competitor surfaces (SriMandir/Utsav/AstroSage/AppsForBharat), diffs vs prior snapshot. Detects new SKUs + price changes + new landing pages. State file `_competitor-feature-watcher-state.json`.
+5. **P14 blog markdown render upgrade** (919862b)
+   - Added: H1, unordered lists, ordered lists, inline links (external-tab), images, blockquotes, fenced code blocks, inline code.
+   - Preserved no-external-dep constraint. Code blocks pre-extracted + parked.
+   - content-publisher drafts now render correctly instead of being silently flattened.
+
+**Stats**: 5 new pages, 2 new agents, 25 new programmatic SEO entries (15 cities + 20 festivals - 10 dupes), 6 markdown elements added, full fleet now 16 daily agents.
+
+**User-pending (unchanged):**
+
+- **U18** `CRON_AUTH_TOKEN` GH secret
+- **U19** `INDEXNOW_KEY` GH secret + `darshya.online/<key>.txt`
+- **Rotate Resend key** `***REMOVED***`
+- **U16** flip CF `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true`
+- **U1-U15** → `docs/activation-gates.md`
 
 ## HANDOFF 2026-05-27 (P5-P9 autonomous batch)
 
@@ -105,6 +139,9 @@
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-27 | feat: P12-P14 — /today daily hub + seo-internal-linker + competitor-feature-watcher + markdown render upgrade | `919862b` |
+| 2026-05-27 | feat: P11 — 15 cities + 20 festivals added (cities 10→25, festivals 10→30) | `ab9a8e2` |
+| 2026-05-27 | feat: P10 — /aarti + /chalisa + /deity/[slug]/mantras programmatic-SEO | `5b91a52` |
 | 2026-05-27 | feat(home): NextFestivalStrip above-the-fold countdown | `0c0090c` |
 | 2026-05-27 | feat(seo): /pujas/[slug]/temples mirror — best temples per puja | `4d355d4` |
 | 2026-05-27 | feat(blog): live blog reader from agent drafts on GitHub | `1b85d97` |
