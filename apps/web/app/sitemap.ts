@@ -121,6 +121,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/shloka-card', priority: 0.7 },
     { path: '/launch', priority: 0.6 },
     { path: '/updates', priority: 0.5 },
+    { path: '/changelog', priority: 0.5 },
+    { path: '/press', priority: 0.5 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -149,12 +151,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: s.priority,
   }));
 
-  const templeEntries = templeSlugs.map((slug) => ({
-    url: `${BASE_URL}/temples/${slug}`,
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }));
+  const templeEntries = templeSlugs.flatMap((slug) => [
+    {
+      url: `${BASE_URL}/temples/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    // Programmatic-SEO long-tail page per temple.
+    {
+      url: `${BASE_URL}/temples/${slug}/pujas`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+  ]);
 
   const pujaEntries = pujaSlugs.map((slug) => ({
     url: `${BASE_URL}/pujas/${slug}`,
@@ -179,25 +190,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // /hi prefix entries for the top 10 pages converted in TD18. Only the
-  // surfaces with real Hindi content are duplicated — adding /hi for
-  // unconverted pages would mislead search engines.
-  const hiTranslatedPaths = [
-    '', '/temples', '/pujas', '/darshan', '/donations', '/content',
-    '/store', '/auth/login', '/upgrade', '/yatra/destinations',
-  ];
-  const hiEntries = hiTranslatedPaths.map((p) => ({
-    url: `${BASE_URL}/hi${p}`,
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-    alternates: {
-      languages: {
-        en: `${BASE_URL}${p || '/'}`,
-        hi: `${BASE_URL}/hi${p}`,
+  // Hindi entry — only the landing page is genuinely translated today.
+  // Listing untranslated /hi/* pages here would mislead Google + hurt SEO
+  // (thin/duplicate content penalty). Expand this array only when real
+  // Devanagari pages ship.
+  const hiEntries = [
+    {
+      url: `${BASE_URL}/hi`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+      alternates: {
+        languages: {
+          en: `${BASE_URL}/`,
+          hi: `${BASE_URL}/hi`,
+        },
       },
     },
-  }));
+  ];
 
   const bookEntries = [
     { url: `${BASE_URL}/content/books`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },

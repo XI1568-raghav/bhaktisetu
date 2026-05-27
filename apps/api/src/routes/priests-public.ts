@@ -68,10 +68,22 @@ function serializePriest(p: PriestRow, offeringCount: number) {
 }
 
 export async function priestsPublicRoutes(server: FastifyInstance) {
-  // GET / — list verified active priests with active-offering counts
-  server.get('/', async (_request, reply) => {
+  // GET / — list verified active priests with active-offering counts.
+  // Optional filters: ?specialization=marriage&deity=ganesh — applied
+  // server-side so clients don't pull the full list and post-filter (E10).
+  server.get('/', async (request, reply) => {
+    const q = request.query as { specialization?: string; deity?: string };
+    const where: Record<string, unknown> = { isVerified: true, status: 'active' };
+    if (q.specialization && q.specialization.trim()) {
+      where.specializations = { has: q.specialization.trim().toLowerCase() };
+    }
+    if (q.deity && q.deity.trim()) {
+      where.offerings = {
+        some: { isActive: true, deity: { equals: q.deity.trim(), mode: 'insensitive' } },
+      };
+    }
     const priests = await prisma.priest.findMany({
-      where: { isVerified: true, status: 'active' },
+      where,
       orderBy: { ratingAvg: 'desc' },
       select: {
         id: true,
