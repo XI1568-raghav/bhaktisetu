@@ -126,6 +126,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/deity', priority: 0.8 },
     { path: '/festival', priority: 0.9 },
     { path: '/city', priority: 0.9 },
+    { path: '/aarti', priority: 0.8 },
+    { path: '/chalisa', priority: 0.8 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -208,6 +210,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${BASE_URL}/deity/${slug}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  // Per-deity mantra sub-pages — long-tail "{deity} mantras", "{deity} beej mantra".
+  const { deitiesWithMantras } = await import('../lib/deity-mantras');
+  const deityMantraEntries = deitiesWithMantras().map((slug) => ({
+    url: `${BASE_URL}/deity/${slug}/mantras`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
+  // Aarti collection — long-tail "{deity} aarti lyrics".
+  const { aartiSlugs } = await import('../lib/aartis');
+  const aartiEntries = aartiSlugs().map((slug) => ({
+    url: `${BASE_URL}/aarti/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
+  // Chalisa collection — long-tail "{deity} chalisa lyrics meaning".
+  const { chalisaSlugs } = await import('../lib/chalisas');
+  const chalisaEntries = chalisaSlugs().map((slug) => ({
+    url: `${BASE_URL}/chalisa/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
     priority: 0.8,
   }));
 
@@ -300,6 +329,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...yatraEntries,
     ...yatraDestEntries,
     ...deityEntries,
+    ...deityMantraEntries,
+    ...aartiEntries,
+    ...chalisaEntries,
     ...festivalEntries,
     ...cityEntries,
     ...rashiEntries,

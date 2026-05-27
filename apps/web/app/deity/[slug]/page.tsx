@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDeity, DEITIES } from '../../../lib/deities';
 import { getPujaTypes } from '../../../lib/api';
+import { getMantrasForDeity } from '../../../lib/deity-mantras';
 
 export const runtime = 'edge';
 export const revalidate = 3600;
@@ -46,6 +47,8 @@ export default async function DeityPage({ params }: Params) {
     () => null,
   );
   const pujas = pujasRes?.data.filter((p) => p.isActive) || [];
+
+  const mantraCount = getMantrasForDeity(d.slug).length;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -96,9 +99,24 @@ export default async function DeityPage({ params }: Params) {
           {d.mantra}
         </p>
         <p className="text-xs text-surface-600 mt-2">
-          Recite 108 times for maximum benefit. Use {' '}
-          <Link href="/shlokas" className="text-saffron-700 hover:underline">our shloka library</Link>
-          {' '}for more.
+          Recite 108 times for maximum benefit.
+          {mantraCount > 0 ? (
+            <>
+              {' '}See{' '}
+              <Link
+                href={`/deity/${d.slug}/mantras`}
+                className="text-saffron-700 hover:underline font-semibold"
+              >
+                all {mantraCount} {d.name} mantras →
+              </Link>
+            </>
+          ) : (
+            <>
+              {' '}Use{' '}
+              <Link href="/shlokas" className="text-saffron-700 hover:underline">our shloka library</Link>
+              {' '}for more.
+            </>
+          )}
         </p>
       </section>
 
