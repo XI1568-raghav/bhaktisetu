@@ -28,6 +28,8 @@ const TARGETS = [
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/gita', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/gita/karma-yoga', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/ramayana', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/ramayana/sundara-kanda', expected: ['BreadcrumbList', 'Article'] },
   { url: '/today', expected: [] },
   { url: '/shloka-card', expected: [] },
   { url: '/launch', expected: [] },
