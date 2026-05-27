@@ -1,9 +1,8 @@
 'use client';
-export const runtime = 'edge';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
  ArrowLeft,
  Star,
@@ -104,9 +103,9 @@ const activityLog = [
  { action: 'Account created', time: '6 months ago', icon: Calendar },
 ];
 
-export default function AdminUserDetailPage() {
- const params = useParams();
- const userId = params.id as string;
+function AdminUserDetailInner() {
+ const sp = useSearchParams();
+ const userId = sp.get('id') ?? '';
  const user = usersDb[userId];
  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
@@ -410,5 +409,13 @@ export default function AdminUserDetailPage() {
  </div>
  </div>
  </div>
+ );
+}
+
+export default function AdminUserDetailPage() {
+ return (
+ <Suspense fallback={<div className="p-8 text-sm text-surface-500">Loading…</div>}>
+ <AdminUserDetailInner />
+ </Suspense>
  );
 }
