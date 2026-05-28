@@ -40,6 +40,56 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
 
     const profile = await prisma.astrologerProfile.findUnique({ where: { userId } });
 
+    // Surface real bookings from raw-SQL astrologer_consultations table.
+    // Matches on astrologer_id = userId (real-astrologer flow) — rows from the
+    // in-memory astrology service use synthetic ids that won't match, which is
+    // intentional (they're demo data). Safe-default empty arrays on table miss.
+    let consultationsToday = 0;
+    let earningsTodayInr = 0;
+    let earningsMonthInr = 0;
+    let totalEarningsInr = 0;
+    let upcomingSessions: unknown[] = [];
+    try {
+      const today = await prisma.$queryRawUnsafe<Array<{ count: string; sum: string | null }>>(
+        `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum
+         FROM astrologer_consultations
+         WHERE astrologer_id = $1 AND status = 'confirmed'
+           AND paid_at::date = CURRENT_DATE`,
+        userId,
+      );
+      consultationsToday = Number(today[0]?.count ?? 0);
+      earningsTodayInr = Number(today[0]?.sum ?? 0);
+
+      const month = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
+        `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
+         FROM astrologer_consultations
+         WHERE astrologer_id = $1 AND status = 'confirmed'
+           AND date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)`,
+        userId,
+      );
+      earningsMonthInr = Number(month[0]?.sum ?? 0);
+
+      const all = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
+        `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
+         FROM astrologer_consultations
+         WHERE astrologer_id = $1 AND status = 'confirmed'`,
+        userId,
+      );
+      totalEarningsInr = Number(all[0]?.sum ?? 0);
+
+      upcomingSessions = await prisma.$queryRawUnsafe<unknown[]>(
+        `SELECT id, reference, user_id, minutes, amount_inr, scheduled_at, room_name, status, created_at
+         FROM astrologer_consultations
+         WHERE astrologer_id = $1 AND status = 'confirmed'
+           AND (scheduled_at IS NULL OR scheduled_at >= now() - interval '1 hour')
+         ORDER BY COALESCE(scheduled_at, created_at) ASC
+         LIMIT 20`,
+        userId,
+      );
+    } catch (err) {
+      server.log.warn({ err }, 'astrologer_consultations query failed (table may not exist yet)');
+    }
+
     return reply.send({
       profile,
       stats: {
@@ -47,14 +97,13 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
         rating: profile?.rating ?? 0,
         pricePerMinute: profile ? Number(profile.pricePerMinute) : 0,
         approved: profile?.approved ?? false,
-        // Real earnings + active-client counts pending Consultation model.
-        consultationsToday: 0,
-        earningsTodayInr: 0,
-        earningsMonthInr: 0,
-        totalEarningsInr: 0,
-        activeClients: 0,
+        consultationsToday,
+        earningsTodayInr,
+        earningsMonthInr,
+        totalEarningsInr,
+        activeClients: upcomingSessions.length,
       },
-      upcomingSessions: [],
+      upcomingSessions,
     });
   });
 
