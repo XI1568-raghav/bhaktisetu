@@ -52,6 +52,23 @@ type DonationRow = {
   paid_at: Date | null;
 };
 
+type GaushalaTaxRow = {
+  pan: string | null;
+  regn_80g: string | null;
+};
+
+// Idempotent column adds so 80G receipts can carry real PAN + registration
+// numbers. Schema.prisma update tracked separately — raw SQL avoids client
+// regeneration mid-deploy (same pattern as gift_puja_orders, astrologer_consultations).
+async function ensureGaushalaTaxFields() {
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE gaushala_profiles ADD COLUMN IF NOT EXISTS pan TEXT;`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE gaushala_profiles ADD COLUMN IF NOT EXISTS regn_80g TEXT;`,
+  );
+}
+
 function nextReceiptNumber(): string {
   const d = new Date();
   const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
@@ -79,6 +96,10 @@ const verifyDonationSchema = z.object({
 });
 
 export async function donationRoutes(server: FastifyInstance) {
+  await ensureGaushalaTaxFields().catch((err) =>
+    server.log.warn({ err }, 'gaushala_profiles tax-field add failed'),
+  );
+
   // ── Create order ─────────────────────────────────────────────────────
   server.post('/create-order', { preHandler: [authenticateUser] }, async (request, reply) => {
     const parsed = createOrderSchema.safeParse(request.body ?? {});
@@ -181,6 +202,17 @@ export async function donationRoutes(server: FastifyInstance) {
       where: { userId: donation.gaushala_id },
     }).catch(() => null);
 
+    // Raw SQL fetch for pan + regn_80g — not in Prisma client until next
+    // schema regeneration (see ensureGaushalaTaxFields).
+    let taxFields: GaushalaTaxRow | null = null;
+    if (gaushalaProfile) {
+      const taxRows = await prisma.$queryRawUnsafe<GaushalaTaxRow[]>(
+        `SELECT pan, regn_80g FROM gaushala_profiles WHERE user_id = $1::uuid LIMIT 1;`,
+        donation.gaushala_id,
+      ).catch(() => [] as GaushalaTaxRow[]);
+      taxFields = taxRows[0] ?? null;
+    }
+
     const receiptNumber = nextReceiptNumber();
     const donationDate = new Date().toLocaleDateString('en-IN', {
       day: '2-digit', month: 'long', year: 'numeric',
@@ -210,8 +242,8 @@ export async function donationRoutes(server: FastifyInstance) {
         paymentMode: isDemoPayment ? 'Other' : 'UPI',
         paymentReference: body.razorpay_payment_id,
         gaushalaName: gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network',
-        gaushala80GNumber: gaushalaProfile ? 'AAAGD1234F' : undefined,
-        gaushalaPan: gaushalaProfile ? 'AAAGD1234F' : undefined,
+        gaushala80GNumber: taxFields?.regn_80g ?? undefined,
+        gaushalaPan: taxFields?.pan ?? undefined,
         gaushalaAddress: gaushalaProfile?.address ?? undefined,
       });
     } catch (err) {

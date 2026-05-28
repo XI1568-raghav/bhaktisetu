@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { sendEmail } from '../lib/email.js';
+import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
 
 /**
  * Yatra package inquiry intake. Affiliate program (U9) not approved yet —
@@ -96,7 +97,43 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
 <p>— Darshya yatra desk</p>`,
     }).catch(() => null);
 
-    request.log.info({ referenceId, yatraSlug: body.yatraSlug, tier: body.packageTier }, '[yatra-inquiry]');
-    return reply.status(200).send({ referenceId, ok: true });
+    // WhatsApp handoff to ops + buyer (env-or-noop). Plan: Sprint 1 Sub-batch
+    // 5 — replace email-only flow with WA primary channel so ops responds
+    // within minutes, not hours. Templates 'yatra_inquiry_ops' (vars: ref,
+    // tier, pax, start) + 'yatra_inquiry_received' (vars: name, title, ref)
+    // must be pre-approved in WhatsApp Manager.
+    let waDelivery: 'sent' | 'skipped' | 'failed' = 'skipped';
+    if (whatsapp.enabled) {
+      const opsTo = process.env.YATRA_OPS_WHATSAPP || '';
+      if (opsTo) {
+        await sendWhatsappTemplate({
+          to: opsTo,
+          template: 'yatra_inquiry_ops',
+          languageCode: 'en',
+          variables: [
+            referenceId,
+            body.packageTier,
+            String(body.travelersCount),
+            body.startDate,
+          ],
+        }).catch(() => null);
+      }
+      if (body.buyer.phone) {
+        const r = await sendWhatsappTemplate({
+          to: body.buyer.phone,
+          template: 'yatra_inquiry_received',
+          languageCode: 'en',
+          variables: [
+            body.buyer.name,
+            body.yatraTitle || body.yatraSlug,
+            referenceId,
+          ],
+        }).catch(() => ({ ok: false }));
+        waDelivery = r.ok ? 'sent' : 'failed';
+      }
+    }
+
+    request.log.info({ referenceId, yatraSlug: body.yatraSlug, tier: body.packageTier, waDelivery }, '[yatra-inquiry]');
+    return reply.status(200).send({ referenceId, ok: true, waDelivery });
   });
 }
