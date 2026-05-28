@@ -6,6 +6,68 @@
 
 - **P51 /chakras** — `apps/web/lib/chakras.ts` created (7 chakras muladhara→sahasrara, full Tantric detail). PAUSED per user "stop 51 as of now" 2026-05-28. Pages/sitemap/footer wiring NOT done. Awaiting resume / kill direction.
 
+## HANDOFF 2026-05-28 (MVP1 Sprint 3 close — sub-batches 3.1-3.5 shipped)
+
+Per locked plan `C:\Users\DELL\.claude\plans\stateless-fluttering-turtle.md`. All 3 sprints (15 sub-batches) shipped. Day-90 pitch outline written.
+
+### Sprint 3 commits
+
+| Sub-batch | Commit | What |
+|---|---|---|
+| 3.1 P1 security | (prior) | refresh-token rotation, CSP, temple-portal ownership, outreach HMAC, AI XSS |
+| 3.2 Stripe + perf | `6027a60` | Fastify p50/p95/p99 hook, /darshan/live 30s cache, Stripe Elements full Provider |
+| 3.3 Wave 3 agents | `8c1e2ee` | daily-devotional-broadcast, funnel-drop-analyzer, social-content-multiplexer, investor-weekly-digest-v2 |
+| 3.4 Founder dashboard | `aa900e8` | `/admin/metrics` real-numbers + `/api/v1/admin/metrics/{investor,funnel,dashboard}` aggregate routes |
+| 3.5 Mobile provider parity | `55083a2` | (gaushala)/cows + (store-admin)/products + (astrologer)/availability — 3 stubs → real POST/PATCH |
+| 3.6 Cleanup + deck | (pending push) | `docs/day-90-pitch-deck.md` 12-slide outline + this HANDOFF |
+
+### Sub-batch 5 mobile parity audit result
+
+All 7 provider portals primary-action audited:
+
+- (priest)/bookings ✓ wired | services = local toggle (web canonical, OK)
+- (temple)/pujas + streams = "Use web portal" honest fallback (web canonical workflows, OK)
+- (astrologer)/availability ✓ NEW: PATCH /api/v1/astrologer-portal/availability w/ weekly slot blob
+- (gaushala)/cows ✓ NEW: POST /api/v1/gaushala-portal/cows w/ Modal create form
+- (gaushala)/donations + volunteers = read-only (OK, no create flow needed)
+- (store-admin)/products ✓ NEW: POST /api/v1/store-admin/products w/ price+stock guards
+- (wellness)/sessions ✓ already wired (createSession + setRoom mutations)
+
+### Day-90 readiness
+
+- 100+ paying users target: pending live metrics curl
+- ₹25k MRR / ₹1L+ cumulative GMV / 15%+ NRI mix: pending metric capture
+- Pitch deck outline at `docs/day-90-pitch-deck.md` — 12 slides + 5 appendix, ready to populate w/ live numbers from `/admin/metrics/investor`
+- All 8 P0 security blockers + 10 Audit-A user-journey gaps closed across Sprints 1-3
+
+### Verify status (session-end)
+
+- Render redeploy of `aa900e8` admin-metrics: needs re-verify (was 404 last check, likely lag)
+- Mobile tsc clean for all 3 changed files
+- API tsc clean
+
+### Open user-action gates (priority order)
+
+| Pri | Gate | Action |
+|---|---|---|
+| P0 | U1 Razorpay live KYC | Submit business docs — unblocks domestic real payments |
+| P0 | U2 Stripe NRI KYC | US/UK/CA/AU activation — unblocks NRI MRR |
+| P0 | U12 Rotate Resend `re_46d7rTF7…` | Generate + Render paste |
+| P0 | U10 Rotate Supabase password | Reset + Render DATABASE_URL paste |
+| P1 | U18 `CRON_AUTH_TOKEN` GH secret | `openssl rand -hex 32` → GH + Render |
+| P1 | U19 `INDEXNOW_KEY` | Generate + host at `darshya.online/<key>.txt` |
+| P2 | U16 CF env flip | `NEXT_PUBLIC_KNOWLEDGE_ENABLED=true` + `NEXT_PUBLIC_GURUKUL_ENABLED=true` |
+| P2 | U6 Sentry DSN | Paste CF + Render |
+| P2 | U8 PostHog key | Paste CF |
+| P3 | U3 Apple Dev $99/yr / U4 Play $25 / U5 FCM / U7 WA Meta Cloud | iOS + Android push + WA blast |
+
+### Resume cheatsheet next session
+
+1. Curl `https://api.darshya.online/api/v1/admin/metrics/dashboard` (expect 401 = live; 404 = redeploy lag)
+2. Curl `https://darshya.online/admin/metrics` (signed-in admin only — manual verify)
+3. Pull live numbers into `docs/day-90-pitch-deck.md` TBD cells
+4. If user says "continue": post-MVP1 polish OR begin MVP2 line per user direction (yatra commerce real payment / iOS Testflight / B2B white-label / community sangha)
+
 ## HANDOFF 2026-05-28 (session-end snapshot — interactive footer + Discover sprint)
 
 **Context for next session — read this first.**
