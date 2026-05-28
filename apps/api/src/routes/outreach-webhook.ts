@@ -416,10 +416,53 @@ async function handleInbound(body: unknown): Promise<{
 
 export async function outreachWebhookRoutes(server: FastifyInstance) {
   // ── Inbound reply parsing ──────────────────────────────────────────
+  // Resend inbound parse webhooks sign the raw body with Svix headers, same
+  // scheme as /bounce-webhook below. Without verification, anon callers can
+  // flip Lead.status (UNSUBSCRIBED / REPLIED) or trigger autoresponder loops.
+  // If RESEND_WEBHOOK_SECRET unset we 503 to fail-closed rather than open.
+  const verifySvix = (
+    request: import('fastify').FastifyRequest,
+    reply: import('fastify').FastifyReply,
+  ): boolean => {
+    const secret = process.env.RESEND_WEBHOOK_SECRET ?? '';
+    if (!secret) {
+      request.log.error('RESEND_WEBHOOK_SECRET unset — refusing inbound webhook to avoid anon Lead mutation');
+      reply.code(503).send({ ok: false, error: 'webhook_unconfigured' });
+      return false;
+    }
+    const svixId = request.headers['svix-id'];
+    const svixTimestamp = request.headers['svix-timestamp'];
+    const svixSignature = request.headers['svix-signature'];
+    const rawBody = (request as unknown as { rawBody?: string }).rawBody ?? '';
+    if (!svixId || !svixTimestamp || !svixSignature || !rawBody) {
+      reply.code(400).send({ ok: false, error: 'missing_signature' });
+      return false;
+    }
+    const secretBytes = Buffer.from(secret.replace(/^whsec_/, ''), 'base64');
+    const signedContent = `${String(svixId)}.${String(svixTimestamp)}.${rawBody}`;
+    const expected = crypto.createHmac('sha256', secretBytes).update(signedContent).digest('base64');
+    const provided = String(svixSignature)
+      .split(' ')
+      .map((s) => s.trim())
+      .filter((s) => s.startsWith('v1,'))
+      .map((s) => s.slice(3));
+    const expBuf = Buffer.from(expected, 'utf8');
+    const sigOk = provided.some((p) => {
+      const pBuf = Buffer.from(p, 'utf8');
+      return pBuf.length === expBuf.length && crypto.timingSafeEqual(pBuf, expBuf);
+    });
+    if (!sigOk) {
+      reply.code(401).send({ ok: false, error: 'invalid_signature' });
+      return false;
+    }
+    return true;
+  };
+
   const inboundHandler = async (
     request: import('fastify').FastifyRequest,
     reply: import('fastify').FastifyReply,
   ) => {
+    if (!verifySvix(request, reply)) return;
     try {
       const result = await handleInbound(request.body);
       return reply.code(200).send(result);
@@ -430,9 +473,9 @@ export async function outreachWebhookRoutes(server: FastifyInstance) {
     }
   };
 
-  server.post('/reply-webhook', inboundHandler);
+  server.post('/reply-webhook', { config: { rawBody: true } }, inboundHandler);
   // Spec also wires Resend inbound parse webhook at /inbound — same handler.
-  server.post('/inbound', inboundHandler);
+  server.post('/inbound', { config: { rawBody: true } }, inboundHandler);
 
   // ── Bounce webhook (Resend / SES style) ────────────────────────────
   // Resend signs webhooks with Svix headers (svix-id, svix-timestamp,
