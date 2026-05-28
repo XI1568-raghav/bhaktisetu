@@ -1,7 +1,7 @@
-name: Agent fleet - daily (critical 7)
+name: Agent fleet - daily (critical 10)
 
 # Daily critical-only set. Rest moved to agents-weekly.yml to fit free tier.
-# Free tier: ~2.5 min/day = 75 min/month against 2000-min ceiling.
+# Free tier: ~3.5 min/day = 105 min/month against 2000-min ceiling.
 # See docs/free-tier-budgets.md.
 #
 # Killed 2026-05-28 per Sprint 2 sub-batch 1 audit (silent-failure agents):
@@ -12,6 +12,11 @@ name: Agent fleet - daily (critical 7)
 #   - booking-quality-monitor (SLA breach detector, files P0 GH issues)
 #   - onboarding-nudge (24h/72h/7d KYC abandon recovery)
 #   - support-intent-triage (refund/abuse → P0; bucket the rest)
+#
+# Added 2026-05-28 per Sprint 2 sub-batch 3 (Wave 2 acquisition/retention):
+#   - cold-temple-outreach (25/day partnership emails to NEW TEMPLE leads)
+#   - referral-nudge (7-day post-first-booking referral hook)
+#   - dormant-reactivation (Wed-only, nakshatra-personalised rebook)
 
 on:
   schedule:
@@ -52,7 +57,8 @@ jobs:
             # on SLA breaches / refund signals — no human polling needed.
             node scripts/agents/run-all.mjs \
               broken-link founder-tweet-draft content-publisher weekly-digest \
-              booking-quality-monitor onboarding-nudge support-intent-triage
+              booking-quality-monitor onboarding-nudge support-intent-triage \
+              cold-temple-outreach referral-nudge dormant-reactivation
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
           fi
