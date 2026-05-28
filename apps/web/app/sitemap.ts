@@ -142,6 +142,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/jyotirlinga', priority: 0.95 },
     { path: '/shakti-peeth', priority: 0.95 },
     { path: '/ashta-lakshmi', priority: 0.9 },
+    { path: '/aditya', priority: 0.9 },
     { path: '/calendar', priority: 0.9 },
     { path: '/nava-graha', priority: 0.9 },
     { path: '/why-darshya', priority: 0.9 },
@@ -385,6 +386,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { DWADASHA_ADITYA_SLUGS } = await import('../lib/dwadasha-aditya');
+  const adityaEntries = DWADASHA_ADITYA_SLUGS.map((slug) => ({
+    url: `${BASE_URL}/aditya/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const calendarMonthSlugs = ['january','february','march','april','may','june','july','august','september','october','november','december'];
   const calendarMonthEntries = calendarMonthSlugs.map((slug) => ({
     url: `${BASE_URL}/calendar/${slug}`,
@@ -597,6 +606,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...jyotirlingaEntries,
     ...shaktiPeethEntries,
     ...ashtaLakshmiEntries,
+    ...adityaEntries,
     ...calendarMonthEntries,
     ...navaGrahaEntries,
     ...gitaEntries,
