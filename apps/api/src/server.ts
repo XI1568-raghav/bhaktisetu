@@ -105,8 +105,19 @@ async function bootstrap() {
   await ensureSchemaInvariants(server.log);
 
   // Security plugins
+  // API serves only JSON — no HTML, no inline scripts, no embedded frames.
+  // Strict default-src 'none' + frame-ancestors 'none' is defense-in-depth
+  // against any future templated error page that might leak script context.
+  // Web CSP is separate (CF Pages headers).
   await server.register(helmet, {
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
+    },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
   // CORS: production requires CORS_ORIGIN to be set explicitly. Local dev
