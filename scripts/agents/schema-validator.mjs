@@ -32,6 +32,8 @@ const TARGETS = [
   { url: '/ashta-lakshmi/dhana-lakshmi', expected: ['BreadcrumbList', 'Article'] },
   { url: '/aditya', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/aditya/savitar', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/sapta-mathruka', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/sapta-mathruka/chamunda', expected: ['BreadcrumbList', 'Article'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/nava-graha', expected: ['ItemList'] },
