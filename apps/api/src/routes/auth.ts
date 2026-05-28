@@ -604,31 +604,14 @@ export async function authRoutes(server: FastifyInstance) {
       // unique. Send a real value when provided; pass null otherwise so
       // the multi-NULL unique-index path handles it cleanly.
       const phoneValue = phone && phone.trim() ? phone.trim() : null;
-      const user = await prisma.user.upsert({
-        where: { id: authData.user.id },
-        update: {
-          email: emailLower,
-          fullName,
-          // Only overwrite phone if the user supplied one this time;
-          // never wipe a previously-set phone with null.
-          ...(phoneValue ? { phone: phoneValue } : {}),
-          locationCity: city || undefined,
-        },
-        create: {
-          id: authData.user.id,
-          email: emailLower,
-          fullName,
-          phone: phoneValue,
-          locationCity: city || undefined,
-        },
-      });
 
-      // Persist primary role on user_role_assignments so /admin/users
-      // surfaces the selected role and role-gated middleware (requireRole)
-      // resolves correctly on the very first request after signup.
-      // Without this, every new account read back as DEVOTEE and provider
-      // accounts could not access their portals until an admin manually
-      // patched roles via PATCH /admin/users/:id.
+      // P1 — wrap user + role assignment + provider stub in a single
+      // transaction. Previously: 3 sequential writes with the inner two
+      // try/catch-swallowed. If role assignment failed after user upsert
+      // succeeded, account read back as DEVOTEE and the provider portal
+      // was unreachable until admin patched. Now atomic: any inner failure
+      // rolls back user create, signup returns 500, retry is idempotent
+      // (Supabase auth + Prisma upsert both no-op on existing rows).
       const SIGNUP_ROLE_ENUM: Record<string, 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER'> = {
         devotee: 'DEVOTEE',
         pandit: 'PANDIT',
@@ -639,76 +622,87 @@ export async function authRoutes(server: FastifyInstance) {
         temple_manager: 'TEMPLE_MANAGER',
       };
       const enumRole = SIGNUP_ROLE_ENUM[role];
-      if (enumRole) {
-        try {
-          await prisma.userRoleAssignment.upsert({
-            where: { userId_role: { userId: user.id, role: enumRole } },
-            update: { isPrimary: true },
-            create: { userId: user.id, role: enumRole, isPrimary: true },
-          });
-        } catch (assignErr) {
-          // Non-fatal — surface in logs but let signup complete. User can
-          // still authenticate; admin can manually fix role if this throws.
-          request.log.warn({ err: assignErr, userId: user.id, role: enumRole }, 'role assignment upsert failed');
-        }
 
-        // Seed a stub provider profile (approved=false) so the account
-        // shows up in /admin/approvals immediately, even if the secondary
-        // /onboarding/provider call from the web signup page fails Zod or
-        // never fires (e.g. network drop after user creation). Idempotent:
-        // skipNothing — onUpdate is a no-op so a later /onboarding/provider
-        // call still overwrites with real data. Without this, providers
-        // had to manually navigate to /onboarding/[role] before admins
-        // could see them, and many never did — silent approval-queue gap.
-        try {
+      const user = await prisma.$transaction(async (tx) => {
+        const u = await tx.user.upsert({
+          where: { id: authData.user!.id },
+          update: {
+            email: emailLower,
+            fullName,
+            // Only overwrite phone if the user supplied one this time;
+            // never wipe a previously-set phone with null.
+            ...(phoneValue ? { phone: phoneValue } : {}),
+            locationCity: city || undefined,
+          },
+          create: {
+            id: authData.user!.id,
+            email: emailLower,
+            fullName,
+            phone: phoneValue,
+            locationCity: city || undefined,
+          },
+        });
+
+        if (enumRole) {
+          await tx.userRoleAssignment.upsert({
+            where: { userId_role: { userId: u.id, role: enumRole } },
+            update: { isPrimary: true },
+            create: { userId: u.id, role: enumRole, isPrimary: true },
+          });
+
+          // Seed a stub provider profile (approved=false) so the account
+          // shows up in /admin/approvals immediately, even if the
+          // secondary /onboarding/provider call from web signup never
+          // fires. Idempotent: empty update preserves any real data a
+          // later /onboarding/provider call writes.
           switch (enumRole) {
             case 'PANDIT':
-              await prisma.panditProfile.upsert({
-                where: { userId: user.id },
+              await tx.panditProfile.upsert({
+                where: { userId: u.id },
                 update: {},
-                create: { userId: user.id, experience: 0, specialties: [], languages: [], pricePerPuja: 500 },
+                create: { userId: u.id, experience: 0, specialties: [], languages: [], pricePerPuja: 500 },
               });
               break;
             case 'STORE_OWNER':
-              await prisma.storeProfile.upsert({
-                where: { userId: user.id },
+              await tx.storeProfile.upsert({
+                where: { userId: u.id },
                 update: {},
-                create: { userId: user.id, storeName: fullName || 'Unnamed Store', categories: [] },
+                create: { userId: u.id, storeName: fullName || 'Unnamed Store', categories: [] },
               });
               break;
             case 'ASTROLOGER':
-              await prisma.astrologerProfile.upsert({
-                where: { userId: user.id },
+              await tx.astrologerProfile.upsert({
+                where: { userId: u.id },
                 update: {},
-                create: { userId: user.id, displayName: fullName || 'Astrologer', specialties: [], experience: 0, languages: [], pricePerMinute: 10 },
+                create: { userId: u.id, displayName: fullName || 'Astrologer', specialties: [], experience: 0, languages: [], pricePerMinute: 10 },
               });
               break;
             case 'WELLNESS_INSTRUCTOR':
-              await prisma.wellnessProfile.upsert({
-                where: { userId: user.id },
+              await tx.wellnessProfile.upsert({
+                where: { userId: u.id },
                 update: {},
-                create: { userId: user.id, displayName: fullName || 'Wellness Instructor', specialties: [], certifications: [], experience: 0, pricePerSession: 500 },
+                create: { userId: u.id, displayName: fullName || 'Wellness Instructor', specialties: [], certifications: [], experience: 0, pricePerSession: 500 },
               });
               break;
             case 'GAUSHALA_MANAGER':
-              await prisma.gaushalaProfile.upsert({
-                where: { userId: user.id },
+              await tx.gaushalaProfile.upsert({
+                where: { userId: u.id },
                 update: {},
-                create: { userId: user.id, gaushalaName: fullName || 'Unnamed Gaushala', totalCows: 0 },
+                create: { userId: u.id, gaushalaName: fullName || 'Unnamed Gaushala', totalCows: 0 },
               });
               break;
             case 'TEMPLE_MANAGER':
-              await prisma.templeProfile.upsert({
-                where: { userId: user.id },
+              await tx.templeProfile.upsert({
+                where: { userId: u.id },
                 update: {},
-                create: { userId: user.id, templeName: fullName || 'Unnamed Temple' },
+                create: { userId: u.id, templeName: fullName || 'Unnamed Temple' },
               });
               break;
           }
-        } catch (profileErr) {
-          request.log.warn({ err: profileErr, userId: user.id, role: enumRole }, 'stub profile upsert failed');
         }
-      }
+
+        return u;
+      });
 
       return reply.code(201).send({
         session: authData.session
