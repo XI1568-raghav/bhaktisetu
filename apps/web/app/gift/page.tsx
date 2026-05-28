@@ -40,13 +40,13 @@ const STEPS = [
   },
   {
     n: '3',
-    title: 'Pay in your currency',
-    body: 'Stripe Checkout in USD / GBP / EUR / AUD / CAD. No INR conversion headache.',
+    title: 'Pay securely in USD',
+    body: 'Stripe-secured checkout. If automatic flow is unavailable our team replies within 4 hours with a payment link in your currency.',
   },
   {
     n: '4',
     title: 'Recipient gets WhatsApp + video',
-    body: 'On the chosen date, recipient gets a WhatsApp message from us. After the puja, full video arrives within 24h.',
+    body: 'Recipient gets a WhatsApp confirmation on payment (when configured) or a manual call from our coordinator. Full video arrives within 24h of the puja.',
   },
 ];
 
