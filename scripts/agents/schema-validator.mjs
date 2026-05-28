@@ -28,6 +28,8 @@ const TARGETS = [
   { url: '/jyotirlinga/mahakaleshwar', expected: ['BreadcrumbList', 'Place', 'Article'] },
   { url: '/shakti-peeth', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/shakti-peeth/kamakhya', expected: ['BreadcrumbList', 'Place', 'Article'] },
+  { url: '/ashta-lakshmi', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/ashta-lakshmi/dhana-lakshmi', expected: ['BreadcrumbList', 'Article'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/nava-graha', expected: ['ItemList'] },
