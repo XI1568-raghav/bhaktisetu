@@ -17,6 +17,12 @@ name: Agent fleet - daily (critical 10)
 #   - cold-temple-outreach (25/day partnership emails to NEW TEMPLE leads)
 #   - referral-nudge (7-day post-first-booking referral hook)
 #   - dormant-reactivation (Wed-only, nakshatra-personalised rebook)
+#
+# Added 2026-05-28 per Sprint 3 sub-batch 3 (Wave 3 broadcast + analytics):
+#   - daily-devotional-broadcast (WA-primary daily message — Resend cap protect)
+#   - funnel-drop-analyzer (daily funnel-health → files P0 GH issue on >70% drop)
+#   - social-content-multiplexer (3-channel content pack — SUPERSEDES founder-tweet-draft + content-publisher; both removed below)
+#   - investor-weekly-digest-v2 (Sun-only real-numbers digest from /metrics/investor)
 
 on:
   schedule:
@@ -49,6 +55,10 @@ jobs:
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
           CRON_AUTH_TOKEN: ${{ secrets.CRON_AUTH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Wave 3 — env-or-noop. daily-devotional-broadcast skips send if either unset.
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_DEVOTIONAL_TEMPLATE: ${{ secrets.WHATSAPP_DEVOTIONAL_TEMPLATE }}
         run: |
           AGENTS="${{ github.event.inputs.only }}"
           if [ -z "$AGENTS" ]; then
@@ -56,9 +66,11 @@ jobs:
             # producing-only set. Wave 1 ops agents file P0 GH issues directly
             # on SLA breaches / refund signals — no human polling needed.
             node scripts/agents/run-all.mjs \
-              broken-link founder-tweet-draft content-publisher weekly-digest \
+              broken-link weekly-digest \
               booking-quality-monitor onboarding-nudge support-intent-triage \
-              cold-temple-outreach referral-nudge dormant-reactivation
+              cold-temple-outreach referral-nudge dormant-reactivation \
+              daily-devotional-broadcast funnel-drop-analyzer \
+              social-content-multiplexer investor-weekly-digest-v2
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
           fi
