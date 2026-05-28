@@ -94,6 +94,11 @@ export const CATEGORY_TREE: Category[] = [
         description: 'Traditional gurukuls — discover and apply.',
       },
       {
+        label: 'Vipassana',
+        href: '/wellness/vipassana',
+        description: '10-day silent meditation retreats — Goenka tradition + 27 centers worldwide.',
+      },
+      {
         label: 'Books',
         href: '/content/books',
         description: 'Sacred scriptures and commentaries to read.',
