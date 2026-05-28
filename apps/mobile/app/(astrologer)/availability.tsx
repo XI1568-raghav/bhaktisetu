@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
-import { useAstrologers } from '@poojly/api-client';
+import { api, useAstrologers } from '@poojly/api-client';
 import { PortalScreen, Section } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -32,15 +32,27 @@ export default function Availability() {
   const [slots, setSlots] = useState<Slot[]>(INITIAL);
   const [refreshing, setRefreshing] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   function toggle(day: string, key: 'morning' | 'afternoon' | 'evening') {
     setSlots((s) => s.map((it) => (it.day === day ? { ...it, [key]: !it[key] } : it)));
     setDirty(true);
   }
 
-  function save() {
-    Alert.alert('Saved', 'Availability updated. Sync with backend coming soon.');
-    setDirty(false);
+  async function save() {
+    setSaving(true);
+    try {
+      await api.patch('/api/v1/astrologer-portal/availability', {
+        availability: { weekly: slots, updatedAt: new Date().toISOString() },
+      });
+      setDirty(false);
+      Alert.alert('Saved', 'Availability synced.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not save availability.';
+      Alert.alert('Error', msg.includes('403') ? 'Astrologer role required.' : msg);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function onRefresh() {
@@ -86,8 +98,13 @@ export default function Availability() {
       </Section>
 
       {dirty ? (
-        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={save}>
-          <Text style={styles.saveText}>Save Changes</Text>
+        <TouchableOpacity
+          style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+          activeOpacity={0.8}
+          onPress={save}
+          disabled={saving}
+        >
+          <Text style={styles.saveText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
         </TouchableOpacity>
       ) : null}
     </PortalScreen>
@@ -125,5 +142,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     alignItems: 'center',
   },
+  saveBtnDisabled: { opacity: 0.5 },
   saveText: { color: colors.white, fontSize: fontSize.base, fontWeight: '700' },
 });
