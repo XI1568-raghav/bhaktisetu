@@ -407,6 +407,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { centerSlugs: vipassanaCenterSlugs } = await import('../lib/vipassana-centers');
+  const vipassanaEntries = [
+    { url: `${BASE_URL}/wellness/vipassana/centers`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    { url: `${BASE_URL}/wellness/vipassana/learn`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.85 },
+    ...vipassanaCenterSlugs().map((slug) => ({
+      url: `${BASE_URL}/wellness/vipassana/centers/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
+  ];
+
   const { upanishadSlugs } = await import('../lib/upanishads');
   const upanishadEntries = [
     { url: `${BASE_URL}/upanishads`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
@@ -560,6 +572,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...gitaEntries,
     ...ramayanaEntries,
     ...mahabharataEntries,
+    ...vipassanaEntries,
     ...upanishadEntries,
     ...yogaSutraEntries,
     ...samskaraEntries,

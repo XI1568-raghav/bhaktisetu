@@ -5,74 +5,22 @@ import {
  MapPin,
  Calendar,
  Users,
- Clock,
  ChevronDown,
  CheckCircle,
- Eye,
  AlertCircle,
+ BookOpen,
+ Globe2,
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
+import { FLAGSHIP_CENTERS, VIPASSANA_CENTERS } from '../../../lib/vipassana-centers';
 
 export const metadata: Metadata = {
- title: 'Vipassana — 10-Day Retreats & Courses',
+ title: 'Vipassana — 10-Day Silent Meditation Retreats',
  description:
- 'Discover Vipassana meditation. Register for upcoming 10-day retreats at centers across India. Preparation guides and FAQs included.',
+ 'Discover Vipassana meditation in the S.N. Goenka tradition. Browse 27 centers across India and worldwide. Learn the technique, preparation guides, FAQs, and how to apply directly with each center.',
 };
 
-const retreats = [
- {
- id: 'ret-001',
- center: 'Dhamma Pattana',
- location: 'Gorai, Mumbai, Maharashtra',
- dates: 'May 1 - 12, 2026',
- startDate: '2026-05-01',
- capacity: 80,
- registered: 62,
- teacher: 'Acharya Goenkaji',
- type: '10-Day Residential',
- facilities: ['Dormitory', 'Vegetarian Meals', 'Meditation Hall', 'Walking Area'],
- notes: 'This center overlooks the Arabian Sea. Silent practice with separate accommodations for men and women.',
- },
- {
- id: 'ret-002',
- center: 'Dhamma Giri',
- location: 'Igatpuri, Nashik, Maharashtra',
- dates: 'May 15 - 26, 2026',
- startDate: '2026-05-15',
- capacity: 120,
- registered: 95,
- teacher: 'Senior AT',
- type: '10-Day Residential',
- facilities: ['Individual Cells', 'Vegetarian Meals', 'Pagoda', 'Gardens'],
- notes: 'The global headquarters of Vipassana meditation. One of the largest centers in the world, nestled in the Sahyadri hills.',
- },
- {
- id: 'ret-003',
- center: 'Dhamma Bodhi',
- location: 'Bodh Gaya, Bihar',
- dates: 'Jun 1 - 12, 2026',
- startDate: '2026-06-01',
- capacity: 60,
- registered: 28,
- teacher: 'Senior AT',
- type: '10-Day Residential',
- facilities: ['Shared Rooms', 'Vegetarian Meals', 'Meditation Hall', 'Library'],
- notes: 'Located near the Mahabodhi Temple where the Buddha attained enlightenment. A profoundly significant location for meditation practice.',
- },
- {
- id: 'ret-004',
- center: 'Dhamma Sota',
- location: 'Dehradun, Uttarakhand',
- dates: 'Jun 15 - 26, 2026',
- startDate: '2026-06-15',
- capacity: 50,
- registered: 12,
- teacher: 'Senior AT',
- type: '10-Day Residential',
- facilities: ['Dormitory', 'Vegetarian Meals', 'Mountain Views', 'Walking Trails'],
- notes: 'A serene center in the foothills of the Himalayas. Cool climate and natural surroundings support deep practice.',
- },
-];
+const featuredCenters = FLAGSHIP_CENTERS;
 
 const preparationGuide = [
  {
@@ -160,20 +108,20 @@ export default function VipassanaPage() {
  </p>
 
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
- <a
- href="#retreats"
+ <Link
+ href="/wellness/vipassana/centers"
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
  style={{ background: 'var(--color-primary)' }}
  >
- View Retreats <Calendar className="w-4 h-4" />
- </a>
- <a
- href="#what-is"
+ Find a Center <Globe2 className="w-4 h-4" />
+ </Link>
+ <Link
+ href="/wellness/vipassana/learn"
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg"
  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
  >
- Learn More
- </a>
+ Learn the Technique <BookOpen className="w-4 h-4" />
+ </Link>
  </div>
  </div>
  </div>
@@ -216,87 +164,76 @@ export default function VipassanaPage() {
  </div>
  </section>
 
- {/* ═══ UPCOMING RETREATS ══════════════════════════════════════════════ */}
+ {/* ═══ FEATURED CENTERS ═══════════════════════════════════════════════ */}
  <section id="retreats" className="py-14 md:py-20">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
- Retreat Calendar
+ Featured Centers
  </p>
- <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Upcoming 10-day retreats
+ <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ Where to sit your first course
  </h2>
+ <p data-reveal="up" data-delay="1" className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+ Six of the most established centers in the Goenka tradition. Course applications go directly to each center via dhamma.org — Darshya is a discovery resource, not a booking middleman. {VIPASSANA_CENTERS.length} centers in the full directory.
+ </p>
 
- <div className="space-y-5">
- {retreats.map((retreat, i) => {
- const spotsLeft = retreat.capacity - retreat.registered;
- const fillPercent = Math.round((retreat.registered / retreat.capacity) * 100);
- return (
+ <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+ {featuredCenters.map((c, i) => (
  <div
- key={retreat.id}
+ key={c.slug}
  data-reveal="up"
  data-delay={String(Math.min(i + 1, 4))}
- className="p-5 sm:p-6 rounded-xl"
+ className="p-5 rounded-xl flex flex-col"
  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
  >
- <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
- <div className="flex-1">
- <div className="flex items-center gap-2 mb-2">
- <h3 className="text-base font-medium" style={{ color: 'var(--color-text)' }}>
- {retreat.center}
+ <div className="flex items-start justify-between gap-2 mb-2">
+ <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
+ {c.name}
  </h3>
- <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
- {retreat.type}
+ <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
+ Flagship
  </span>
  </div>
- <div className="flex flex-wrap items-center gap-4 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
- <span className="flex items-center gap-1">
- <MapPin className="w-3 h-3" /> {retreat.location}
- </span>
- <span className="flex items-center gap-1">
- <Calendar className="w-3 h-3" /> {retreat.dates}
- </span>
- <span className="flex items-center gap-1">
- <Users className="w-3 h-3" /> {spotsLeft} spots remaining
- </span>
+ <div className="flex items-center gap-1 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+ <MapPin className="w-3 h-3" /> {c.city}, {c.country}
  </div>
- <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--color-text-muted)' }}>
- {retreat.notes}
+ <p className="text-xs leading-relaxed mb-3 flex-grow" style={{ color: 'var(--color-text-muted)' }}>
+ {c.summary.length > 180 ? c.summary.slice(0, 180) + '…' : c.summary}
  </p>
- <div className="flex flex-wrap gap-1.5">
- {retreat.facilities.map((f) => (
- <span key={f} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>
- {f}
- </span>
- ))}
+ <div className="flex flex-wrap items-center gap-3 text-[11px] mb-4" style={{ color: 'var(--color-text-faint)' }}>
+ {c.capacity ? <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Cap {c.capacity}</span> : null}
+ <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {c.bestSeason}</span>
  </div>
- </div>
-
- <div className="sm:text-right shrink-0 space-y-3">
- <div>
- <div className="text-xs mb-1" style={{ color: 'var(--color-text-faint)' }}>
- {fillPercent}% full
- </div>
- <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-surface-offset)' }}>
- <div
- className="h-full rounded-full"
- style={{ width: `${fillPercent}%`, background: fillPercent > 80 ? '#b91c1c' : 'var(--color-primary)' }}
- />
- </div>
- </div>
- <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
- Donation-based
- </div>
- <button
- className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white btn-press"
+ <div className="flex flex-wrap gap-2 mt-auto">
+ <Link
+ href={`/wellness/vipassana/centers/${c.slug}`}
+ className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg"
+ style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ >
+ Details
+ </Link>
+ <a
+ href={c.bookingUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white btn-press"
  style={{ background: 'var(--color-primary)' }}
  >
- Register <ArrowRight className="w-3 h-3" />
- </button>
+ Apply on dhamma.org <ArrowRight className="w-3 h-3" />
+ </a>
  </div>
  </div>
+ ))}
  </div>
- );
- })}
+
+ <div className="mt-8 text-center">
+ <Link
+ href="/wellness/vipassana/centers"
+ className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg"
+ style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ >
+ See all {VIPASSANA_CENTERS.length} centers worldwide <ArrowRight className="w-4 h-4" />
+ </Link>
  </div>
  </div>
  </section>
@@ -387,22 +324,22 @@ export default function VipassanaPage() {
  Ready to take the 10-day journey?
  </h2>
  <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
- Register for an upcoming retreat, or start with our online introduction session to learn the basics before committing.
+ Pick a center from our directory and apply directly with them. Or read the complete preparation guide before deciding.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
- <a
- href="#retreats"
+ <Link
+ href="/wellness/vipassana/centers"
  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
  style={{ background: 'var(--color-primary)' }}
  >
- Register Now <ArrowRight className="w-4 h-4" />
- </a>
+ Find a Center <ArrowRight className="w-4 h-4" />
+ </Link>
  <Link
- href="/wellness/meditation"
+ href="/wellness/vipassana/learn"
  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg"
  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
  >
- Start with Meditation
+ Read the Full Guide
  </Link>
  </div>
  </div>
