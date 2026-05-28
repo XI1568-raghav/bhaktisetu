@@ -34,7 +34,7 @@ export default function LoginScreen() {
   const { signInWithCredentials, signInWithOtp } = useAuth();
   const [tab, setTab] = useState<Tab>('email');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('demo123');
+  const [password, setPassword] = useState(__DEV__ ? 'demo123' : '');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
 

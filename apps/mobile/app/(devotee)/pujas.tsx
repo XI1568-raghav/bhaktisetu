@@ -5,7 +5,7 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  Linking,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha'
 
 interface Puja {
   id: string;
+  slug: string;
   name: string;
   deity: string;
   category: Exclude<PujaCategory, 'all'>;
@@ -44,6 +45,7 @@ const categories: { key: PujaCategory; label: string }[] = [
 const pujasData: Puja[] = [
   {
     id: '1',
+    slug: 'rudrabhishek',
     name: 'Rudrabhishek',
     deity: 'Lord Shiva',
     category: 'shiva',
@@ -60,6 +62,7 @@ const pujasData: Puja[] = [
   },
   {
     id: '2',
+    slug: 'satyanarayan-katha',
     name: 'Satyanarayan Katha',
     deity: 'Lord Vishnu',
     category: 'vishnu',
@@ -76,6 +79,7 @@ const pujasData: Puja[] = [
   },
   {
     id: '3',
+    slug: 'ganesh-atharvashirsha',
     name: 'Ganesh Atharvashirsha',
     deity: 'Lord Ganesha',
     category: 'ganesh',
@@ -92,6 +96,7 @@ const pujasData: Puja[] = [
   },
   {
     id: '4',
+    slug: 'navagraha-shanti',
     name: 'Navagraha Shanti',
     deity: 'Nine Planets',
     category: 'navagraha',
@@ -108,6 +113,7 @@ const pujasData: Puja[] = [
   },
   {
     id: '5',
+    slug: 'durga-saptashati-path',
     name: 'Durga Saptashati Path',
     deity: 'Goddess Durga',
     category: 'devi',
@@ -124,6 +130,7 @@ const pujasData: Puja[] = [
   },
   {
     id: '6',
+    slug: 'sunderkand-path',
     name: 'Sunderkand Path',
     deity: 'Lord Hanuman',
     category: 'vishnu',
@@ -151,8 +158,9 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
 }
 
 function PujaCard({ puja }: { puja: Puja }) {
+  const bookUrl = `https://darshya.online/pujas/book?slug=${encodeURIComponent(puja.slug)}&utm_source=mobile-app&utm_medium=puja-card`;
   return (
-    <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Alert.alert(puja.name, `${puja.description}\n\nDuration: ${puja.duration}\nPrice: ₹${puja.price.toLocaleString('en-IN')}`)}>
+    <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
 
       {/* Image placeholder */}
       <View style={styles.pujaImageArea}>
@@ -219,7 +227,7 @@ function PujaCard({ puja }: { puja: Puja }) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.bookButton} activeOpacity={0.7} onPress={() => Alert.alert('Book Puja', `Booking for ${puja.name} is coming soon! Stay tuned.`)}>
+        <TouchableOpacity style={styles.bookButton} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
           <Ionicons name="calendar-outline" size={16} color={colors.white} />
           <Text style={styles.bookButtonText}>Book Puja</Text>
         </TouchableOpacity>
@@ -241,6 +249,7 @@ export default function PujasScreen() {
         const cat = inferCategory(p.deity);
         return {
           id: p.id,
+          slug: (p as { slug?: string }).slug ?? p.id,
           name: p.name,
           deity: p.deity,
           category: cat,
