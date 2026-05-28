@@ -26,6 +26,8 @@ const TARGETS = [
   { url: '/tirth/kashi-vishwanath', expected: ['BreadcrumbList', 'Place'] },
   { url: '/jyotirlinga', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/jyotirlinga/mahakaleshwar', expected: ['BreadcrumbList', 'Place', 'Article'] },
+  { url: '/shakti-peeth', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/shakti-peeth/kamakhya', expected: ['BreadcrumbList', 'Place', 'Article'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/nava-graha', expected: ['ItemList'] },

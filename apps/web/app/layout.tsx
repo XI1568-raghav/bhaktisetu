@@ -469,6 +469,7 @@ export default function RootLayout({
  <li><Link href="/muhurat" className="hover:text-saffron-400 transition-colors">Muhurat Guide</Link></li>
  <li><Link href="/tirth" className="hover:text-saffron-400 transition-colors">Sacred Tirthas</Link></li>
  <li><Link href="/jyotirlinga" className="hover:text-saffron-400 transition-colors">12 Jyotirlinga</Link></li>
+ <li><Link href="/shakti-peeth" className="hover:text-saffron-400 transition-colors">51 Shakti Peeth</Link></li>
  <li><Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link></li>
  <li><Link href="/samskaras" className="hover:text-saffron-400 transition-colors">16 Samskaras</Link></li>
  </ul>
