@@ -55,6 +55,7 @@ import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
 import { adminCronRoutes } from './routes/admin-cron.js';
 import { adminOpsRoutes } from './routes/admin-ops.js';
+import { adminMetricsRoutes } from './routes/admin-metrics.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { demoPayRoutes } from './routes/demo-pay.js';
 import { ratingRoutes } from './routes/ratings.js';
@@ -266,6 +267,7 @@ async function bootstrap() {
   await server.register(cronRoutes, { prefix: '/api/v1/cron' });
   await server.register(adminCronRoutes, { prefix: '/api/v1/admin/cron' });
   await server.register(adminOpsRoutes, { prefix: '/api/v1/admin/ops' });
+  await server.register(adminMetricsRoutes, { prefix: '/api/v1/admin/metrics' });
   await server.register(conversationRoutes, { prefix: '/api/v1/conversations' });
   await server.register(demoPayRoutes, { prefix: '/api/v1/demo-pay' });
   await server.register(ratingRoutes, { prefix: '/api/v1/ratings' });
