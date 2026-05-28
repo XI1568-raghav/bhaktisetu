@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -93,6 +94,7 @@ export default function DarshanPlayerScreen() {
   const embedUrl = youtubeEmbedUrl(liveUrl);
   const hlsMode = isHlsUrl(liveUrl);
   const [refreshing, setRefreshing] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -106,6 +108,25 @@ export default function DarshanPlayerScreen() {
       return;
     }
     Linking.openURL(liveUrl).catch(() => Alert.alert('Cannot open', liveUrl));
+  }
+
+  function onSave() {
+    setSaved((s) => !s);
+  }
+
+  async function onShare() {
+    const shareUrl = id
+      ? `https://darshya.online/darshan/${encodeURIComponent(id)}?utm_source=mobile-app&utm_medium=share`
+      : 'https://darshya.online/darshan?utm_source=mobile-app&utm_medium=share';
+    try {
+      await Share.share({
+        title,
+        message: `${title} — Live Darshan on Darshya\n${shareUrl}`,
+        url: shareUrl,
+      });
+    } catch {
+      // user cancel — silent
+    }
   }
 
   return (
@@ -177,11 +198,11 @@ export default function DarshanPlayerScreen() {
         </View>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>
-            <Ionicons name="heart-outline" size={20} color={colors.saffron[600]} />
-            <Text style={styles.actionText}>Save</Text>
+          <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={onSave}>
+            <Ionicons name={saved ? 'heart' : 'heart-outline'} size={20} color={colors.saffron[600]} />
+            <Text style={styles.actionText}>{saved ? 'Saved' : 'Save'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={onShare}>
             <Ionicons name="share-social-outline" size={20} color={colors.saffron[600]} />
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>

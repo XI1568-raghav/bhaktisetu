@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Linking,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -45,7 +46,8 @@ export default function YatraDetailScreen() {
 
   async function onBook() {
     if (!isPackage) {
-      Alert.alert('Talk to us', 'This destination is curated. Our concierge will reach out to plan your yatra.');
+      const msg = `Namaste, I'd like to plan a yatra to ${slug}. Please share package options.`;
+      Linking.openURL(`https://wa.me/919999999999?text=${encodeURIComponent(msg)}`);
       return;
     }
     const count = Math.max(1, Math.min(20, parseInt(travelers, 10) || 1));
@@ -69,7 +71,7 @@ export default function YatraDetailScreen() {
       });
       Alert.alert(
         'Yatra reserved',
-        `Booking ${res.bookingNumber} confirmed for ${count} traveller(s). Total ₹${Number(res.totalInr).toLocaleString('en-IN')}. We will email payment instructions.`,
+        `Booking ${res.bookingNumber} confirmed for ${count} traveller(s). Total ₹${Number(res.totalInr).toLocaleString('en-IN')}. We will WhatsApp payment instructions to ${phone.trim()}.`,
         [{ text: 'Done', onPress: () => router.back() }],
       );
     } catch (err) {

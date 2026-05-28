@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Alert,
+  Linking,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -145,7 +145,7 @@ function ProductCard({ product }: { product: Product }) {
     <TouchableOpacity
       style={[styles.productCard, { width: CARD_WIDTH }]}
       activeOpacity={0.7}
-      onPress={() => Alert.alert(product.name, `Price: ₹${product.price.toLocaleString('en-IN')}\nRating: ${product.rating} ⭐ (${product.reviews.toLocaleString('en-IN')} reviews)`)}
+      onPress={() => Linking.openURL(`https://darshya.online/store?utm_source=mobile-app&utm_medium=product-card&q=${encodeURIComponent(product.name)}`)}
     >
       {/* Image placeholder */}
       <View style={styles.productImage}>
@@ -185,7 +185,7 @@ function ProductCard({ product }: { product: Product }) {
             ({product.reviews.toLocaleString('en-IN')})
           </Text>
         </View>
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.7} onPress={() => Alert.alert('Added to Cart', `${product.name} has been added to your cart.`)}>
+        <TouchableOpacity style={styles.addButton} activeOpacity={0.7} onPress={() => Linking.openURL(`https://darshya.online/store?utm_source=mobile-app&utm_medium=add-to-cart&q=${encodeURIComponent(product.name)}`)}>
           <Ionicons name="cart-outline" size={14} color={colors.white} />
           <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
@@ -250,7 +250,7 @@ export default function StoreScreen() {
               Sacred items delivered to your door
             </Text>
           </View>
-          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7} onPress={() => Alert.alert('Your Cart', '2 items in cart. Checkout coming soon!')}>
+          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7} onPress={() => Linking.openURL('https://darshya.online/store/cart?utm_source=mobile-app&utm_medium=cart-icon')}>
             <Ionicons name="cart-outline" size={22} color={colors.stone[700]} />
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>2</Text>

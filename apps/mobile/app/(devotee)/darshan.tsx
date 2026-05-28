@@ -250,7 +250,7 @@ export default function DarshanScreen() {
           </View>
 
           <View style={styles.grid}>
-            {liveStreams.map((stream) => (
+            {liveData.map((stream) => (
               <StreamCard key={stream.id} stream={stream} />
             ))}
           </View>
@@ -269,7 +269,7 @@ export default function DarshanScreen() {
           </View>
 
           <View style={styles.grid}>
-            {scheduledStreams.map((stream) => (
+            {scheduledData.map((stream) => (
               <StreamCard key={stream.id} stream={stream} />
             ))}
           </View>

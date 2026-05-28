@@ -5,7 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  Linking,
   RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -196,7 +196,7 @@ export default function AstrologyScreen() {
                     router.push('/(devotee)/kundli' as any);
                     return;
                   }
-                  Alert.alert(service.name, service.description + ' (Duration: ' + service.duration + ', Price: ₹' + service.price + ')');
+                  Linking.openURL(`https://darshya.online/astrology?utm_source=mobile-app&utm_medium=service-card&service=${encodeURIComponent(service.name)}`);
                 }}
               >
                 <View style={styles.serviceIconContainer}>
@@ -231,7 +231,7 @@ export default function AstrologyScreen() {
             <Text style={styles.aiCardDescription}>
               Get instant astrological insights powered by AI. Ask about your birth chart, compatibility, muhurat, and more.
             </Text>
-            <TouchableOpacity style={styles.aiButton} activeOpacity={0.7} onPress={() => Alert.alert('AI Jyotish Assistant', 'Your personal AI astrologer is coming soon!')}>
+            <TouchableOpacity style={styles.aiButton} activeOpacity={0.7} onPress={() => Linking.openURL('https://darshya.online/astrology/chat?utm_source=mobile-app&utm_medium=ai-cta')}>
               <Ionicons name="chatbubble-ellipses" size={16} color={colors.white} />
               <Text style={styles.aiButtonText}>Ask AI Jyotish</Text>
             </TouchableOpacity>
