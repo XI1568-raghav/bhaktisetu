@@ -63,6 +63,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Muhurat Guide', href: '/muhurat', description: 'Brahma Muhurta, Abhijit, Rahu Kalam — auspicious and inauspicious times explained.', count: '10 muhurats' },
       { label: 'Sacred Tirthas', href: '/tirth', description: 'Single-destination pilgrim guides — Kashi, Tirupati, Vaishno Devi, Char Dham and more.', count: '12 tirthas' },
       { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, 12 Jyotirlinga, Shakti Peeth, Pancha Bhoota and other canonical circuits.', count: '8 circuits' },
+      { label: 'Vipassana Retreats', href: '/wellness/vipassana', description: '10-day silent meditation in the S.N. Goenka tradition. Learn the technique, find a center, apply directly.', count: '27 centers' },
       { label: '16 Samskaras', href: '/samskaras', description: 'The Vedic life-stage rites from garbhadhana to antyeshti.', count: '16 rites' },
     ],
   },
