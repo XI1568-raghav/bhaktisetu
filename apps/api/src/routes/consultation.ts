@@ -1,27 +1,107 @@
 import { FastifyInstance } from 'fastify';
-import { authenticateUser } from '../middlewares/auth.js';
+import { z } from 'zod';
+import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
+import Razorpay from 'razorpay';
+import { prisma } from '../lib/prisma.js';
+import { authenticateUser } from '../middlewares/auth.js';
+import { astrologyService } from '../services/astrology.service.js';
+import { assertNotProductionDemo } from '../lib/payment-mode.js';
+
+assertNotProductionDemo('routes/consultation');
 
 /**
- * Live consultation rooms backed by Jitsi Meet's free public server
- * (meet.jit.si). Jitsi is open source, free to use, no per-minute cost,
- * no API key — we just generate a unique room name and return the URL.
+ * Live consultation rooms backed by Jitsi Meet (meet.jit.si) + paid
+ * astrology booking flow w/ Razorpay.
  *
- * Tradeoffs vs Twilio/Agora/100ms:
- *   + Free, no rate limits, no card on file
- *   + Real WebRTC video + audio + screen share
- *   - Public server has uptime SLAs of "best effort"
- *   - Anyone with the room name can join (mitigated by random 32-char id)
- *   - No native recording (can self-host Jibri later if needed)
+ * Two surfaces:
+ *   1. POST /start           — ephemeral Jitsi room (no payment, no DB row)
+ *   2. POST /book + verify   — paid astrologer consultation
+ *      Persists to raw-SQL `astrologer_consultations` (no Prisma model
+ *      yet — same pattern as donations.ts / csr-match.ts).
  */
+
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
+const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
+
+const razorpay = isDemoPayment
+  ? null
+  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+
+async function ensureConsultationTables() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS astrologer_consultations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      reference TEXT UNIQUE NOT NULL,
+      user_id UUID NOT NULL,
+      astrologer_id TEXT NOT NULL,
+      astrologer_name TEXT NOT NULL,
+      minutes INT NOT NULL,
+      per_minute_rate_inr NUMERIC(8,2) NOT NULL,
+      amount_inr NUMERIC(10,2) NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'INR',
+      scheduled_at TIMESTAMPTZ,
+      razorpay_order_id TEXT,
+      razorpay_payment_id TEXT,
+      room_name TEXT,
+      status TEXT NOT NULL DEFAULT 'pending_payment',
+      created_at TIMESTAMPTZ DEFAULT now(),
+      paid_at TIMESTAMPTZ
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS astrologer_consultations_user_idx ON astrologer_consultations (user_id);`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS astrologer_consultations_astrologer_idx ON astrologer_consultations (astrologer_id);`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS astrologer_consultations_status_idx ON astrologer_consultations (status);`,
+  );
+}
+
+type ConsultationRow = {
+  id: string;
+  reference: string;
+  user_id: string;
+  astrologer_id: string;
+  astrologer_name: string;
+  minutes: number;
+  per_minute_rate_inr: string;
+  amount_inr: string;
+  currency: string;
+  scheduled_at: Date | null;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string | null;
+  room_name: string | null;
+  status: string;
+  created_at: Date;
+  paid_at: Date | null;
+};
+
+function nextConsultRef(): string {
+  const d = new Date();
+  const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+  return `AC-${ymd}-${randomBytes(3).toString('hex').toUpperCase()}`;
+}
+
+const bookSchema = z.object({
+  astrologerId: z.string().min(1).max(64),
+  minutes: z.number().int().min(5).max(60),
+  scheduledAt: z.string().datetime().optional(),
+});
+
+const verifySchema = z.object({
+  consultationId: z.string().uuid(),
+  razorpay_order_id: z.string().optional(),
+  razorpay_payment_id: z.string().optional(),
+  razorpay_signature: z.string().optional(),
+});
+
 export async function consultationRoutes(server: FastifyInstance) {
-  /**
-   * POST /api/v1/consultation/start
-   * Body: { providerId?: string, providerName?: string, kind?: 'astrologer'|'priest'|'wellness' }
-   *
-   * Returns a Jitsi room URL the user can navigate to immediately. Both the
-   * devotee and the provider join the same room name.
-   */
+  // Ephemeral Jitsi room (kept for backward-compat — used by /astrology
+  // page "Call" button which spins a free-trial room w/o payment).
   server.post('/start', { preHandler: [authenticateUser] }, async (request, reply) => {
     const body = (request.body ?? {}) as {
       providerId?: string;
@@ -36,10 +116,8 @@ export async function consultationRoutes(server: FastifyInstance) {
       .replace(/(^-|-$)/g, '')
       .slice(0, 32);
 
-    // Random 16-byte hex → 32-char unguessable room id.
     const roomId = randomBytes(16).toString('hex');
     const roomName = `darshya-${kind}-${providerSlug}-${roomId}`;
-
     const userDisplayName = encodeURIComponent(
       request.currentUser?.fullName ?? 'Devotee',
     );
@@ -50,9 +128,216 @@ export async function consultationRoutes(server: FastifyInstance) {
       embedUrl: `https://meet.jit.si/${roomName}`,
       provider: 'jitsi',
       kind,
-      // Frontend can show this much; backend has not stored anything yet.
-      // Persist in DB only if we want billing/history (not for this MVP).
       createdAt: new Date().toISOString(),
+    });
+  });
+
+  // ─── POST /book ─────────────────────────────────────────────────────────
+  // Paid astrology consultation. Creates Razorpay order + raw-SQL row
+  // status 'pending_payment'. Client opens Razorpay checkout w/ returned
+  // order id, then calls /verify-payment with the gateway signature.
+  server.post('/book', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const parsed = bookSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const { astrologerId, minutes, scheduledAt } = parsed.data;
+    const userId = request.currentUser!.id;
+
+    // Trust the in-memory astrology service as source-of-truth for rate +
+    // identity. Client cannot inject a fake rate this way.
+    const astrologer = astrologyService.getAstrologerById(astrologerId);
+    if (!astrologer) {
+      return reply.code(404).send({ error: 'Astrologer not found.' });
+    }
+
+    const perMinuteRate = Number(astrologer.perMinuteRate);
+    if (!Number.isFinite(perMinuteRate) || perMinuteRate <= 0) {
+      return reply.code(400).send({ error: 'Astrologer rate not configured.' });
+    }
+    const amountInr = Math.round(perMinuteRate * minutes);
+    if (amountInr < 50) {
+      return reply.code(400).send({ error: 'Minimum consultation amount is ₹50.' });
+    }
+    const amountInPaise = amountInr * 100;
+
+    await ensureConsultationTables();
+    const reference = nextConsultRef();
+
+    let razorpayOrderId: string | null = null;
+    if (!isDemoPayment && razorpay) {
+      try {
+        const order = await razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: reference,
+          notes: {
+            consultationRef: reference,
+            astrologerId,
+            astrologerName: astrologer.name,
+            userId,
+            minutes: String(minutes),
+          },
+        });
+        razorpayOrderId = order.id;
+      } catch (err: any) {
+        server.log.error({ err }, 'razorpay.orders.create failed (consultation)');
+        return reply.code(502).send({ error: 'Payment gateway unavailable. Please retry.' });
+      }
+    } else {
+      // Demo mode — synthetic order id, so the demo-pay fallback button works.
+      razorpayOrderId = `order_demo_${randomBytes(8).toString('hex')}`;
+    }
+
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `INSERT INTO astrologer_consultations
+        (reference, user_id, astrologer_id, astrologer_name, minutes,
+         per_minute_rate_inr, amount_inr, currency, scheduled_at,
+         razorpay_order_id, status)
+       VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, 'INR', $8::timestamptz, $9, 'pending_payment')
+       RETURNING *;`,
+      reference,
+      userId,
+      astrologerId,
+      astrologer.name,
+      minutes,
+      perMinuteRate,
+      amountInr,
+      scheduledAt ?? null,
+      razorpayOrderId,
+    );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(500).send({ error: 'Failed to persist consultation.' });
+    }
+
+    return reply.code(201).send({
+      consultationId: row.id,
+      reference: row.reference,
+      astrologerName: row.astrologer_name,
+      minutes: row.minutes,
+      amountInr,
+      amountInPaise,
+      currency: 'INR',
+      razorpayOrderId,
+      razorpayKeyId: isDemoPayment ? null : razorpayKeyId,
+      demo: isDemoPayment,
+    });
+  });
+
+  // ─── POST /verify-payment ───────────────────────────────────────────────
+  // Razorpay HMAC verify. On success, flip status → 'confirmed', mint
+  // Jitsi room name. Demo mode skips signature check (mirrors donations.ts).
+  server.post('/verify-payment', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const parsed = verifySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const { consultationId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = parsed.data;
+    const userId = request.currentUser!.id;
+
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+      consultationId,
+    );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(404).send({ error: 'Consultation not found.' });
+    }
+    if (row.user_id !== userId) {
+      return reply.code(403).send({ error: 'Not authorized for this consultation.' });
+    }
+    if (row.status === 'confirmed') {
+      // Idempotent — return existing room.
+      return reply.send({
+        verified: true,
+        consultationId: row.id,
+        reference: row.reference,
+        roomName: row.room_name,
+        jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
+      });
+    }
+
+    if (!isDemoPayment) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return reply.code(400).send({ error: 'Missing Razorpay verification fields.' });
+      }
+      if (razorpay_order_id !== row.razorpay_order_id) {
+        return reply.code(400).send({ error: 'Order id mismatch.' });
+      }
+      const expected = crypto
+        .createHmac('sha256', razorpayKeySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+      const a = Buffer.from(expected, 'utf8');
+      const b = Buffer.from(razorpay_signature, 'utf8');
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return reply.code(400).send({ error: 'Invalid payment signature.' });
+      }
+    }
+
+    // Mint a fresh Jitsi room and flip status.
+    const slug = row.astrologer_name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 24);
+    const roomName = `darshya-astrologer-${slug}-${randomBytes(12).toString('hex')}`;
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE astrologer_consultations
+       SET status = 'confirmed',
+           razorpay_payment_id = $1,
+           room_name = $2,
+           paid_at = now()
+       WHERE id = $3::uuid;`,
+      razorpay_payment_id ?? null,
+      roomName,
+      consultationId,
+    );
+
+    return reply.send({
+      verified: true,
+      consultationId: row.id,
+      reference: row.reference,
+      roomName,
+      jitsiUrl: `https://meet.jit.si/${roomName}`,
+    });
+  });
+
+  // ─── GET /:id ───────────────────────────────────────────────────────────
+  // Fetch single consultation (success page + portal).
+  server.get('/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+      return reply.code(400).send({ error: 'Invalid consultation id.' });
+    }
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+      id,
+    );
+    const row = rows[0];
+    if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
+    if (row.user_id !== request.currentUser!.id) {
+      return reply.code(403).send({ error: 'Not authorized.' });
+    }
+    return reply.send({
+      consultation: {
+        id: row.id,
+        reference: row.reference,
+        astrologerId: row.astrologer_id,
+        astrologerName: row.astrologer_name,
+        minutes: row.minutes,
+        amountInr: Number(row.amount_inr),
+        currency: row.currency,
+        status: row.status,
+        roomName: row.room_name,
+        jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
+        scheduledAt: row.scheduled_at,
+        createdAt: row.created_at,
+      },
     });
   });
 }
