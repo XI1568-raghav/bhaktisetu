@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { api, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
+import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
 
 // ─── Demo accounts (mirror of apps/web/lib/auth-context.tsx) ─────────────────
 
@@ -453,10 +453,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(updatedUser);
         await persistSession(session, updatedUser);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      if (err instanceof ApiClientError && err.statusCode === 401) {
+        await signOut();
+      }
     }
-  }, [session, user?.role, persistSession]);
+  }, [session, user?.role, persistSession, signOut]);
 
   const value: AuthContextValue = {
     user,

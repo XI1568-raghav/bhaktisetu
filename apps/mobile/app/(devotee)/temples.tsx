@@ -6,9 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
+  Linking,
   RefreshControl,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTemples } from '@poojly/api-client';
@@ -120,8 +121,16 @@ function renderStars(trustScore: number) {
 }
 
 function TempleCard({ temple }: { temple: Temple }) {
+  const detailUrl = `https://darshya.online/temples/${encodeURIComponent(temple.id)}?utm_source=mobile-app&utm_medium=temple-card`;
+  const openTemple = () => {
+    if (temple.liveDarshanEnabled) {
+      router.push({ pathname: '/(devotee)/darshan-player' as any, params: { id: temple.id, title: temple.name } } as any);
+    } else {
+      Linking.openURL(detailUrl);
+    }
+  };
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => Alert.alert(temple.name, `${temple.deity} • ${temple.city}, ${temple.state}\n\n${temple.description}`)}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={openTemple}>
       {/* Image placeholder */}
       <View style={styles.cardImage}>
         <Ionicons name="business" size={36} color={colors.saffron[300]} />
@@ -178,8 +187,8 @@ function TempleCard({ temple }: { temple: Temple }) {
           )}
         </View>
 
-        <TouchableOpacity style={styles.viewButton} activeOpacity={0.7} onPress={() => Alert.alert(temple.name, `${temple.deity} • ${temple.city}, ${temple.state}\n\n${temple.description}`)}>
-          <Text style={styles.viewButtonText}>View Temple</Text>
+        <TouchableOpacity style={styles.viewButton} activeOpacity={0.7} onPress={openTemple}>
+          <Text style={styles.viewButtonText}>{temple.liveDarshanEnabled ? 'Watch Live' : 'View Temple'}</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.white} />
         </TouchableOpacity>
       </View>

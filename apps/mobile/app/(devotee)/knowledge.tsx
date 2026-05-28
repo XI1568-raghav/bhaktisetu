@@ -19,7 +19,26 @@ const categories: CategoryCard[] = [
   { key: 'sanatan', title: 'Sanatan Dharma', subtitle: 'Living tradition', icon: 'flower', color: colors.green[600] ?? colors.saffron[500] },
 ];
 
+const KNOWLEDGE_ENABLED = process.env.EXPO_PUBLIC_KNOWLEDGE_ENABLED === 'true';
+const GURUKUL_ENABLED = process.env.EXPO_PUBLIC_GURUKUL_ENABLED === 'true';
+
 export default function KnowledgeHubScreen() {
+  if (!KNOWLEDGE_ENABLED) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Knowledge</Text>
+          <Text style={styles.headerSubtitle}>Sanskrit, Vedas, and Sanatan Dharma</Text>
+        </View>
+        <View style={{ flex: 1, padding: spacing.md, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="construct-outline" size={40} color={colors.stone[400]} />
+          <Text style={{ fontSize: fontSize.lg, color: colors.stone[600], marginTop: spacing.sm, textAlign: 'center' }}>
+            Knowledge Hub launching soon.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
