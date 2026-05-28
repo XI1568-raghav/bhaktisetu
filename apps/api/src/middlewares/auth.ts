@@ -4,6 +4,16 @@ import { prisma } from '../lib/prisma.js';
 
 export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER' | 'ADMIN';
 
+// P0 boot-time assertion. Demo-token bypass maps to real DB admin/devotee
+// rows with full privileges — anyone with the token format gets that session.
+// Default-deny in prod. Crash boot if both flags are set; surfaces misconfig
+// before any traffic. Investor demos must unset NODE_ENV or use a staging URL.
+if (process.env.ALLOW_DEMO_TOKENS === 'true' && process.env.NODE_ENV === 'production') {
+  // eslint-disable-next-line no-console
+  console.error('[FATAL] ALLOW_DEMO_TOKENS=true in production. Demo tokens grant admin access. Refusing to boot.');
+  process.exit(1);
+}
+
 export interface AuthUser {
   id: string;
   supabaseId: string;
