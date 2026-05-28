@@ -1,9 +1,13 @@
 name: Agent fleet - weekly
 
-# Weekly batch: investor pipeline + PR outreach + 18 agents moved from daily
-# (SEO, content, growth, social, onboarding, competitor, keyword, schema, etc).
-# Free tier: ~10 min/run × 4/mo = 40 min/month. See docs/free-tier-budgets.md.
+# Weekly batch: investor pipeline + PR outreach + producing agents.
+# Free tier: ~7 min/run × 4/mo = 28 min/month. See docs/free-tier-budgets.md.
 # Monday 04:00 UTC = 09:30 IST.
+#
+# Killed 2026-05-28 per Sprint 2 sub-batch 1 audit (silent-failure agents):
+#   - review-harvest, seo-internal-linker, competitor-feature-watcher,
+#     x-engagement-digest, schema-validator, backlinks-monitor
+# Scripts retained in scripts/agents/ for future repair; removed from cron.
 
 on:
   schedule:
@@ -34,10 +38,8 @@ jobs:
             investor-pipeline pr-outreach \
             seo-audit content-pipeline lead-gen growth-metrics \
             social-queue onboarding-drip gsc-submitter \
-            review-harvest competitor-watch rss-to-thread \
-            seo-internal-linker competitor-feature-watcher \
-            keyword-rank-tracker x-engagement-digest \
-            weekly-investor-update schema-validator backlinks-monitor
+            competitor-watch rss-to-thread \
+            keyword-rank-tracker weekly-investor-update
 
       - name: Commit reports
         run: |
