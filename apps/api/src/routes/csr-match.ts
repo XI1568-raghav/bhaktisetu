@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { authenticateUser } from '../middlewares/auth.js';
+import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 /**
  * Layer AX — Corporate CSR donation match.
@@ -167,7 +167,10 @@ export async function csrMatchRoutes(server: FastifyInstance) {
   });
 
   // Admin: list / activate / deactivate corporate accounts
-  server.get('/admin/list', async () => {
+  // P0 — gate. Previously public — leaked corporate emails + GSTIN.
+  const adminPreHandlers = [authenticateUser, requireRole('admin')];
+
+  server.get('/admin/list', { preHandler: adminPreHandlers }, async () => {
     const rows = await prisma.$queryRawUnsafe<unknown[]>(
       `SELECT id, name, contact_email, gstin, match_ratio, monthly_cap_inr, monthly_used_inr,
        reset_date, is_active, created_at FROM csr_corporate_accounts ORDER BY created_at DESC`,
@@ -177,6 +180,7 @@ export async function csrMatchRoutes(server: FastifyInstance) {
 
   server.post<{ Params: { id: string }; Body: { is_active: boolean } }>(
     '/admin/:id/active',
+    { preHandler: adminPreHandlers },
     async (request) => {
       await prisma.$executeRawUnsafe(
         `UPDATE csr_corporate_accounts SET is_active = $1 WHERE id = $2::uuid`,

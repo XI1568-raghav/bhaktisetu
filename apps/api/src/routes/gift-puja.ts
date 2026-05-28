@@ -62,7 +62,14 @@ function escape(s: string): string {
 }
 
 export async function giftPujaRoutes(server: FastifyInstance) {
-  server.post('/inquiry', async (request, reply) => {
+  // P0 — abuse vector closure. Endpoint triggers outbound email to recipient
+  // contacts (and in Sub-batch 4 will also trigger WhatsApp). Per-IP 5/hr cap
+  // prevents mass-spam without killing the only NRI conversion path (which
+  // requires unauth submission today; auth requirement lands in Sub-batch 4
+  // when payment flow ships and account create becomes natural).
+  server.post('/inquiry', {
+    config: { rateLimit: { max: 5, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
     const parsed = inquirySchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });

@@ -168,7 +168,11 @@ async function bootstrap() {
     if (existing) return;
     let policy: { max: number; timeWindow: string } | null = null;
     if (url.startsWith('/auth/') || url.startsWith('/auth')) policy = { max: 10, timeWindow: '1 minute' };
-    else if (url === '/ai/chat' || url.startsWith('/ai/chat')) policy = { max: 20, timeWindow: '1 minute' };
+    // P0 — cap ALL /ai/* (was only /ai/chat). Groq/Anthropic spend exposure.
+    // Covers /ai/chat, /ai/summarize, /ai/recommend, and any future /ai/* added.
+    else if (url.startsWith('/ai/')) policy = { max: 20, timeWindow: '1 minute' };
+    // Astrology AI endpoint shares the LLM bill — cap separately.
+    else if (url.startsWith('/astrology/ask') || url === '/astrology/ask') policy = { max: 20, timeWindow: '1 minute' };
     else if (url.startsWith('/bookings/create-order') || url.startsWith('/bookings/verify-payment')) policy = { max: 30, timeWindow: '1 minute' };
     else if (url.startsWith('/donations/create-order')) policy = { max: 10, timeWindow: '1 minute' };
     else if (url.startsWith('/admin/')) policy = { max: 60, timeWindow: '1 minute' };
