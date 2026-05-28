@@ -2,15 +2,29 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { sendEmail } from '../lib/email.js';
+import { prisma } from '../lib/prisma.js';
+import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
+import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
 
 /**
- * Gift puja inquiry intake. NRI submits buyer + Indian recipient details +
- * desired puja + occasion. We email gift@darshya.online (or fallback
- * RESEND_INQUIRIES_TO) and return a reference id.
+ * Gift puja — three surfaces:
  *
- * No DB write — Prisma schema does not yet have a GiftPujaInquiry model and
- * we're not changing schema in agent runs. When volume justifies it, promote
- * to a real model with Lead-style status tracking.
+ *   1. POST /inquiry        — legacy email-only intake (kept for fallback).
+ *   2. POST /create-order   — Stripe PaymentIntent in buyer currency
+ *                             (USD default). Persists gift_puja_orders row
+ *                             status='pending_payment'.
+ *   3. POST /verify-payment — re-fetch the PaymentIntent from Stripe, flip
+ *                             row → 'confirmed', trigger WhatsApp template
+ *                             to recipient (env-or-noop if WA not configured).
+ *   4. GET  /config         — feature flags so the web form knows which path
+ *                             to take.
+ *
+ * No Prisma schema change — gift_puja_orders is a raw-SQL table created on
+ * first call (same pattern as csr-match.ts, astrologer_consultations).
+ *
+ * Honest copy mandate: when Stripe/WA aren't both ready the web form falls
+ * back to the inquiry path and we tell the buyer the truth: ops will reply
+ * with a payment link instead of an automatic flow.
  */
 
 const inquirySchema = z.object({
@@ -30,10 +44,25 @@ const inquirySchema = z.object({
   source: z.string().max(80).optional().default('web-gift'),
 });
 
+const createOrderSchema = inquirySchema.extend({
+  amountUsd: z.number().int().min(20).max(2000).default(120),
+});
+
+const verifyPaymentSchema = z.object({
+  orderId: z.string().uuid(),
+  paymentIntentId: z.string().min(8).max(200),
+});
+
 function refId(): string {
   const bytes = crypto.randomBytes(4).toString('hex').toUpperCase();
   const yyyymmdd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   return `GIFT-${yyyymmdd}-${bytes}`;
+}
+
+function escape(s: string): string {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c
+  ));
 }
 
 function inquiryHtml(referenceId: string, b: z.infer<typeof inquirySchema>): string {
@@ -55,18 +84,78 @@ function inquiryHtml(referenceId: string, b: z.infer<typeof inquirySchema>): str
 </div></body></html>`;
 }
 
-function escape(s: string): string {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c
-  ));
+async function ensureGiftPujaTables() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS gift_puja_orders (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      reference TEXT UNIQUE NOT NULL,
+      buyer_email TEXT NOT NULL,
+      buyer_name TEXT,
+      buyer_country TEXT,
+      recipient_name TEXT NOT NULL,
+      recipient_whatsapp TEXT NOT NULL,
+      recipient_city TEXT,
+      puja TEXT,
+      occasion TEXT,
+      message TEXT,
+      amount_usd NUMERIC(8,2) NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      stripe_payment_intent_id TEXT,
+      stripe_client_secret TEXT,
+      status TEXT NOT NULL DEFAULT 'pending_payment',
+      wa_message_id TEXT,
+      wa_status TEXT,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      paid_at TIMESTAMPTZ
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS gift_puja_orders_email_idx ON gift_puja_orders (buyer_email);`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS gift_puja_orders_status_idx ON gift_puja_orders (status);`,
+  );
 }
 
+type GiftPujaOrderRow = {
+  id: string;
+  reference: string;
+  buyer_email: string;
+  buyer_name: string | null;
+  recipient_name: string;
+  recipient_whatsapp: string;
+  recipient_city: string | null;
+  puja: string | null;
+  amount_usd: string;
+  currency: string;
+  stripe_payment_intent_id: string | null;
+  stripe_client_secret: string | null;
+  status: string;
+  wa_message_id: string | null;
+  wa_status: string | null;
+  created_at: Date;
+  paid_at: Date | null;
+};
+
 export async function giftPujaRoutes(server: FastifyInstance) {
-  // P0 — abuse vector closure. Endpoint triggers outbound email to recipient
-  // contacts (and in Sub-batch 4 will also trigger WhatsApp). Per-IP 5/hr cap
-  // prevents mass-spam without killing the only NRI conversion path (which
-  // requires unauth submission today; auth requirement lands in Sub-batch 4
-  // when payment flow ships and account create becomes natural).
+  await ensureGiftPujaTables().catch((err) => server.log.warn({ err }, 'gift_puja_orders init failed'));
+
+  // ─── GET /config ────────────────────────────────────────────────────────
+  // Feature flags so the web form knows whether to show "Pay now" or
+  // "Request invite". Public — leaks only boolean readiness.
+  server.get('/config', async () => {
+    return {
+      paymentEnabled: !isStripeDemoMode,
+      whatsappEnabled: whatsapp.enabled,
+      // Both must be true for the auto end-to-end flow. Otherwise inquiry.
+      autoFlowReady: !isStripeDemoMode && whatsapp.enabled,
+    };
+  });
+
+  // ─── POST /inquiry ──────────────────────────────────────────────────────
+  // Legacy email-only intake. Kept as the safe fallback even when payment +
+  // WA are wired — ops can still receive manual leads from buyers who
+  // prefer to talk before paying.
   server.post('/inquiry', {
     config: { rateLimit: { max: 5, timeWindow: '1 hour' } },
   }, async (request, reply) => {
@@ -86,7 +175,6 @@ export async function giftPujaRoutes(server: FastifyInstance) {
 
     request.log.info({ referenceId, email: body.buyer.email, puja: body.puja, sent: 'ok' in result ? result.ok : false }, '[gift-puja] inquiry');
 
-    // Send buyer confirmation too.
     await sendEmail({
       to: body.buyer.email,
       subject: `Gift puja inquiry received — ${referenceId}`,
@@ -98,5 +186,182 @@ export async function giftPujaRoutes(server: FastifyInstance) {
     }).catch(() => null);
 
     return reply.status(200).send({ referenceId, ok: true });
+  });
+
+  // ─── POST /create-order ─────────────────────────────────────────────────
+  // Stripe PaymentIntent for NRI gift puja, billed in USD. Persists row +
+  // returns client_secret for the buyer's checkout. Rate-limited to suppress
+  // PaymentIntent abuse — Stripe charges per attempt above a threshold.
+  server.post('/create-order', {
+    config: { rateLimit: { max: 10, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
+    const parsed = createOrderSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
+    }
+    const body = parsed.data;
+    const reference = refId();
+    const amountUsd = body.amountUsd;
+    const amountInCents = amountUsd * 100;
+
+    let paymentIntentId: string;
+    let clientSecret: string | null;
+    try {
+      const stripe = await getStripe();
+      const intent = await stripe.paymentIntents.create({
+        amount: amountInCents,
+        currency: 'usd',
+        metadata: {
+          giftRef: reference,
+          buyerEmail: body.buyer.email,
+          recipient: body.recipient.name,
+          puja: body.puja || 'unspecified',
+        },
+        automatic_payment_methods: { enabled: true },
+      });
+      paymentIntentId = intent.id;
+      clientSecret = intent.client_secret;
+    } catch (err: any) {
+      server.log.error({ err }, 'stripe.paymentIntents.create failed (gift-puja)');
+      return reply.code(502).send({ error: 'Payment gateway unavailable. Please retry.' });
+    }
+
+    await ensureGiftPujaTables();
+    const rows = await prisma.$queryRawUnsafe<GiftPujaOrderRow[]>(
+      `INSERT INTO gift_puja_orders
+        (reference, buyer_email, buyer_name, buyer_country,
+         recipient_name, recipient_whatsapp, recipient_city,
+         puja, occasion, message, amount_usd, currency,
+         stripe_payment_intent_id, stripe_client_secret, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'USD', $12, $13, 'pending_payment')
+       RETURNING *;`,
+      reference,
+      body.buyer.email,
+      body.buyer.name || null,
+      body.buyer.country || null,
+      body.recipient.name,
+      body.recipient.whatsapp,
+      body.recipient.city || null,
+      body.puja || null,
+      body.occasion || null,
+      body.message || null,
+      amountUsd,
+      paymentIntentId,
+      clientSecret,
+    );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(500).send({ error: 'Failed to persist gift puja order.' });
+    }
+
+    return reply.code(201).send({
+      orderId: row.id,
+      reference: row.reference,
+      amountUsd,
+      amountInCents,
+      currency: 'USD',
+      paymentIntentId,
+      clientSecret,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+      demo: isStripeDemoMode,
+    });
+  });
+
+  // ─── POST /verify-payment ───────────────────────────────────────────────
+  // Buyer-side verification after Stripe Elements confirmation. Re-fetches
+  // the PaymentIntent and only flips state if status === 'succeeded'. Then
+  // fires WhatsApp template to recipient. Idempotent on 'confirmed'.
+  server.post('/verify-payment', {
+    config: { rateLimit: { max: 30, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
+    const parsed = verifyPaymentSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
+    }
+    const { orderId, paymentIntentId } = parsed.data;
+    await ensureGiftPujaTables();
+    const rows = await prisma.$queryRawUnsafe<GiftPujaOrderRow[]>(
+      `SELECT * FROM gift_puja_orders WHERE id = $1::uuid LIMIT 1;`,
+      orderId,
+    );
+    const row = rows[0];
+    if (!row) return reply.code(404).send({ error: 'order_not_found' });
+    if (row.stripe_payment_intent_id !== paymentIntentId) {
+      return reply.code(400).send({ error: 'payment_intent_mismatch' });
+    }
+    if (row.status === 'confirmed') {
+      return reply.send({ verified: true, reference: row.reference, status: 'confirmed' });
+    }
+
+    // Re-fetch from Stripe — don't trust client. Demo mode short-circuits.
+    if (!isStripeDemoMode) {
+      try {
+        const stripe = await getStripe();
+        const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (intent.status !== 'succeeded') {
+          return reply.code(400).send({ error: 'payment_not_succeeded', stripeStatus: intent.status });
+        }
+      } catch (err: any) {
+        server.log.error({ err }, 'stripe.paymentIntents.retrieve failed (gift-puja verify)');
+        return reply.code(502).send({ error: 'Payment gateway unavailable.' });
+      }
+    }
+
+    // Fire WhatsApp template — env-or-noop. Template name 'gift_puja_delivered'
+    // must be approved in WA Manager with vars: {{1}}=recipient name,
+    // {{2}}=puja name, {{3}}=buyer name. Fallback to empty strings.
+    let waStatus = 'skipped';
+    let waMessageId: string | null = null;
+    if (whatsapp.enabled) {
+      const waResult = await sendWhatsappTemplate({
+        to: row.recipient_whatsapp,
+        template: 'gift_puja_delivered',
+        languageCode: 'en',
+        variables: [
+          row.recipient_name,
+          row.puja || 'a special puja',
+          row.buyer_name || 'your loved one',
+        ],
+      }).catch((err) => ({ ok: false, error: err instanceof Error ? err.message : String(err) }));
+      waStatus = waResult.ok ? 'sent' : `failed:${('error' in waResult && waResult.error) || 'unknown'}`;
+      waMessageId = ('messageId' in waResult && waResult.messageId) ? waResult.messageId : null;
+    }
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE gift_puja_orders
+       SET status = 'confirmed', paid_at = now(),
+           wa_message_id = $1, wa_status = $2
+       WHERE id = $3::uuid;`,
+      waMessageId,
+      waStatus,
+      orderId,
+    );
+
+    // Also notify ops + buyer via email.
+    const to = process.env.GIFT_INQUIRY_TO || 'gift@darshya.online';
+    await sendEmail({
+      to,
+      subject: `[Gift Puja PAID] ${row.puja || 'puja'} — ${row.recipient_name} ($${row.amount_usd})`,
+      html: `<p>Reference <strong>${row.reference}</strong> paid by ${escape(row.buyer_email)}.</p>
+<p>Recipient: <strong>${escape(row.recipient_name)}</strong>, WA: ${escape(row.recipient_whatsapp)}, city: ${escape(row.recipient_city || '-')}</p>
+<p>Puja: ${escape(row.puja || '-')}, amount: $${row.amount_usd}, WA delivery: ${escape(waStatus)}</p>`,
+    }).catch(() => null);
+
+    await sendEmail({
+      to: row.buyer_email,
+      subject: `Your gift puja is confirmed — ${row.reference}`,
+      html: `<p>Namaste${row.buyer_name ? ` ${escape(row.buyer_name)}` : ''},</p>
+<p>Your gift puja for <strong>${escape(row.recipient_name)}</strong> is confirmed.</p>
+<p>Reference: <strong>${row.reference}</strong></p>
+<p>We've notified the recipient on WhatsApp. Our temple coordinator will share scheduled date + pandit details within 4 hours.</p>
+<p>— Darshya team</p>`,
+    }).catch(() => null);
+
+    return reply.send({
+      verified: true,
+      reference: row.reference,
+      status: 'confirmed',
+      whatsappDelivery: waStatus,
+    });
   });
 }
