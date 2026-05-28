@@ -40,6 +40,7 @@ const sidebarLinks = [
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
   { href: '/admin/revenue', label: 'Revenue', icon: IndianRupee },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/admin/metrics', label: 'Metrics', icon: BarChart3 },
   { href: '/admin/agents', label: 'Agents', icon: Bot },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
