@@ -65,6 +65,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: '12 Jyotirlinga', href: '/jyotirlinga', description: 'All 12 swayambhu Shiva abodes in canonical order — Bhasma Aarti, Sphatika Linga, 22 Theertham and signature rituals.', count: '12 jyotirlinga' },
       { label: '51 Shakti Peeth', href: '/shakti-peeth', description: "Where Sati's body fell — across India, Nepal, Bangladesh, Sri Lanka, Pakistan and Tibet. Devi-Bhairava pairings and Navratri rituals.", count: '51 peeths' },
       { label: '8 Ashta Lakshmi', href: '/ashta-lakshmi', description: 'All 8 forms of Goddess Lakshmi — Adi, Dhana, Dhanya, Gaja, Santana, Veera, Vijaya, Vidya. Mantras, vahana, vrata and signature festivals.', count: '8 forms' },
+      { label: '12 Adityas', href: '/aditya', description: 'All 12 sons of Aditi per Bhagavata Purana — Vivasvan, Savitar, Mitra, Varuna and 8 more. Each presides over one solar month with unique mantra, ratna and vrata.', count: '12 forms' },
       { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, 12 Jyotirlinga, Shakti Peeth, Pancha Bhoota and other canonical circuits.', count: '8 circuits' },
       { label: 'Vipassana Retreats', href: '/wellness/vipassana', description: '10-day silent meditation in the S.N. Goenka tradition. Learn the technique, find a center, apply directly.', count: '27 centers' },
       { label: '16 Samskaras', href: '/samskaras', description: 'The Vedic life-stage rites from garbhadhana to antyeshti.', count: '16 rites' },
