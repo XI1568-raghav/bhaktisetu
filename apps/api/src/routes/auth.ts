@@ -307,6 +307,13 @@ export async function authRoutes(server: FastifyInstance) {
   /**
    * POST /refresh
    * Refreshes an expired access token using the refresh token.
+   *
+   * Refresh-token rotation is handled NATIVELY by Supabase Auth:
+   * `auth.refreshSession({ refresh_token })` returns a NEW refresh_token on
+   * every success and invalidates the prior one server-side (configured via
+   * GoTrue REFRESH_TOKEN_ROTATION_ENABLED, default ON for Supabase Cloud).
+   * Replaying a used refresh_token returns an error and the family is revoked.
+   * No custom JTI ledger needed — Sprint 3 P1 item closed without code change.
    */
   server.post('/refresh', async (request, reply) => {
     const parseResult = refreshSchema.safeParse(request.body);

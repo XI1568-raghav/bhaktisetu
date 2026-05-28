@@ -574,7 +574,33 @@ How may I guide you today?`,
  );
 }
 
-// ─── Simple Markdown Formatter ──────────────────────────────────────────────
+// ─── Safe Markdown Formatter ────────────────────────────────────────────────
+// XSS-safe: tokenizes **bold** / *italic* into React nodes. Never reaches DOM
+// via dangerouslySetInnerHTML, so LLM output cannot inject script tags.
+
+function renderInline(raw: string, keyPrefix: string): React.ReactNode[] {
+ const nodes: React.ReactNode[] = [];
+ const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+ let lastIndex = 0;
+ let match: RegExpExecArray | null;
+ let idx = 0;
+ while ((match = regex.exec(raw)) !== null) {
+ if (match.index > lastIndex) {
+ nodes.push(raw.slice(lastIndex, match.index));
+ }
+ if (match[1] !== undefined) {
+ nodes.push(<strong key={`${keyPrefix}-b-${idx}`}>{match[1]}</strong>);
+ } else if (match[2] !== undefined) {
+ nodes.push(<em key={`${keyPrefix}-i-${idx}`}>{match[2]}</em>);
+ }
+ lastIndex = regex.lastIndex;
+ idx++;
+ }
+ if (lastIndex < raw.length) {
+ nodes.push(raw.slice(lastIndex));
+ }
+ return nodes;
+}
 
 function formatMarkdown(text: string): React.JSX.Element {
  if (!text) return <></>;
@@ -583,29 +609,27 @@ function formatMarkdown(text: string): React.JSX.Element {
  const elements: React.JSX.Element[] = [];
 
  for (let i = 0; i < lines.length; i++) {
- let line = lines[i]!;
-
- // Bold
- line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
- // Italic
- line = line.replace(/\*(.+?)\*/g, '<em>$1</em>');
+ const line = lines[i]!;
 
  if (line.startsWith('- ') || line.startsWith('• ')) {
  elements.push(
  <div key={i} className="flex gap-2 ml-2">
  <span className="text-saffron-500 shrink-0 mt-0.5">&#8226;</span>
- <span dangerouslySetInnerHTML={{ __html: line.slice(2) }} />
+ <span>{renderInline(line.slice(2), `l${i}`)}</span>
  </div>
  );
  } else if (line.match(/^\d+\.\s/)) {
  elements.push(
- <div key={i} className="ml-2" dangerouslySetInnerHTML={{ __html: line }} />
+ <div key={i} className="ml-2">{renderInline(line, `l${i}`)}</div>
  );
  } else if (line.trim() === '') {
  elements.push(<div key={i} className="h-2" />);
  } else {
  elements.push(
- <span key={i} dangerouslySetInnerHTML={{ __html: line + (i < lines.length - 1 ? '<br/>' : '') }} />
+ <span key={i}>
+ {renderInline(line, `l${i}`)}
+ {i < lines.length - 1 ? <br /> : null}
+ </span>
  );
  }
  }
