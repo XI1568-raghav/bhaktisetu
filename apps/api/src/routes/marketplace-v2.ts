@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 /**
  * Layer AW — Marketplace API for 3rd-party temple/devotional apps.
@@ -184,9 +185,11 @@ const issueKeySchema = z.object({
 export async function marketplaceAdminRoutes(server: FastifyInstance) {
   await ensureTables().catch(() => undefined);
 
-  // Admin auth handled by parent router (server.ts wraps with auth middleware).
+  // P0 security gate — admin-only. Comment above was aspirational; parent
+  // router did NOT wrap. Apply preHandler explicitly on every route.
+  const adminPreHandlers = [authenticateUser, requireRole('admin')];
 
-  server.post('/keys', async (request, reply) => {
+  server.post('/keys', { preHandler: adminPreHandlers }, async (request, reply) => {
     const parsed = issueKeySchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
@@ -207,7 +210,7 @@ export async function marketplaceAdminRoutes(server: FastifyInstance) {
     return { key, prefix, message: 'Save this key — it cannot be retrieved again.' };
   });
 
-  server.get('/keys', async () => {
+  server.get('/keys', { preHandler: adminPreHandlers }, async () => {
     const rows = await prisma.$queryRawUnsafe<unknown[]>(
       `SELECT id, name, key_prefix, owner_email, scopes, rate_limit_per_min,
               requests_today, last_used_at, is_active, created_at, revoked_at
@@ -216,7 +219,7 @@ export async function marketplaceAdminRoutes(server: FastifyInstance) {
     return { keys: rows };
   });
 
-  server.delete<{ Params: { id: string } }>('/keys/:id', async (request) => {
+  server.delete<{ Params: { id: string } }>('/keys/:id', { preHandler: adminPreHandlers }, async (request) => {
     await prisma.$executeRawUnsafe(
       `UPDATE marketplace_api_keys SET is_active = false, revoked_at = now() WHERE id = $1::uuid`,
       request.params.id,
