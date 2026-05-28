@@ -8,7 +8,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
-import { registerAuthDecorators } from './middlewares/auth.js';
+import { registerAuthDecorators, authenticateUser, requireRole } from './middlewares/auth.js';
 import { ensureSchemaInvariants } from './lib/ensure-schema.js';
 import { templeRoutes } from './routes/temples.js';
 import { pujaRoutes } from './routes/pujas.js';
@@ -88,6 +88,7 @@ import { knowledgeRoutes } from './routes/knowledge.js';
 import { referralsRoutes } from './routes/referrals.js';
 import { giftPujaRoutes } from './routes/gift-puja.js';
 import { yatraInquiryRoutes } from './routes/yatra-inquiry.js';
+import { recordLatency, snapshotStats, startMetricsReporter } from './lib/route-metrics.js';
 
 const server = Fastify({
   logger: {
@@ -196,6 +197,28 @@ async function bootstrap() {
 
   // Health check
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+
+  // ── Per-route latency instrumentation ─────────────────────────────
+  // Lightweight in-memory p50/p95/p99 tracker. Reporter logs top-20 by p95
+  // every 5 min. Live snapshot at /api/v1/admin/metrics/latency (admin gate).
+  // Zero infra burn — no Prometheus, no DB writes.
+  server.addHook('onRequest', async (request) => {
+    (request as unknown as { _lat?: bigint })._lat = process.hrtime.bigint();
+  });
+  server.addHook('onResponse', async (request, reply) => {
+    const start = (request as unknown as { _lat?: bigint })._lat;
+    if (start === undefined) return;
+    const ms = Number(process.hrtime.bigint() - start) / 1_000_000;
+    const route = request.routeOptions?.url ?? request.url.split('?')[0] ?? 'unknown';
+    recordLatency(`${request.method} ${route} → ${reply.statusCode}`, ms);
+  });
+  startMetricsReporter(server.log);
+
+  server.get(
+    '/api/v1/admin/metrics/latency',
+    { preHandler: [authenticateUser, requireRole('admin')] },
+    async () => ({ stats: snapshotStats() }),
+  );
 
   // API v1 routes
   await server.register(authRoutes, { prefix: '/api/v1/auth' });
