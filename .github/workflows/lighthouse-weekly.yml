@@ -7,8 +7,8 @@ name: Lighthouse - weekly
 # Free: ~3 min/run × 4 runs/month = 12 min against 2000-min ceiling.
 
 on:
-  schedule:
-    - cron: '0 4 * * 1'
+  # Killed cron 2026-05-28 per Sprint 2 sub-batch 1 — silent failure, no
+  # lighthouse-*.md artifacts in agent-reports/. Repair before re-enabling.
   workflow_dispatch:
 
 jobs:
