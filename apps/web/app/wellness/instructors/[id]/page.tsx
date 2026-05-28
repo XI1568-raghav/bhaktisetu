@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
- ArrowRight,
  ArrowLeft,
  Star,
  Calendar,
@@ -12,6 +11,7 @@ import {
  MessageSquare,
 } from 'lucide-react';
 import ScrollReveal from '../../../../components/ScrollReveal';
+import WellnessEnrolButton from './WellnessEnrolButton';
 
 // ─── Static instructor data (mirrors API) ──────────────────────────────────
 
@@ -297,12 +297,13 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
 
  <div data-reveal="up" className="mt-8">
- <button
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press w-full sm:w-auto justify-center"
- style={{ background: 'var(--color-primary)' }}
- >
- Book Consultation <ArrowRight className="w-4 h-4" />
- </button>
+ <WellnessEnrolButton
+   instructorId={inst.id}
+   instructorName={inst.name}
+   plan="consultation"
+   variant="primary"
+   label="Book Consultation"
+ />
  </div>
  </div>
  </section>
@@ -371,11 +372,11 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </h2>
 
  <div className="grid sm:grid-cols-3 gap-4">
- {[
- { label: 'Single Session', price: inst.pricePerSession, desc: 'One-on-one 60 min session', highlight: false },
- { label: '5 Session Pack', price: Math.round(inst.pricePerSession * 4.5), desc: 'Save 10% — valid for 30 days', highlight: true },
- { label: '10 Session Pack', price: Math.round(inst.pricePerSession * 8), desc: 'Save 20% — valid for 60 days', highlight: false },
- ].map((plan) => (
+ {([
+ { slug: 'single' as const, label: 'Single Session', price: inst.pricePerSession, desc: 'One-on-one 60 min session', highlight: false },
+ { slug: 'pack5' as const, label: '5 Session Pack', price: Math.round(inst.pricePerSession * 4.5), desc: 'Save 10% — valid for 30 days', highlight: true },
+ { slug: 'pack10' as const, label: '10 Session Pack', price: Math.round(inst.pricePerSession * 8), desc: 'Save 20% — valid for 60 days', highlight: false },
+ ]).map((plan) => (
  <div
  key={plan.label}
  data-reveal="scale-up"
@@ -400,15 +401,14 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  <p className="text-xs mb-4" style={{ opacity: plan.highlight ? 0.8 : undefined, color: plan.highlight ? undefined : 'var(--color-text-faint)' }}>
  {plan.desc}
  </p>
- <button
- className="w-full py-2 text-xs font-medium rounded-lg btn-press"
- style={{
- background: plan.highlight ? 'rgba(255,255,255,0.2)' : 'var(--color-primary)',
- color: '#fff',
- }}
- >
- Book Now
- </button>
+ <WellnessEnrolButton
+   instructorId={inst.id}
+   instructorName={inst.name}
+   plan={plan.slug}
+   price={plan.price}
+   variant={plan.highlight ? 'tierHighlight' : 'tier'}
+   label="Book Now"
+ />
  </div>
  ))}
  </div>

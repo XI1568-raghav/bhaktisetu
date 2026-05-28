@@ -6,6 +6,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initApiClient } from '@poojly/api-client';
 import { AuthProvider, getStoredAccessToken } from '../lib/auth-context';
 import { initSentryMobile } from '../lib/sentry';
+import { usePushNotifications } from '../lib/push-notifications';
+
+function PushRegister() {
+  usePushNotifications();
+  return null;
+}
 
 // Initialise Sentry once at module load, before any user code runs.
 // No-op if EXPO_PUBLIC_SENTRY_DSN is missing.
@@ -40,6 +46,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <PushRegister />
           <StatusBar style="dark" backgroundColor="#FFFFFF" />
           <Stack
             screenOptions={{
