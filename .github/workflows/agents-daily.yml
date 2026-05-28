@@ -1,12 +1,17 @@
-name: Agent fleet - daily (critical 4)
+name: Agent fleet - daily (critical 7)
 
 # Daily critical-only set. Rest moved to agents-weekly.yml to fit free tier.
-# Free tier: ~1.5 min/day = 45 min/month against 2000-min ceiling.
+# Free tier: ~2.5 min/day = 75 min/month against 2000-min ceiling.
 # See docs/free-tier-budgets.md.
 #
 # Killed 2026-05-28 per Sprint 2 sub-batch 1 audit (silent-failure agents):
 #   - uptime-pinger (no artifact in recent reports)
 #   - agent-issue-filer (no GH issues filed despite probe rate)
+#
+# Added 2026-05-28 per Sprint 2 sub-batch 2 (Wave 1 ops agents):
+#   - booking-quality-monitor (SLA breach detector, files P0 GH issues)
+#   - onboarding-nudge (24h/72h/7d KYC abandon recovery)
+#   - support-intent-triage (refund/abuse → P0; bucket the rest)
 
 on:
   schedule:
@@ -37,13 +42,17 @@ jobs:
           WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          CRON_AUTH_TOKEN: ${{ secrets.CRON_AUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AGENTS="${{ github.event.inputs.only }}"
           if [ -z "$AGENTS" ]; then
-            # Critical daily (post-Sprint-2-S1 kill): broken-link, founder-tweet,
-            # content-publisher, weekly-digest (Sun-only internal). uptime-pinger
-            # + agent-issue-filer removed — silent failure per audit C.
-            node scripts/agents/run-all.mjs broken-link founder-tweet-draft content-publisher weekly-digest
+            # Critical daily (post-Sprint-2-S1 kill + S2 Wave 1 add):
+            # producing-only set. Wave 1 ops agents file P0 GH issues directly
+            # on SLA breaches / refund signals — no human polling needed.
+            node scripts/agents/run-all.mjs \
+              broken-link founder-tweet-draft content-publisher weekly-digest \
+              booking-quality-monitor onboarding-nudge support-intent-triage
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
           fi
