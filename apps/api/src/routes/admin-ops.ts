@@ -111,4 +111,129 @@ export async function adminOpsRoutes(server: FastifyInstance) {
       generatedAt: new Date().toISOString(),
     });
   });
+
+  // referral-nudge feed: users whose first booking landed 7-8 days ago.
+  // Picks the single oldest booking per user; agent DMs the user a referral
+  // code + 10% off prompt while the experience is still fresh.
+  server.get<{ Querystring: TokenQuery }>('/recent-first-bookings', async (request, reply) => {
+    if (!authorisedToken(request.query.token)) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    const after = new Date(Date.now() - 8 * 24 * 3600_000);
+    const before = new Date(Date.now() - 7 * 24 * 3600_000);
+
+    // Raw query: first booking per user inside the window. user_id grouping
+    // + min(created_at) keeps it single round trip and avoids N+1.
+    const rows = await prisma.$queryRawUnsafe<
+      { user_id: string; first_booking: Date; full_name: string; email: string | null; phone: string | null }[]
+    >(
+      `SELECT u.id AS user_id, fb.first_booking, u.full_name, u.email, u.phone
+       FROM (
+         SELECT user_id, MIN(created_at) AS first_booking
+         FROM puja_bookings
+         GROUP BY user_id
+       ) fb
+       JOIN users u ON u.id = fb.user_id
+       WHERE fb.first_booking >= $1::timestamp AND fb.first_booking < $2::timestamp
+         AND u.blocked = false
+       LIMIT 100;`,
+      after,
+      before,
+    ).catch(() => []);
+
+    return reply.send({
+      ok: true,
+      count: rows.length,
+      users: rows,
+      window: { after: after.toISOString(), before: before.toISOString() },
+    });
+  });
+
+  // dormant-reactivation feed: users whose most recent booking was ≥ N
+  // days ago (default 30). Returns up to 80 (sender-quota safe).
+  server.get<{ Querystring: TokenQuery & { days?: string } }>('/dormant-users', async (request, reply) => {
+    if (!authorisedToken(request.query.token)) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    const days = Math.min(Math.max(Number(request.query.days) || 30, 7), 180);
+    const cutoff = new Date(Date.now() - days * 24 * 3600_000);
+
+    const rows = await prisma.$queryRawUnsafe<
+      { user_id: string; last_booking: Date; full_name: string; email: string | null; phone: string | null; nakshatra: string | null }[]
+    >(
+      `SELECT u.id AS user_id, lb.last_booking, u.full_name, u.email, u.phone, u.nakshatra
+       FROM (
+         SELECT user_id, MAX(created_at) AS last_booking
+         FROM puja_bookings
+         GROUP BY user_id
+       ) lb
+       JOIN users u ON u.id = lb.user_id
+       WHERE lb.last_booking < $1::timestamp
+         AND u.blocked = false
+         AND u.email IS NOT NULL
+       ORDER BY lb.last_booking DESC
+       LIMIT 80;`,
+      cutoff,
+    ).catch(() => []);
+
+    return reply.send({
+      ok: true,
+      count: rows.length,
+      users: rows,
+      cutoffDays: days,
+      cutoffAt: cutoff.toISOString(),
+    });
+  });
+
+  // cold-temple-outreach feed: NEW Lead rows with role TEMPLE that we
+  // discovered via lead-gen or apollo-refresh but have not yet contacted.
+  // Agent sends one templated email per run (capped at 25 — anti-spam).
+  server.get<{ Querystring: TokenQuery }>('/cold-temples', async (request, reply) => {
+    if (!authorisedToken(request.query.token)) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    const rows = await prisma.lead.findMany({
+      where: {
+        role: 'TEMPLE',
+        status: 'NEW',
+        lastContactedAt: null,
+        email: { not: null },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        city: true,
+        state: true,
+        phone: true,
+      },
+      take: 25,
+      orderBy: { createdAt: 'asc' },
+    }).catch(() => []);
+
+    return reply.send({ ok: true, count: rows.length, leads: rows });
+  });
+
+  // Mark a lead as contacted (agent calls this after successful send).
+  // Increments contact_count and sets last_contacted_at. Idempotent enough
+  // for our use case.
+  server.post<{ Querystring: TokenQuery; Body: { leadIds: string[] } }>(
+    '/mark-contacted',
+    async (request, reply) => {
+      if (!authorisedToken(request.query.token)) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+      const ids = Array.isArray(request.body?.leadIds) ? request.body.leadIds.slice(0, 50) : [];
+      if (ids.length === 0) return reply.send({ ok: true, updated: 0 });
+      const r = await prisma.lead.updateMany({
+        where: { id: { in: ids } },
+        data: {
+          status: 'EMAILED',
+          lastContactedAt: new Date(),
+          contactCount: { increment: 1 },
+        },
+      });
+      return reply.send({ ok: true, updated: r.count });
+    },
+  );
 }
