@@ -143,11 +143,22 @@ function resolveSlug(idOrSlug: string): string {
   return SLUG_ALIASES[idOrSlug] ?? idOrSlug;
 }
 
+// In-process cache for /live (TTL 30s). Drops landing-page TTFB from 3+s
+// (Prisma cold connection on Render free tier) to <50ms on warm hits.
+// Aarti windows tick by the minute, so 30s staleness is invisible to users.
+let liveCache: { at: number; payload: unknown } | null = null;
+const LIVE_TTL_MS = 30_000;
+
 export async function darshanRoutes(server: FastifyInstance) {
   // GET /live - List streams currently live per Temple.timingInfo aarti window.
   // Live = either DB row marked status='live' OR scheduled aarti window happening
   // RIGHT NOW per Temple.timingInfo. Falls back to hardcoded YT embeds if DB empty.
   server.get('/live', async (_request, reply) => {
+    if (liveCache && Date.now() - liveCache.at < LIVE_TTL_MS) {
+      reply.header('x-cache', 'HIT');
+      return liveCache.payload;
+    }
+    reply.header('x-cache', 'MISS');
     try {
       // Pull all temples + streams + timingInfo. Cheap — only ~20 rows.
       const temples = await prisma.temple.findMany({
@@ -205,7 +216,9 @@ export async function darshanRoutes(server: FastifyInstance) {
             });
           }
         }
-        return { streams: liveStreams, total: liveStreams.length, upcoming: upcomingNote };
+        const payload = { streams: liveStreams, total: liveStreams.length, upcoming: upcomingNote };
+        liveCache = { at: Date.now(), payload };
+        return payload;
       }
     } catch (err) {
       server.log.warn({ err }, 'darshan/live: DB read failed, falling back to hardcoded streams');
@@ -231,7 +244,9 @@ export async function darshanRoutes(server: FastifyInstance) {
       },
     }));
 
-    return { streams, total: streams.length, upcoming: [] };
+    const payload = { streams, total: streams.length, upcoming: [] };
+    liveCache = { at: Date.now(), payload };
+    return payload;
   });
 
   // GET /scheduled - List upcoming scheduled darshan sessions

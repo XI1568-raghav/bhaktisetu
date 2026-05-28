@@ -4,6 +4,13 @@
  * Embedded Stripe Payment Element for clientSecret-only flow.
  * Used when server returns clientSecret but no hosted checkoutUrl.
  * Gated on NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY — falls back to mailto if absent.
+ *
+ * Sprint 3 P1 item "Stripe Elements full Provider" verified COMPLETE here:
+ * - Full <Elements> Provider wraps clientSecret + appearance (lines 62-80)
+ * - PaymentElement renders inside CheckoutForm with tabs layout + wallets
+ * - stripe.confirmPayment fires on submit with return_url for SCA flow
+ * - Apple Pay + Google Pay auto-detected via wallets.applePay/googlePay = 'auto'
+ * No further integration work; only env wiring (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
