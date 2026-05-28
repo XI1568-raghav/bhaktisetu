@@ -46,9 +46,14 @@ export const CATEGORY_TREE: Category[] = [
         description: 'Tax-deductible giving with instant 80G receipt.',
       },
       {
-        label: 'Daily Aarti',
-        href: '/content?tab=aarti',
-        description: 'Audio aartis to play during morning rituals.',
+        label: 'Panchang',
+        href: '/panchang',
+        description: 'Today’s tithi, nakshatra, and shubh muhurat.',
+      },
+      {
+        label: 'Aarti / Chalisa / Mantra',
+        href: '/content',
+        description: 'Library of devotional texts with translations.',
       },
     ],
   },
@@ -89,24 +94,9 @@ export const CATEGORY_TREE: Category[] = [
         description: 'Traditional gurukuls — discover and apply.',
       },
       {
-        label: 'Panchang',
-        href: '/panchang',
-        description: 'Today’s tithi, nakshatra, and shubh muhurat.',
-      },
-      {
-        label: 'Aarti / Chalisa / Mantra',
-        href: '/content',
-        description: 'Library of devotional texts with translations.',
-      },
-      {
         label: 'Books',
         href: '/content/books',
         description: 'Sacred scriptures and commentaries to read.',
-      },
-      {
-        label: 'Daily Horoscope',
-        href: '/astrology/horoscope',
-        description: 'Personalized rashi-based daily reading.',
       },
       {
         label: 'Blog',
@@ -144,6 +134,11 @@ export const CATEGORY_TREE: Category[] = [
         label: 'Wellness',
         href: '/wellness',
         description: 'Yoga, meditation, and Ayurveda guidance.',
+      },
+      {
+        label: 'Daily Horoscope',
+        href: '/astrology/horoscope',
+        description: 'Personalized rashi-based daily reading.',
       },
     ],
   },
