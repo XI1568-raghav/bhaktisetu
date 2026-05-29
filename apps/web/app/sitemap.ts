@@ -431,6 +431,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { PANCHANG_YOGAS } = await import('../lib/panchang-yogas');
+  const yogaEntries = [
+    { url: `${BASE_URL}/panchang/yoga`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.9 },
+    ...PANCHANG_YOGAS.map((y) => ({
+      url: `${BASE_URL}/panchang/yoga/${y.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
+  const { PANCHANG_KARANAS } = await import('../lib/panchang-karanas');
+  const karanaEntries = [
+    { url: `${BASE_URL}/panchang/karana`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.9 },
+    ...PANCHANG_KARANAS.map((k) => ({
+      url: `${BASE_URL}/panchang/karana/${k.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const { VEDIC_MONTH_SLUGS } = await import('../lib/vedic-months');
   const masaEntries = VEDIC_MONTH_SLUGS.map((slug) => ({
     url: `${BASE_URL}/masa/${slug}`,
@@ -680,6 +702,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...adityaEntries,
     ...saptaMathrukaEntries,
     ...tithiEntries,
+    ...yogaEntries,
+    ...karanaEntries,
     ...masaEntries,
     ...panchaBhootaEntries,
     ...navaratnaEntries,
