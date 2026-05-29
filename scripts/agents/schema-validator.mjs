@@ -40,6 +40,8 @@ const TARGETS = [
   { url: '/masa/chaitra', expected: ['BreadcrumbList', 'Article'] },
   { url: '/pancha-bhoota', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/pancha-bhoota/nataraja-chidambaram', expected: ['BreadcrumbList', 'Place', 'Article'] },
+  { url: '/navaratna', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/navaratna/blue-sapphire-neelam', expected: ['BreadcrumbList', 'Article'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/nava-graha', expected: ['ItemList'] },

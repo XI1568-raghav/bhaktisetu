@@ -476,6 +476,7 @@ export default function RootLayout({
  <li><Link href="/tithi" className="hover:text-saffron-400 transition-colors">30 Lunar Tithis</Link></li>
  <li><Link href="/masa" className="hover:text-saffron-400 transition-colors">12 Vedic Months</Link></li>
  <li><Link href="/pancha-bhoota" className="hover:text-saffron-400 transition-colors">5 Pancha Bhoota Stalam</Link></li>
+ <li><Link href="/navaratna" className="hover:text-saffron-400 transition-colors">9 Navaratna Gems</Link></li>
  <li><Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link></li>
  <li><Link href="/samskaras" className="hover:text-saffron-400 transition-colors">16 Samskaras</Link></li>
  </ul>
