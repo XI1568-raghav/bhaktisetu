@@ -40,10 +40,10 @@ import { TEMPLE_DETAILS } from '../../../lib/temple-details';
 
 export function generateStaticParams() {
   const fallback = [
-    'kashi-vishwanath', 'tirumala-tirupati', 'siddhivinayak', 'somnath',
+    'kashi-vishwanath', 'tirupati-balaji', 'siddhivinayak', 'somnath',
     'jagannath-puri', 'golden-temple', 'meenakshi-temple', 'kedarnath',
     'badrinath', 'akshardham', 'mahakaleshwar', 'dwarkadhish',
-    'rameshwaram', 'vaishno-devi',
+    'rameshwaram', 'vaishno-devi', 'baidyanath-dham',
   ];
   const known = Object.keys(TEMPLE_DETAILS);
   const all = Array.from(new Set([...known, ...fallback]));
