@@ -122,6 +122,15 @@ export const metadata: Metadata = {
  index: true,
  follow: true,
  },
+ // Search Console verification — pasted on first verify in GSC / Bing.
+ // Leaving values empty is safe; Next.js skips empty meta tags.
+ verification: {
+ google: process.env.NEXT_PUBLIC_GSC_VERIFICATION || "",
+ other: {
+ "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION || "",
+ "yandex-verification": process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || "",
+ },
+ },
 };
 
 export const viewport: Viewport = {
