@@ -91,6 +91,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/astrology/vastu', priority: 0.95 },
     { path: '/astrology/lal-kitab', priority: 0.95 },
     { path: '/astrology/pitra-dosh', priority: 0.95 },
+    { path: '/astrology/pancha-pakshi', priority: 0.95 },
     { path: '/matchmaking', priority: 0.95 },
     { path: '/wellness', priority: 0.7 },
     { path: '/gaushala', priority: 0.7 },
@@ -462,6 +463,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { PANCHA_PAKSHI_BIRDS } = await import('../lib/pancha-pakshi');
+  const panchaPakshiEntries = PANCHA_PAKSHI_BIRDS.map((b) => ({
+    url: `${BASE_URL}/astrology/pancha-pakshi/${b.slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const { PANCHA_BHOOTA_SLUGS } = await import('../lib/pancha-bhoota');
   const panchaBhootaEntries = PANCHA_BHOOTA_SLUGS.map((slug) => ({
     url: `${BASE_URL}/pancha-bhoota/${slug}`,
@@ -707,6 +716,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...karanaEntries,
     ...masaEntries,
     ...panchaBhootaEntries,
+    ...panchaPakshiEntries,
     ...navaratnaEntries,
     ...calendarMonthEntries,
     ...navaGrahaEntries,
