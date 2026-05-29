@@ -76,6 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/astrology', priority: 0.7 },
     { path: '/astrology/horoscope', priority: 0.7 },
     { path: '/astrology/kundli', priority: 0.7 },
+    { path: '/astrology/kundli-milan', priority: 0.95 },
     { path: '/wellness', priority: 0.7 },
     { path: '/gaushala', priority: 0.7 },
     { path: '/yatra', priority: 0.7 },
