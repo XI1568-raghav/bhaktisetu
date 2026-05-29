@@ -7,9 +7,9 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology, Horoscope & Kundli — 14 Free Tools + Live Pandits | Darshya',
+ title: 'Vedic Astrology, Horoscope & Kundli — 15 Free Tools + Live Pandits | Darshya',
  description:
- 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour, Kaal Sarp Dosh detector (12 Kalsarpa Yoga types), Shubh Muhurat finder for marriage / griha pravesh / vehicle / business / 8 more life events, Vastu Shastra 8-direction room placement scorer. Plus verified pandits for consults.',
+ 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour, Kaal Sarp Dosh detector (12 Kalsarpa Yoga types), Shubh Muhurat finder for marriage / griha pravesh / vehicle / business / 8 more life events, Vastu Shastra 8-direction room placement scorer, Lal Kitab Farman Finder mapping 12 life problems to 9 grahas with 108 house-by-house household remedies. Plus verified pandits for consults.',
 };
 
 const FREE_TOOLS = [
@@ -125,6 +125,14 @@ const FREE_TOOLS = [
   cta: 'Check My Vastu',
   badge: 'New',
  },
+ {
+  slug: 'lal-kitab',
+  title: 'Lal Kitab Upay Finder',
+  sanskrit: 'लाल किताब',
+  desc: 'Per Pt. Roop Chand Joshi (1939-52). Pick from 12 life problems (career/marriage/money/health/court case + 7 more) → identify troubling graha → get 3 universal Farman + house-by-house remedy. All 108 graha-in-house combinations with household upay — water, jaggery, mustard oil, copper, silver, feed crows. Zero gemstone cost.',
+  cta: 'Find My Farman',
+  badge: 'New',
+ },
 ];
 
 const TOOLS_LD = {
@@ -150,7 +158,7 @@ export default function AstrologyPage() {
  <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div className="text-center">
    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tools · no signup</p>
-   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">14 free astrology calculators</h2>
+   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">15 free astrology calculators</h2>
    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
     Use any of these instantly — fully Vedic, no signup, no email. When you want a pandit-led
     consult on top of the numbers, every result page links straight to live astrologers.
