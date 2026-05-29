@@ -1,9 +1,15 @@
 import { prisma } from '../lib/prisma.js';
 import { cached, CACHE_TTL } from '../lib/cache.js';
+import {
+  julianDay,
+  moonLongitudeSidereal,
+  sunLongitudeSidereal,
+  nakshatraFromLongitude,
+} from '../lib/muhurat.js';
 
 // ─── Dynamic Panchang Computation ──────────────────────────────────────────────
-// Fallback calculations when DB has no data for the requested date.
-// These are simplified astronomical approximations — accurate enough for daily use.
+// Sidereal Lahiri-ayanamsa math via shared helpers in lib/muhurat. Matches
+// drikpanchang convention used by mainstream Hindu panchangs in India.
 
 const TITHIS = [
   'Shukla Pratipada', 'Shukla Dwitiya', 'Shukla Tritiya', 'Shukla Chaturthi', 'Shukla Panchami',
@@ -198,64 +204,90 @@ const FESTIVALS_DB: Array<{
   { date: '2026-12-25', festivals: ['Christmas'], vrat: [], specialInfo: 'Celebration of the birth of Jesus Christ.' },
 ];
 
-/**
- * Convert a Date to a Julian Day Number (simplified).
- */
-function toJulianDay(date: Date): number {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-
-  const a = Math.floor((14 - month) / 12);
-  const y = year + 4800 - a;
-  const m = month + 12 * a - 3;
-  return day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4)
-    - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+// Evaluate sidereal longitudes at IST sunrise (~06:00 IST = 00:30 UTC) so the
+// tithi/nakshatra reflect the day's prevailing limb at the standard panchang
+// reference moment, not midnight UTC.
+function jdAtIstSunrise(date: Date): number {
+  const utcRef = new Date(Date.UTC(
+    date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 30, 0,
+  ));
+  return julianDay(utcRef);
 }
 
-/**
- * Compute Tithi index (0-29) based on lunar phase.
- */
 function computeTithiIndex(date: Date): number {
-  const jd = toJulianDay(date);
-  // Synodic month ≈ 29.53059 days
-  // Reference new moon: 2000-01-06 18:14 UTC → JD 2451550.26
-  const lunarAge = ((jd - 2451550.26) % 29.53059 + 29.53059) % 29.53059;
-  return Math.floor((lunarAge / 29.53059) * 30) % 30;
+  const jd = jdAtIstSunrise(date);
+  let elong = moonLongitudeSidereal(jd) - sunLongitudeSidereal(jd);
+  elong = ((elong % 360) + 360) % 360;
+  return Math.floor(elong / 12) % 30;
 }
 
-/**
- * Compute Nakshatra index (0-26) — approximation based on moon's mean longitude.
- */
 function computeNakshatraIndex(date: Date): number {
-  const jd = toJulianDay(date);
-  // Moon's mean longitude rate ≈ 13.176358° per day
-  // Reference: Moon at 0° Aries on 2000-01-01 (approx)
-  const daysSinceRef = jd - 2451544.5;
-  const moonLong = ((daysSinceRef * 13.176358) % 360 + 360) % 360;
-  // Each nakshatra = 360° / 27 = 13.333°
-  return Math.floor(moonLong / (360 / 27)) % 27;
+  const jd = jdAtIstSunrise(date);
+  return nakshatraFromLongitude(moonLongitudeSidereal(jd)).index;
 }
 
-/**
- * Compute Yoga index (0-26) — Sun longitude + Moon longitude mod (360/27).
- */
 function computeYogaIndex(date: Date): number {
-  const jd = toJulianDay(date);
-  const daysSinceRef = jd - 2451544.5;
-  const sunLong = ((daysSinceRef * 0.9856474) % 360 + 360) % 360;
-  const moonLong = ((daysSinceRef * 13.176358) % 360 + 360) % 360;
-  const combined = ((sunLong + moonLong) % 360 + 360) % 360;
-  return Math.floor(combined / (360 / 27)) % 27;
+  const jd = jdAtIstSunrise(date);
+  const sum = ((moonLongitudeSidereal(jd) + sunLongitudeSidereal(jd)) % 360 + 360) % 360;
+  return Math.floor(sum / (360 / 27)) % 27;
 }
 
-/**
- * Compute Karana index (0-10). There are 60 karanas in a month, two per tithi.
- */
-function computeKaranaIndex(tithiIndex: number): number {
-  // Each tithi has 2 karanas; cycle through 7 main + 4 fixed
-  const karanaNumber = (tithiIndex * 2) % 11;
-  return karanaNumber;
+// Karana sequence (drikpanchang convention).
+// Karanas 1..56 cycle through Bava..Vishti (the seven movable karanas, 8x repeating).
+// Karanas 57..60 are the four fixed karanas: Shakuni, Chatushpada, Naga, Kimstughna.
+// Karana index 0..10 maps into KARANAS array: 0..6 movable, 7..10 fixed.
+const MOVABLE_KARANA_INDICES = [0, 1, 2, 3, 4, 5, 6]; // Bava..Vishti
+const FIXED_KARANA_INDICES = [7, 8, 9, 10]; // Shakuni, Chatushpada, Naga, Kimstughna
+
+function computeKaranaIndex(date: Date): number {
+  const jd = jdAtIstSunrise(date);
+  let elong = moonLongitudeSidereal(jd) - sunLongitudeSidereal(jd);
+  elong = ((elong % 360) + 360) % 360;
+  // 60 karanas per lunar month, two per tithi (each spans 6°).
+  const karanaNum = Math.floor(elong / 6); // 0..59
+  // First karana of month (karanaNum===0) = Kimstughna (fixed, after Amavasya start).
+  // The four fixed karanas occupy positions 0, 57, 58, 59.
+  // Drikpanchang convention: Kimstughna first half of Shukla Pratipada,
+  // then Bava..Vishti repeat 8 times, then Shakuni, Chatushpada, Naga at end.
+  if (karanaNum === 0) return FIXED_KARANA_INDICES[3]!; // Kimstughna
+  if (karanaNum === 57) return FIXED_KARANA_INDICES[0]!; // Shakuni
+  if (karanaNum === 58) return FIXED_KARANA_INDICES[1]!; // Chatushpada
+  if (karanaNum === 59) return FIXED_KARANA_INDICES[2]!; // Naga
+  // Positions 1..56 cycle through the 7 movable karanas.
+  return MOVABLE_KARANA_INDICES[(karanaNum - 1) % 7]!;
+}
+
+// Rahu Kaal segment per weekday — which of the 8 equal day-segments
+// (sunrise to sunset divided by 8) is ruled by Rahu. Standard table.
+// Sunday=0 → 8th, Monday=1 → 2nd, Tuesday=2 → 7th, Wednesday=3 → 5th,
+// Thursday=4 → 6th, Friday=5 → 4th, Saturday=6 → 3rd.
+const RAHU_KAAL_SEGMENT: Record<number, number> = {
+  0: 7, 1: 1, 2: 6, 3: 4, 4: 5, 5: 3, 6: 2,
+};
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function minsToHHMM(m: number): string {
+  const h = Math.floor(m / 60) % 24;
+  const mm = Math.floor(m % 60);
+  return `${pad2(h)}:${pad2(mm)}`;
+}
+
+function parseHHMM(s: string): number {
+  const [h, m] = s.split(':').map((x) => parseInt(x, 10));
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+function computeRahuKaal(sunrise: string, sunset: string, dayOfWeek: number): string {
+  const sr = parseHHMM(sunrise);
+  const ss = parseHHMM(sunset);
+  const segLen = (ss - sr) / 8;
+  const segIdx = RAHU_KAAL_SEGMENT[dayOfWeek] ?? 0;
+  const start = sr + segLen * segIdx;
+  const end = start + segLen;
+  return `${minsToHHMM(start)} - ${minsToHHMM(end)}`;
 }
 
 /**
@@ -329,7 +361,7 @@ function computePanchang(date: Date, city: string = 'Delhi') {
   const tithiIdx = computeTithiIndex(date);
   const nakshatraIdx = computeNakshatraIndex(date);
   const yogaIdx = computeYogaIndex(date);
-  const karanaIdx = computeKaranaIndex(tithiIdx);
+  const karanaIdx = computeKaranaIndex(date);
   const dayOfWeek = date.getDay();
   const month = date.getMonth() + 1;
 
@@ -339,7 +371,10 @@ function computePanchang(date: Date, city: string = 'Delhi') {
   const karanaName = KARANAS[karanaIdx]!;
 
   const sunTimes = getSunTimes(city, month);
-  const rahuKaal = RAHU_KAAL_BY_DAY[dayOfWeek]!;
+  // Rahu Kaal = the Rahu-ruled octant of (sunset - sunrise) per weekday.
+  // Replaces the prior static-per-weekday string which was off by up to 90 min
+  // city-to-city and ignored seasonal day-length variation.
+  const rahuKaal = computeRahuKaal(sunTimes.sunrise, sunTimes.sunset, dayOfWeek);
 
   // Festival lookup
   const festivalInfo = getFestivalsForDate(date);
@@ -349,15 +384,23 @@ function computePanchang(date: Date, city: string = 'Delhi') {
   const allVrat = [...new Set([...festivalInfo.vrat, ...vratInfo.vrat])];
   const specialInfo = [festivalInfo.specialInfo, vratInfo.info].filter(Boolean).join(' ') || null;
 
-  // Compute approximate muhurat based on sunrise
-  const sunriseHour = parseInt(sunTimes.sunrise.split(':')[0]!, 10);
-  const sunriseMin = parseInt(sunTimes.sunrise.split(':')[1]!, 10);
-  const brahmaMuhurtaStart = `${String(sunriseHour - 2).padStart(2, '0')}:${String(sunriseMin).padStart(2, '0')}`;
-  const brahmaMuhurtaEnd = `${String(sunriseHour - 1).padStart(2, '0')}:${String(sunriseMin + 12).padStart(2, '0')}`;
-  const abhijitStart = `${String(sunriseHour + 6).padStart(2, '0')}:00`;
-  const abhijitEnd = `${String(sunriseHour + 6).padStart(2, '0')}:48`;
-  const vijayStart = `${String(sunriseHour + 8).padStart(2, '0')}:30`;
-  const vijayEnd = `${String(sunriseHour + 9).padStart(2, '0')}:15`;
+  // Muhurat windows computed from sunrise/sunset in minutes-of-day. Prior
+  // naive hour arithmetic overflowed (e.g. sunriseMin+12 → "05:73") and
+  // ignored day-length variation. Now derived per drikpanchang convention:
+  // Brahma = 1h36m to 0h48m before sunrise; Abhijit = midday ± 24m;
+  // Vijay = ~7th muhurta of the day (afternoon, 48-min duration).
+  const srMin = parseHHMM(sunTimes.sunrise);
+  const ssMin = parseHHMM(sunTimes.sunset);
+  const dayLen = ssMin - srMin;
+  const midday = (srMin + ssMin) / 2;
+  const brahmaMuhurtaStart = minsToHHMM(srMin - 96);
+  const brahmaMuhurtaEnd = minsToHHMM(srMin - 48);
+  const abhijitStart = minsToHHMM(midday - 24);
+  const abhijitEnd = minsToHHMM(midday + 24);
+  // Vijay muhurat = 11th muhurta (each muhurta = dayLen/15) from sunrise.
+  const muhurtaUnit = dayLen / 15;
+  const vijayStart = minsToHHMM(srMin + muhurtaUnit * 10);
+  const vijayEnd = minsToHHMM(srMin + muhurtaUnit * 11);
 
   return {
     id: `computed-${date.toISOString().split('T')[0]}-${city.toLowerCase()}`,
