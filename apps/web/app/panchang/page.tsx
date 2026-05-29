@@ -31,55 +31,36 @@ export const metadata: Metadata = {
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
-const fallbackPanchang: Panchang = {
- id: 'fallback',
- date: '2026-04-15',
- tithi: 'Shukla Trayodashi',
- nakshatra: 'Hasta',
- yoga: 'Shukla',
- karana: 'Garaja',
- sunrise: '6:02 AM',
- sunset: '6:48 PM',
- rahuKaal: '3:18 PM - 4:48 PM',
- shubhMuhurat: [
- { name: 'Abhijit Muhurat', start: '11:54 AM', end: '12:45 PM' },
- { name: 'Amrit Kaal', start: '2:18 PM', end: '3:52 PM' },
- { name: 'Brahma Muhurat', start: '4:26 AM', end: '5:14 AM' },
- { name: 'Vijay Muhurat', start: '2:27 PM', end: '3:18 PM' },
- ],
- festivals: [],
- vrat: ['Pradosh Vrat'],
- specialInfo:
- 'Pradosh Vrat falls on Trayodashi Tithi, dedicated to Lord Shiva and Goddess Parvati. Fasting from sunrise to seeing the moon. Shiva puja during Pradosh Kaal (1.5 hours before and after sunset) is highly meritorious.',
-};
+// Last-ditch fallback if API request itself throws (network / cold start).
+// API now self-computes via sidereal Lahiri math + DB upsert cron, so this
+// path should be rare. Date stamps to today rather than a locked past date,
+// and limbs read "Unavailable" instead of misleading fixed values.
+function buildFallbackPanchang(): Panchang {
+ const todayIso = new Date().toISOString().slice(0, 10);
+ return {
+  id: 'fallback',
+  date: todayIso,
+  tithi: 'Unavailable',
+  nakshatra: 'Unavailable',
+  yoga: 'Unavailable',
+  karana: 'Unavailable',
+  sunrise: '—',
+  sunset: '—',
+  rahuKaal: '—',
+  shubhMuhurat: [],
+  festivals: [],
+  vrat: [],
+  specialInfo:
+   'Panchang data is temporarily unavailable. Please refresh in a moment.',
+ };
+}
 
-const fallbackFestivals = [
- {
- date: 'April 17',
- name: 'Amavasya',
- description: 'New Moon day. Shraadh and Tarpan auspicious.',
- type: 'tithi',
- },
- {
- date: 'April 20',
- name: 'Akshaya Tritiya',
- description:
- 'One of the most auspicious days for new beginnings and gold purchases.',
- type: 'festival',
- },
- {
- date: 'April 26',
- name: 'Mohini Ekadashi',
- description: 'Fasting on this day removes sins and grants liberation.',
- type: 'vrat',
- },
- {
- date: 'May 1',
- name: 'Purnima',
- description: 'Full Moon day. Buddha Purnima celebrations.',
- type: 'festival',
- },
-];
+const fallbackFestivals: Array<{
+ date: string;
+ name: string;
+ description?: string;
+ type?: string;
+}> = [];
 
 const calendarDays = [
  { day: 30, month: 'prev' as const, tithi: 'Pratipada' },
@@ -127,7 +108,7 @@ async function fetchPanchang(dateOffset: number = 0): Promise<Panchang> {
  const data = await getTodayPanchang();
  return data;
  } catch {
- return fallbackPanchang;
+ return buildFallbackPanchang();
  }
 }
 

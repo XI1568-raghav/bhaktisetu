@@ -10,6 +10,7 @@ import { prewarmDailyHoroscopes } from '../lib/astrology.js';
 import { processAutoRefunds } from '../services/refund.service.js';
 import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
 import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepResult } from '../lib/webhook-idempotency.js';
+import { runDailyPanchangCompute } from './daily-panchang-compute-cron.js';
 
 interface RefundCronResult {
   processed: number;
@@ -60,10 +61,18 @@ interface ApolloResult {
   errorCount?: number;
 }
 
+interface PanchangComputeResult {
+  written: number;
+  skipped: number;
+  errors: number;
+  skippedReason?: string;
+}
+
 export interface DailyOpsResult {
   outreach: OutreachResult;
   waitlist: WaitlistResult;
   panchang: PanchangResult;
+  panchangCompute: PanchangComputeResult;
   youtube: YoutubeResult;
   apollo: ApolloResult;
   contentSeed: ContentSeedResult;
@@ -209,6 +218,22 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
   }
 }
 
+async function tickPanchangCompute(): Promise<PanchangComputeResult> {
+  // Upserts 7 days of panchang into DailyPanchang so the freshness gate in
+  // panchang.service.getToday never falls through to dynamic compute on the
+  // hot path. Idempotent — safe to run every tick.
+  try {
+    return await runDailyPanchangCompute();
+  } catch (err) {
+    return {
+      written: 0,
+      skipped: 0,
+      errors: 1,
+      skippedReason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 async function tickApolloRefresh(): Promise<ApolloResult> {
   // Best-effort: gated on a 7-day in-process cooldown inside
   // maybeRunApolloRefresh(). Missing APOLLO_API_KEY → skipped. Any error
@@ -265,6 +290,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       outreach,
       waitlist: { nudged: 0, skipped: true },
       panchang: { sent: 0, skipped: true },
+      panchangCompute: { written: 0, skipped: 0, errors: 0, skippedReason: 'outreachOnly' },
       youtube: { skipped: true, reason: 'outreachOnly' },
       apollo: { skipped: true, reason: 'outreachOnly' },
       contentSeed: {
@@ -303,6 +329,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   }
   const waitlist = await tickWaitlistNudges();
   const panchang = await tickPanchangBlast(opts.forcePanchang ?? false);
+  const panchangCompute = await tickPanchangCompute();
   const youtube = await tickYoutubeDiscovery();
   const apollo = await tickApolloRefresh();
   const contentSeed = await tickContentSeed();
@@ -317,6 +344,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     outreach,
     waitlist,
     panchang,
+    panchangCompute,
     youtube,
     apollo,
     contentSeed,

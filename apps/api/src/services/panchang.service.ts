@@ -357,7 +357,7 @@ function getVratFromTithi(tithiName: string, dayOfWeek: number): { vrat: string[
 /**
  * Compute a complete panchang for any date dynamically.
  */
-function computePanchang(date: Date, city: string = 'Delhi') {
+export function computePanchang(date: Date, city: string = 'Delhi') {
   const tithiIdx = computeTithiIndex(date);
   const nakshatraIdx = computeNakshatraIndex(date);
   const yogaIdx = computeYogaIndex(date);
@@ -457,12 +457,13 @@ export class PanchangService {
         orderBy: { date: 'desc' },
       });
 
-      // If DB is completely empty or closest is more than 7 days old, compute dynamically
-      if (!closest || Math.abs(today.getTime() - closest.date.getTime()) > 7 * 24 * 60 * 60 * 1000) {
+      // If DB is empty or closest > 2 days old, recompute from sidereal math.
+      // Prior 7-day window silently served stale data; new flag lets UI warn.
+      if (!closest || Math.abs(today.getTime() - closest.date.getTime()) > 2 * 24 * 60 * 60 * 1000) {
         return computePanchang(today, city ?? 'Delhi');
       }
 
-      return { ...closest, note: 'Showing most recent available panchang data.' };
+      return { ...closest, stale: true, note: 'Showing most recent available panchang data.' };
     });
   }
 
