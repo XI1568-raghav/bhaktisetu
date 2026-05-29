@@ -100,7 +100,7 @@ export type MuhuratInput = z.infer<typeof MuhuratInputSchema>;
 // Errors of 1° in Moon longitude shift nakshatra boundary by < 2 hours which we
 // accept for the booking-decision use case.
 
-function julianDay(date: Date): number {
+export function julianDay(date: Date): number {
   const y = date.getUTCFullYear();
   const m = date.getUTCMonth() + 1;
   const d =
@@ -125,7 +125,7 @@ function deg(x: number): number {
 
 // Sidereal Moon longitude at noon UTC (Lahiri ayanamsha approximation).
 // Reference: Meeus, "Astronomical Algorithms" simplified series + Lahiri 24°.
-function moonLongitudeSidereal(jd: number): number {
+export function moonLongitudeSidereal(jd: number): number {
   const T = (jd - 2451545.0) / 36525;
   const Lp = 218.3164477 + 481267.88123421 * T;
   const D = 297.8501921 + 445267.1114034 * T;
@@ -150,7 +150,7 @@ function moonLongitudeSidereal(jd: number): number {
   return deg(lon - ayan);
 }
 
-function sunLongitudeSidereal(jd: number): number {
+export function sunLongitudeSidereal(jd: number): number {
   const T = (jd - 2451545.0) / 36525;
   const L0 = 280.46646 + 36000.76983 * T;
   const M = 357.52911 + 35999.05029 * T;
