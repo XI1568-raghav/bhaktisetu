@@ -14,7 +14,7 @@ import {
   Quote,
   Star,
 } from 'lucide-react';
-import { organizationJsonLd } from '../../lib/jsonld';
+import { organizationJsonLd, brandFaqJsonLd } from '../../lib/jsonld';
 import ScrollReveal from '../../components/ScrollReveal';
 import RoadmapRail, { type Milestone } from '../../components/RoadmapRail';
 
@@ -189,6 +189,10 @@ export default function AboutPage() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(brandFaqJsonLd) }}
         />
 
         <div className="fixed top-14 left-0 right-0 z-40 h-0.5 bg-saffron-100">
