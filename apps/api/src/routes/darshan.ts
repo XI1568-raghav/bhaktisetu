@@ -127,6 +127,73 @@ const TEMPLE_LIVE_STREAMS = [
   },
 ];
 
+// Real aarti windows per temple in IST (HH:MM-HH:MM). Used to day-sync the
+// fallback /live response with actual temple ritual schedules so we don't
+// claim a temple is live at 3pm when its only aarti is the 4am Bhasma.
+// Sources: each temple's official site / SGPC / TTD / Shrine Board (verified
+// 2026-05-30). Update if a temple changes its public schedule.
+const TEMPLE_AARTI_SCHEDULE: Record<string, { regularHours: Record<string, string> }> = {
+  'live-somnath': {
+    regularHours: {
+      morningAarti: '06:30-07:30',
+      noonAarti: '11:30-12:30',
+      eveningAarti: '18:30-19:30',
+    },
+  },
+  // SVBC / Tirupati: 24/7 live stream.
+  'live-ttd': { regularHours: { svbcAarti: '00:00-23:59' } },
+  // Golden Temple: continuous Gurbani kirtan.
+  'live-golden-temple': { regularHours: { gurbaniAarti: '00:00-23:59' } },
+  'live-shirdi': {
+    regularHours: {
+      kakadAarti: '04:30-05:30',
+      madhyanaAarti: '12:00-13:00',
+      dhupAarti: '17:45-18:45',
+      shejAarti: '21:30-22:30',
+    },
+  },
+  'live-kashi': {
+    regularHours: {
+      mangalaAarti: '03:00-04:00',
+      shringarAarti: '08:00-09:00',
+      bhogAarti: '11:30-12:30',
+      sandhyaAarti: '19:00-20:00',
+      shringarBhogAarti: '21:00-22:00',
+    },
+  },
+  'live-siddhivinayak': {
+    regularHours: {
+      kakadAarti: '05:30-06:30',
+      madhyanhAarti: '12:00-13:00',
+      sandhyaAarti: '19:30-20:30',
+    },
+  },
+  // Mahakaleshwar: Bhasma Aarti at 4 AM is the famous one.
+  'live-mahakaleshwar': {
+    regularHours: {
+      bhasmaAarti: '04:00-06:00',
+      naivedyaAarti: '07:00-07:45',
+      sandhyaAarti: '19:00-19:45',
+      shayanAarti: '22:30-23:00',
+    },
+  },
+  // Vaishno Devi: Shrine Board does periodic darshan; morning + evening aartis.
+  'live-vaishno-devi': {
+    regularHours: {
+      morningAarti: '05:30-07:00',
+      eveningAarti: '18:30-19:30',
+    },
+  },
+  'live-jagannath': {
+    regularHours: {
+      mangalaAarti: '04:00-05:00',
+      sahanaAarti: '07:00-08:00',
+      madhyahnaAarti: '12:00-13:00',
+      sandhyaAarti: '19:00-20:00',
+    },
+  },
+};
+
 // Short-alias → canonical slug map. URLs like /darshan/kashi-vishwanath should
 // resolve to the temple stored under templeSlug 'kashi-vishwanath-varanasi'.
 const SLUG_ALIASES: Record<string, string> = {
@@ -225,26 +292,45 @@ export async function darshanRoutes(server: FastifyInstance) {
     }
 
     // Fallback: hardcoded streams with real YouTube embeds (DB empty / unreachable).
-    const streams = TEMPLE_LIVE_STREAMS.map((s) => ({
-      id: s.id,
-      templeId: s.id,
-      playbackUrl: s.playbackUrl,
-      status: 'live' as const,
-      viewerCount: s.viewerCount,
-      peakViewers: s.peakViewers,
-      isPremium: false,
-      scheduledStart: null,
-      availability: s.availability,
-      temple: {
-        name: s.templeName,
-        slug: s.templeSlug,
-        city: s.city,
-        deityPrimary: s.deityPrimary,
-        images: [s.thumbnailUrl],
-      },
-    }));
+    // Day-sync against TEMPLE_AARTI_SCHEDULE so we don't mark a temple "live"
+    // outside its actual aarti window.
+    const liveStreams: Array<Record<string, unknown>> = [];
+    const upcomingNote: Array<Record<string, unknown>> = [];
+    for (const s of TEMPLE_LIVE_STREAMS) {
+      const schedule = TEMPLE_AARTI_SCHEDULE[s.id];
+      const status = schedule ? getLiveStatus(schedule) : null;
+      const isLive = status ? status.isLive : true;
+      if (isLive) {
+        liveStreams.push({
+          id: s.id,
+          templeId: s.id,
+          playbackUrl: s.playbackUrl,
+          status: 'live' as const,
+          viewerCount: s.viewerCount,
+          peakViewers: s.peakViewers,
+          isPremium: false,
+          scheduledStart: null,
+          availability: s.availability,
+          currentSlot: status && status.isLive ? status.current.label : undefined,
+          endsInMin: status && status.isLive ? status.endsInMin : undefined,
+          temple: {
+            name: s.templeName,
+            slug: s.templeSlug,
+            city: s.city,
+            deityPrimary: s.deityPrimary,
+            images: [s.thumbnailUrl],
+          },
+        });
+      } else if (status && !status.isLive && status.nextAarti) {
+        upcomingNote.push({
+          templeSlug: s.templeSlug,
+          nextSlot: status.nextAarti.label,
+          startsInMin: status.nextStartsInMin,
+        });
+      }
+    }
 
-    const payload = { streams, total: streams.length, upcoming: [] };
+    const payload = { streams: liveStreams, total: liveStreams.length, upcoming: upcomingNote };
     liveCache = { at: Date.now(), payload };
     return payload;
   });

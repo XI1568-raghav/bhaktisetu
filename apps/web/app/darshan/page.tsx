@@ -16,6 +16,10 @@ export const metadata: Metadata = {
  'Watch live darshan from India’s most sacred temples. Real-time temple ceremonies, aarti, and abhishekam streams from 100+ temples.',
 };
 
+// Day-sync ISR: regenerate every 5 min so the live-now list reflects current
+// aarti windows (matches /darshan/[id] detail page revalidate cadence).
+export const revalidate = 300;
+
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
 const fallbackLiveStreams: DarshanStream[] = [
