@@ -16,8 +16,10 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { RASHIS, getRashi, pujasForRashi } from '../../../../lib/rashis';
+import { getDailyHoroscope, getPeriodHoroscope } from '../../../../lib/daily-horoscope';
 
 export const dynamicParams = false;
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return RASHIS.map((r) => ({ rashi: r.rashi }));
@@ -51,7 +53,14 @@ export default function RashiPage({ params }: Params) {
   const recommendedPujas = pujasForRashi(r);
   const otherRashis = RASHIS.filter((x) => x.rashi !== r.rashi).slice(0, 11);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const todayDate = new Date();
+  const today = todayDate.toISOString().slice(0, 10);
+  const daily = getDailyHoroscope(r.rashi, todayDate);
+  const weekly = getPeriodHoroscope(r.rashi, todayDate, 'week');
+  const monthly = getPeriodHoroscope(r.rashi, todayDate, 'month');
+  const liveRating = daily.rating;
+  const liveLuckyNumber = daily.luckyNumber;
+  const liveLuckyColor = daily.luckyColor;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -61,7 +70,7 @@ export default function RashiPage({ params }: Params) {
     dateModified: today,
     author: { '@type': 'Organization', name: 'Darshya Astrology' },
     publisher: { '@type': 'Organization', name: 'Darshya', logo: { '@type': 'ImageObject', url: 'https://darshya.online/logo.png' } },
-    description: r.prediction,
+    description: daily.prediction,
     mainEntityOfPage: `https://darshya.online/astrology/horoscope/${r.rashi}`,
   };
 
@@ -91,9 +100,10 @@ export default function RashiPage({ params }: Params) {
             Ruler: {r.rulingPlanet}
           </span>
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
-            {Array.from({ length: r.overallRating }).map((_, i) => (
+            {Array.from({ length: liveRating }).map((_, i) => (
               <Star key={i} className="w-3 h-3 fill-amber-500 text-amber-500" />
             ))}
+            <span className="ml-1 text-surface-500 text-[10px]">{liveRating}/5 today</span>
           </span>
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-2">
@@ -103,7 +113,10 @@ export default function RashiPage({ params }: Params) {
           {r.rashiHindi} Rashifal · {new Date(today).toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
         <p className="text-lg text-surface-700 leading-relaxed">
-          {r.prediction}
+          {daily.prediction}
+        </p>
+        <p className="mt-3 text-xs text-surface-500">
+          Today: Moon in house {daily.transits.moonHouse}, Sun in house {daily.transits.sunHouse}, Jupiter in house {daily.transits.jupiterHouse}, Saturn in house {daily.transits.saturnHouse} relative to your natal {r.rashiEnglish}. Tithi: {daily.tithi}. Moon nakshatra: {daily.nakshatra}.
         </p>
       </header>
 
@@ -112,19 +125,37 @@ export default function RashiPage({ params }: Params) {
           <div className="flex items-center gap-2 text-saffron-700 mb-2">
             <Briefcase className="w-4 h-4" /> <span className="text-xs font-semibold uppercase tracking-wide">Career</span>
           </div>
-          <p className="text-sm text-surface-800">{r.career}</p>
+          <p className="text-sm text-surface-800">{daily.career}</p>
         </div>
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
           <div className="flex items-center gap-2 text-rose-700 mb-2">
             <Heart className="w-4 h-4" /> <span className="text-xs font-semibold uppercase tracking-wide">Love</span>
           </div>
-          <p className="text-sm text-surface-800">{r.love}</p>
+          <p className="text-sm text-surface-800">{daily.love}</p>
         </div>
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex items-center gap-2 text-emerald-700 mb-2">
             <Activity className="w-4 h-4" /> <span className="text-xs font-semibold uppercase tracking-wide">Health</span>
           </div>
-          <p className="text-sm text-surface-800">{r.health}</p>
+          <p className="text-sm text-surface-800">{daily.health}</p>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-10">
+        <div className="flex items-center gap-2 text-amber-800 mb-2">
+          <Sparkles className="w-4 h-4" /> <span className="text-xs font-semibold uppercase tracking-wide">Finance today</span>
+        </div>
+        <p className="text-sm text-surface-800">{daily.finance}</p>
+      </section>
+
+      <section className="grid sm:grid-cols-2 gap-4 mb-10">
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+          <h3 className="text-sm font-bold text-indigo-700 uppercase tracking-wide mb-2">This Week (avg {weekly.rating}/5)</h3>
+          <p className="text-sm text-surface-800 leading-relaxed">{weekly.prediction}</p>
+        </div>
+        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
+          <h3 className="text-sm font-bold text-purple-700 uppercase tracking-wide mb-2">This Month (avg {monthly.rating}/5)</h3>
+          <p className="text-sm text-surface-800 leading-relaxed">{monthly.prediction}</p>
         </div>
       </section>
 
@@ -134,12 +165,12 @@ export default function RashiPage({ params }: Params) {
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-xs text-surface-500 uppercase tracking-wide mb-1">Number</p>
-            <p className="text-2xl font-bold text-saffron-700">{r.luckyNumber}</p>
+            <p className="text-xs text-surface-500 uppercase tracking-wide mb-1">Number today</p>
+            <p className="text-2xl font-bold text-saffron-700">{liveLuckyNumber}</p>
           </div>
           <div>
-            <p className="text-xs text-surface-500 uppercase tracking-wide mb-1">Color</p>
-            <p className="text-lg font-semibold text-surface-900">{r.luckyColor}</p>
+            <p className="text-xs text-surface-500 uppercase tracking-wide mb-1">Color today</p>
+            <p className="text-lg font-semibold text-surface-900">{liveLuckyColor}</p>
           </div>
           <div>
             <p className="text-xs text-surface-500 uppercase tracking-wide mb-1">Direction</p>

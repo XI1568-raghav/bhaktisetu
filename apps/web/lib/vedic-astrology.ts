@@ -140,7 +140,7 @@ export interface KundliData {
 
 // ─── Julian Day Number ───────────────────────────────────────────────────────
 
-function toJulianDay(year: number, month: number, day: number, hour: number): number {
+export function toJulianDay(year: number, month: number, day: number, hour: number): number {
  // Convert to Julian Day Number using the standard algorithm
  let y = year;
  let m = month;
@@ -155,7 +155,7 @@ function toJulianDay(year: number, month: number, day: number, hour: number): nu
 
 // ─── Lahiri Ayanamsa ─────────────────────────────────────────────────────────
 
-function getLahiriAyanamsa(jd: number): number {
+export function getLahiriAyanamsa(jd: number): number {
  // Lahiri ayanamsa calculation
  // Based on the standard formula: ayanamsa = 23.85 + 50.27" * (year - 2000) / 3600
  const T = (jd - 2451545.0) / 36525.0; // Julian centuries from J2000
@@ -166,7 +166,7 @@ function getLahiriAyanamsa(jd: number): number {
 
 // ─── Tropical to Sidereal Conversion ─────────────────────────────────────────
 
-function tropicalToSidereal(tropicalLong: number, ayanamsa: number): number {
+export function tropicalToSidereal(tropicalLong: number, ayanamsa: number): number {
  let sidereal = tropicalLong - ayanamsa;
  if (sidereal < 0) sidereal += 360;
  if (sidereal >= 360) sidereal -= 360;
@@ -183,7 +183,7 @@ function normalizeDeg(deg: number): number {
 
 // ─── Sun Position (simplified) ───────────────────────────────────────────────
 
-function getSunLongitude(jd: number): number {
+export function getSunLongitude(jd: number): number {
  const T = (jd - 2451545.0) / 36525.0;
  // Mean longitude
  const L0 = normalizeDeg(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
@@ -201,7 +201,7 @@ function getSunLongitude(jd: number): number {
 
 // ─── Moon Position (simplified) ──────────────────────────────────────────────
 
-function getMoonLongitude(jd: number): number {
+export function getMoonLongitude(jd: number): number {
  const T = (jd - 2451545.0) / 36525.0;
  // Mean longitude
  const Lp = normalizeDeg(218.3165 + 481267.8813 * T);
@@ -232,7 +232,7 @@ function getMoonLongitude(jd: number): number {
 
 // ─── Planetary Longitudes (simplified orbital elements) ──────────────────────
 
-function getPlanetLongitude(planet: string, jd: number): number {
+export function getPlanetLongitude(planet: string, jd: number): number {
  const T = (jd - 2451545.0) / 36525.0;
 
  // Simplified mean longitudes and periods
@@ -308,7 +308,7 @@ function getAscendant(jd: number, latitude: number, longitude: number): number {
 
 // ─── Sign from Longitude ─────────────────────────────────────────────────────
 
-function getSignIndex(longitude: number): number {
+export function getSignIndex(longitude: number): number {
  return Math.floor(longitude / 30) % 12;
 }
 
