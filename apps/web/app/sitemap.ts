@@ -92,6 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/astrology/lal-kitab', priority: 0.95 },
     { path: '/astrology/pitra-dosh', priority: 0.95 },
     { path: '/astrology/pancha-pakshi', priority: 0.95 },
+    { path: '/devi/navadurga', priority: 0.95 },
     { path: '/matchmaking', priority: 0.95 },
     { path: '/wellness', priority: 0.7 },
     { path: '/gaushala', priority: 0.7 },
@@ -471,6 +472,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const { NAVADURGA } = await import('../lib/navadurga');
+  const navadurgaEntries = NAVADURGA.map((n) => ({
+    url: `${BASE_URL}/devi/navadurga/${n.slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const { PANCHA_BHOOTA_SLUGS } = await import('../lib/pancha-bhoota');
   const panchaBhootaEntries = PANCHA_BHOOTA_SLUGS.map((slug) => ({
     url: `${BASE_URL}/pancha-bhoota/${slug}`,
@@ -717,6 +726,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...masaEntries,
     ...panchaBhootaEntries,
     ...panchaPakshiEntries,
+    ...navadurgaEntries,
     ...navaratnaEntries,
     ...calendarMonthEntries,
     ...navaGrahaEntries,
