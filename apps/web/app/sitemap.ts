@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getTemples, getPujaTypes } from '../lib/api';
 import { SHLOKAS } from '../lib/shlokas';
+import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -9,7 +10,7 @@ const BASE_URL = 'https://darshya.online';
 // rather than crash the build or produce an empty sitemap.
 const FALLBACK_TEMPLE_SLUGS = [
   'kashi-vishwanath',
-  'tirumala-tirupati',
+  'tirupati-balaji',
   'siddhivinayak',
   'somnath',
   'jagannath-puri',
@@ -615,6 +616,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const freePanditEntries = [
+    { url: `${BASE_URL}/free-pandit-advice`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.95 },
+    ...freePanditTopicSlugs().map((slug) => ({
+      url: `${BASE_URL}/free-pandit-advice/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
+    })),
+  ];
+
   const shlokaEntries = [
     { url: `${BASE_URL}/shlokas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.8 },
     ...SHLOKAS.map((s) => ({
@@ -673,6 +684,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...saptaRishiEntries,
     ...langEntries,
     ...shlokaEntries,
+    ...freePanditEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];
 }
