@@ -79,6 +79,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/astrology/kundli-milan', priority: 0.95 },
     { path: '/astrology/numerology', priority: 0.95 },
     { path: '/astrology/baby-name', priority: 0.95 },
+    { path: '/astrology/nakshatra-finder', priority: 0.95 },
     { path: '/matchmaking', priority: 0.95 },
     { path: '/wellness', priority: 0.7 },
     { path: '/gaushala', priority: 0.7 },
