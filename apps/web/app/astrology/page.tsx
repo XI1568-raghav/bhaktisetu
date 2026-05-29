@@ -7,9 +7,9 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology, Horoscope & Kundli — 11 Free Tools + Live Pandits | Darshya',
+ title: 'Vedic Astrology, Horoscope & Kundli — 12 Free Tools + Live Pandits | Darshya',
  description:
- 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour. Plus verified pandits for consults.',
+ 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour, Kaal Sarp Dosh detector (12 Kalsarpa Yoga types). Plus verified pandits for consults.',
 };
 
 const FREE_TOOLS = [
@@ -101,6 +101,14 @@ const FREE_TOOLS = [
   cta: 'Check Hora Now',
   badge: 'New',
  },
+ {
+  slug: 'kaal-sarp',
+  title: 'Kaal Sarp Dosh Calculator',
+  sanskrit: 'काल सर्प दोष',
+  desc: 'All 12 Kalsarpa Yoga types — Anant, Kulik, Vasuki, Shankhpal, Padma, Mahapadma, Takshak, Karkotak, Shankhachud, Ghatak, Vishdhar, Sheshnag. Detects forward/reverse arc + partial dosh. Naga puja remedies (Kalahasti / Trimbakeshwar) prescribed per house position.',
+  cta: 'Check Kaal Sarp Dosh',
+  badge: 'New',
+ },
 ];
 
 const TOOLS_LD = {
@@ -126,7 +134,7 @@ export default function AstrologyPage() {
  <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div className="text-center">
    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tools · no signup</p>
-   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">11 free astrology calculators</h2>
+   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">12 free astrology calculators</h2>
    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
     Use any of these instantly — fully Vedic, no signup, no email. When you want a pandit-led
     consult on top of the numbers, every result page links straight to live astrologers.
