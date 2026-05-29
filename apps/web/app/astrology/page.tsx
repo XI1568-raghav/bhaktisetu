@@ -7,9 +7,9 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology, Horoscope & Kundli — 8 Free Tools + Live Pandits | Darshya',
+ title: 'Vedic Astrology, Horoscope & Kundli — 9 Free Tools + Live Pandits | Darshya',
  description:
- 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check. Plus verified pandits for consults.',
+ 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat. Plus verified pandits for consults.',
 };
 
 const FREE_TOOLS = [
@@ -77,6 +77,14 @@ const FREE_TOOLS = [
   cta: 'Check Sade Sati',
   badge: 'New',
  },
+ {
+  slug: 'choghadiya',
+  title: 'Choghadiya Muhurat',
+  sanskrit: 'चौघड़िया मुहूर्त',
+  desc: '16 daily auspicious / inauspicious windows per Brihat Samhita. 8 day + 8 night periods classified Amrit/Shubh/Labh/Char/Kaal/Rog/Udveg. Live "now" marker. No birth-data needed — pure date + city.',
+  cta: 'Check Choghadiya Today',
+  badge: 'New',
+ },
 ];
 
 const TOOLS_LD = {
@@ -102,7 +110,7 @@ export default function AstrologyPage() {
  <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div className="text-center">
    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tools · no signup</p>
-   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">8 free astrology calculators</h2>
+   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">9 free astrology calculators</h2>
    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
     Use any of these instantly — fully Vedic, no signup, no email. When you want a pandit-led
     consult on top of the numbers, every result page links straight to live astrologers.
