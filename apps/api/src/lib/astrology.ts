@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { generateText, MODELS, DEMO_MODE } from '../integrations/claude.js';
 import { cached, cacheGet, cacheSet } from './cache.js';
+import { buildVedicChart, type VedicChart } from './jyotish.js';
+
+// Canonical reference fallback when caller has no birth coordinates. Delhi
+// matches the DailyPanchang canonical city — keeps Lagna sign-stable for
+// most North-India births; ~5-10° drift for distant locations, still better
+// than the prior 2hr/sign mock.
+const FALLBACK_LAT_DELHI = 28.6139;
+const FALLBACK_LON_DELHI = 77.209;
 
 // ─── Validation ─────────────────────────────────────────────────────────────────
 // Zod at the boundary. Internal callers can pass already-parsed values.
@@ -80,64 +88,10 @@ const DASHA_SEQUENCE: Array<{ planet: string; planetHindi: string; years: number
 const NAKSHATRA_LORD_INDEX = [0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 // ─── Sidereal helpers ───────────────────────────────────────────────────────────
-// Approximate Lahiri ayanamsa for current epoch (~24.1° in 2026). We don't
-// pretend to be Swiss Ephemeris — these are good enough for sun-sign /
-// moon-sign / nakshatra display. If `VEDIC_ASTRO_API_KEY` is set, callers can
-// front this with a real provider; otherwise our deterministic math is the
-// safe fallback (rather than 500-ing).
-
-const LAHIRI_AYANAMSA_DEG = 24.12;
-
-function julianDay(date: Date): number {
-  // JDN at 0h UT for the calendar date.
-  const Y = date.getUTCFullYear();
-  const M = date.getUTCMonth() + 1;
-  const D = date.getUTCDate();
-  const a = Math.floor((14 - M) / 12);
-  const y = Y + 4800 - a;
-  const m = M + 12 * a - 3;
-  return D + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
-}
-
-function meanSunLongitudeTropical(jd: number): number {
-  // VSOP87 truncated. Accurate to ~0.01° — adequate for sign assignment.
-  const T = (jd - 2451545) / 36525;
-  const L = (280.46646 + 36000.76983 * T + 0.0003032 * T * T) % 360;
-  const M = ((357.52911 + 35999.05029 * T - 0.0001537 * T * T) % 360) * (Math.PI / 180);
-  const C =
-    (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M) +
-    (0.019993 - 0.000101 * T) * Math.sin(2 * M) +
-    0.000289 * Math.sin(3 * M);
-  return ((L + C) % 360 + 360) % 360;
-}
-
-function meanMoonLongitudeTropical(jd: number): number {
-  // Truncated lunar theory (Meeus Astronomical Algorithms ch.47 main term).
-  const T = (jd - 2451545) / 36525;
-  const Lp = ((218.3164477 + 481267.88123421 * T - 0.0015786 * T * T) % 360 + 360) % 360;
-  const D = ((297.8501921 + 445267.1114034 * T) % 360) * (Math.PI / 180);
-  const M = ((357.5291092 + 35999.0502909 * T) % 360) * (Math.PI / 180);
-  const Mp = ((134.9633964 + 477198.8675055 * T) % 360) * (Math.PI / 180);
-  const F = ((93.2720950 + 483202.0175233 * T) % 360) * (Math.PI / 180);
-  const correction =
-    6.288774 * Math.sin(Mp) +
-    1.274027 * Math.sin(2 * D - Mp) +
-    0.658314 * Math.sin(2 * D) +
-    0.213618 * Math.sin(2 * Mp) -
-    0.185116 * Math.sin(M) -
-    0.114332 * Math.sin(2 * F);
-  return ((Lp + correction) % 360 + 360) % 360;
-}
-
-function siderealLongitude(tropicalDeg: number): number {
-  return ((tropicalDeg - LAHIRI_AYANAMSA_DEG) % 360 + 360) % 360;
-}
-
-function rashiFromLongitude(longDeg: number): { index: number; degree: number } {
-  const idx = Math.floor(longDeg / 30) % 12;
-  const degInSign = longDeg - idx * 30;
-  return { index: idx, degree: degInSign };
-}
+// Astronomy lives in jyotish.ts (Lahiri-drift ayanamsa + truncated VSOP87 +
+// mean lunar node + true Lagna from LST). This file keeps only the
+// nakshatra helper used by buildDashaSequence and the rashi/nakshatra
+// lookup tables.
 
 function nakshatraFromLongitude(longDeg: number): { index: number; pada: number } {
   // 27 nakshatras across 360° → 13°20' (=13.3333…°) each. 4 padas per nakshatra.
@@ -233,52 +187,47 @@ function signatureFor(input: KundliInput): string {
   return `kr_${(h >>> 0).toString(36)}`;
 }
 
-function lagnaFromTob(tob: string, sunRashiIndex: number): number {
-  // Naive Lagna estimate: each rashi ~2hr at the equator; rises in order from sun-sign.
-  // Real Lagna depends on latitude + ascendant calc, which Swiss Ephemeris would
-  // give us — we surface this as approximate.
-  const [hStr, mStr] = tob.split(':');
-  const hours = Number(hStr) + Number(mStr) / 60;
-  const offset = Math.floor(hours / 2) % 12;
-  return (sunRashiIndex + offset) % 12;
-}
-
 export async function generateKundli(rawInput: unknown): Promise<KundliPayload> {
   const input = KundliInputSchema.parse(rawInput);
+  // Birth moment in UTC. tob is local civil time per spec; without an IANA
+  // tz lookup we treat it as UTC (caller is expected to pre-normalise to
+  // UTC on the client — same convention as the prior implementation).
   const dob = new Date(`${input.dob}T${input.tob}:00Z`);
-  const jd = julianDay(dob) + (Number(input.tob.slice(0, 2)) + Number(input.tob.slice(3)) / 60) / 24;
 
-  const sunTropical = meanSunLongitudeTropical(jd);
-  const moonTropical = meanMoonLongitudeTropical(jd);
-  const sunSidereal = siderealLongitude(sunTropical);
-  const moonSidereal = siderealLongitude(moonTropical);
+  const lat = input.latitude ?? FALLBACK_LAT_DELHI;
+  const lon = input.longitude ?? FALLBACK_LON_DELHI;
+  const chart: VedicChart = buildVedicChart(dob, lat, lon);
 
-  const sunRashi = rashiFromLongitude(sunSidereal);
-  const moonRashi = rashiFromLongitude(moonSidereal);
-  const moonNak = nakshatraFromLongitude(moonSidereal);
+  const sunBody = chart.bodies.find((b) => b.planet === 'Sun')!;
+  const moonBody = chart.bodies.find((b) => b.planet === 'Moon')!;
+  const moonNak = nakshatraFromLongitude(moonBody.longitude);
 
-  const lagnaIdx = lagnaFromTob(input.tob, sunRashi.index);
-  const sun = RASHIS[sunRashi.index]!;
-  const moon = RASHIS[moonRashi.index]!;
-  const lagnaSign = RASHIS[lagnaIdx]!;
+  const sun = RASHIS[sunBody.rashiIndex]!;
+  const moon = RASHIS[moonBody.rashiIndex]!;
+  const lagnaSign = RASHIS[chart.lagna.rashiIndex]!;
   const nak = NAKSHATRAS[moonNak.index]!;
 
-  const dasha = buildDashaSequence(moonSidereal, dob);
+  const dasha = buildDashaSequence(moonBody.longitude, dob);
   const current = dasha.find((d) => d.isCurrent) ?? null;
 
-  // Approximate planetary positions: anchor Sun + Moon (computed); other 7 are
-  // placed deterministically relative to Lagna so the result is reproducible.
-  const planetaryPositions = [
-    { planet: 'Sun', sign: sun.english, signHindi: sun.hindi, degree: `${sunRashi.degree.toFixed(2)}°`, house: ((sunRashi.index - lagnaIdx + 12) % 12) + 1 },
-    { planet: 'Moon', sign: moon.english, signHindi: moon.hindi, degree: `${moonRashi.degree.toFixed(2)}°`, house: ((moonRashi.index - lagnaIdx + 12) % 12) + 1 },
-    ...['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].map((p, i) => {
-      const off = (sunRashi.index + i + 1) % 12;
-      const r = RASHIS[off]!;
-      return { planet: p, sign: r.english, signHindi: r.hindi, degree: `${(((moonRashi.degree + i * 7) % 30)).toFixed(2)}°`, house: ((off - lagnaIdx + 12) % 12) + 1 };
-    }),
-  ];
+  // Real planetary positions from jyotish.ts (Lahiri-drift sidereal +
+  // truncated VSOP87 + mean lunar node). Bhava is whole-sign from Lagna.
+  const planetaryPositions = chart.bodies.map((b) => {
+    const r = RASHIS[b.rashiIndex]!;
+    return {
+      planet: b.planet,
+      sign: r.english,
+      signHindi: r.hindi,
+      degree: `${b.rashiDegree.toFixed(2)}°`,
+      house: b.bhava,
+    };
+  });
 
   const useApi = !!process.env.VEDIC_ASTRO_API_KEY;
+  const usedFallbackLocation = input.latitude === undefined || input.longitude === undefined;
+  const lagnaWarning = usedFallbackLocation
+    ? ' Lagna computed from Delhi (28.6°N) reference — supply birth latitude/longitude for exact ascendant.'
+    : '';
   const interpretation = await generateInterpretation({
     name: input.name ?? 'Devotee',
     rashi: moon,
@@ -290,12 +239,16 @@ export async function generateKundli(rawInput: unknown): Promise<KundliPayload> 
 
   return {
     source: useApi ? 'vedicastroapi' : 'computed',
-    warning: useApi ? undefined : process.env.GROQ_API_KEY ? undefined : 'Astrology API key not configured — using local sidereal calculations + static interpretation.',
+    warning: useApi
+      ? (lagnaWarning || undefined)
+      : process.env.GROQ_API_KEY
+        ? (lagnaWarning || undefined)
+        : `Astrology API key not configured — using local sidereal calculations + static interpretation.${lagnaWarning}`,
     name: input.name ?? 'Devotee',
     dob: input.dob,
     tob: input.tob,
     location: input.location ?? `${input.latitude},${input.longitude}`,
-    ayanamsa: LAHIRI_AYANAMSA_DEG,
+    ayanamsa: +chart.ayanamsa.toFixed(4),
     rashi: { english: moon.english, sanskrit: moon.sanskrit, hindi: moon.hindi, symbol: moon.symbol, lord: moon.lord },
     sunSign: { english: sun.english, sanskrit: sun.sanskrit, hindi: sun.hindi },
     nakshatra: { name: nak[0], hindi: nak[1], pada: moonNak.pada },
