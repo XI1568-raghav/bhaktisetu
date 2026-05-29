@@ -7,9 +7,9 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology, Horoscope & Kundli — 5 Free Tools + Live Pandits | Darshya',
+ title: 'Vedic Astrology, Horoscope & Kundli — 7 Free Tools + Live Pandits | Darshya',
  description:
- 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology (life-path + name number), Baby Name by Nakshatra, Janma Nakshatra Finder (DOB + time). Plus verified pandits for consults.',
+ 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check. Plus verified pandits for consults.',
 };
 
 const FREE_TOOLS = [
@@ -53,6 +53,22 @@ const FREE_TOOLS = [
   cta: 'Find My Nakshatra',
   badge: 'New',
  },
+ {
+  slug: 'dasha',
+  title: 'Vimshottari Dasha Calculator',
+  sanskrit: 'विंशोत्तरी महादशा',
+  desc: 'Full 120-year Vimshottari timeline from your janma nakshatra. Current mahadasha + antardasha sub-period + all 9 planetary periods with start/end dates. Per Brihat Parashara.',
+  cta: 'Compute My Dasha',
+  badge: 'New',
+ },
+ {
+  slug: 'manglik',
+  title: 'Manglik Dosh Calculator',
+  sanskrit: 'मंगल दोष',
+  desc: 'Am I manglik? Chandra-lagna based Mars-house check with severity (poorna/anshik), Mars position, traditional cancellation rules, and Mangal Shanti remedies.',
+  cta: 'Check Manglik Dosh',
+  badge: 'New',
+ },
 ];
 
 const TOOLS_LD = {
@@ -78,7 +94,7 @@ export default function AstrologyPage() {
  <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div className="text-center">
    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tools · no signup</p>
-   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">5 free astrology calculators</h2>
+   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">7 free astrology calculators</h2>
    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
     Use any of these instantly — fully Vedic, no signup, no email. When you want a pandit-led
     consult on top of the numbers, every result page links straight to live astrologers.
