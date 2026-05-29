@@ -85,6 +85,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/astrology/sade-sati', priority: 0.95 },
     { path: '/astrology/choghadiya', priority: 0.95 },
     { path: '/astrology/rahu-kalam', priority: 0.95 },
+    { path: '/astrology/hora', priority: 0.95 },
     { path: '/matchmaking', priority: 0.95 },
     { path: '/wellness', priority: 0.7 },
     { path: '/gaushala', priority: 0.7 },
