@@ -244,10 +244,12 @@ function getPlanetLongitude(planet: string, jd: number): number {
  return normalizeDeg(L + 6.419 * Math.sin(Mrad) + 0.411 * Math.sin(2 * Mrad));
  }
  case 'Mercury': {
- const L = normalizeDeg(252.251 + 149472.6746 * T);
- const M = normalizeDeg(174.795 + 149472.5153 * T);
- const Mrad = M * Math.PI / 180;
- return normalizeDeg(L + 23.440 * Math.sin(Mrad) + 2.968 * Math.sin(2 * Mrad));
+ // Geocentric Mercury via elongation arc around Sun (max ~23°).
+ const helio = normalizeDeg(252.250906 + 149472.6746358 * T);
+ const sun = getSunLongitude(jd);
+ const earthHelio = normalizeDeg(sun + 180);
+ const phase = normalizeDeg(helio - earthHelio) * Math.PI / 180;
+ return normalizeDeg(sun + 23 * Math.sin(phase));
  }
  case 'Jupiter': {
  const L = normalizeDeg(34.351 + 3034.9057 * T);
@@ -256,10 +258,12 @@ function getPlanetLongitude(planet: string, jd: number): number {
  return normalizeDeg(L + 5.555 * Math.sin(Mrad) + 0.168 * Math.sin(2 * Mrad));
  }
  case 'Venus': {
- const L = normalizeDeg(181.980 + 58517.8159 * T);
- const M = normalizeDeg(50.416 + 58517.8039 * T);
- const Mrad = M * Math.PI / 180;
- return normalizeDeg(L + 0.776 * Math.sin(Mrad) + 0.005 * Math.sin(2 * Mrad));
+ // Geocentric Venus via elongation arc around Sun (max ~45°).
+ const helio = normalizeDeg(181.979801 + 58517.8156760 * T);
+ const sun = getSunLongitude(jd);
+ const earthHelio = normalizeDeg(sun + 180);
+ const phase = normalizeDeg(helio - earthHelio) * Math.PI / 180;
+ return normalizeDeg(sun + 45 * Math.sin(phase));
  }
  case 'Saturn': {
  const L = normalizeDeg(50.077 + 1222.1138 * T);
