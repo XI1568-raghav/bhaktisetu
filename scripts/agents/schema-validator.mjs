@@ -38,6 +38,8 @@ const TARGETS = [
   { url: '/tithi/ekadashi', expected: ['BreadcrumbList', 'Article'] },
   { url: '/masa', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/masa/chaitra', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/pancha-bhoota', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/pancha-bhoota/nataraja-chidambaram', expected: ['BreadcrumbList', 'Place', 'Article'] },
   { url: '/calendar', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/calendar/march', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/nava-graha', expected: ['ItemList'] },
