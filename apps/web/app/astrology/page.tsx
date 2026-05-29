@@ -7,9 +7,9 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology, Horoscope & Kundli — 4 Free Tools + Live Pandits | Darshya',
+ title: 'Vedic Astrology, Horoscope & Kundli — 5 Free Tools + Live Pandits | Darshya',
  description:
- 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology (life-path + name number), Baby Name by Nakshatra. Plus verified pandits for consults.',
+ 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology (life-path + name number), Baby Name by Nakshatra, Janma Nakshatra Finder (DOB + time). Plus verified pandits for consults.',
 };
 
 const FREE_TOOLS = [
@@ -45,6 +45,14 @@ const FREE_TOOLS = [
   cta: 'Find Baby Names',
   badge: 'New',
  },
+ {
+  slug: 'nakshatra-finder',
+  title: 'Janma Nakshatra Finder',
+  sanskrit: 'जन्म नक्षत्र',
+  desc: 'Enter DOB + time → get birth nakshatra, pada, rashi, lord, deity. Meeus moon longitude + Lahiri ayanamsa (±0.3°). Feeds directly into baby-name + kundli-milan.',
+  cta: 'Find My Nakshatra',
+  badge: 'New',
+ },
 ];
 
 const TOOLS_LD = {
@@ -70,14 +78,14 @@ export default function AstrologyPage() {
  <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
   <div className="text-center">
    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tools · no signup</p>
-   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">4 free astrology calculators</h2>
+   <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">5 free astrology calculators</h2>
    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
     Use any of these instantly — fully Vedic, no signup, no email. When you want a pandit-led
     consult on top of the numbers, every result page links straight to live astrologers.
    </p>
   </div>
 
-  <div className="mt-8 grid gap-4 sm:grid-cols-2">
+  <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
    {FREE_TOOLS.map((t) => (
     <Link
      key={t.slug}
