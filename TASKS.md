@@ -2,6 +2,49 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-30.
 
+## HANDOFF 2026-05-30 (Consultation lifecycle API — Render-only, pushed b71b06c + 9aae740 + 1f392f2)
+
+CF Pages still blocked at 500/500 until ~June 1 reset. Used the gap to close 3 real consultation-flow gaps via API-only commits (no apps/web change → 0 CF cost).
+
+| Commit | Subject |
+|---|---|
+| `b71b06c` | feat(api): consultation /mine list + /:id/cancel per business rule #5 |
+| `9aae740` | feat(api): consultation PATCH /:id/complete for astrologer session lifecycle |
+| `1f392f2` | test(api): consultation bookSchema + verifySchema + ref generator (13 tests) |
+
+### New endpoints
+
+- **GET /api/v1/consultation/mine** — authed user lists own paid consultations (limit 100, newest first). Powers `/profile/consultations` (web wiring deferred until CF unblocks).
+- **POST /api/v1/consultation/:id/cancel** — devotee-initiated. Refund eligibility per business rule #5: `pending_payment` always refundable; `confirmed` only if `scheduled_at` >= 24h away or unscheduled+paid <24h ago. Flips status to `cancelled`; refund executed manually in Razorpay dashboard.
+- **PATCH /api/v1/consultation/:id/complete** — astrologer marks confirmed session done after Jitsi ends. Closes the lifecycle (`pending_payment` → `confirmed` → `completed`/`cancelled`). Only assigned astrologer may flip; idempotent on already-complete; 409 on non-confirmed.
+
+### Render verify
+
+- `GET /api/v1/consultation/mine` → 401 (auth required, expected) — deploy of `b71b06c` confirmed live via Monitor at session midpoint.
+- Subsequent commits `9aae740` + `1f392f2` will redeploy on next Render auto-build; same auth gate applies.
+
+### Test coverage
+
+- 13 new vitest cases in `apps/api/src/routes/consultation.test.ts` covering minutes bounds (5-60, int only), scheduledAt iso shape, demo-path verify (consultationId only), uuid guard, AC-YYYYMMDD-XXXXXX ref shape + 50-pick uniqueness.
+- Pure schema + helper tests, no DB required — runs in 10ms.
+
+### What's still queued for CF June 1 unblock
+
+1. Trivial commit push to trigger fresh CF build of HEAD `13f4711` (the Loading-trap fix).
+2. Wire `/profile/consultations` web page consuming GET /mine.
+3. Cancel button on `/consultation/[id]/success` consuming POST /:id/cancel.
+4. Astrologer portal "Mark complete" button consuming PATCH /:id/complete.
+5. Curl-verify 4 routes from prior HANDOFF (darshan/govind-dev-ji-jaipur, astrology/astro_002, astrology/view, astrology/astro_002/book).
+
+### Resume cheatsheet
+
+1. `git log --oneline -5` — HEAD `1f392f2`
+2. `curl -s -o /dev/null -w "%{http_code}" https://api.darshya.online/api/v1/consultation/mine` — expect 401
+3. If user "continue" + CF still blocked: more Render-only API gaps (consultation auto-expire cron / wellness portal endpoints / pandit payout fields)
+4. If CF unblocked: batch all queued web changes into one commit, single push.
+
+---
+
 ## HANDOFF 2026-05-30 (Darshan + astrology route fixes — pushed, BLOCKED on CF quota until June 1 reset)
 
 User-reported (verbatim): "fix these for darshan" (govind-dev-ji-jaipur Loading trap) + "live consultansation with rs not working / talk to specific astrolger not working" + "showing this, fix all of these in one deployment" (astro_002 Loading trap screenshot) + "post fixing rednder and cloudflare deployemnt, I want both these green, please continue on the things as per our journey roadmap make sure follow all free tier rules ultrathink".
