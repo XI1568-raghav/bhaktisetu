@@ -306,6 +306,101 @@ export async function consultationRoutes(server: FastifyInstance) {
     });
   });
 
+  // ─── GET /mine ──────────────────────────────────────────────────────────
+  // List the calling user's paid consultations (history + upcoming). Newest
+  // first. Devotee profile page surfaces this. Static path MUST be declared
+  // before `/:id` so the UUID regex doesn't 400 the literal string.
+  server.get('/mine', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations
+       WHERE user_id = $1::uuid
+       ORDER BY COALESCE(scheduled_at, created_at) DESC
+       LIMIT 100;`,
+      userId,
+    );
+    return reply.send({
+      consultations: rows.map((row) => ({
+        id: row.id,
+        reference: row.reference,
+        astrologerId: row.astrologer_id,
+        astrologerName: row.astrologer_name,
+        minutes: row.minutes,
+        amountInr: Number(row.amount_inr),
+        currency: row.currency,
+        status: row.status,
+        roomName: row.room_name,
+        jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
+        scheduledAt: row.scheduled_at,
+        createdAt: row.created_at,
+        paidAt: row.paid_at,
+      })),
+    });
+  });
+
+  // ─── POST /:id/cancel ───────────────────────────────────────────────────
+  // Devotee-initiated cancellation. Per business rule #5: refund eligible
+  // up to 24h before scheduled time. Pending-payment rows cancel free. Past
+  // the window or already-completed rows refuse. Refund itself is ops-
+  // executed via Razorpay dashboard — this endpoint only flips the row.
+  server.post('/:id/cancel', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+      return reply.code(400).send({ error: 'Invalid consultation id.' });
+    }
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+      id,
+    );
+    const row = rows[0];
+    if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
+    if (row.user_id !== request.currentUser!.id) {
+      return reply.code(403).send({ error: 'Not authorized.' });
+    }
+    if (row.status === 'cancelled') {
+      return reply.send({ cancelled: true, refundEligible: false, alreadyCancelled: true });
+    }
+    if (row.status === 'completed') {
+      return reply.code(409).send({ error: 'Consultation already completed.' });
+    }
+
+    // Refund eligibility: pending_payment always refundable (no charge taken
+    // yet for demo; for live, gateway holds funds 24h). Confirmed rows must
+    // have scheduled_at and be > 24h away.
+    let refundEligible = false;
+    if (row.status === 'pending_payment') {
+      refundEligible = true;
+    } else if (row.status === 'confirmed') {
+      if (row.scheduled_at) {
+        const scheduledMs = new Date(row.scheduled_at).getTime();
+        const cutoffMs = Date.now() + 24 * 60 * 60 * 1000;
+        refundEligible = scheduledMs >= cutoffMs;
+      } else {
+        // No schedule yet — treat as window-open until astrologer starts.
+        refundEligible = !row.paid_at || Date.now() - new Date(row.paid_at).getTime() < 24 * 60 * 60 * 1000;
+      }
+    }
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE astrologer_consultations
+       SET status = 'cancelled'
+       WHERE id = $1::uuid;`,
+      id,
+    );
+
+    return reply.send({
+      cancelled: true,
+      refundEligible,
+      consultationId: row.id,
+      reference: row.reference,
+      note: refundEligible
+        ? 'Cancellation accepted. Refund will be processed within 5-7 business days.'
+        : 'Cancellation accepted. Refund not eligible — past the 24-hour cancellation window.',
+    });
+  });
+
   // ─── GET /:id ───────────────────────────────────────────────────────────
   // Fetch single consultation (success page + portal).
   server.get('/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
