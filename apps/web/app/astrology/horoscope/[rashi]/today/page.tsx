@@ -28,17 +28,12 @@ import {
   luckyNumberOfDay,
 } from '../../../../../lib/horoscope-templates';
 
-// CF Pages @cloudflare/next-on-pages flagged this route as needing edge runtime
-// despite SSG markers. Reason: combo of intra-day revalidate + per-request IST
-// date math triggers the adapter's dynamic-route guard. Edge runtime satisfies
-// the guard without measurable worker-bundle bloat (single small page).
+// Next 15 disallows `runtime='edge'` + `generateStaticParams` together.
+// CF Pages adapter rejected this route without edge runtime; choosing edge SSR
+// over SSG so the IST date in "today's horoscope" stays current per request.
+// getRashi() validates the slug and calls notFound() on miss — equivalent guard
+// to the prior dynamicParams=false. 12 rashis, pure JS compute, no DB hit.
 export const runtime = 'edge';
-export const dynamicParams = false;
-export const revalidate = 14400; // 4h — intra-day refresh for today's prediction
-
-export function generateStaticParams() {
-  return RASHIS.map((r) => ({ rashi: r.rashi }));
-}
 
 interface Params {
   params: Promise<{ rashi: string }>;
