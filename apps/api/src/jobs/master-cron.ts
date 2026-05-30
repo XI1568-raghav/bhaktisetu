@@ -11,6 +11,7 @@ import { processAutoRefunds } from '../services/refund.service.js';
 import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
 import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepResult } from '../lib/webhook-idempotency.js';
 import { runDailyPanchangCompute } from './daily-panchang-compute-cron.js';
+import { tickConsultationExpire, type ConsultationExpireResult } from './consultation-expire.js';
 
 interface RefundCronResult {
   processed: number;
@@ -83,6 +84,7 @@ export interface DailyOpsResult {
   refunds: RefundCronResult;
   backup: BackupResult;
   webhookReplaySweep: WebhookSweepResult;
+  consultationExpire: ConsultationExpireResult;
   ranAt: string;
 }
 
@@ -324,6 +326,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       refunds: { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'outreachOnly' },
       backup: { ok: true, skipped: true, reason: 'outreachOnly' },
       webhookReplaySweep: { deleted: 0, skipped: true, reason: 'outreachOnly' },
+      consultationExpire: { expired: 0, skipped: true, reason: 'outreachOnly' },
       ranAt: new Date().toISOString(),
     };
   }
@@ -340,6 +343,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const refunds = await tickAutoRefunds();
   const backup = await tickWeeklyBackup();
   const webhookReplaySweep = await tickWebhookReplaySweep();
+  const consultationExpire = await tickConsultationExpire();
   return {
     outreach,
     waitlist,
@@ -355,6 +359,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     refunds,
     backup,
     webhookReplaySweep,
+    consultationExpire,
     ranAt: new Date().toISOString(),
   };
 }
