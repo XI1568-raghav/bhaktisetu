@@ -401,6 +401,38 @@ export async function consultationRoutes(server: FastifyInstance) {
     });
   });
 
+  // ─── PATCH /:id/complete ────────────────────────────────────────────────
+  // Astrologer marks a confirmed session done after the Jitsi call ends.
+  // Only the assigned astrologer (astrologer_id == currentUser.id) may flip
+  // the row. Already-completed is idempotent; non-confirmed rows refuse.
+  server.patch('/:id/complete', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+      return reply.code(400).send({ error: 'Invalid consultation id.' });
+    }
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+      id,
+    );
+    const row = rows[0];
+    if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
+    if (row.astrologer_id !== request.currentUser!.id) {
+      return reply.code(403).send({ error: 'Only the assigned astrologer can mark complete.' });
+    }
+    if (row.status === 'completed') {
+      return reply.send({ completed: true, alreadyCompleted: true, consultationId: row.id });
+    }
+    if (row.status !== 'confirmed') {
+      return reply.code(409).send({ error: `Cannot complete a ${row.status} consultation.` });
+    }
+    await prisma.$executeRawUnsafe(
+      `UPDATE astrologer_consultations SET status = 'completed' WHERE id = $1::uuid;`,
+      id,
+    );
+    return reply.send({ completed: true, consultationId: row.id, reference: row.reference });
+  });
+
   // ─── GET /:id ───────────────────────────────────────────────────────────
   // Fetch single consultation (success page + portal).
   server.get('/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
