@@ -20,8 +20,9 @@ CF Pages still blocked at 500/500 until ~June 1 reset. Used the gap to close 3 r
 
 ### Render verify
 
-- `GET /api/v1/consultation/mine` → 401 (auth required, expected) — deploy of `b71b06c` confirmed live via Monitor at session midpoint.
-- Subsequent commits `9aae740` + `1f392f2` will redeploy on next Render auto-build; same auth gate applies.
+- `GET /api/v1/consultation/mine` → 401 (auth required, expected) — deploy of `b71b06c` confirmed live via Monitor at session midpoint (~90 s).
+- `PATCH /api/v1/consultation/:id/complete` → 404 after 17+ min wait. Render auto-deploy of `9aae740` appears queued/throttled behind the first deploy (free-tier serial build queue). Health endpoint responds fresh, so server is alive — second commit just not picked up yet. Recheck next session: expect 401 once Render processes the queue.
+- `GET /api/v1/admin/metrics/dashboard` → 401 (live; was 404 in prior HANDOFF — Sprint 3.4 deploy fully landed since).
 
 ### Test coverage
 
