@@ -2,6 +2,53 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-31.
 
+## HANDOFF 2026-05-31 #2 (Astrologer-consultation admin lifecycle surface — 2 commits)
+
+Closes the 4th + final queued web wiring from prior HANDOFF: an admin operator dashboard for the new `AstrologerConsultation` table (from POST /consultation/book lifecycle) since astrologer-side wiring is gated on slug→User-UUID onboarding work that's deferred.
+
+| Commit | Subject |
+|---|---|
+| `7dd2b9e` | feat(api): GET /consultation/admin/all — ADMIN-only LIST for new AstrologerConsultation table |
+| `27f33ef` | feat(web): /admin/consultations operator dashboard for AstrologerConsultation lifecycle |
+
+### API: GET /consultation/admin/all (7dd2b9e)
+
+ADMIN-gated (`[authenticateUser, requireRole('admin')]`). Zod query schema: `status` enum (4 values), `astrologerId` ≤64, `limit` 1-200 default 50 + `offset` ≥0 default 0, both `z.coerce.number()` for URL string→number. Dynamic WHERE clause built from positional `$1 $2` placeholders to keep SQL parameterized. Returns `{ total, limit, offset, consultations: [...] }` with row mapping that synthesizes `jitsiUrl = https://meet.jit.si/${room_name}` when room exists. Tests: 7 new schema-only vitest cases (empty defaults / string coercion / enum reject / 4 valid enum / cap 200 / negative offset reject / astrologerId 65-char reject). **515/515 green** (up from 508).
+
+### Web: /admin/consultations (27f33ef)
+
+`runtime='edge'` + AuthGuard. 5-filter chip row, 3-col summary card (pending/confirmed/completed counts), 8-col table with per-row Complete button (only when status=confirmed). PATCH `/api/v1/consultation/:id/complete` w/ confirm prompt → refetch. Auth bridge matches /profile/consultations: `localStorage.poojly_session_token ?? darshya_session_token`. 401/403 explicit messages. Footer documents the slug↔UUID gap.
+
+### Render verify (still pending)
+
+- `GET /api/v1/consultation/admin/all` — expect 401 once Render serial queue clears (now 5 commits deep: 9aae740 → 42f8f14 → 85386ee → 50fa426 → 7dd2b9e)
+- `PATCH /api/v1/consultation/:id/complete` — still 404 at session-end per prior HANDOFF, same queue
+- No action accelerates Render free-tier queue
+
+### CF Pages verify
+
+- `27f33ef` triggered CF build (web change). Expect `https://darshya.online/admin/consultations` → 200 after ~3min build.
+
+### Process learning (recorded)
+
+Pushed `7dd2b9e` without `[skip ci]` despite touching only `apps/api/**`. CLAUDE.md `[skip ci]` rule lists "scripts/agents/** with no apps/web/** change" — extends by principle to apps/api/**-only commits. Burned 1 unnecessary CF Pages build slot. **Next API-only push MUST include `[skip ci]`.**
+
+### Still queued (post-this-session)
+
+1. Astrologer onboarding design pass — slug↔User-UUID mapping. Current admin-only lifecycle drive is the workaround until this lands. ~6-8h plus owner decisions on KYC fields.
+2. ~~Curl-verify 4 routes from earlier HANDOFF~~ — daily uptime-pinger agent covers this.
+3. P51 `/chakras` finish — paused per user "stop 51 as of now"; awaiting resume/kill.
+4. P52+ programmatic-SEO depth (12 Jyotirlinga, 51 Shakti Peeth, Char Dham individual pages, etc).
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/admin/consultations` — expect 200 (CF build of 27f33ef)
+2. `curl -s -o /dev/null -w "%{http_code}" https://api.darshya.online/api/v1/consultation/admin/all` — expect 401 (Render of 7dd2b9e)
+3. `git log --oneline -5` — HEAD `27f33ef` (after this docs commit lands, HEAD updates)
+4. If user "continue": astrologer-onboarding design pass OR P51 chakras finish OR P52 fan-out
+
+---
+
 ## HANDOFF 2026-05-31 (Consultation web wiring + CF horoscope fix + Aadhaar gate tests — 5 commits pushed)
 
 CF Pages quota reset post-June-1. Used the window to close 2 of 4 queued web wirings from prior HANDOFF + ship CF build-blocker fix + lock business rule #4 with regression tests.
