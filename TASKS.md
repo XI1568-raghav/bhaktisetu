@@ -2,6 +2,38 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-30.
 
+## HANDOFF 2026-05-30 (Darshan + astrology route fixes — pushed, BLOCKED on CF quota until June 1 reset)
+
+User-reported (verbatim): "fix these for darshan" (govind-dev-ji-jaipur Loading trap) + "live consultansation with rs not working / talk to specific astrolger not working" + "showing this, fix all of these in one deployment" (astro_002 Loading trap screenshot) + "post fixing rednder and cloudflare deployemnt, I want both these green, please continue on the things as per our journey roadmap make sure follow all free tier rules ultrathink".
+
+### Code fixes shipped to git (2 commits)
+
+| Commit | Subject | What |
+|---|---|---|
+| `36475ec` | fix(web): unblock darshan + astrology routes | 4 file changes — darshan [id]/page.tsx dynamicParams=true + coming-soon UI / astrology [id]/page.tsx new server redirect to /view?id= / view/page.tsx Book Paid Consultation Link / not-found.tsx CSS delayed swap |
+| `13f4711` | fix(web): close added flex-col wrapper on astrology view page | Missing `</div>` close from prior commit caused JSX parse error on CF build; local `next build` now green |
+
+### CF Pages deploy block
+
+- 36475ec: CF build ran but failed on JSX parse error (missing `</div>` in view/page.tsx — fixed by 13f4711)
+- 13f4711: CF check_run started=completed 2026-05-30T11:20:30Z (0-sec) = **quota gate rejection at 500/500**. Per CLAUDE.md incident note same date.
+- Site still serves last-successful prior deploy. Loading-trap bugs visible to users until next build executes.
+- **Quota resets ~June 1.** No additional code-deploy pushes until then (each wastes a queued slot).
+- Local `pnpm next build` of HEAD = green, all routes built, no errors.
+
+### Render API
+
+- Health green: `https://api.darshya.online/health` returns `{"status":"ok"}`.
+
+### Recommended next action when CF unblocks
+
+1. Push any 1 trivial commit to trigger fresh build of HEAD `13f4711` (or wait for git-integration auto-build on next push of any branch).
+2. Curl-verify the 4 fixed routes:
+   - `https://darshya.online/darshan/govind-dev-ji-jaipur` (expect 200, coming-soon UI)
+   - `https://darshya.online/astrology/astro_002` (expect 200 after 307 redirect to /view?id=)
+   - `https://darshya.online/astrology/view?id=astro_002` (expect 200, has Book Paid Consultation CTA)
+   - `https://darshya.online/astrology/astro_002/book` (expect 200, Razorpay booking form)
+
 ## HANDOFF 2026-05-30 (Items 1-10 owner-audit batch — pushed 72a6da1)
 
 10-item owner audit closed end-to-end in single commit. Direct quote from user: "ultrathink lets fix all these 10 items end to end" + "tell me each step if my dependency and take ownership in things try to avoid putting things on me, ask for changes from my side so that future you can do it yourself"
