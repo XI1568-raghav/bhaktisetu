@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { __testing } from './consultation.js';
 
-const { bookSchema, verifySchema, nextConsultRef } = __testing;
+const { bookSchema, verifySchema, adminListSchema, nextConsultRef } = __testing;
 
 describe('consultation bookSchema', () => {
   const valid = { astrologerId: 'astro_001', minutes: 15 };
@@ -71,5 +71,50 @@ describe('consultation reference number', () => {
   it('emits distinct refs on consecutive calls', () => {
     const refs = new Set(Array.from({ length: 50 }, () => nextConsultRef()));
     expect(refs.size).toBeGreaterThan(40); // <=10 hex collisions across 50 picks is acceptable
+  });
+});
+
+describe('consultation adminListSchema', () => {
+  it('accepts empty query and applies defaults', () => {
+    const r = adminListSchema.safeParse({});
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.limit).toBe(50);
+      expect(r.data.offset).toBe(0);
+      expect(r.data.status).toBeUndefined();
+    }
+  });
+
+  it('coerces string limit/offset to numbers (URL query params arrive as strings)', () => {
+    const r = adminListSchema.safeParse({ limit: '25', offset: '100' });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.limit).toBe(25);
+      expect(r.data.offset).toBe(100);
+    }
+  });
+
+  it('rejects status outside the 4-value enum', () => {
+    const r = adminListSchema.safeParse({ status: 'in_progress' });
+    expect(r.success).toBe(false);
+  });
+
+  it('accepts all 4 valid status values', () => {
+    for (const status of ['pending_payment', 'confirmed', 'completed', 'cancelled'] as const) {
+      expect(adminListSchema.safeParse({ status }).success).toBe(true);
+    }
+  });
+
+  it('caps limit at 200 to prevent unbounded admin pulls', () => {
+    expect(adminListSchema.safeParse({ limit: 200 }).success).toBe(true);
+    expect(adminListSchema.safeParse({ limit: 201 }).success).toBe(false);
+  });
+
+  it('rejects negative offset', () => {
+    expect(adminListSchema.safeParse({ offset: -1 }).success).toBe(false);
+  });
+
+  it('rejects astrologerId over 64 chars (mirrors bookSchema cap)', () => {
+    expect(adminListSchema.safeParse({ astrologerId: 'x'.repeat(65) }).success).toBe(false);
   });
 });

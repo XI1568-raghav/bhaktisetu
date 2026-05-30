@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
-import { authenticateUser } from '../middlewares/auth.js';
+import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { astrologyService } from '../services/astrology.service.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 
@@ -99,7 +99,16 @@ const verifySchema = z.object({
   razorpay_signature: z.string().optional(),
 });
 
-export const __testing = { bookSchema, verifySchema, nextConsultRef };
+// Admin LIST query — status filter optional, paginated. Bounds tight enough
+// to prevent admin-page slowdown if rows grow into the thousands.
+const adminListSchema = z.object({
+  status: z.enum(['pending_payment', 'confirmed', 'completed', 'cancelled']).optional(),
+  astrologerId: z.string().min(1).max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const __testing = { bookSchema, verifySchema, adminListSchema, nextConsultRef };
 
 export async function consultationRoutes(server: FastifyInstance) {
   // Ephemeral Jitsi room (kept for backward-compat — used by /astrology
@@ -476,6 +485,66 @@ export async function consultationRoutes(server: FastifyInstance) {
         scheduledAt: row.scheduled_at,
         createdAt: row.created_at,
       },
+    });
+  });
+
+  // ─── GET /admin/all ─────────────────────────────────────────────────────
+  // ADMIN-only LIST across all AstrologerConsultation rows. Powers the
+  // /admin/consultations dashboard. Optional status + astrologerId filters,
+  // limit/offset pagination. Until real astrologer onboarding maps slug →
+  // User UUID, admin is the only role that can drive the full lifecycle
+  // (book → confirm → complete), so this list is the canonical operator view.
+  server.get('/admin/all', { preHandler: [authenticateUser, requireRole('admin')] }, async (request, reply) => {
+    const parsed = adminListSchema.safeParse(request.query ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid query', issues: parsed.error.flatten() });
+    }
+    const { status, astrologerId, limit, offset } = parsed.data;
+    await ensureConsultationTables();
+
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (status) {
+      params.push(status);
+      where.push(`status = $${params.length}`);
+    }
+    if (astrologerId) {
+      params.push(astrologerId);
+      where.push(`astrologer_id = $${params.length}`);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    params.push(limit);
+    params.push(offset);
+    const sql = `SELECT * FROM astrologer_consultations ${whereSql}
+       ORDER BY created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length};`;
+
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(sql, ...params);
+    const countParams = params.slice(0, where.length);
+    const countSql = `SELECT COUNT(*)::int AS total FROM astrologer_consultations ${whereSql};`;
+    const countRows = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...countParams);
+    const total = countRows[0]?.total ?? 0;
+
+    return reply.send({
+      total,
+      limit,
+      offset,
+      consultations: rows.map((row) => ({
+        id: row.id,
+        reference: row.reference,
+        userId: row.user_id,
+        astrologerId: row.astrologer_id,
+        astrologerName: row.astrologer_name,
+        minutes: row.minutes,
+        amountInr: Number(row.amount_inr),
+        currency: row.currency,
+        status: row.status,
+        roomName: row.room_name,
+        jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
+        scheduledAt: row.scheduled_at,
+        createdAt: row.created_at,
+        paidAt: row.paid_at,
+      })),
     });
   });
 }
