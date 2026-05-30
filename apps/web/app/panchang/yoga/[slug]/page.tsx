@@ -12,8 +12,9 @@ export function generateStaticParams() {
  return PANCHANG_YOGAS.map((y) => ({ slug: y.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
- const y = PANCHANG_YOGAS.find((it) => it.slug === params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const { slug } = await params;
+ const y = PANCHANG_YOGAS.find((it) => it.slug === slug);
  if (!y) return { title: 'Yoga not found | Darshya' };
  return {
   title: `${y.name} Yoga (${y.sanskrit}) — Effect, Deity, Best For | Darshya`,
@@ -34,8 +35,9 @@ const NATURE_BAR = {
  mixed: 'bg-amber-100 text-amber-900 border-amber-300',
 } as const;
 
-export default function YogaDetailPage({ params }: { params: { slug: string } }) {
- const y = PANCHANG_YOGAS.find((it) => it.slug === params.slug);
+export default async function YogaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+ const { slug } = await params;
+ const y = PANCHANG_YOGAS.find((it) => it.slug === slug);
  if (!y) notFound();
 
  const prev = PANCHANG_YOGAS[(y.number - 2 + PANCHANG_YOGAS.length) % PANCHANG_YOGAS.length];

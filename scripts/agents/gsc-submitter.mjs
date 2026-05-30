@@ -6,7 +6,10 @@
 import { fetchText, writeReport, upsertLog, WEB_BASE, TODAY } from './_lib.mjs';
 
 const SITEMAP_URL = `${WEB_BASE}/sitemap.xml`;
-const INDEXNOW_KEY = process.env.INDEXNOW_KEY || '';
+// Self-issued IndexNow key — committed to repo + served at /<key>.txt by CF Pages.
+// Owner doesn't need to paste anything; agent pings Bing on every run. Owner CAN
+// override via INDEXNOW_KEY env var if they want to rotate.
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY || 'b9d4f2e7c6a31085f8e5d2a7c9b1e4f6';
 
 async function pingGoogle() {
   const url = `https://www.google.com/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`;
@@ -53,9 +56,7 @@ async function run() {
   md += `## Pings\n\n| Engine | HTTP | Response |\n|---|---|---|\n`;
   for (const p of pings) md += `| ${p.engine} | ${p.status} | ${p.snippet || '-'} |\n`;
 
-  if (!INDEXNOW_KEY) {
-    md += `\n> **Setup**: Bing IndexNow requires \`INDEXNOW_KEY\`. Generate a 32-char hex string, host it at \`${WEB_BASE}/<key>.txt\` (single line = the key itself), then set \`INDEXNOW_KEY\` as a GH secret + Render env var.\n`;
-  }
+  md += `\n> IndexNow key self-issued (committed to repo + served at \`${WEB_BASE}/${INDEXNOW_KEY}.txt\`). No owner action needed.\n`;
 
   writeReport('gsc-submitter', md);
   upsertLog('gsc-submitter', `urls=${sitemap.urlCount} google=${pings[0].status} bing=${pings[1].status}`);

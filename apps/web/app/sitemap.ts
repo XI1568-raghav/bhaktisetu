@@ -304,14 +304,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
-  // Per-rashi horoscope pages — long-tail "{rashi} horoscope today".
-  const { rashiSlugs } = await import('../lib/rashis');
-  const rashiEntries = rashiSlugs().map((slug) => ({
-    url: `${BASE_URL}/astrology/horoscope/${slug}`,
+  // Per-city panchang pages — long-tail "panchang in {city}", "{city} sunrise today".
+  const panchangCityEntries = citySlugs().map((slug) => ({
+    url: `${BASE_URL}/panchang/${slug}`,
     lastModified: now,
     changeFrequency: 'daily' as const,
-    priority: 0.8,
+    priority: 0.85,
   }));
+
+  // Per-rashi horoscope pages — long-tail "{rashi} horoscope today".
+  const { rashiSlugs } = await import('../lib/rashis');
+  const rashiEntries = rashiSlugs().flatMap((slug) => [
+    {
+      url: `${BASE_URL}/astrology/horoscope/${slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    },
+    // Today's reading — high-volume daily long-tail.
+    {
+      url: `${BASE_URL}/astrology/horoscope/${slug}/today`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.85,
+    },
+  ]);
 
   // Blog posts — pulled from GH at build/revalidate, tolerant of API failure.
   let blogEntries: { url: string; lastModified: Date; changeFrequency: 'weekly'; priority: number }[] = [];
@@ -723,6 +740,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...chalisaEntries,
     ...festivalEntries,
     ...cityEntries,
+    ...panchangCityEntries,
     ...rashiEntries,
     ...blogEntries,
     ...bookEntries,
