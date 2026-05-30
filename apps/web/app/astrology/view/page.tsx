@@ -316,6 +316,14 @@ function AstrologerDetailInner() {
  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
  <span className="text-xs font-semibold text-amber-700">First 5 min FREE</span>
  </div>
+ <div className="flex flex-col gap-2">
+ <Link
+ href={`/astrology/${encodeURIComponent(astrologer.id)}/book`}
+ className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-saffron-600 text-white shadow-md shadow-saffron-500/25 hover:bg-saffron-700 transition-all duration-200"
+ >
+ <Video className="w-4 h-4" />
+ Book Paid Consultation
+ </Link>
  <div className="flex gap-2">
  <button
  type="button"

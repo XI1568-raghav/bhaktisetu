@@ -1,4 +1,8 @@
-export const dynamicParams = false;
+// Unknown slugs render on-demand (ISR) instead of 404-ing into the global
+// loading-flash not-found page. Page component detects unknown slugs and
+// renders an honest "Coming soon" panel rather than silently falling back
+// to Kashi Vishwanath content.
+export const dynamicParams = true;
 export const revalidate = 300;
 export function generateStaticParams() {
   return [
@@ -316,9 +320,6 @@ const FALLBACK_KEY_BY_SLUG: Record<string, keyof typeof FALLBACK_TEMPLE_LIBRARY>
  'jagannath-puri': 'jagannath-puri',
 };
 
-// Default-of-defaults if even the slug map fails. Non-null since the key is hardcoded above.
-const fallbackStream: DarshanStream = FALLBACK_TEMPLE_LIBRARY['kashi-vishwanath']!;
-
 const fallbackSchedule = [
  { time: '3:00 AM', event: 'Mangala Aarti', status: 'completed' },
  { time: '4:00 AM', event: 'Shringar Aarti', status: 'completed' },
@@ -360,7 +361,10 @@ const fallbackRelatedTemples = [
 
 // `idOrSlug` accepts either the stream id (e.g. live-somnath) or the temple slug
 // (e.g. somnath-gujarat). DarshanBrowser links to /darshan/<slug>, so slug is the hot path.
-async function getStreamById(idOrSlug: string): Promise<DarshanStream> {
+// Returns null when neither the API nor the static fallback library knows the slug —
+// the page renders a "Coming soon" panel for that case rather than silently serving
+// Kashi Vishwanath content under another temple's URL.
+async function getStreamById(idOrSlug: string): Promise<DarshanStream | null> {
  try {
  const [liveRes, scheduledRes] = await Promise.all([
  getLiveDarshan(),
@@ -379,7 +383,14 @@ async function getStreamById(idOrSlug: string): Promise<DarshanStream> {
  const entry = FALLBACK_TEMPLE_LIBRARY[fallbackKey];
  if (entry) return entry;
  }
- return fallbackStream;
+ return null;
+}
+
+function humanizeSlug(slug: string): string {
+ return slug
+ .split('-')
+ .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+ .join(' ');
 }
 
 async function getRelatedStreams(
@@ -402,6 +413,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
  const { id } = await params;
  const stream = await getStreamById(id);
+ if (!stream) {
+ const name = humanizeSlug(id);
+ return {
+ title: `${name} — Live Darshan Coming Soon | Darshya`,
+ description: `Live darshan from ${name} is not yet available on Darshya. Browse 16 active temple streams or request this temple.`,
+ robots: { index: false, follow: true },
+ };
+ }
  const title = `Live Darshan — ${stream.temple.name}, ${stream.temple.city}`;
  const description = `Watch live darshan from ${stream.temple.name} in ${stream.temple.city}. Daily aarti & continuous live stream from the official temple channel. ${stream.temple.deityPrimary}.`;
  const url = `https://darshya.online/darshan/${stream.temple.slug}`;
@@ -433,8 +452,99 @@ export default async function DarshanDetailPage({
 }) {
  const { id } = await params;
  const stream = await getStreamById(id);
- const relatedStreams = await getRelatedStreams(id);
 
+ // Unknown slug: render honest "Coming soon" panel instead of silently
+ // falling back to a different temple's live stream.
+ if (!stream) {
+ const name = humanizeSlug(id);
+ const activeRelated = await getRelatedStreams(id);
+ const browseList = activeRelated.length > 0
+ ? activeRelated.slice(0, 6)
+ : Object.values(FALLBACK_TEMPLE_LIBRARY).slice(0, 6);
+ return (
+ <div className="min-h-screen bg-[#2a2520]">
+ <div className="border-b border-surface-700">
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+ <nav className="flex items-center gap-1.5 text-sm text-surface-500">
+ <a href="/" className="hover:text-saffron-400 transition-colors flex items-center gap-1">
+ <Home className="w-3.5 h-3.5" />
+ Home
+ </a>
+ <ChevronRight className="w-3.5 h-3.5 text-surface-600" />
+ <a href="/darshan" className="hover:text-saffron-400 transition-colors">Live Darshan</a>
+ <ChevronRight className="w-3.5 h-3.5 text-surface-600" />
+ <span className="text-surface-300 font-medium truncate max-w-[200px]">{name}</span>
+ </nav>
+ </div>
+ </div>
+ <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+ <div className="bg-surface-800 border border-surface-700 rounded-2xl p-8 text-center">
+ <Video className="w-12 h-12 text-saffron-400 mx-auto mb-4 opacity-80" />
+ <h1 className="text-2xl font-bold text-white mb-2">{name}</h1>
+ <p className="text-surface-400 mb-1">Live darshan coming soon</p>
+ <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+ We don&rsquo;t have an active live stream for this temple yet. Browse the temples
+ streaming right now below, or visit our full directory.
+ </p>
+ <div className="flex flex-col sm:flex-row gap-3 justify-center">
+ <a
+ href="/darshan"
+ className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-saffron-600 text-white font-semibold text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ >
+ Browse All Live Streams
+ <ChevronRight className="w-4 h-4" />
+ </a>
+ <a
+ href="/temples"
+ className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 border border-surface-600 text-surface-200 font-semibold text-sm rounded-lg hover:border-saffron-400 hover:text-saffron-300 transition-colors"
+ >
+ Temple Directory
+ </a>
+ </div>
+ </div>
+
+ <div className="mt-10">
+ <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-4">
+ Streaming Right Now
+ </h2>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ {browseList.map((s) => (
+ <a
+ key={s.id}
+ href={`/darshan/${s.temple.slug}`}
+ className="group flex items-start gap-3 p-4 bg-surface-800 border border-surface-700 rounded-xl hover:border-saffron-400 transition-colors"
+ >
+ <div className="w-12 h-12 rounded-lg bg-surface-700 flex items-center justify-center shrink-0">
+ <Video className="w-5 h-5 text-surface-500" />
+ </div>
+ <div className="min-w-0 flex-1">
+ <h3 className="text-sm font-semibold text-white truncate group-hover:text-saffron-400 transition-colors">
+ {s.temple.name}
+ </h3>
+ <p className="text-xs text-surface-500 flex items-center gap-1 mt-0.5">
+ <MapPin className="w-3 h-3" />
+ {s.temple.city}
+ </p>
+ <div className="flex items-center gap-2 mt-1">
+ <span className="text-xs text-surface-600">{s.temple.deityPrimary}</span>
+ {s.status === 'live' && (
+ <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400">
+ <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+ LIVE
+ </span>
+ )}
+ </div>
+ </div>
+ </a>
+ ))}
+ </div>
+ </div>
+ </div>
+ </div>
+ );
+ }
+
+ const relatedStreams = await getRelatedStreams(id);
  const isLive = stream.status === 'live';
  const firstImg = stream.temple.images?.[0];
  const templeImage =
