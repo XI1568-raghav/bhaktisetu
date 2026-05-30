@@ -404,9 +404,15 @@ export async function consultationRoutes(server: FastifyInstance) {
   });
 
   // ─── PATCH /:id/complete ────────────────────────────────────────────────
-  // Astrologer marks a confirmed session done after the Jitsi call ends.
-  // Only the assigned astrologer (astrologer_id == currentUser.id) may flip
-  // the row. Already-completed is idempotent; non-confirmed rows refuse.
+  // Marks a confirmed session done after the Jitsi call ends.
+  //
+  // Auth: ADMIN role always allowed. Astrologer-self gate is parked —
+  // astrologer_id stores the in-memory astrology.service slug (e.g.
+  // 'astro_002'), not a User.id UUID, so equality with currentUser.id can
+  // never succeed for a real astrologer. Real astrologer onboarding (mapping
+  // slug → User row) is a deferred design pass; until then only ADMIN can
+  // close the lifecycle. Already-completed is idempotent; non-confirmed
+  // refuses with 409.
   server.patch('/:id/complete', { preHandler: [authenticateUser] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     if (!/^[0-9a-f-]{36}$/i.test(id)) {
@@ -419,8 +425,11 @@ export async function consultationRoutes(server: FastifyInstance) {
     );
     const row = rows[0];
     if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
-    if (row.astrologer_id !== request.currentUser!.id) {
-      return reply.code(403).send({ error: 'Only the assigned astrologer can mark complete.' });
+    const roles = request.currentUser!.roles ?? [];
+    const isAdmin = roles.includes('ADMIN');
+    const isAssignedAstrologer = row.astrologer_id === request.currentUser!.id;
+    if (!isAdmin && !isAssignedAstrologer) {
+      return reply.code(403).send({ error: 'Only the assigned astrologer or admin can mark complete.' });
     }
     if (row.status === 'completed') {
       return reply.send({ completed: true, alreadyCompleted: true, consultationId: row.id });
