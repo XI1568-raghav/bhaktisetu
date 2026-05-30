@@ -33,6 +33,27 @@ import DarshanPlayer from '../../../components/DarshanPlayer';
 import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
 import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
+import {
+ currentAartiState,
+ getScheduleForTemple,
+ nextAartiLabel,
+ nowMinutesIST,
+ type AartiSlot,
+} from '../../../lib/aarti-schedules';
+
+function formatTime12h(time24: string): string {
+ const [hStr, m] = time24.split(':');
+ const h = parseInt(hStr ?? '0', 10);
+ const ampm = h < 12 ? 'AM' : 'PM';
+ const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+ return `${h12}:${m ?? '00'} ${ampm}`;
+}
+
+function classifySlot(slot: AartiSlot, nowMin: number): 'live' | 'completed' | 'upcoming' {
+ if (nowMin >= slot.minutes && nowMin < slot.minutes + slot.durationMin) return 'live';
+ if (nowMin >= slot.minutes + slot.durationMin) return 'completed';
+ return 'upcoming';
+}
 
 // ─── YouTube stream URL lookup for fallback ──────────────────────────────────
 // Channel IDs verified 2026-05-02 against YouTube RSS feed (200 = real, 404 = dead).
@@ -431,6 +452,12 @@ export default async function DarshanDetailPage({
  ? await resolveLivePlaybackUrl(channelId)
  : (stream.playbackUrl || YOUTUBE_STREAMS[stream.temple.slug] || null);
 
+ // Per-temple IST aarti schedule + current-slot resolver. Null when slug not in
+ // aarti-schedules registry → page falls back to the legacy generic schedule.
+ const aartiSchedule = getScheduleForTemple(stream.temple.slug) ?? getScheduleForTemple(id);
+ const aartiNow = aartiSchedule ? currentAartiState(aartiSchedule.templeSlug) : null;
+ const nowMinIST = nowMinutesIST();
+
  return (
  <div className="min-h-screen bg-[#2a2520]">
  {/* Breadcrumb */}
@@ -575,14 +602,60 @@ export default async function DarshanDetailPage({
  </div>
  </div>
 
- {/* Today's Schedule */}
+ {/* Today's Schedule — IST aarti slots per temple (real time aware) */}
  <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
- <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+ <div className="flex items-start justify-between mb-4 gap-3">
+ <h2 className="text-lg font-bold text-white flex items-center gap-2">
  <Calendar className="w-5 h-5 text-saffron-400" />
- Today&rsquo;s Schedule
+ Today&rsquo;s Aarti Schedule
  </h2>
+ {aartiNow && (
+ <span
+ className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
+ aartiNow.current
+ ? 'text-red-400 bg-red-400/10 border border-red-400/30'
+ : 'text-saffron-300 bg-saffron-400/10 border border-saffron-400/30'
+ }`}
+ >
+ {aartiNow.current && <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />}
+ {nextAartiLabel(aartiNow)}
+ </span>
+ )}
+ </div>
  <div className="space-y-0">
- {fallbackSchedule.map((item, i) => (
+ {aartiSchedule
+ ? aartiSchedule.slots.map((slot) => {
+ const status = classifySlot(slot, nowMinIST);
+ return (
+ <div
+ key={slot.time}
+ className={`flex items-center gap-4 py-3 border-b border-surface-700/50 last:border-0 ${
+ status === 'live' ? 'bg-red-500/5 -mx-3 px-3 rounded' : ''
+ }`}
+ >
+ <span className="text-sm text-surface-400 font-medium w-24 shrink-0">
+ {formatTime12h(slot.time)}
+ </span>
+ <span className="text-sm text-white flex-1">{slot.event}</span>
+ <div>
+ {status === 'live' ? (
+ <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full">
+ <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+ LIVE
+ </span>
+ ) : status === 'completed' ? (
+ <span className="text-xs text-surface-600">Completed</span>
+ ) : (
+ <button className="inline-flex items-center gap-1 text-xs text-surface-500 hover:text-saffron-400 transition-colors">
+ <Bell className="w-3.5 h-3.5" />
+ Remind
+ </button>
+ )}
+ </div>
+ </div>
+ );
+ })
+ : fallbackSchedule.map((item, i) => (
  <div
  key={i}
  className="flex items-center gap-4 py-3 border-b border-surface-700/50 last:border-0"
@@ -590,9 +663,7 @@ export default async function DarshanDetailPage({
  <span className="text-sm text-surface-400 font-medium w-20 shrink-0">
  {item.time}
  </span>
- <span className="text-sm text-white flex-1">
- {item.event}
- </span>
+ <span className="text-sm text-white flex-1">{item.event}</span>
  <div>
  {item.status === 'live' ? (
  <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full">
@@ -600,9 +671,7 @@ export default async function DarshanDetailPage({
  LIVE
  </span>
  ) : item.status === 'completed' ? (
- <span className="text-xs text-surface-600">
- Completed
- </span>
+ <span className="text-xs text-surface-600">Completed</span>
  ) : (
  <button className="inline-flex items-center gap-1 text-xs text-surface-500 hover:text-saffron-400 transition-colors">
  <Bell className="w-3.5 h-3.5" />
@@ -613,6 +682,11 @@ export default async function DarshanDetailPage({
  </div>
  ))}
  </div>
+ {aartiSchedule && (
+ <p className="mt-3 text-[11px] text-surface-500">
+ Schedule shown in IST. Slots auto-classify based on current Indian Standard Time.
+ </p>
+ )}
  </div>
 
  {/* Chat / Prayer request placeholder */}
