@@ -28,6 +28,11 @@ import {
   luckyNumberOfDay,
 } from '../../../../../lib/horoscope-templates';
 
+// CF Pages @cloudflare/next-on-pages flagged this route as needing edge runtime
+// despite SSG markers. Reason: combo of intra-day revalidate + per-request IST
+// date math triggers the adapter's dynamic-route guard. Edge runtime satisfies
+// the guard without measurable worker-bundle bloat (single small page).
+export const runtime = 'edge';
 export const dynamicParams = false;
 export const revalidate = 14400; // 4h — intra-day refresh for today's prediction
 
