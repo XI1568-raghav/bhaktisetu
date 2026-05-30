@@ -5,7 +5,7 @@ export const runtime = 'edge';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, Loader2, Phone, Calendar, Clock, IndianRupee, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Phone, Calendar, Clock, IndianRupee, AlertCircle, XCircle } from 'lucide-react';
 import AuthGuard from '../../../../components/AuthGuard';
 import { API_BASE_URL } from '../../../../lib/api-config';
 
@@ -38,6 +38,30 @@ function SuccessContent() {
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  async function handleCancel() {
+    if (!consultation) return;
+    if (!confirm(`Cancel ${consultation.reference}? Refund (if eligible) takes 5-7 business days.`)) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/consultation/${consultation.id}/cancel`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0, 140)}` : ''}`);
+      }
+      setConsultation({ ...consultation, status: 'cancelled' });
+    } catch (e) {
+      setCancelError(e instanceof Error ? e.message : 'Could not cancel');
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -156,6 +180,26 @@ function SuccessContent() {
           <p className="text-xs text-surface-400 text-center mt-4">
             Room link also emailed to you. Refund if astrologer doesn't join within 10 min.
           </p>
+
+          {consultation.status !== 'cancelled' && consultation.status !== 'completed' && (
+            <div className="mt-4 border-t border-surface-100 pt-4">
+              {cancelError && (
+                <p className="text-xs text-red-600 text-center mb-2">{cancelError}</p>
+              )}
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 disabled:opacity-60"
+              >
+                {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                Cancel consultation
+              </button>
+              <p className="text-xs text-surface-400 text-center mt-2">
+                Refund eligibility: full refund up to 24h before scheduled time. Within 24h, refund only if astrologer no-show.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="text-center mt-6">
