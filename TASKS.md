@@ -1,6 +1,58 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-30.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-31.
+
+## HANDOFF 2026-05-31 (Consultation web wiring + CF horoscope fix + Aadhaar gate tests — 5 commits pushed)
+
+CF Pages quota reset post-June-1. Used the window to close 2 of 4 queued web wirings from prior HANDOFF + ship CF build-blocker fix + lock business rule #4 with regression tests.
+
+| Commit | Subject |
+|---|---|
+| `5e25e5b` | fix(web): edge runtime on /astrology/horoscope/[rashi]/today — unblock CF Pages build |
+| `42f8f14` | feat(api): consultation auto-expire stale pending_payment rows after 30min |
+| `85386ee` | feat(api): gate priest payout on aadhaarVerified per business rule #4 + 2 new negative tests |
+| `81111c6` | fix(web): drop SSG markers on horoscope/today, switch to edge SSR (Next 15 mutex) |
+| `3b56f47` | feat(web): wire /profile/consultations list + cancel button on success page |
+
+### CF horoscope/today fix (Next 15 incompat root cause)
+
+Prior session's `runtime='edge'` patch broke local build w/ `cannot use both export const runtime = 'edge' and export generateStaticParams`. Next 15 forbids the combo. Resolution: dropped `dynamicParams=false`, `revalidate=14400`, `generateStaticParams()` → kept edge runtime. Route now SSRs per request; `getRashi()` still calls `notFound()` on bad slug (12 rashis hardcoded). Pure-JS compute, no DB, no perf regression. Verified `ƒ /astrology/horoscope/[rashi]/today  196 B` in local build + curl 200 at Monitor iter 9.
+
+### Business rule #4 lock (Aadhaar gate)
+
+Added `prisma.priest.findUnique({ aadhaarVerified, displayName })` lookup in `createPriestPayout()`. Throws if priest record missing OR `aadhaarVerified=false`. 2 new negative-case vitest blocks lock the gate. Updated existing video_uploaded/delivered tests to mock priest record. **508/508 green** (up from 506).
+
+### Web wirings (apps/web side of consultation lifecycle API)
+
+- **`/profile/consultations`** — devotee list page consuming GET /consultation/mine. AuthGuard, status badges, per-row Details/Join (status=confirmed && jitsiUrl)/Cancel (pending_payment|confirmed)/Session-closed (completed) actions. Empty state → Browse Astrologers CTA.
+- **`/consultation/[id]/success` cancel button** — POST /consultation/:id/cancel. Confirmation prompt + refund-eligibility helper text per business rule #5. Optimistic status flip on success.
+
+Both `runtime='edge'`. Registered in `.next/types/routes.d.ts` as `/profile/consultations` + `/consultation/[id]/success`. Local build green.
+
+### Still queued from prior HANDOFF
+
+1. ~~Wire `/profile/consultations`~~ ✓ shipped 3b56f47
+2. ~~Cancel button on `/consultation/[id]/success`~~ ✓ shipped 3b56f47
+3. Astrologer portal "Mark complete" button consuming PATCH /:id/complete — **DEFERRED**: legacy `/astrology/consultations/:id` endpoint hits a different system (status enums scheduled/in_progress/completed/cancelled/no_show) than the new AstrologerConsultation table from POST /consultation/book. Would need new astrologer-side LIST endpoint for AstrologerConsultation rows first.
+4. Curl-verify 4 routes from earlier HANDOFF — covered by daily uptime-pinger agent.
+
+### Render PATCH /:id/complete (9aae740)
+
+Still 404 at session-end Monitor iter 9 — Render free-tier serial deploy queue still working through backlog. Health endpoint green. No action accelerates Render; passive wait. Next session: re-curl, expect 401.
+
+### Test stats
+
+- API: **508/508 green** across 32 files.
+- Web/Admin/Mobile: 0 (pre-existing — no regression).
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/profile/consultations` — expect 200 once CF build of 3b56f47 lands
+2. `curl -s -o /dev/null -w "%{http_code}" -X PATCH https://api.darshya.online/api/v1/consultation/00000000-0000-0000-0000-000000000000/complete` — expect 401 once Render queue clears 9aae740
+3. `git log --oneline -5` — HEAD `3b56f47`
+4. If user "continue": queued item #3 (astrologer-side AstrologerConsultation LIST + Mark-complete UI wiring, ~3h) OR P51 chakras finish OR P52 (12 Jyotirlinga / Shakti Peeth fan-out)
+
+---
 
 ## HANDOFF 2026-05-30 (Consultation lifecycle API — Render-only, pushed b71b06c + 9aae740 + 1f392f2)
 
@@ -605,6 +657,11 @@ All 7 provider portals primary-action audited:
 
 | Date | Task | Commit |
 |---|---|---|
+| 2026-05-31 | feat(web): /profile/consultations + cancel on success page (consume b71b06c API) | `3b56f47` |
+| 2026-05-31 | fix(web): drop SSG markers on horoscope/today, switch to edge SSR | `81111c6` |
+| 2026-05-31 | feat(api): gate priest payout on aadhaarVerified per business rule #4 + 2 regression tests | `85386ee` |
+| 2026-05-31 | feat(api): consultation auto-expire stale pending_payment rows after 30min | `42f8f14` |
+| 2026-05-31 | fix(web): edge runtime on /astrology/horoscope/[rashi]/today | `5e25e5b` |
 | 2026-05-27 | feat: P12-P14 — /today daily hub + seo-internal-linker + competitor-feature-watcher + markdown render upgrade | `919862b` |
 | 2026-05-27 | feat: P11 — 15 cities + 20 festivals added (cities 10→25, festivals 10→30) | `ab9a8e2` |
 | 2026-05-27 | feat: P10 — /aarti + /chalisa + /deity/[slug]/mantras programmatic-SEO | `5b91a52` |
