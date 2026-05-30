@@ -113,6 +113,24 @@ export interface DoshaInfo {
  remedy: string;
 }
 
+export interface NavamsaHouse {
+ house: number; // 1-12, indexed from D9 ascendant
+ sign: string;
+ signHindi: string;
+ signSymbol: string;
+ planets: string[];
+}
+
+export interface BhuktiPeriod {
+ mahadashaPlanet: string;
+ mahadashaPlanetHindi: string;
+ bhuktiPlanet: string;
+ bhuktiPlanetHindi: string;
+ startDate: string;
+ endDate: string;
+ days: number;
+}
+
 export interface KundliData {
  name: string;
  birthDate: string;
@@ -133,7 +151,9 @@ export interface KundliData {
  sunSignHindi: string;
  planetaryPositions: PlanetPosition[];
  houses: HouseInfo[];
+ navamsa: NavamsaHouse[];
  dashas: DashaPeriod[];
+ currentBhukti: BhuktiPeriod | null;
  doshas: DoshaInfo[];
  ayanamsa: number;
 }
@@ -708,6 +728,90 @@ function getCityCoordinates(place: string): CityCoords {
  return { lat: 28.6139, lng: 77.2090, timezone: 5.5 };
 }
 
+// ─── D9 Navamsa Chart ────────────────────────────────────────────────────────
+// Parashara rule: each rasi (30°) split into 9 parts of 3°20'. Starting navamsa
+// sign depends on rasi nature (movable / fixed / dual). Render in same 12-house
+// wheel keyed by D9 ascendant.
+
+function getNavamsaSignIndex(siderealLong: number): number {
+ const signIdx0 = Math.floor(siderealLong / 30); // 0..11
+ const degInSign = siderealLong - signIdx0 * 30; // 0..30
+ const navIdx = Math.floor(degInSign / (30 / 9)); // 0..8
+ let startSign: number;
+ const sign1 = signIdx0 + 1;
+ if (sign1 === 1 || sign1 === 4 || sign1 === 7 || sign1 === 10) {
+  startSign = sign1; // movable
+ } else if (sign1 === 2 || sign1 === 5 || sign1 === 8 || sign1 === 11) {
+  startSign = ((sign1 + 8 - 1) % 12) + 1; // fixed → 9th
+ } else {
+  startSign = ((sign1 + 4 - 1) % 12) + 1; // dual → 5th
+ }
+ return (startSign + navIdx - 1 - 1 + 12) % 12; // back to 0..11
+}
+
+function buildNavamsa(
+ planetLongitudes: Record<string, number>,
+ ascSid: number,
+): NavamsaHouse[] {
+ const ascNavIdx = getNavamsaSignIndex(ascSid);
+ const planetNavSigns: Record<string, number> = {};
+ for (const [planet, long] of Object.entries(planetLongitudes)) {
+  planetNavSigns[planet] = getNavamsaSignIndex(long);
+ }
+ const houses: NavamsaHouse[] = [];
+ for (let i = 0; i < 12; i++) {
+  const houseSignIdx = (ascNavIdx + i) % 12;
+  const planetsHere: string[] = [];
+  for (const [planet, navIdx] of Object.entries(planetNavSigns)) {
+   if (navIdx === houseSignIdx) {
+    const meta = PLANET_NAMES[planet as keyof typeof PLANET_NAMES];
+    planetsHere.push(meta?.english?.split(' (')[0] ?? planet);
+   }
+  }
+  houses.push({
+   house: i + 1,
+   sign: SIGNS[houseSignIdx]!,
+   signHindi: SIGNS_HINDI[houseSignIdx]!,
+   signSymbol: SIGN_SYMBOLS[houseSignIdx]!,
+   planets: planetsHere,
+  });
+ }
+ return houses;
+}
+
+// ─── Vimshottari Bhukti ──────────────────────────────────────────────────────
+// Sub-period within current mahadasha. Each bhukti = (mahaYears × bhuktiYears) / 120.
+
+function computeCurrentBhukti(dashas: DashaPeriod[]): BhuktiPeriod | null {
+ const current = dashas.find((d) => d.isCurrent);
+ if (!current) return null;
+ const mahaStart = new Date(current.startDate).getTime();
+ const mahaPlanet = current.planet;
+ const mahaYears = DASHA_YEARS[mahaPlanet]!;
+ const lordIdx = DASHA_SEQUENCE.indexOf(mahaPlanet as typeof DASHA_SEQUENCE[number]);
+ const nowMs = Date.now();
+ let cursor = mahaStart;
+ for (let i = 0; i < 9; i++) {
+  const bhuktiPlanet = DASHA_SEQUENCE[(lordIdx + i) % 9]!;
+  const bhuktiYears = DASHA_YEARS[bhuktiPlanet]!;
+  const bhuktiDays = (mahaYears * bhuktiYears) / 120 * 365.25;
+  const endMs = cursor + bhuktiDays * 86400000;
+  if (nowMs >= cursor && nowMs < endMs) {
+   return {
+    mahadashaPlanet: mahaPlanet,
+    mahadashaPlanetHindi: current.planetHindi,
+    bhuktiPlanet,
+    bhuktiPlanetHindi: PLANET_NAMES[bhuktiPlanet as keyof typeof PLANET_NAMES]?.hindi ?? bhuktiPlanet,
+    startDate: formatDate(new Date(cursor)),
+    endDate: formatDate(new Date(endMs)),
+    days: Math.round(bhuktiDays),
+   };
+  }
+  cursor = endMs;
+ }
+ return null;
+}
+
 // ─── Main Calculation Function ───────────────────────────────────────────────
 
 export function calculateKundli(
@@ -815,6 +919,10 @@ export function calculateKundli(
 
  // Calculate Dasha periods
  const dashas = calculateDashas(moonSid, jd);
+ const currentBhukti = computeCurrentBhukti(dashas);
+
+ // D9 Navamsa chart — uses sidereal longitudes already computed
+ const navamsa = buildNavamsa(planetLongitudes, ascSid);
 
  // Detect Doshas
  const doshas = detectDoshas(planetaryPositions, houses);
@@ -839,7 +947,9 @@ export function calculateKundli(
  sunSignHindi: SIGNS_HINDI[sunSignIdx]!,
  planetaryPositions,
  houses,
+ navamsa,
  dashas,
+ currentBhukti,
  doshas,
  ayanamsa: Math.round(ayanamsa * 100) / 100,
  };

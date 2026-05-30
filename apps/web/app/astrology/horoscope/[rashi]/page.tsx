@@ -26,11 +26,12 @@ export function generateStaticParams() {
 }
 
 interface Params {
-  params: { rashi: string };
+  params: Promise<{ rashi: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const r = getRashi(params.rashi);
+  const { rashi } = await params;
+  const r = getRashi(rashi);
   if (!r) return { title: 'Horoscope — Darshya' };
   return {
     title: `${r.rashiEnglish} Horoscope Today (${r.rashiHindi} Rashifal) — Darshya`,
@@ -46,8 +47,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default function RashiPage({ params }: Params) {
-  const r = getRashi(params.rashi);
+export default async function RashiPage({ params }: Params) {
+  const { rashi } = await params;
+  const r = getRashi(rashi);
   if (!r) notFound();
 
   const recommendedPujas = pujasForRashi(r);
@@ -112,6 +114,12 @@ export default function RashiPage({ params }: Params) {
         <p className="text-2xl font-serif text-saffron-700 mb-3">
           {r.rashiHindi} Rashifal · {new Date(today).toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
+        <Link
+          href={`/astrology/horoscope/${r.rashi}/today`}
+          className="inline-flex items-center gap-1.5 mb-4 px-4 py-2 rounded-lg bg-saffron-600 text-white text-sm font-semibold hover:bg-saffron-700 transition"
+        >
+          Today&apos;s reading <ArrowRight className="w-4 h-4" />
+        </Link>
         <p className="text-lg text-surface-700 leading-relaxed">
           {daily.prediction}
         </p>
