@@ -830,6 +830,23 @@ export class PaymentService {
       throw new Error('No priest assigned to this booking.');
     }
 
+    // Business rule #4: Priest payout gated on Aadhaar verification.
+    // Refuse to mint the payout row if the assigned priest has not
+    // completed KYC — admin should chase the priest, not silently queue
+    // money to an unverified bank account.
+    const priestKyc = await prisma.priest.findUnique({
+      where: { id: booking.priestId },
+      select: { aadhaarVerified: true, displayName: true },
+    });
+    if (!priestKyc) {
+      throw new Error('Assigned priest not found.');
+    }
+    if (!priestKyc.aadhaarVerified) {
+      throw new Error(
+        `Priest "${priestKyc.displayName}" has not completed Aadhaar verification. Payout blocked until KYC clears.`
+      );
+    }
+
     // Check if payout already exists
     const existingPayout = await prisma.priestPayout.findFirst({
       where: { bookingId },

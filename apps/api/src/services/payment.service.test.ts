@@ -172,6 +172,10 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
     async (status) => {
       const service = await loadService();
       prismaMock.pujaBooking.findUnique.mockResolvedValue({ ...baseBooking, status });
+      prismaMock.priest.findUnique.mockResolvedValue({
+        aadhaarVerified: true,
+        displayName: 'Test Priest',
+      });
       prismaMock.priestPayout.findFirst.mockResolvedValue(null);
       prismaMock.priestPayout.create.mockResolvedValue({
         id: 'po-1',
@@ -185,6 +189,37 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
       expect(out.id).toBe('po-1');
     }
   );
+
+  it('refuses payout when priest.aadhaarVerified=false (business rule #4)', async () => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...baseBooking,
+      status: 'video_uploaded',
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      aadhaarVerified: false,
+      displayName: 'Unverified Priest',
+    });
+
+    await expect(service.createPriestPayout('bk-1')).rejects.toThrow(
+      /has not completed Aadhaar verification/
+    );
+    expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses payout when assigned priest record missing', async () => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...baseBooking,
+      status: 'delivered',
+    });
+    prismaMock.priest.findUnique.mockResolvedValue(null);
+
+    await expect(service.createPriestPayout('bk-1')).rejects.toThrow(
+      /Assigned priest not found/
+    );
+    expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('PaymentService.handleWebhook (legacy JSON.stringify path)', () => {
