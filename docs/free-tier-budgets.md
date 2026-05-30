@@ -71,9 +71,10 @@ Cap = 2000 min/mo. Headroom ~1150 min/mo for ad-hoc reruns and manual.
 ### Commit batching rules
 
 1. **No 1-commit pushes for code that triggers CI.** Wait until you have ≥ a logical chunk (5-10 changes, one feature, or end of a debug session).
-2. **Pure docs changes** (TASKS.md / ROADMAP.md / PROJECT_CONTEXT.md / docs/**) can land alone because they hit no workflows.
-3. **Before pushing, check current month burn:** if > 60% of cap consumed and it's < 20th of month, pause until next cycle for non-critical work.
+2. **Pure docs changes** (TASKS.md / ROADMAP.md / PROJECT_CONTEXT.md / docs/**, *.md only) MUST append `[skip ci]` to commit subject. CF Pages git-integration runs on every push regardless of paths — `[skip ci]` is the ONLY mechanism that prevents CF build queue entry. Correction 2026-05-30: prior rule said "docs can land alone because they hit no workflows" — that was wrong, CF Pages has no paths-ignore.
+3. **Before pushing, check current month burn:** if > 60% of cap consumed and it's < 20th of month, pause until next cycle for non-critical work. Without cloudflare MCP installed, you CANNOT see CF build count programmatically — ask owner before any non-critical push after mid-month.
 4. **In an unattended/autonomous batch:** commit at logical chunk boundaries to git, but **push only at end of batch or when blocked**, not after every commit. This keeps CI cost = 1× per batch, not 1× per commit.
+5. **`[skip ci]` syntax accepted by CF Pages:** `[skip ci]`, `[ci skip]`, `[skip-ci]`, `[CI Skip]` — place in commit subject or body. Skips queue entirely → zero build quota burn even at 500/500 cap.
 
 ### CF Pages rules
 
@@ -81,7 +82,8 @@ Cap = 2000 min/mo. Headroom ~1150 min/mo for ad-hoc reruns and manual.
 2. **Default new pages to Static / SSG.** Only add `runtime = 'edge'` if you NEED per-request server logic.
 3. **`'use client'` pages don't need edge** — they hydrate in browser.
 4. **Heavy SDKs (Stripe, Marked, Lucide-all, date-fns) banned from edge routes.**
-5. **CF builds 500/mo:** same rules as GH commit batching. Each push to main = 1 CF build.
+5. **CF builds 500/mo:** same rules as GH commit batching. Each push to main = 1 CF build, regardless of file types touched.
+6. **Two pushes in same hour for same logical work = budget waste.** If you just pushed code, do NOT push docs follow-up — amend or wait until next code change. Incident 2026-05-30: `72a6da1` code + `a358f92` docs pushed 5 min apart, both blocked at 500/500.
 
 ### Resend rules
 

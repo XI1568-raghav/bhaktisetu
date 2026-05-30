@@ -14,6 +14,8 @@ Repo `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — n
 - Before /compact or /clear → write HANDOFF block in TASKS.md.
 - Treat 3 files as shared memory across agents + sessions.
 - Verify "memory says X" by reading current source before acting.
+- **Every push = 1 CF Pages build. Cap 500/mo.** Before pushing, check if commit is docs-only or non-deploy (TASKS.md / ROADMAP.md / PROJECT_CONTEXT.md / docs/** / *.md only / scripts/agents/** with no `apps/web/**` change). If yes → append `[skip ci]` to commit subject line. CF Pages git integration skips queue entirely → no build, no quota burn. Incident 2026-05-30: docs-only `a358f92` pushed without tag, blocked at 500/500 along with `72a6da1` code commit.
+- **Batch commits before pushing.** Stage all session work, push once. Multiple `git push` calls in same session = waste. Prefer single push at session end.
 
 ## Deeper docs (lazy-load)
 
