@@ -99,6 +99,8 @@ const verifySchema = z.object({
   razorpay_signature: z.string().optional(),
 });
 
+export const __testing = { bookSchema, verifySchema, nextConsultRef };
+
 export async function consultationRoutes(server: FastifyInstance) {
   // Ephemeral Jitsi room (kept for backward-compat — used by /astrology
   // page "Call" button which spins a free-trial room w/o payment).
