@@ -12,8 +12,9 @@ export function generateStaticParams() {
  return PANCHANG_KARANAS.map((k) => ({ slug: k.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
- const k = PANCHANG_KARANAS.find((it) => it.slug === params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const { slug } = await params;
+ const k = PANCHANG_KARANAS.find((it) => it.slug === slug);
  if (!k) return { title: 'Karana not found | Darshya' };
  return {
   title: `${k.name} Karana (${k.sanskrit}) — Effect, Deity, Best For | Darshya`,
@@ -34,8 +35,9 @@ const NATURE_BAR = {
  mixed: 'bg-amber-100 text-amber-900 border-amber-300',
 } as const;
 
-export default function KaranaDetailPage({ params }: { params: { slug: string } }) {
- const k = PANCHANG_KARANAS.find((it) => it.slug === params.slug);
+export default async function KaranaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+ const { slug } = await params;
+ const k = PANCHANG_KARANAS.find((it) => it.slug === slug);
  if (!k) notFound();
 
  const prev = PANCHANG_KARANAS[(k.number - 2 + PANCHANG_KARANAS.length) % PANCHANG_KARANAS.length];

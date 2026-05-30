@@ -263,6 +263,17 @@ export default function KundliPage() {
  <p className="text-lg font-bold">{currentDasha.years} years</p>
  </div>
  </div>
+ {kundli.currentBhukti && (
+ <div className="mt-4 pt-4 border-t border-white/20">
+ <p className="text-xs text-white/60 mb-1">Current Bhukti (Antardasha)</p>
+ <p className="text-base font-bold">
+ {kundli.currentBhukti.bhuktiPlanet} ({kundli.currentBhukti.bhuktiPlanetHindi})
+ <span className="ml-2 text-white/80 font-normal">
+ {kundli.currentBhukti.startDate} → {kundli.currentBhukti.endDate} · {kundli.currentBhukti.days}d
+ </span>
+ </p>
+ </div>
+ )}
  </div>
  );
  })()}
@@ -399,6 +410,82 @@ export default function KundliPage() {
  ))}
  </div>
  </div>
+
+ {/* Navamsa D9 Chart — marriage, dharma, planetary strength */}
+ {kundli.navamsa && kundli.navamsa.length === 12 && (
+ <div className="bg-white rounded-xl border border-surface-200/80 p-6 lg:col-span-2">
+ <div className="flex items-baseline justify-between mb-5">
+ <h3 className="text-lg font-bold text-surface-800">Navamsa D9 Chart</h3>
+ <p className="text-xs text-surface-500">marriage · dharma · planetary strength</p>
+ </div>
+ <div className="max-w-md mx-auto grid grid-cols-4 gap-px bg-indigo-200 border border-indigo-200 rounded-xl overflow-hidden">
+ {[12, 1, 2, 3].map(houseNum => {
+ const house = kundli.navamsa.find(h => h.house === houseNum)!;
+ return (
+ <div key={`n-${houseNum}`} className="bg-white p-2 min-h-[70px]">
+ <p className="text-[9px] font-bold text-indigo-400 mb-0.5">{houseNum}</p>
+ <p className="text-[9px] text-surface-400">{house.signHindi}</p>
+ {house.planets.length > 0 && (
+ <p className={`text-[10px] font-semibold mt-0.5 ${houseNum === 1 ? 'text-red-600' : 'text-indigo-600'}`}>
+ {house.planets.join(', ')}
+ </p>
+ )}
+ </div>
+ );
+ })}
+ <div className="bg-white p-2 min-h-[70px]">
+ <p className="text-[9px] font-bold text-indigo-400 mb-0.5">11</p>
+ <p className="text-[9px] text-surface-400">{kundli.navamsa[10]!.signHindi}</p>
+ {kundli.navamsa[10]!.planets.length > 0 && (
+ <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[10]!.planets.join(', ')}</p>
+ )}
+ </div>
+ <div className="bg-indigo-50 p-2 col-span-2 row-span-2 flex items-center justify-center min-h-[140px]">
+ <div className="text-center">
+ <p className="text-lg font-bold text-indigo-700">D9</p>
+ <p className="text-sm text-indigo-500">{kundli.navamsa[0]!.sign}</p>
+ <p className="text-xs text-indigo-400 mt-1">{kundli.navamsa[0]!.signHindi} {kundli.navamsa[0]!.signSymbol}</p>
+ </div>
+ </div>
+ <div className="bg-white p-2 min-h-[70px]">
+ <p className="text-[9px] font-bold text-indigo-400 mb-0.5">4</p>
+ <p className="text-[9px] text-surface-400">{kundli.navamsa[3]!.signHindi}</p>
+ {kundli.navamsa[3]!.planets.length > 0 && (
+ <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[3]!.planets.join(', ')}</p>
+ )}
+ </div>
+ <div className="bg-white p-2 min-h-[70px]">
+ <p className="text-[9px] font-bold text-indigo-400 mb-0.5">10</p>
+ <p className="text-[9px] text-surface-400">{kundli.navamsa[9]!.signHindi}</p>
+ {kundli.navamsa[9]!.planets.length > 0 && (
+ <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[9]!.planets.join(', ')}</p>
+ )}
+ </div>
+ <div className="bg-white p-2 min-h-[70px]">
+ <p className="text-[9px] font-bold text-indigo-400 mb-0.5">5</p>
+ <p className="text-[9px] text-surface-400">{kundli.navamsa[4]!.signHindi}</p>
+ {kundli.navamsa[4]!.planets.length > 0 && (
+ <p className="text-[10px] font-semibold text-amber-600 mt-0.5">{kundli.navamsa[4]!.planets.join(', ')}</p>
+ )}
+ </div>
+ {[9, 8, 7, 6].map(houseNum => {
+ const house = kundli.navamsa.find(h => h.house === houseNum)!;
+ return (
+ <div key={`n-${houseNum}`} className="bg-white p-2 min-h-[70px]">
+ <p className="text-[9px] font-bold text-indigo-400 mb-0.5">{houseNum}</p>
+ <p className="text-[9px] text-surface-400">{house.signHindi}</p>
+ {house.planets.length > 0 && (
+ <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{house.planets.join(', ')}</p>
+ )}
+ </div>
+ );
+ })}
+ </div>
+ <p className="text-[11px] text-surface-500 mt-4 text-center">
+ D9 (Varga 9) — Parashara divisional chart. Strong planet in D9 = strong in life results. 7th house D9 reveals spouse nature.
+ </p>
+ </div>
+ )}
  </div>
  )}
 
