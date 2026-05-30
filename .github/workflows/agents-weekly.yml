@@ -39,7 +39,8 @@ jobs:
             seo-audit content-pipeline lead-gen growth-metrics \
             social-queue onboarding-drip gsc-submitter \
             competitor-watch rss-to-thread \
-            keyword-rank-tracker weekly-investor-update
+            keyword-rank-tracker weekly-investor-update \
+            temple-link-validator
 
       - name: Commit reports
         run: |
