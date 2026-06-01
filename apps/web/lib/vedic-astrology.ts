@@ -176,11 +176,11 @@ export function toJulianDay(year: number, month: number, day: number, hour: numb
 // ─── Lahiri Ayanamsa ─────────────────────────────────────────────────────────
 
 export function getLahiriAyanamsa(jd: number): number {
- // Lahiri ayanamsa calculation
- // Based on the standard formula: ayanamsa = 23.85 + 50.27" * (year - 2000) / 3600
+ // Lahiri ayanamsa. Reference: Indian Astronomical Ephemeris J2000.0 = 23°51'11.5" = 23.85320°.
+ // Precession rate ≈ 50.2564 arcsec/year → 5025.64 arcsec/century when T is in centuries.
+ // Prior version had unit bug (50.2564 with T-in-centuries → 100× too slow); fixed 2026-06-02.
  const T = (jd - 2451545.0) / 36525.0; // Julian centuries from J2000
- // More accurate polynomial
- const ayanamsa = 23.85 + (50.2564 * T + 0.0111 * T * T) / 3600;
+ const ayanamsa = 23.85320 + (5025.64 * T + 1.11 * T * T) / 3600;
  return ayanamsa;
 }
 
