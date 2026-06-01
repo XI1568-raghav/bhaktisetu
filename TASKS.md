@@ -1,6 +1,52 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-05-31.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-01.
+
+## HANDOFF 2026-06-01 (17-route astrology fix — 1 commit, Render+CF green, verify-spot-check learning)
+
+Surfaced via curl spot-check of `/astrology/numerology` returning 302 → catch-all. Audit found same pattern across 17 sibling SSG-style astrology routes lacking `runtime='edge'` — CF Pages static-segment routing was sending all of them through the dynamic `[param]` catch-all redirect. Plain static segments without an edge marker don't get deployed to the CF Pages worker.
+
+| Commit | Subject |
+|---|---|
+| `9b4d033` | fix(web): edge runtime on 17 astrology static segments — unblock CF Pages routing |
+
+### Routes fixed (17)
+
+16 simple SSG `page.tsx` files: numerology, baby-name, dasha, manglik, sade-sati, choghadiya, rahu-kalam, hora, kaal-sarp, shubh-muhurat, vastu, lal-kitab, pitra-dosh, kundli-milan, nakshatra-finder, pancha-pakshi — single-line insert `export const runtime = 'edge';` above existing `revalidate = 86400`.
+
+17th = `pancha-pakshi/[slug]/page.tsx` Next-15 mutex resolution: dropped `dynamicParams=false` + `generateStaticParams()` (forbidden alongside `runtime='edge'` per prior 81111c6 precedent on horoscope/today). Made `generateMetadata` + default export async with `Promise<{slug}>` params. `getBird()` slug lookup still calls `notFound()` on invalid — preserves 404 behavior. `PANCHA_PAKSHI_BIRDS` import retained for `findIndex` + mod-N prev/next nav.
+
+### Verify (post-deploy)
+
+- Local `pnpm next build` exit 0, all 17 routes built clean
+- Push rebased over 3 remote agent commits (8a3216e weekly + 65ac42c daily + 03721a1 health-smoke) — no conflicts
+- CF Pages auto-build green
+- 14/16 simple routes 200 on first curl pass; 2/16 (numerology + baby-name) initially 302 from CF edge cache lag, returned 200 on re-curl with cache-buster query — confirmed transient propagation, not code bug
+- 5/5 pancha-pakshi/[slug] sample (vulture/owl/peacock/cock/crow) returned 200
+- Session-end re-verify: numerology/pancha-pakshi/vulture/rahu-kalam/pitra-dosh all 200
+
+### Process learning
+
+verify-before-declare-done spot-check caught a regression that deploy logs reported as green. CF build logs showed each route built; only diverse curl across sibling routes exposed that static segments without edge runtime weren't routed correctly. Adding to discipline: after any batch of `page.tsx` additions, spot-curl a random sample (not just the one you changed) — sibling routes can break silently when CF routing rules apply.
+
+### /jyotirlinga audit (no action needed)
+
+Checked as potential P52 fan-out work — found already shipped: `lib/jyotirlingas.ts` (406 lines, 12 entries + slug helpers), `/jyotirlinga` index + `/jyotirlinga/[slug]` detail both return 200 in production. Uses SSG markers without edge runtime but works — likely served from CF static cache since no sibling static-segment competes for the path. Leave as-is.
+
+### Still queued (carried from prior HANDOFFs)
+
+1. Astrologer onboarding design pass — slug↔User-UUID mapping. ~6-8h plus owner KYC-field decisions.
+2. P51 `/chakras` finish — paused per user "stop 51 as of now"; `apps/web/lib/chakras.ts` parked untracked.
+3. P52+ programmatic-SEO depth — Shakti Peeth 51-fan-out (highest leverage but ~12h scope), Char Dham individual destinations, Vedic deities expansion, Bhagavad Gita 700-verse, Ramayana sarga, Mahabharata adhyaya, Vedic months × 12, Tithi × 30.
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/astrology/numerology` — expect 200
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/astrology/pancha-pakshi/vulture` — expect 200
+3. `git log --oneline -5` — HEAD likely past `9b4d033` after this docs commit
+4. If user "continue": Char Dham individual destinations (smallest unattended scope-to-impact, 4 entries × ~20 fields ≈ 3h) OR Vedic deities expansion OR P51 chakras finish
+
+---
 
 ## HANDOFF 2026-05-31 #2 (Astrologer-consultation admin lifecycle surface — 2 commits)
 
