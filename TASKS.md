@@ -1,6 +1,64 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-01.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-02.
+
+## HANDOFF 2026-06-02 (autonomous programmatic-SEO + pancha-bhoota regression fix — 4 commits)
+
+Per standing autonomy directive. Day-2 unattended batch. Stack continues from 2026-06-01 17-route astrology fix.
+
+| Commit | Subject |
+|---|---|
+| `16789fb` | feat(seo): expand /deity programmatic-SEO 9 → 17 (surya, kartikeya, ayyappa, narasimha, jagannath, brahma, kali, shirdi-sai-baba) |
+| `f8fa56d` | feat(seo): expand /tirth programmatic-SEO 12 → 25 (sabarimala, shirdi, vrindavan, mathura, haridwar, rishikesh, pushkar, golden-temple, madurai, bodh-gaya, palani, kanchipuram, guruvayur) |
+| `de5c571` | fix(web): edge runtime on pancha-bhoota — unblock CF Pages routing for 5 prod-404 routes |
+| `25d2f3f` | feat(seo): expand /aarti 7 → 13 + /chalisa 5 → 10 |
+
+### Pancha-bhoota regression
+
+Discovered via curl spot-check during candidate audit. `/pancha-bhoota` and all 5 `/pancha-bhoota/[slug]` routes returning 404 in prod despite shipping 64 commits ago (`71c90a7` P59). Same CF Pages static-segment routing regression that affected 17 astrology routes per prior HANDOFF. Plain SSG markers without `runtime='edge'` cause CF to route through dynamic catch-all redirect.
+
+Resolution per 81111c6 / 9b4d033 precedent:
+- `apps/web/app/pancha-bhoota/page.tsx`: insert `export const runtime = 'edge';` between import and revalidate
+- `apps/web/app/pancha-bhoota/[slug]/page.tsx`: drop `dynamicParams=false` + `generateStaticParams()`, add `runtime='edge'`, remove unused `PANCHA_BHOOTA_SLUGS` import. `getPanchaBhootaBySlug()` already calls `notFound()` on bad slug — preserves 404 behaviour.
+
+### Programmatic-SEO additions
+
+- **/deity** 9 → 17 (+8): 13 → 13 stable + 8 new. surya/kartikeya/ayyappa/narasimha/jagannath/brahma/kali/shirdi-sai-baba. Schema unchanged. Auto-fans into `/deity/[slug]` SSG via existing `deitySlugs()` helper. Sitemap auto-includes.
+- **/tirth** 12 → 25 (+13): sabarimala, shirdi, vrindavan-banke-bihari, mathura-krishna-janmabhoomi, haridwar-har-ki-pauri, rishikesh, pushkar-brahma, golden-temple-amritsar, madurai-meenakshi, bodh-gaya-mahabodhi, palani-murugan, kanchipuram-ekambareswarar, guruvayur-krishna. Full 28-field schema (significance/legend/howToReach/airport/railway/whereToStay/whatToOffer/primaryPujas/dressCode/photoPolicy etc).
+- **/aarti** 7 → 13 (+6): krishna-aarti (Aarti Kunj Bihari Ki), saraswati-aarti, jagannath-aarti, kali-aarti, surya-aarti, satyanarayan-aarti. Devanagari + transliteration + meaning + duration + deity cross-link.
+- **/chalisa** 5 → 10 (+5): krishna-chalisa, lakshmi-chalisa, saraswati-chalisa, vishnu-chalisa, ram-chalisa. Composer/composedIn/significance/benefits/excerpt fields.
+
+Net new SEO surface: ~32 programmatic pages (8 deity + 13 tirth + 6 aarti + 5 chalisa). All auto-included in sitemap via existing `*-Slugs()` dynamic imports.
+
+### Verify (post-deploy)
+
+Spot-curled 10 routes mid-session — all 8 new deity + 4 sampled new tirth = 200. `/pancha-bhoota` index = 200 after de5c571 build. After slug-typo correction, all 5 pancha-bhoota detail routes = 200 (ekambareshwarar-kanchipuram / jambukeshwarar-thiruvanaikaval / arunachaleshwar-thiruvannamalai / srikalahasti / nataraja-chidambaram).
+
+### Free-tier check
+
+CF builds this session: 4 (f8fa56d / 16789fb / de5c571 / 25d2f3f). Quota healthy. This docs commit gets `[skip ci]` per CLAUDE.md rule (TASKS.md-only change).
+
+### Process learning (carried)
+
+Verify-spot-check methodology confirmed value again — pancha-bhoota was shipped 64 commits ago, deploy logs reported green, but no one curled the routes since. CF static-segment routing silently dropped them when no edge-runtime marker present. Adding to discipline: after any HANDOFF cycle, spot-curl a random older programmatic-SEO route family — old routes can regress silently when CF routing rules update.
+
+Slug-typo lesson: when spot-checking dictionary routes, grep the actual `^    slug:` lines first. I burned a re-curl pass typing "ekambareswarar" instead of "ekambareshwarar".
+
+### Still queued (carried from prior HANDOFFs)
+
+1. Astrologer onboarding design pass — slug↔User-UUID mapping. ~6-8h plus owner KYC-field decisions.
+2. P51 `/chakras` finish — paused per user "stop 51 as of now"; `apps/web/lib/chakras.ts` parked untracked.
+3. P52+ programmatic-SEO depth — Shakti Peeth 51-fan-out (highest leverage but ~12h scope), Bhagavad Gita 700-verse, Ramayana sarga, Mahabharata adhyaya, Vedic months × 12, Tithi × 30. Cheaper batches still available: `/vrats` 10→20, `/chants` 12→20, `/nakshatra` already full 27, `/muhurat` 10→20.
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/pancha-bhoota/ekambareshwarar-kanchipuram` — expect 200
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/aarti/krishna-aarti` — expect 200 (after CF build of 25d2f3f lands)
+3. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/chalisa/lakshmi-chalisa` — expect 200
+4. `git log --oneline -5` — HEAD likely past `25d2f3f` after this docs commit
+5. If user "continue": vrats/chants/muhurat expansion (smallest scope-to-impact) OR Shakti Peeth fan-out (highest impact) OR P51 chakras finish OR astrologer-onboarding design pass
+
+---
 
 ## HANDOFF 2026-06-01 (17-route astrology fix — 1 commit, Render+CF green, verify-spot-check learning)
 
