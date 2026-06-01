@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SHAKTI_PEETHS, SHAKTI_PEETH_SLUGS, getShaktiPeethBySlug, type ShaktiPeethCountry } from '../../../lib/shakti-peeths';
+import { SHAKTI_PEETHS, getShaktiPeethBySlug, type ShaktiPeethCountry } from '../../../lib/shakti-peeths';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
-export const dynamicParams = false;
 
 const BASE_URL = 'https://darshya.online';
 
@@ -16,10 +16,6 @@ const COUNTRY_CODE: Record<ShaktiPeethCountry, string> = {
   Pakistan: 'PK',
   Tibet: 'CN',
 };
-
-export function generateStaticParams() {
-  return SHAKTI_PEETH_SLUGS.map((slug) => ({ slug }));
-}
 
 interface Props { params: Promise<{ slug: string }> }
 
