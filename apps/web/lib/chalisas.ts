@@ -201,6 +201,186 @@ export const CHALISAS: ChalisaInfo[] = [
       { label: 'Shri Sai Satcharitra (canonical biography)', url: 'https://www.sai.org.in' },
     ],
   },
+  {
+    slug: 'krishna-chalisa',
+    name: 'Krishna Chalisa',
+    sanskrit: 'कृष्ण चालीसा',
+    deity: 'Lord Krishna',
+    deitySlug: 'krishna',
+    composer: 'Traditional (attributed to various 18th-19th century devotee-poets)',
+    composedIn: 'Awadhi-Hindi mix',
+    whenRecited: 'Janmashtami, Krishna Paksha Ashtami, Thursdays, daily for Braj devotees',
+    description:
+      '40-verse hymn to Lord Krishna covering his birth at Mathura, childhood leelas in Vrindavan, slaying of demons (Putana, Kaliya, Kamsa), the Bhagavad Gita discourse at Kurukshetra, and his role as the eighth avatar of Vishnu. Sung at every Krishna temple during Janmashtami midnight aarti.',
+    significance:
+      'Frees the devotee from the eight kinds of bondage (ashta-bandhan) and grants worldly happiness alongside the path of bhakti. Particularly powerful when recited 11 times during Krishna Janmashtami fast or before a major decision concerning love, marriage, or career change.',
+    benefits: [
+      'Resolves disputes in love and marriage',
+      'Removes fear of enemies and litigation (per Bhagavad Gita 18.66)',
+      'Grants peace of mind and clarity in confusion',
+      'Believed to bring children to childless couples (per Putradayaka Krishna tradition)',
+      'Aids in the cultivation of bhakti and surrender',
+    ],
+    excerpt: [
+      'श्री गणेशाय नमः। श्री राधा-कृष्णाय नमः॥',
+      'बंशी शोभित कर मधुर, नील जलज तनु श्याम।',
+      'अरुण अधर जनु बिम्बफल, नयन कमल अभिराम॥',
+      'पूर्ण इन्द्र, अरविन्द मुख, पीताम्बर शुभ साज।',
+      'जय मनमोहन मदन छवि, कृष्णचन्द्र महाराज॥',
+      'जय यदुनन्दन जय जगवन्दन। जय वसुदेव देवकी नन्दन॥',
+    ],
+    excerptMeaning:
+      'Salutations to Ganesha. Salutations to Radha-Krishna. Holding the sweet flute in his hand, dark-bodied like the blue lotus. Lips ruddy like the bimba fruit, eyes lovely as lotuses. Face like a full moon and lotus, adorned with yellow pitambar. Glory to Manmohan, charming as Madana (Cupid) — Krishna Chandra Maharaj. Glory to the Yadu-prince, glory to the one worshipped by the world, glory to the son of Vasudeva and Devaki.',
+    durationMinutes: 8,
+    relatedPujas: ['janmashtami-puja', 'krishna-abhishek'],
+    externalSources: [
+      { label: 'Geeta Press Krishna Chalisa edition', url: 'https://gitapress.org' },
+    ],
+  },
+  {
+    slug: 'lakshmi-chalisa',
+    name: 'Lakshmi Chalisa (Shri Lakshmi Chalisa)',
+    sanskrit: 'श्री लक्ष्मी चालीसा',
+    deity: 'Maa Lakshmi',
+    deitySlug: 'lakshmi',
+    composer: 'Sundardas (traditional attribution, 17th century)',
+    composedIn: 'Brajbhasha-Hindi',
+    whenRecited: 'Fridays, Diwali night, Akshaya Tritiya, Kojagari Purnima, before new business ventures',
+    description:
+      'Recited at the start of every new business, on Diwali Lakshmi Puja, and on Fridays which are sacred to the goddess. Praises Lakshmi as Vishnu’s consort, daughter of the cosmic ocean (Kshirsagar), and bestower of all eight prosperities (Ashta-Lakshmi).',
+    significance:
+      'The Lakshmi Chalisa is the principal hymn of the Vaishnava prosperity tradition. Recited 11 or 108 times during Diwali Mahalakshmi puja, accompanied by Sri Suktam, it is believed to invite Lakshmi to reside in the household account-books, safes and grain-stores for the new Samvat year.',
+    benefits: [
+      'Attracts wealth and removes debt',
+      'Resolves obstacles in business and trade',
+      'Brings harmony between husband and wife (Lakshmi-Narayan bhava)',
+      'Grants the eight forms of prosperity — Adi, Dhana, Dhanya, Gaja, Santana, Veera, Vijaya, Vidya',
+      'Recommended for women seeking auspicious married life',
+    ],
+    excerpt: [
+      'मातु लक्ष्मी करि कृपा, करो हृदय में वास।',
+      'मनोकामना सिद्ध कर, पुरवहु मेरी आस॥',
+      'सिंधु सुता विष्णुप्रिये, नित नूतन सुख देहु।',
+      'कमलवासिनी कमलकर, मनवांछित फल देहु॥',
+      'जय जय श्री महालक्ष्मी, करूँ मातु तव ध्यान।',
+      'सिद्ध बुद्धि सुख-सम्पदा, देहु तुम मातु अमान॥',
+    ],
+    excerptMeaning:
+      'Mother Lakshmi, show your grace and dwell in my heart. Fulfil my desires and complete my hopes. Daughter of the ocean, beloved of Vishnu, grant fresh joys each day. Seated on the lotus, lotus-handed one, grant the wished-for fruit. Glory, glory to Mahalakshmi — I meditate upon you. Grant me wisdom, intelligence, happiness and wealth, O immeasurable Mother.',
+    durationMinutes: 7,
+    relatedPujas: ['lakshmi-puja', 'diwali-puja', 'sri-suktam-path'],
+    externalSources: [
+      { label: 'Geeta Press Lakshmi Chalisa', url: 'https://gitapress.org' },
+    ],
+  },
+  {
+    slug: 'saraswati-chalisa',
+    name: 'Saraswati Chalisa (Shri Saraswati Chalisa)',
+    sanskrit: 'श्री सरस्वती चालीसा',
+    deity: 'Maa Saraswati',
+    deitySlug: 'saraswati',
+    composer: 'Traditional (early 20th century printed editions)',
+    composedIn: 'Khari Boli Hindi',
+    whenRecited: 'Basant Panchami, Vidyarambham, daily by students before study, before exams',
+    description:
+      '40-verse hymn invoking the goddess of learning, music and speech. Universal among Indian students preparing for board exams, JEE, NEET, UPSC and other competitive tests. Recited daily at music gurukuls before a riyaaz session begins.',
+    significance:
+      'Saraswati is the only one of the Tridevi (Lakshmi, Parvati, Saraswati) whose worship is uniquely tied to education and the arts. The Chalisa is given to children at the Vidyarambham (initiation into letters) ceremony, traditionally on Vijayadashami in Kerala, and recited every day thereafter through their student years.',
+    benefits: [
+      'Sharpens memory and concentration',
+      'Removes speech impediments and stage fear',
+      'Grants success in examinations and academic pursuits',
+      'Develops aptitude for music, dance and the fine arts',
+      'Believed to clear vak-dosha (impediments caused by harsh speech in past karma)',
+    ],
+    excerpt: [
+      'जनक जननि पद कमल रज, निज मस्तक पर धरि।',
+      'बंदहु मातु सरस्वती, बुद्धि बल दे करि॥',
+      'पूर्ण जगत में व्याप्त तव, महिमा अमित अनन्तु।',
+      'राम सरस मम कीजिए, हे शारदे भगवन्तु॥',
+      'जय श्री सकल बुद्धि बलराशी। जय सर्वज्ञ अमर अविनाशी॥',
+      'जय जय जय वीणाकर धारी। करती सदा सुहंस सवारी॥',
+    ],
+    excerptMeaning:
+      'Placing on my own head the dust of the lotus-feet of my father and mother, I salute Mother Saraswati — grant me intelligence and strength. Your boundless and infinite glory pervades the whole universe. Make my speech sweet as Rama’s, O divine Sharada. Glory to the embodiment of all wisdom and strength, glory to the omniscient, immortal and imperishable. Glory, glory, glory to the holder of the veena who ever rides the noble swan.',
+    durationMinutes: 7,
+    relatedPujas: ['saraswati-puja', 'vidyarambham', 'akshara-abhyasam'],
+    externalSources: [
+      { label: 'Geeta Press Saraswati Chalisa', url: 'https://gitapress.org' },
+    ],
+  },
+  {
+    slug: 'vishnu-chalisa',
+    name: 'Vishnu Chalisa (Shri Vishnu Chalisa)',
+    sanskrit: 'श्री विष्णु चालीसा',
+    deity: 'Lord Vishnu',
+    deitySlug: 'vishnu',
+    composer: 'Sundardas (traditional attribution)',
+    composedIn: 'Brajbhasha-Hindi',
+    whenRecited: 'Thursdays, Ekadashi, Vaikuntha Ekadashi, Anant Chaturdashi, after Vishnu Sahasranama path',
+    description:
+      '40-verse hymn praising Vishnu as the preserver of the universe, the lord who rests on the cosmic serpent Sheshanaga upon the milk-ocean, and who incarnates as the ten avatars (Dashavatara) whenever dharma declines. Recited by Vaishnava devotees on Thursdays and all Ekadashi tithis.',
+    significance:
+      'In the Vaishnava household, Vishnu Chalisa is recited after the heavier Vishnu Sahasranama (1000 names) to seal the path. It is also the principal hymn of the Anant Chaturdashi vrata, when devotees tie a 14-knotted thread on the arm seeking Vishnu’s protection for fourteen years.',
+    benefits: [
+      'Grants protection from sudden calamity and accidents',
+      'Removes the effects of Pitru Dosha and Sarpa Dosha',
+      'Brings peace in family and harmony between generations',
+      'Believed to sustain employment and livelihood',
+      'Recommended during pregnancy for safe childbirth',
+    ],
+    excerpt: [
+      'विष्णु जी की मैं करूँ, चालीसा अब वर्णन।',
+      'सुनहु प्रेम से सब जन, मनवांछित फल पावन॥',
+      'जय विष्णु भगवान् की महिमा, जग में अमित अनूप।',
+      'दीनदयालु कृपा निधान तुम, धर्म धुरंधर भूप॥',
+      'जय जय श्री हरि नाथ कृपाला। दीनदयालु दानि दयाला॥',
+      'अमित कोटि रवि की छवि न्यारी। शोभित नीलकंठ बनवारी॥',
+    ],
+    excerptMeaning:
+      'I now narrate the Chalisa of Lord Vishnu. Listen with love, all people, and receive the wished-for fruit. Glory — the greatness of Lord Vishnu is boundless and unequalled in the world. Compassionate to the lowly, treasure-house of grace, you are the king who upholds dharma. Glory, glory to Sri Hari, gracious lord, kind to the lowly and generous in mercy. Your splendour exceeds that of countless suns; the blue-throated forester (Krishna form) shines forth.',
+    durationMinutes: 8,
+    relatedPujas: ['vishnu-sahasranama', 'satyanarayan-puja', 'anant-chaturdashi-vrat'],
+    externalSources: [
+      { label: 'Geeta Press Vishnu Chalisa', url: 'https://gitapress.org' },
+    ],
+  },
+  {
+    slug: 'ram-chalisa',
+    name: 'Ram Chalisa (Shri Ram Chalisa)',
+    sanskrit: 'श्री राम चालीसा',
+    deity: 'Lord Rama',
+    deitySlug: 'rama',
+    composer: 'Traditional (Tulsidas school)',
+    composedIn: 'Awadhi',
+    whenRecited: 'Ram Navami, Tuesdays, Thursdays, daily by Ram bhaktas',
+    description:
+      '40-verse devotional hymn to Rama, the seventh avatar of Vishnu, the ideal son, husband, and king (Maryada Purushottam). Forms part of the daily Rama-bhakti tradition alongside Ramayana Path and Sundarkand. Particularly recited at the new Ram Mandir at Ayodhya and at Ram temples throughout India.',
+    significance:
+      'Like the Hanuman Chalisa, Ram Chalisa is a portable, recitable digest of the Ramayana’s essential teaching: that dharma succeeds, that surrender to Rama removes all sin, and that the chanting of his name (Ramanama) is itself the highest practice in the Kali Yuga.',
+    benefits: [
+      'Grants courage, righteousness, and patience',
+      'Removes fear of enemies and legal entanglements',
+      'Restores broken family relationships (Rama as ideal son and brother)',
+      'Believed to expiate the gravest sins through Ramanama',
+      'Bestows steady mind and equanimity (sthitaprajna)',
+    ],
+    excerpt: [
+      'श्री रघुवीर भक्त हितकारी। सुन लीजै प्रभु अरज हमारी॥',
+      'निशिदिन ध्यान धरै जो कोई। ता सम भक्त और नहिं होई॥',
+      'ध्यान धरे शिवजी मन माहीं। ब्रह्म, इन्द्र, पारवै नाहीं॥',
+      'जय जय जय श्री राम भवानी। चारों युग जग में हो वानी॥',
+      'सोचा था मन में कई बारा। राम भजन से बेड़ा पारा॥',
+      'अति विशाल नहिं नाम तिहारो। दीनबंधु भक्तन रखवारो॥',
+    ],
+    excerptMeaning:
+      'O Sri Raghuvira, benefactor of devotees, hear our supplication, O Lord. Whoever holds your meditation day and night — there is no other devotee equal to him. Even Shiva holds your meditation in his mind; Brahma and Indra cannot fathom you. Glory, glory, glory to Sri Rama and Bhavani — through all four ages your name resounds in the world. Many times I have considered in my mind: by chanting Rama, my boat is taken across. Your name is supremely vast, friend of the lowly, protector of devotees.',
+    durationMinutes: 8,
+    relatedPujas: ['ram-navami-puja', 'ramayana-path', 'sundarkand-path'],
+    externalSources: [
+      { label: 'Geeta Press Ram Chalisa', url: 'https://gitapress.org' },
+    ],
+  },
 ];
 
 export function getChalisa(slug: string): ChalisaInfo | undefined {
