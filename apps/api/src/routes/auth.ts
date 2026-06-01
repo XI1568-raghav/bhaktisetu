@@ -484,23 +484,29 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    // Check demo accounts first
-    const demo = DEMO_ACCOUNTS[emailLower];
-    if (demo && demo.password === password) {
-      const { session } = makeDemoSession(emailLower);
-      return reply.send({
-        session,
-        user: {
-          id: `demo-${emailLower.split('@')[0]}`,
-          email: emailLower,
-          fullName: demo.fullName,
-          role: demo.role,
-          avatarUrl: null,
-          preferredLanguage: 'en',
-          subscriptionTier: 'free',
-          createdAt: new Date().toISOString(),
-        },
-      });
+    // Check demo accounts first — DEV/STAGING ONLY.
+    // Prod gate: NODE_ENV !== 'production' OR explicit ALLOW_DEMO_TOKENS=true.
+    // Without this, hardcoded admin@demo.com/demo123 grants ADMIN session in prod.
+    const demoAllowed = process.env.NODE_ENV !== 'production'
+      || process.env.ALLOW_DEMO_TOKENS === 'true';
+    if (demoAllowed) {
+      const demo = DEMO_ACCOUNTS[emailLower];
+      if (demo && demo.password === password) {
+        const { session } = makeDemoSession(emailLower);
+        return reply.send({
+          session,
+          user: {
+            id: `demo-${emailLower.split('@')[0]}`,
+            email: emailLower,
+            fullName: demo.fullName,
+            role: demo.role,
+            avatarUrl: null,
+            preferredLanguage: 'en',
+            subscriptionTier: 'free',
+            createdAt: new Date().toISOString(),
+          },
+        });
+      }
     }
 
     // Try DB lookup (will fail gracefully if DB unavailable)
@@ -745,8 +751,10 @@ export async function authRoutes(server: FastifyInstance) {
       // In dev (Supabase NOT configured), fall back to a demo session so the
       // local signup flow still works without a live backend. In prod, surface
       // the real error so we can fix it instead of silently masking it.
+      // Hard prod gate: even if supabaseConfigured check misreads a placeholder
+      // URL, never issue demo sessions in production.
       const supabaseConfigured = !!process.env.SUPABASE_URL && process.env.SUPABASE_URL !== 'https://demo.supabase.co';
-      if (supabaseConfigured) {
+      if (supabaseConfigured || process.env.NODE_ENV === 'production') {
         return reply.code(500).send({
           error: 'SignupFailed',
           message: err?.message || 'Could not create account. Please try again.',
