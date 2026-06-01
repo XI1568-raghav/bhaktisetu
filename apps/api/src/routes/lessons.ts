@@ -103,12 +103,14 @@ export async function lessonsRoutes(server: FastifyInstance) {
     ]);
     const earned = new Set(existingBadges.map((b) => b.badgeKey));
     const ctx: BadgeCtx = { lessonCount, score, streakDays: currentDays };
-    const newBadges: string[] = [];
-    for (const rule of BADGE_RULES) {
-      if (!earned.has(rule.key) && rule.predicate(ctx)) {
-        await prisma.userBadge.create({ data: { userId, badgeKey: rule.key } }).catch(() => null);
-        newBadges.push(rule.key);
-      }
+    const newBadges = BADGE_RULES
+      .filter((rule) => !earned.has(rule.key) && rule.predicate(ctx))
+      .map((rule) => rule.key);
+    if (newBadges.length > 0) {
+      await prisma.userBadge.createMany({
+        data: newBadges.map((badgeKey) => ({ userId, badgeKey })),
+        skipDuplicates: true,
+      }).catch(() => null);
     }
 
     return reply.send({

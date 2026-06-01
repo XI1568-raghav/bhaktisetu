@@ -48,29 +48,33 @@ export async function adminOpsRoutes(server: FastifyInstance) {
       { name: '7d', after: new Date(now - 8 * 24 * 3600_000), before: new Date(now - 7 * 24 * 3600_000) },
     ];
 
+    // Buckets are disjoint time-windows w/ different row sets — can't groupBy.
+    // Fan out in parallel: 3 queries × ~50ms = 1 round-trip instead of 3.
+    const results = await Promise.all(
+      buckets.map((b) =>
+        prisma.lead.findMany({
+          where: {
+            status: 'NEW',
+            source: { contains: 'self-onboard' },
+            createdAt: { gte: b.after, lt: b.before },
+            role: { in: ['PRIEST', 'GAUSHALA', 'TEMPLE', 'ASTROLOGER', 'WELLNESS_INSTRUCTOR'] },
+          },
+          select: {
+            id: true,
+            role: true,
+            name: true,
+            email: true,
+            phone: true,
+            city: true,
+            createdAt: true,
+          },
+          take: 50,
+          orderBy: { createdAt: 'desc' },
+        }).catch(() => [] as unknown[]),
+      ),
+    );
     const out: Record<string, unknown[]> = {};
-    for (const b of buckets) {
-      const rows = await prisma.lead.findMany({
-        where: {
-          status: 'NEW',
-          source: { contains: 'self-onboard' },
-          createdAt: { gte: b.after, lt: b.before },
-          role: { in: ['PRIEST', 'GAUSHALA', 'TEMPLE', 'ASTROLOGER', 'WELLNESS_INSTRUCTOR'] },
-        },
-        select: {
-          id: true,
-          role: true,
-          name: true,
-          email: true,
-          phone: true,
-          city: true,
-          createdAt: true,
-        },
-        take: 50,
-        orderBy: { createdAt: 'desc' },
-      }).catch(() => []);
-      out[b.name] = rows;
-    }
+    buckets.forEach((b, i) => { out[b.name] = results[i]!; });
     return reply.send({ ok: true, buckets: out, generatedAt: new Date().toISOString() });
   });
 
