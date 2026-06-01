@@ -7,6 +7,7 @@ import NakshatraFinderClient from './NakshatraFinderClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
 import { NAKSHATRAS } from '../../../lib/nakshatras';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

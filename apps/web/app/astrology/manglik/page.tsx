@@ -6,6 +6,7 @@ import Link from 'next/link';
 import ManglikClient from './ManglikClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

@@ -5,6 +5,7 @@ import { GRAHAS, PROBLEMS } from '../../../lib/lal-kitab';
 
 const BASE_URL = 'https://darshya.online';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
