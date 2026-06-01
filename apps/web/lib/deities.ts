@@ -119,6 +119,95 @@ export const DEITIES: DeityInfo[] = [
     mantra: 'ॐ ऐं सरस्वत्यै नमः',
     festival: 'Basant Panchami',
   },
+  {
+    slug: 'surya',
+    name: 'Lord Surya',
+    sanskrit: 'सूर्य',
+    deityKey: 'Surya',
+    description:
+      'The Sun god, source of light, life, and health. Worshipped at sunrise via Surya Namaskar and Arghya. Central to Chhath Puja and Makar Sankranti. Devotees seek vitality, eyesight, and authority.',
+    popularPujas: ['Chhath Puja', 'Surya Arghya', 'Aditya Hridayam Path'],
+    mantra: 'ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः',
+    festival: 'Chhath Puja',
+  },
+  {
+    slug: 'kartikeya',
+    name: 'Lord Kartikeya / Murugan',
+    sanskrit: 'कार्तिकेय',
+    deityKey: 'Kartikeya',
+    description:
+      'Son of Shiva and Parvati, commander of the deva army. Worshipped as Murugan in South India, Subramanya in Karnataka, and Skanda elsewhere. Patron of warriors and victory over evil.',
+    popularPujas: ['Skanda Shashti Puja', 'Kavadi Puja', 'Vel Vel Muruga Bhajan'],
+    mantra: 'ॐ शरवणभवाय नमः',
+    festival: 'Skanda Shashti',
+  },
+  {
+    slug: 'ayyappa',
+    name: 'Lord Ayyappa',
+    sanskrit: 'अय्यप्प',
+    deityKey: 'Ayyappa',
+    description:
+      'Son of Shiva and Mohini (Vishnu), Lord of Sabarimala. Worshipped through the 41-day Mandala vrata involving celibacy, black dress, and pilgrimage. Devotees address each other as Swami.',
+    popularPujas: ['Mandala Vrata', 'Padi Puja', 'Harivarasanam Recitation'],
+    mantra: 'स्वामिये शरणम् अय्यप्पा',
+    festival: 'Makaravilakku',
+  },
+  {
+    slug: 'narasimha',
+    name: 'Lord Narasimha',
+    sanskrit: 'नरसिंह',
+    deityKey: 'Narasimha',
+    description:
+      'Fourth avatar of Vishnu, the man-lion who slew Hiranyakashipu to protect devotee Prahlada. Worshipped for protection from enemies, ugra-shanti (calming fierce energy), and removing fear.',
+    popularPujas: ['Narasimha Jayanti Puja', 'Narasimha Kavacham Path', 'Lakshmi-Narasimha Homa'],
+    mantra: 'ॐ उग्रं वीरं महाविष्णुं ज्वलन्तं सर्वतोमुखम्',
+    festival: 'Narasimha Jayanti',
+  },
+  {
+    slug: 'jagannath',
+    name: 'Lord Jagannath',
+    sanskrit: 'जगन्नाथ',
+    deityKey: 'Jagannath',
+    description:
+      'Lord of the Universe, form of Vishnu/Krishna worshipped with siblings Balabhadra and Subhadra at Puri Dham. Famed for the annual Ratha Yatra where devotees of all castes touch the chariot ropes.',
+    popularPujas: ['Ratha Yatra', 'Snana Yatra', 'Mahaprasad Bhog'],
+    mantra: 'ॐ जगन्नाथाय नमः',
+    festival: 'Ratha Yatra',
+  },
+  {
+    slug: 'brahma',
+    name: 'Lord Brahma',
+    sanskrit: 'ब्रह्मा',
+    deityKey: 'Brahma',
+    consort: 'Saraswati',
+    description:
+      'The Creator in the Trimurti. Rarely worshipped in dedicated temples — the principal one is at Pushkar, Rajasthan. Invoked at Vedic homas, sandhyavandanam, and creative undertakings.',
+    popularPujas: ['Brahma Puja at Pushkar', 'Brahma Yagna', 'Sandhyavandanam'],
+    mantra: 'ॐ ब्रह्मणे नमः',
+    festival: 'Kartik Purnima (Pushkar Mela)',
+  },
+  {
+    slug: 'kali',
+    name: 'Maa Kali',
+    sanskrit: 'काली',
+    deityKey: 'Kali',
+    description:
+      'Fierce form of Devi, destroyer of evil and time itself. Worshipped especially in Bengal (Kalighat, Dakshineswar) and at Shakti Peeths. Central to Kali Puja on Diwali night and Tantric sadhana.',
+    popularPujas: ['Kali Puja (Diwali night)', 'Dakshina Kali Homa', 'Karpuradi Stotra Path'],
+    mantra: 'ॐ क्रीं कालिकायै नमः',
+    festival: 'Kali Puja',
+  },
+  {
+    slug: 'shirdi-sai-baba',
+    name: 'Shirdi Sai Baba',
+    sanskrit: 'श्री साईं बाबा',
+    deityKey: 'SaiBaba',
+    description:
+      'Revered 19th-century saint of Shirdi, Maharashtra, worshipped as a divine teacher transcending Hindu-Muslim boundaries. Devotees seek faith (shraddha) and patience (saburi). Thursdays are sacred.',
+    popularPujas: ['Sai Sandhya Aarti', 'Sai Satcharitra Path', 'Thursday Sai Vrat'],
+    mantra: 'ॐ साईं श्री साईं जय जय साईं',
+    festival: 'Guru Purnima · Vijayadashami (Sai Samadhi)',
+  },
 ];
 
 export function getDeity(slug: string): DeityInfo | undefined {
