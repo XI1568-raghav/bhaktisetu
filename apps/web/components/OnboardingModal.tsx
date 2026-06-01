@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Video, Flame, BookOpen, Sparkles, Compass, MapPin, Globe2, type LucideIcon } from 'lucide-react';
+import { X, Video, Flame, BookOpen, MessageCircleQuestion, Compass, MapPin, Globe2, type LucideIcon } from 'lucide-react';
 import {
   ONBOARDING_LANGUAGE_KEY,
   type OnboardingIntent,
@@ -24,7 +24,7 @@ const INTENT_OPTIONS: {
   { key: 'darshan', icon: Video, title: 'Live Darshan', caption: 'Watch from home', href: '/darshan' },
   { key: 'puja', icon: Flame, title: 'Book a Puja', caption: 'At a temple', href: '/pujas' },
   { key: 'wisdom', icon: BookOpen, title: 'Read & Learn', caption: 'Scriptures, more', href: '/content' },
-  { key: 'consult', icon: Sparkles, title: 'Talk to a Pandit', caption: 'AI guidance', href: '/ask-pandit' },
+  { key: 'consult', icon: MessageCircleQuestion, title: 'Talk to a Pandit', caption: 'AI guidance', href: '/ask-pandit' },
   { key: 'explore', icon: Compass, title: 'Just exploring', caption: 'Show me around', href: null },
 ];
 

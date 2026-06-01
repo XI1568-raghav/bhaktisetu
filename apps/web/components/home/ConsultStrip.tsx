@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Sparkles, Phone, CalendarHeart, ArrowRight } from 'lucide-react';
+import { MessageCircleQuestion, Sparkles, Phone, CalendarHeart, ArrowRight } from 'lucide-react';
 
 type ConsultCard = {
   href: string;
@@ -16,7 +16,7 @@ const CARDS: ConsultCard[] = [
     label: 'Ask Pandit',
     body: 'Ask anything · AI in your language. Instant scripture-grounded answers.',
     cta: 'Ask now',
-    Icon: Sparkles,
+    Icon: MessageCircleQuestion,
     emphasis: true,
   },
   {

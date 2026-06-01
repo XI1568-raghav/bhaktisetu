@@ -20,6 +20,7 @@ import {
  Instagram,
  Youtube,
  Sparkles,
+ MessageCircleQuestion,
  Moon,
  Leaf,
  Mountain,
@@ -158,7 +159,7 @@ const moreLinks = [
  { href: "/wellness", labelKey: "wellness" as const, icon: Leaf },
 ];
 
-const highlightLink = { href: "/ask-pandit", labelKey: "askPandit" as const, icon: Sparkles };
+const highlightLink = { href: "/ask-pandit", labelKey: "askPandit" as const, icon: MessageCircleQuestion };
 
 type FooterLink = { href: string; t: 'footer' | 'terms' | 'nav'; key: string };
 const footerSections: { titleKey: string; links: FooterLink[] }[] = [
@@ -340,7 +341,7 @@ export default function RootLayout({
  href={highlightLink.href}
  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-saffron-600 hover:bg-saffron-700 rounded-md transition-colors whitespace-nowrap ml-1 btn-press"
  >
- <Sparkles className="w-3.5 h-3.5" />
+ <MessageCircleQuestion className="w-3.5 h-3.5" />
  {tNav(highlightLink.labelKey)}
  </a>
  </div>
