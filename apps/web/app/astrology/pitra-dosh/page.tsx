@@ -5,6 +5,7 @@ import { PITRA_DOSH_TYPES, UNIVERSAL_REMEDIES } from '../../../lib/pitra-dosh';
 
 const BASE_URL = 'https://darshya.online';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

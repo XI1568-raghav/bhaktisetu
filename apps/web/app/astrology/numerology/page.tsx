@@ -6,6 +6,7 @@ import Link from 'next/link';
 import NumerologyClient from './NumerologyClient';
 import { listAllMeanings } from '../../../lib/numerology';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
