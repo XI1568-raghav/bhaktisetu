@@ -17,6 +17,7 @@ import {
   Moon,
   Leaf,
   Sparkles,
+  MessageCircleQuestion,
   ChevronRight,
 } from 'lucide-react';
 
@@ -133,7 +134,7 @@ export function MobileNav() {
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-white bg-saffron-600 hover:bg-saffron-700 rounded-lg transition-colors btn-press"
           >
-            <Sparkles className="w-4 h-4" />
+            <MessageCircleQuestion className="w-4 h-4" />
             Ask Pandit
           </Link>
 
