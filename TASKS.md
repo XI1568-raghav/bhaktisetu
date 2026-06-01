@@ -2,6 +2,63 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-02.
 
+## HANDOFF 2026-06-02 #2 (preventive edge-runtime + Himalayan pilgrim-circuit fan-out — 2 commits)
+
+Per standing autonomy directive. Day-2 continuation post-compaction.
+
+| Commit | Subject |
+|---|---|
+| `cd47ab2` | fix(web): edge runtime on tithi/masa/shakti-peeth — preempt CF static-segment regression |
+| `ab575b5` | feat(seo): expand /tirth 25 → 36 — Char Dham complete + 5 Panch Prayag + 4 Panch Kedar |
+
+### Preventive edge-runtime sweep (cd47ab2)
+
+Applied the proven `runtime='edge'` precedent (from de5c571 pancha-bhoota + 9b4d033 17-astrology) to 3 more multi-route programmatic-SEO families flagged as next-likely-regression-candidates: `/tithi`, `/masa`, `/shakti-peeth`. Each family got the same 2-file pattern: index `page.tsx` gets `export const runtime = 'edge';` insert; `[slug]/page.tsx` drops the `dynamicParams=false` + `generateStaticParams()` combo (Next 15 mutex with edge runtime) and gets `runtime='edge'`. The `getXBySlug()` helpers preserve `notFound()` behavior on invalid slugs. Unused `*_SLUGS` imports removed; helper exports retained where prev/next nav uses them.
+
+Post-deploy Monitor curl-verified all 6 routes return 200 with `x-edge-runtime: 1` header — `tithi=200 tithi/ekadashi=200 masa=200 masa/chaitra=200 shakti-peeth=200 shakti-peeth/kamakhya=200`.
+
+### /tirth Himalayan pilgrim-circuit fan-out (ab575b5)
+
+Filled the canonical Char Dham + Panch Prayag + Panch Kedar gap in a single 11-entry append to `apps/web/lib/tirthas.ts`. Zero new route files — reuses existing `/tirth/[slug]` SSG page + sitemap auto-fan via `tirthaSlugs()` helper.
+
+- **Char Dham completion**: yamunotri + gangotri (kedarnath + badrinath already shipped in prior `f8fa56d`)
+- **Panch Prayag (5/5)**: vishnuprayag → nandprayag → karnaprayag → rudraprayag → devprayag (in upstream-to-Rishikesh order — each is a sacred Ganga-tributary confluence in Uttarakhand)
+- **Panch Kedar (4/5)**: tungnath (arms, world's highest Shiva temple 3680m) + rudranath (face, 24km trek) + madhyamaheshwar (navel) + kalpeshwar (hair, only year-round Panch Kedar); kedarnath (hump) already existed
+
+Each entry curated with full 25-field schema: darshan timings, trek routes, nearest airports/railways, legends from Mahabharata buffalo-Shiva tradition + Garhwali folklore, visitor estimates, modern relevance (2013 floods, 2021 Chamoli glacial burst, 2026 Nanda Devi Raj Jat Yatra).
+
+Local `pnpm next build` verified `tirth/[slug]` ssg count: "[+33 more paths]" (3 displayed + 33 = 36 total, up from 25).
+
+### Pre-pivot discovery
+
+Original session plan was vrats 10→20 + chants 12→20 + muhurat 10→20 expansion per stale prior-HANDOFF "Still queued" line. Verify-before-act grep found all 3 already at 20 entries — caught the stale claim before burning a cycle. Pivoted to the Himalayan canonical-circuit gap (much higher pilgrim-search volume than the muhurat expansions would have hit).
+
+### Free-tier check
+
+CF builds this session: 2 (cd47ab2 + ab575b5). This docs commit gets `[skip ci]` per CLAUDE.md rule (TASKS.md-only change → CF Pages git-integration skips queue entirely). Monthly CF quota healthy.
+
+### Verify (post-deploy)
+
+cd47ab2 confirmed via Monitor `bb0ynisb0` iter=8. ab575b5 verify spawned as Monitor `b89a0g9nh` — 11 new tirth routes (yamunotri/gangotri/devprayag/rudraprayag/karnaprayag/nandprayag/vishnuprayag/tungnath/rudranath/madhyamaheshwar/kalpeshwar). Curls all 11 in serial each pass; exits early when all 200.
+
+### Still queued (carried + refreshed)
+
+1. Astrologer onboarding design pass — slug↔User-UUID mapping. ~6-8h plus owner KYC-field decisions.
+2. P51 `/chakras` finish — paused per user "stop 51 as of now"; `apps/web/lib/chakras.ts` parked untracked.
+3. **Remaining Himalayan circuits**: Sapta Puri (need to verify gap), Ashta Vinayak (8 Ganesha), Do Dham (puri+rameswaram already in tirth, dwarka already in, badrinath already in — likely already complete).
+4. P52+ depth: Bhagavad Gita 700-verse fan-out (large), Ramayana sarga (large), Mahabharata adhyaya (large), Vedic months × 12 (some already in /masa).
+5. Cheaper batches still available: Shakti Peeth 51-fan-out (highest leverage but ~12h scope — base /shakti-peeth + [slug] already exists, just need to populate lib/shakti-peeths.ts beyond current entries).
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/tirth/yamunotri` — expect 200
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/tirth/tungnath` — expect 200
+3. `curl -sI https://darshya.online/tithi | grep -i edge-runtime` — expect `x-edge-runtime: 1`
+4. `git log --oneline -5` — HEAD likely past `ab575b5` after this docs commit
+5. If user "continue": Shakti Peeth 51-fan-out (highest impact) OR Bhagavad Gita programmatic OR astrologer-onboarding design pass OR P51 chakras finish
+
+---
+
 ## HANDOFF 2026-06-02 (autonomous programmatic-SEO + pancha-bhoota regression fix — 4 commits)
 
 Per standing autonomy directive. Day-2 unattended batch. Stack continues from 2026-06-01 17-route astrology fix.
