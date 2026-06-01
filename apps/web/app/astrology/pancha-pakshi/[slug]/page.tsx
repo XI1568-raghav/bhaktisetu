@@ -5,15 +5,11 @@ import { ELEMENT_COLOR, getBird, PANCHA_PAKSHI_BIRDS } from '../../../../lib/pan
 
 const BASE_URL = 'https://darshya.online';
 
-export const revalidate = 86400;
-export const dynamicParams = false;
+export const runtime = 'edge';
 
-export function generateStaticParams() {
- return PANCHA_PAKSHI_BIRDS.map((b) => ({ slug: b.slug }));
-}
-
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
- const bird = getBird(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const { slug } = await params;
+ const bird = getBird(slug);
  if (!bird) return { title: 'Not found' };
  return {
   title: `${bird.name} Pakshi (${bird.sanskrit}) — Tamil Pancha Pakshi Profile | Darshya`,
@@ -22,8 +18,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
  };
 }
 
-export default function PanchaPakshiBirdPage({ params }: { params: { slug: string } }) {
- const bird = getBird(params.slug);
+export default async function PanchaPakshiBirdPage({ params }: { params: Promise<{ slug: string }> }) {
+ const { slug } = await params;
+ const bird = getBird(slug);
  if (!bird) return notFound();
 
  const idx = PANCHA_PAKSHI_BIRDS.findIndex((b) => b.slug === bird.slug);

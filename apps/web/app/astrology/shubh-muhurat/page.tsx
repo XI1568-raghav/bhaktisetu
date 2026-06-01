@@ -3,6 +3,7 @@ import Link from 'next/link';
 import ShubhMuhuratClient from './ShubhMuhuratClient';
 import { EVENT_OPTIONS } from '../../../lib/shubh-muhurat';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
