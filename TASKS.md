@@ -125,6 +125,12 @@ Per user 5-phase E2E audit directive ("elite Autonomous Principal Engineer and Q
 
 **Phase 5 final push** (this commit `fc52ea5`): single CF build slot consumed (apps/web/lib/vedic-astrology.ts). Render auto-redeploys api on push. Verify-before-declare-done next: re-run `/astrology/kundli` with `1995-01-05 14:40 Panipat` post-CF deploy + curl `/login` POST `admin@demo.com/demo123` expects 401.
 
+**Phase 5 verify GREEN 2026-06-02** (Monitor buf9cqyba iter=9):
+- ✓ `POST https://api.darshya.online/api/v1/auth/login` w/ `admin@demo.com/demo123` → **401** (was 200, demo gate now active in prod) — P0 closed end-to-end
+- ✓ `GET https://darshya.online/astrology/kundli` → **200** (CF Pages deploy of ayanamsa fix live) — owner can re-test `1995-01-05 14:40 Panipat` manually next session
+- Render free-tier serial deploy queue took ~4.5 min (iter 1-8 = 200; iter 9 = 401) — confirms fc52ea5 + 5488a6e both rode the same queued slot
+- Total session CF burn: 1 build (fc52ea5 / apps/web/lib/vedic-astrology.ts). dead8ff + bd22967 docs commits + 5488a6e [skip ci] commit = 0 additional builds. Within "1 apps/web push/day" discipline.
+
 ---
 
 ## HANDOFF 2026-06-02 #2 (preventive edge-runtime + Himalayan pilgrim-circuit fan-out — 2 commits)
