@@ -162,6 +162,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/tirth', priority: 0.9 },
     { path: '/jyotirlinga', priority: 0.95 },
     { path: '/shakti-peeth', priority: 0.95 },
+    { path: '/rudraksha', priority: 0.85 },
     { path: '/ashta-lakshmi', priority: 0.9 },
     { path: '/aditya', priority: 0.9 },
     { path: '/sapta-mathruka', priority: 0.9 },
@@ -419,6 +420,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.85,
+  }));
+
+  const { rudrakshaSlugs } = await import('../lib/rudrakshas');
+  const rudrakshaEntries = rudrakshaSlugs().map((slug) => ({
+    url: `${BASE_URL}/rudraksha/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
   }));
 
   const { ASHTA_LAKSHMI_SLUGS } = await import('../lib/ashta-lakshmi');
@@ -753,6 +762,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...tirthaEntries,
     ...jyotirlingaEntries,
     ...shaktiPeethEntries,
+    ...rudrakshaEntries,
     ...ashtaLakshmiEntries,
     ...adityaEntries,
     ...saptaMathrukaEntries,
