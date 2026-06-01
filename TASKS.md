@@ -107,14 +107,19 @@ Per user 5-phase E2E audit directive ("elite Autonomous Principal Engineer and Q
 - Kundli P1 (partial) — `apps/web/lib/vedic-astrology.ts` getLahiriAyanamsa: fixed precession-coefficient unit bug. 50.2564→5025.64 + 0.0111→1.11 + baseline 23.85→23.85320 (J2000 ref). For 1995-01-05: previously 23.849° → now 23.780° (matches Lahiri ~23.78°).
 - Kundli P1 (remaining) — Moon perturbation series only 6 terms vs Meeus 60+ → off-by-one nakshatra. Full `astronomy-engine` npm rewrite + 3-golden-chart regression scheduled separate batch (heavier scope, deserves dedicated session).
 
-**Phase 2 P1/P2 deferred** (4-9 from agent report, all M-L effort, recorded but not in this batch):
+**Phase 2 P1/P2 S-batch shipped `5488a6e` [skip ci]** (5 fixes, apps/api-only, 0 CF burn, piggybacks on fc52ea5 Render queue slot):
+- P1 #8 ✓ `apps/api/src/middlewares/auth.ts` ALLOW_AUTH_DIAGNOSTICS now hard-gated on `NODE_ENV !== 'production'` — stops err.name + err.message leak in prod even if flag accidentally flipped on
+- P1 #9 ✓ `apps/api/src/middlewares/auth.ts:231` empty `catch{}` on UserRoleAssignment lookup now logs warn (userId + errName + errMsg) before DEVOTEE fallback — silent role-table miss masked an outage once
+- P2 #11 ✓ `apps/api/src/routes/admin-ops.ts` /kyc-abandoned: 3 sequential bucket queries → `Promise.all` fan-out (3 round-trips → 1, cuts agent-poll p95 ~150ms)
+- P2 #12 ✓ `apps/api/src/routes/lessons.ts` badge-unlock: sequential `prisma.userBadge.create` loop → single `createMany skipDuplicates` (N round-trips → 1, atomic, idempotent)
+- P2 #13 ✓ `apps/api/src/middlewares/auth.ts` demo-shaped token in prod w/o ALLOW_DEMO_TOKENS now 401s explicitly instead of falling through to Supabase verify
+
+**Phase 2 P1 M-L deferred** (heavier scope, separate sessions per item):
 - P1 #4 localStorage→HttpOnly cookie session (L effort, web-wide refactor)
 - P1 #5 refresh-token JTI single-use persistence (M)
 - P1 #6 EmailSession expiresAt + /auth/logout (M)
 - P1 #7 CSP unsafe-inline+unsafe-eval drop + nonce migration (M)
-- P1 #8 ALLOW_AUTH_DIAGNOSTICS prod gate (S)
-- P1 #9 auth.ts:231 empty catch{} logging (S)
-- P2 #10-13 N+1 micro-optimizations + demo-handle prod kill (all S)
+- P2 #10 outstanding micro-optimization (re-survey on next audit)
 
 **Phase 3 (functional E2E) — landed 2026-06-02**: 71/71 effective green post false-positive validation. `b7444ac` `/pujas/jagannath-puja` confirmed live 200/0.89s ✓. All "non-200" findings were bad spec URLs (`/priest-portal` → actual `/priest`, `/mesha` → English slugs only, `/api/v1/pujas` canonical 404 by design, `/api/v1/priests-public` → registered at `/api/v1/priests`, `/store-admin` 4.58s acceptable cold start). Zero real prod bugs.
 
