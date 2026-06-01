@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { PANCHA_BHOOTA, PANCHA_BHOOTA_SLUGS, getPanchaBhootaBySlug } from '../../../lib/pancha-bhoota';
+import { PANCHA_BHOOTA, getPanchaBhootaBySlug } from '../../../lib/pancha-bhoota';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-  return PANCHA_BHOOTA_SLUGS.map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
