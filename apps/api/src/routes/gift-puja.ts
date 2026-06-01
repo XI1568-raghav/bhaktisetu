@@ -156,8 +156,11 @@ export async function giftPujaRoutes(server: FastifyInstance) {
   // Legacy email-only intake. Kept as the safe fallback even when payment +
   // WA are wired — ops can still receive manual leads from buyers who
   // prefer to talk before paying.
+  // Anon-allowed (NRI gift flow is primary monetization vector — auth would
+  // block legit buyers). Tightened to 2/hr/IP to bound Resend (100/day cap)
+  // and ops inbox abuse. Each call also emails buyer confirmation = 2 sends.
   server.post('/inquiry', {
-    config: { rateLimit: { max: 5, timeWindow: '1 hour' } },
+    config: { rateLimit: { max: 2, timeWindow: '1 hour' } },
   }, async (request, reply) => {
     const parsed = inquirySchema.safeParse(request.body);
     if (!parsed.success) {
