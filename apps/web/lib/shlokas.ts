@@ -94,6 +94,116 @@ export const SHLOKAS: Shloka[] = [
       'We worship the three-eyed One, the fragrant, the nourisher. May He liberate us from the bondage of death, as a cucumber from its stem — granting us immortality.',
     tags: ['shiva', 'mantra', 'healing'],
   },
+  {
+    slug: 'gita-2-20',
+    source: 'Bhagavad Gita 2.20',
+    text: 'न जायते म्रियते वा कदाचि-\nन्नायं भूत्वा भविता वा न भूयः।\nअजो नित्यः शाश्वतोऽयं पुराणो\nन हन्यते हन्यमाने शरीरे॥',
+    translit:
+      'na jāyate mriyate vā kadācin\nnāyaṁ bhūtvā bhavitā vā na bhūyaḥ\najo nityaḥ śāśvato ’yaṁ purāṇo\nna hanyate hanyamāne śarīre',
+    meaning:
+      'The Self is never born nor dies; having been, it never ceases to be. Unborn, eternal, ever-abiding and primeval — it is not slain when the body is slain.',
+    tags: ['gita', 'atman', 'immortality'],
+  },
+  {
+    slug: 'gita-9-22',
+    source: 'Bhagavad Gita 9.22',
+    text: 'अनन्याश्चिन्तयन्तो मां ये जनाः पर्युपासते।\nतेषां नित्याभियुक्तानां योगक्षेमं वहाम्यहम्॥',
+    translit:
+      'ananyāś cintayanto māṁ ye janāḥ paryupāsate\nteṣāṁ nityābhiyuktānāṁ yoga-kṣemaṁ vahāmy aham',
+    meaning:
+      'To those who worship Me with single-pointed devotion, I personally provide what they lack and preserve what they have.',
+    tags: ['gita', 'devotion', 'protection'],
+  },
+  {
+    slug: 'gita-15-7',
+    source: 'Bhagavad Gita 15.7',
+    text: 'ममैवांशो जीवलोके जीवभूतः सनातनः।\nमनःषष्ठानीन्द्रियाणि प्रकृतिस्थानि कर्षति॥',
+    translit:
+      'mamaivāṁśo jīva-loke jīva-bhūtaḥ sanātanaḥ\nmanaḥ-ṣaṣṭhānīndriyāṇi prakṛti-sthāni karṣati',
+    meaning:
+      'A fragment of My own eternal Self becomes the living being in this world, drawing to itself the senses, of which the mind is the sixth, rooted in material nature.',
+    tags: ['gita', 'jivatma', 'wisdom'],
+  },
+  {
+    slug: 'gita-12-13',
+    source: 'Bhagavad Gita 12.13-14',
+    text: 'अद्वेष्टा सर्वभूतानां मैत्रः करुण एव च।\nनिर्ममो निरहंकारः समदुःखसुखः क्षमी॥',
+    translit:
+      'adveṣṭā sarva-bhūtānāṁ maitraḥ karuṇa eva ca\nnirmamo nirahaṅkāraḥ sama-duḥkha-sukhaḥ kṣamī',
+    meaning:
+      'One who is free from malice toward all beings, friendly and compassionate, without ego or sense of possession, equal in joy and sorrow, and forgiving — such a devotee is dear to Me.',
+    tags: ['gita', 'devotee', 'qualities'],
+  },
+  {
+    slug: 'gita-3-35',
+    source: 'Bhagavad Gita 3.35',
+    text: 'श्रेयान्स्वधर्मो विगुणः परधर्मात्स्वनुष्ठितात्।\nस्वधर्मे निधनं श्रेयः परधर्मो भयावहः॥',
+    translit:
+      'śreyān sva-dharmo viguṇaḥ para-dharmāt sv-anuṣṭhitāt\nsva-dharme nidhanaṁ śreyaḥ para-dharmo bhayāvahaḥ',
+    meaning:
+      'Better is one\'s own dharma, though imperfectly performed, than the dharma of another well discharged. Better death in one\'s own dharma; the dharma of another brings fear.',
+    tags: ['gita', 'svadharma', 'duty'],
+  },
+  {
+    slug: 'om-purnamadah',
+    source: 'Isha Upanishad — Shanti Mantra',
+    text: 'ॐ पूर्णमदः पूर्णमिदं पूर्णात्पूर्णमुदच्यते।\nपूर्णस्य पूर्णमादाय पूर्णमेवावशिष्यते॥\nॐ शान्तिः शान्तिः शान्तिः॥',
+    translit:
+      'oṁ pūrṇam adaḥ pūrṇam idaṁ pūrṇāt pūrṇam udacyate\npūrṇasya pūrṇam ādāya pūrṇam evāvaśiṣyate\noṁ śāntiḥ śāntiḥ śāntiḥ',
+    meaning:
+      'That is whole, this is whole; from the whole the whole emerges. Taking the whole from the whole, the whole alone remains. Om peace, peace, peace.',
+    tags: ['upanishad', 'isha', 'shanti'],
+  },
+  {
+    slug: 'saha-navavatu',
+    source: 'Taittiriya / Katha Upanishad — Shanti Mantra',
+    text: 'ॐ सह नाववतु। सह नौ भुनक्तु।\nसह वीर्यं करवावहै।\nतेजस्विनावधीतमस्तु मा विद्विषावहै॥\nॐ शान्तिः शान्तिः शान्तिः॥',
+    translit:
+      'oṁ saha nāv avatu. saha nau bhunaktu\nsaha vīryaṁ karavāvahai\ntejasvi nāv adhītam astu mā vidviṣāvahai\noṁ śāntiḥ śāntiḥ śāntiḥ',
+    meaning:
+      'May we, teacher and student, be protected together. May we be nourished together. May we work together with great vigour. May our study be enlightening; may we not have hatred for each other. Om peace, peace, peace.',
+    tags: ['upanishad', 'teacher', 'shanti'],
+  },
+  {
+    slug: 'tvameva-mata',
+    source: 'Traditional Pandava Gita — Surrender prayer',
+    text: 'त्वमेव माता च पिता त्वमेव।\nत्वमेव बन्धुश्च सखा त्वमेव।\nत्वमेव विद्या द्रविणं त्वमेव।\nत्वमेव सर्वं मम देव देव॥',
+    translit:
+      'tvam eva mātā ca pitā tvam eva\ntvam eva bandhuś ca sakhā tvam eva\ntvam eva vidyā draviṇaṁ tvam eva\ntvam eva sarvaṁ mama deva deva',
+    meaning:
+      'You alone are my mother and father. You alone are my kin and friend. You alone are my knowledge and wealth. You alone are everything to me, O Lord of Lords.',
+    tags: ['surrender', 'prayer', 'devotion'],
+  },
+  {
+    slug: 'guru-brahma',
+    source: 'Guru Stotram — Skanda Purana',
+    text: 'गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः।\nगुरुः साक्षात् परं ब्रह्म तस्मै श्रीगुरवे नमः॥',
+    translit:
+      'gurur brahmā gurur viṣṇuḥ gurur devo maheśvaraḥ\nguruḥ sākṣāt paraṁ brahma tasmai śrī-gurave namaḥ',
+    meaning:
+      'The guru is Brahma, the guru is Vishnu, the guru is Lord Shiva. The guru is the Supreme Brahman directly perceived. Salutations to that revered guru.',
+    tags: ['guru', 'invocation', 'reverence'],
+  },
+  {
+    slug: 'karagre-vasate',
+    source: 'Traditional Karadarshanam — Morning prayer',
+    text: 'कराग्रे वसते लक्ष्मीः करमध्ये सरस्वती।\nकरमूले तु गोविन्दः प्रभाते करदर्शनम्॥',
+    translit:
+      'karāgre vasate lakṣmīḥ kara-madhye sarasvatī\nkara-mūle tu govindaḥ prabhāte kara-darśanam',
+    meaning:
+      'At the fingertips dwells Lakshmi, at the palm Saraswati, and at the wrist Govinda. So at dawn I gaze upon my hands.',
+    tags: ['morning', 'prayer', 'lakshmi'],
+  },
+  {
+    slug: 'asatoma-sadgamaya-pavamana',
+    source: 'Pavamana Mantra — Brihadaranyaka 1.3.28',
+    text: 'ॐ असतो मा सद्गमय।\nतमसो मा ज्योतिर्गमय।\nमृत्योर्मामृतं गमय।\nॐ शान्तिः शान्तिः शान्तिः॥',
+    translit:
+      'oṁ asato mā sad gamaya\ntamaso mā jyotir gamaya\nmṛtyor mā amṛtaṁ gamaya\noṁ śāntiḥ śāntiḥ śāntiḥ',
+    meaning:
+      'From the unreal lead me to the real. From darkness lead me to light. From death lead me to immortality. Om peace, peace, peace.',
+    tags: ['pavamana', 'shanti', 'upanishad'],
+  },
 ];
 
 export function getShloka(slug: string): Shloka | undefined {
