@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { TITHIS, TITHI_SLUGS, getTithiBySlug } from '../../../lib/tithis';
+import { TITHIS, getTithiBySlug } from '../../../lib/tithis';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return TITHI_SLUGS.map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

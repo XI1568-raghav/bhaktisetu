@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SHAKTI_PEETHS, type ShaktiPeethCountry } from '../../lib/shakti-peeths';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

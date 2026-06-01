@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TITHIS } from '../../lib/tithis';
 
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
