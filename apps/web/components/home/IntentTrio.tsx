@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Video, Flame, Sparkles, ArrowRight } from 'lucide-react';
+import { Video, Flame, MessageCircleQuestion, ArrowRight } from 'lucide-react';
 import { OnboardingGate } from './_useOnboardingSafe';
 
 type IntentCard = {
@@ -28,7 +28,7 @@ const CARDS: IntentCard[] = [
     href: '/pujas',
   },
   {
-    Icon: Sparkles,
+    Icon: MessageCircleQuestion,
     title: 'Ask a Pandit',
     body: 'AI guidance on dharma, rituals',
     cta: 'Ask now',
