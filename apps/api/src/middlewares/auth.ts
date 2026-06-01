@@ -97,6 +97,17 @@ export async function authenticateUser(
     // default-deny is the safe default.
     const demoAllowed =
       process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEMO_TOKENS === 'true';
+    // Demo-shaped token in prod with no override = clear 401. Without this
+    // the token falls through to Supabase verify which rejects it anyway,
+    // but the explicit reject is faster, logs cleaner, and stops Supabase
+    // from getting hit with obvious junk.
+    if (token.startsWith('demo-') && !demoAllowed) {
+      reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Demo tokens not accepted in production.',
+      });
+      return;
+    }
     if (token.startsWith('demo-') && demoAllowed) {
       const stripped = token.replace(/^demo-/, '').replace(/-token$/, '').replace(/^demo-/, '');
       const DEMO_ROLE_MAP: Record<string, { roles: MarketplaceRole[]; email: string }> = {
@@ -228,8 +239,16 @@ export async function authenticateUser(
         roles = roleAssignments.map((ra) => ra.role as MarketplaceRole);
         if (!roles.includes('DEVOTEE')) roles.push('DEVOTEE');
       }
-    } catch {
-      // Role table may not exist yet; default to DEVOTEE
+    } catch (roleErr) {
+      // Role table miss = silently downgrading to DEVOTEE-only masked a real
+      // outage once. Log it so ops can tell "user is devotee" from "DB error
+      // forced devotee fallback". Keep the fallback for cold-boot resilience.
+      const rErrName = roleErr instanceof Error ? roleErr.name : 'UnknownRoleErr';
+      const rErrMsg = roleErr instanceof Error ? roleErr.message : String(roleErr);
+      request.log.warn(
+        { rErrName, rErrMsg, userId: dbUser.id },
+        'UserRoleAssignment lookup failed — falling back to DEVOTEE-only',
+      );
     }
 
     // Check admin email allowlist as fallback
@@ -256,10 +275,12 @@ export async function authenticateUser(
       { errName, errMsg, errStack, url: request.url },
       'Auth middleware error',
     );
-    // When ALLOW_AUTH_DIAGNOSTICS=true (set during triage), surface the real
-    // error name + message in the response so the operator can diagnose
-    // without Render log access. Default-deny: never leak in normal prod.
-    const diag = process.env.ALLOW_AUTH_DIAGNOSTICS === 'true';
+    // ALLOW_AUTH_DIAGNOSTICS surfaces the real error name + message in the
+    // response — useful in dev/staging triage, dangerous in prod (leaks stack
+    // shape + DB error text). Hard prod gate: even if the env flag is set,
+    // never surface in production. Default-deny.
+    const diag = process.env.ALLOW_AUTH_DIAGNOSTICS === 'true'
+      && process.env.NODE_ENV !== 'production';
     reply.code(500).send({
       error: 'Internal Server Error',
       message: diag
