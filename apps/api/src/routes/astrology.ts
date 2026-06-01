@@ -278,13 +278,15 @@ export async function astrologyRoutes(server: FastifyInstance) {
     }
 
     try {
-      const response = await astrologyService.askAstrologer(message.trim(), birthDetails);
-      return { response };
+      const result = await astrologyService.askAstrologer(message.trim(), birthDetails);
+      return result;
     } catch (error: any) {
       server.log.error(error, 'AI Astrologer error');
-      // Return fallback response instead of 500
       const fallback = astrologyService.getAstrologerFallback(message.trim());
-      return { response: fallback };
+      return {
+        response: fallback.text,
+        source: fallback.matched ? 'fallback-keyword' : 'fallback-default',
+      };
     }
   });
 

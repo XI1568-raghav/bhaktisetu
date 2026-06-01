@@ -1,4 +1,5 @@
 import { generateText, MODELS, DEMO_MODE } from '../integrations/claude.js';
+import { computeVedicContext, type VedicContext } from '../lib/vedic-context.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -1075,28 +1076,34 @@ class AstrologyService {
       time?: string;
       place?: string;
     }
-  ): Promise<string> {
-    const birthContext = birthDetails?.date
-      ? `\n\nUser's birth details:\n- Name: ${birthDetails.name || 'Not provided'}\n- Date of Birth: ${birthDetails.date}\n- Time of Birth: ${birthDetails.time || 'Not provided'}\n- Place of Birth: ${birthDetails.place || 'Not provided'}\n\nUse these birth details to provide personalized astrological insights when relevant.`
-      : '';
+  ): Promise<{ response: string; source: 'llm-grounded' | 'llm' | 'fallback-keyword' | 'fallback-default'; context?: VedicContext }> {
+    const context = birthDetails?.date ? computeVedicContext(birthDetails) : null;
 
-    const systemPrompt = `You are an expert Vedic Astrologer (Jyotishi) on the Darshya platform. You provide astrological guidance based on authentic Vedic Jyotish (Hindu astrology) principles.
+    const birthContext = context
+      ? `\n\nUser's Vedic chart (computed from birth details — use these as ground truth, do NOT contradict):\n- ${context.summary}\n\nName: ${birthDetails?.name || 'devotee'}. Tailor every answer to this chart. Reference the actual Mahadasha, Moon sign, Lagna, and nakshatra by name. If a dosha is flagged, address it directly.`
+      : birthDetails?.date
+        ? `\n\nUser's birth details:\n- Name: ${birthDetails.name || 'Not provided'}\n- Date of Birth: ${birthDetails.date}\n- Time of Birth: ${birthDetails.time || 'Not provided'}\n- Place of Birth: ${birthDetails.place || 'Not provided'}`
+        : '';
+
+    const systemPrompt = `You are an expert Vedic Astrologer (Jyotishi) on the Darshya platform. You provide authentic Jyotish guidance grounded in Parashari and Jaimini systems.
 
 Guidelines:
-- Use Vedic sidereal zodiac (not Western tropical zodiac)
-- Reference traditional Jyotish concepts: rashis, nakshatras, dashas, yogas, doshas
-- Provide specific planetary analysis when birth details are available
-- Suggest traditional remedies: mantras, gemstones, pujas, donations
-- Include relevant Sanskrit mantras with transliteration when suggesting remedies
-- Be respectful, warm, and encouraging — address the user warmly
-- Keep responses focused and under 500 words
-- When birth details are not available, provide general guidance based on the question
-- For marriage questions: discuss 7th house, Venus, Jupiter transit, relevant dashas
-- For career questions: discuss 10th house, Saturn, Sun, Mercury influences
-- For health questions: discuss 1st, 6th, 8th houses and relevant planet-body correlations
+- Use Vedic sidereal zodiac (Lahiri ayanamsa), never Western tropical
+- Reference rashis, nakshatras, Vimshottari dashas, yogas, doshas by Sanskrit name
+- When a computed chart block is provided below, anchor every claim in those values
+- Suggest traditional remedies: beej mantras, gemstones, pujas, donations, charity (daan)
+- Include Sanskrit mantras with Devanagari + IAST transliteration
+- Address user warmly (Namaste / dear devotee); keep responses focused, 250-500 words
+- Marriage: 7th house, Venus karaka, Jupiter transit, Navamsa (D-9), Manglik check
+- Career: 10th house, Saturn karaka, Sun for authority, Mercury for trade
+- Health: 1st/6th/8th houses, planet-body correlations, Mahamrityunjaya for crisis
+- Money: 2nd/11th houses, Jupiter for wealth, Venus for luxury, Lakshmi rituals
+- Children: 5th house, Jupiter karaka, Santan Gopal mantra
+- Education: 4th/5th houses, Mercury + Jupiter, Saraswati upasana
+- Travel/foreign: 9th/12th houses, Rahu for foreign lands
 - Do not provide medical, legal, or financial advice — redirect to professionals
-- Reference Parashari and Jaimini systems of astrology
-- Mention relevant pujas available on Darshya when appropriate${birthContext}`;
+- Mention relevant Darshya pujas (Rudrabhishek, Mahamrityunjaya Japa, Navagraha Shanti, Satyanarayan, Lakshmi Puja) when remedies fit
+- Be honest about astrology's limits: planets show tendencies, karma + free will shape outcomes${birthContext}`;
 
     try {
       const response = await generateText({
@@ -1105,106 +1112,317 @@ Guidelines:
         maxTokens: 1024,
         model: MODELS.HAIKU,
       });
-      return response;
+      return {
+        response,
+        source: context ? 'llm-grounded' : 'llm',
+        ...(context ? { context } : {}),
+      };
     } catch {
-      return this.getAstrologerFallback(message);
+      const fallback = this.getAstrologerFallback(message);
+      return {
+        response: fallback.text,
+        source: fallback.matched ? 'fallback-keyword' : 'fallback-default',
+        ...(context ? { context } : {}),
+      };
     }
   }
 
   // ── Fallback responses for when API is unavailable ───────────────────────
-  getAstrologerFallback(message: string): string {
+  getAstrologerFallback(message: string): { text: string; matched: boolean } {
     const lower = message.toLowerCase();
+    const has = (...keys: string[]) => keys.some((k) => lower.includes(k));
 
-    if (lower.includes('marriage') || lower.includes('vivah') || lower.includes('shaadi') || lower.includes('partner') || lower.includes('love') || lower.includes('relationship')) {
-      return `Based on Vedic astrology principles, marriage timing is primarily determined by:
+    if (has('marriage', 'married', 'vivah', 'shaadi', 'partner', 'love', 'relationship', 'spouse', 'divorce', 'engaged', 'breakup', 'girlfriend', 'boyfriend', 'wedding')) {
+      return { matched: true, text: `Marriage in Vedic Jyotish is read from the **7th house, its lord, Venus (Shukra) as karaka, and the Navamsa (D-9) chart**.
 
-**Key Indicators:**
-- **7th house** and its lord determine the nature and timing of marriage
-- **Venus** (Shukra) is the primary karaka (significator) for marriage
-- **Jupiter** transit over the 7th house or 7th lord often triggers marriage
-- **Vimshottari Dasha** of 7th lord, Venus, or planets in the 7th house
+**Timing indicators:**
+- Vimshottari Mahadasha or Antardasha of Venus, 7th lord, or planets in the 7th house
+- Jupiter transit (gochar) over the 7th house, 7th lord, or Moon sign's 2nd/7th/11th
+- Saturn transit over Venus often delays — natural maturation phase
 
-**General Guidance:**
-- Venus Mahadasha or Antardasha is highly favorable for marriage
-- Jupiter's transit through the 2nd, 7th, or 11th house from Moon sign activates marriage yoga
-- The Navamsa chart (D-9) should be analyzed for marriage compatibility
+**Manglik check:** Mars in 1/4/7/8/12 from Lagna OR Moon. Marrying another Manglik cancels the dosha. Mangal Shanti puja (Mangalvar) is the classical remedy.
 
-**Remedies for Marriage Delay:**
-- Worship Lord Shiva and Parvati together on Mondays
-- Chant the Katyayani Mantra: "ओम कात्यायन्यै नमः" 108 times
-- Perform Vivah Puja at a Shiva temple
-- Donate items related to Venus (white clothes, sweets) on Fridays
+**Remedies:**
+- Mondays: worship Shiva-Parvati together (Ardhanarishvara form)
+- Katyayani Mantra: ॐ कात्यायनी महामाये महायोगिन्यधीश्वरि — 108 times
+- Fridays: donate white items (rice, sugar, white cloth) for Venus
+- Book a **Vivah Puja** or **Swayamvara Parvati Puja** on Darshya
 
-For a precise prediction, please share your birth details (date, time, and place of birth).`;
+Share your birth date + time + place for a precise Mahadasha + Navamsa reading.` };
     }
 
-    if (lower.includes('career') || lower.includes('job') || lower.includes('business') || lower.includes('work') || lower.includes('profession') || lower.includes('money') || lower.includes('finance')) {
-      return `According to Vedic astrology, career success is influenced by several planetary factors:
+    if (has('career', 'job', 'business', 'work', 'profession', 'promotion', 'raise', 'firing', 'fired', 'colleague', 'boss', 'office')) {
+      return { matched: true, text: `Career in Jyotish reads from the **10th house (Karma Bhava), its lord, and karakas Saturn (effort) + Sun (authority) + Mercury (intellect) + Jupiter (wisdom)**.
 
-**Key Houses for Career:**
-- **10th house** (Karma Bhava) — profession and public standing
-- **6th house** — daily work, service, competition
-- **2nd house** — wealth accumulation
-- **11th house** — gains and income
+**House map:**
+- **10th** — profession, public standing, dharma karma
+- **6th** — service, daily work, competition won
+- **2nd** — accumulated wealth from career
+- **11th** — gains, bonuses, income flow
 
-**Important Planets:**
-- **Saturn** (Shani) — karaka for career and hard work
-- **Sun** (Surya) — authority, government positions, leadership
-- **Mercury** (Budh) — communication, business, trade
-- **Jupiter** (Guru) — wisdom, teaching, advisory roles
+**Dasha sensitivity:** Mahadasha of 10th lord or planets aspecting 10th typically marks pivot years. Saturn return (around age 29-30 and 58-59) reshapes career identity.
 
-**Career Remedies:**
-- Chant the Gayatri Mantra at sunrise for mental clarity
-- Worship Lord Ganesha before starting new ventures
-- Donate dark-colored items on Saturdays for Saturn's blessings
-- Wear a blue sapphire (Neelam) only after proper chart analysis
+**Remedies:**
+- Gayatri Mantra at sunrise — mental clarity + Sun blessing
+- Saturday: donate black sesame, mustard oil, iron, dark cloth for Saturn
+- Chant Hanuman Chalisa on Tuesdays for courage at workplace
+- Book **Navagraha Shanti** if multiple malefics afflict 10th
+- Blue sapphire (Neelam) **only after chart confirms Saturn benefic** — never wear untested
 
-Share your birth details for a personalized career reading.`;
+Share your birth details for 10th-house lord + Mahadasha analysis.` };
     }
 
-    if (lower.includes('health') || lower.includes('disease') || lower.includes('illness') || lower.includes('body') || lower.includes('medical')) {
-      return `Vedic astrology views health through planetary positions and their influence:
+    if (has('money', 'wealth', 'rich', 'loan', 'debt', 'investment', 'stocks', 'savings', 'finance', 'income')) {
+      return { matched: true, text: `Wealth in Vedic astrology flows from the **Dhana trikona — 2nd, 5th, 9th, 11th houses** and karaka **Jupiter (Brihaspati) + Venus (Shukra)**.
 
-**Health Houses:**
-- **1st house (Lagna)** — overall vitality and constitution
-- **6th house** — diseases and immunity
-- **8th house** — chronic conditions and longevity
-- **12th house** — hospitalization
+**Key reads:**
+- 2nd house — accumulated wealth, family money
+- 5th — speculative gains, investments, intelligence
+- 9th — luck, dharma earnings
+- 11th — income, gains, fulfilled desires
 
-**Planet-Body Correlations:**
-- **Sun** — heart, bones, eyesight
-- **Moon** — mind, blood, emotional health
-- **Mars** — blood pressure, muscles, accidents
-- **Mercury** — nervous system, skin
-- **Jupiter** — liver, diabetes, growth
-- **Venus** — kidneys, reproductive system
-- **Saturn** — joints, chronic diseases
+**Dhana Yoga:** lords of 2/5/9/11 in mutual exchange or conjunction. Lakshmi Yoga (9th lord strong + Venus in own/exalted sign) blesses sustained prosperity.
 
-**Health Remedies:**
-- Chant Mahamrityunjaya Mantra: "ओम त्र्यम्बकं यजामहे..."
-- Perform Navagraha Shanti Puja
-- Follow Ayurvedic routine aligned with your chart
+**Remedies:**
+- Friday: Lakshmi Puja, light ghee diya, offer kheer
+- Shri Suktam recitation on full moon (Purnima)
+- Donate yellow lentils (chana dal) Thursdays for Jupiter
+- Book **Mahalakshmi Yagna** during Dhanteras
+- Avoid borrowing on Saturdays (Saturn's day)
 
-Note: Astrology complements medical advice but does not replace it.`;
+For debt: Kuber mantra **ॐ यक्षाय कुबेराय वैश्रवणाय धनधान्याधिपतये धनधान्यसमृद्धिं मे देहि दापय स्वाहा** — 108 times daily.` };
     }
 
-    return `Namaste! Thank you for your question.
+    if (has('health', 'disease', 'illness', 'body', 'medical', 'surgery', 'pain', 'recovery', 'hospital', 'sick')) {
+      return { matched: true, text: `Health in Jyotish maps to **Lagna (1st — vitality), 6th (disease), 8th (chronic/longevity), 12th (hospitalization, mental rest)**.
 
-As an AI astrologer grounded in Vedic Jyotish traditions, I can share some general guidance:
+**Planet-body correlations:**
+- Sun: heart, bones, eyesight, vitality
+- Moon: mind, blood, emotions, fluids
+- Mars: muscles, blood pressure, accidents, surgery
+- Mercury: nerves, skin, speech
+- Jupiter: liver, fat, diabetes, growth
+- Venus: kidneys, reproductive system
+- Saturn: joints, chronic conditions, teeth
+- Rahu: poisoning, mysterious ailments
+- Ketu: viral, unexplained
 
-**Key Principles of Vedic Astrology:**
-1. **Karma and Free Will** — Planets show tendencies, not fixed outcomes. Your actions (karma) can modify planetary effects.
-2. **Remedies (Upaya)** — Mantras, gemstones, donations, and pujas can mitigate negative influences.
-3. **Timing (Muhurta)** — Choosing auspicious times for important actions improves outcomes.
+**Crisis mantra — Mahamrityunjaya:**
+ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम् |
+उर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय माऽमृतात् ||
 
-**For a personalized reading, you can:**
-- Share your birth details (date, time, place)
-- Ask about specific areas: career, marriage, health, education
-- Inquire about current planetary transits
+108 recitations daily, ideally on Mondays.
 
-The Bhagavad Gita (4.39) teaches: "श्रद्धावान् लभते ज्ञानम्" — One who has faith attains wisdom.
+**Remedies:** Navagraha Shanti, Rudrabhishek for Shiva's healing grace, donate to ill on 8th-house transit days.
 
-How may I guide you further?`;
+**Critical:** astrology complements medicine — never replace doctor's care. Book Mahamrityunjaya Japa on Darshya for chronic conditions.` };
+    }
+
+    if (has('education', 'study', 'studies', 'exam', 'college', 'admission', 'school', 'student', 'degree')) {
+      return { matched: true, text: `Education in Jyotish reads from **4th house (basic education, mother's nurturing), 5th house (intellect, learning), 9th house (higher learning, dharma)** with karakas **Mercury (Budh) + Jupiter (Guru)**.
+
+**Strong combos:**
+- Jupiter aspecting 5th = wisdom, scholarship
+- Mercury in own/exalted sign = sharp intellect
+- 9th lord strong = post-graduate + foreign education
+- Saraswati Yoga (Mercury + Jupiter + Venus in kendra) = top scholar
+
+**Exam-time remedies:**
+- Saraswati mantra: ॐ ऐं सरस्वत्यै नमः — 108 times before study
+- Wear yellow on Thursdays
+- Worship Ganesha before exams: ॐ गं गणपतये नमः
+- Offer 21 durva to Ganesh idol
+
+**Foreign education:** Rahu in 9th, 9th lord in 12th, or Moon-Rahu in 9th often indicate study abroad. Mahadasha of these planets activates the foreign window.
+
+Book **Saraswati Puja** on Vasant Panchami for academic excellence.` };
+    }
+
+    if (has('child', 'children', 'santaan', 'santan', 'pregnancy', 'pregnant', 'baby', 'ivf', 'conceive', 'conception', 'putra', 'progeny')) {
+      return { matched: true, text: `Children (santan) read from the **5th house (Putra Bhava), its lord, and karaka Jupiter (Guru)**.
+
+**Indicators:**
+- 5th house occupied/aspected by benefics (Jupiter, Venus, Moon waxing)
+- Jupiter strong in own/exalted sign
+- 5th lord in trikona (1, 5, 9) = blessed progeny
+- Malefics (Saturn, Mars, Rahu) afflicting 5th + Jupiter = delays/complications
+
+**Putra dosha** (Pitra dosha affecting children) treated via Tripindi Shradh at Gaya or Trimbakeshwar.
+
+**Remedies for conception:**
+- Santan Gopal Mantra: ॐ देवकीसुत गोविन्द वासुदेव जगत्पते | देहि मे तनयं कृष्ण त्वामहं शरणं गतः ||
+- Recite Hari Vamsa Purana
+- Worship Gopal Krishna on Wednesdays + Janmashtami
+- Donate to children's education / orphanage
+- Book **Santan Gopal Puja** on Darshya
+
+For IVF timing: align procedure with **Chandra Bala** (favorable Moon transit from Moon sign) + benefic muhurta. Share birth details for both partners for precise window.` };
+    }
+
+    if (has('travel', 'foreign', 'abroad', 'visa', 'immigration', 'us', 'usa', 'canada', 'australia', 'uk', 'singapore', 'dubai', 'nri')) {
+      return { matched: true, text: `Foreign travel + settlement in Jyotish reads from **9th house (long journeys, dharma), 12th house (foreign lands, expenditure abroad), 3rd (short trips)** with **Rahu** as the chief foreign karaka.
+
+**Strong indicators:**
+- Rahu in 9th, 12th, or Lagna
+- 9th or 12th lord in mutual exchange
+- Moon-Rahu / Sun-Rahu conjunctions
+- Mahadasha/Antardasha of Rahu or 12th lord
+
+**Visa muhurta:** Submit on a Wednesday (Mercury — paperwork) or Thursday (Jupiter — fortune), avoiding Rahu Kalam. Wear blue or saffron.
+
+**Remedies:**
+- Durga Saptashati for safe passage
+- Hanuman Chalisa before journey
+- Offer coconut + flowers to flowing water on travel-day morning
+- Chant **ॐ रां राहवे नमः** for Rahu favor
+- Avoid travel during Bhadra karana or Vyatipata yoga
+
+**For NRI children/spouse abroad:** light a diya facing west at dusk on Tuesdays. Book **Sankat Mochan Hanuman Puja** for protection.` };
+    }
+
+    if (has('manglik', 'mangal', 'sade-sati', 'sade sati', 'sadesati', 'kaal-sarp', 'kaal sarp', 'kaalsarp', 'pitra', 'pitru', 'pitru dosh', 'dosha', 'dosh', 'kemadruma')) {
+      return { matched: true, text: `**Doshas in Vedic astrology — diagnosis + remedy:**
+
+**Manglik Dosha:** Mars in 1/4/7/8/12 from Lagna OR Moon. Affects marriage harmony. *Cancels* when partner also Manglik, or Mars debilitated, or after age 28. Remedies: Mangal Shanti Puja, Hanuman Chalisa Tuesdays, fast on Tuesdays, marry a tree/Vishnu idol (Kumbh Vivah) before human marriage.
+
+**Sade-Sati:** Saturn's 7.5-year transit over 12th, 1st, 2nd house from natal Moon. Three phases: rising (12th), peak (1st), setting (2nd). Not always negative — brings maturity. Remedies: Shani Mantra **ॐ शं शनैश्चराय नमः** 108x Saturdays, donate black sesame + mustard oil, feed crows, Hanuman Chalisa daily, **Shani Shanti Puja** at Shani temples (Shingnapur, Tirunallar).
+
+**Kaal Sarp Dosha:** All 7 planets between Rahu-Ketu axis. Twelve variations (Anant, Kulik, Vasuki...). Causes recurring obstacles. Remedy: **Kaal Sarp Shanti** at Trimbakeshwar / Kalahasti, recite Maha Mrityunjaya 108x daily.
+
+**Pitra Dosha:** Sun + Rahu/Ketu in 9th, or 9th lord afflicted. Ancestral karma. Remedy: **Tripindi Shradh** at Gaya/Trimbakeshwar, feed brahmins on Amavasya, donate to elders.
+
+**Kemadruma Yoga:** No planet in 2nd/12th from Moon. Isolation, financial swings. Remedy: Monday fasts, Chandra mantra **ॐ सोम सोमाय नमः**, white-colored offerings.
+
+Share birth details to confirm which doshas (if any) apply to your chart.` };
+    }
+
+    if (has('gemstone', 'gem', 'ratna', 'ruby', 'pearl', 'coral', 'emerald', 'diamond', 'sapphire', 'topaz', 'neelam', 'pukhraj', 'manik', 'moti')) {
+      return { matched: true, text: `**Vedic gemstones (Navaratna) — planet ↔ stone:**
+
+| Planet | Gemstone | Hindi | Finger | Day | Weight |
+|---|---|---|---|---|---|
+| Sun | Ruby | Manik | Ring | Sunday | 3-6 carats |
+| Moon | Pearl | Moti | Little | Monday | 4-6 carats |
+| Mars | Red Coral | Moonga | Ring | Tuesday | 5-9 carats |
+| Mercury | Emerald | Panna | Little | Wednesday | 4-6 carats |
+| Jupiter | Yellow Sapphire | Pukhraj | Index | Thursday | 4-6 carats |
+| Venus | Diamond | Heera | Middle | Friday | 0.5-1 carat |
+| Saturn | Blue Sapphire | Neelam | Middle | Saturday | 4-7 carats |
+| Rahu | Hessonite | Gomed | Middle | Wednesday | 4-6 carats |
+| Ketu | Cat's Eye | Lehsuniya | Ring | Tuesday | 3-6 carats |
+
+**CRITICAL warnings:**
+- **Never wear a gemstone untested.** Wrong stone activates the planet's malefic side.
+- Blue sapphire (Neelam) most powerful + most dangerous — test 3 days under pillow first.
+- Yellow sapphire safest as general benefic for most charts.
+- Always energise: dip in raw milk + Ganga jal, chant beej mantra 108x, wear on the planet's day at sunrise.
+
+**Cheaper substitutes (upratna):** Garnet for ruby, moonstone for pearl, peridot for emerald, citrine for yellow sapphire.
+
+Share your chart for personalised stone recommendation — avoid online astrology generators that ignore Dasha + house lordship.` };
+    }
+
+    if (has('mantra', 'chant', 'jaap', 'japa', 'recite')) {
+      return { matched: true, text: `**Foundational Vedic mantras + their applications:**
+
+**1. Gayatri Mantra** (universal):
+ॐ भूर्भुवः स्वः | तत्सवितुर्वरेण्यं | भर्गो देवस्य धीमहि | धियो यो नः प्रचोदयात् ||
+108x at sunrise — wisdom, mental clarity, Sun blessing.
+
+**2. Mahamrityunjaya Mantra** (Shiva — healing, crisis):
+ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम् | उर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय माऽमृतात् ||
+108x daily for health, longevity, fearlessness.
+
+**3. Ganesh Mantra** (obstacles):
+ॐ गं गणपतये नमः — 108x before any new venture.
+
+**4. Hanuman Beej** (courage, Mars protection):
+ॐ हं हनुमते रुद्रात्मकाय हुं फट् — Tuesdays + Saturdays.
+
+**5. Navagraha Beej** (planet-specific):
+- Sun: ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः
+- Moon: ॐ श्रां श्रीं श्रौं सः चन्द्राय नमः
+- Mars: ॐ क्रां क्रीं क्रौं सः भौमाय नमः
+- Mercury: ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः
+- Jupiter: ॐ ग्रां ग्रीं ग्रौं सः गुरवे नमः
+- Venus: ॐ द्रां द्रीं द्रौं सः शुक्राय नमः
+- Saturn: ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः
+- Rahu: ॐ भ्रां भ्रीं भ्रौं सः राहवे नमः
+- Ketu: ॐ स्रां स्रीं स्रौं सः केतवे नमः
+
+**Practice rules:** rudraksha mala, east-facing, fixed time daily, focus on meaning + sound. 40-day cycle (mandala) for serious sankalpa.
+
+Share your chart to learn which planet's mantra serves you best.` };
+    }
+
+    if (has('saturn', 'shani', 'jupiter', 'guru', 'mars', 'mangal', 'venus', 'shukra', 'mercury', 'budh', 'sun', 'surya', 'moon', 'chandra', 'rahu', 'ketu', 'transit', 'gochar')) {
+      return { matched: true, text: `**Current major planetary transits (gochar) and their themes:**
+
+**Saturn (Shani):** moves through one sign for ~2.5 years. Brings karmic correction, slow growth, discipline. Sade-Sati phases (when Saturn transits 12th/1st/2nd from your natal Moon) reshape identity over 7.5 years. Not punishment — graduation.
+
+**Jupiter (Guru):** ~1 year per sign. Expansive, dharmic. Transits over your Moon's 2nd/5th/7th/9th/11th = expansion, marriage, children, fortune. Over 6th/8th/12th = teaching through challenge.
+
+**Rahu/Ketu:** ~18 months per sign, retrograde always. Eclipse points. Bring unexpected change, foreign elements, spiritual restlessness. Mahadasha 18y (Rahu) + 7y (Ketu) cycles.
+
+**Mars (Mangal):** ~45 days per sign (retrograde ~2.5 months every 2 years). Activates conflict, surgery, real estate.
+
+**Mercury, Venus, Sun:** ~30 days per sign. Mood + speech + finance + identity rhythms.
+
+**Reading your transit:** map current planet positions to your **Moon sign** (Chandra Lagna) and **Lagna**. Most Indian classical Jyotish reads from Moon for emotional impact, Lagna for material outcome.
+
+Share birth date + place + time — I will map your current Mahadasha + 3 most relevant gochar effects.` };
+    }
+
+    if (has('spiritual', 'spirituality', 'sadhana', 'moksha', 'enlightenment', 'meditation', 'anxiety', 'depression', 'mental', 'mind', 'peace', 'stress')) {
+      return { matched: true, text: `**Spiritual practice + mental peace in Jyotish:**
+
+**Houses:**
+- **9th** (Dharma) — guru, faith, pilgrimage
+- **12th** (Moksha) — liberation, meditation, isolation, sleep, dreams
+- **5th** (Purva Punya) — past-life merit, devotion, mantra-siddhi
+- **4th** (Hridaya) — inner peace, mother, emotional foundation
+
+**Strong spiritual chart:** Jupiter or Ketu in 9th/12th, Moon-Jupiter conjunction, Saturn in 12th (renunciation), Ketu strong (detachment).
+
+**For anxiety/depression (Moon affliction):**
+- Moon-Saturn / Moon-Rahu conjunctions cause cyclical low mood
+- Remedy: White flowers to Shiva, Chandra mantra **ॐ सोम सोमाय नमः** 108x Mondays
+- Mahamrityunjaya Japa — proven for mental fear
+- Pranayama (Anulom-Vilom + Bhramari) daily 20 min
+- Avoid Tamasic food (stale, processed, leftover) — Moon is highly sensitive
+
+**Spiritual sadhana suggestions by Moon sign:**
+- Fire signs (Aries, Leo, Sagittarius): karma yoga, service
+- Earth signs (Taurus, Virgo, Capricorn): ritual worship, mantra
+- Air signs (Gemini, Libra, Aquarius): jnana yoga, study
+- Water signs (Cancer, Scorpio, Pisces): bhakti yoga, kirtan
+
+**Critical:** clinical depression needs medical care first. Astrology + sadhana complement, never replace, professional treatment.
+
+Book **Mahamrityunjaya Japa** or **Chandra Shanti Puja** on Darshya for mental peace support.` };
+    }
+
+    return { matched: false, text: `Namaste 🙏
+
+I am the Darshya AI Vedic Astrologer, grounded in authentic Parashari + Jaimini Jyotish traditions. I can guide you on:
+
+**🪔 Life questions** — marriage, career, health, money, children, education, travel/foreign settlement
+**🔭 Doshas** — Manglik, Sade-Sati, Kaal Sarp, Pitra Dosh, Kemadruma
+**💎 Remedies** — Vedic mantras, gemstones (Navaratna), pujas, donations, fasts
+**🌌 Planetary transits** — current gochar effects on your Moon sign and Lagna
+**📿 Spiritual sadhana** — meditation, mantra-siddhi, paths by Moon sign
+
+**For precise readings, share:**
+- Date of birth (YYYY-MM-DD)
+- Time of birth (HH:MM, 24-hour)
+- Place of birth (city)
+
+Without time + place, I can give general guidance only. With them, I compute your Lagna, Moon Rashi, Nakshatra, current Vimshottari Mahadasha, and dosha flags — then answer with chart-grounded specifics.
+
+**Key principle from Bhagavad Gita 4.39:**
+*श्रद्धावान् लभते ज्ञानम्* — "One who has faith attains wisdom."
+
+Ask your question — what would you like to know?` };
   }
 }
 

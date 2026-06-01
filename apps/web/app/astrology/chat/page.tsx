@@ -20,11 +20,14 @@ import { API_BASE_URL } from '../../../lib/api-config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+type ChatSource = 'llm-grounded' | 'llm' | 'fallback-keyword' | 'fallback-default';
+
 interface ChatMessage {
  id: string;
  role: 'user' | 'assistant';
  content: string;
  timestamp: string;
+ source?: ChatSource;
 }
 
 interface BirthDetails {
@@ -260,7 +263,9 @@ How may I guide you today?`,
  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
  const data = await res.json();
- const responseText = data.response || data.message || getFallbackResponse(trimmed);
+ const responseText: string = data.response || data.message || getFallbackResponse(trimmed);
+ const source: ChatSource = (data.source as ChatSource) || 'llm';
+ setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, source } : m));
 
  // Simulate typing effect
  let displayedText = '';
@@ -277,6 +282,7 @@ How may I guide you today?`,
  } catch {
  // Use fallback response when API is unavailable
  const fallback = getFallbackResponse(trimmed);
+ setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, source: 'fallback-default' as ChatSource } : m));
  let displayedText = '';
  const words = fallback.split(' ');
  for (let i = 0; i < words.length; i++) {
@@ -505,9 +511,39 @@ How may I guide you today?`,
  : 'bg-white border border-surface-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm'
  }`}>
  {msg.role === 'assistant' && (
- <div className="flex items-center gap-1.5 mb-2">
+ <div className="flex items-center gap-1.5 mb-2 flex-wrap">
  <Star className="w-3.5 h-3.5 text-saffron-500" />
  <span className="text-[10px] font-semibold text-saffron-600 uppercase tracking-wider">AI Astrologer</span>
+ {msg.source && (
+ <span
+ className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
+ msg.source === 'llm-grounded'
+ ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+ : msg.source === 'llm'
+ ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+ : msg.source === 'fallback-keyword'
+ ? 'bg-amber-50 text-amber-700 border-amber-200'
+ : 'bg-surface-100 text-surface-600 border-surface-200'
+ }`}
+ title={
+ msg.source === 'llm-grounded'
+ ? 'Response grounded in your computed Vedic chart'
+ : msg.source === 'llm'
+ ? 'AI guidance — share birth details for chart-grounded response'
+ : msg.source === 'fallback-keyword'
+ ? 'Offline knowledge base — AI temporarily unavailable'
+ : 'General guidance — AI temporarily unavailable'
+ }
+ >
+ {msg.source === 'llm-grounded'
+ ? '🌟 From your chart'
+ : msg.source === 'llm'
+ ? '🤖 AI'
+ : msg.source === 'fallback-keyword'
+ ? '📚 Offline KB'
+ : '💬 General'}
+ </span>
+ )}
  </div>
  )}
  <div className={`text-sm leading-relaxed whitespace-pre-wrap ${
