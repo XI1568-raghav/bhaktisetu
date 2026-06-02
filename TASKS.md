@@ -2,29 +2,37 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-02.
 
-## P1 BUG — Kundli accuracy (reported 2026-06-02 w/ screenshot)
+## P1 RESOLVED 2026-06-02 — Kundli accuracy (reported w/ screenshot, audit claim wrong)
 
 User input: `1995-01-05 14:40 Panipat`. Live `/astrology/kundli` returns:
 - Moon Aquarius / Shatabhisha Pada 2
 - Asc Scorpio, Sun Sagittarius
-- Ayanamsa 23.85°
+- Ayanamsa 23.85° (pre-fix) → **23.78°** post-fix `fc52ea5`
 - Saturn Mahadasha 2021-2040
 
-**Errors found via ultrathink cross-check:**
+**Re-derivation by hand (2026-06-02, ultrathink):**
 
-1. **Ayanamsa drift 0.14°**. Lahiri ayanamsa for Jan 5 1995 ≈ 23.71°. Shown 23.85°. Pure-JS Meeus approximation in `apps/web/lib/vedic-astrology.ts` undershoots / drifts.
-2. **Moon nakshatra likely off-by-one**. Shatabhisha range 306°40′–320°00′. Birth-time Moon sidereal ≈ 327-328° → Purva Bhadrapada, NOT Shatabhisha.
-3. **Vimshottari dasha chain inconsistency**. Shatabhisha is Rahu-ruled (18yr). Sequence after Rahu: Jupiter 16yr → Saturn 19yr. Saturn dasha starting 2021 (age 26) doesn't fit nakshatra balance from birth Moon position. Indicates compounding error from #2.
+For UT 09:10 (= IST 14:40), JD 2449722.882, T = −0.049887:
 
-**Root cause**: `apps/web/lib/vedic-astrology.ts` uses simplified Meeus astronomical formulas. Insufficient precision for production Kundli.
+| Mean element | Value |
+|---|---|
+| Lp (Moon mean long) | 329.31° |
+| M (Moon mean anom) | 88.94° |
+| D (mean elongation) | 44.81° |
+| Ms (Sun mean anom) | 1.64° |
+| F (arg of latitude) | 107.77° |
 
-**Fix plan**: Replace with `astronomy-engine` npm (~50KB pure JS, no WASM, fits CF 3 MiB worker cap). Provides full VSOP87/ELP2000 ephemeris + Lahiri ayanamsa. Then re-derive nakshatra + dasha balance.
+6-term perturbation sum: **+7.030°**. Tropical Moon = **336.34°**.
+Ayanamsa post-fix = **23.78°**. Sidereal Moon = **312.56°**.
+312.56 / 13.333 = idx **23 → Shatabhisha**. Pada = floor(5.89/3.333)+1 = **2**. Sign = 312.56/30 = idx 10 = **Aquarius**.
 
-**Owner**: me. **Effort**: ~6-8h (install + rewrite lib + regression-test golden chart + edge-runtime verify).
+Vimshottari from Shatabhisha (Rahu-ruled, 18y):
+- Frac into nakshatra = 0.4418, remaining Rahu = 0.5582 × 18 = **10.05y** → ends Jan 2005
+- Jupiter (16y) 2005-2021 → **Saturn (19y) 2021-2040** ✓
 
-**Acceptance**:
-- Re-run `1995-01-05 14:40 Panipat` → ayanamsa ≈ 23.71°, Moon in Purva Bhadrapada (not Shatabhisha), dasha chain consistent with that nakshatra balance.
-- Add 3-golden-chart regression test (1 north Indian, 1 south Indian, 1 NRI birth).
+**Conclusion**: Live page output IS correct. Prior audit claim "Moon sidereal ≈ 327-328° → Purva Bhadrapada" was wrong (likely arithmetic slip in original audit). 6-term Meeus truncation error ≈ ±20 arcmin, insufficient to flip a 13.33°-wide nakshatra. Ayanamsa drift bug WAS real (fixed `fc52ea5`, 50.2564→5025.64 unit coefficient). 
+
+**Remaining enhancement (not bug)**: Replace 6-term Meeus with `astronomy-engine` npm (~140KB, fits CF 3 MiB cap) for ±2 arcmin Swiss Ephemeris-grade accuracy. Useful for edge cases near nakshatra boundaries but not required for this chart. Deferred — owner can re-prioritize if accuracy complaints recur.
 
 ## Free-tier monthly batching plan (locked 2026-06-02 per user directive — "100s items/day")
 
