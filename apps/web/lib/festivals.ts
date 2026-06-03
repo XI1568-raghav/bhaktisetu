@@ -813,6 +813,111 @@ export const FESTIVALS: FestivalInfo[] = [
     significance:
       'Sarva Pitru Amavasya — the universal shraddha day when offerings reach ancestors whose death tithi is forgotten. Per the Mahabharata, Karna\'s soul returned to earth for 16 days to complete pitru rites he had neglected, establishing the Pitru Paksha tradition. Simultaneously marks the goddess\'s descent — bridging ancestor karma resolution into Devi-shakti invocation.',
   },
+  {
+    slug: 'thaipusam',
+    name: 'Thaipusam',
+    sanskrit: 'थैपूसम्',
+    date2026: '2026-02-01',
+    deity: 'Lord Murugan (Kartikeya — Subrahmanya)',
+    deitySlug: 'kartikeya',
+    description:
+      'The full-moon festival of Thai (Jan-Feb) when the Pusam nakshatra is ascendant — commemorating Parvati handing the divine vel (lance) to Murugan to destroy the asura Soorapadman. Tamil devotees worldwide undertake the kavadi-attam — bearing decorated wooden arches on the shoulders, often with skin piercings of the vel through cheek and tongue, walking barefoot up the 272 steps of Batu Caves (Kuala Lumpur, 1.6 million pilgrims), Palani Hill Temple (one of the Aaru Padai Veedu), and Murugan Temple Penang.',
+    rituals: [
+      'Kavadi attam — bearing the burden arches up the temple steps',
+      '48-day vratham of celibacy, vegetarianism, and yellow/saffron dress prior to the day',
+      'Vel kavadi with cheek/tongue piercing as a vow of austerity',
+      'Paal kudam (milk pot) carried on the head as bhog',
+      'Skanda Shashti Kavacham continuous recitation',
+    ],
+    pujasAvailable: ['murugan-archana', 'skanda-shashti-kavacham-puja'],
+    fastingType: 'full',
+    significance:
+      'The defining festival of Tamil Shaiva Siddhanta — the day Parvati armed Murugan with the cosmic vel that pierced Krauncha mountain and slew the asura. Establishes the bhakti-tapasya path of Murugan worship — the kavadi vow is a public testament that no burden is too heavy when carried for the divine. Recognized as a federal holiday in Malaysia, Singapore, Mauritius, and parts of Sri Lanka.',
+  },
+  {
+    slug: 'ratha-saptami',
+    name: 'Ratha Saptami',
+    sanskrit: 'रथ सप्तमी',
+    date2026: '2026-01-24',
+    deity: 'Surya (Sun)',
+    deitySlug: 'surya',
+    description:
+      'The seventh day of the bright fortnight of Magha — marking the Sun god turning his celestial chariot (drawn by seven horses) towards the northern hemisphere (uttarayana). Considered Surya Jayanti — the symbolic birthday of the Sun. Devotees bathe at sunrise placing seven arka (calotropis) leaves on the head — one on each shoulder, both knees, both feet, and the crown — representing the sapta-ashva of the Sun’s ratha.',
+    rituals: [
+      'Pre-dawn snan with arka leaves placed at 7 body points',
+      'Arghya (water offering) to the rising Sun facing east with Gayatri Mantra',
+      'Aditya Hridayam parayana — 31 verses from Ramayana Yuddha Kanda',
+      'Drawing the seven-horse ratha rangoli at the doorway',
+      'Distribution of jaggery-cooked rice (chakkara-pongal) as prasad in South India',
+    ],
+    pujasAvailable: ['surya-archana', 'aditya-hridayam-paath'],
+    fastingType: 'partial',
+    significance:
+      'Auspicious for any health-related sankalpa — Surya is the karaka of vitality, eyesight, bones, and the soul (atma-karaka). Major celebration at Konark Sun Temple Odisha, Suryanar Kovil Tamil Nadu, and the Modhera Sun Temple Gujarat. The day inaugurates the spring season per the Hindu lunisolar calendar.',
+  },
+  {
+    slug: 'gangaur',
+    name: 'Gangaur',
+    sanskrit: 'गणगौर',
+    date2026: '2026-03-21',
+    deity: 'Goddess Gauri (Parvati)',
+    deitySlug: 'parvati',
+    description:
+      'The 18-day Rajasthan festival beginning the day after Holi and culminating on Chaitra Shukla Tritiya — celebrating Parvati’s reunion with Shiva. Unmarried women observe the vrat to obtain a good husband; married women for marital harmony and the long life of their spouse. Clay murtis of Isar (Shiva) and Gangaur (Parvati) are dressed daily by women in their finest, paraded on Tritiya through the streets of Jaipur, Udaipur, and Bikaner with the queens of the erstwhile royal families leading the procession.',
+    rituals: [
+      'Daily worship of clay Isar-Gangaur murtis in homes for 18 days',
+      'Singing of Gangaur ghoomar folk songs and dancing',
+      'Wearing of new red, green, and yellow chaniya choli',
+      'Royal Gangaur procession from City Palace Jaipur and Udaipur on Tritiya',
+      'Immersion of Gangaur murtis in Pichola Lake or Gangaur Ghat',
+    ],
+    pujasAvailable: ['gauri-puja-suvasini', 'isar-gangaur-vrat'],
+    fastingType: 'partial',
+    significance:
+      'The cultural identity-marker of Rajasthan — recognized by UNESCO as a living tradition representing the suvasini-dharma of women’s spiritual agency. Echoes the larger Parvati-Shiva mythology where Parvati performs austerity to regain Shiva after his Tandava grief. Mughal-era Jahangir reportedly halted his army to watch the Udaipur Gangaur procession.',
+  },
+  {
+    slug: 'ananta-chaturdashi',
+    name: 'Ananta Chaturdashi',
+    sanskrit: 'अनन्त चतुर्दशी',
+    date2026: '2026-09-26',
+    deity: 'Lord Vishnu (Ananta Padmanabha)',
+    deitySlug: 'vishnu',
+    description:
+      'The 14th day of Bhadrapada Shukla Paksha — marking the worship of Vishnu in his Ananta-Shesha reclining form, and also the immersion (visarjan) day for Ganesh murtis after 10 days of Ganesh Chaturthi. Devotees tie the sacred Ananta-sutra — a 14-knotted yellow or red cotton thread — on the right wrist (men) or left wrist (women), invoking Vishnu’s 14 lokas of protection. Mumbai sees its largest visarjan procession of the year at Girgaum Chowpatty with over 200,000 Ganesh murtis immersed.',
+    rituals: [
+      'Tying the 14-knotted Ananta-sutra after Vishnu puja',
+      'Vishnu Sahasranama parayana',
+      'Ganesh visarjan procession (final day of Ganesh Chaturthi 10-day cycle)',
+      'Vrat of fasting until the puja is concluded at noon',
+      'Reading of Ananta Vrat Katha from the Bhavishyottara Purana',
+    ],
+    pujasAvailable: ['ananta-padmanabha-vrat', 'ganesh-visarjan-puja'],
+    fastingType: 'full',
+    significance:
+      'The Bhavishyottara Purana narrates Yudhishthira learning the Ananta Vrat from Krishna himself during the Pandavas’ vanavasa — restoring their fortunes lost at the dice game. The 14 knots symbolise the 14 manvantaras and the 14 worlds. The convergence with Ganesh visarjan makes it Mumbai and Pune’s largest single-day spiritual gathering — 1.5 million devotees on the streets.',
+  },
+  {
+    slug: 'gita-jayanti',
+    name: 'Gita Jayanti',
+    sanskrit: 'गीता जयन्ती',
+    date2026: '2026-12-01',
+    deity: 'Lord Krishna (as Gitacharya)',
+    deitySlug: 'krishna',
+    description:
+      'The Margashirsha Shukla Ekadashi (Mokshada Ekadashi) — the very day in Dvapara Yuga when Lord Krishna delivered the 700-verse Bhagavad Gita to Arjuna on the Kurukshetra battlefield before the Mahabharata war. Devotees undertake full parayana of all 18 chapters and 700 verses in a single day. ISKCON celebrates with continuous gita-pravachana at every centre worldwide. Kurukshetra city hosts the International Gita Mahotsav with delegations from 40+ countries.',
+    rituals: [
+      'Single-day full parayana of all 18 chapters and 700 verses',
+      'Brahmin satkar — gifting copies of the Gita to seekers',
+      'Mokshada Ekadashi vrat of fasting',
+      'Recitation of Chapter 15 (Purushottama Yoga) and Chapter 18 (final liberation) at sunset',
+      'Visit to Jyotisar Tirtha (the banyan tree at Kurukshetra where Krishna spoke the Gita)',
+    ],
+    pujasAvailable: ['gita-parayana-18-chapters', 'mokshada-ekadashi-vrat'],
+    fastingType: 'full',
+    significance:
+      'The Gita is the only scripture whose anniversary the Hindu tradition celebrates as a Jayanti — a recognition of its status as Krishna’s direct verbal teaching (sruti through smriti). Established by the Padma Purana phala-shruti: hearing even a single verse of the Gita on this day removes the sin of countless births. Translated into 78+ languages, gifted by Indian PMs to visiting heads of state.',
+  },
 ];
 
 export function getFestival(slug: string): FestivalInfo | undefined {
