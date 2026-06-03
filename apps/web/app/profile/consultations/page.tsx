@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
+import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 
 type Consultation = {
@@ -33,12 +34,13 @@ type Consultation = {
   createdAt: string;
 };
 
-function authHeaders(): Record<string, string> {
-  const token =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
-      : null;
-  return token ? { authorization: `Bearer ${token}` } : {};
+// P1#4: HttpOnly cookie `darshya_session` is the canonical auth surface.
+// Bearer header retained as additive transition fallback (in-memory session
+// from auth-context — no localStorage read) while backend rolls out cookie
+// issuance. Every fetch below MUST pass `credentials: 'include'` so the
+// cross-origin cookie (darshya.online → api.darshya.online) is sent.
+function buildAuthHeaders(accessToken: string | undefined): Record<string, string> {
+  return accessToken ? { authorization: `Bearer ${accessToken}` } : {};
 }
 
 function statusBadge(status: string) {
@@ -57,6 +59,7 @@ function statusBadge(status: string) {
 }
 
 function ListContent() {
+  const { session } = useAuth();
   const [items, setItems] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +69,10 @@ function ListContent() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/consultation/mine`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE_URL}/consultation/mine`, {
+        headers: buildAuthHeaders(session?.accessToken),
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error(`Could not load (${res.status})`);
       const json = (await res.json()) as { consultations?: Consultation[] };
       setItems(json.consultations ?? []);
@@ -75,7 +81,7 @@ function ListContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session?.accessToken]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -86,7 +92,8 @@ function ListContent() {
     try {
       const res = await fetch(`${API_BASE_URL}/consultation/${c.id}/cancel`, {
         method: 'POST',
-        headers: authHeaders(),
+        headers: buildAuthHeaders(session?.accessToken),
+        credentials: 'include',
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');

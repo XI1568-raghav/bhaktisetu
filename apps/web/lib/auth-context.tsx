@@ -298,6 +298,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  if (sess && usr) {
  setCookie(STORAGE_KEYS.SESSION, JSON.stringify(sess), 7);
  setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
+ // TODO P1#4: remove once all reads migrated — backend HttpOnly
+ // `darshya_session` cookie + in-memory session state will be the
+ // only auth surfaces. localStorage write is kept transitionally so
+ // existing reads (e.g. shipped legacy bundles) don't break mid-rollout.
  try {
  localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
@@ -365,10 +369,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  ? storedSession.expiresAt * 1000
  : storedSession.expiresAt;
  if (expMs && expMs < nowMs + 60_000) {
- // Token expired or about to expire — refresh it
+ // Token expired or about to expire — refresh it.
+ // P1#4: credentials:'include' so HttpOnly refresh cookie is sent.
  const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ credentials: 'include',
  body: JSON.stringify({ refreshToken: storedSession.refreshToken }),
  });
 
@@ -414,6 +420,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ credentials: 'include',
  body: JSON.stringify({ refreshToken: session.refreshToken }),
  });
  if (res.ok) {
@@ -607,9 +614,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const signOut = useCallback(async () => {
  try {
  if (session?.accessToken && !session.accessToken.startsWith('demo-')) {
+ // P1#4: credentials:'include' ensures the HttpOnly `darshya_session`
+ // cookie is sent so the backend /auth/logout can clear it
+ // (Set-Cookie expires=0). Bearer body retained for transition.
  await fetch(`${API_BASE_URL}/auth/logout`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ credentials: 'include',
  body: JSON.stringify({ accessToken: session.accessToken }),
  });
  }

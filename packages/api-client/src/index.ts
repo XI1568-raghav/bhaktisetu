@@ -196,6 +196,19 @@ export type {
   WellnessStudentsResponse,
 } from "./hooks/portals.js";
 
+// ─── Consultations (new AstrologerConsultation lifecycle) ───
+export {
+  useMyConsultations,
+  useCancelConsultation,
+  consultationKeys,
+} from "./hooks/consultations.js";
+export type {
+  ConsultationStatus,
+  MyConsultation,
+  MyConsultationsResponse,
+  CancelConsultationResponse,
+} from "./hooks/consultations.js";
+
 // ─── Reading progress hooks ──────────────────
 export {
   useReadingProgress,

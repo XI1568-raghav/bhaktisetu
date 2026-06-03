@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Loader2, Phone, Calendar, Clock, IndianRupee, AlertCircle, XCircle } from 'lucide-react';
 import AuthGuard from '../../../../components/AuthGuard';
+import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 
 type Consultation = {
@@ -24,15 +25,15 @@ type Consultation = {
   createdAt: string;
 };
 
-function authHeaders(): Record<string, string> {
-  const token =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
-      : null;
-  return token ? { authorization: `Bearer ${token}` } : {};
+// P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header retained
+// as additive transition fallback (in-memory session — no localStorage read).
+// Every fetch MUST pass `credentials: 'include'` for cross-origin cookie send.
+function buildAuthHeaders(accessToken: string | undefined): Record<string, string> {
+  return accessToken ? { authorization: `Bearer ${accessToken}` } : {};
 }
 
 function SuccessContent() {
+  const { session } = useAuth();
   const params = useParams();
   const consultationId = String(params?.id ?? '');
   const [consultation, setConsultation] = useState<Consultation | null>(null);
@@ -49,7 +50,8 @@ function SuccessContent() {
     try {
       const res = await fetch(`${API_BASE_URL}/consultation/${consultation.id}/cancel`, {
         method: 'POST',
-        headers: authHeaders(),
+        headers: buildAuthHeaders(session?.accessToken),
+        credentials: 'include',
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
@@ -68,7 +70,8 @@ function SuccessContent() {
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/consultation/${consultationId}`, {
-          headers: authHeaders(),
+          headers: buildAuthHeaders(session?.accessToken),
+          credentials: 'include',
         });
         if (!res.ok) throw new Error(`Could not load consultation (${res.status})`);
         const json = (await res.json()) as { consultation?: Consultation };
@@ -83,7 +86,7 @@ function SuccessContent() {
       }
     })();
     return () => { cancelled = true; };
-  }, [consultationId]);
+  }, [consultationId, session?.accessToken]);
 
   if (loading) {
     return (
