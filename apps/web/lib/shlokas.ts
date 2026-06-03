@@ -423,6 +423,56 @@ export const SHLOKAS: Shloka[] = [
       'I am not the mind, intellect, ego, or memory; I am not the ears, tongue, nose or eyes; I am not space, earth, fire or wind. I am the form of pure consciousness and bliss — I am Shiva, I am Shiva. The opening of Adi Shankaracharya’s six-verse Nirvana Shatakam, the foundational chant of Advaita Vedanta self-negation leading to Brahman-identification.',
     tags: ['shankara', 'advaita', 'nirvana-shatakam', 'shivoham', 'vedanta'],
   },
+  {
+    slug: 'gita-2-48',
+    source: 'Bhagavad Gita 2.48 — Sankhya Yoga',
+    text: 'योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय।\nसिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते॥',
+    translit:
+      'yogasthaḥ kuru karmāṇi saṅgaṁ tyaktvā dhanañjaya\nsiddhyasiddhyoḥ samo bhūtvā samatvaṁ yoga ucyate',
+    meaning:
+      'Established in yoga, O Dhananjaya, perform your duties having abandoned attachment, remaining equipoised in success and failure alike — this evenness of mind is called yoga. Krishna here distills Karma Yoga into a single sutra: action is unavoidable, but bondage arises only from the ego\'s craving for a particular fruit. By surrendering the result while sincerely discharging svadharma, the seeker dissolves the dvandvas (pleasure-pain, gain-loss) that otherwise churn the chitta. Samatva — equanimity rooted in the Atman — is itself defined as yoga, the prerequisite to jnana and the gateway to nishkama karma that purifies the heart.',
+    tags: ['bhagavad-gita', 'karma-yoga', 'samatvam', 'krishna', 'arjuna'],
+  },
+  {
+    slug: 'bhaja-govindam-1',
+    source: 'Bhaja Govindam (Moha Mudgara) Verse 1 — Adi Shankaracharya',
+    text: 'भज गोविन्दं भज गोविन्दं गोविन्दं भज मूढमते।\nसम्प्राप्ते सन्निहिते काले न हि न हि रक्षति डुकृञ्करणे॥',
+    translit:
+      'bhaja govindaṁ bhaja govindaṁ govindaṁ bhaja mūḍhamate\nsamprāpte sannihite kāle na hi na hi rakṣati ḍukṛñkaraṇe',
+    meaning:
+      'Worship Govinda, worship Govinda, worship Govinda, O deluded mind — when the appointed hour of death draws near, the rules of grammar (ḍukṛñ-karaṇe) will certainly not save you. Shankaracharya composed this on the ghats of Kashi after rebuking an aged pandit drilling Panini\'s sutras while life ebbed away. The verse is the bija of the entire Moha-Mudgara: dry scholarship divorced from bhakti and Atma-vichara cannot ferry the jiva across samsara. Only constant remembrance of Govinda — the Lord who is sat-chit-ananda — dissolves moha and grants liberation when Yama arrives.',
+    tags: ['bhaja-govindam', 'shankaracharya', 'bhakti', 'vairagya', 'govinda'],
+  },
+  {
+    slug: 'shiva-mahimna-1',
+    source: 'Shiva Mahimna Stotra Verse 1 — Pushpadanta',
+    text: 'महिम्नः पारं ते परमविदुषो यद्यसदृशी\nस्तुतिर्ब्रह्मादीनामपि तदवसन्नास्त्वयि गिरः।\nअथावाच्यः सर्वः स्वमतिपरिणामावधि गृणन्\nममाप्येष स्तोत्रे हर निरपवादः परिकरः॥',
+    translit:
+      'mahimnaḥ pāraṁ te paramaviduṣo yadyasadṛśī\nstutirbrahmādīnāmapi tadavasannāstvayi giraḥ\nathāvācyaḥ sarvaḥ svamatipariṇāmāvadhi gṛṇan\nmamāpyeṣa stotre hara nirapavādaḥ parikaraḥ',
+    meaning:
+      'O Hara, if praise offered by one ignorant of the farther shore of Thy greatness be unworthy, then even the hymns of Brahma and the gods fall short, for words falter before Thee. Yet since every devotee may extol the Lord to the limit of his own understanding without blame, this stotra of mine too is a faultless offering. The Gandharva king Pushpadanta, cursed for trampling Shiva\'s flowers, sings this opening to acknowledge that the Mahadeva\'s mahima is anirvachaniya — beyond speech and mind. Sincere bhakti, not eloquence, sanctifies stuti; the Lord receives the bhava, not the polish.',
+    tags: ['shiva', 'mahimna-stotra', 'pushpadanta', 'stotra', 'bhakti'],
+  },
+  {
+    slug: 'lalita-sahasranama-opening',
+    source: 'Lalita Sahasranama Dhyanam — Brahmanda Purana, Uttara Khanda',
+    text: 'सिन्दूरारुणविग्रहां त्रिनयनां माणिक्यमौलिस्फुरत्\nतारानायकशेखरां स्मितमुखीमापीनवक्षोरुहाम्।\nपाणिभ्यामलिपूर्णरत्नचषकं रक्तोत्पलं बिभ्रतीं\nसौम्यां रत्नघटस्थरक्तचरणां ध्यायेत्परामम्बिकाम्॥',
+    translit:
+      'sindūrāruṇa-vigrahāṁ trinayanāṁ māṇikya-mauli-sphurat\ntārā-nāyaka-śekharāṁ smita-mukhīm-āpīna-vakṣoruhām\npāṇibhyām-ali-pūrṇa-ratna-caṣakaṁ raktotpalaṁ bibhratīṁ\nsaumyāṁ ratna-ghaṭa-stha-rakta-caraṇāṁ dhyāyet-parām-ambikām',
+    meaning:
+      'Let one meditate on the Supreme Mother Lalita-Tripurasundari whose form glows vermilion like the dawn, who bears three eyes, whose ruby crown sparkles with the crescent moon as a diadem, whose face is gently smiling and whose bosom is full; in her two hands she holds a jewelled cup brimming with mead and a red lotus; serene of mien, her crimson feet rest upon a jewel-studded pot. This dhyana sloka opens the Sri Lalita Sahasranama recited by Hayagriva to Agastya, fixing the upasaka\'s chitta on the Devi\'s saguna form before invoking the thousand names. The vermilion hue signifies pure rajas wielded for grace; the cup and lotus are bhoga and moksha bestowed simultaneously upon the sincere sadhaka.',
+    tags: ['lalita-sahasranama', 'devi', 'tripurasundari', 'dhyanam', 'sri-vidya'],
+  },
+  {
+    slug: 'narayaniyam-1-1',
+    source: 'Narayaniyam Dashaka 1, Verse 1 — Melpathur Narayana Bhattathiri',
+    text: 'साद्रानन्दावबोधात्मकमनुपमितं कालदेशावधिभ्यां\nनिर्मुक्तं नित्यमुक्तं निगमशतसहस्रेण निर्भास्यमानम्।\nअस्पष्टं दृष्टमात्रे पुनरुरुपुरुषार्थात्मकं ब्रह्म तत्त्वं\nतत्तावद्भाति साक्षाद् गुरुपवनपुरे हन्त भाग्यं जनानाम्॥',
+    translit:
+      'sāndrānandāvabodhātmakam-anupamitaṁ kāla-deśāvadhibhyāṁ\nnirmuktaṁ nitya-muktaṁ nigama-śata-sahasreṇa nirbhāsyamānam\naspaṣṭaṁ dṛṣṭa-mātre punar-uru-puruṣārthātmakaṁ brahma tattvaṁ\ntat-tāvad-bhāti sākṣād guru-pavana-pure hanta bhāgyaṁ janānām',
+    meaning:
+      'That Brahman — whose very nature is dense bliss and pure consciousness, beyond compare, free from the limits of time and space, eternally liberated, illumined by hundreds of thousands of Vedic utterances, indistinct yet the embodiment of the four purusharthas the moment it is glimpsed — that selfsame Tattva shines visibly in Guruvayur. Alas, what fortune is this of the people! Bhattathiri opens the Narayaniyam by declaring that the nirguna Para-Brahman of the Upanishads has, out of grace, assumed saguna form as Guruvayurappan. Composed in 1586 CE as a cure for the poet\'s paralysis through Krishna-bhakti, this mangala-shloka fuses Advaitic jnana with Vaishnava prema, asserting that darshan at Guruvayur grants what shastras struggle to describe.',
+    tags: ['narayaniyam', 'guruvayur', 'krishna', 'bhattathiri', 'brahman'],
+  },
 ];
 
 export function getShloka(slug: string): Shloka | undefined {
