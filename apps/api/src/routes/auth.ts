@@ -154,6 +154,66 @@ function bucketOk(map: Map<string, Bucket>, key: string, max: number): boolean {
   return true;
 }
 
+// ─── Session-cookie helpers ────────────────────────────────────────────────────
+// P1 #4 — additive HttpOnly cookies alongside the JSON Bearer response.
+// Mobile keeps reading the JSON body; web transitions to cookies. Both flows
+// remain valid until the web migration is fully cut over.
+//
+// `darshya_session` carries the access token. Default TTL 3600s — Supabase
+// access tokens are 1h. We don't read the TTL off env to keep this self-
+// contained; flip the constant when Supabase project changes the lifetime.
+// `darshya_refresh` is scoped to /api/v1/auth so it's only sent on the
+// refresh endpoint, never on regular API calls. 7-day default matches
+// Supabase's refresh-token lifetime.
+const SESSION_COOKIE = 'darshya_session';
+const REFRESH_COOKIE = 'darshya_refresh';
+const SESSION_TTL_SECONDS = 60 * 60;                 // 1 hour
+const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
+const REFRESH_COOKIE_PATH = '/api/v1/auth';
+
+function setAuthCookies(
+  reply: import('fastify').FastifyReply,
+  accessToken: string,
+  refreshToken: string,
+): void {
+  // setCookie is added by @fastify/cookie. If the plugin isn't registered
+  // yet (current state of this app — see auth-model docs), the call throws.
+  // We swallow that here so the JSON Bearer response path stays intact and
+  // never regresses on the missing-plugin case. Once @fastify/cookie is
+  // wired in server bootstrap, cookies start flowing automatically.
+  const r = reply as any;
+  if (typeof r.setCookie !== 'function') return;
+  try {
+    r.setCookie(SESSION_COOKIE, accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_TTL_SECONDS,
+    });
+    r.setCookie(REFRESH_COOKIE, refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: REFRESH_COOKIE_PATH,
+      maxAge: REFRESH_TTL_SECONDS,
+    });
+  } catch {
+    // best-effort; JSON Bearer response remains the contract of record
+  }
+}
+
+function clearAuthCookies(reply: import('fastify').FastifyReply): void {
+  const r = reply as any;
+  if (typeof r.clearCookie !== 'function') return;
+  try {
+    r.clearCookie(SESSION_COOKIE, { path: '/' });
+    r.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
+  } catch {
+    // best-effort
+  }
+}
+
 // ─── Routes ────────────────────────────────────────────────────────────────────
 
 export async function authRoutes(server: FastifyInstance) {
@@ -338,6 +398,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    setAuthCookies(reply, data.session.access_token, data.session.refresh_token);
     return reply.code(200).send({
       success: true,
       session: {
@@ -372,6 +433,7 @@ export async function authRoutes(server: FastifyInstance) {
       request.log.warn(error, 'Supabase signOut error (non-critical)');
     }
 
+    clearAuthCookies(reply);
     return reply.code(200).send({
       success: true,
       message: 'Logged out successfully',
@@ -493,6 +555,7 @@ export async function authRoutes(server: FastifyInstance) {
       const demo = DEMO_ACCOUNTS[emailLower];
       if (demo && demo.password === password) {
         const { session } = makeDemoSession(emailLower);
+        setAuthCookies(reply, session.accessToken, session.refreshToken);
         return reply.send({
           session,
           user: {
@@ -534,6 +597,7 @@ export async function authRoutes(server: FastifyInstance) {
 
       const role = await getPrimaryRoleForUser(user.id);
 
+      setAuthCookies(reply, authData.session.access_token, authData.session.refresh_token);
       return reply.send({
         session: {
           accessToken: authData.session.access_token,

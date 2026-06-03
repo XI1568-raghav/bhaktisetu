@@ -46,6 +46,7 @@ import { yatraPackagesRoutes } from './routes/yatra-packages.js';
 import { supportRoutes } from './routes/support.js';
 import { searchRoutes } from './routes/search.js';
 import { consultationRoutes } from './routes/consultation.js';
+import { payoutsRoutes } from './routes/payouts.js';
 import { magicLinkRoutes } from './routes/magic-link.js';
 import { donationRoutes } from './routes/donations.js';
 import { mediaRoutes } from './routes/media.js';
@@ -258,6 +259,7 @@ async function bootstrap() {
   await server.register(supportRoutes, { prefix: '/api/v1/support' });
   await server.register(searchRoutes, { prefix: '/api/v1/search' });
   await server.register(consultationRoutes, { prefix: '/api/v1/consultation' });
+  await server.register(payoutsRoutes, { prefix: '/api/v1/payouts' });
   await server.register(magicLinkRoutes, { prefix: '/api/v1/auth/magic-link' });
   await server.register(whatsappOtpRoutes, { prefix: '/api/v1/auth/whatsapp-otp' });
   await server.register(donationRoutes, { prefix: '/api/v1/donations' });

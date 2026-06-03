@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { authenticateUser } from '../middlewares/auth.js';
+import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 const profileUpdateSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
@@ -11,6 +11,35 @@ const profileUpdateSchema = z.object({
   pricePerSession: z.number().min(0).max(1000000).optional(),
   bio: z.string().max(2000).optional(),
 });
+
+// ─── instructor LIST schema ─────────────────────────────────────────────────
+// Mirrors consultation.ts astrologerListSchema: optional status from the
+// WellnessSessionStatus enum + paginated limit/offset (URL query strings
+// arrive as strings so use z.coerce). limit capped at 200 to keep payload
+// bounded; offset >=0 to prevent negative pagination drift.
+const mineQuerySchema = z.object({
+  status: z.enum(['SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const __testing = { mineQuerySchema };
+
+type WellnessSessionRow = {
+  id: string;
+  instructor_id: string;
+  title: string;
+  description: string;
+  type: string;
+  scheduled_at: Date | null;
+  duration_minutes: number;
+  capacity: number;
+  price_inr: string;
+  room_url: string | null;
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+};
 
 export async function wellnessPortalRoutes(server: FastifyInstance) {
   server.get('/dashboard', { preHandler: [authenticateUser] }, async (request, reply) => {
@@ -94,6 +123,66 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
       })),
     });
   });
+
+  // ─── GET /instructor/mine ───────────────────────────────────────────────
+  // Wellness-instructor-side LIST of WellnessSession rows where this user is
+  // the instructor. Mirrors consultation.ts GET /astrologer/mine: optional
+  // status filter, paginated, ordered by scheduledAt DESC NULLS LAST then
+  // createdAt DESC. Raw parameterized SQL keeps the shape consistent with
+  // the astrologer endpoint (single query path, NULLS LAST nicely supported)
+  // even though WellnessSession is a real Prisma model.
+  server.get(
+    '/instructor/mine',
+    { preHandler: [authenticateUser, requireRole('WELLNESS_INSTRUCTOR')] },
+    async (request, reply) => {
+      const parsed = mineQuerySchema.safeParse(request.query ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid query', issues: parsed.error.flatten() });
+      }
+      const { status, limit, offset } = parsed.data;
+      const instructorId = request.currentUser!.id;
+
+      const params: unknown[] = [instructorId];
+      let whereSql = `WHERE instructor_id = $1`;
+      if (status) {
+        params.push(status);
+        whereSql += ` AND status = $${params.length}`;
+      }
+      params.push(limit);
+      params.push(offset);
+      const sql = `SELECT * FROM wellness_sessions ${whereSql}
+         ORDER BY scheduled_at DESC NULLS LAST, created_at DESC
+         LIMIT $${params.length - 1} OFFSET $${params.length};`;
+
+      const rows = await prisma.$queryRawUnsafe<WellnessSessionRow[]>(sql, ...params);
+      const countParams = params.slice(0, params.length - 2);
+      const countSql = `SELECT COUNT(*)::int AS total FROM wellness_sessions ${whereSql};`;
+      const countRows = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...countParams);
+      const total = countRows[0]?.total ?? 0;
+
+      return reply.send({
+        total,
+        limit,
+        offset,
+        sessions: rows.map((row) => ({
+          id: row.id,
+          instructorId: row.instructor_id,
+          title: row.title,
+          description: row.description,
+          type: row.type,
+          scheduledAt: row.scheduled_at,
+          durationMinutes: row.duration_minutes,
+          capacity: row.capacity,
+          priceInr: Number(row.price_inr),
+          roomUrl: row.room_url,
+          zoomUrl: row.room_url,
+          status: row.status,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        })),
+      });
+    },
+  );
 
   // ─── GET /students ──────────────────────────────────────────────────────────
   // Distinct devotees who have paid for any of this instructor's wellness
