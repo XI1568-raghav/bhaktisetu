@@ -47,21 +47,20 @@ function loadRazorpayScript(): Promise<void> {
   return razorpayScriptPromise;
 }
 
-function authHeaders(): Record<string, string> {
-  const token =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
-      : null;
+// P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header retained
+// as additive transition fallback (in-memory session — no localStorage read).
+// Every fetch MUST pass `credentials: 'include'` for cross-origin cookie send.
+function buildAuthHeaders(accessToken: string | undefined): Record<string, string> {
   return {
     'content-type': 'application/json',
-    ...(token ? { authorization: `Bearer ${token}` } : {}),
+    ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
   };
 }
 
 function BookContent() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const astrologerId = String(params?.id ?? '');
 
   const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
@@ -99,10 +98,11 @@ function BookContent() {
     setPlacing(true);
     setPlaceError(null);
     try {
-      const headers = authHeaders();
+      const headers = buildAuthHeaders(session?.accessToken);
       const res = await fetch(`${API_BASE_URL}/consultation/book`, {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({
           astrologerId: astrologer.id,
           minutes,
@@ -129,6 +129,7 @@ function BookContent() {
         const verifyRes = await fetch(`${API_BASE_URL}/consultation/verify-payment`, {
           method: 'POST',
           headers,
+          credentials: 'include',
           body: JSON.stringify({
             consultationId: order.consultationId,
             razorpay_order_id: order.razorpayOrderId,
@@ -172,6 +173,7 @@ function BookContent() {
               const verifyRes = await fetch(`${API_BASE_URL}/consultation/verify-payment`, {
                 method: 'POST',
                 headers,
+                credentials: 'include',
                 body: JSON.stringify({
                   consultationId: order.consultationId,
                   razorpay_order_id: response.razorpay_order_id,

@@ -88,7 +88,7 @@ type PaymentMethod = 'razorpay' | 'cod';
 
 function CheckoutContent() {
  const router = useRouter();
- const { user } = useAuth();
+ const { user, session } = useAuth();
  const { items, itemCount, subtotal, deliveryFee, tax, total, clearCart } = useCart();
 
  const [selectedAddress, setSelectedAddress] = useState(
@@ -158,17 +158,19 @@ function CheckoutContent() {
  try {
  const addr = SAVED_ADDRESSES.find((a) => a.id === selectedAddress);
  if (!addr) throw new Error('Select a delivery address');
- const token =
- typeof window !== 'undefined'
- ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
- : null;
+ // P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header
+ // retained as additive transition fallback (in-memory session — no
+ // localStorage read). All fetches below pass `credentials: 'include'`
+ // for cross-origin cookie send (darshya.online → api.darshya.online).
+ const accessToken = session?.accessToken;
  const authHeaders: Record<string, string> = {
  'content-type': 'application/json',
- ...(token ? { authorization: `Bearer ${token}` } : {}),
+ ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
  };
  const res = await fetch(`${API_BASE_URL}/store/orders`, {
  method: 'POST',
  headers: authHeaders,
+ credentials: 'include',
  body: JSON.stringify({
  items: items.map((it) => ({
  productId: it.product.id,
@@ -211,7 +213,7 @@ function CheckoutContent() {
  }
  const rzpRes = await fetch(
  `${API_BASE_URL}/payments/store-orders/${storeOrderId}/razorpay`,
- { method: 'POST', headers: authHeaders },
+ { method: 'POST', headers: authHeaders, credentials: 'include' },
  );
  if (!rzpRes.ok) {
  const txt = await rzpRes.text().catch(() => '');
@@ -307,6 +309,7 @@ function CheckoutContent() {
  {
  method: 'POST',
  headers: args.authHeaders,
+ credentials: 'include',
  body: JSON.stringify({
  razorpayOrderId: args.razorpayOrderId,
  razorpayPaymentId: args.razorpayPaymentId,
