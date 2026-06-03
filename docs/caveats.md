@@ -128,3 +128,19 @@ Imports are hoisted but Sentry's instrumentation needs to run before route handl
 
 **Why**: Otherwise, errors thrown during boot are missed.
 **Don't**: Move Sentry init below other side-effecting imports.
+
+## Security
+
+### CSP `'unsafe-eval'` dropped from script-src 2026-06-04 (P1 #7)
+
+`apps/web/public/_headers` script-src no longer permits `'unsafe-eval'`. Razorpay, Stripe, PostHog, GA4 SDKs do not need eval per their public docs. `'unsafe-inline'` retained until ~130 inline JSON-LD scripts can be hash-migrated (separate batch — nonce-based approach incompatible with CF Pages static-HTML deploy model).
+
+**Rollback procedure if any third-party SDK breaks**:
+1. Edit `apps/web/public/_headers`
+2. Change the `script-src` directive from `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com …` back to `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com …`
+3. Commit + push (CF Pages auto-deploys the new headers file — no build needed, static file).
+4. File a follow-up issue identifying which SDK regressed (look in browser console for `Refused to evaluate a string as JavaScript because 'unsafe-eval' is not an allowed source of script`).
+
+**Also added same batch**: `form-action` now permits `https://checkout.stripe.com` (was missing — Stripe checkout form posts were silently blocked).
+
+**Don't**: Re-add `'unsafe-eval'` "just in case" — actually verify the breaking SDK first. Each unsafe-* directive widens XSS blast radius.
