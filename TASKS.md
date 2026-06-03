@@ -1,6 +1,67 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-03.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-04.
+
+## HANDOFF 2026-06-04 (P1#4 HttpOnly cookies + 7 new wisdom-family libs + CF deploy diagnostic)
+
+Standing all-day autonomy directive continues. Day-3 unattended batch. Compaction resumed from prior session summary.
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `7a14aa5` | feat(seo): 7 new wisdom families — chakras + hindu-philosophies + hindu-symbols + sacred-mountains + sacred-rivers + sacred-trees + vedic-yajnas | rides f067706 |
+| `d9a2c57` | feat(seo): expand 7 wisdom dicts batch-22 (~70 entries) — aarti chalisa festival muhurat shloka upanishad yatra-dest | rides f067706 |
+| `f3deb13` | sec(web): drop unsafe-eval from CSP script-src + add Stripe form-action | rides f067706 |
+| `1269d41` | feat(api): P1#4 HttpOnly auth cookies + payouts route + wellness LIST + consultation polish [skip ci] | 0 (api-only) |
+| `e9aaf38` | feat(web): P1#4 web cookie credentials:include + consultation hooks export + 5 page polish | rides f067706 |
+| `40ed878` | feat(mobile): devotee consultations screen + profile link [skip ci] | 0 (mobile-only) |
+| `a72dc07` | feat(api-client): useMyConsultations + useCancelConsultation hooks [skip ci] | 0 (pkg-only) |
+| `1f0d533` | chore(deploy): empty trigger commit | **SKIPPED by CF — empty commits ignored** |
+| `f067706` | chore(deploy): real-diff CF trigger — sitemap stamp | 1 slot (consumed) |
+
+### CF Pages discovery (NEW caveat for `docs/cf-worker-budget.md` or `docs/caveats.md`)
+
+- CF Pages git-integration **skips empty commits with zero file diff** (undocumented, confirmed empirically 2026-06-04).
+- CF Pages git-integration **only inspects HEAD commit for `[skip ci]` tag** — does NOT walk back through push range. If HEAD is `[skip ci]` OR empty, entire push is skipped, EVEN if prior commits in same push are real `apps/web/**` changes.
+- **Implication**: When stacking N apps/web commits behind `[skip ci]` api/docs commits, the LAST commit in the push MUST be a real apps/web file diff WITHOUT `[skip ci]` tag.
+- **Fix this session**: pushed `f067706` w/ 1-line sitemap stamp comment to force diff + trigger build of HEAD state (which includes all 4 stacked apps/web commits 7a14aa5/d9a2c57/f3deb13/e9aaf38).
+
+### Test stats
+
+- API: **537/537 green** across 40 files (up from 521 baseline pre-session). New tests: payouts.test.ts (Aadhaar gate LIST), wellness-portal.test.ts expansion, consultation.test.ts polish.
+- TSC strict on apps/web: clean (7 TS2322 errors in `lib/upanishads.ts` fixed via 2 `replace_all` edits — `Krishna Yajur` + `Shukla Yajur` → `Yajur` per `UpanishadInfo.veda` discriminated union; shakha qualifier preserved in adjacent `vedaShakha` field).
+- pnpm next build: clean w/ 14 new routes (7 index + 7 detail for new wisdom families).
+
+### Day-budget check (2026-06-04)
+
+- CF builds consumed: 1 (f067706). 6f675a8 attempted before compaction = total 2 attempted, 1 successful. Empty 1f0d533 skipped.
+- Monthly projection: 2 builds/day × 30 = 60 builds = 12% of 500. Healthy.
+- **No more apps/web pushes today** — single-push-per-day discipline respected.
+- Render: 1 push triggered serial queue (1269d41 api-only [skip ci] — CF skipped, Render auto-deploys regardless of [skip ci] tag).
+
+### Pending verify (Monitor `bzdwee7zr` in flight)
+
+- 5 sample new routes — chakras / sacred-rivers / sacred-trees / hindu-symbols / vedic-yajnas — expect 200 once CF build completes (~3-5 min).
+- Iter 1 confirmed `cf=in_progress`. Empty-commit-skip hypothesis validated.
+
+### Carried open
+
+1. **Batch-23 LOCAL staging** (no push today, single push tomorrow):
+   - aartis 20→30 (+10): santoshi-mata, vaibhav-lakshmi, kanaka-durga, dhanvantari, ramayana-aarti, bhairav-aarti, sai-baba-aarti, mahalakshmi-aarti, mahakali-aarti, gauri-aarti
+   - chalisas 15→25 (+10): durga-chalisa, bajrang-baan, dakshina-kali, narmada-chalisa, ganga-chalisa, mahalakshmi-chalisa, sai-chalisa, vindhyavasini-chalisa, jagannath-chalisa, narsimha-chalisa
+   - upanishads 18→25 (+7): paingala, ganapati, devi, garbha, jabala-darshana, tripura, atma
+2. **P1 #5/#6/#7** carried (heavy scope, separate sessions): refresh-token JTI single-use persistence / EmailSession expiresAt + /auth/logout / CSP nonce migration
+3. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC field decisions)
+4. **P51 chakras finish** — index/[slug] now shipped via 7a14aa5; lib was previously parked. Verify post-deploy.
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/chakras` — expect 200 (CF deploy of f067706 landed)
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/sacred-rivers/ganga` — expect 200
+3. `curl -s -o /dev/null -w "%{http_code}" https://api.darshya.online/api/v1/payouts/mine` — expect 401 (Render deploy of 1269d41 landed)
+4. `git log --oneline -10` — HEAD past f067706
+5. If user "continue": batch-23 LOCAL staging (aarti+10 / chalisa+10 / upanishad+7) → single push end-of-day OR pivot to P1 #5 refresh-token JTI
+
+---
 
 ## HANDOFF 2026-06-03 #2 (close — 5-lib batch-2 +50 entries pushed d857978; CF deploy verifying)
 
