@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
+import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 
 type AdminConsultation = {
@@ -42,12 +43,11 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
-function authHeaders(): Record<string, string> {
-  const token =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('poojly_session_token') ?? localStorage.getItem('darshya_session_token')
-      : null;
-  return token ? { authorization: `Bearer ${token}` } : {};
+// P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header retained
+// as additive transition fallback (in-memory session — no localStorage read).
+// Every fetch MUST pass `credentials: 'include'` for cross-origin cookie send.
+function buildAuthHeaders(accessToken: string | undefined): Record<string, string> {
+  return accessToken ? { authorization: `Bearer ${accessToken}` } : {};
 }
 
 function statusBadge(status: string) {
@@ -76,6 +76,7 @@ function formatWhen(iso: string | null): string {
 }
 
 function ListContent() {
+  const { session } = useAuth();
   const [items, setItems] = useState<AdminConsultation[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,8 @@ function ListContent() {
       const qs = new URLSearchParams({ limit: '100' });
       if (filter !== 'all') qs.set('status', filter);
       const res = await fetch(`${API_BASE_URL}/consultation/admin/all?${qs}`, {
-        headers: authHeaders(),
+        headers: buildAuthHeaders(session?.accessToken),
+        credentials: 'include',
         cache: 'no-store',
       });
       if (res.status === 401) throw new Error('Sign in required');
@@ -106,7 +108,7 @@ function ListContent() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, session?.accessToken]);
 
   useEffect(() => {
     load();
@@ -119,7 +121,8 @@ function ListContent() {
     try {
       const res = await fetch(`${API_BASE_URL}/consultation/${c.id}/complete`, {
         method: 'PATCH',
-        headers: authHeaders(),
+        headers: buildAuthHeaders(session?.accessToken),
+        credentials: 'include',
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
