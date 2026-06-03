@@ -473,6 +473,46 @@ export const SHLOKAS: Shloka[] = [
       'That Brahman — whose very nature is dense bliss and pure consciousness, beyond compare, free from the limits of time and space, eternally liberated, illumined by hundreds of thousands of Vedic utterances, indistinct yet the embodiment of the four purusharthas the moment it is glimpsed — that selfsame Tattva shines visibly in Guruvayur. Alas, what fortune is this of the people! Bhattathiri opens the Narayaniyam by declaring that the nirguna Para-Brahman of the Upanishads has, out of grace, assumed saguna form as Guruvayurappan. Composed in 1586 CE as a cure for the poet\'s paralysis through Krishna-bhakti, this mangala-shloka fuses Advaitic jnana with Vaishnava prema, asserting that darshan at Guruvayur grants what shastras struggle to describe.',
     tags: ['narayaniyam', 'guruvayur', 'krishna', 'bhattathiri', 'brahman'],
   },
+  {
+    slug: 'bhagavad-gita-9-26',
+    source: 'Bhagavad Gita — Chapter 9, Verse 26',
+    text: 'पत्रं पुष्पं फलं तोयं यो मे भक्त्या प्रयच्छति।\nतदहं भक्त्युपहृतमश्नामि प्रयतात्मनः॥',
+    translit: 'patram puspam phalam toyam yo me bhaktya prayacchati\ntad aham bhakty-upahrtam asnami prayatatmanah',
+    meaning: 'In this beloved verse Krishna assures Arjuna that the path of devotion is open to every soul regardless of birth, wealth, learning, or capacity for elaborate ritual. He declares that whoever offers him a leaf, a flower, a fruit, or even a little water with sincere love, that offering, presented by a pure-hearted devotee, he accepts and indeed enjoys. The verse dismantles the assumption that god requires lavish sacrifice or costly ornament; what truly reaches the divine is the bhava, the loving disposition behind the gesture. Three Sanskrit words carry the weight of the teaching: bhaktya, with devotion, prayatatmanah, by one whose inner being is purified, and asnami, I eat or partake, suggesting an intimate personal acceptance rather than impersonal grace. Commentators across traditions celebrate this verse as the charter of bhakti yoga. Ramanuja reads it as proof that the lord makes himself accessible to the lowliest, while Madhusudana Sarasvati emphasizes that the smallest token offered with love outweighs mountains of ritual gold offered without it. The verse is recited daily before meals in countless homes as the bhojana mantra, transforming each act of eating into an offering and a remembrance.',
+    tags: ['bhakti', 'devotion', 'simplicity', 'offering', 'krishna', 'bhojana-mantra', 'gita'],
+  },
+  {
+    slug: 'bhagavad-gita-11-32',
+    source: 'Bhagavad Gita — Chapter 11, Verse 32',
+    text: 'कालोऽस्मि लोकक्षयकृत्प्रवृद्धो लोकान्समाहर्तुमिह प्रवृत्तः।\nऋतेऽपि त्वां न भविष्यन्ति सर्वे येऽवस्थिताः प्रत्यनीकेषु योधाः॥',
+    translit: 'kalo asmi loka-ksaya-krt pravrddho lokan samahartum iha pravrttah\nrte api tvam na bhavisyanti sarve ye avasthitah pratyanikesu yodhah',
+    meaning: 'Spoken in the cosmic eleventh chapter during the vision of the universal form, this verse contains Krishna self-revelation as Time itself, mighty and unstoppable, engaged in the dissolution of worlds. The image is at once terrifying and liberating. To Arjuna trembling on the chariot, Krishna declares that the warriors arrayed for battle have in truth already been struck down by time; Arjuna is merely the instrument through which an inevitability will manifest. The Sanskrit phrase kalo asmi, I am time, became one of the most quoted lines of the entire Mahabharata, summarizing the Hindu intuition that creation, sustenance, and dissolution are not three accidents but three faces of one supreme reality. The verse does not advocate violence; it dissolves the warrior delusion of personal agency. By recognizing that all action unfolds within a vaster pattern, Arjuna is freed from both pride in victory and guilt in destruction. Commentators caution that the teaching is meant for one already established in dharma, not as a license for indifference, but as the inner clarity that allows the dharmic actor to perform his duty without anxiety over results.',
+    tags: ['time', 'cosmic-form', 'kala', 'dharma', 'detachment', 'arjuna', 'vishvarupa'],
+  },
+  {
+    slug: 'bhagavad-gita-2-22',
+    source: 'Bhagavad Gita — Chapter 2, Verse 22',
+    text: 'वासांसि जीर्णानि यथा विहाय नवानि गृह्णाति नरोऽपराणि।\nतथा शरीराणि विहाय जीर्णान्यन्यानि संयाति नवानि देही॥',
+    translit: 'vasamsi jirnani yatha vihaya navani grhnati naro aparani\ntatha sarirani vihaya jirnany anyani samyati navani dehi',
+    meaning: 'Krishna offers Arjuna one of the most evocative images of the Gita to convey the indestructibility of the atman. Just as a person discards worn-out garments and accepts new ones in their place, so the embodied self lays aside aged or broken bodies and enters fresh ones. The simile makes a metaphysical doctrine intimate; clothing is something we change daily without grief, and the verse invites us to look upon birth and death with the same equanimity. The choice of the word dehi, the one who possesses a body, is deliberate: it distinguishes the wearer from the worn, the conscious witness from the temporary form. By relocating identity from the body to the deathless self, the verse undercuts the principal source of fear that paralyzes Arjuna and that grips ordinary human life. Sankara emphasizes that the analogy holds only at the level of the embodied jiva caught in samsara; the underlying Brahman neither comes nor goes. Ramanuja stresses that the journey from body to body proceeds under the guidance of the lord and according to karma, which is why right action and devotion remain urgent.',
+    tags: ['atman', 'rebirth', 'death', 'detachment', 'consolation', 'samsara', 'gita'],
+  },
+  {
+    slug: 'aditya-hridayam-opening',
+    source: 'Aditya Hridayam — Valmiki Ramayana, Yuddha Kanda 105, Opening',
+    text: 'ततो युद्धपरिश्रान्तं समरे चिन्तया स्थितम्।\nरावणं चाग्रतो दृष्ट्वा युद्धाय समुपस्थितम्॥\nदैवतैश्च समागम्य द्रष्टुमभ्यागतो रणम्।\nउपागम्याब्रवीद्राममगस्त्यो भगवांस्तदा॥',
+    translit: 'tato yuddha-parisrantam samare cintaya sthitam\nravanam cagrato drstva yuddhaya samupasthitam\ndaivatais ca samagamya drastum abhyagato ranam\nupagamya abravid ramam agastyo bhagavams tada',
+    meaning: 'The Aditya Hridayam begins on the battlefield of Lanka, where Rama stands exhausted after relentless combat, contemplating the fearsome Ravana arrayed once more before him. At this critical moment, the sage Agastya, who had come with the gods to witness the war, approaches Rama and prepares to bestow upon him the secret hymn of the Sun. The opening verses establish a powerful narrative frame: even the avatar incarnate, in the depths of human fatigue, is granted divine instruction by a sage rather than acting from unsupported strength. The teaching that follows in the full hymn praises Surya as the dispeller of all enemies, the source of victory, the destroyer of darkness within and without, and the indwelling soul of every creature. By beginning with this scene, the text underscores a profound spiritual principle: when worldly effort reaches its limit, surrender to the light of the supreme yields strength beyond ordinary capacity. The Aditya Hridayam is recited at dawn for clarity, health, and courage; warriors, students, and seekers across India have turned to it for over two millennia.',
+    tags: ['surya', 'aditya', 'ramayana', 'agastya', 'victory', 'morning-prayer', 'stotra'],
+  },
+  {
+    slug: 'bilvashtakam-1',
+    source: 'Bilvashtakam — Verse 1',
+    text: 'त्रिदलं त्रिगुणाकारं त्रिनेत्रं च त्रियायुधम्।\nत्रिजन्मपापसंहारमेकबिल्वं शिवार्पणम्॥',
+    translit: 'tri-dalam tri-gunakaram tri-netram ca tri-yayudham\ntri-janma-papa-samharam eka-bilvam sivarpanam',
+    meaning: 'The Bilvashtakam, composed in praise of the bilva or wood-apple leaf that is the favorite offering of Lord Shiva, opens with a verse that uncovers layer upon layer of symbolism in the three-pointed leaf. The leaf has three lobes, mirrors the three gunas of sattva, rajas, and tamas, recalls the three eyes of Shiva, and recalls his three weapons, the trident, the bow, and the goad. Most importantly the verse declares that a single bilva leaf, offered with devotion, destroys the accumulated sins of three lifetimes. The repetition of the syllable tri builds a rhythmic intensity that mirrors the ringing of the bell during Shiva worship, and the closing words eka bilvam sivarpanam, one bilva leaf is offered to Shiva, become the refrain of the entire ashtakam. The teaching is twofold. First, every natural object can be read as a scripture; the same leaf the gardener tramples becomes, in the eye of the devotee, a complete cosmology. Second, the spiritual power of an offering lies not in its quantity but in the consciousness behind it. A single leaf, placed at the feet of Shiva with concentrated love, accomplishes what mountains of unmindful ritual cannot.',
+    tags: ['shiva', 'bilva', 'stotra', 'three-gunas', 'pradosha', 'shivaratri', 'shaiva'],
+  },
 ];
 
 export function getShloka(slug: string): Shloka | undefined {
