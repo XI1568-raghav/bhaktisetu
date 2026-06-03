@@ -71,6 +71,49 @@ User explicit: "push to render supase claoude git all other are mainted to be in
 
 ---
 
+## HANDOFF 2026-06-03 (mid-batch save — 6 Opus agents drafted 36 lib entries, NOT YET applied — context-clear save)
+
+> **State**: drafts exist in JSONL transcript + spec-recoverable. No Edits applied, no commits. HEAD `23304b6`. Working tree clean except untracked `apps/web/lib/chakras.ts` (parked) + local `.claude/*`.
+
+| Asset | Path |
+|---|---|
+| Full drafts spec + resume cheatsheet | `docs/handoff-2026-06-03-batch-drafts.md` |
+| Verbatim agent outputs | `C:/Users/DELL/.claude/projects/E--NewClaude/7508a6fc-910c-4cdb-bf05-a0570f9fcdd1.jsonl` |
+| Plan in scope | `C:/Users/DELL/.claude/plans/stateless-fluttering-turtle.md` (Darshya MVP1 Sprint 1-3 + 6w polish) |
+
+### What was completed this session
+
+6 Opus agents dispatched in parallel (single tool block), all returned drafts:
+- Aarti +7 (bhairav, kartikeya, narasimha, vishnu, ram, gayatri, ambe) — 13→20
+- Chalisa +5 (kartikeya, bhairav, gayatri, surya, navagraha) — 10→15
+- Upanishad +8 (svetasvatara, kaushitaki, maitri, yoga-tattva, yoga-kundalini, dhyana-bindu, advaya-taraka, narayana) — 10→18
+- Festival +10 (gudi-padwa, ugadi, baisakhi, pongal, lohri, durga-puja, vishu, bonalu, teej-hartalika, mahalaya-amavasya) — 30→40
+- Tirtha +6 (kollur-mookambika, sringeri-sharada, srisailam-mallikarjuna, chamundeshwari-mysuru, nathdwara-shrinathji, udupi-krishna) — 36→42
+- Survey: top-6 next batch ranked (deities +13 → tithis +14 → vrats +12 → chants +12 → home-pujas +12 → pilgrimage-circuits +6 = 69 entries)
+
+### What is pending (resume immediately)
+
+1. Re-dispatch the 6 agents (prompts in `docs/handoff-2026-06-03-batch-drafts.md`) OR grep JSONL for verbatim drafts.
+2. Synthesize 5 Edit calls appending drafts before final `];` of each lib (aartis 448, chalisas 392, upanishads 194, festivals 626, tirthas 1020 — re-measure first).
+3. Local `pnpm next build` (apps/web). Fix TS errors.
+4. Single commit subject: `feat(seo): expand 5 wisdom libs +36 entries (aarti 13→20, chalisa 10→15, upanishad 10→18, festival 30→40, tirtha 36→42)`.
+5. `git push origin main` (1 CF Pages build slot).
+6. Curl-verify 5 sample new slugs (200 status, one per lib).
+7. Append closing HANDOFF here w/ commit hash.
+8. Continue all-day loop → next batch from survey rank.
+
+### Standing directives (carried verbatim, do not lose)
+
+- "work on the next items plans in the roadmap and pick 5-6 items together and complete ultrathink use multiple agents and use best skills and push those once completed pick nextv 5-6 itemss and follow this for entire day today"
+- "complete everything in your hand without waiting for me dont worry about tokens work for 6-7 hours straight … go ahead in the roadmap as far as you can go"
+- "make sure limits of all free tiers are followed and push to render supase claoude git all other are mainted to be in limits for entire month as we will be pushing 100s of items daily so group those chunks"
+
+### Canonical libs at max (skip for future batches)
+
+shakti-peeths 51, jyotirlingas 12, rashis 12, nakshatras 27, ekadashis 24, puranas 18, samskaras 16, mahavidyas 10, navadurga 9, dashavatar 10, dwadasha-aditya 12, gita-chapters 18, ramayana-kandas 7, pancha-bhoota 5.
+
+---
+
 ## HANDOFF 2026-06-02 #3 (Ask Pandit icon refresh + /pujas edge-runtime 404 fix — 1 commit)
 
 | Commit | Subject |
