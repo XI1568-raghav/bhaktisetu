@@ -918,6 +918,116 @@ export const FESTIVALS: FestivalInfo[] = [
     significance:
       'The Gita is the only scripture whose anniversary the Hindu tradition celebrates as a Jayanti — a recognition of its status as Krishna’s direct verbal teaching (sruti through smriti). Established by the Padma Purana phala-shruti: hearing even a single verse of the Gita on this day removes the sin of countless births. Translated into 78+ languages, gifted by Indian PMs to visiting heads of state.',
   },
+  {
+    slug: 'karthigai-deepam',
+    name: 'Karthigai Deepam',
+    sanskrit: 'कार्त्तिक दीपम्',
+    date2026: '2026-12-03',
+    deity: 'Shiva',
+    deitySlug: 'shiva',
+    description:
+      'Karthigai Deepam falls on the Pournami of the Tamil month Karthigai when the moon conjoins the Krittika nakshatra, observed across Tamil Nadu, Kerala and Sri Lanka. Legend recalls Shiva manifesting as an infinite jyotirlinga of fire at Tiruvannamalai, humbling Brahma and Vishnu who could not measure His ends; the Mahadeepam atop Arunachala Hill is lit at dusk and visible for miles. Homes glow with rows of agal vilakku (clay lamps) on verandahs and thresholds, while temples conduct Krittika abhisheka. The festival predates Diwali in Tamil tradition and is referenced in Tolkappiyam and Ahananuru Sangam literature.',
+    rituals: [
+      'Lighting rows of agal vilakku clay lamps at dusk on doorsteps and tulsi-vrindavan',
+      'Witnessing or kindling the Mahadeepam cauldron atop Arunachala Hill at Tiruvannamalai',
+      'Performing Krittika nakshatra abhisheka to Shiva and Murugan lingas',
+      'Preparing pori urundai (puffed-rice jaggery balls) and nei appam as naivedyam',
+      'Girivalam pradakshina of the 14-km Arunachala hill circuit through the night',
+      'Reciting Arunachala Aksharamanamalai and Sri Rudram before the household lamp',
+    ],
+    pujasAvailable: ['shiva-abhisheka', 'rudrabhishek', 'deepa-aradhana'],
+    fastingType: 'partial',
+    significance:
+      'Karthigai Deepam celebrates Shiva as the formless column of light (Arunachaleshwara) and is regarded by Tamil Shaivites as the most ancient festival of lamps. The phala-shruti promises liberation from the cycle of rebirth for devotees who witness the Mahadeepam with bhakti, and the kindling of household lamps is said to dispel inner tamas, attract Lakshmi-Saraswati, and protect lineage progeny from premature death. Lighting the deepam on this tithi is considered equal in merit to a thousand ordinary lamps offered on other days.',
+  },
+  {
+    slug: 'skanda-shashti',
+    name: 'Skanda Shashti',
+    sanskrit: 'स्कन्द षष्ठी',
+    date2026: '2026-10-26',
+    deity: 'Murugan',
+    deitySlug: 'murugan',
+    description:
+      'Skanda Shashti, observed on the Shukla Shashti of the Tamil month Aippasi, commemorates the day Murugan (Skanda-Kartikeya) annihilated the asura Surapadma at Tiruchendur on the Tamil coast, restoring dharma to the devas. The six-day Soorasamharam festival at the Tiruchendur Arulmigu Subramanya Swamy Temple culminates in a dramatic re-enactment where the vel pierces Surapadma, who is transformed into the peacock vahana and rooster banner of the Lord. The vratam is widely observed in Tamil Nadu, Kerala, Sri Lanka, Singapore and Malaysia, and finds scriptural sanction in the Skanda Purana and the Tamil Kanda Puranam of Kachiyappa Sivacharya.',
+    rituals: [
+      'Six-day nirjala or phala-ahara fast beginning on Aippasi Shukla Prathama',
+      'Daily recitation of Kanda Shashti Kavacham composed by Devaraya Swamigal',
+      'Witnessing the Soorasamharam vel-yudham re-enactment at Tiruchendur',
+      'Offering panchamrita abhisheka and vibhuti archana to the shanmukha vigraha',
+      'Lighting karpura aarti and presenting panneer (rose water) to Murugan',
+      'Breaking the vratam on Sapthami after Tirukalyanam of Murugan with Devasena',
+    ],
+    pujasAvailable: ['murugan-archana', 'kanda-shashti-kavacham-parayanam', 'shashti-vratam'],
+    fastingType: 'full',
+    significance:
+      'Skanda Shashti is held by Kaumara devotees to be the most potent vratam for vanquishing inner asuras of ego, lust and ignorance, mirroring the slaying of Surapadma by the vel of jnana-shakti. The phala-shruti of the Kanda Shashti Kavacham declares that those who observe the six-day fast with sincerity gain victory over enemies, freedom from graha-dosha, marital harmony, progeny, and ultimately moksha at the lotus feet of the six-faced Lord. The vratam is especially prescribed for the unmarried and for those afflicted by Mangal-dosha.',
+  },
+  {
+    slug: 'chaitra-navaratri',
+    name: 'Chaitra Navaratri',
+    sanskrit: 'चैत्र नवरात्रि',
+    date2026: '2026-03-19',
+    deity: 'Durga',
+    deitySlug: 'durga',
+    description:
+      'Chaitra Navaratri, also known as Vasanta Navaratri or Rama Navaratri, spans the first nine tithis of the Shukla Paksha of Chaitra and culminates on Rama Navami, the appearance day of Shri Rama. Beginning with Ugadi-Gudi Padwa pratipada ghatasthapana, devotees invoke the nine forms of Durga — Shailaputri through Siddhidatri — one each day, paralleling the autumnal Sharada Navaratri. The festival marks the Hindu New Year in much of North India, Maharashtra, Karnataka and Andhra, and is celebrated with special fervour in the Shakti peethas of Vaishno Devi, Jwalamukhi and Chintpurni. The Devi Mahatmya of Markandeya Purana is the principal liturgical text.',
+    rituals: [
+      'Ghatasthapana kalasha installation and akhanda-jyoti on Pratipada morning',
+      'Daily parayana of Durga Saptashati (Chandi Path) — 700 verses across nine days',
+      'Worship of one Navadurga form per tithi with corresponding flower and naivedya',
+      'Kanya-pujan of nine pre-pubescent girls as Devi-svarupa on Ashtami or Navami',
+      'Sowing barley (jayanti) seeds in the kalasha and observing daily sprout-growth',
+      'Concluding with Rama Navami abhisheka and Ramayana Sundara Kanda parayanam',
+    ],
+    pujasAvailable: ['durga-saptashati-parayanam', 'kanya-pujan', 'chandi-homa', 'navadurga-archana'],
+    fastingType: 'full',
+    significance:
+      'Chaitra Navaratri is regarded in the Devi Bhagavata as the spring-tide propitiation of Adi Shakti, when sattva is naturally ascendant in nature and sadhana yields manifold phala. The phala-shruti of the Durga Saptashati promises destruction of obstacles, victory over adversaries, wealth, progeny, dispelling of graha-pida and bhuta-badha, and ultimately the supreme boon of bhakti and mukti. Observing the nine-day vratam with kumari-pujan is said to confer the punya of a thousand ashvamedha yajnas and to please Devi as a mother is pleased by her child.',
+  },
+  {
+    slug: 'ahoi-ashtami',
+    name: 'Ahoi Ashtami',
+    sanskrit: 'अहोई अष्टमी',
+    date2026: '2026-11-02',
+    deity: 'Ahoi Mata',
+    deitySlug: 'parvati',
+    description:
+      'Ahoi Ashtami falls on the Krishna Paksha Ashtami of Kartik month, observed primarily by mothers across North India — Uttar Pradesh, Rajasthan, Haryana, Punjab, Himachal and Uttarakhand — for the long life, health and prosperity of their children. Ahoi Mata, a benevolent form of Parvati, is depicted with eight corners (ashta-koshthaka) on a wall painting or pata along with her cubs, recalling the legend of a merchant\'s wife who accidentally killed a porcupine\'s young while digging clay and lost her own seven sons until Ahoi Mata\'s grace restored them. The vrata-katha is recited in the evening before sighting stars or the moon.',
+    rituals: [
+      'Nirjala fast from sunrise observed by mothers until star-sighting at twilight',
+      'Drawing the Ahoi Mata pata with eight corners on the northern wall using geru and rice paste',
+      'Establishing a silver Syau (necklace with beads representing children) on the altar',
+      'Listening to the Ahoi Ashtami vrata-katha of the saahukar and the porcupine',
+      'Offering halwa-puri, sweet boiled chana, and singhare-ka-halwa as naivedya',
+      'Arghya to the stars (taraon ko arghya) with water from a karwa before breaking the fast',
+    ],
+    pujasAvailable: ['ahoi-mata-puja', 'santan-gopal-puja', 'parvati-archana'],
+    fastingType: 'full',
+    significance:
+      'Ahoi Ashtami is held by Smarta and Vaishnava grhasthas to be the supreme putra-praapti and putra-rakshana vrata, complementing Karwa Chauth observed eight days earlier for the husband\'s longevity. The phala-shruti of the vrata-katha promises that mothers who observe the nirjala fast with shraddha shall never witness the death of their progeny, that barren women shall conceive, and that the lineage shall be protected from akala-mrityu (untimely death) and apamrityu. The silver Syau is passed down across generations as a family heirloom of Ahoi Mata\'s blessing.',
+  },
+  {
+    slug: 'varuthini-ekadashi',
+    name: 'Varuthini Ekadashi',
+    sanskrit: 'वरूथिनी एकादशी',
+    date2026: '2026-05-12',
+    deity: 'Vishnu',
+    deitySlug: 'vishnu',
+    description:
+      'Varuthini Ekadashi falls on the Krishna Paksha Ekadashi of Vaishakha month and is glorified by Shri Krishna himself to Yudhishthira in the Bhavishyottara Purana as the bestower of varutha — divine armour and protection. The vrata commemorates the rescue of King Mandhata, who while performing tapasya was seized by a bear; Vishnu appeared as Varaha-rupa and not only delivered the king but, in compassion, granted moksha to the bear as well. Observed across Vaishnava sampradayas from Vrindavan to Udupi, the ekadashi is particularly associated with charitable giving of grain, gold and cow (godana) to qualified brahmanas at sunrise on dwadashi.',
+    rituals: [
+      'Nirjala or phala-ahara fast from dashami sunset through dwadashi parana',
+      'Predawn snana and Tulsi-archana followed by Vishnu Sahasranama parayanam',
+      'Jagarana through ekadashi night with bhajan, kirtan and Bhagavatam recitation',
+      'Listening to the Varuthini Ekadashi mahatmya from Bhavishyottara Purana',
+      'Dana of til (sesame), gold, cloth and cow to a deserving brahmana at dwadashi',
+      'Parana at the prescribed dwadashi muhurta with tulsi-jal and akshata',
+    ],
+    pujasAvailable: ['ekadashi-vrata-puja', 'vishnu-sahasranama-parayanam', 'satyanarayana-puja'],
+    fastingType: 'full',
+    significance:
+      'Varuthini Ekadashi is extolled in the Bhavishyottara Purana as equivalent in merit to ten thousand years of tapasya, and Krishna declares its phala superior to surya-grahana snana at Kurukshetra, horse-sacrifice, and the gifting of a thousand cows. The phala-shruti promises that observers are freed from the gravest papas including brahma-hatya and stri-hatya, are armoured (varutha) against misfortune in this life, attain beauty, fortune and progeny, and after death ascend to Vaikuntha. Even hearing the mahatmya with shraddha is said to dissolve the sins of a thousand births.',
+  },
 ];
 
 export function getFestival(slug: string): FestivalInfo | undefined {
