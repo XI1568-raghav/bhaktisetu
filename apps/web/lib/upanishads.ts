@@ -431,7 +431,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'amritabindu-upanishad', name: 'Amritabindu Upanishad', sanskrit: 'अमृतबिन्दूपनिषद्', iast: 'Amṛtabindūpaniṣad',
-    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
     mantraCount: 22,
     centralTheme: 'The "drop of immortality" — the silent bindu of consciousness reached by withholding mind from objects',
     summary:
@@ -447,7 +447,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'paramahamsa-upanishad', name: 'Paramahamsa Upanishad', sanskrit: 'परमहंसोपनिषद्', iast: 'Paramahaṁsopaniṣad',
-    veda: 'Shukla Yajur', vedaShakha: 'Shukla Yajur Veda (Sannyasa Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Shukla Yajur Veda (Sannyasa Upanishad group)',
     mantraCount: 4,
     centralTheme: 'Marks of the Paramahamsa — the highest-stage renunciate who has dropped staff, kamandalu, sacred thread and even the will to renounce',
     summary:
@@ -463,7 +463,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'tejobindu-upanishad', name: 'Tejobindu Upanishad', sanskrit: 'तेजोबिन्दूपनिषद्', iast: 'Tejobindūpaniṣad',
-    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
     mantraCount: 465,
     centralTheme: 'The "drop of radiance" — the longest of the Bindu Upanishads, mapping fifteen limbs of Advaita-yoga onto Patanjali\'s eight',
     summary:
@@ -479,7 +479,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'varaha-upanishad', name: 'Varaha Upanishad', sanskrit: 'वराहोपनिषद्', iast: 'Varāhopaniṣad',
-    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Vaishnava Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Vaishnava Upanishad group)',
     mantraCount: 263,
     centralTheme: 'The dialogue of Lord Varaha with the sage Ribhu — the most complete Vaishnava-Advaita synthesis among the minor Upanishads',
     summary:
@@ -575,7 +575,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'brahma-upanishad', name: 'Brahma Upanishad', sanskrit: 'ब्रह्मोपनिषद्', iast: 'Brahmopaniṣad',
-    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Sannyasa Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Sannyasa Upanishad group)',
     mantraCount: 41,
     centralTheme: 'The four states of consciousness located in four bodily centres — and the renunciate\'s vow of the sacred thread of pure knowledge (brahma-sutra)',
     summary:
@@ -591,7 +591,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'kaivalya-upanishad', name: 'Kaivalya Upanishad', sanskrit: 'कैवल्योपनिषद्', iast: 'Kaivalyopaniṣad',
-    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Sannyasa Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Sannyasa Upanishad group)',
     mantraCount: 25,
     centralTheme: 'The supreme realization (kaivalya) attained through devotion (bhakti), renunciation (sannyasa), and identification with Shiva as one\'s own Self',
     summary:
@@ -607,7 +607,7 @@ export const UPANISHADS: UpanishadInfo[] = [
   },
   {
     slug: 'subala-upanishad', name: 'Subala Upanishad', sanskrit: 'सुबालोपनिषद्', iast: 'Subālopaniṣad',
-    veda: 'Shukla Yajur', vedaShakha: 'Shukla Yajur Veda (Samanya Vedanta Upanishad group)',
+    veda: 'Yajur', vedaShakha: 'Shukla Yajur Veda (Samanya Vedanta Upanishad group)',
     mantraCount: 16,
     centralTheme: 'The cosmology of creation from the unmanifest, the 16-chapter analysis of the gross-subtle-causal universe, and the final dissolution back into the unborn',
     summary:
@@ -751,6 +751,101 @@ export const UPANISHADS: UpanishadInfo[] = [
       reference: 'Mahanarayana Upanishad 13.5',
     },
     takeaway: 'The one Narayana shines within every form, every mantra, and every breath of the universe.',
+  },
+  {
+    slug: 'katha-rudra-upanishad',
+    name: 'Katha Rudra Upanishad',
+    sanskrit: 'कठरुद्रोपनिषद्',
+    iast: 'Kaṭha-rudropaniṣad',
+    veda: 'Yajur',
+    vedaShakha: 'Krishna Yajurveda — Sannyasa group',
+    mantraCount: 25,
+    centralTheme: 'The discipline of renunciation as the direct path to recognising Rudra-Brahman within',
+    summary: 'The Katha Rudra Upanishad belongs to the Krishna Yajurveda and is counted among the Sannyasa Upanishads, the small but luminous group of texts that codify the inner and outer life of the wandering renunciate. It opens with Prajapati instructing his eldest seeker on the lawful sequence of asrama renunciation, the disposal of the sacred thread and ritual fires into the meditating self, and the threefold offering of breath, mind, and ego into the inner Rudra-flame. The text moves with great economy from the outward ceremony of formally taking sannyasa to the inward recognition that the same Rudra who is worshipped with hymns in Vedic fire altars is in truth the witness consciousness seated in the heart-cave of the renunciate. It draws heavily on the imagery of the Katha Upanishad, addressing the seeker as the one who like Nachiketas has chosen the path of shreyas over preyas, and it equates the cremation fire of the householder with the jnana-agni in which the sannyasin daily offers the entire field of perception. Considerable instruction is given on the inner sandhya, the silencing of speech, the cultivation of an ownerless attitude toward food and shelter, and the steady recollection that the same Rudra who destroys the worlds at the end of an age destroys the bondage of the seeker who surrenders fully. The text closes by declaring that one who lives this discipline becomes Rudra himself, no longer counted among the wandering souls but established as the very Brahman that the Upanishadic hymns celebrate.',
+    keyConcepts: ['atyasrama sannyasa', 'antaragni hotra', 'shikha-sutra visarjana', 'rudra-brahman identity', 'jnana agni', 'pratyahara of breath', 'witness consciousness'],
+    famousVerse: {
+      sanskrit: 'अहं ब्रह्मास्मि परमं ब्रह्म रुद्रोऽहमस्मि। न मे रागो न मे द्वेषो न मे लोभो न मे भयम्॥',
+      iast: 'ahaṁ brahmāsmi paramaṁ brahma rudro\'ham asmi, na me rāgo na me dveṣo na me lobho na me bhayam',
+      translation: 'I am Brahman, the supreme Brahman; I am Rudra himself. In me there is no attachment, no aversion, no greed and no fear.',
+      reference: 'Katha Rudra Upanishad 5',
+    },
+    takeaway: 'True sannyasa is the inner sacrifice in which the seeker recognises himself as the very Rudra he once worshipped from afar.',
+  },
+  {
+    slug: 'sarvasara-upanishad',
+    name: 'Sarvasara Upanishad',
+    sanskrit: 'सर्वसारोपनिषद्',
+    iast: 'Sarvasāropaniṣad',
+    veda: 'Yajur',
+    vedaShakha: 'Krishna Yajurveda — Samanya Vedanta group',
+    mantraCount: 23,
+    centralTheme: 'A compact glossary of every essential Vedantic term arranged as a direct inquiry into the Self',
+    summary: 'The Sarvasara Upanishad, literally the Upanishad of the Essence of All, is a short but uniquely structured text of the Krishna Yajurveda that functions as a teaching dictionary of the central terms of Advaita Vedanta. It proceeds by question and answer, asking in turn what is meant by bondage, what is meant by liberation, what is avidya, what is vidya, what are the four states of consciousness, what is the kshetra and what is the kshetrajna, what is maya, what is jiva, what is paramatma, and what is the witness, and it answers each with a precise philosophical definition drawn from the larger Upanishadic corpus. The text is widely studied as a beginner\'s compendium because it crystallises in a few lines what the longer Upanishads such as the Brihadaranyaka and Chandogya elaborate across hundreds of mantras, yet it is equally cherished by advanced practitioners for the discipline of its definitions. It enumerates the panchakoshas, the three bodies, the three gunas, the avasthatraya of waking dream and deep sleep, and the turiya that transcends them, and it weaves them into a single coherent map of the seeker\'s inner geography. The text concludes by identifying the Self with the indivisible Brahman and declaring that one who has grasped these essences has in effect grasped the whole of Vedanta, requiring no further scripture for liberation but only the direct contemplation of what has been heard.',
+    keyConcepts: ['bandha and moksha', 'avidya and vidya', 'avasthatraya', 'kshetra-kshetrajna', 'panchakosha', 'sakshi chaitanya', 'jiva and paramatma'],
+    famousVerse: {
+      sanskrit: 'देहाद्यहम्बुद्धिर्बन्ध इत्युच्यते। तन्निवृत्तिर्मोक्ष इति॥',
+      iast: 'dehādy-aham-buddhir bandha ity ucyate, tan-nivṛttir mokṣa iti',
+      translation: 'Bondage is the conviction that I am the body and its kindred forms; the cessation of that conviction is itself called liberation.',
+      reference: 'Sarvasara Upanishad 1',
+    },
+    takeaway: 'Liberation is not a distant attainment but the simple dropping of the mistaken identification with body and mind.',
+  },
+  {
+    slug: 'vajrasuchika-upanishad',
+    name: 'Vajrasuchika Upanishad',
+    sanskrit: 'वज्रसूचिकोपनिषद्',
+    iast: 'Vajrasūcikopaniṣad',
+    veda: 'Sama',
+    vedaShakha: 'Samaveda — Samanya Vedanta group',
+    mantraCount: 9,
+    centralTheme: 'A diamond-needle critique demolishing every birth-based definition of brahmanhood and locating it solely in Self-knowledge',
+    summary: 'The Vajrasuchika Upanishad belongs to the Samaveda and is one of the most socially radical texts in the entire Vedic canon, traditionally ascribed to Adi Shankara though its core argument is far older. Its name means the diamond needle, and it lives up to the title by systematically piercing every conventional definition of who is a brahmana, the highest of the four varnas. It asks in succession whether a brahmana is the jiva, the body, the lineage, learning, ritual action, or piety, and through a tightly reasoned refutation it shows that each of these falls short, for the jiva is the same in all beings, bodies decay and differ only externally, lineages contain both sages and outcastes, learning is found in many varnas, ritual is performed by all, and even piety in the absence of Self-knowledge does not make one a brahmana. Having dismantled every external criterion the text declares with great force that a true brahmana is one who has directly realised the non-dual Self, who has burned away the threefold suffering, who is free from desire and aversion, and whose inner state is the same toward gold and clay, friend and foe, praise and blame. The text is regularly cited in modern reform movements as scriptural authority that varna is to be understood by inner realisation rather than by birth, and it stands as a luminous example of the self-correcting moral conscience of the Vedic tradition.',
+    keyConcepts: ['varna by guna and karma', 'self-knowledge as brahmanahood', 'refutation of jati', 'sama-darshana', 'tri-tapa nivritti', 'nishkama equipoise', 'inner purity over outer ritual'],
+    famousVerse: {
+      sanskrit: 'यस्तु आत्मानमद्वितीयं जातिगुणक्रियाहीनं षडूर्मिषड्भावेत्यादिसर्वदोषरहितं साक्षात्करोति स एव ब्राह्मणः॥',
+      iast: 'yas tu ātmānam advitīyaṁ jāti-guṇa-kriyā-hīnaṁ ṣaḍ-ūrmi-ṣaḍ-bhāvety-ādi-sarva-doṣa-rahitaṁ sākṣāt-karoti sa eva brāhmaṇaḥ',
+      translation: 'One who directly realises the non-dual Self that is free of caste, attribute, and action, and untouched by the six waves and six modifications of life — that one alone is truly a brahmana.',
+      reference: 'Vajrasuchika Upanishad 9',
+    },
+    takeaway: 'Brahmanahood is not inherited from a lineage but earned by the direct realisation of the one non-dual Self.',
+  },
+  {
+    slug: 'mahopanishad',
+    name: 'Maha Upanishad',
+    sanskrit: 'महोपनिषद्',
+    iast: 'Mahopaniṣad',
+    veda: 'Sama',
+    vedaShakha: 'Samaveda — Samanya Vedanta group',
+    mantraCount: 565,
+    centralTheme: 'The greatness of Brahman explored through cosmology, jivanmukti, and the recognition that the world is one family',
+    summary: 'The Maha Upanishad is one of the longer texts of the Samaveda canon and is divided into six chapters that move from cosmogony to the inner discipline of the liberated-in-life sage. It opens with the declaration that in the beginning Narayana alone existed, from whom emerged Brahma and through Brahma the entire ordered universe, and it then turns to the question of how the embodied seeker is to recover the original unity behind that apparent multiplicity. Long passages in the later chapters describe the seven stages of wisdom culminating in turiyaga, the state of one who lives and acts in the world while inwardly absorbed in Brahman, and the text is one of the principal scriptural sources for the classical doctrine of jivanmukti. It draws frequent parallels with the Yoga Vasishtha, sharing several illustrative stories and verses, and it praises the sage who has crossed the ocean of becoming as one whose every breath has become a hymn to the supreme. The Maha Upanishad is most widely known in the modern world for a single verse in its sixth chapter declaring that for those of noble conduct the whole earth is one family, a sentence inscribed in the entrance hall of the Parliament of India and recited at countless interfaith gatherings as a Vedic charter of universal kinship. Together its cosmology, its psychology of the seven stages, and its ethical climax give the text a unique combination of metaphysical depth and visible social fruit.',
+    keyConcepts: ['narayana cosmogony', 'jnana bhumika seven stages', 'jivanmukti', 'turiyaga state', 'vasudhaiva kutumbakam', 'cosmic family ethic', 'world as Brahman'],
+    famousVerse: {
+      sanskrit: 'अयं निजः परो वेति गणना लघुचेतसाम्। उदारचरितानां तु वसुधैव कुटुम्बकम्॥',
+      iast: 'ayaṁ nijaḥ paro veti gaṇanā laghu-cetasām, udāra-caritānāṁ tu vasudhaiva kuṭumbakam',
+      translation: 'This is mine and that is another\'s — such is the calculation of the small-minded; for those of noble conduct the whole world is but one family.',
+      reference: 'Maha Upanishad 6.72',
+    },
+    takeaway: 'The sage rooted in Brahman sees the entire earth as a single family and walks the world as a living hymn of unity.',
+  },
+  {
+    slug: 'narada-parivrajaka-upanishad',
+    name: 'Narada Parivrajaka Upanishad',
+    sanskrit: 'नारदपरिव्राजकोपनिषद्',
+    iast: 'Nārada-parivrājakopaniṣad',
+    veda: 'Atharva',
+    vedaShakha: 'Atharvaveda — Sannyasa group',
+    mantraCount: 270,
+    centralTheme: 'The complete code of the wandering renunciate revealed by Lord Brahma to the sage Narada',
+    summary: 'The Narada Parivrajaka Upanishad is the longest of the Sannyasa Upanishads and is set as a discourse delivered by the four-faced Brahma to the wandering sage Narada in response to his question on the supreme path to liberation. The text is organised into nine upadeshas or instructions and constitutes nothing less than a comprehensive manual for the Hindu monastic life, covering the inner qualifications that make a candidate fit for renunciation, the precise mantras and ritual of formally taking sannyasa including the visarjana of the sacred thread and the offering of the inner fires into the Self, the four classical orders of renunciate from kutichaka through bahudaka and hamsa to paramahamsa, and the daily discipline of begging, bathing, meditation, and study. It enters into detailed consideration of when a householder, a brahmacarin, or even a vanaprastha may take to the orange robe, what implements are permitted, what foods may be accepted, and how the monk is to deal with hostile gatherings, illness, and the approach of death. Throughout the nine chapters the outer code is repeatedly grounded in its inner purpose, the cultivation of an unbroken recognition that the Atman alone is real and that the renunciate has abandoned not the world but the false sense of agency and ownership that bound him to it. The text closes by declaring that the paramahamsa who has internalised this whole discipline lives free of name, lineage, and obligation, having become a luminous instance of the Brahman the Upanishads everywhere celebrate.',
+    keyConcepts: ['four orders of sannyasa', 'paramahamsa ideal', 'praisha mantra', 'antaragni samaropana', 'bhiksha discipline', 'atyasrama vairagya', 'videha mukti'],
+    famousVerse: {
+      sanskrit: 'त्यक्तपुत्रैषणो विद्वान् त्यक्तवित्तैषणस्तथा। त्यक्तलोकैषणश्चैव परिव्राड् ब्रह्मवित्तमः॥',
+      iast: 'tyakta-putraiṣaṇo vidvān tyakta-vittaiṣaṇas tathā, tyakta-lokaiṣaṇaś caiva parivrāḍ brahma-vit-tamaḥ',
+      translation: 'The wise one who has renounced the craving for progeny, for wealth, and for worldly recognition — that wandering monk is the foremost knower of Brahman.',
+      reference: 'Narada Parivrajaka Upanishad 3.50',
+    },
+    takeaway: 'The complete renunciate, free of craving for sons, wealth, and fame, becomes the very embodiment of Brahman-knowledge.',
   },
 ];
 
