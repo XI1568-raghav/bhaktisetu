@@ -1269,6 +1269,142 @@ export const AARTIS: AartiInfo[] = [
     durationMinutes: 6,
     relatedPujas: ['sabarimala-mandala-puja', 'makaravilakku-darshan', 'ayyappa-vratham-41-day'],
   },
+  {
+    slug: 'vitthal-aarti',
+    name: 'Vitthal Aarti (Yuga Yuga Vari Ubha)',
+    sanskrit: 'युगे युगे विटेवरी उभा',
+    deity: 'Lord Vitthal (Vithoba / Panduranga)',
+    deitySlug: 'vitthal',
+    whenSung: 'At the dawn (Kakad Aarti) and evening (Shej Aarti) services at the Pandharpur Vithoba temple every day. Sung in massive congregation by Warkari pilgrims during Ashadhi Ekadashi and Kartiki Ekadashi as they reach Pandharpur after their 250 km Palkhi padayatra from Alandi and Dehu.',
+    description:
+      'The signature Marathi abhanga-aarti of Vithoba of Pandharpur — composed in the Warkari sampradaya tradition tracing back to Sant Dnyaneshwar, Sant Tukaram and Sant Namdev (13th-17th c.). Sung as devotees raise their joined hands in the iconic kar-kateevari posture mirroring Vitthal himself standing on the brick. Pandharpur sees over 1 million pilgrims on Ashadhi Ekadashi alone, all singing this aarti as Lord Vitthal is bathed and adorned for darshan.',
+    lyricsHindi: [
+      'युगे अठ्ठावीस विटेवरी उभा। वामांगी रखुमाई दिसे दिव्य शोभा॥',
+      'पुंडलिकाचे भेटी परब्रह्म आले गा। चरणी वाहे भीमा उद्धरी जगा॥',
+      'जय देव जय देव जय पांडुरंगा। रखुमाई वल्लभा राहिच्या वल्लभा पावे जिवलगा॥',
+      'तुळसी हार गळा कासे पीतांबर। आवडे निरंतर हेचि ध्यान॥',
+      'मकर कुंडले तळपती श्रवणी। कंठी कौस्तुभमणी विराजित॥',
+    ],
+    lyricsTransliteration: [
+      'Yuge atthaavees vitevari ubha | Vaamaangi Rakhumai dise divya shobha',
+      'Pundalikaache bheti Parabrahma aale ga | Charani vaahe Bheema uddhari jagaa',
+      'Jay dev jay dev jay Pandurangaa | Rakhumai-vallabhaa Rahichyaa vallabhaa paave jivalagaa',
+      'Tulasi haar galaa kaase peetaambar | Aavade nirantar hechi dhyaan',
+      'Makar kundale talapati shravani | Kanthi Kaustubha-mani viraajit',
+    ],
+    meaning:
+      'For twenty-eight ages He has stood upon the brick — Rakhumai shining at His left in divine beauty. The Supreme Brahman came down to meet Pundalik; the Bheema (Chandrabhaga) river flows past His feet, redeeming the world. Victory, O Pandurang, beloved of Rakhumai and Rahi, our soul-companion. Tulsi garland on the neck, yellow silk at the waist — this is the form we love to meditate upon forever. Crocodile-shaped earrings glint at the ears; the Kaustubha jewel shines at the throat.',
+    durationMinutes: 5,
+    relatedPujas: ['ashadhi-ekadashi-darshan', 'kartiki-ekadashi-puja', 'pandharpur-warkari-padayatra'],
+  },
+  {
+    slug: 'swaminarayan-aarti',
+    name: 'Swaminarayan Aarti (Jay Sadguru Swami)',
+    sanskrit: 'जय सद्गुरु स्वामी',
+    deity: 'Bhagwan Swaminarayan (Sahajanand Swami)',
+    deitySlug: 'swaminarayan',
+    whenSung: 'Five times daily (Mangala/Shringar/Rajbhog/Sandhya/Shayan aartis) in every Swaminarayan and BAPS mandir worldwide. Sung with special intensity during the founder Bhagwan Swaminarayan’s birthday (Chaitra Sud 9 — Swaminarayan Jayanti) and on Ekadashi vrats.',
+    description:
+      'The five-times-daily aarti of the Swaminarayan Sampraday composed by Sadguru Muktanand Swami in 1804 at the direct request of Bhagwan Swaminarayan himself in Loj village, Gujarat. Now sung across 1,200+ BAPS mandirs globally (Akshardham Delhi, Akshardham Robbinsville NJ, BAPS Shri Swaminarayan Mandir Wembley London) and in every Sahajanand-tradition mandir of Vadtal and Ahmedabad dioceses. Frames Bhagwan Swaminarayan as Purna Purushottam, the supreme God of all incarnations.',
+    lyricsHindi: [
+      'जय सद्गुरु स्वामी प्रभु जय सद्गुरु स्वामी। सहजानन्द दयालु बलिहारी जाऊँ हुं तारी॥',
+      'अष्ट सखा संग शोभे मनवाला मूर्ति। प्रेमानन्द कविजन गावे आरति॥',
+      'मेरे श्री हरि कमलापति राजे श्रीकृष्ण रूपी। गोप-गोपी संग रासे रमते अति सुख रूपी॥',
+      'मुक्तानन्द मुनि गावे आरति श्रीहरि की। प्रभु सहजानन्द भगवान सेवा करूँ सर्वदा॥',
+    ],
+    lyricsTransliteration: [
+      'Jay Sadguru Swami Prabhu jay Sadguru Swami | Sahajananda dayalu balihari jaau hu tari',
+      'Asht sakha sang shobhe Manavala murti | Premananda kavijan gaave aarati',
+      'Mere Shri Hari Kamalapati raaje Shrikrishna rupi | Gop-gopi sang rase ramate ati sukha rupi',
+      'Muktananda muni gaave aarati Shri Hari ki | Prabhu Sahajananda Bhagavan seva karu sarvada',
+    ],
+    meaning:
+      'Victory, victory to the Sadguru Swami, Lord. O compassionate Sahajananda, I sacrifice myself for you. With your eight paramhansa companions you shine, beloved manvala-form; the poet Premananda sings this aarti. My Shri Hari, lord of Lakshmi, reigns in the form of Shri Krishna, sporting joyfully in the rasa-lila with the cowherd boys and milkmaids. Muni Muktananda sings the aarti of Shri Hari — O Lord Sahajananda Bhagwan, may I serve you forever.',
+    durationMinutes: 4,
+    relatedPujas: ['swaminarayan-jayanti-puja', 'baps-mandir-aarti', 'akshardham-darshan'],
+  },
+  {
+    slug: 'vaishno-devi-aarti',
+    name: 'Mata Vaishno Devi Aarti (Jai Mata Di)',
+    sanskrit: 'जय वैष्णवी माता',
+    deity: 'Mata Vaishno Devi (Trikuta — Mahakali / Mahalakshmi / Maha Saraswati)',
+    deitySlug: 'vaishno-devi',
+    whenSung: 'Twice daily in the holy cave at Bhawan — pre-dawn (Pratah Aarti, after the cave sanctum is bathed with milk and Ganga jal) and at dusk (Sandhya Aarti, just before the cave closes for the night). The two aartis are the only times the Trikuta pindis are visible in full vibhuti-shringar and devotees with Aarti darshan pass after midnight queue alone gain entry.',
+    description:
+      'The ceremonial aarti of Mata Vaishno Devi at Bhawan (5,200 ft, Trikuta hills, Katra J&K) — sung as the holy three self-manifest pindis of Mahakali, Mahalakshmi and Mahasaraswati are bathed, adorned with chola, and offered bhog. Over 10 million pilgrims trek the 13 km from Katra to Bhawan annually; the call "Jai Mata Di" echoes throughout the climb. The aarti darshan token system is one of the most sought-after spiritual experiences in North India.',
+    lyricsHindi: [
+      'जय वैष्णवी माता मैया जय वैष्णवी माता। त्रिकुटा पर्वत वासिनी भक्तन सुखदाता॥',
+      'चरण कमल अति शोभित मणि-माणिक्य जड़ित। शीश छत्र मुख चन्द्र समान दिव्य ज्योति प्रगटित॥',
+      'दर्शन को आते भक्तजन कटरा से चलकर। बाण-गंगा में स्नान करत हैं अर्धकुंवारी जाकर॥',
+      'भैरव बाबा का दर्शन माँ की पूर्णता देता। जो जन तेरा सच्चा भक्त वैकुण्ठ को जाता॥',
+      'ॐ जय वैष्णवी माता मैया जय शेर वाली। पाँच पाण्डव भी तेरे शरण आये हे जग पालनहारी॥',
+    ],
+    lyricsTransliteration: [
+      'Jai Vaishnavi Mata Maiya jai Vaishnavi Mata | Trikuta parvat vaasini bhaktan sukha-data',
+      'Charana kamala ati shobhit mani-maanikya jadit | Sheesha chhatra mukha-chandra samaan divya jyoti pragatit',
+      'Darshan ko aate bhaktajan Katra se chalkar | Baan-Ganga mein snaan karat hain Ardhakunwari jaakar',
+      'Bhairav Baba ka darshan Maa ki poornata deta | Jo jan tera saccha bhakta Vaikuntha ko jaata',
+      'Om jai Vaishnavi Mata Maiya jai Sher Vaali | Paanch Paandav bhi tere sharan aaye he jag paalanhari',
+    ],
+    meaning:
+      'Victory to Mother Vaishnavi, dweller of the Trikuta peak, giver of joy to devotees. Your lotus feet shine adorned with gems and rubies; the parasol over your head and your moon-like face manifest divine light. Pilgrims walk from Katra for your darshan, bathe in the Baan-Ganga, and stop at Ardhakunwari. Darshan of Bhairav Baba completes the Mother’s blessing; whoever is your true devotee attains Vaikuntha. Om, victory to Mother Vaishnavi, victory to the lion-rider — even the five Pandavas took refuge at your feet, O sustainer of the world.',
+    durationMinutes: 6,
+    relatedPujas: ['vaishno-devi-yatra-package', 'navratri-darshan-katra', 'ardhakunwari-cave-puja'],
+  },
+  {
+    slug: 'balaji-aarti',
+    name: 'Venkateswara Balaji Aarti (Govinda Govinda)',
+    sanskrit: 'गोविन्द गोविन्द',
+    deity: 'Lord Venkateswara (Balaji / Srinivasa / Tirumala)',
+    deitySlug: 'venkateswara',
+    whenSung: 'During the Suprabhata Seva at 3 AM and the Ekantha Seva at 1:30 AM in the Tirumala Sri Venkateswara Swamy Devasthanam. The "Govinda Govinda" call is also raised continuously by every pilgrim climbing the 3,550 stone steps from Alipiri to Tirumala (the Sopanamarga), and by every devotee in the queue (Sarva Darshan or Seeghra Darshan VIP).',
+    description:
+      'The eternal naam-aarti of Lord Balaji at Tirumala — the world’s richest and most-visited Hindu temple (60,000-100,000 pilgrims per day, peaking at 500,000 during Brahmotsavam). Composed within the Annamacharya sankeertana tradition (15th c. saint-poet who sang 32,000 keertanas exclusively for Balaji). The call "Govinda Govinda" is uttered by every pilgrim shaving their head as tonsure offering, by every devotee depositing hundi donations exceeding ₹1,500 crore annually, and at every step of the Tirumala climb.',
+    lyricsHindi: [
+      'गोविन्द गोविन्द गोविन्द गोविन्दा। श्री श्रीनिवास गोविन्दा श्री वेङ्कटेश गोविन्दा॥',
+      'भक्त वत्सल गोविन्दा भागवत प्रिय गोविन्दा। नित्य निर्मल गोविन्दा नीला मेघश्याम गोविन्दा॥',
+      'पुरन्दर विट्ठल गोविन्दा पुराण पुरुष गोविन्दा। पद्म पाणी गोविन्दा पन्नग शायी गोविन्दा॥',
+      'श्रीनिवास तिरुमल वासा। शेषाद्रि शिखर वासा॥ आनन्द निलय निवासा। तिरुमल तिरुपति बालाजी॥',
+    ],
+    lyricsTransliteration: [
+      'Govinda Govinda Govinda Govindaa | Shri Shrinivaasa Govindaa Shri Venkatesha Govindaa',
+      'Bhakta vatsala Govindaa Bhaagavata priya Govindaa | Nitya nirmala Govindaa Neela meghashyaama Govindaa',
+      'Purandara Vitthala Govindaa Puraana Purusha Govindaa | Padma paani Govindaa Pannaga shaayi Govindaa',
+      'Shrinivaasa Tirumala vaasa | Sheshaadri shikhara vaasa | Aananda nilaya nivaasa | Tirumala Tirupati Balaji',
+    ],
+    meaning:
+      'Govinda Govinda Govinda Govinda — Shri Shrinivasa Govinda, Shri Venkatesha Govinda. Loving towards devotees, dear to the Bhagavatas, eternally pure, dark-blue cloud-coloured Govinda. Pranav-vithoba, ancient Purusha, lotus-handed, reclining upon Adishesha — Govinda. Shrinivasa, dweller at Tirumala, residing atop the Sheshachalam peaks, in the abode of bliss — O Lord Balaji of Tirumala-Tirupati.',
+    durationMinutes: 5,
+    relatedPujas: ['tirumala-suprabhata-seva', 'venkateswara-brahmotsavam', 'thomala-seva-vip-darshan'],
+  },
+  {
+    slug: 'radha-rani-aarti',
+    name: 'Radha Rani Aarti (Shri Radhe Radhe)',
+    sanskrit: 'श्री राधे राधे',
+    deity: 'Shrimati Radharani (Vrishabhanu-nandini / Brajeshwari)',
+    deitySlug: 'radha',
+    whenSung: 'During Radhashtami (Bhadrapada Shukla Ashtami, the birth anniversary of Radharani) at the Larli Lal Temple in Barsana and the Radha Raman temple in Vrindavan. Also during the Lathmar Holi at Barsana and Nandgaon, and at the Mangala Aarti of the Banke Bihari temple in Vrindavan when the curtain parts only briefly twice a day.',
+    description:
+      'The most beloved aarti of Shrimati Radharani in the Vraja-mandala — sung with overwhelming devotion in Barsana (her birthplace), Vrindavan, Nandgaon and Govardhan. In the Gaudiya Vaishnava and Pushti Marg traditions Radha is worshipped as Shakti-tattva inseparable from Krishna — the hladini-shakti, the supreme energy of divine love. Composed in the bhajan tradition of Sant Hit Harivamsa (16th c. founder of Radhavallabha sampradaya) and sung today in pre-dawn mangala arati at Banke Bihari Mandir.',
+    lyricsHindi: [
+      'श्री राधे राधे राधे राधे श्यामा। बरसाने वाली राधे श्यामा॥',
+      'किशोरी जू को नित्य दर्शन पाऊँ। बृन्दावन की कुंज गलियाँ नित गुण गाऊँ॥',
+      'वृषभानु दुलारी राधे लाडिली लाल की। हरि की प्राण-प्रिय कुंजनवारी छवि न्यारी॥',
+      'मधुर मधुर मुस्कान राधे की हृदय बसी जाये। ब्रजेश्वरी की कृपा मिले तो जीवन धन्य हो जाये॥',
+      'जय जय श्री राधे जय जय श्री राधे। बरसाना धाम की रानी मेरी प्यारी राधे॥',
+    ],
+    lyricsTransliteration: [
+      'Shri Radhe Radhe Radhe Radhe Shyaamaa | Barsaane Vaali Radhe Shyaamaa',
+      'Kishori Ju ko nitya darshan paaun | Brindavan ki kunja galiyaan nit guna gaaun',
+      'Vrishabhaanu dulaari Radhe Laadili Laal ki | Hari ki praana-priya kunjanvaari chhavi nyaari',
+      'Madhura madhura muskaan Radhe ki hridaya basi jaaye | Brajeshwari ki kripa mile to jeevan dhanya ho jaaye',
+      'Jai jai Shri Radhe jai jai Shri Radhe | Barsaana Dhaam ki Rani meri pyaari Radhe',
+    ],
+    meaning:
+      'Shri Radhe Radhe Radhe Radhe Shyama — O Radhe of Barsana, beloved of Shyama. May I have eternal darshan of Kishori Ju; in the kunja-lanes of Vrindavan let me forever sing her glories. Cherished daughter of Vrishabhanu, beloved of the dear-Lal Krishna; the very life-breath of Hari, the unmatched beauty of the bowers. Let Radha’s gentle smile take root in my heart; if Brajeshwari’s grace falls, life becomes blessed. Victory to Shri Radhe, queen of Barsana Dhaam, my beloved Radha.',
+    durationMinutes: 4,
+    relatedPujas: ['radhashtami-puja', 'banke-bihari-mangala-aarti', 'lathmar-holi-barsana'],
+  },
 ];
 
 export function getAarti(slug: string): AartiInfo | undefined {

@@ -374,6 +374,55 @@ export const SHLOKAS: Shloka[] = [
       'Salutations to your wrath, O Rudra, and salutations to your arrow. Salutations to your bow, and salutations to your two arms.',
     tags: ['rudra', 'shiva', 'veda', 'rudram'],
   },
+  {
+    slug: 'yoga-sutra-1-2',
+    source: 'Patanjali Yoga Sutra 1.2',
+    text: 'योगश्चित्तवृत्तिनिरोधः॥',
+    translit: 'yogaś-citta-vṛtti-nirodhaḥ',
+    meaning:
+      'Yoga is the cessation of the modifications of the mind. The definitional sutra of all Yoga — Patanjali frames yoga not as posture or breath but as the stilling of the whirlpools (vrittis) of consciousness so the seer may rest in his own true nature (1.3).',
+    tags: ['yoga-sutra', 'patanjali', 'definition', 'meditation'],
+  },
+  {
+    slug: 'tat-tvam-asi',
+    source: 'Chandogya Upanishad 6.8.7 (Sama Veda)',
+    text: 'स य एषोऽणिमा ऐतदात्म्यमिदं सर्वं तत्सत्यं स आत्मा तत्त्वमसि श्वेतकेतो॥',
+    translit:
+      'sa ya eṣo’ṇimā aitad-ātmyam idaṁ sarvaṁ tat satyaṁ sa ātmā tat tvam asi śvetaketo',
+    meaning:
+      'That which is this subtle essence — all this has its self in it. That alone is the Real. That is the Self. That thou art, O Shvetaketu. The supreme Mahavakya of the Sama Veda — Uddalaka Aruni’s instruction to his son Shvetaketu, equating the individual atman with the cosmic Brahman.',
+    tags: ['mahavakya', 'upanishad', 'chandogya', 'advaita', 'sama-veda'],
+  },
+  {
+    slug: 'purusha-suktam-opening',
+    source: 'Rigveda 10.90.1 (Purusha Suktam)',
+    text: 'सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात्।\nस भूमिं विश्वतो वृत्वात्यतिष्ठद्दशाङ्गुलम्॥',
+    translit:
+      'sahasra-śīrṣā puruṣaḥ sahasrākṣaḥ sahasra-pāt\nsa bhūmiṁ viśvato vṛtvāty-atiṣṭhad daśāṅgulam',
+    meaning:
+      'The Cosmic Person has a thousand heads, a thousand eyes, a thousand feet. Pervading the earth on all sides, he extends beyond it by the measure of ten fingers. The opening verse of the Purusha Suktam — recited in every major Vedic puja, abhisheka and yajna across India.',
+    tags: ['rigveda', 'purusha-suktam', 'yajna', 'cosmology', 'veda'],
+  },
+  {
+    slug: 'sri-suktam-opening',
+    source: 'Sri Suktam — Khila Rigveda',
+    text: 'हिरण्यवर्णां हरिणीं सुवर्णरजतस्रजाम्।\nचन्द्रां हिरण्मयीं लक्ष्मीं जातवेदो म आ वह॥',
+    translit:
+      'hiraṇya-varṇāṁ hariṇīṁ suvarṇa-rajata-srajām\ncandrāṁ hiraṇmayīṁ lakṣmīṁ jātavedo ma ā vaha',
+    meaning:
+      'O Jataveda (Agni), bring to me that Lakshmi of golden hue, deer-eyed, adorned with garlands of gold and silver, moon-bright, made of gold. The opening verse of Sri Suktam — chanted during Lakshmi Puja, Diwali, Varalakshmi Vratam and Kanakadhara Stotra recitations.',
+    tags: ['lakshmi', 'rigveda', 'sri-suktam', 'diwali', 'wealth'],
+  },
+  {
+    slug: 'nirvana-shatakam-1',
+    source: 'Adi Shankara — Nirvana Shatakam / Atma Shatakam, verse 1',
+    text: 'मनोबुद्ध्यहङ्कारचित्तानि नाहं\nन च श्रोत्रजिह्वे न च घ्राणनेत्रे।\nन च व्योमभूमिर्न तेजो न वायुः\nचिदानन्दरूपः शिवोऽहं शिवोऽहम्॥',
+    translit:
+      'mano-buddhy-ahaṅkāra-cittāni nāhaṁ\nna ca śrotra-jihve na ca ghrāṇa-netre\nna ca vyoma-bhūmir na tejo na vāyuḥ\ncidānanda-rūpaḥ śivo’haṁ śivo’ham',
+    meaning:
+      'I am not the mind, intellect, ego, or memory; I am not the ears, tongue, nose or eyes; I am not space, earth, fire or wind. I am the form of pure consciousness and bliss — I am Shiva, I am Shiva. The opening of Adi Shankaracharya’s six-verse Nirvana Shatakam, the foundational chant of Advaita Vedanta self-negation leading to Brahman-identification.',
+    tags: ['shankara', 'advaita', 'nirvana-shatakam', 'shivoham', 'vedanta'],
+  },
 ];
 
 export function getShloka(slug: string): Shloka | undefined {
