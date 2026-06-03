@@ -174,6 +174,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/nava-graha', priority: 0.9 },
     { path: '/why-darshya', priority: 0.9 },
     { path: '/discover', priority: 0.95 },
+    { path: '/chakras', priority: 0.85 },
+    { path: '/sacred-trees', priority: 0.9 },
+    { path: '/hindu-symbols', priority: 0.9 },
+    { path: '/sacred-mountains', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
 
@@ -689,6 +693,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { chakraSlugs } = await import('../lib/chakras');
+  const chakraEntries = chakraSlugs().map((slug) => ({
+    url: `${BASE_URL}/chakras/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
+  const { sacredTreeSlugs } = await import('../lib/sacred-trees');
+  const sacredTreeEntries = sacredTreeSlugs().map((slug) => ({
+    url: `${BASE_URL}/sacred-trees/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
+  const { hinduSymbolSlugs } = await import('../lib/hindu-symbols');
+  const hinduSymbolEntries = hinduSymbolSlugs().map((slug) => ({
+    url: `${BASE_URL}/hindu-symbols/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
+  const { sacredRiverSlugs } = await import('../lib/sacred-rivers');
+  const sacredRiverEntries = [
+    { url: `${BASE_URL}/sacred-rivers`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.85 },
+    ...sacredRiverSlugs().map((slug) => ({
+      url: `${BASE_URL}/sacred-rivers/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
+  const { vedicYajnaSlugs } = await import('../lib/vedic-yajnas');
+  const vedicYajnaEntries = [
+    { url: `${BASE_URL}/vedic-yajnas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...vedicYajnaSlugs().map((slug) => ({
+      url: `${BASE_URL}/vedic-yajnas/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
+    })),
+  ];
+
   const langCodes = ['hi', 'ta', 'te', 'bn', 'mr'] as const;
   const langAlternates = {
     en: `${BASE_URL}/`,
@@ -790,6 +840,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...vedaEntries,
     ...dashavatarEntries,
     ...saptaRishiEntries,
+    ...chakraEntries,
+    ...sacredTreeEntries,
+    ...hinduSymbolEntries,
+    ...sacredRiverEntries,
+    ...vedicYajnaEntries,
     ...langEntries,
     ...shlokaEntries,
     ...freePanditEntries,
