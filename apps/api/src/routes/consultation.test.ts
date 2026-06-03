@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { __testing } from './consultation.js';
 
-const { bookSchema, verifySchema, adminListSchema, nextConsultRef } = __testing;
+const { bookSchema, verifySchema, adminListSchema, astrologerListSchema, nextConsultRef } = __testing;
 
 describe('consultation bookSchema', () => {
   const valid = { astrologerId: 'astro_001', minutes: 15 };
@@ -116,5 +116,45 @@ describe('consultation adminListSchema', () => {
 
   it('rejects astrologerId over 64 chars (mirrors bookSchema cap)', () => {
     expect(adminListSchema.safeParse({ astrologerId: 'x'.repeat(65) }).success).toBe(false);
+  });
+});
+
+describe('consultation astrologerListSchema', () => {
+  it('accepts empty query and applies defaults', () => {
+    const r = astrologerListSchema.safeParse({});
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.limit).toBe(50);
+      expect(r.data.offset).toBe(0);
+      expect(r.data.status).toBeUndefined();
+    }
+  });
+
+  it('coerces string limit/offset to numbers (URL query params arrive as strings)', () => {
+    const r = astrologerListSchema.safeParse({ limit: '75', offset: '25' });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.limit).toBe(75);
+      expect(r.data.offset).toBe(25);
+    }
+  });
+
+  it('rejects status outside the 4-value enum', () => {
+    expect(astrologerListSchema.safeParse({ status: 'scheduled' }).success).toBe(false);
+  });
+
+  it('accepts all 4 valid status values', () => {
+    for (const status of ['pending_payment', 'confirmed', 'completed', 'cancelled'] as const) {
+      expect(astrologerListSchema.safeParse({ status }).success).toBe(true);
+    }
+  });
+
+  it('caps limit at 200 to prevent unbounded astrologer-side pulls', () => {
+    expect(astrologerListSchema.safeParse({ limit: 200 }).success).toBe(true);
+    expect(astrologerListSchema.safeParse({ limit: 201 }).success).toBe(false);
+  });
+
+  it('rejects negative offset', () => {
+    expect(astrologerListSchema.safeParse({ offset: -1 }).success).toBe(false);
   });
 });
