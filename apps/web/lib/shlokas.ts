@@ -204,6 +204,106 @@ export const SHLOKAS: Shloka[] = [
       'From the unreal lead me to the real. From darkness lead me to light. From death lead me to immortality. Om peace, peace, peace.',
     tags: ['pavamana', 'shanti', 'upanishad'],
   },
+  {
+    slug: 'gita-6-5',
+    source: 'Bhagavad Gita 6.5',
+    text: 'उद्धरेदात्मनात्मानं नात्मानमवसादयेत्।\nआत्मैव ह्यात्मनो बन्धुरात्मैव रिपुरात्मनः॥',
+    translit:
+      'uddhared ātmanātmānaṁ nātmānam avasādayet\nātmaiva hy ātmano bandhur ātmaiva ripur ātmanaḥ',
+    meaning:
+      'Let one lift the self by the Self alone; let one not degrade the self. The self alone is the friend of the self, and the self alone is the enemy of the self.',
+    tags: ['gita', 'self', 'discipline'],
+  },
+  {
+    slug: 'gita-2-14',
+    source: 'Bhagavad Gita 2.14',
+    text: 'मात्रास्पर्शास्तु कौन्तेय शीतोष्णसुखदुःखदाः।\nआगमापायिनोऽनित्यास्तांस्तितिक्षस्व भारत॥',
+    translit:
+      'mātrā-sparśās tu kaunteya śītoṣṇa-sukha-duḥkha-dāḥ\nāgamāpāyino \'nityās tāṁs titikṣasva bhārata',
+    meaning:
+      'O Kaunteya, contact of the senses with objects gives rise to heat and cold, pleasure and pain. They come and go, impermanent — endure them, O Bharata.',
+    tags: ['gita', 'endurance', 'equanimity'],
+  },
+  {
+    slug: 'isha-upanishad-1',
+    source: 'Isha Upanishad 1',
+    text: 'ॐ ईशा वास्यमिदं सर्वं यत्किञ्च जगत्यां जगत्।\nतेन त्यक्तेन भुञ्जीथा मा गृधः कस्यस्विद्धनम्॥',
+    translit:
+      'oṁ īśā vāsyam idaṁ sarvaṁ yat kiñca jagatyāṁ jagat\ntena tyaktena bhuñjīthā mā gṛdhaḥ kasya svid dhanam',
+    meaning:
+      'All this — whatever moves in this moving world — is pervaded by the Lord. Enjoy through renunciation; do not covet anyone\'s wealth.',
+    tags: ['upanishad', 'isha', 'renunciation'],
+  },
+  {
+    slug: 'kena-upanishad-1-3',
+    source: 'Kena Upanishad 1.3',
+    text: 'न तत्र चक्षुर्गच्छति न वाग्गच्छति नो मनो।\nन विद्मो न विजानीमो यथैतदनुशिष्यात्॥',
+    translit:
+      'na tatra cakṣur gacchati na vāg gacchati no mano\nna vidmo na vijānīmo yathaitad anuśiṣyāt',
+    meaning:
+      'There the eye does not reach, speech does not reach, nor the mind. We know not, we understand not how one can teach this.',
+    tags: ['upanishad', 'kena', 'brahman'],
+  },
+  {
+    slug: 'mundaka-3-1-1',
+    source: 'Mundaka Upanishad 3.1.1',
+    text: 'द्वा सुपर्णा सयुजा सखाया समानं वृक्षं परिषस्वजाते।\nतयोरन्यः पिप्पलं स्वाद्वत्त्यनश्नन्नन्यो अभिचाकशीति॥',
+    translit:
+      'dvā suparṇā sayujā sakhāyā samānaṁ vṛkṣaṁ pariṣasvajāte\ntayor anyaḥ pippalaṁ svādv atty anaśnann anyo abhicākaśīti',
+    meaning:
+      'Two birds, inseparable companions, perch on the same tree. One eats the sweet fruit; the other looks on without eating.',
+    tags: ['upanishad', 'mundaka', 'jiva-paramatma'],
+  },
+  {
+    slug: 'taittiriya-1-11-2',
+    source: 'Taittiriya Upanishad 1.11.2',
+    text: 'सत्यं वद। धर्मं चर। स्वाध्यायान्मा प्रमदः।\nमातृदेवो भव। पितृदेवो भव। आचार्यदेवो भव। अतिथिदेवो भव॥',
+    translit:
+      'satyaṁ vada | dharmaṁ cara | svādhyāyān mā pramadaḥ\nmātṛ-devo bhava | pitṛ-devo bhava | ācārya-devo bhava | atithi-devo bhava',
+    meaning:
+      'Speak the truth. Practice dharma. Do not neglect study. Treat your mother as God, your father as God, your teacher as God, your guest as God.',
+    tags: ['upanishad', 'taittiriya', 'conduct'],
+  },
+  {
+    slug: 'hanuman-stuti',
+    source: 'Hanuman Stuti — Ramayana',
+    text: 'मनोजवं मारुततुल्यवेगं जितेन्द्रियं बुद्धिमतां वरिष्ठम्।\nवातात्मजं वानरयूथमुख्यं श्रीरामदूतं शरणं प्रपद्ये॥',
+    translit:
+      'mano-javaṁ māruta-tulya-vegaṁ jitendriyaṁ buddhimatāṁ variṣṭham\nvātātmajaṁ vānara-yūtha-mukhyaṁ śrī-rāma-dūtaṁ śaraṇaṁ prapadye',
+    meaning:
+      'I take refuge in the messenger of Sri Rama — swift as the mind, fleet as the wind, master of the senses, foremost of the wise, son of the wind, chief of the vanara host.',
+    tags: ['hanuman', 'stuti', 'ramayana'],
+  },
+  {
+    slug: 'ya-devi-sarvabhuteshu',
+    source: 'Devi Mahatmyam — Ya Devi Sarvabhuteshu',
+    text: 'या देवी सर्वभूतेषु शक्तिरूपेण संस्थिता।\nनमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः॥',
+    translit:
+      'yā devī sarva-bhūteṣu śakti-rūpeṇa saṁsthitā\nnamas tasyai namas tasyai namas tasyai namo namaḥ',
+    meaning:
+      'To the Goddess who abides in all beings in the form of Power — salutations to Her, salutations to Her, salutations to Her, salutations again and again.',
+    tags: ['durga', 'shakti', 'devi-mahatmya'],
+  },
+  {
+    slug: 'gita-2-62-63',
+    source: 'Bhagavad Gita 2.62-63',
+    text: 'ध्यायतो विषयान्पुंसः सङ्गस्तेषूपजायते।\nसङ्गात्सञ्जायते कामः कामात्क्रोधोऽभिजायते॥\nक्रोधाद्भवति सम्मोहः सम्मोहात्स्मृतिविभ्रमः।\nस्मृतिभ्रंशाद् बुद्धिनाशो बुद्धिनाशात्प्रणश्यति॥',
+    translit:
+      'dhyāyato viṣayān puṁsaḥ saṅgas teṣūpajāyate\nsaṅgāt sañjāyate kāmaḥ kāmāt krodho \'bhijāyate\nkrodhād bhavati sammohaḥ sammohāt smṛti-vibhramaḥ\nsmṛti-bhraṁśād buddhi-nāśo buddhi-nāśāt praṇaśyati',
+    meaning:
+      'Brooding on sense objects breeds attachment; attachment breeds desire; desire breeds anger. Anger breeds delusion; delusion confuses memory; loss of memory destroys discrimination; with discrimination destroyed, one perishes.',
+    tags: ['gita', 'mind', 'discipline'],
+  },
+  {
+    slug: 'narayana-suktam-opening',
+    source: 'Narayana Suktam — Taittiriya Aranyaka',
+    text: 'सहस्रशीर्षं देवं विश्वाक्षं विश्वशम्भुवम्।\nविश्वं नारायणं देवमक्षरं परमं पदम्॥',
+    translit:
+      'sahasra-śīrṣaṁ devaṁ viśvākṣaṁ viśva-śambhuvam\nviśvaṁ nārāyaṇaṁ devam akṣaraṁ paramaṁ padam',
+    meaning:
+      'The God with a thousand heads, all-seeing, source of all welfare — the universe is Narayana, the imperishable, the supreme abode.',
+    tags: ['narayana', 'vishnu', 'sukta'],
+  },
 ];
 
 export function getShloka(slug: string): Shloka | undefined {
