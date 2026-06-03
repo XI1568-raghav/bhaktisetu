@@ -953,6 +953,196 @@ export const CHALISAS: ChalisaInfo[] = [
       { label: 'Geeta Press Gorakhpur (Shitala Ashtakam + Chalisa)', url: 'https://www.gitapress.org' },
     ],
   },
+  {
+    slug: 'parvati-chalisa',
+    name: 'Parvati Chalisa',
+    sanskrit: 'पार्वती चालीसा',
+    deity: 'Goddess Parvati',
+    deitySlug: 'parvati',
+    composer: 'Traditional Shakta devotional (popularised in print by Geeta Press)',
+    composedIn: 'Hindi (Awadhi-Braj poetic dialect with Sanskrit invocations)',
+    whenRecited: 'Mondays (Shiva-Parvati day), Hartalika Teej (Bhadrapada Shukla Tritiya), Gauri Tritiya, Mangala Gauri Vrat (Tuesdays of Shravan), throughout Navaratri, before marriage and during marital reconciliation',
+    description:
+      '40-verse hymn to Devi Parvati — daughter of Himavan, consort of Shiva, mother of Ganesha and Kartikeya, the supreme Shakti who united with Mahadeva through the longest tapasya in puranic literature. Praised here as Gauri (the fair one), Uma (light), Aparna (she who lived on no food during her penance), Ambika (the universal mother), and Mahadevi (the supreme goddess).',
+    significance:
+      'Parvati embodies the principle that divine union is earned through unwavering tapas (austerity) and shraddha (faith). Her chalisa is the foundational hymn for unmarried women seeking a worthy husband, for married women seeking marital harmony, for mothers seeking the wellbeing of their children, and for all devotees seeking to balance Shiva (consciousness) with Shakti (energy) within themselves. Recited extensively during Hartalika Teej, when women fast without food or water for 24 hours in emulation of Parvati\'s austerity to win Shiva.',
+    benefits: [
+      'Worthy husband for unmarried women (the central Hartalika Teej blessing)',
+      'Marital harmony, end of marital discord, return of an estranged spouse',
+      'Removal of mangal-dosha and shukra-dosha afflictions',
+      'Healthy progeny, particularly sons (the boon she granted to many devotees)',
+      'Beauty, grace, and the inner radiance that comes from tapas',
+      'Reconciliation with one\'s mother and elder women in the family',
+    ],
+    excerpt: [
+      'जय गिरिराज किशोरी, अम्बे जय गिरिराज किशोरी॥',
+      'जय जय अम्बे जय जगदम्बे, माता शिवशंकर की प्यारी॥',
+      'पार्वती तप कीन्ह अति भारी, शिव को पति वर लीन्ह सँवारी॥',
+      'हरतालिका व्रत जो नारी, राखे श्रद्धा से एक तिथि सारी॥',
+      'मनवांछित वर पावै सोई, शिव सम पति घर आवै सोई॥',
+      'गौरी माँ की कृपा अपारा, संकट काटे करे उद्धारा॥',
+    ],
+    excerptMeaning:
+      'Victory to Girija (daughter of the mountain), victory to Ambika, daughter of the king of mountains. Victory, victory to Ambika, victory to Jagadamba (mother of the universe), beloved consort of Shiva-Shankara. Parvati performed the most severe tapasya, and chose Shiva as her husband through self-purification. The woman who keeps the Hartalika Teej vrat with full faith for the entire tithi obtains the husband of her heart\'s desire, a partner equal to Shiva. The grace of Mother Gauri is boundless — she severs every difficulty and bestows liberation. Recited on Mondays, Tuesdays of Shravan, and most powerfully during Hartalika Teej.',
+    durationMinutes: 9,
+    relatedPujas: ['hartalika-teej-vrat', 'mangala-gauri-vrat', 'kanya-pujan'],
+    externalSources: [
+      { label: 'Geeta Press Gorakhpur (Parvati Chalisa)', url: 'https://www.gitapress.org' },
+      { label: 'Sri Brahma Vaivarta Purana — Parvati Khand', url: 'https://www.sacred-texts.com' },
+    ],
+  },
+  {
+    slug: 'ayyappa-chalisa',
+    name: 'Ayyappa Chalisa',
+    sanskrit: 'अय्यप्पा चालीसा',
+    deity: 'Lord Ayyappa',
+    deitySlug: 'ayyappa',
+    composer: 'Traditional Sabarimala devotional (compiled from Tamil-Malayalam tradition into Hindi for North Indian devotees)',
+    composedIn: 'Hindi (with Malayalam-Tamil Ayyappa stotra base, Sanskrit dhyana slokas)',
+    whenRecited: 'During the 41-day Mandala vratam preceding the Sabarimala yatra (mid-November to mid-January), daily for those wearing the Ayyappa mala, on Makar Sankranti (January 14 — Makaravilakhu darshan), on the first Saturday of Karkidakam (Malayalam month), throughout the Pamba-to-Sannidhanam trek',
+    description:
+      '40-verse hymn to Lord Ayyappa — Hariharaputra, the son of Hari (Vishnu in Mohini form) and Hara (Shiva), who manifests as the eternally celibate (Naishtika Brahmachari) yogi-king of Sabarimala. Praised here as Manikanta (the bell-throated one — the bell tied to his neck as an infant by King Rajashekhara of Pandalam), Dharma Sastha (the lord of righteousness), and Bhutanatha (lord of all beings).',
+    significance:
+      'Ayyappa\'s chalisa is the spiritual companion of every Sabarimala pilgrim during the 41-day vratam — when the devotee wears the black or saffron dhoti, the mala of tulsi or rudraksha tied by a Guruswami, practices strict celibacy, takes pre-dawn cold-water baths, and lives as an ascetic in his own home. Recited daily, it culminates in the famous 18-step ascent at Sannidhanam chanting "Swamiye Sharanam Ayyappa" — each of the 18 sacred steps representing a phase of the spiritual journey from the five senses through the three gunas to vidya and avidya.',
+    benefits: [
+      'Successful completion of the 41-day vratam without breaking discipline',
+      'Safe pilgrimage through the forest treks of Periyar Tiger Reserve',
+      'Spiritual maturity through the practice of celibacy and austerity',
+      'Removal of obstacles in righteousness (dharma-bhanga)',
+      'Protection of those who travel through forests, mountains, and wilderness',
+      'Unity across caste, region, and language (Sabarimala welcomes all)',
+    ],
+    excerpt: [
+      'जय अय्यप्पा हरिहर पुत्रा, मणिकंठ ब्रह्मचारी पवित्रा॥',
+      'पम्बा से सन्निधानम जाते, स्वामिये शरणम् सब गाते॥',
+      'अठारह सीढ़ी चढ़े जो कोई, इरुमुड़ी सर पर धर सोई॥',
+      'चालीस दिन का व्रत जो धारे, माला बांधे गुरुस्वामी पधारे॥',
+      'मकर ज्योति का दर्शन पाता, पुण्य अनंत मन में समाता॥',
+      'धर्मशास्ता भूतनाथ कहलाओ, शबरीमलै के स्वामी अय्यप्पा॥',
+    ],
+    excerptMeaning:
+      'Victory to Ayyappa, son of Hari and Hara, the bell-necked, pure celibate. From Pamba to Sannidhanam all chant "Swamiye Sharanam." Whoever climbs the eighteen steps with the irumudi (sacred two-pouched bundle) on his head, whoever holds the 41-day vrat and ties the mala from the Guruswami, that one receives the darshan of the Makara Jyothi (the celestial light on Makar Sankranti) and infinite punya enters his heart. You are called Dharma-Sastha and Bhutanatha — O Ayyappa, lord of Sabarimala. Recited every day of the 41-day Mandala vratam by pilgrims preparing for the Sabarimala yatra, and during the final 5 km trek from Pamba base camp to Sannidhanam.',
+    durationMinutes: 8,
+    relatedPujas: ['sabarimala-yatra-preparation', 'mandala-vratam', 'makar-sankranti-puja'],
+    externalSources: [
+      { label: 'Travancore Devaswom Board (Sabarimala official)', url: 'https://sabarimala.kerala.gov.in' },
+      { label: 'Geeta Press Gorakhpur (Ayyappa Sahasranama + Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'dattatreya-chalisa',
+    name: 'Dattatreya Chalisa',
+    sanskrit: 'दत्तात्रेय चालीसा',
+    deity: 'Lord Dattatreya',
+    deitySlug: 'dattatreya',
+    composer: 'Traditional (compiled in Marathi-Hindi-Kannada tradition of the Datta sampradaya; printed editions popularised by Sri Vasudevananda Saraswati lineage)',
+    composedIn: 'Hindi (with Sanskrit dhyana slokas from Avadhuta Gita and Tripura Rahasya)',
+    whenRecited: 'Datta Jayanti (Margashirsha Purnima — December full moon), Thursdays (Guru Vaar — most auspicious day for guru-tattva), during the 7-day Gurucharitra parayana (Saptaha Parayan), at Ganagapur, Audumbar, and Narsobawadi (the three principal Datta sthanas), before commencing any spiritual sadhana',
+    description:
+      '40-verse hymn to Lord Dattatreya — the triple-formed (tri-murti) avatar combining Brahma, Vishnu, and Shiva in a single body, son of Sage Atri and the chaste Anasuya. Depicted with three faces, six arms (holding kamandalu, japamala, damaru, trishula, shankha, and chakra), accompanied by four dogs (representing the four Vedas) and a cow (the wish-fulfilling Kamadhenu, symbol of the Earth-Mother).',
+    significance:
+      'Dattatreya is venerated as the Adi Guru — the original teacher — and the founder of the guru-shishya parampara. His chalisa is the foundational invocation of every disciple of the Datta sampradaya, including the lineages of Sripada Sri Vallabha (the first historical Datta avatar of Kali Yuga, 1320-1350 CE in Pithapuram, Andhra Pradesh), Sri Nrisimha Saraswati (the second Datta avatar of Kali Yuga, 1378-1458 CE at Ganagapur, Karnataka), and Sai Baba of Shirdi (regarded by many as a Datta avatar). Recited extensively at the three principal Datta kshetras: Audumbar (Maharashtra), Narsobawadi (Maharashtra-Karnataka border), and Ganagapur (Karnataka).',
+    benefits: [
+      'Spiritual progress through the awakening of guru-tattva within the seeker',
+      'Removal of confusion regarding sadhana — Datta sends a guru when the disciple is ready',
+      'Healing of mental illness, anxiety, and psychiatric afflictions (Datta is the patron of mental health)',
+      'Liberation from chronic karmic patterns spanning multiple lifetimes',
+      'Detachment, dispassion, and the awakening of avadhuta vairagya',
+      'Protection while travelling (Datta is the wandering avadhuta par excellence)',
+    ],
+    excerpt: [
+      'जय गुरुदेव दत्तात्रेय, अत्रि अनसूया के तेय॥',
+      'त्रिमुख षड्भुज शोभा पाओ, चार वेद श्वान सँग आओ॥',
+      'कामधेनु संग वन में फिरते, अवधूत वेश में दर्शन देते॥',
+      'गाणगापुर औदुम्बर वासा, नृसिंह सरस्वती पधारी ख्यासा॥',
+      'गुरुवार को जो चालीसा गाता, गुरु तत्व उसके मन में आता॥',
+      'दिगम्बर दत्त गुरु महाराज की जय, श्रीपाद वल्लभ की जय॥',
+    ],
+    excerptMeaning:
+      'Victory to Guru Dattatreya, born of the radiance of Atri and Anasuya. With three faces and six arms you shine, the four Vedas (as dogs) walk beside you. With Kamadhenu you wander the forests, granting darshan in the avadhuta\'s guise. Your abodes are Ganagapur and Audumbar; the great Nrisimha Saraswati incarnated to spread your fame. Whoever sings this chalisa on a Thursday — guru-tattva awakens within his heart. Victory to the sky-clad Datta Guru Maharaj, victory to Sripada Sri Vallabha. Recited every Thursday by Datta devotees, daily during the 7-day Gurucharitra parayana, and at the three principal Datta sthanas.',
+    durationMinutes: 8,
+    relatedPujas: ['datta-jayanti-puja', 'gurucharitra-saptaha-parayan', 'audumbar-yatra'],
+    externalSources: [
+      { label: 'Shri Ganagapur Datta Sansthan (official)', url: 'https://www.shrikshetraganagapur.org' },
+      { label: 'Geeta Press Gorakhpur (Datta Stotra + Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'jagannath-chalisa',
+    name: 'Jagannath Chalisa',
+    sanskrit: 'जगन्नाथ चालीसा',
+    deity: 'Lord Jagannath',
+    deitySlug: 'jagannath',
+    composer: 'Traditional Odia-Hindi devotional (compiled from the Skanda Purana Jagannath Mahatmya and the Madala Panji temple chronicles of Puri)',
+    composedIn: 'Hindi (with Sanskrit invocations and Odia bhajana refrains)',
+    whenRecited: 'Daily by Puri pilgrims and the Daitapatis (the special servitor lineage), throughout Ratha Yatra (Ashadha Shukla Dwitiya — late June or early July), on Snana Purnima (Jyeshtha Purnima — the great bathing festival), during Anavasara (the 15-day "quarantine" after Snana Purnima when the deities convalesce), on Niladri Bije (the deities return to the sanctum after Ratha Yatra)',
+    description:
+      '40-verse hymn to Lord Jagannath — the "Lord of the Universe" who manifests at Sri Mandir Puri as a daru-vigraha (wooden idol) together with his elder brother Balabhadra and sister Subhadra. Unique among Hindu temples, the deities are not made of stone or metal but of neem wood, and are ceremonially replaced through the Navakalevara ritual every 12-19 years. The chalisa praises Jagannath as Patitapavana (saviour of the fallen), Kalia Thakura (the dark lord), and Daru Brahma (the Brahman in wood).',
+    significance:
+      'Jagannath\'s chalisa carries unique theological weight: in his Puri sanctum, no caste distinction applies — the Daitapatis (descended from the tribal Sabar chieftain Vishvavasu, who originally worshipped Nila Madhava) hold privileges that even Brahmin sevayats do not, and the Mahaprasad (the temple food, cooked in 752 earthen pots stacked vertically over wood fires in Ananda Bazaar — the world\'s largest temple kitchen) is consumed shoulder-to-shoulder by all castes. The chalisa is recited extensively during Ratha Yatra, when over 1 million pilgrims pull the three towering chariots from Sri Mandir to Gundicha Temple — the only day of the year when Jagannath, who is otherwise inaccessible to non-Hindus and confined to his sanctum, comes out into the streets and grants darshan to every human being regardless of faith.',
+    benefits: [
+      'Complete absolution of sins through pulling the chariot rope during Ratha Yatra',
+      'Liberation (moksha) granted to those who die in Puri (it is one of the four moksha-puris)',
+      'Protection from untimely death (akala mrityu) for those who recite the chalisa daily',
+      'Removal of caste-based karma and ego of social superiority',
+      'Healing of chronic illness through Mahaprasad sevana',
+      'Family unity (Jagannath, Balabhadra, Subhadra represent the ideal sibling bond)',
+    ],
+    excerpt: [
+      'जय जगन्नाथ कलिया ठाकुर, बलभद्र सुभद्रा सहित मनोहर॥',
+      'दारू ब्रह्म कहाओ नीलाद्रि वासी, पतित पावन तुम जग के स्वामी॥',
+      'रथ यात्रा पर बाहर आते, गुंडिचा मन्दिर तक जाते॥',
+      'रथ की रस्सी जो कोई खींचे, जन्म जन्म के पाप वो सींचे॥',
+      'महाप्रसाद का भोग लगाओ, जात-पाँत का भेद मिटाओ॥',
+      'चार धामों में प्रिय धाम पुरी, जगन्नाथ की जय जय जयकारी॥',
+    ],
+    excerptMeaning:
+      'Victory to Jagannath, the dark lord Kalia, manifest with Balabhadra and Subhadra in delightful form. You are called Daru-Brahman, dweller of Niladri (the Blue Hill), saviour of the fallen — you are the lord of the world. On Ratha Yatra you come out and travel to the Gundicha Temple. Whoever pulls the chariot rope washes away the sins of countless lifetimes. The Mahaprasad bhog you accept erases all caste distinction. Among the four moksha-puris, Puri is your most beloved abode — victory, victory, victory to Jagannath. Recited daily by Puri pilgrims and the temple Daitapatis, and most powerfully during Ratha Yatra when over a million devotees gather on the Bada Danda (grand road) to pull the three towering chariots.',
+    durationMinutes: 9,
+    relatedPujas: ['ratha-yatra-puja', 'snana-purnima', 'niladri-bije'],
+    externalSources: [
+      { label: 'Sri Jagannatha Temple Administration Puri (official)', url: 'https://jagannath.nic.in' },
+      { label: 'Geeta Press Gorakhpur (Jagannath Stotra + Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'kuber-chalisa',
+    name: 'Kuber Chalisa',
+    sanskrit: 'कुबेर चालीसा',
+    deity: 'Lord Kuber',
+    deitySlug: 'kuber',
+    composer: 'Traditional (devotional compilation from the Bhavishya Purana Kuber Mahatmya and Padma Purana Patala Khand)',
+    composedIn: 'Hindi (with Sanskrit beej-mantra invocations from the Yaksha tantra tradition)',
+    whenRecited: 'Dhanteras (Ashwin Krishna Trayodashi — the day Kuber descended to bless mortals with prosperity), Diwali (Lakshmi-Kuber Puja, the night Kuber is invited into the home along with Lakshmi), Akshaya Tritiya (Vaishakha Shukla Tritiya), every Friday evening (Kuber-Lakshmi joint puja), before opening a new business, before signing major financial contracts',
+    description:
+      '40-verse hymn to Lord Kuber — the king of the Yakshas, lord of wealth, treasurer of the gods, guardian of the northern direction (Uttara dikpala), and ruler of Alakapuri (the celestial city of gold in the Himalayas, beyond Kailash). Depicted as a portly figure with a paunch, holding a mongoose vomiting jewels, riding a man (a punishment from his contest with his half-brother Ravana — the Pushpaka Vimana was originally his before Ravana seized it).',
+    significance:
+      'Kuber\'s chalisa is the foundational hymn for Vaibhava Lakshmi (prosperity) puja — recited together with Lakshmi Chalisa on every Friday evening and most powerfully on Dhanteras, the eve of Diwali, when households purify their wealth-storage spaces (lockers, vaults, gold jewellery cases) and invoke Kuber to take residence as the cosmic accountant who tracks the flow of dharmika dhana (righteous wealth). Unlike Lakshmi (who represents the goddess of prosperity itself), Kuber represents the steward of prosperity — the one who ensures wealth is preserved, multiplied through right action, and never lost through carelessness or adharma. Business families across North India (Marwaris, Gujaratis, Sindhis) recite the Kuber Chalisa as part of their Diwali Chopda Pujan ledger-opening ritual.',
+    benefits: [
+      'Increase in business income and removal of cash-flow blockages',
+      'Protection of accumulated savings, investments, and property from theft or loss',
+      'Recovery of long-pending debts and unpaid receivables',
+      'Success in matters involving banking, lending, real estate, and treasury',
+      'Awakening of the financial discipline (artha-shaucha) that attracts and retains wealth',
+      'Patron blessing for opening new ventures, signing contracts, and entering partnerships',
+    ],
+    excerpt: [
+      'जय कुबेर यक्षेश्वर स्वामी, धन के दाता दीनदयाली॥',
+      'अलकापुरी में निवास करते, उत्तर दिशा के दिक्पाल कहलाते॥',
+      'धनतेरस के दिन तुम आते, घर घर लक्ष्मी संग पधारते॥',
+      'चोपड़ा पूजन में सेठ बुलाते, नूतन बही खाता जो खुलाते॥',
+      'कुबेर मंत्र जो श्रद्धा से गाये, उसके घर धन की कमी न आये॥',
+      'व्यापारी जन तुमको पूजे, ऋद्धि सिद्धि घर मे रूजे॥',
+    ],
+    excerptMeaning:
+      'Victory to Kuber, lord of the Yakshas, the bestower of wealth, compassionate to the destitute. You dwell in Alakapuri and are called the guardian of the northern direction. On the day of Dhanteras you arrive, accompanied by Lakshmi, in every home. Merchants invoke you in the Chopda Pujan when opening new account ledgers. Whoever sings your mantra with faith — never shall there be want of wealth in his home. Businessmen worship you, and prosperity and accomplishment settle in their homes. Recited on every Friday evening, most powerfully on Dhanteras and Diwali Lakshmi-Kuber Puja, and during the Chopda Pujan business-ledger-opening ritual that Marwari and Gujarati families perform on the morning of Diwali.',
+    durationMinutes: 8,
+    relatedPujas: ['dhanteras-puja', 'lakshmi-kuber-puja', 'chopda-pujan'],
+    externalSources: [
+      { label: 'Bhavishya Purana — Kuber Mahatmya', url: 'https://www.sacred-texts.com' },
+      { label: 'Geeta Press Gorakhpur (Kuber Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
 ];
 
 export function getChalisa(slug: string): ChalisaInfo | undefined {
