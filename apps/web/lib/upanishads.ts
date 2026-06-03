@@ -509,6 +509,86 @@ export const UPANISHADS: UpanishadInfo[] = [
     },
     takeaway: 'The name "Ram" itself is fire-and-water — it burns what binds and washes what stains. There is no other tapasya for kali-yuga.',
   },
+  {
+    slug: 'nrisimha-tapaniya-upanishad', name: 'Nrisimha Tapaniya Upanishad', sanskrit: 'नृसिंहतापनीयोपनिषद्', iast: 'Nṛsiṁha-tāpanīyopaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (Vaishnava Upanishad group)',
+    mantraCount: 138,
+    centralTheme: 'The esoteric meaning of Narasimha — Purva-tapaniya unpacks the 32-syllable Narasimha Anushtubh mantra, Uttara-tapaniya identifies Narasimha with the non-dual Brahman',
+    summary:
+      'The most authoritative Upanishadic source on the Narasimha tradition, split (like the Rama and Krishna Tapaniyas) into two halves. The Purva-tapaniya (5 prashnas) gives the ritual unfolding of the Mantra-raja — the 32-syllable Anushtubh-meter Narasimha mantra "Ugram Veeram Mahaa-Vishnum Jvalantam Sarvato Mukham Nrsimham Bheeshanam Bhadram Mrityu-mrityum Namaamy aham" — which is regarded by the Sri Vaishnava and Madhva sampradayas as the supreme tantric vidya. It explains each syllable as a bija, prescribes the yantra, and gives the dhyana mantra. The Uttara-tapaniya (9 prashnas) is pure Advaita: Narasimha is Pranava (Om), the man-lion form is the union of jivatma (lion = chit) and ishvara (man = sat), and the destruction of Hiranyakashipu is the destruction of the ahamkara (ego) of the seeker. Adi Shankara wrote a famous bhashya on this Upanishad.',
+    keyConcepts: ['Narasimha Mantra-raja (32-syllable Anushtubh)', 'Mantra-vidya + yantra-vidya integration', 'Narasimha as Pranava (Om)', 'Hiranyakashipu = ahamkara symbolism', 'Bhashya by Adi Shankara', 'Source authority for Sri Narasimha sampradayas'],
+    famousVerse: {
+      sanskrit: 'उग्रं वीरं महाविष्णुं ज्वलन्तं सर्वतोमुखम्। नृसिंहं भीषणं भद्रं मृत्युमृत्युं नमाम्यहम्॥',
+      iast: 'Ugraṁ vīraṁ mahā-viṣṇuṁ jvalantaṁ sarvato-mukham, nṛsiṁhaṁ bhīṣaṇaṁ bhadraṁ mṛtyu-mṛtyuṁ namāmy aham',
+      translation: 'I bow to Narasimha, the fierce, the heroic, the great Vishnu, blazing, with faces in every direction, terrible yet auspicious — the death of death itself.',
+      reference: 'Nrisimha Tapaniya Upanishad — Mantra-raja (also Bhagavata 5.18.8)',
+    },
+    takeaway: 'The man-lion is the seeker himself: human reason united with the lion of pure consciousness tears the heart of the ego at twilight, on the threshold of all categories.',
+  },
+  {
+    slug: 'gopala-tapaniya-upanishad', name: 'Gopala Tapaniya Upanishad', sanskrit: 'गोपालतापनीयोपनिषद्', iast: 'Gopāla-tāpanīyopaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (Vaishnava Upanishad group)',
+    mantraCount: 96,
+    centralTheme: 'The esoteric meaning of Krishna-Gopala — Purva-tapaniya unpacks the Krishna Ashtadasakshari (18-syllable) and Gopala Mantra-raja, Uttara-tapaniya gives the Brahma-Krishna identity',
+    summary:
+      'The foundational Upanishadic source for the Gaudiya, Nimbarka, Vallabha, and Pushti sampradayas. The Purva-tapaniya (4 chapters) describes the Gopala-yantra of Vrindavan, unfolds the famous 18-syllable mantra "Klim Krishnaya Govindaya Gopijana-vallabhaya Svaha", and identifies the Gopis as the supreme exemplars of bhakti (the gopis-rasa-leela is not erotic but is the eternal play of jivas with Paramatma). The Uttara-tapaniya (4 chapters) frames the conversation between Brahma and the Gopas: Krishna is Para-Brahman, Vrindavan is the eternal Goloka transposed onto earth, the flute is the call of grace, the Yamuna is the river of consciousness. This Upanishad is the primary scriptural justification cited by Chaitanya Mahaprabhu for treating Krishna (not Vishnu, not Narayana) as Svayam Bhagavan — the original source.',
+    keyConcepts: ['Klim Krishnaya Govindaya Gopijana-vallabhaya Svaha (18-syllable)', 'Vrindavan as Goloka', 'Gopi-bhava as supreme bhakti', 'Krishna as Svayam Bhagavan (source of all avatars)', 'Authority for Gaudiya/Nimbarka/Pushti', 'Rasa-leela as Paramatma-jivatma play'],
+    famousVerse: {
+      sanskrit: 'क्लीं कृष्णाय गोविन्दाय गोपीजनवल्लभाय स्वाहा',
+      iast: 'Klīṁ Kṛṣṇāya Govindāya Gopījana-vallabhāya Svāhā',
+      translation: 'Klim, salutations to Krishna, to Govinda, beloved of the gopis — svaha.',
+      reference: 'Gopala Tapaniya Upanishad — Ashtadasakshari Mantra',
+    },
+    takeaway: 'Krishna is not an avatar — he is the source of all avatars. The flute he plays is the call you have been hearing your whole life.',
+  },
+  {
+    slug: 'shandilya-upanishad', name: 'Shandilya Upanishad', sanskrit: 'शाण्डिल्योपनिषद्', iast: 'Śāṇḍilyopaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (Yoga Upanishad group)',
+    mantraCount: 108,
+    centralTheme: 'A complete yoga manual structured around Patanjali\'s eight limbs but expanded into ten — including the ten yamas, ten niyamas, eight asanas, three bandhas, three mudras, and detailed nadi-shodhana pranayama',
+    summary:
+      'Named after Sage Shandilya (the author of the famous Shandilya Bhakti Sutras), this Upanishad is one of the most comprehensive yoga texts in the entire Upanishadic corpus — predating Hatha Yoga Pradipika by centuries yet covering nearly all the same techniques. It enumerates ten yamas (vs Patanjali\'s five): ahimsa, satya, asteya, brahmacharya, daya (compassion), arjava (sincerity), kshama (forgiveness), dhriti (steadiness), mitahara (moderate eating), shaucha (purity). It enumerates ten niyamas: tapas, santosha, astikya, dana, ishvara-pujana, siddhanta-shravana, hri (modesty), mati, japa, vrata. It describes eight asanas (svastika, gomukha, padma, vira, simha, bhadra, mukta, mayura), three bandhas (mula, uddiyana, jalandhara), three mudras, and prescribes the complete nadi-shodhana sequence with ratios 1:4:2 (puraka:kumbhaka:rechaka). The text also contains a remarkable cosmology: the body is the brahmanda, sushumna is Mount Meru, ida and pingala are the rivers Ganga and Yamuna, the chakras are the lokas.',
+    keyConcepts: ['Ten yamas + ten niyamas (vs Patanjali\'s five)', 'Eight classical asanas described', 'Three bandhas + three mudras (pre-Hatha Yoga Pradipika)', 'Nadi-shodhana pranayama (1:4:2 ratio)', 'Body as brahmanda — sushumna as Meru, ida/pingala as Ganga/Yamuna', 'Brahma-jnana through ashtanga + kundalini integration'],
+    famousVerse: {
+      sanskrit: 'अहिंसा सत्यमस्तेयं ब्रह्मचर्यं दया तथा। आर्जवं क्षान्तिर्धृतिर्मिताहारः शौचमेव च॥',
+      iast: 'Ahiṁsā satyam asteyaṁ brahmacaryaṁ dayā tathā, ārjavaṁ kṣāntir dhṛtir mitāhāraḥ śaucam eva ca',
+      translation: 'Non-violence, truthfulness, non-stealing, celibacy, compassion, sincerity, forgiveness, steadiness, moderate eating, and purity — these are the ten yamas.',
+      reference: 'Shandilya Upanishad 1.1.1',
+    },
+    takeaway: 'Yoga begins not with posture but with ten yamas — and only ten. Until those ten are alive in the body, the asana is a stretch and the pranayama is a breath exercise.',
+  },
+  {
+    slug: 'nada-bindu-upanishad', name: 'Nada Bindu Upanishad', sanskrit: 'नादबिन्दूपनिषद्', iast: 'Nāda-bindūpaniṣad',
+    veda: 'Rig', vedaShakha: 'Rig Veda (Yoga Upanishad group)',
+    mantraCount: 56,
+    centralTheme: 'The yoga of inner sound — meditation on the unstruck cosmic vibration (nada) heard within, leading from gross sound through subtle to the soundless Brahman',
+    summary:
+      'A specialised yoga Upanishad devoted entirely to nada-anusandhana (the inquiry into inner sound) — the technique of closing the external ears and listening to the spontaneous unstruck sound (anahata nada) within. The text describes ten progressively subtler stages of inner sound: chini (like the sound of "chin"), chini-chini (more refined), bell (ghanta), conch (shankha), tantri (lute), tala (cymbals), venu (flute), bheri (drum), mridanga, and finally the soundless meghadhwani (cloud-thunder dissolving into silence). Each stage corresponds to a deeper layer of the mind: the lute-stage steadies the prana, the flute-stage absorbs the chitta, the thunder-stage dissolves the manas itself. The Upanishad opens with a remarkable Vedic cosmology — the Pranava (Om) is the swan whose feet are the four states (waking-dream-sleep-turiya), whose body is the three matras (a-u-m), and whose flight is the upward journey of consciousness from the muladhara to the sahasrara. This Upanishad is the primary scriptural source for the Nada Yoga of the Hatha Yoga Pradipika (Chapter 4) and for the entire Sant tradition (Kabir, Nanak, Dadu — all reference inner sound as the surest path to liberation).',
+    keyConcepts: ['Anahata nada (unstruck inner sound)', 'Ten progressive sound stages (chini → meghadhwani)', 'Pranava swan cosmology (4 states + 3 matras + sahasrara flight)', 'Source for Hatha Yoga Pradipika Chapter 4', 'Foundation of Sant tradition shabad/surat-shabd yoga', 'Sound as the most direct samadhi technique'],
+    famousVerse: {
+      sanskrit: 'अन्तःस्थं मनसा पश्येद्ब्रह्माणं निष्कलं ध्रुवम्। नादे लीनं मनो यस्य स याति परमां गतिम्॥',
+      iast: 'Antaḥsthaṁ manasā paśyed brahmāṇaṁ niṣkalaṁ dhruvam, nāde līnaṁ mano yasya sa yāti paramāṁ gatim',
+      translation: 'One should see within, by the mind, the partless and changeless Brahman. He whose mind is absorbed in the inner sound — he attains the supreme goal.',
+      reference: 'Nada Bindu Upanishad — Mantra 51',
+    },
+    takeaway: 'Close the ears and listen. The bell, the conch, the flute, the thunder — and then silence. The shortest road home is the unstruck sound.',
+  },
+  {
+    slug: 'brahma-upanishad', name: 'Brahma Upanishad', sanskrit: 'ब्रह्मोपनिषद्', iast: 'Brahmopaniṣad',
+    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Sannyasa Upanishad group)',
+    mantraCount: 41,
+    centralTheme: 'The four states of consciousness located in four bodily centres — and the renunciate\'s vow of the sacred thread of pure knowledge (brahma-sutra)',
+    summary:
+      'A core Sannyasa Upanishad teaching that the four states of consciousness (jagrat, svapna, sushupti, turiya) are not merely temporal sequences but are spatially located in four centres of the body: jagrat-purusha resides in the eye, svapna-purusha in the throat, sushupti-purusha in the heart, and turiya-purusha in the crown (murdha). This four-fold scheme became the foundational anatomy of every later Vedanta meditation manual. The text also redefines the sacred thread (yajnopavita): for the householder it is the visible cotton thread, but for the sannyasi it becomes the antar-yajnopavita — the inner thread of self-knowledge that he wears even after relinquishing the external thread at the time of taking sannyasa. The Upanishad gives the famous Pippalada-Shaunaka dialogue: when Shaunaka asks "what is this Brahman that is the foundation of all?" Pippalada answers in two words — Tat tvam asi — and then unfolds the implications across the remaining 40 mantras. Vidyaranya, the founder of the Vijayanagara Empire and codifier of the Smarta order, draws extensively on this Upanishad in his Panchadashi.',
+    keyConcepts: ['Four states in four bodily centres (eye → throat → heart → crown)', 'Inner sacred thread (antar-yajnopavita) for sannyasis', 'Tat tvam asi as the foundational answer', 'Pippalada-Shaunaka dialogue', 'Source for Vidyaranya\'s Panchadashi', 'Anatomy of the four purushas (jagrat → turiya)'],
+    famousVerse: {
+      sanskrit: 'चत्वारः पुरुषाश्चत्वारो वेदाश्चत्वार आश्रमाः। चतुर्धा भिद्यते देहश्चत्वारः पुरुषाः स्मृताः॥',
+      iast: 'Catvāraḥ puruṣāś catvāro vedāś catvāra āśramāḥ, caturdhā bhidyate dehaś catvāraḥ puruṣāḥ smṛtāḥ',
+      translation: 'Four are the purushas (states of consciousness), four the Vedas, four the ashramas; the body is divided in four — the four purushas are remembered.',
+      reference: 'Brahma Upanishad — Mantra 5',
+    },
+    takeaway: 'Every body is a four-storeyed temple. Walk up from the eye to the crown — the four states are not in time, they are in space.',
+  },
 ];
 
 export function upanishadSlugs(): string[] {
