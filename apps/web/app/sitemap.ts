@@ -4,6 +4,7 @@ import { SHLOKAS } from '../lib/shlokas';
 import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
 
 const BASE_URL = 'https://darshya.online';
+// deploy-stamp 2026-06-04 — CF trigger for stacked apps/web batch (7a14aa5..e9aaf38)
 
 // Build-time fetch tolerant of failures — if the API is asleep/cold or down,
 // we still ship a sitemap with the static paths + a curated fallback list
