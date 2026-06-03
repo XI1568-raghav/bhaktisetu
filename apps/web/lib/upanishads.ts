@@ -429,6 +429,86 @@ export const UPANISHADS: UpanishadInfo[] = [
     },
     takeaway: 'Three things call themselves "I" — the body, the mind, and the silence behind both. Only the third is the Atman.',
   },
+  {
+    slug: 'amritabindu-upanishad', name: 'Amritabindu Upanishad', sanskrit: 'अमृतबिन्दूपनिषद्', iast: 'Amṛtabindūpaniṣad',
+    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    mantraCount: 22,
+    centralTheme: 'The "drop of immortality" — the silent bindu of consciousness reached by withholding mind from objects',
+    summary:
+      'A short Yoga Upanishad of 22 mantras that distils the entire Vedantic-yogic project into a single image — the amrita-bindu, the imperishable drop at the centre of awareness. Famously opens with the declaration that the mind alone is the cause of bondage and liberation — "मन एव मनुष्याणां कारणं बन्धमोक्षयोः" — a sloka quoted in nearly every later Advaita and Tantric manual. Distinguishes the two minds (shuddha = pure, ashuddha = stained), prescribes pranava-japa with the four matras of Om as the ladder to nirvikalpa, and ends with the recognition that the one Atman appears as many only because of the upadhi of the bodies, as a single moon appears multiplied in many pots of water.',
+    keyConcepts: ['Mind = sole cause of bondage and moksha (mana eva manushyanam karanam bandha-mokshayoh)', 'Shuddha-manas / ashuddha-manas distinction', 'Four matras of Om as graduated absorption', 'One Atman appearing as many (moon-in-pots simile)', 'Amrita-bindu = silent fourth state (turiya)'],
+    famousVerse: {
+      sanskrit: 'मन एव मनुष्याणां कारणं बन्धमोक्षयोः । बन्धाय विषयासक्तं मुक्त्यै निर्विषयं स्मृतम्',
+      iast: 'Mana eva manuṣyāṇāṁ kāraṇaṁ bandha-mokṣayoḥ, bandhāya viṣayāsaktaṁ muktyai nirviṣayaṁ smṛtam',
+      translation: 'The mind alone is the cause of bondage and liberation for human beings — attached to objects, it binds; freed from objects, it liberates.',
+      reference: 'Amritabindu Upanishad 2',
+    },
+    takeaway: 'You are bound by the mind attached to objects; you are freed by the mind withdrawn from objects. The Self never moved.',
+  },
+  {
+    slug: 'paramahamsa-upanishad', name: 'Paramahamsa Upanishad', sanskrit: 'परमहंसोपनिषद्', iast: 'Paramahaṁsopaniṣad',
+    veda: 'Shukla Yajur', vedaShakha: 'Shukla Yajur Veda (Sannyasa Upanishad group)',
+    mantraCount: 4,
+    centralTheme: 'Marks of the Paramahamsa — the highest-stage renunciate who has dropped staff, kamandalu, sacred thread and even the will to renounce',
+    summary:
+      'A foundational Sannyasa Upanishad describing the four progressive stages of the renouncer (kutichaka → bahudaka → hamsa → paramahamsa) and the unique outward marks of the paramahamsa — no staff (danda), no water-pot (kamandalu), no shikha, no yajnopavita, no clothing prescriptions, only the recognition "aham brahmasmi." His begging-bowl is his belly, his clothing is the four directions (digambara), his meditation is the seamless flow of the Self thinking the Self. Quoted by Sri Ramakrishna and by every later Sannyasa Paddhati for the dictum that the paramahamsa has no external dharma left because he has become dharma itself.',
+    keyConcepts: ['Four stages of sannyasa: kutichaka, bahudaka, hamsa, paramahamsa', 'Dropping of all external markers (danda, kamandalu, shikha, yajnopavita)', 'Digambara (clothed by the four directions)', '"aham brahmasmi" as sole meditation', 'Begging belly + Self-as-Self meditation'],
+    famousVerse: {
+      sanskrit: 'न दण्डं न शिखां न यज्ञोपवीतं न च कन्थां धारयेत् । शीतोष्णसुखदुःखमानावमानांश्च त्यक्त्वा',
+      iast: 'Na daṇḍaṁ na śikhāṁ na yajñopavītaṁ na ca kanthāṁ dhārayet, śītoṣṇa-sukha-duḥkha-mānāvamānāṁś ca tyaktvā',
+      translation: 'He should bear no staff, no tuft, no sacred thread, no patched garment — having abandoned cold and heat, pleasure and pain, honour and dishonour.',
+      reference: 'Paramahamsa Upanishad 1',
+    },
+    takeaway: 'The highest renunciation is the renunciation even of the marks of renunciation.',
+  },
+  {
+    slug: 'tejobindu-upanishad', name: 'Tejobindu Upanishad', sanskrit: 'तेजोबिन्दूपनिषद्', iast: 'Tejobindūpaniṣad',
+    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    mantraCount: 465,
+    centralTheme: 'The "drop of radiance" — the longest of the Bindu Upanishads, mapping fifteen limbs of Advaita-yoga onto Patanjali\'s eight',
+    summary:
+      'A six-chapter Yoga Upanishad of 465 mantras, far longer than its Bindu cousins. Expands the eight limbs of Patanjali into fifteen Advaita limbs by inserting tyaga (renunciation), mauna (silence), desha (right place), kala (right time), mulabandha and dehasamya among others, and reinterprets each limb purely as a meditation on "I am Brahman." Chapter 1 is the most-quoted: the upadesha of Kumara to Shiva on the difficulty of nirvikalpa samadhi. Chapter 6 ("Atmanubhuti") is the longest Advaita poem in the entire Upanishadic corpus — almost three hundred verses of "neti, neti" culminating in "I am the Brahman alone." Beloved of Ramana Maharshi and translated by Pujyapada Swami Chinmayananda.',
+    keyConcepts: ['Fifteen Advaita limbs (extends Patanjali\'s eight)', 'Each limb reinterpreted as meditation on "I am Brahman"', 'Chapter 6 Atmanubhuti — the longest Advaita poem in shruti', 'Difficulty of nirvikalpa samadhi (upadesha of Kumara to Shiva)', 'Mulabandha + mauna + tyaga as inner limbs'],
+    famousVerse: {
+      sanskrit: 'अहं ब्रह्मेति निश्चयः । अनात्मन्यात्मविज्ञानं नात्मा बुद्धिः शरीरकम्',
+      iast: 'Ahaṁ brahmeti niścayaḥ, anātmany ātma-vijñānaṁ nātmā buddhiḥ śarīrakam',
+      translation: '"I am Brahman" — this is the firm conviction. Knowing the Self in what is not-Self is bondage; the body and intellect are not the Atman.',
+      reference: 'Tejobindu Upanishad 1.32',
+    },
+    takeaway: 'Every limb of yoga is the same limb — the recognition "I am Brahman," held under fifteen disguises.',
+  },
+  {
+    slug: 'varaha-upanishad', name: 'Varaha Upanishad', sanskrit: 'वराहोपनिषद्', iast: 'Varāhopaniṣad',
+    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Vaishnava Upanishad group)',
+    mantraCount: 263,
+    centralTheme: 'The dialogue of Lord Varaha with the sage Ribhu — the most complete Vaishnava-Advaita synthesis among the minor Upanishads',
+    summary:
+      'A five-chapter Vaishnava Upanishad of 263 mantras structured as the upadesha of the boar-incarnation Vishnu to the sage Ribhu. Uniquely synthesises three streams: (1) Sri Vidya-influenced Vaishnava tantric meditation (Vishnu as the bindu within the heart-lotus); (2) Patanjala yoga (the full eight limbs and the seven stages of jnana — shubhechha, vicharana, tanumanasa, sattvapatti, asamsakti, padarthabhavini, turyaga); and (3) classical Advaita ("Brahman alone is real, world is mithya, the jiva is Brahman itself"). Chapter 4 contains the famous "jivanmukta-gita" describing the marks of the liberated-while-living. Chapter 5 ends with Ribhu attaining sayujya-mukti directly in Varaha\'s presence — held by the Sri Vaishnava tradition as proof that bhakti and jnana converge at the summit.',
+    keyConcepts: ['Vishnu (Varaha) as Brahman teaching Ribhu', 'Seven stages of jnana (sapta-jnana-bhumika)', 'Jivanmukta-gita (Chapter 4) — marks of the liberated-while-living', 'Sri Vidya-style heart-lotus Vishnu visualisation', 'Synthesis of Vaishnava bhakti + Patanjala yoga + Advaita jnana'],
+    famousVerse: {
+      sanskrit: 'जीवन्मुक्तपदं त्यक्त्वा स्वदेहे कालसात्कृते । विशत्यदेहमुक्तत्वं पवनोऽस्पन्दतामिव',
+      iast: 'Jīvan-mukta-padaṁ tyaktvā sva-dehe kāla-sāt-kṛte, viśaty adeha-muktatvaṁ pavano \'spandatām iva',
+      translation: 'Leaving behind even the state of liberation-while-living when his body falls in due course, he enters bodiless liberation — as the wind enters stillness.',
+      reference: 'Varaha Upanishad 4.39',
+    },
+    takeaway: 'Bhakti to Vishnu and jnana of Brahman are the same path seen from two faces — both end in Ribhu\'s silence.',
+  },
+  {
+    slug: 'ramatapaniya-upanishad', name: 'Rama Tapaniya Upanishad', sanskrit: 'रामतापनीयोपनिषद्', iast: 'Rāma-tāpanīyopaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (Vaishnava Upanishad group)',
+    mantraCount: 95,
+    centralTheme: 'The esoteric meaning of Rama — split into Purva-tapaniya (mantra-shastra of "Ram") and Uttara-tapaniya (Advaita identity of Rama with Brahman)',
+    summary:
+      'A two-part Vaishnava Upanishad of the Ramaite tradition, paralleling the Krishna-side Gopala Tapaniya. The Purva-tapaniya (5 chapters) explains the syllable "Ram" as the Rama-bija and unpacks the Rama Shadakshari ("Shri Rama Jaya Rama") mantra — the source-text quoted by Tulsidas in his Vinaya Patrika and by every Rama-bhakta lineage from Ramananda onward. The Uttara-tapaniya (5 chapters) is pure Advaita: Rama is none other than Brahman, Sita is none other than Maya/Prakriti, Lakshmana is the jiva, Bharata is dharma, Shatrughna is the destruction of nescience, the Ramayana itself is the soul\'s journey home. The text\'s reading of "Ram" as the union of "ra" (fire = burning of sins) and "m" (water = washing of sins) became the standard etymology in every later Rama-katha.',
+    keyConcepts: ['"Ram" etymology: ra (fire/burns sins) + m (water/washes sins)', 'Rama Shadakshari mantra (Shri Rama Jaya Rama)', 'Allegorical Ramayana: Rama=Brahman, Sita=Maya, Lakshmana=jiva, Bharata=dharma', 'Source for Tulsidas + Ramananda sampradaya', 'Purva (mantra-shastra) + Uttara (Advaita) structure'],
+    famousVerse: {
+      sanskrit: 'रामो राजमणिः सदा विजयते रामं रमेशं भजे । रामेणाभिहता निशाचरचमू रामाय तस्मै नमः',
+      iast: 'Rāmo rāja-maṇiḥ sadā vijayate rāmaṁ rameśaṁ bhaje, rāmeṇābhihatā niśācara-camū rāmāya tasmai namaḥ',
+      translation: 'Rama, the jewel of kings, ever conquers; I worship Rama, the Lord of Lakshmi. By Rama the demon hosts are slain — to that Rama, salutations.',
+      reference: 'Rama Tapaniya Upanishad (Rama Stuti)',
+    },
+    takeaway: 'The name "Ram" itself is fire-and-water — it burns what binds and washes what stains. There is no other tapasya for kali-yuga.',
+  },
 ];
 
 export function upanishadSlugs(): string[] {

@@ -304,6 +304,76 @@ export const SHLOKAS: Shloka[] = [
       'The God with a thousand heads, all-seeing, source of all welfare — the universe is Narayana, the imperishable, the supreme abode.',
     tags: ['narayana', 'vishnu', 'sukta'],
   },
+  {
+    slug: 'gita-9-22',
+    source: 'Bhagavad Gita 9.22',
+    text: 'अनन्याश्चिन्तयन्तो मां ये जनाः पर्युपासते।\nतेषां नित्याभियुक्तानां योगक्षेमं वहाम्यहम्॥',
+    translit:
+      'ananyāś cintayanto māṁ ye janāḥ paryupāsate\nteṣāṁ nityābhiyuktānāṁ yoga-kṣemaṁ vahāmy aham',
+    meaning:
+      'To those who worship Me with single-minded devotion and ever remain steadfast, I personally carry what they lack and preserve what they have.',
+    tags: ['gita', 'devotion', 'surrender'],
+  },
+  {
+    slug: 'gita-18-66',
+    source: 'Bhagavad Gita 18.66 — Charama Shloka',
+    text: 'सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज।\nअहं त्वा सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः॥',
+    translit:
+      'sarva-dharmān parityajya mām ekaṁ śaraṇaṁ vraja\nahaṁ tvā sarva-pāpebhyo mokṣayiṣyāmi mā śucaḥ',
+    meaning:
+      'Abandon all varieties of dharma and simply surrender unto Me alone. I shall liberate you from all sins; do not grieve.',
+    tags: ['gita', 'surrender', 'liberation', 'charama'],
+  },
+  {
+    slug: 'gita-7-7',
+    source: 'Bhagavad Gita 7.7',
+    text: 'मत्तः परतरं नान्यत्किञ्चिदस्ति धनञ्जय।\nमयि सर्वमिदं प्रोतं सूत्रे मणिगणा इव॥',
+    translit:
+      'mattaḥ parataraṁ nānyat kiñcid asti dhanañjaya\nmayi sarvam idaṁ protaṁ sūtre maṇi-gaṇā iva',
+    meaning:
+      'There is nothing higher than Me, O Arjuna. Everything rests upon Me as pearls strung upon a thread.',
+    tags: ['gita', 'oneness', 'krishna'],
+  },
+  {
+    slug: 'katha-upanishad-1-3-14',
+    source: 'Katha Upanishad 1.3.14',
+    text: 'उत्तिष्ठत जाग्रत प्राप्य वरान्निबोधत।\nक्षुरस्य धारा निशिता दुरत्यया दुर्गं पथस्तत्कवयो वदन्ति॥',
+    translit:
+      'uttiṣṭhata jāgrata prāpya varān nibodhata\nkṣurasya dhārā niśitā duratyayā durgaṁ pathas tat kavayo vadanti',
+    meaning:
+      'Arise! Awake! Approach the great teachers and learn. The path is sharp as a razor\'s edge, hard to traverse — so the wise declare.',
+    tags: ['upanishad', 'awakening', 'effort'],
+  },
+  {
+    slug: 'mundaka-3-2-3',
+    source: 'Mundaka Upanishad 3.2.3',
+    text: 'नायमात्मा प्रवचनेन लभ्यो न मेधया न बहुना श्रुतेन।\nयमेवैष वृणुते तेन लभ्यस्तस्यैष आत्मा विवृणुते तनूं स्वाम्॥',
+    translit:
+      'nāyam ātmā pravacanena labhyo na medhayā na bahunā śrutena\nyam evaiṣa vṛṇute tena labhyas tasyaiṣa ātmā vivṛṇute tanūṁ svām',
+    meaning:
+      'The Self cannot be attained by discourse, nor by intellect, nor by much learning. He whom the Self chooses — by him alone is It attained; to him the Self reveals Its own nature.',
+    tags: ['upanishad', 'self', 'grace'],
+  },
+  {
+    slug: 'durga-saptashati-ya-devi-shanti',
+    source: 'Durga Saptashati 5.20 (Ya Devi — Shanti form)',
+    text: 'या देवी सर्वभूतेषु शान्तिरूपेण संस्थिता।\nनमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः॥',
+    translit:
+      'yā devī sarva-bhūteṣu śānti-rūpeṇa saṁsthitā\nnamas tasyai namas tasyai namas tasyai namo namaḥ',
+    meaning:
+      'To that Goddess who dwells in all beings as Peace — salutations again and again unto Her.',
+    tags: ['devi', 'shanti', 'saptashati'],
+  },
+  {
+    slug: 'rudram-namakam-opening',
+    source: 'Sri Rudram — Namakam, Yajurveda',
+    text: 'नमस्ते रुद्र मन्यव उतो त इषवे नमः।\nनमस्ते अस्तु धन्वने बाहुभ्यामुत ते नमः॥',
+    translit:
+      'namas te rudra manyava uto ta iṣave namaḥ\nnamas te astu dhanvane bāhubhyām uta te namaḥ',
+    meaning:
+      'Salutations to your wrath, O Rudra, and salutations to your arrow. Salutations to your bow, and salutations to your two arms.',
+    tags: ['rudra', 'shiva', 'veda', 'rudram'],
+  },
 ];
 
 export function getShloka(slug: string): Shloka | undefined {
