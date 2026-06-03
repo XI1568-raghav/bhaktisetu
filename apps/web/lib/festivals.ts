@@ -608,6 +608,211 @@ export const FESTIVALS: FestivalInfo[] = [
     significance:
       'Most powerful Ekadashi for ancestor liberation. ISKCON Gita Daan campaign distributes lakhs of free Gitas globally on this day.',
   },
+  {
+    slug: 'gudi-padwa',
+    name: 'Gudi Padwa',
+    sanskrit: 'गुडी पाडवा',
+    date2026: '2026-03-19',
+    deity: 'Brahma / Rama',
+    description:
+      'Maharashtrian and Konkani New Year on Chaitra Shukla Pratipada. Households hoist the gudi (bamboo pole with silk cloth, neem-mango leaves, sugar garland, inverted copper kalash) at the entrance at sunrise as a victory standard. Marks Brahma\'s creation of the universe, Shalivahana\'s defeat of the Shakas, and Rama\'s return to Ayodhya.',
+    rituals: [
+      'Abhyang snan (oil bath before sunrise)',
+      'Gudi hoisting on the right side of the main door',
+      'Rangoli + mango toran at the threshold',
+      'Panchang shravan (annual almanac reading) at temples',
+      'Neem-jaggery prasad (bevu-bella) to balance bitter and sweet',
+    ],
+    pujasAvailable: ['satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Marks the first day of the lunisolar Hindu calendar in Maharashtra, Goa, and Konkan. The hoisted gudi symbolises Brahma\'s creative flag and Shivaji Maharaj\'s military victories. New ventures, gold purchases, and Griha Pravesh are considered auto-auspicious without separate muhurat lookup.',
+  },
+  {
+    slug: 'ugadi',
+    name: 'Ugadi',
+    sanskrit: 'युगादि',
+    date2026: '2026-03-19',
+    deity: 'Brahma',
+    description:
+      'Telugu and Kannada New Year on Chaitra Shukla Pratipada (yuga + adi = beginning of a new age). Karnataka and Andhra-Telangana households prepare Ugadi Pachadi, a six-taste chutney mixing neem flowers, raw mango, jaggery, tamarind, salt, and green chilli — symbolising that the new year will hold sorrow, surprise, joy, disgust, fear, and anger in equal measure.',
+    rituals: [
+      'Pre-dawn oil bath and new clothes',
+      'Mango-leaf toran on doorways',
+      'Ugadi Pachadi shared before the first meal',
+      'Panchanga Shravanam at temple or by elders',
+      'Reading of the year\'s rashi-phala (zodiac forecast)',
+    ],
+    pujasAvailable: ['satyanarayan-puja', 'navagraha-shanti'],
+    fastingType: 'none',
+    significance:
+      'Believed to be the day Brahma began creation. The six-taste pachadi is a uniquely Hindu acceptance-of-duality teaching — life is a balanced compound, not a single flavour. Panchanga Shravanam on this day sets the spiritual calendar for the entire year.',
+  },
+  {
+    slug: 'baisakhi',
+    name: 'Baisakhi (Vaisakhi)',
+    sanskrit: 'वैशाखी',
+    date2026: '2026-04-14',
+    deity: 'Sun / Guru Gobind Singh',
+    description:
+      'Solar New Year and Punjabi harvest festival on Mesha Sankranti — when the Sun enters Aries. Also commemorates 1699 CE, when Guru Gobind Singh founded the Khalsa Panth at Anandpur Sahib, baptising the Panj Pyare with Amrit. Farmers thank the divine for the rabi harvest; Sikhs celebrate the birth of the Khalsa identity.',
+    rituals: [
+      'Pre-dawn bath in the Ganga, Yamuna, or local river',
+      'Visit to Gurdwara for Akhand Path and Amrit Sanchar',
+      'Nagar Kirtan procession led by Panj Pyare',
+      'Bhangra and Gidda performances around bonfires',
+      'Langar seva (community meal) at gurdwaras',
+    ],
+    pujasAvailable: ['satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Astronomically marks the Sun\'s entry into Mesha rashi, the start of the Hindu solar year shared with Tamil Puthandu, Vishu, Pohela Boishakh, and Bihu. Spiritually, the Khalsa foundation day for Sikhs — when Guru Gobind Singh dissolved caste through the shared Amrit ceremony.',
+  },
+  {
+    slug: 'pongal',
+    name: 'Pongal',
+    sanskrit: 'पोङ्गल्',
+    date2026: '2026-01-14',
+    deity: 'Surya',
+    deitySlug: 'surya',
+    description:
+      'Four-day Tamil harvest festival on Thai month sankranti, dedicated to the Sun. Day 1 Bhogi Pongal (burning old belongings), Day 2 Thai Pongal (boiling fresh rice with jaggery and milk in a new clay pot until it overflows — the auspicious "Pongalo Pongal" cry), Day 3 Mattu Pongal (worship of cattle), Day 4 Kaanum Pongal (family visits and outings).',
+    rituals: [
+      'Cleaning of homes and discarding old items on Bhogi eve',
+      'Kolam (rice-flour rangoli) at the threshold',
+      'Cooking sakkarai pongal in a new earthen pot facing east',
+      'Garlanding and worship of oxen and cows on Mattu Pongal',
+      'Sugarcane, turmeric, and ginger offerings to Surya',
+    ],
+    pujasAvailable: ['surya-arghya', 'navagraha-shanti'],
+    fastingType: 'none',
+    significance:
+      'Thanksgiving to Surya, the cattle, and the earth for the harvest. The overflowing pot symbolises prosperity overflowing into the new year. Marks Uttarayana — the Sun\'s northward journey — considered the most auspicious half of the year per the Mahabharata (Bhishma waited for it before leaving his body).',
+  },
+  {
+    slug: 'lohri',
+    name: 'Lohri',
+    sanskrit: 'लोहड़ी',
+    date2026: '2026-01-13',
+    deity: 'Agni / Surya',
+    description:
+      'Punjabi winter-solstice harvest festival on the eve of Makar Sankranti. Families and neighbourhoods gather around a bonfire at dusk, circumambulating it while tossing sesame seeds, jaggery, rewari, popcorn, and peanuts into the flames as offerings to Agni. The ballad of Dulla Bhatti — the 16th-century Punjabi Robin Hood who rescued Hindu girls from slave traders — is sung in chorus.',
+    rituals: [
+      'Lighting the community bonfire at sunset',
+      'Parikrama around the fire with til-gud, rewari, gajak offerings',
+      'Singing "Sundar mundriye ho" (Dulla Bhatti ballad)',
+      'First Lohri celebration for newlyweds and newborns',
+      'Sarson da saag and makki di roti community feast',
+    ],
+    pujasAvailable: ['satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'Marks the end of the coldest fortnight (Pausha) and the lengthening of days from Uttarayana. The fire offerings symbolise the dissolution of the past year\'s negativity. Especially significant for the bride\'s first post-wedding winter and a baby\'s first Lohri — both celebrated with neighbourhood-wide invitations.',
+  },
+  {
+    slug: 'durga-puja',
+    name: 'Durga Puja',
+    sanskrit: 'दुर्गा पूजा',
+    date2026: '2026-10-19',
+    deity: 'Goddess Durga',
+    deitySlug: 'durga',
+    description:
+      'Five-day Bengali celebration of Goddess Durga\'s slaying of Mahishasura, peaking on Maha Ashtami of Sharada Navaratri. Artisans of Kumartuli sculpt clay murtis of ten-armed Durga flanked by Lakshmi, Saraswati, Ganesha, and Kartikeya through the year. Sarbojanin (community) pandals across Kolkata transform neighbourhoods into open-air art galleries; Bonedi Bari (aristocratic household) pujas preserve 300-year-old family rites.',
+    rituals: [
+      'Mahalaya invocation chanting Mahishasura Mardini stotra at dawn',
+      'Bodhon (awakening of the goddess) on Shashthi',
+      'Sandhi Puja at the junction of Ashtami-Navami (108 lamps + lotuses)',
+      'Kumari Puja — worship of a pre-pubescent girl as living Devi',
+      'Sindoor Khela and visarjan procession on Vijayadashami',
+    ],
+    pujasAvailable: ['durga-saptashati-path', 'chandi-homam'],
+    fastingType: 'partial',
+    significance:
+      'Celebrates the annual visit of Durga to her maternal home (Bengal) with her children before returning to Kailash. UNESCO inscribed Kolkata Durga Puja on the Representative List of Intangible Cultural Heritage in 2021. Spiritually marks the triumph of dharma over adharmic ego — the buffalo demon being the unbridled lower nature.',
+  },
+  {
+    slug: 'vishu',
+    name: 'Vishu',
+    sanskrit: 'विषु',
+    date2026: '2026-04-14',
+    deity: 'Vishnu / Krishna',
+    deitySlug: 'krishna',
+    description:
+      'Malayali New Year on Medam 1 (Sun\'s entry into Mesha rashi), centred on the Vishukkani — the first auspicious sight at dawn. Elders arrange a uruli (bronze vessel) the previous night with raw rice, golden Konna (cassia fistula) flowers, fresh fruits, a mirror, gold coins, a yellow cucumber, and an image of Krishna; family members are led to it blindfolded at sunrise to ensure their first vision of the year is prosperous.',
+    rituals: [
+      'Vishukkani arrangement before midnight on Vishu eve',
+      'Blindfolded darshan of the kani at brahma muhurta',
+      'Vishukkaineetam — elders gift coins to children',
+      'Visit to Guruvayur, Sabarimala, or local Krishna temple',
+      'Sadya feast of 26 dishes on a banana leaf',
+    ],
+    pujasAvailable: ['satyanarayan-puja'],
+    fastingType: 'none',
+    significance:
+      'The kani is a visual sankalpa — what the eye sees first sets the tone for the entire year. Konna flowers blooming yellow are considered Krishna\'s favourite. Astronomically aligned with Baisakhi, Puthandu, and Pohela Boishakh as the pan-Indian solar new year on Mesha Sankranti.',
+  },
+  {
+    slug: 'bonalu',
+    name: 'Bonalu',
+    sanskrit: 'बोनालु',
+    date2026: '2026-07-12',
+    deity: 'Mahakali',
+    deitySlug: 'kali',
+    description:
+      'Folk Mahakali festival of Telangana observed across the Sundays of Ashada masa, peaking at the Golconda Fort Jagadambika temple and Secunderabad Ujjaini Mahakali. Women carry "bonam" (offering) — earthen pots stacked with cooked rice, jaggery, milk, and curd, lit with a deepa and crowned with neem leaves — on their heads in procession to the Devi temple as gratitude for surviving the rainy-season epidemics.',
+    rituals: [
+      'Bonam pot preparation at home with new earthenware',
+      'Procession to Mahakali temple with drums and Pothurajulu dancers',
+      'Rangam — a woman in trance prophesies the coming year while balanced on an earthen pot',
+      'Sacrifice of pumpkins as substitute for animal offering',
+      'Ghatam procession on the final Sunday from Akkanna Madanna temple',
+    ],
+    pujasAvailable: ['kali-puja'],
+    fastingType: 'partial',
+    significance:
+      'Originated in 1813 when a military battalion from Hyderabad prayed at Ujjaini Mahakali during a plague outbreak; on return, they installed the Devi and began the bonam tradition. Declared the state festival of Telangana after bifurcation in 2014. The Rangam prophecy is treated as binding civic forecast.',
+  },
+  {
+    slug: 'teej-hartalika',
+    name: 'Hartalika Teej',
+    sanskrit: 'हरतालिका तीज',
+    date2026: '2026-08-15',
+    deity: 'Goddess Parvati',
+    deitySlug: 'parvati',
+    description:
+      'Bhadrapada Shukla Tritiya nirjala vrat observed by married women and unmarried girls of north India, Nepal, Rajasthan, and Bihar for marital longevity and the boon of a Shiva-like husband. Named "Hartalika" because Parvati\'s sakhis (her female friends) abducted her to the forest to prevent her father\'s plan to marry her to Vishnu, allowing her to continue penance for Shiva.',
+    rituals: [
+      'Sand-clay murtis of Shiva-Parvati crafted at home',
+      'Nirjala vrat — no food, no water for 24 hours',
+      'Night-long jagran with Teej katha recitation',
+      'Sindoor, mehndi, green bangles, and green saree (suhag shringar)',
+      'Visarjan of clay murtis the next morning',
+    ],
+    pujasAvailable: ['parvati-puja', 'rudrabhishek'],
+    fastingType: 'full',
+    significance:
+      'Marks Parvati\'s acceptance by Shiva after 108 lifetimes of tapasya, hence the most rigorous vrat for suhag (marital wellbeing). Considered more austere than Karva Chauth because no water is permitted. Unmarried girls observe it praying for a husband who embodies Shiva\'s qualities of detachment with devotion.',
+  },
+  {
+    slug: 'mahalaya-amavasya',
+    name: 'Mahalaya Amavasya',
+    sanskrit: 'महालय अमावस्या',
+    date2026: '2026-10-09',
+    deity: 'Pitrs / Goddess Durga',
+    description:
+      'New-moon closing day of Pitru Paksha (the 16-day dark fortnight of ancestor remembrance) and the dawn-invocation that opens Devi Paksha leading to Durga Puja. Sons perform Tarpan at riverbanks — offering water, black sesame, and pinda to three generations of paternal and maternal ancestors. In Bengal, families wake before dawn to All India Radio\'s 1931 Birendra Krishna Bhadra rendition of Mahishasura Mardini, a 90-year unbroken ritual broadcast.',
+    rituals: [
+      'Pre-dawn Tarpan at the Ganga, Godavari, or nearest river',
+      'Pinda daan with cooked rice balls, til, and darbha grass',
+      'Feeding of Brahmins, cows, crows (kakabali), and dogs',
+      'Listening to Mahishasura Mardini stotra at brahma muhurta',
+      'Chakshu Daan — painting the eyes of Durga clay murtis',
+    ],
+    pujasAvailable: ['pitra-dosh-nivaran', 'tripindi-shraddha'],
+    fastingType: 'partial',
+    significance:
+      'Sarva Pitru Amavasya — the universal shraddha day when offerings reach ancestors whose death tithi is forgotten. Per the Mahabharata, Karna\'s soul returned to earth for 16 days to complete pitru rites he had neglected, establishing the Pitru Paksha tradition. Simultaneously marks the goddess\'s descent — bridging ancestor karma resolution into Devi-shakti invocation.',
+  },
 ];
 
 export function getFestival(slug: string): FestivalInfo | undefined {

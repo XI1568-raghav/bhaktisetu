@@ -381,6 +381,196 @@ export const CHALISAS: ChalisaInfo[] = [
       { label: 'Geeta Press Ram Chalisa', url: 'https://gitapress.org' },
     ],
   },
+  {
+    slug: 'kartikeya-chalisa',
+    name: 'Kartikeya Chalisa',
+    sanskrit: 'कार्तिकेय चालीसा',
+    deity: 'Lord Kartikeya (Skanda / Murugan)',
+    deitySlug: 'kartikeya',
+    composer: 'Traditional (North Indian recension)',
+    composedIn: 'Hindi (with Sanskrit invocations)',
+    whenRecited: 'Tuesdays, Skanda Shashthi, Thaipusam, Kartik Purnima, before facing enemies or court cases',
+    description:
+      '40-verse hymn to Lord Kartikeya, the warrior son of Shiva and Parvati, commander of the celestial armies (Devasenapati). Known as Murugan in the South, Skanda in scriptures, and Subrahmanya in Vedanta — six-faced slayer of the demon Tarakasura, eternal youth bearing the Vel spear.',
+    significance:
+      'Kartikeya embodies viveka (discrimination), valour, and the vanquishing of ego (Tarakasura symbolises ahamkara). His chalisa is invoked for victory in disputes, protection from black magic, removal of Mangal Dosha, and the awakening of fearless wisdom in spiritual seekers.',
+    benefits: [
+      'Victory in legal disputes, competitions, and confrontations',
+      'Relief from Mangal Dosha and Mars-related afflictions in the kundli',
+      'Protection from black magic, tantric attacks, and evil eye',
+      'Courage to face adversity and dissolve fear of enemies',
+      'Awakening of viveka — the discriminative wisdom that pierces illusion',
+      'Blessings for children, especially male progeny per traditional belief',
+    ],
+    excerpt: [
+      'जय जय जय कार्तिकेय गुसाईं। शिव-पारवती के प्यारे भाई॥',
+      'षडमुख षडानन छह भुजधारी। तारकासुर के तुम संहारी॥',
+      'मयूर वाहन हाथ में भाला। गले विराजे मणियन माला॥',
+      'देव सेनापति शूर बलवाना। दुष्ट दलन प्रभु कृपा निधाना॥',
+      'जय गिरिजा सुत परम सुजाना। ऋद्धि सिद्धि के तुम वरदाना॥',
+      'क्रौंच पर्वत को चीर गिराया। तारक का तुमने मद चूर्ण कराया॥',
+    ],
+    excerptMeaning:
+      'Victory, victory, victory to Lord Kartikeya, beloved brother in the family of Shiva and Parvati. The six-faced one with six countenances and twelve arms, you are the slayer of the demon Tarakasura. Riding the peacock, holding the spear in your hand, a garland of jewels gracing your neck. Commander of the celestial armies, hero of immense strength, destroyer of the wicked and treasury of grace. Victory to the wise son of the mountain-born Parvati, granter of prosperity and supernatural perfection. You cleaved through the Krauncha mountain and shattered the pride of Taraka. Devotees who recite these verses with sincere bhakti receive the fearless spear of viveka that cuts through the ego-demon within, just as your Vel pierced Tarakasura\'s heart on the battlefield of Devaloka.',
+    durationMinutes: 10,
+    relatedPujas: ['kartikeya-puja', 'mangal-dosha-nivaran', 'skanda-shashthi-vrat'],
+    externalSources: [
+      { label: 'Geeta Press Gorakhpur', url: 'https://www.gitapress.org' },
+      { label: 'Murugan.org (Tamil tradition)', url: 'https://murugan.org' },
+    ],
+  },
+  {
+    slug: 'bhairav-chalisa',
+    name: 'Bhairav Chalisa',
+    sanskrit: 'भैरव चालीसा',
+    deity: 'Kala Bhairava (Bhairavnath)',
+    deitySlug: 'bhairav',
+    composer: 'Traditional (Kashi tradition)',
+    composedIn: 'Hindi / Awadhi',
+    whenRecited: 'Sundays, Tuesdays, Bhairav Ashtami, Kala Ashtami of every month, midnight tantric upasana',
+    description:
+      '40-verse hymn to Kala Bhairava — the fierce form of Shiva, eternal kotwal (police-chief) of Kashi, guardian of time itself. Worshipped as the dispeller of fear, remover of debts, and lord of the eight Bhairavas (Asitanga, Ruru, Chanda, Krodha, Unmatta, Kapala, Bhishana, Samhara).',
+    significance:
+      'No pilgrim\'s Kashi yatra is complete without seeking Kala Bhairava\'s permission first — he holds the keys to Vishwanath\'s city. His chalisa removes obstacles caused by ancestral curses (pitra dosh), Shani affliction, accumulated debts, and lingering negative entities. Tantric sadhakas invoke him as the gatekeeper of siddhi.',
+    benefits: [
+      'Removal of debts (rin-mochan) and chronic financial blockages',
+      'Protection from accidents, sudden death, and untimely calamity',
+      'Relief from Shani Dosha and Pitra Dosha',
+      'Banishment of ghosts, negative entities, and tantric attacks',
+      'Courage to walk the spiritual path without fear of worldly opposition',
+      'Successful completion of Kashi yatra and tantric sadhana',
+    ],
+    excerpt: [
+      'जय जय श्री काल भैरव देवा। करत सदा संतन की सेवा॥',
+      'अष्ट भैरव के तुम अधिनायक। काशी पुरी के परम सहायक॥',
+      'श्वान सवारी कर में डंडा। दुष्ट जनन को देत प्रचंडा॥',
+      'त्रिशूल खप्पर खड्ग सुहावे। कटि करधनी घुंघरू बजावे॥',
+      'भूत प्रेत पिशाच भगावे। रोग शोक संताप मिटावे॥',
+      'काशी के कोतवाल कहाओ। विश्वनाथ के द्वारपाल लाओ॥',
+    ],
+    excerptMeaning:
+      'Victory, victory to revered Kala Bhairava Deva, who eternally serves the company of saints. You are the supreme lord of the eight Bhairavas and the foremost protector of the holy city of Kashi. Riding upon the dog, wielding the staff in your hand, you unleash fierce justice upon the wicked. The trident, skull-bowl, and sword grace you splendidly; the ankle-bells upon your waist-girdle resound. You banish ghosts, spirits, and demonic possessors, and dissolve disease, grief, and torment. You are hailed as the kotwal of Kashi, the gatekeeper guarding the very threshold of Lord Vishwanath. Devotees who recite these verses with a fearless heart at midnight find their debts dissolved, their enemies silenced, and the path to liberation cleared by the dread lord who guards time itself with his loyal hound and unsheathed blade.',
+    durationMinutes: 11,
+    relatedPujas: ['bhairav-puja', 'rin-mochan-puja', 'pitra-dosh-shanti', 'kala-ashtami-vrat'],
+    externalSources: [
+      { label: 'Kashi Vishwanath Temple Trust', url: 'https://shrikashivishwanath.org' },
+      { label: 'Geeta Press Gorakhpur', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'gayatri-chalisa',
+    name: 'Gayatri Chalisa',
+    sanskrit: 'गायत्री चालीसा',
+    deity: 'Maa Gayatri (Veda Mata)',
+    deitySlug: 'gayatri',
+    composer: 'Traditional (Arya Samaj / Gayatri Pariwar lineage, popularised by Pt. Shriram Sharma Acharya)',
+    composedIn: 'Hindi (with Vedic Sanskrit invocations)',
+    whenRecited: 'Daily at sunrise (Brahma Muhurta), Gayatri Jayanti (Jyeshtha Purnima), during Sandhya Vandanam',
+    description:
+      '40-verse hymn extolling Maa Gayatri — the mother of the Vedas, personification of the 24-syllable Gayatri Mantra revealed to Rishi Vishwamitra. She is depicted as five-faced (representing the five pranas) and ten-armed, seated on a swan, embodying pure consciousness and the dawn of inner illumination.',
+    significance:
+      'Called Veda Mata (mother of the Vedas), Deva Mata (mother of the gods), and Vishwa Mata (mother of the universe). Her chalisa amplifies the power of the Gayatri Mantra — said to purify intellect, awaken intuition, and grant the seeker direct connection with Savitr (the inner Sun). Considered the highest mantra a Brahmin or sadhaka can chant.',
+    benefits: [
+      'Sharpening of intellect, memory, and academic performance',
+      'Awakening of intuitive wisdom (ritambhara prajna)',
+      'Purification of past karmas and removal of mental impurities',
+      'Success in education, examinations, and intellectual pursuits',
+      'Spiritual progress and direct connection to inner divine light',
+      'Peace of mind, freedom from anxiety, and balanced emotions',
+    ],
+    excerpt: [
+      'ह्रीं श्रीं क्लीं मेधा प्रभा जीवन ज्योति प्रचण्ड।',
+      'शान्ति कान्ति जागृत प्रगति रचना शक्ति अखण्ड॥',
+      'जय गायत्री वेद की माता। जय आनन्द सुख शान्ति विधाता॥',
+      'भारत में तब अति प्रचलित था। घर घर में तेरा यश ललित था॥',
+      'अक्षर चौबीस परम पुनीता। इनमें बसें शास्त्र श्रुति गीता॥',
+      'शाश्वत सत्य सनातन वाणी। जो जपते वे ज्ञानी ध्यानी॥',
+    ],
+    excerptMeaning:
+      'Hreem Shreem Kleem — invocations of wisdom, radiance, the fierce flame of life; peace, beauty, awakening, progress, and the unbroken creative shakti. Victory to Gayatri, mother of the Vedas; victory to the bestower of bliss, happiness, and peace. Once you were universally cherished throughout the land of Bharata, your glory celebrated in every household. Your twenty-four syllables are supremely sacred — within them reside all the shastras, the shrutis, and the Bhagavad Gita itself. You are the eternal truth, the timeless sanatana voice; those who chant your mantra become both jnani (wise) and dhyani (meditative). Whoever recites this chalisa with reverence at sunrise dissolves mental impurities, awakens the inner sun of consciousness, and walks the path of Vedic wisdom under the guidance of the universal Mother who illuminated the rishis themselves.',
+    durationMinutes: 9,
+    relatedPujas: ['gayatri-havan', 'gayatri-mantra-anushthan', 'saraswati-puja'],
+    externalSources: [
+      { label: 'Gayatri Pariwar (Shantikunj, Haridwar)', url: 'https://www.awgp.org' },
+      { label: 'Geeta Press Gorakhpur', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'surya-chalisa',
+    name: 'Surya Chalisa',
+    sanskrit: 'सूर्य चालीसा',
+    deity: 'Surya Bhagavan (Aditya)',
+    deitySlug: 'surya',
+    composer: 'Traditional',
+    composedIn: 'Hindi / Sanskrit',
+    whenRecited: 'Daily at sunrise during Arghya offering, Sundays, Ratha Saptami, Makar Sankranti, Chhath Puja',
+    description:
+      '40-verse hymn to Surya Bhagavan — the visible deity (pratyaksha devata), soul of the universe (jagatatma), and chief of the nine Navagrahas. Depicted riding a seven-horse chariot driven by Aruna, illuminating all three worlds with his thousand rays. Father of Yama, Shani, Karna, and the Ashvini Kumaras.',
+    significance:
+      'The only deity directly visible to the naked eye — every Vedic ritual begins with Surya Namaskar. His chalisa cures skin diseases, heart ailments, and eye disorders; strengthens a weak Sun in the kundli (low confidence, poor relationship with father, government opposition); and is the primary remedy for those born with afflicted Sun in the 1st, 5th, 9th, or 10th house.',
+    benefits: [
+      'Strengthening of a weak Sun in the natal kundli',
+      'Cure of skin diseases, heart conditions, and eye disorders',
+      'Recognition, fame, and success in government and administrative careers',
+      'Improved father-son relationships and paternal blessings',
+      'Boost in self-confidence, leadership ability, and personal magnetism',
+      'Removal of obstacles in promotions, authority positions, and public recognition',
+    ],
+    excerpt: [
+      'कनक बदन कुण्डल मकर, मुक्ता माला अंग।',
+      'पद्मासन स्थित ध्याइए, शंख चक्र के संग॥',
+      'जय सविता जय जयति दिवाकर। सहस्रांशु सप्ताश्व तिमिरहर॥',
+      'भानु पतंग मरीची भास्कर। सविता हंस सुनूर प्रभाकर॥',
+      'त्वष्टा अर्क अरुण भग पूषा। दिवस मणि खग दिनकर ज्योतिषा॥',
+      'आदि देव सकल जग वंदित। प्रकट होत हर्षित जन मंडित॥',
+    ],
+    excerptMeaning:
+      'Golden-hued of form, with makara-shaped earrings, a pearl garland gracing your limbs; seated in the lotus posture, meditate upon him bearing the conch and discus. Victory to Savita, victory and victory again to Divakara (maker of the day), thousand-rayed one drawn by seven horses, dispeller of darkness. Bhanu, Patanga, Marichi, Bhaskara — Savita the swan, the beautifully radiant Prabhakara. Tvashta, Arka, Aruna, Bhaga, Pushan — jewel of the day, sky-bird, light-maker, supreme luminary. Primordial deity worshipped by all the worlds, on whose rising the people are joyfully adorned. Devotees who recite these verses while offering Arghya at sunrise dissolve afflictions of the Sun in their horoscope, strengthen the heart and vital force, and receive the recognition, leadership, and paternal grace that flows from the visible witness of all creation.',
+    durationMinutes: 10,
+    relatedPujas: ['surya-arghya', 'navagraha-shanti', 'ratha-saptami-puja', 'chhath-puja'],
+    externalSources: [
+      { label: 'Konark Sun Temple (ASI)', url: 'https://asi.nic.in/konark/' },
+      { label: 'Geeta Press Gorakhpur', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'navagraha-chalisa',
+    name: 'Navagraha Chalisa',
+    sanskrit: 'नवग्रह चालीसा',
+    deity: 'Navagraha (Nine Planetary Lords)',
+    deitySlug: 'navagraha',
+    composer: 'Traditional (Vedic astrological tradition)',
+    composedIn: 'Hindi / Sanskrit',
+    whenRecited: 'During planetary transits, after kundli analysis revealing dosha, on respective weekdays of each graha, before Navagraha Shanti homa',
+    description:
+      '40-verse composite hymn invoking all nine planetary lords — Surya, Chandra, Mangal, Budha, Brihaspati (Guru), Shukra, Shani, Rahu, and Ketu. Each graha receives dedicated verses honouring its dignity, vahana, weapon, and the karmic dimension it governs in the human birth chart.',
+    significance:
+      'The Navagrahas are not malefic forces but cosmic accountants delivering the precise fruits of past karma. This chalisa is the most concise daily remedy for any unidentified planetary affliction — recommended when one cannot afford individual graha pujas or when multiple grahas are simultaneously weak. Recited at Navagraha shrines found in every South Indian temple.',
+    benefits: [
+      'Pacification of multiple planetary doshas in a single sitting',
+      'Reduction of malefic effects during Sade Sati, Kantaka Shani, and Rahu-Ketu transits',
+      'Balancing of the entire kundli without requiring nine separate pujas',
+      'Protection from sudden misfortune, accidents, and karmic upheavals',
+      'Cost-effective daily remedy for those unable to perform full Navagraha homa',
+      'Harmony in health, wealth, relationships, and career across life domains',
+    ],
+    excerpt: [
+      'श्री गणपति गुरु गौरी पद, प्रेम सहित धरि माथ।',
+      'चालीसा वन्दौं नवग्रह, होहु सकल सुख साथ॥',
+      'जय जय रवि शशि सोम बुधा। बृहस्पति शुक्र शनैश्चरा॥',
+      'राहु केतु सहित नवग्रह। दीन बन्धु दुख हरण सबग्रह॥',
+      'सूर्य सिंहासन स्वर्ण विराजे। मंगल भौम धरा सुत साजे॥',
+      'चन्द्र दूज के दर्शन प्यारे। बुध सौम्य सब विद्या के तारे॥',
+    ],
+    excerptMeaning:
+      'Placing upon my head with deepest love the feet of Sri Ganapati, the Guru, and Gauri, I venerate this Chalisa of the Nine Grahas — may all happiness accompany me. Victory, victory to Ravi (Sun), Shashi (Moon), Soma, Budha (Mercury), Brihaspati (Jupiter), Shukra (Venus), and Shanaishchara (Saturn). Along with Rahu and Ketu — all nine grahas, friends of the destitute, dispellers of sorrow for every devotee. Surya is enthroned upon a golden seat; Mangala, the fiery son of the Earth, is splendidly adorned. Chandra of the second-day darshan is most beloved; gentle Budha is the star of all the sciences and learning. Devotees who recite this chalisa daily, especially on the weekday assigned to a troublesome graha, find the karmic accounts of nine planetary forces simultaneously softened, the malefic transits made bearable, and the auspicious yogas of their birth chart enhanced through the grace of the cosmic accountants of dharma.',
+    durationMinutes: 12,
+    relatedPujas: ['navagraha-shanti-homa', 'graha-dosha-nivaran', 'sade-sati-shanti', 'rahu-ketu-puja'],
+    externalSources: [
+      { label: 'Suryanar Kovil (Navagraha Temple, Tamil Nadu)', url: 'https://hrce.tn.gov.in' },
+      { label: 'Geeta Press Gorakhpur', url: 'https://www.gitapress.org' },
+    ],
+  },
 ];
 
 export function getChalisa(slug: string): ChalisaInfo | undefined {
