@@ -41,6 +41,13 @@ const quickLinks: QuickLink[] = [
     color: colors.saffron[500],
   },
   {
+    id: 'consultations',
+    icon: 'star',
+    label: 'My Consultations',
+    subtitle: 'Astrologer sessions — upcoming & history',
+    color: colors.amber[600],
+  },
+  {
     id: 'subscription',
     icon: 'diamond',
     label: 'Subscription',
@@ -223,6 +230,10 @@ export default function ProfileScreen() {
     }
     if (id === 'messages') {
       router.push('/(devotee)/messages' as any);
+      return;
+    }
+    if (id === 'consultations') {
+      router.push('/(devotee)/consultations' as any);
       return;
     }
     if (id === 'addresses') {
