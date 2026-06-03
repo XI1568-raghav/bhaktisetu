@@ -183,6 +183,137 @@ export const UPANISHADS: UpanishadInfo[] = [
     },
     takeaway: 'Neti, neti — not this, not this — until only the witness remains.',
   },
+  {
+    slug: 'svetasvatara-upanishad', name: 'Svetasvatara Upanishad', sanskrit: 'श्वेताश्वतरोपनिषद्', iast: 'Śvetāśvataropaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Taittiriya shakha — appended to its Aranyaka)',
+    mantraCount: 113,
+    centralTheme: 'The first theistic Upanishad — Rudra-Shiva as the one God hidden in all beings',
+    mahavakya: { sanskrit: 'एको देवः सर्वभूतेषु गूढः', iast: 'Eko devaḥ sarva-bhūteṣu gūḍhaḥ', translation: 'One God hidden in all beings.', reference: 'Svetasvatara 6.11' },
+    summary:
+      'Named after the sage Svetasvatara ("of the white mule"), this is the earliest Upanishad to openly worship a personal deity — Rudra-Shiva — as the Supreme Brahman. Six adhyayas of 113 mantras synthesise Samkhya cosmology (purusha + prakriti + three gunas), early Yoga (posture, breath, withdrawal), and Vedanta non-duality into a devotional theism. Sources the iconic verses "yo brahmāṇaṁ vidadhāti pūrvam" and "tam īśvarāṇāṁ paramaṁ maheśvaram". Often called the seed-text of bhakti within the shruti canon.',
+    keyConcepts: ['Eka deva — one God in all beings', 'Rudra as Brahman + Ishvara', 'Samkhya purusha-prakriti + three gunas absorbed into Vedanta', 'Early astanga-yoga seed (2.8-15 posture, prana, dharana)', 'Maya as the Lord\'s power (māyāṁ tu prakṛtiṁ vidyāt māyinaṁ tu maheśvaram)', 'Two birds verse re-quoted (4.6-7)'],
+    famousVerse: {
+      sanskrit: 'एको देवः सर्वभूतेषु गूढः सर्वव्यापी सर्वभूतान्तरात्मा । कर्माध्यक्षः सर्वभूताधिवासः साक्षी चेता केवलो निर्गुणश्च',
+      iast: 'Eko devaḥ sarva-bhūteṣu gūḍhaḥ sarva-vyāpī sarva-bhūtāntarātmā, karmādhyakṣaḥ sarva-bhūtādhivāsaḥ sākṣī cetā kevalo nirguṇaśca',
+      translation: 'One God, hidden in all beings, all-pervading, the inner Self of all — overseer of all action, dwelling in all beings, the witness, the knower, alone and beyond the gunas.',
+      reference: 'Svetasvatara 6.11',
+    },
+    takeaway: 'The impersonal Brahman of the early Upanishads here puts on a face — and that face is Shiva-as-Ishvara, lovable as well as knowable.',
+  },
+  {
+    slug: 'kaushitaki-upanishad', name: 'Kaushitaki Upanishad', sanskrit: 'कौषीतक्युपनिषद्', iast: 'Kauṣītaki-upaniṣad',
+    veda: 'Rig', vedaShakha: 'Kaushitaki Brahmana of the Rig Veda (Kaushitaki / Shankhayana shakha)',
+    mantraCount: 49,
+    centralTheme: 'Prana as Brahman; the post-mortem path to the world of Brahma',
+    mahavakya: { sanskrit: 'प्राणो ब्रह्म', iast: 'Prāṇo brahma', translation: 'Prana is Brahman.', reference: 'Kaushitaki 2.1' },
+    summary:
+      'Four adhyayas, 49 mantras. Chapter 1 narrates Chitra Gangyayani\'s teaching to Aruni on the two post-mortem paths — devayana (the way of the gods, no return) and pitriyana (the way of the ancestors, return through the moon). Chapter 2 is the great prana-vidya: prana is the conscious Self, the breath that holds the senses, the immortal in the mortal. Chapter 3 records Indra\'s self-disclosure to Pratardana: "I am prana, I am the conscious Self — meditate on me as life, as immortality." Chapter 4 is the Balaki-Ajatashatru dialogue (paralleled in Brihadaranyaka 2.1) where 16 partial definitions of Brahman are corrected to the one Self.',
+    keyConcepts: ['Prana-vidya — breath as the conscious Self', 'Devayana vs. pitriyana — two post-mortem paths', 'Indra-Pratardana dialogue ("aham asmi prajñātmā")', 'Balaki-Ajatashatru — 16 false Brahmans corrected', 'Paryanka-vidya — the cosmic couch of Brahma'],
+    famousVerse: {
+      sanskrit: 'प्राणोऽस्मि प्रज्ञात्मा तं मामायुरमृतमित्युपास्स्व',
+      iast: 'Prāṇo\'smi prajñātmā taṁ mām āyur amṛtam ity upāssva',
+      translation: 'I am prana, the conscious Self — meditate on me as life, as immortality.',
+      reference: 'Kaushitaki 3.2',
+    },
+    takeaway: 'Breath is not a function of the Self; the Self is the breath that breathes the breath.',
+  },
+  {
+    slug: 'maitri-upanishad', name: 'Maitri Upanishad', sanskrit: 'मैत्र्युपनिषद्', iast: 'Maitry-upaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Maitrayaniya shakha)',
+    mantraCount: 107,
+    centralTheme: 'Six-limbed yoga (shadanga-yoga) and the two-fold Brahman (shabda + ashabda)',
+    summary:
+      'Also called Maitrayaniya. Opens with King Brihadratha renouncing his kingdom and asking the sage Shakayanya the existential question: "In this body, foul-smelling and pithless — heap of bone, skin, marrow, flesh, semen, blood, mucus, tears, faeces, urine, wind, bile and phlegm — what is the use of enjoyment?" The reply unfolds across seven prapathakas the doctrine of two Brahmans (the sound-Brahman Om → the soundless Brahman beyond), the six-limbed yoga of pranayama, pratyahara, dhyana, dharana, tarka and samadhi (the earliest shadanga-yoga schema, predating Patanjali\'s ashtanga), and an extended teaching on time (kala) as the form of the Lord.',
+    keyConcepts: ['Brihadratha\'s body-renunciation prashna', 'Two Brahmans — shabda (Om) and ashabda (silent)', 'Shadanga-yoga: pranayama, pratyahara, dhyana, dharana, tarka, samadhi', 'Kala-vada — time as the Lord\'s form', 'Five gross + five subtle elements + the absorber'],
+    famousVerse: {
+      sanskrit: 'प्राणायामः प्रत्याहारो ध्यानं धारणा तर्कः समाधिः षडङ्ग इत्युच्यते योगः',
+      iast: 'Prāṇāyāmaḥ pratyāhāro dhyānaṁ dhāraṇā tarkaḥ samādhiḥ ṣaḍaṅga ity ucyate yogaḥ',
+      translation: 'Breath-control, withdrawal of the senses, meditation, concentration, inquiry, and absorption — this six-limbed yoga is so declared.',
+      reference: 'Maitri 6.18',
+    },
+    takeaway: 'The body is a leaking pot; the only worthwhile use of the years left is the six-limbed climb from Om to silence.',
+  },
+  {
+    slug: 'yoga-tattva-upanishad', name: 'Yoga Tattva Upanishad', sanskrit: 'योगतत्त्वोपनिषद्', iast: 'Yoga-tattva-upaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    mantraCount: 142,
+    centralTheme: 'The four yogas — mantra, laya, hatha, raja — taught by Vishnu to Brahma',
+    summary:
+      'A minor (sāmānya-yoga) Upanishad of 142 mantras opening with Brahma\'s prostration before Vishnu and the question: "Teach me the science of yoga (yoga-tattvam) by which the jiva is freed from samsara." Vishnu replies with the classical four-fold yoga taxonomy: mantra-yoga (japa of an ishta-mantra for 12 years), laya-yoga (dissolution through the chitta\'s absorption in the object of meditation), hatha-yoga (the eight angas with detailed asana, eight kumbhakas and three bandhas), and raja-yoga (the highest, leading to kevala-kumbhaka and samadhi). Lists the obstacles (vighna), the four awakening stages (arambha, ghata, parichaya, nishpatti) and the eight siddhis with their grave dangers.',
+    keyConcepts: ['Four yogas — mantra, laya, hatha, raja', 'Four stages — arambha → ghata → parichaya → nishpatti', 'Eight kumbhakas + three bandhas (mula, uddiyana, jalandhara)', 'Kevala-kumbhaka as the doorway to raja-yoga', 'Eight siddhis and the warning against attachment to them'],
+    famousVerse: {
+      sanskrit: 'मन्त्रो लयो हठो राजयोगोऽन्तर्भूमिकाः क्रमात् । एक एव चतुर्धाऽयं महायोग इति स्मृतः',
+      iast: 'Mantro layo haṭho rāja-yogo\'ntar-bhūmikāḥ kramāt, eka eva caturdhā\'yaṁ mahā-yoga iti smṛtaḥ',
+      translation: 'Mantra, laya, hatha and raja are the progressive inner stages — though four, this is remembered as the one Maha-Yoga.',
+      reference: 'Yoga Tattva 19-20',
+    },
+    takeaway: 'Mantra is the doorway, laya the corridor, hatha the staircase, raja the throne room — and all four are one yoga.',
+  },
+  {
+    slug: 'yoga-kundalini-upanishad', name: 'Yoga Kundalini Upanishad', sanskrit: 'योगकुण्डल्युपनिषद्', iast: 'Yoga-kuṇḍaly-upaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    mantraCount: 171,
+    centralTheme: 'Awakening kundalini through pranayama, mudras and khechari',
+    summary:
+      'Three chapters, 171 mantras. The most technical of the kundalini-yoga Upanishads. Chapter 1 details saraswati-chalana (the "stirring of Saraswati" — a manipulation of the sushumna at the navel) and the pranayama-mudra combinations (especially shakti-chalana with the four bhutas) that rouse the coiled serpent-power at the muladhara and drive her up the central channel through the six chakras to the sahasrara. Chapter 2 is a complete manual of khechari-mudra — the lengthening, milking and severance of the frenulum until the tongue reverses into the nasopharynx and drinks the amrita of the lunar plexus, conferring physical immortality. Chapter 3 closes with the description of the three avasthas culminating in videha-mukti and the soundless turiya.',
+    keyConcepts: ['Kundalini — the coiled shakti at muladhara', 'Saraswati-chalana + shakti-chalana mudras', 'Khechari-mudra — tongue lock for amrita-pana', 'Six chakras and their piercing', 'Three avasthas: arambha, pichu-pichu, vaja', 'Videha-mukti and the soundless turiya'],
+    famousVerse: {
+      sanskrit: 'कुण्डलिन्याः समुद्भूतां गायत्रीं प्राणसंयुताम् । ज्ञानमुद्रां च मां प्राप्य संसारं तरते नरः',
+      iast: 'Kuṇḍalinyāḥ samudbhūtāṁ gāyatrīṁ prāṇa-saṁyutām, jñāna-mudrāṁ ca māṁ prāpya saṁsāraṁ tarate naraḥ',
+      translation: 'Reaching the Gayatri risen from Kundalini, joined with prana, and the jnana-mudra — that I am — a man crosses samsara.',
+      reference: 'Yoga Kundalini 1.86',
+    },
+    takeaway: 'The serpent is not a metaphor — she sleeps until prana drives her up the spine.',
+  },
+  {
+    slug: 'dhyana-bindu-upanishad', name: 'Dhyana Bindu Upanishad', sanskrit: 'ध्यानबिन्दूपनिषद्', iast: 'Dhyāna-bindūpaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Yoga Upanishad group)',
+    mantraCount: 106,
+    centralTheme: 'The bindu (drop) at the heart of Om — meditation on the seed-point',
+    summary:
+      'A 106-mantra yoga-Upanishad teaching pranava-upasana and bindu-dhyana. Opens with the famous declaration: "Even if a mountain of sin as large as Meru extends for many leagues, it is destroyed by dhyana-yoga — no other means is known to break it." Lays out the six-anga yoga (asana, prana-samrodha, pratyahara, dharana, dhyana, samadhi), the AUM-tri-matra meditation with each matra mapped to a deity (Brahma-Vishnu-Rudra) and a guna (rajas-sattva-tamas), and the bindu as the half-matra (ardha-matra) above the M — the silent dot of the chandra-bindu where the meditator is absorbed. Closes with the lotus-of-the-heart visualisation and the nine chakras (extending the standard six with manas, soma and lalata).',
+    keyConcepts: ['Bindu — the seed-point above Om', 'AUM tri-matra → Brahma-Vishnu-Rudra mapping', 'Ardha-matra — the silent half-measure', 'Six-anga yoga (variant — drops tarka, keeps asana)', 'Nine chakras (six + manas + soma + lalata)', 'Hamsa-mantra (so\'ham japa) on inhale-exhale'],
+    famousVerse: {
+      sanskrit: 'यदि शैलसमं पापं विस्तीर्णं बहुयोजनम् । भिद्यते ध्यानयोगेन नान्यो भेदः कदाचन',
+      iast: 'Yadi śaila-samaṁ pāpaṁ vistīrṇaṁ bahu-yojanam, bhidyate dhyāna-yogena nānyo bhedaḥ kadācana',
+      translation: 'Even sin as vast as a mountain, extending many leagues, is shattered by dhyana-yoga — no other means is ever known.',
+      reference: 'Dhyana Bindu 1',
+    },
+    takeaway: 'Past the A, past the U, past the M — sit with the silent dot above the moon.',
+  },
+  {
+    slug: 'advaya-taraka-upanishad', name: 'Advaya Taraka Upanishad', sanskrit: 'अद्वयतारकोपनिषद्', iast: 'Advaya-tārakopaniṣad',
+    veda: 'Yajur', vedaShakha: 'Shukla Yajur Veda (Sannyasa / Yoga Upanishad group)',
+    mantraCount: 19,
+    centralTheme: 'Taraka-brahma-yoga — the saviour Brahman + the famous gu-ru etymology',
+    summary:
+      'Just 19 mantras of dense yoga-Vedanta. "Taraka" — "that which ferries across" — names the inner light meditated upon between the eyebrows or at the heart-cave; the meditator becomes one with the saviour Brahman that ferries the jiva over samsara. Distinguishes purva-taraka (the prior, sa-vishaya — with object: trataka on inner stars, lights, suns) from uttara-taraka (the higher, nir-vishaya — objectless, manonmani, the unmesha of pure awareness). Lists the five-fold tri-lakshya-yoga (gazing at the tip of nose, midway, etc) and seals with the iconic guru-etymology: "gu means darkness, ru means its remover; the guru is so called because he removes the darkness."',
+    keyConcepts: ['Taraka — the saviour Brahman that ferries across', 'Purva-taraka (with object) vs. uttara-taraka (objectless / manonmani)', 'Tri-lakshya-yoga — three meditation points', 'Shambhavi mudra and amanaska state', 'Gu-Ru etymology: darkness → its remover'],
+    famousVerse: {
+      sanskrit: 'गुशब्दस्त्वन्धकारः स्यात् रुशब्दस्तन्निरोधकः । अन्धकारनिरोधित्वात् गुरुरित्यभिधीयते',
+      iast: 'Gu-śabdas tv andhakāraḥ syāt ru-śabdas tan-nirodhakaḥ, andhakāra-nirodhitvāt gurur ity abhidhīyate',
+      translation: 'The syllable "gu" denotes darkness; the syllable "ru" denotes its remover. Because he removes the darkness, he is called guru.',
+      reference: 'Advaya Taraka 16',
+    },
+    takeaway: 'The guru is not a person but the function of darkness-removal — wherever that happens, there the guru is.',
+  },
+  {
+    slug: 'narayana-upanishad', name: 'Narayana Upanishad', sanskrit: 'नारायणोपनिषद्', iast: 'Nārāyaṇopaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda (Taittiriya shakha — Vaishnava Upanishad group)',
+    mantraCount: 13,
+    centralTheme: 'Narayana as the All — source, substance and goal of the cosmos',
+    mahavakya: { sanskrit: 'नारायण एवेदं सर्वम्', iast: 'Nārāyaṇa evedaṁ sarvam', translation: 'Narayana alone is all this.', reference: 'Narayana Upanishad 2' },
+    summary:
+      'A short Vaishnava Upanishad of 13 mantras, recited daily by Sri-Vaishnavas as part of the Narayana-anuvaka. Declares that Narayana alone existed before creation — not Brahma, not Shiva, not the dyaus or earth — and that from his contemplation arose Brahma, the senses, the elements, the worlds, the Vedas, even Rudra and Indra. Embeds the ashtakshara mantra "om namo nārāyaṇāya" with the assurance that whoever recites it gains the heaven of Vaikuntha. Frequently chanted with the Purusha-sukta, Sri-sukta and Bhu-sukta as part of the Narayana-Upanishad bundle in Vaishnava sandhya.',
+    keyConcepts: ['Narayana as the pre-cosmic One', 'Cosmogony — Brahma + senses + elements + Vedas from Narayana', 'Ashtakshara mantra — om namo nārāyaṇāya', 'Daily liturgical use in Sri-Vaishnava sandhya', 'Identity of Narayana with Brahman, Shiva, Indra, kala and the Vedas'],
+    famousVerse: {
+      sanskrit: 'नारायण एवेदं सर्वं यद्भूतं यच्च भव्यम् । निष्कलङ्को निरञ्जनो निर्विकल्पो निराख्यातः शुद्धो देव एको नारायणः',
+      iast: 'Nārāyaṇa evedaṁ sarvaṁ yad-bhūtaṁ yac ca bhavyam, niṣkalaṅko nirañjano nirvikalpo nirākhyātaḥ śuddho deva eko nārāyaṇaḥ',
+      translation: 'Narayana alone is all this — what has been and what shall be. Spotless, untainted, beyond change, beyond name, pure — the one God is Narayana.',
+      reference: 'Narayana Upanishad 2',
+    },
+    takeaway: 'Past, present, future — one name covers it: Narayana.',
+  },
 ];
 
 export function upanishadSlugs(): string[] {
