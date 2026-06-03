@@ -314,6 +314,121 @@ export const UPANISHADS: UpanishadInfo[] = [
     },
     takeaway: 'Past, present, future — one name covers it: Narayana.',
   },
+  {
+    slug: 'paingala-upanishad', name: 'Paingala Upanishad', sanskrit: 'पैङ्गलोपनिषद्', iast: 'Paiṅgalopaniṣad',
+    veda: 'Yajur', vedaShakha: 'Shukla Yajur Veda (Sāmānya-Vedānta Upanishad group)',
+    mantraCount: 52,
+    centralTheme: 'Atman-Brahman identity unfolded through Yajnavalkya\'s instruction to Paingala',
+    mahavakya: { sanskrit: 'तत्त्वमसि', iast: 'Tat tvam asi', translation: 'That thou art.', reference: 'Paingala 2.6' },
+    summary:
+      'Four chapters recording the disciple Paingala\'s twelve-year inquiry under Yajnavalkya. Chapter 1 lays out the cosmogony — the pre-cosmic Brahman, its reflection in maya, the unfolding of the five elements, the three bodies (sthula, sukshma, karana) and the three avasthas. Chapter 2 takes the mahavakya "Tat tvam asi" apart pada-by-pada — tat (lakshyartha = pure Brahman), tvam (jiva minus upadhis), asi (the indivisible identity) — the classic Advaita jahad-ajahal-lakshana exegesis later codified by Shankara and Sureshvara. Chapter 3 is the jivanmukti / videhamukti distinction; Chapter 4 closes with the post-realisation conduct of the knower.',
+    keyConcepts: ['Pada-by-pada exegesis of Tat Tvam Asi', 'Three bodies + three states framework', 'Jahad-ajahal-lakshana (the Advaita method of mahavakya interpretation)', 'Jivanmukti vs. videhamukti distinction', 'Twelve-year tapas of Paingala before instruction was given'],
+    famousVerse: {
+      sanskrit: 'तत्पदं लक्ष्यते ब्रह्म त्वंपदं जीव उच्यते । असिपदैक्यसम्बन्धस्तत्त्वमस्यादिवाक्यतः',
+      iast: 'Tat-padaṁ lakṣyate brahma tvaṁ-padaṁ jīva ucyate, asi-padaikya-sambandhas tat-tvam-asy-ādi-vākyataḥ',
+      translation: 'The word "tat" indicates Brahman, the word "tvam" the jiva; the word "asi" establishes their identity — this is the import of "Tat tvam asi" and the great sayings.',
+      reference: 'Paingala 2.6',
+    },
+    takeaway: 'Strip tat of cosmic upadhi, strip tvam of personal upadhi — what remains in both is one.',
+  },
+  {
+    slug: 'ganapati-upanishad', name: 'Ganapati Upanishad', sanskrit: 'गणपत्युपनिषद्', iast: 'Gaṇapaty-upaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (also called Ganapati Atharvashirsha)',
+    mantraCount: 14,
+    centralTheme: 'Ganesha as Brahman — the elephant-headed One identical with Om and the supreme Self',
+    mahavakya: { sanskrit: 'त्वमेव प्रत्यक्षं तत्त्वमसि', iast: 'Tvameva pratyakṣaṁ tat-tvam-asi', translation: 'You alone are the visible "That thou art."', reference: 'Ganapati Upanishad 1' },
+    summary:
+      'Also called Ganapati Atharvashirsha or Sri Ganapati Atharvashirsha Upanishad. Opens with the iconic prostration "Om Namaste Ganapataye" and the eight-fold identification: "You alone are the visible Tattva, you alone are the creator, you alone are the sustainer, you alone are the destroyer, you alone are all this, you alone are Brahman, you alone are the Atman." Embeds the ganesha-gayatri ("ekadantāya vidmahe, vakratuṇḍāya dhīmahi") and the seed-mantra "gaṁ" with its full nyasa procedure. Recited daily by Ganapatya sect and by all who begin any auspicious undertaking. Promises removal of obstacles, mastery of the eight siddhis and ultimate liberation to its daily reciter.',
+    keyConcepts: ['Ganesha = Brahman = Atman identity', 'Ekakshara mantra "gaṁ" + ganesha-gayatri', 'Eight-fold identification (creator/sustainer/destroyer/all/Brahman/Atman/visible-Tattva/Aum)', 'Phalashruti — eight siddhis + mukti for daily recitation', 'Used as obstacle-removal invocation before every Vedic ritual'],
+    famousVerse: {
+      sanskrit: 'त्वं ब्रह्मा त्वं विष्णुस्त्वं रुद्रस्त्वमिन्द्रस्त्वमग्निस्त्वं वायुस्त्वं सूर्यस्त्वं चन्द्रमास्त्वं ब्रह्म भूर्भुवः स्वरोम्',
+      iast: 'Tvaṁ brahmā tvaṁ viṣṇus tvaṁ rudras tvam indras tvam agnis tvaṁ vāyus tvaṁ sūryas tvaṁ candramās tvaṁ brahma bhūr bhuvaḥ svar oṁ',
+      translation: 'You are Brahma, you are Vishnu, you are Rudra, you are Indra, you are Agni, you are Vayu, you are Surya, you are Chandra — you are Brahman, the three worlds, you are Om.',
+      reference: 'Ganapati Upanishad 8',
+    },
+    takeaway: 'The remover of obstacles is not a deva among devas — he is the One the devas themselves are.',
+  },
+  {
+    slug: 'devi-upanishad', name: 'Devi Upanishad', sanskrit: 'देव्युपनिषद्', iast: 'Devy-upaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (Shakta Upanishad group)',
+    mantraCount: 32,
+    centralTheme: 'The Goddess as Brahman — Devi\'s self-disclosure of her own supreme nature to the devas',
+    mahavakya: { sanskrit: 'अहं ब्रह्मस्वरूपिणी', iast: 'Ahaṁ brahma-svarūpiṇī', translation: 'I am of the form of Brahman.', reference: 'Devi Upanishad 2' },
+    summary:
+      'A Shakta Upanishad of 32 mantras. Opens with the devas approaching the Great Goddess and asking "Who are you, Mahadevi?" Her reply — the Devi-pratyabhijna — is one of the most powerful first-person self-disclosures in shruti: "I am of the form of Brahman; from me proceeds prakriti-purusha; I am the void and the non-void; I am bliss and non-bliss; I am the Vedas and the non-Vedas; I am born and unborn; I am below and above and around." Embeds the Navakshari mantra of Durga and the dhyana-shloka visualising her as red-hued, three-eyed, smiling, holding noose and goad. Closes with the celebrated assurance that the daily reciter is purified of every sin and gains union with the Devi.',
+    keyConcepts: ['Devi-pratyabhijna — Goddess\'s first-person Brahma-statement', 'Navakshari mantra of Durga embedded', 'Dhyana of Devi as Mahatripurasundari', 'Identity of Devi with Vac, Lakshmi, Sarasvati, Mahamaya', 'Phalashruti for daily Shakta recitation'],
+    famousVerse: {
+      sanskrit: 'अहं ब्रह्मस्वरूपिणी । मत्तः प्रकृतिपुरुषात्मकं जगत् । शून्यं चाशून्यं च',
+      iast: 'Ahaṁ brahma-svarūpiṇī, mattaḥ prakṛti-puruṣātmakaṁ jagat, śūnyaṁ cāśūnyaṁ ca',
+      translation: 'I am of the very form of Brahman. From me proceeds the world of prakriti and purusha. I am the void and the non-void.',
+      reference: 'Devi Upanishad 2',
+    },
+    takeaway: 'When the Goddess names herself, the answer is not "consort of" — the answer is Brahman.',
+  },
+  {
+    slug: 'garbha-upanishad', name: 'Garbha Upanishad', sanskrit: 'गर्भोपनिषद्', iast: 'Garbhopaniṣad',
+    veda: 'Yajur', vedaShakha: 'Krishna Yajur Veda',
+    mantraCount: 5,
+    centralTheme: 'Embryology and gestation as a vehicle for non-dual teaching on the embodied Self',
+    summary:
+      'Five long mantras (often divided into prose paragraphs) presenting a remarkably detailed pre-modern embryology alongside Vedanta. Catalogues the human body — five elements, six tastes, seven dhatus, ten doors, three humours, 180 joints, 107 marmas, 900 sinews, four-and-a-half crore hairs — then walks month-by-month through gestation: liquefaction in the first month, hardening into a lump in the second, limb-budding in the third, bones in the fourth, skin in the fifth, mouth/nose/eyes/ears in the sixth, jiva-entry in the seventh, completion in the eighth, descent in the ninth. The seventh-month foetus, conscious in the womb, recollects past lives and resolves to seek liberation; at birth the maya of Vaishnavi obliterates the memory. The closing teaching: this body, however constructed, is not the Self.',
+    keyConcepts: ['Month-by-month gestational stages (1-9)', 'Body inventory — dhatus, marmas, joints, doors', 'Seventh-month jiva-entry + past-life recall in the womb', 'Vaishnavi maya erases memory at birth', 'Pancha-bhuta and tri-dosha enumeration', 'The body as anatma'],
+    famousVerse: {
+      sanskrit: 'सप्तमे मासि जीवेन संयुक्तो भवति । अष्टमे मासि सर्वसंपूर्णो भवति',
+      iast: 'Saptame māsi jīvena saṁyukto bhavati, aṣṭame māsi sarva-sampūrṇo bhavati',
+      translation: 'In the seventh month it becomes united with the jiva; in the eighth month it becomes complete in every respect.',
+      reference: 'Garbha Upanishad 3',
+    },
+    takeaway: 'The Self that resolved liberation in the womb is the same Self reading these words — only the maya is thicker now.',
+  },
+  {
+    slug: 'jabala-darshana-upanishad', name: 'Jabala Darshana Upanishad', sanskrit: 'जाबालदर्शनोपनिषद्', iast: 'Jābāla-darśanopaniṣad',
+    veda: 'Sama', vedaShakha: 'Sama Veda (Yoga Upanishad group)',
+    mantraCount: 113,
+    centralTheme: 'The Atman realised through ashtanga-yoga as taught by Dattatreya to Sankriti',
+    summary:
+      'A 113-mantra yoga-Upanishad in ten chapters cast as a dialogue between Lord Dattatreya and his disciple Sankriti. Lays out a full Patanjala-style ashtanga-yoga (yama, niyama, asana, pranayama, pratyahara, dharana, dhyana, samadhi) but recast in advaita-vedanta terms: each anga becomes a meditation on the Self. Distinctive contributions: the nine chakra schema (extends the standard six with talu, ajna and brahmarandhra), the seventy-two thousand nadis with sushumna-pingala-ida central, the ten pranas, and a detailed kundalini ascent. Closes by declaring that the eight angas are not eight separate disciplines but one continuous awakening of the inner light. Dattatreya-Sankriti dialogue makes this one of the foundational texts of the Avadhuta tradition.',
+    keyConcepts: ['Ashtanga-yoga recast in advaita terms', 'Dattatreya-Sankriti dialogue (Avadhuta lineage source)', 'Nine chakras + 72,000 nadis schema', 'Ten pranas and their stations', 'Kundalini-jagarana via prana + bandha + mudra', 'Yama-niyama as continuous Self-meditation'],
+    famousVerse: {
+      sanskrit: 'यमश्च नियमश्चैव आसनं प्राणसंयमः । प्रत्याहारो धारणा च ध्यानं समाधिरेव च',
+      iast: 'Yamaś ca niyamaś caiva āsanaṁ prāṇa-saṁyamaḥ, pratyāhāro dhāraṇā ca dhyānaṁ samādhir eva ca',
+      translation: 'Yama, niyama, asana, breath-control, withdrawal, concentration, meditation and absorption — these are the eight limbs of yoga.',
+      reference: 'Jabala Darshana 1.1',
+    },
+    takeaway: 'Patanjali\'s eight limbs become Vedanta when each limb is meditation on "I am That."',
+  },
+  {
+    slug: 'tripura-upanishad', name: 'Tripura Upanishad', sanskrit: 'त्रिपुरोपनिषद्', iast: 'Tripuropaniṣad',
+    veda: 'Rig', vedaShakha: 'Rig Veda (Shakta Upanishad group)',
+    mantraCount: 16,
+    centralTheme: 'Tripura Sundari and the Shodashi mantra — the cornerstone of the Sri Vidya tradition',
+    summary:
+      'A compact but exceptionally dense Shakta Upanishad of 16 mantras — one of the three foundational shruti texts of the Sri Vidya tradition (alongside the Tripuratapini and Bhavana Upanishads). Each of the 16 mantras is held to correspond to one of the 16 kalas of the moon and to one of the 16 syllables of the Shri Shodashi mantra, the most secret form of the Pancadashi addressing Tripura Sundari, the Goddess of the three cities (waking/dream/sushupti, or the three bindus of the Sri Yantra). Encodes the Sri Chakra geometry — nine interlocking triangles, the bindu at the centre as Maha Tripura Sundari — and the kamakala visualisation. Heavily commented by Bhaskararaya in his Saubhagya-bhaskara. Considered the most concentrated tantra within the orthodox Vedic canon.',
+    keyConcepts: ['Sri Vidya foundational shruti', 'Shodashi mantra (16 syllables = 16 mantras = 16 kalas)', 'Sri Chakra / Sri Yantra geometry', 'Tripura = three cities = three states / three bindus', 'Kamakala visualisation', 'Bhaskararaya\'s Saubhagya-bhaskara commentary'],
+    famousVerse: {
+      sanskrit: 'त्रिपुरा परमेशानी जयति त्रिजगन्मयी । आदिमध्यान्तरहिता सच्चिदानन्दविग्रहा',
+      iast: 'Tripurā parameśānī jayati tri-jagan-mayī, ādi-madhyānta-rahitā sac-cid-ānanda-vigrahā',
+      translation: 'Victory to Tripura, the Supreme Sovereign, who is the form of the three worlds — without beginning, middle or end, whose body is being-consciousness-bliss.',
+      reference: 'Tripura Upanishad 1',
+    },
+    takeaway: 'The three cities are the three states of your own consciousness — Tripura Sundari sits as the bindu at their centre.',
+  },
+  {
+    slug: 'atma-upanishad', name: 'Atma Upanishad', sanskrit: 'आत्मोपनिषद्', iast: 'Ātmopaniṣad',
+    veda: 'Atharva', vedaShakha: 'Atharva Veda (Sāmānya-Vedānta Upanishad group)',
+    mantraCount: 3,
+    centralTheme: 'The threefold Atman — bahyatman (gross body), antaratman (subtle/jiva) and paramatman (causal/supreme Self)',
+    summary:
+      'A miniature Upanishad of just three mantras attributed to the sage Angiras. Despite its brevity it lays out a complete Vedantic anthropology by distinguishing three meanings of the word "atman" — bahyatman (the outer self = the gross body with its skin, bones, marrow, nerves, hair, nails, hunger, sleep, fear, decay and death), antaratman (the inner self = the subtle body of intellect, manas, ahamkara and the ten organs, the experiencer of waking, dream and deep sleep, of the eight prakritis and the three gunas) and paramatman (the supreme Self = the pure consciousness adored with Om, beyond the three states, beyond the three bodies, beyond birth and death, the witness of all). Maps directly onto the later panchakosha-viveka and the karana-sukshma-sthula trilogy that became the staple of every Vedantic primer.',
+    keyConcepts: ['Three Atmans: bahya (gross body), antara (subtle/jiva), parama (causal/Brahman)', 'Body inventory parallel to Garbha Upanishad', 'Antaratman = experiencer of jagrat-svapna-sushupti', 'Paramatman = pure consciousness adored by Om', 'Source-text for Vedantasara\'s sthula-sukshma-karana sharira-traya'],
+    famousVerse: {
+      sanskrit: 'अथ परमात्मा यथाक्षरमुपासनीयः । ओमित्येतस्याक्षरस्य पादाश्चतुर्थः शान्त आत्मा',
+      iast: 'Atha paramātmā yathākṣaram upāsanīyaḥ, om ity-etasyākṣarasya pādāś caturthaḥ śānta ātmā',
+      translation: 'Now the supreme Self is to be meditated upon as the imperishable — the fourth quarter of the syllable Om, the silent and peaceful Self.',
+      reference: 'Atma Upanishad 3',
+    },
+    takeaway: 'Three things call themselves "I" — the body, the mind, and the silence behind both. Only the third is the Atman.',
+  },
 ];
 
 export function upanishadSlugs(): string[] {
