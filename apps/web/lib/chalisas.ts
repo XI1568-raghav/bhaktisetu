@@ -1143,6 +1143,194 @@ export const CHALISAS: ChalisaInfo[] = [
       { label: 'Geeta Press Gorakhpur (Kuber Chalisa)', url: 'https://www.gitapress.org' },
     ],
   },
+  {
+    slug: 'santoshi-mata-chalisa',
+    name: 'Santoshi Mata Chalisa',
+    sanskrit: 'सन्तोषी माता चालीसा',
+    deity: 'Goddess Santoshi Mata (daughter of Lord Ganesha, granter of contentment)',
+    composer: 'Traditional (popularised across north India after the 1975 Hindi film Jai Santoshi Maa cemented the 16-Friday vrat tradition)',
+    composedIn: 'Hindi (with classical Sanskrit beej-mantra invocations)',
+    whenRecited: '16 consecutive Fridays (Shukravar Vrat), beginning preferably in Shukla Paksha of Shravan or Margashirsha; during the Santoshi Mata Vrat-katha; on Akshaya Tritiya; before new beginnings requiring contentment of mind',
+    description:
+      '40-verse hymn to Santoshi Mata — the goddess of contentment and satisfaction, daughter of Lord Ganesha and his consorts Riddhi and Siddhi. The deity emerged in popular Hindu worship during the 20th century but draws on much older Tantric Ganapati lineage traditions. The Chalisa describes her four-armed form holding a sword, trishul, kalash, and abhaya mudra, seated on a lotus, with the Friday-fast prohibition against sour foods (khatta) being her foundational injunction.',
+    significance:
+      'The most widely-observed vrat by north Indian women in the late 20th and 21st centuries. The 16-Friday Santoshi Vrat is considered the supreme remedy for marital problems, financial stress, and removal of all causes of family discontent. The injunction against sour foods (especially imli, lemon, raw mango) for 16 consecutive Fridays develops dietary discipline and trains the mind in contentment. The Chalisa is recited at the beginning and conclusion of the 16-week vrat cycle.',
+    benefits: [
+      'Removal of marital discord and family quarrels',
+      'Financial stability and freedom from sudden expenses',
+      'Recovery from long-pending court cases and property disputes',
+      'Mental contentment (santosh) — the foundational psychological state for all spiritual progress',
+      'Granting of long-desired worldly wishes (especially conception, employment, debt-clearance)',
+      'Protection of children from accidents and illness',
+    ],
+    excerpt: [
+      'जय सन्तोषी माता मैया, गणपति की प्यारी कन्या॥',
+      'रिद्धि सिद्धि की हो तुम बेटी, सुख समृद्धि देने वाली॥',
+      'सोलह शुक्रवार जो व्रत करे, खट्टा वर्जित मन में धरे॥',
+      'गुड़ चना का भोग लगाये, माँ की कथा सुने सुनाये॥',
+      'सोलहवें शुक्र को उद्यापन, पाये मनवांछित फल जीवन में॥',
+      'जो नर श्रद्धा से नित गाये, सुख सम्पत्ति घर में पाये॥',
+    ],
+    excerptMeaning:
+      'Victory to Santoshi Mata, beloved daughter of Ganapati. You are the child of Riddhi and Siddhi, the bestower of happiness and prosperity. Whoever observes the 16-Friday vrat keeping the prohibition against sour food, offers jaggery-chana as bhog, and hears/recites your story, on the 16th Friday performs the Udyapan ceremony — receives all wished-for fruits in life. Whoever sings with faith daily receives wealth and contentment in his home. The chalisa is the opening invocation of the entire 16-week Shukravar Vrat cycle, the foundational vrat for marital harmony and family contentment in modern north Indian household practice.',
+    durationMinutes: 7,
+    relatedPujas: ['santoshi-vrat', 'shukravar-vrat', 'ganesh-puja'],
+    externalSources: [
+      { label: 'Geeta Press Gorakhpur (Santoshi Mata Chalisa + Vrat Katha)', url: 'https://www.gitapress.org' },
+      { label: 'Santoshi Mata Vrat tradition reference', url: 'https://www.santoshimaa.com' },
+    ],
+  },
+  {
+    slug: 'narsimha-chalisa',
+    name: 'Narsimha Chalisa',
+    sanskrit: 'नृसिंह चालीसा',
+    deity: 'Lord Narasimha (fourth avatara of Vishnu — half-man half-lion form)',
+    deitySlug: 'narasimha',
+    composer: 'Traditional (post-classical, drawn from the Narasimha Purana and the Ahobilam temple tradition)',
+    composedIn: 'Hindi-Awadhi (with extensive Sanskrit beej-mantra integration from the Narasimha mantra-shastra)',
+    whenRecited: 'Narasimha Jayanti (Vaishakha Shukla Chaturdashi — the only Vishnu avatara birthday celebrated at twilight), every Saturday for protection from enemies and black magic, before traveling through dangerous areas, during Sade Sati Shani affliction, when facing legal or supernatural threats',
+    description:
+      '40-verse fierce protective hymn to Lord Narasimha — Vishnu\'s most ferocious avatara who manifested at twilight from a pillar to slay the demon-king Hiranyakashipu and save the child-devotee Prahlada. The Chalisa describes the awesome form: lion-faced with a flowing mane, blazing eyes, fangs, claws like thunderbolts, tearing the demon\'s chest open on his thigh at the threshold (neither inside nor outside), at twilight (neither day nor night), with his nails (neither weapon made by man nor god).',
+    significance:
+      'The supreme protective hymn in the entire Vaishnava tradition. Narasimha is the ugra-rakshaka (fierce protector) of devotees — the avatara invoked when no other deity\'s protection is sufficient. The Chalisa is the primary recitation of the Ahobilam Narasimha temple complex (9 manifestations across the hills of Andhra Pradesh) and is considered the most authoritative remedy for black magic (abhichara), chronic enemy harassment, court cases involving threat to life, and severe Shani-Rahu-Ketu malefic afflictions in the horoscope. Many Sri Vaishnava households recite it at every twilight (sandhya).',
+    benefits: [
+      'Protection from black magic, tantrik attacks, and abhichara karma',
+      'Removal of chronic enemy harassment and legal threats to life',
+      'Relief from severe Shani sade-sati, Rahu, and Ketu mahadasha afflictions',
+      'Granting of fierce courage to face seemingly insurmountable obstacles',
+      'Protection during travel through forests, dangerous areas, and at twilight hours',
+      'Removal of fear of premature death (akala-mrityu) and accidents',
+    ],
+    excerpt: [
+      'जय नृसिंह नरहरि देवा, प्रह्लाद के प्राण रक्षेवा॥',
+      'खम्भ फाड़ कर तुम प्रकटे, हिरण्यकश्यप का गर्व मिटाये॥',
+      'सन्ध्या काल में देहली पर, उग्र रूप धर वध किया तत्पर॥',
+      'नख से चीर के पेट उघारा, असुर का अन्त किया तुम न्यारा॥',
+      'भक्त प्रह्लाद को गोद बिठाये, अभय वरदान दिया वहीं पर॥',
+      'जो नर श्रद्धा से नित गाये, शत्रु भय नाशे टोटका जाये॥',
+    ],
+    excerptMeaning:
+      'Victory to Narasimha, the man-lion deity, protector of Prahlada\'s life. Bursting forth from the pillar, you destroyed the pride of Hiranyakashipu. At twilight, on the threshold, in fierce form you performed the slaying immediately. With your nails you tore open the demon\'s belly — uniquely you ended the asura. You placed devotee Prahlada in your lap and granted the boon of fearlessness right there. Whoever recites with faith daily — fear of enemies is destroyed and black magic is dispelled. Recited at every Narasimha Jayanti, on Saturdays for protection from enemies and at twilight by Sri Vaishnavas as a daily protective mantra. The most authoritative remedy across Hindu tradition for abhichara karma and enemy threats to life.',
+    durationMinutes: 8,
+    relatedPujas: ['narasimha-jayanti', 'narasimha-homam', 'shani-shanti-puja'],
+    externalSources: [
+      { label: 'Narasimha Purana (Sanskrit text)', url: 'https://www.sacred-texts.com' },
+      { label: 'Ahobilam Narasimha temple (9 manifestations)', url: 'https://www.ahobilamutt.org' },
+      { label: 'Geeta Press Gorakhpur (Narsimha Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'vishwakarma-chalisa',
+    name: 'Vishwakarma Chalisa',
+    sanskrit: 'विश्वकर्मा चालीसा',
+    deity: 'Lord Vishwakarma (divine architect of the cosmos, son of Brahma)',
+    composer: 'Traditional (post-classical, popularised in the artisan and architect communities — particularly in Bengal, Bihar, Jharkhand, and among Vishwakarma-vansi communities nationwide)',
+    composedIn: 'Hindi (with Sanskrit invocations from the Rig Veda Mandala 10 Vishwakarma Sukta)',
+    whenRecited: 'Vishwakarma Jayanti (17 September annually, Kanya Sankranti — the only Hindu festival fixed on solar calendar), Vishwakarma Puja Day (factory and workshop tradition across north and east India), Diwali eve in artisan households, before commissioning new machinery or vehicles, before construction of new buildings or vehicles',
+    description:
+      '40-verse hymn to Lord Vishwakarma — the divine architect (deva-shilpi) who designed the entire cosmos, the four mythological cities (Swarnalanka of Ravana, Indraprastha of Pandavas, Dwarka of Krishna, Sone-ki-Lanka), the Trishul of Shiva, the Sudarshana Chakra of Vishnu, the Vajra of Indra (from Sage Dadhichi\'s bones), and all the celestial weapons of the gods. The Chalisa describes his five-faced form holding the architectural and craft tools — chisel, hammer, plumb-line, compass, and palm-leaf manuscript of design.',
+    significance:
+      'The foundational hymn for all artisan, engineer, architect, and manufacturer communities in India. Vishwakarma Puja Day is the largest factory holiday in eastern and northern India — every workshop, garage, factory floor, and construction site decorates machinery with garlands, performs tool-puja (calling them the body of Vishwakarma), and recites this Chalisa. Mechanical engineers, civil engineers, IT professionals (modern interpretation as code architects), carpenters, blacksmiths, goldsmiths, and weavers consider Vishwakarma their kuldevta. The hymn is particularly invoked before purchasing a new vehicle, opening a new manufacturing unit, or beginning construction.',
+    benefits: [
+      'Success and prosperity in all manufacturing, engineering, and construction businesses',
+      'Protection of machinery, vehicles, and tools from breakdown and accident',
+      'Sharpening of intellect and craft-skill for artisans and engineers',
+      'Granting of original design and creative innovation abilities',
+      'Removal of obstacles in construction projects (especially Vastu doshas)',
+      'Protection of factory workers, drivers, and machine operators from injury',
+    ],
+    excerpt: [
+      'जय विश्वकर्मा कर्ता देवा, सृष्टि रचैता परम जिनेवा॥',
+      'पंच मुख दश हस्त सुहावे, औजार सब हस्त में पावे॥',
+      'स्वर्णलंका सोने की बनाई, इन्द्रप्रस्थ पाण्डव हित रचाई॥',
+      'द्वारका कृष्ण निवास बनाये, सुदर्शन त्रिशूल वज्र सब रचाये॥',
+      'शिल्पी कारीगर तुमको पूजे, यन्त्र चक्र सब चलते सूझे॥',
+      'जो नर श्रद्धा से नित गाये, धन वैभव कौशल घर पाये॥',
+    ],
+    excerptMeaning:
+      'Victory to Vishwakarma, the divine architect, the supreme creator of the universe. Your five-faced form with ten hands holds all the tools of craft. You built golden Lanka, you constructed Indraprastha for the Pandavas, you made Dwarka the residence of Krishna, you forged the Sudarshana Chakra, Trishula, and Vajra. Artisans and craftsmen worship you — all machines and wheels turn with insight. Whoever recites with faith daily receives wealth, abundance, and skill in his home. Recited on Vishwakarma Jayanti (17 September), Vishwakarma Puja Day, before commissioning new machinery or vehicles, and before construction of buildings — the foundational hymn for engineer, architect, manufacturer, and artisan communities across India.',
+    durationMinutes: 7,
+    relatedPujas: ['vishwakarma-puja', 'tool-puja', 'griha-pravesh', 'vahana-puja'],
+    externalSources: [
+      { label: 'Rig Veda Mandala 10 Vishwakarma Sukta', url: 'https://www.sacred-texts.com' },
+      { label: 'Geeta Press Gorakhpur (Vishwakarma Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'brihaspati-chalisa',
+    name: 'Brihaspati Chalisa (Guru Dev Chalisa)',
+    sanskrit: 'बृहस्पति चालीसा',
+    deity: 'Lord Brihaspati (Jupiter / Guru graha — preceptor of the gods)',
+    composer: 'Traditional (drawn from the Brihaspati Tantra and popularised in Vedic astrological remedial literature)',
+    composedIn: 'Hindi (with extensive Sanskrit beej-mantra integration from Vedic Brihaspati Sukta)',
+    whenRecited: 'Every Thursday (Brihaspativar / Guruvar), during Guru Mahadasha or Guru Pratyantara periods, on Guru Purnima (Ashadha Purnima), during Brihaspati transit benefic periods, before exams especially competitive ones, before marriage discussions',
+    description:
+      '40-verse hymn to Lord Brihaspati — the priest of the gods (Deva Guru), son of sage Angiras, lord of wisdom and Vedic learning, and the planet Jupiter (Guru graha) in Vedic astrology. The Chalisa describes his four-armed yellow-clad form holding a sacred book, kamandalu, japa-mala, and abhaya mudra, seated on a golden lotus or chariot drawn by eight horses, with his consort Tara beside him.',
+    significance:
+      'The supreme hymn for wisdom, knowledge, scholarship, marriage of unmarried girls (Brihaspati rules husband for women in Vedic astrology), and Jupiter graha shanti. Thursday is universally the day of Guru-puja across India — temples conduct mass recitation, students perform Brihaspati puja before examinations, and parents of unmarried daughters specifically commission Brihaspati Chalisa recitations 16 consecutive Thursdays to overcome marriage delays. The Chalisa is the most authoritative remedy for weak or afflicted Jupiter in horoscope (especially when Jupiter is debilitated in Capricorn, combust, or aspected by malefics).',
+    benefits: [
+      'Granting of wisdom, knowledge, and scholarship — particularly Vedic learning',
+      'Success in examinations, competitive tests, and academic pursuits',
+      'Removal of marriage delays for unmarried girls (Jupiter rules husband-karaka)',
+      'Granting of children (Jupiter rules putra-karaka)',
+      'Protection of guru-shishya relationships and spiritual progress',
+      'Remedy for weak or afflicted Jupiter — strengthens 2nd, 5th, 9th, and 11th house significations',
+    ],
+    excerpt: [
+      'जय बृहस्पति देवा गुरु महाराजा, अंगिरस पुत्र देवों के राजा॥',
+      'पीत वस्त्र पीत पुष्प धारे, स्वर्ण सिंहासन पर विराजे प्यारे॥',
+      'चार भुजा में पुस्तक माला, कमण्डल अभय हस्त शुभकारी॥',
+      'गुरुवार के दिन तुम्हें पूजे, विद्या बुद्धि का वर मांगे॥',
+      'पीला वस्त्र पहन के आये, चना दाल गुड़ बेसन लाये॥',
+      'जो छात्र श्रद्धा से नित गाये, परीक्षा में प्रथम स्थान पाये॥',
+    ],
+    excerptMeaning:
+      'Victory to Brihaspati, the divine preceptor, son of Angiras, king of the gods. Wearing yellow garments and yellow flowers, seated on a golden throne. Your four arms hold a book, japa-mala, kamandalu, and abhaya mudra — all auspicious. On Thursday devotees worship you, asking for the boon of wisdom and intellect. Wearing yellow garments they come, bringing chana dal, jaggery, and besan as offerings. Whichever student recites with faith daily obtains first rank in examinations. Recited every Thursday by students, parents of unmarried girls, and devotees during Jupiter Mahadasha periods. The most authoritative remedy in Vedic astrology for weak or afflicted Brihaspati — strengthens wisdom, marriage prospects, children, and 9th-house dharma-karaka significations.',
+    durationMinutes: 7,
+    relatedPujas: ['guru-purnima-puja', 'brihaspati-shanti', 'guruvar-vrat', 'navagraha-shanti'],
+    externalSources: [
+      { label: 'Brihaspati Sukta — Rig Veda', url: 'https://www.sacred-texts.com' },
+      { label: 'Geeta Press Gorakhpur (Brihaspati Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
+  {
+    slug: 'mansa-devi-chalisa',
+    name: 'Mansa Devi Chalisa',
+    sanskrit: 'मनसा देवी चालीसा',
+    deity: 'Goddess Mansa Devi (serpent goddess, daughter of Shiva, granter of wishes)',
+    composer: 'Traditional (drawn from the Mansa Mangal Kavya of Bengal — composed across the 13th-18th centuries by poets including Bijoy Gupta, Bipradas Pipilai, and Ketakadas Kshemananda)',
+    composedIn: 'Hindi-Bengali bridge tradition (with original Sanskrit beej-mantras from the Mansa Tantra and Bengali devotional adaptations)',
+    whenRecited: 'Nag Panchami (Shravan Shukla Panchami), every Shravan Monday, the 5 days of Mansa Puja in Bengal (Bhadra Sankranti and the 4 preceding days), during snake-related fears or after snake-bite incidents, for protection of children from poisoning and infectious diseases',
+    description:
+      '40-verse hymn to Goddess Mansa Devi — the serpent goddess of Bengal, Bihar, Jharkhand, Odisha, and Assam, daughter of Shiva from Mansa (the mind itself — hence "Mansa"), sister of Vasuki the king of serpents, mother of the sage Astika who saved the serpent race from Janamejaya\'s sarpa-yajna. The Chalisa describes her one-eyed form (the other eye burnt by her step-mother Chandi) seated on a lotus surrounded by serpents, holding a snake-canopy above her head, with her vahana Hamsa (swan) at her feet.',
+    significance:
+      'The supreme protective hymn against snake-related fears, snake-bite, infectious diseases (especially smallpox-cholera which were traditionally attributed to her wrath), and granting of children to barren couples. Mansa Devi temples at Haridwar (one of the Panch Tirth of Haridwar atop Bilwa Parvat), Bansberia (Hooghly), Manasa (Madhya Pradesh), and at thousands of village shrines across eastern India worship her with this Chalisa. The Manasa-mangal Kavya tradition makes her the central deity of Bengali folk Hinduism — the story of merchant Chand Sadagar (who refused her worship and lost 7 sons and 14 ships before yielding) is universally known in Bengal.',
+    benefits: [
+      'Protection from snake-bite and snake-related fears (especially for children playing outdoors)',
+      'Remedy for Kala Sarpa dosha and Sarpa-shap in horoscope',
+      'Removal of infectious diseases — particularly during epidemic outbreaks',
+      'Granting of children to barren couples (Mansa is invoked for putra-prapti)',
+      'Protection of merchants and traders during sea voyages and long journeys',
+      'Removal of mental anxieties (she is "Mansa" — the goddess of the mind itself)',
+    ],
+    excerpt: [
+      'जय मनसा देवी सर्प कुमारी, शिव की कन्या कष्ट हरारी॥',
+      'वासुकि की भगिनी कहलाई, आस्तिक मुनि की माता बनाई॥',
+      'पद्मासन पर तुम विराजे, सर्पों का छत्र शिर पर साजे॥',
+      'नाग पञ्चमी के दिन तुम पूजे, दूध केसर लड्डू सब चढ़े॥',
+      'चाँद सौदागर भी झुक गया, सात पुत्र खो कर भक्त बन गया॥',
+      'जो नर श्रद्धा से नित गाये, सर्प भय रोग सब टल जाये॥',
+    ],
+    excerptMeaning:
+      'Victory to Mansa Devi, the serpent-maiden, daughter of Shiva, destroyer of suffering. You are known as the sister of Vasuki and mother of sage Astika. You are seated on a lotus throne, with a canopy of serpents adorning your head. On Nag Panchami day devotees worship you, offering milk, saffron, and laddoos. Even the merchant Chand Sadagar bowed before you — after losing seven sons he became a devotee. Whoever recites with faith daily — fear of snakes and disease all are dispelled. The foundational hymn of Bengali folk Hinduism, recited on Nag Panchami, all 5 days of the annual Mansa Puja in Bengal, and at every village Mansa shrine across eastern India. The most authoritative remedy for snake-bite, Kala Sarpa dosha, and infectious disease across the eastern Indian devotional tradition.',
+    durationMinutes: 8,
+    relatedPujas: ['nag-panchami', 'mansa-puja', 'sarpa-shanti', 'kala-sarpa-dosha-nivaran'],
+    externalSources: [
+      { label: 'Mansa Mangal Kavya (Bengali tradition)', url: 'https://www.sacred-texts.com' },
+      { label: 'Mansa Devi Mandir Haridwar', url: 'https://maamansadevi.org' },
+      { label: 'Geeta Press Gorakhpur (Mansa Chalisa)', url: 'https://www.gitapress.org' },
+    ],
+  },
 ];
 
 export function getChalisa(slug: string): ChalisaInfo | undefined {
