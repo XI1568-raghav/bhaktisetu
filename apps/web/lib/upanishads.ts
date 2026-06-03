@@ -589,6 +589,86 @@ export const UPANISHADS: UpanishadInfo[] = [
     },
     takeaway: 'Every body is a four-storeyed temple. Walk up from the eye to the crown — the four states are not in time, they are in space.',
   },
+  {
+    slug: 'kaivalya-upanishad', name: 'Kaivalya Upanishad', sanskrit: 'कैवल्योपनिषद्', iast: 'Kaivalyopaniṣad',
+    veda: 'Krishna Yajur', vedaShakha: 'Krishna Yajur Veda (Sannyasa Upanishad group)',
+    mantraCount: 25,
+    centralTheme: 'The supreme realization (kaivalya) attained through devotion (bhakti), renunciation (sannyasa), and identification with Shiva as one\'s own Self',
+    summary:
+      'A concise but extraordinarily powerful Sannyasa Upanishad imparted by Lord Brahma to sage Ashwalayana, who asked for the knowledge by which one reaches the supreme imperishable Brahman. The teaching uniquely combines all three margas (paths): bhakti (devotional surrender to Shiva), karma-tyaga (renunciation of all action-fruits), and jnana (direct identification with the witnessing Self). The text is the scriptural source for the famous declaration "I am Shiva, the auspicious one, the supreme Brahman — I am neither the doer nor the enjoyer, I am beyond cause and effect" (Mantra 18-19). The Upanishad culminates in the bold ahamgraha-upasana: "Shivohamasmi" — "I am Shiva himself," delivered not as a mere intellectual conclusion but as a direct meditative realization. The Upanishad ends with the rare reward-clause stating that one who studies this Upanishad daily becomes purified from the five great sins (panca-mahapataka) — even brahma-hatya. Adi Shankaracharya wrote a complete commentary (Kaivalya Bhashya), establishing it as one of the foundational texts of Advaita-bhakti synthesis.',
+    keyConcepts: ['Bhakti + sannyasa + jnana synthesis', 'Shivohamasmi (I am Shiva) ahamgraha-upasana', 'Imparted by Brahma to Ashwalayana', 'Source of "I am neither doer nor enjoyer" declaration', 'Removal of pancha-mahapataka through daily recitation', 'Adi Shankara\'s Kaivalya Bhashya foundational'],
+    famousVerse: {
+      sanskrit: 'मय्येव सकलं जातं मयि सर्वं प्रतिष्ठितम्। मयि सर्वं लयं याति तद्ब्रह्माद्वयमस्म्यहम्॥',
+      iast: 'Mayy eva sakalaṁ jātaṁ mayi sarvaṁ pratiṣṭhitam, mayi sarvaṁ layaṁ yāti tad brahmādvayam asmy aham',
+      translation: 'In me alone all is born, in me alone all is established, in me alone all dissolves — that non-dual Brahman, that I am.',
+      reference: 'Kaivalya Upanishad — Mantra 19',
+    },
+    takeaway: 'Devotion, renunciation, and knowledge are not three roads — they are one road walked from three sides. At the end of all of them: Shivohamasmi.',
+  },
+  {
+    slug: 'subala-upanishad', name: 'Subala Upanishad', sanskrit: 'सुबालोपनिषद्', iast: 'Subālopaniṣad',
+    veda: 'Shukla Yajur', vedaShakha: 'Shukla Yajur Veda (Samanya Vedanta Upanishad group)',
+    mantraCount: 16,
+    centralTheme: 'The cosmology of creation from the unmanifest, the 16-chapter analysis of the gross-subtle-causal universe, and the final dissolution back into the unborn',
+    summary:
+      'A unique cosmological Upanishad framed as the dialogue between sage Raikva (also called Subala) and Lord Brahma. Across 16 brief chapters (khandas), the Upanishad lays out the entire scheme of creation: from the unmanifest avyakta arises akasha (space), from akasha vayu (air), from vayu tejas (fire), from tejas apah (water), from apah prithvi (earth). It then maps the 24 tattvas of Sankhya onto Vedantic non-dualism — accepting the Sankhya enumeration but denying its dualism. The text gives one of the most detailed scriptural accounts of the 72,000 nadis (subtle channels) in the body, the heart-lotus with its 100 petals, and the sushumna nadi as the highway of liberation. The 14th chapter contains the famous "param paragatim" mantra describing the dissolution of the universe back into the unborn imperishable. Subala is one of only three Upanishads (along with Garbha and Pinda) that gives detailed Vedic embryology and the journey of the jiva from conception to liberation.',
+    keyConcepts: ['16-khanda cosmological systematization', '24 Sankhya tattvas accepted but dualism rejected', '72,000 nadis + heart-lotus + sushumna highway', 'Detailed Vedic embryology', 'Universe dissolution into unborn imperishable', 'Brahma-Subala (Raikva) dialogue framework'],
+    famousVerse: {
+      sanskrit: 'अव्यक्तादण्डमुदबभूव। तस्मादण्डात्प्रजापतिः। प्रजापतेरिमे लोकाः॥',
+      iast: 'Avyaktād aṇḍam udababhūva, tasmād aṇḍāt prajāpatiḥ, prajāpater ime lokāḥ',
+      translation: 'From the unmanifest emerged the cosmic egg; from that egg arose Prajapati; from Prajapati arose these worlds.',
+      reference: 'Subala Upanishad — Khanda 2',
+    },
+    takeaway: 'The whole universe is a 16-step staircase from the unborn to the manifest. Whoever knows the steps can walk down them in meditation — and return.',
+  },
+  {
+    slug: 'jabali-upanishad', name: 'Jabali Upanishad', sanskrit: 'जाबाल्युपनिषद्', iast: 'Jābāly-upaniṣad',
+    veda: 'Sama', vedaShakha: 'Sama Veda (Shaiva Upanishad group)',
+    mantraCount: 14,
+    centralTheme: 'The Pashupata vow of smearing sacred ash (vibhuti / bhasma), the Pashupati form of Shiva as the supreme lord of all bound souls (pashus)',
+    summary:
+      'A foundational Shaiva Upanishad consisting of the dialogue between Lord Pashupati (Shiva) and sage Pippalada, with subsequent transmission through sage Jabali (different from the Jabali of Ramayana). The Upanishad establishes the Pashupata vrata — the supreme vow of the Pashupata Shaiva tradition consisting of three layers of bhasma-snana (bath in sacred ash): the gross outer smearing of vibhuti across forehead, throat, chest, navel, and arms forming the tripundra; the subtle internal purification of the panchakosha through visualization; and the supreme realization that the ash itself represents the burnt remains of all dvaita (duality) — what remains is only Shiva. The Upanishad explains the deep metaphysics of bhasma: every wood-fire reduces complex matter to its simplest residue (ash); similarly, the inner agni of jnana reduces the complex jiva-jagat-Ishvara distinctions to their simplest residue (Shiva-Self). Lakulisha, the 2nd century CE founder of the systematic Pashupata Shaiva school, drew his entire Pashupata Sutra commentary tradition from this Upanishad. The text gives the formula for the Bhasma Jabala mantras still chanted by every Lingayata, Veerashaiva, and dasanami sannyasi at morning bhasma-snana.',
+    keyConcepts: ['Foundational Pashupata vrata text', 'Three-layer bhasma-snana (gross/subtle/supreme)', 'Tripundra forehead-marking origin', 'Pashupati-Pippalada-Jabali transmission', 'Source of Lakulisha\'s Pashupata Sutra school', 'Vibhuti as cosmic ash-residue metaphor'],
+    famousVerse: {
+      sanskrit: 'सर्वे देवा भस्म रुद्राः सर्व देवा भस्म वासुदेवाः। तस्माद्भस्मना धारयेद्विप्रः सर्वकर्मसु॥',
+      iast: 'Sarve devā bhasma rudrāḥ sarva devā bhasma vāsudevāḥ, tasmād bhasmanā dhārayed vipraḥ sarva-karmasu',
+      translation: 'All the gods become ash in Rudra, all the gods become ash in Vasudeva — therefore the wise one should wear sacred ash in all his acts.',
+      reference: 'Jabali Upanishad — Mantra 7',
+    },
+    takeaway: 'Every fire leaves ash. The fire of jnana leaves only Shiva. Smear the ash daily and remember: what burns is duality, what remains is the Self.',
+  },
+  {
+    slug: 'yogachudamani-upanishad', name: 'Yogachudamani Upanishad', sanskrit: 'योगचूडामण्युपनिषद्', iast: 'Yoga-cūḍāmaṇy-upaniṣad',
+    veda: 'Sama', vedaShakha: 'Sama Veda (Yoga Upanishad group)',
+    mantraCount: 121,
+    centralTheme: 'The crest-jewel of Hatha Yoga — six chakras, three nadis, four locks (bandhas), the kundalini ascent, and the merger into the sahasrara',
+    summary:
+      'The longest and most systematic of the Hatha Yoga Upanishads — literally the "crest-jewel of yoga" (chudamani = crest-jewel). Across 121 mantras, the text provides the complete operating manual of Hatha Yoga: the six chakras (muladhara, svadhishthana, manipura, anahata, vishuddhi, ajna) with their bija-mantras (Lam, Vam, Ram, Yam, Ham, Om), petal-counts, deities, animal vahanas, and meditational images; the three nadis (ida cooling lunar left, pingala heating solar right, sushumna central fire); the four bandhas (mula bandha, uddiyana bandha, jalandhara bandha, maha bandha); the three granthis (Brahma at navel, Vishnu at heart, Rudra at throat — the three knots the kundalini must pierce); the kechari mudra (rolling the tongue back to the soft palate); and the final sahasrara dissolution where the kundalini-shakti merges with Shiva. The text is the primary source for Swatmarama\'s Hatha Yoga Pradipika (15th century) and for the entire Nath Sampradaya tradition initiated by Matsyendranath and Gorakshanath. The mantras 86-92 contain the famous "shiva-shakti samarasya" verses describing the bliss of the kundalini merger with sahasrara Shiva — the source for all later Kashmir Shaiva metaphysics of pratyabhijna.',
+    keyConcepts: ['Six chakras with bija-mantras + deities + vahanas', 'Three nadis (ida cooling, pingala heating, sushumna central)', 'Four bandhas + three granthis', 'Kechari mudra technique', 'Source of Hatha Yoga Pradipika', 'Foundation of Nath Sampradaya', 'Shiva-Shakti samarasya in sahasrara'],
+    famousVerse: {
+      sanskrit: 'कुण्डलिनी शक्तिरुद्रिक्ता विद्युत्पुञ्जसमप्रभा। सुषुम्नया समारुह्य सहस्रारे विलीयते॥',
+      iast: 'Kuṇḍalinī śaktir udriktā vidyut-puñja-samaprabhā, suṣumnayā samāruhya sahasrāre vilīyate',
+      translation: 'The aroused kundalini-shakti, blazing like a mass of lightning, ascending through the sushumna, dissolves in the thousand-petalled crown.',
+      reference: 'Yogachudamani Upanishad — Mantra 89',
+    },
+    takeaway: 'Six chakras, three nadis, four locks. Wake the serpent at the base, give her the central highway, and she will find Shiva at the crown — every time.',
+  },
+  {
+    slug: 'akshamala-upanishad', name: 'Akshamala Upanishad', sanskrit: 'अक्षमालोपनिषद्', iast: 'Akṣamālopaniṣad',
+    veda: 'Rig', vedaShakha: 'Rig Veda (Shaiva Upanishad group)',
+    mantraCount: 24,
+    centralTheme: 'The metaphysics, materials, threading, and consecration of the japa-mala (rosary) and the comparative power of bead-materials for different mantras',
+    summary:
+      'A specialized ritual-philosophical Upanishad consisting of the dialogue between sage Prajapati and Guha (Kartikeya/Murugan). The text systematically establishes the entire science of japa-mala (rosary) construction and use across all major Hindu traditions. Across 24 mantras, the Upanishad covers: the 12 standard materials for beads (rudraksha — supreme for Shiva mantras; tulsi — supreme for Vishnu mantras; sphatika/crystal — Sarasvati and Chandra mantras; coral — Mars and Lakshmi mantras; pearl — Moon mantras; rudraksha-19-mukhi — most powerful single bead; lotus seed — Lakshmi; sandalwood — Saraswati; turmeric — Baglamukhi; conch — Vishnu; pravala/coral — protection; gomati chakra — Krishna); the precise count standards (108 for general japa, 54 for short rituals, 27 for emergency, 1008 for grand sadhana); the meru-bead (the head-bead representing the deity, never crossed during japa); the consecration ritual (panchamrita-snana, mantra-prana-pratishtha, the 21-day awakening period); and the rules of thumb-finger combinations for different mantras (the index finger for protective mantras, middle finger for moksha mantras, ring finger for prosperity mantras — the little finger never used for japa). The Upanishad is the primary scriptural authority cited by every Tantric, Vedic, and Bhakti tradition for mala-shastra. Adi Shankaracharya\'s "Akshamalika Stotra" draws directly from this text.',
+    keyConcepts: ['12 bead-materials with deity-specific power tables', '108/54/27/1008 count standards', 'Meru-bead rules (never crossed during japa)', '21-day mala consecration ritual', 'Thumb-finger combination rules for mantra types', 'Prajapati-Guha dialogue framework', 'Authoritative for all Tantric and Vedic japa-shastra'],
+    famousVerse: {
+      sanskrit: 'रुद्राक्षं शिवमन्त्राणां तुलसी हरिमन्त्रके। स्फटिकं सर्वमन्त्रेषु अष्टोत्तर शतं सदा॥',
+      iast: 'Rudrākṣaṁ śiva-mantrāṇāṁ tulasī hari-mantrake, sphaṭikaṁ sarva-mantreṣu aṣṭottara-śataṁ sadā',
+      translation: 'Rudraksha for Shiva mantras, tulsi for Hari mantras, crystal (sphatika) for all mantras universally — always one hundred and eight (108) beads.',
+      reference: 'Akshamala Upanishad — Mantra 14',
+    },
+    takeaway: 'The mala in your hand is not jewellery. It is an instrument — the right wood for the right mantra, threaded right, awakened right. Then 108 becomes infinity.',
+  },
 ];
 
 export function upanishadSlugs(): string[] {
