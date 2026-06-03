@@ -108,7 +108,15 @@ const adminListSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export const __testing = { bookSchema, verifySchema, adminListSchema, nextConsultRef };
+// Astrologer LIST query — same shape minus astrologerId (implicit: caller).
+// Astrologer side filters by their own currentUser.id; only status + paging.
+const astrologerListSchema = z.object({
+  status: z.enum(['pending_payment', 'confirmed', 'completed', 'cancelled']).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const __testing = { bookSchema, verifySchema, adminListSchema, astrologerListSchema, nextConsultRef };
 
 export async function consultationRoutes(server: FastifyInstance) {
   // Ephemeral Jitsi room (kept for backward-compat — used by /astrology
@@ -487,6 +495,67 @@ export async function consultationRoutes(server: FastifyInstance) {
       },
     });
   });
+
+  // ─── GET /astrologer/mine ───────────────────────────────────────────────
+  // Astrologer-side LIST of AstrologerConsultation rows assigned to the
+  // calling user. Filter is `astrologer_id = currentUser.id` (UUID equality).
+  // The slug↔UUID onboarding gap means rows whose astrologer_id is still a
+  // slug like 'astro_002' won't match a real User.id UUID — those simply
+  // don't appear in the result. Once onboarding maps slug → User row this
+  // endpoint surfaces them transparently.
+  server.get(
+    '/astrologer/mine',
+    { preHandler: [authenticateUser, requireRole('ASTROLOGER')] },
+    async (request, reply) => {
+      const parsed = astrologerListSchema.safeParse(request.query ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid query', issues: parsed.error.flatten() });
+      }
+      const { status, limit, offset } = parsed.data;
+      const astrologerId = request.currentUser!.id;
+      await ensureConsultationTables();
+
+      const params: unknown[] = [astrologerId];
+      let whereSql = `WHERE astrologer_id = $1`;
+      if (status) {
+        params.push(status);
+        whereSql += ` AND status = $${params.length}`;
+      }
+      params.push(limit);
+      params.push(offset);
+      const sql = `SELECT * FROM astrologer_consultations ${whereSql}
+         ORDER BY scheduled_at DESC NULLS LAST, created_at DESC
+         LIMIT $${params.length - 1} OFFSET $${params.length};`;
+
+      const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(sql, ...params);
+      const countParams = params.slice(0, params.length - 2);
+      const countSql = `SELECT COUNT(*)::int AS total FROM astrologer_consultations ${whereSql};`;
+      const countRows = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...countParams);
+      const total = countRows[0]?.total ?? 0;
+
+      return reply.send({
+        total,
+        limit,
+        offset,
+        consultations: rows.map((row) => ({
+          id: row.id,
+          reference: row.reference,
+          userId: row.user_id,
+          astrologerId: row.astrologer_id,
+          astrologerName: row.astrologer_name,
+          minutes: row.minutes,
+          amountInr: Number(row.amount_inr),
+          currency: row.currency,
+          status: row.status,
+          roomName: row.room_name,
+          jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
+          scheduledAt: row.scheduled_at,
+          createdAt: row.created_at,
+          paidAt: row.paid_at,
+        })),
+      });
+    },
+  );
 
   // ─── GET /admin/all ─────────────────────────────────────────────────────
   // ADMIN-only LIST across all AstrologerConsultation rows. Powers the
