@@ -1,0 +1,314 @@
+// Sacred Rivers of Bharat — Sapta Sindhu + supplementary canon
+// Programmatic-SEO surface for "sacred rivers of india", "ganga origin",
+// "saraswati river vedic", etc. Cross-links to lib/tirthas.ts where major
+// tirthas sit on the riverbank.
+
+export interface SacredRiver {
+  slug: string;
+  name: string;
+  sanskrit: string;
+  length: number; // kilometres
+  origin: string;
+  mouth: string;
+  states: string[];
+  goddessName: string;
+  goddessSlug?: string;
+  sacredGhats: string[];
+  majorTirthas: string[]; // slugs referencing lib/tirthas.ts where possible
+  legend: string;
+  spiritualSignificance: string;
+  bestPilgrimSeason: string;
+  mentionedIn: string[]; // scriptures
+}
+
+export const SACRED_RIVERS: SacredRiver[] = [
+  {
+    slug: 'ganga',
+    name: 'Ganga (गङ्गा)',
+    sanskrit: 'गङ्गा',
+    length: 2525,
+    origin: 'Gaumukh, Gangotri Glacier, Uttarakhand (3,892 m)',
+    mouth: 'Bay of Bengal (Ganga–Brahmaputra Delta, Sundarbans)',
+    states: ['Uttarakhand', 'Uttar Pradesh', 'Bihar', 'Jharkhand', 'West Bengal'],
+    goddessName: 'Goddess Ganga (Mata Ganga)',
+    goddessSlug: 'ganga',
+    sacredGhats: [
+      'Dashashwamedh Ghat, Varanasi',
+      'Manikarnika Ghat, Varanasi',
+      'Har Ki Pauri, Haridwar',
+      'Triveni Ghat, Rishikesh',
+      'Triveni Sangam, Prayagraj',
+      'Munger Ghat, Bihar',
+      'Babughat, Kolkata',
+    ],
+    majorTirthas: [
+      'gangotri',
+      'haridwar-har-ki-pauri',
+      'rishikesh',
+      'prayagraj-triveni-sangam',
+      'kashi-vishwanath',
+    ],
+    legend:
+      'Bhagiratha performed centuries of tapas to bring Ganga from Svarga to liberate his ancestors, the sixty thousand sons of Sagara, burnt to ash by Sage Kapila’s glance. Shiva caught her thunderous descent in his matted locks (jata) to spare the earth, releasing her gently across Bharat. Hence the name Bhagirathi for her upper course.',
+    spiritualSignificance:
+      'Ganga is the only river worshipped as a living goddess across all four Vedas, capable of washing away the karmic residue of seven lifetimes through a single dip (snan). Cremation on her banks at Manikarnika is believed to grant moksha by Shiva himself whispering the Taraka mantra in the ear of the departing soul. Every drop is amrit — non-perishable holy water (Ganga jal) kept in every Hindu home.',
+    bestPilgrimSeason: 'October–March (post-monsoon clarity); Ganga Dussehra in Jyeshtha (May–June)',
+    mentionedIn: ['Rig Veda 10.75', 'Mahabharata Anushasana Parva', 'Skanda Purana', 'Vishnu Purana', 'Ramayana Bala Kanda'],
+  },
+  {
+    slug: 'yamuna',
+    name: 'Yamuna (यमुना)',
+    sanskrit: 'यमुना',
+    length: 1376,
+    origin: 'Yamunotri Glacier, Bandarpoonch peak, Uttarakhand (4,421 m)',
+    mouth: 'Confluence with Ganga at Triveni Sangam, Prayagraj',
+    states: ['Uttarakhand', 'Himachal Pradesh', 'Haryana', 'Delhi', 'Uttar Pradesh'],
+    goddessName: 'Goddess Yamuna (Yami)',
+    goddessSlug: 'yamuna',
+    sacredGhats: [
+      'Vishram Ghat, Mathura',
+      'Keshi Ghat, Vrindavan',
+      'Yamunotri Hot Springs',
+      'Nigambodh Ghat, Delhi',
+      'Bateshwar Ghat, Agra',
+      'Kalindi Kunj, Delhi-Noida',
+    ],
+    majorTirthas: [
+      'yamunotri',
+      'mathura-krishna-janmabhoomi',
+      'vrindavan-banke-bihari',
+      'prayagraj-triveni-sangam',
+    ],
+    legend:
+      'Daughter of Surya and twin sister of Yama, Lord of Death — bathing in her waters is said to grant the bather immunity from her brother’s noose. Krishna’s entire balya leela unfolded on her banks: subduing the serpent Kalia from her depths, raas with the gopis at Keshi Ghat, the cowherd games at Vishram Ghat where Krishna rested after slaying Kamsa.',
+    spiritualSignificance:
+      'Yamuna is rasa-bhakti incarnate — the river of divine love rather than liberation. Pushti Marga (Vallabhacharya sampradaya) treats every drop as Krishna’s own grace. A dip washes asuric pratibandha (demonic obstacles) and grants prema-bhakti unattainable through ritual alone. Her dark blue waters are said to mirror Krishna’s shyama complexion.',
+    bestPilgrimSeason: 'October–March; Yamuna Jayanti on Chaitra Shukla Shashthi (March–April)',
+    mentionedIn: ['Rig Veda 10.75', 'Bhagavata Purana 10', 'Brahma Vaivarta Purana', 'Garga Samhita'],
+  },
+  {
+    slug: 'saraswati',
+    name: 'Saraswati (सरस्वती)',
+    sanskrit: 'सरस्वती',
+    length: 1600,
+    origin: 'Har-ki-Dun glacier region, Himalayas (Vedic course, now subterranean)',
+    mouth: 'Invisible confluence with Ganga–Yamuna at Triveni Sangam, Prayagraj',
+    states: ['Haryana', 'Rajasthan', 'Gujarat (palaeochannels)'],
+    goddessName: 'Goddess Saraswati (Vagdevi)',
+    goddessSlug: 'saraswati',
+    sacredGhats: [
+      'Triveni Sangam (invisible third stream), Prayagraj',
+      'Brahma Sarovar, Kurukshetra',
+      'Pushkar Sarovar, Rajasthan',
+      'Adi Badri, Haryana',
+      'Bhojpur kund, Madhya Pradesh',
+      'Prabhas Patan, Gujarat (Saraswati–Hiran–Kapila Sangam)',
+    ],
+    majorTirthas: [
+      'prayagraj-triveni-sangam',
+      'pushkar-brahma',
+      'somnath',
+    ],
+    legend:
+      'The most extolled river of the Rig Veda — "ambitame, naditame, devitame Saraswati" (best of mothers, best of rivers, best of goddesses). She is said to have gone underground (antah-salila) when her course dried in the late Vedic period, choosing concealment to preserve her sanctity. Satellite imaging of the Ghaggar–Hakra palaeochannel has revived debate over her physical course.',
+    spiritualSignificance:
+      'Saraswati is jnana-shakti — the river of pure knowledge, music, speech, and the Vedas themselves. Bathing in the invisible third stream at Triveni Sangam during Kumbh is held to wash buddhi-mala (impurities of intellect) and bestow the gift of vac-siddhi (perfected speech). Vasant Panchami invokes her at every educational sankalpa across Bharat.',
+    bestPilgrimSeason: 'Vasant Panchami (January–February); Kumbh Mela cycles at Prayagraj',
+    mentionedIn: ['Rig Veda 6.61 + 7.95', 'Mahabharata Salya Parva', 'Brahmanda Purana', 'Skanda Purana'],
+  },
+  {
+    slug: 'narmada',
+    name: 'Narmada (नर्मदा)',
+    sanskrit: 'नर्मदा',
+    length: 1312,
+    origin: 'Amarkantak plateau, Maikal Range, Madhya Pradesh (1,048 m)',
+    mouth: 'Gulf of Khambhat, Arabian Sea (near Bharuch, Gujarat)',
+    states: ['Madhya Pradesh', 'Maharashtra', 'Gujarat'],
+    goddessName: 'Goddess Narmada (Rewa)',
+    goddessSlug: 'narmada',
+    sacredGhats: [
+      'Narmada Udgam, Amarkantak',
+      'Sangam Ghat, Omkareshwar',
+      'Maheshwar Ghats (Ahilya Bai’s fort)',
+      'Bhedaghat (Marble Rocks), Jabalpur',
+      'Chandod–Karnali Sangam, Gujarat',
+      'Bharuch (Bhrigu Tirtha)',
+    ],
+    majorTirthas: [
+      'omkareshwar-jyotirlinga',
+    ],
+    legend:
+      'Born of Shiva’s perspiration during his Tandava on Mount Maikal, hence Shankari. She is the only river in Bharat that flows westward against the prevailing easterly grade, having refused marriage to the Sonbhadra river out of pride in her independence. Every stone (bana-linga) lifted from her bed is considered a swayambhu Shivalinga requiring no pran-pratishtha.',
+    spiritualSignificance:
+      'Narmada parikrama — the 2,600 km circumambulation of the entire river, taken on foot over 3 years 3 months and 13 days — is the supreme penance in Sanatana Dharma, said to grant moksha equal to ten Kashi visits. A mere darshan grants what bathing in Ganga gives after seven days, what Yamuna gives after three. "Ganga snanat phalam yat tu, Narmada darshanat tat" (Skanda Purana).',
+    bestPilgrimSeason: 'November–February (parikrama season); Narmada Jayanti on Magha Shukla Saptami',
+    mentionedIn: ['Skanda Purana (Revakhanda)', 'Matsya Purana', 'Kurma Purana', 'Mahabharata'],
+  },
+  {
+    slug: 'godavari',
+    name: 'Godavari (गोदावरी)',
+    sanskrit: 'गोदावरी',
+    length: 1465,
+    origin: 'Brahmagiri Hills, Trimbakeshwar, Maharashtra (1,067 m)',
+    mouth: 'Bay of Bengal (Konaseema Delta, Andhra Pradesh)',
+    states: ['Maharashtra', 'Telangana', 'Andhra Pradesh', 'Chhattisgarh', 'Odisha'],
+    goddessName: 'Goddess Godavari (Gautami)',
+    goddessSlug: 'godavari',
+    sacredGhats: [
+      'Kushavarta Kund, Trimbakeshwar',
+      'Ramkund, Nashik (Panchavati)',
+      'Basara Saraswati Ghat, Telangana',
+      'Bhadrachalam Ghat (Ram temple)',
+      'Pattisam Ghat, Andhra Pradesh',
+      'Antarvedi Sangam, Bay of Bengal',
+    ],
+    majorTirthas: [
+      'trimbakeshwar',
+    ],
+    legend:
+      'Sage Gautama, accused of go-hatya (killing a cow) by sages jealous of his prosperity, performed severe penance to Shiva who released Ganga from his locks at Brahmagiri — she became known as Gautami Ganga or Godavari in his honour. Rama, Sita and Lakshmana spent their forest exile at Panchavati on her banks; Lakshmana cut Surpanakha’s nose at Tapovan; Sita was abducted from here by Ravana.',
+    spiritualSignificance:
+      'Called Dakshina Ganga (Ganga of the South) — every twelve years she hosts Simhastha Kumbh at Nashik–Trimbakeshwar when Jupiter enters Leo. Bathing during Pushkaram (twelve-yearly festival) is held to liberate twenty-one generations of ancestors. The river’s most sacred bend at Bhadrachalam is where Rama drew the Lakshmana Rekha — pilgrims today still mark its memory there.',
+    bestPilgrimSeason: 'Simhastha Kumbh (next 2027 at Nashik); Pushkaram every 12 years',
+    mentionedIn: ['Brahma Purana', 'Skanda Purana (Brahmottara Khanda)', 'Ramayana Aranya Kanda', 'Padma Purana'],
+  },
+  {
+    slug: 'kaveri',
+    name: 'Kaveri (कावेरी)',
+    sanskrit: 'कावेरी',
+    length: 805,
+    origin: 'Talakaveri, Brahmagiri Hills, Kodagu (Coorg), Karnataka (1,341 m)',
+    mouth: 'Bay of Bengal (Poompuhar / Kaveripoompattinam Delta, Tamil Nadu)',
+    states: ['Karnataka', 'Tamil Nadu', 'Kerala', 'Puducherry'],
+    goddessName: 'Goddess Kaveri Amma',
+    sacredGhats: [
+      'Talakaveri Brahma Kund, Kodagu',
+      'Bhagamandala Triveni Sangam',
+      'Srirangapatna Ghats',
+      'Mukti Ghat, Talakad',
+      'Amma Mandapam Ghat, Srirangam',
+      'Mayuram (Mayiladuthurai) Ghats',
+      'Poompuhar Sangam, Bay of Bengal',
+    ],
+    majorTirthas: [
+      'srirangam-ranganatha-swamy',
+      'chidambaram-nataraja',
+    ],
+    legend:
+      'Daughter of Sage Kavera (an incarnation of Brahma), adopted as foster-daughter by Lopamudra and wedded to Sage Agastya. To bless the parched southern plains during a great drought, she leapt from Agastya’s kamandalu at Talakaveri and flowed as a river — Agastya consented, knowing her higher dharma was to nourish Tamilakam. She is therefore both wife and Mother of the Tamil land.',
+    spiritualSignificance:
+      'Kaveri is Dakshina Bhagirathi for South India — her annual swelling on Tula Sankramana (mid-October) is said to be Ganga herself visiting Talakaveri to wash off the sins of her northern bathers. Bathing at this moment is considered equal to ten Kashi visits. Twelve-yearly Kaveri Pushkaram brings millions to Srirangam, where the river circumambulates the Ranganatha temple island.',
+    bestPilgrimSeason: 'Tula Sankramana (October); Kaveri Pushkaram every 12 years (next 2029)',
+    mentionedIn: ['Skanda Purana (Kaveri Mahatmya)', 'Agni Purana', 'Silappadikaram', 'Periya Puranam'],
+  },
+  {
+    slug: 'sindhu',
+    name: 'Sindhu (सिन्धु / Indus)',
+    sanskrit: 'सिन्धु',
+    length: 3180,
+    origin: 'Senge Khabab springs near Mount Kailash, Tibet (5,500 m)',
+    mouth: 'Arabian Sea (Sindh Delta, Pakistan)',
+    states: ['Ladakh (India)', 'Gilgit-Baltistan', 'Khyber Pakhtunkhwa', 'Punjab (Pak)', 'Sindh'],
+    goddessName: 'Sindhu Devi (Sindhu Mata)',
+    sacredGhats: [
+      'Sindhu Darshan Sangam, Leh',
+      'Nimoo Ghat (Zanskar–Sindhu Sangam)',
+      'Skardu Confluence',
+      'Attock Sangam (Kabul River meeting)',
+      'Sukkur Sadhu Bela Mandir Ghat',
+    ],
+    majorTirthas: [],
+    legend:
+      'The river that gave Bharat its outside name — Hindu, Hindustan, India all trace back to Sindhu through Persian "Hindu" and Greek "Indos". Praised in Rig Veda 10.75 (Nadi Sukta) as the most powerful of the seven sisters, racing like a battle chariot from the mountain. The Vedic civilisation flowered along her banks at Mohenjo-daro and Harappa.',
+    spiritualSignificance:
+      'First of the Sapta Sindhu and the geographic root of Sanatana Dharma. Sindhu Darshan festival every June at Leh — instituted in 1997 — gathers pilgrims to perform abhishek and remember the river of our origin. Though most of her course flows outside modern India, her Ladakhi headwaters remain accessible and the annual darshan is treated as equivalent to a Char Dham yatra by Sindhi Hindus.',
+    bestPilgrimSeason: 'Sindhu Darshan Festival, full moon of Jyeshtha (June)',
+    mentionedIn: ['Rig Veda 10.75 (Nadi Sukta)', 'Atharva Veda', 'Mahabharata Bhishma Parva', 'Vishnu Purana'],
+  },
+  {
+    slug: 'brahmaputra',
+    name: 'Brahmaputra (ब्रह्मपुत्र)',
+    sanskrit: 'ब्रह्मपुत्र',
+    length: 2900,
+    origin: 'Angsi Glacier, Mount Kailash region, Tibet (5,300 m) — known as Yarlung Tsangpo',
+    mouth: 'Bay of Bengal (Ganga–Brahmaputra–Meghna Delta)',
+    states: ['Arunachal Pradesh', 'Assam', 'Meghalaya (catchment)'],
+    goddessName: 'Goddess Brahmaputra (only male-named river worshipped as son of Brahma)',
+    sacredGhats: [
+      'Parashuram Kund, Lohit',
+      'Umananda Ghat, Guwahati (Peacock Island)',
+      'Kamakhya Ghat, Nilachal Hill',
+      'Auniati Satra Ghat, Majuli',
+      'Sukreswar Ghat, Guwahati',
+      'Dibrugarh Ghats',
+    ],
+    majorTirthas: [],
+    legend:
+      'Son of Brahma and Amogha, wife of Sage Shantanu — hence the only major river in Bharat with a male name (putra = son). When Parashurama killed his mother on his father’s command, he could not wash the matricide blood from his axe in any river. Brahmaputra at Parashuram Kund finally absolved him, splitting his axe into the river — pilgrims to this day come to perform Tarpan that no other water can complete.',
+    spiritualSignificance:
+      'Bathing at Parashuram Kund on Makar Sankranti is held to wash sins no other tirtha can touch — even patricide and matricide. The river encircles Kamakhya (Shakti Peeth where Sati’s yoni fell) and is considered the husband-river of the Goddess. Brahmaputra Aarti at Sukreswar Ghat each evening rivals Varanasi’s Ganga Aarti in scale.',
+    bestPilgrimSeason: 'Makar Sankranti (January) at Parashuram Kund; Ambubachi Mela (June) at Kamakhya',
+    mentionedIn: ['Kalika Purana', 'Yogini Tantra', 'Mahabharata Vana Parva', 'Brahmaputra Mahatmya'],
+  },
+  {
+    slug: 'krishna-river',
+    name: 'Krishna (कृष्णा)',
+    sanskrit: 'कृष्णा',
+    length: 1400,
+    origin: 'Mahabaleshwar, Western Ghats, Maharashtra (1,337 m)',
+    mouth: 'Bay of Bengal (Krishna Delta near Hamsaladeevi, Andhra Pradesh)',
+    states: ['Maharashtra', 'Karnataka', 'Telangana', 'Andhra Pradesh'],
+    goddessName: 'Goddess Krishnaveni',
+    sacredGhats: [
+      'Panchganga Sangam, Mahabaleshwar',
+      'Krishnabai Mandir Ghat, Wai',
+      'Sangam Ghat, Sangli',
+      'Sangameshwar Ghat (Krishna–Tungabhadra)',
+      'Vijayawada Kanaka Durga Ghat',
+      'Amaravati Ghats',
+    ],
+    majorTirthas: [
+      'srisailam-mallikarjuna',
+      'pandharpur-vitthal-rukmini',
+    ],
+    legend:
+      'Born from the kamandalu of Brahma at the source of five sister-streams — Krishna, Koyna, Venna, Savitri, Gayatri — which all rise at Mahabaleshwar from the symbolic mouth of a stone cow (gomukh). Krishna herself is held to be a partial avatara of Vishnu’s shyama form, which is why her banks host more Vishnu kshetras than Shiva.',
+    spiritualSignificance:
+      'Krishna Pushkaram every 12 years (next 2028) draws millions to Vijayawada and Amaravati. The river encircles Srisailam (one of 12 Jyotirlingas AND 18 Shakti Peethas — the only such double sthala) and a bath at Patalganga is held to grant kaivalya. The Mahabharata’s Bhishma rates her among the rivers that confer immediate punya merely by remembrance.',
+    bestPilgrimSeason: 'Krishna Pushkaram every 12 years; Maha Shivaratri at Srisailam',
+    mentionedIn: ['Skanda Purana (Sahyadri Khanda)', 'Brahmanda Purana', 'Mahabharata Bhishma Parva'],
+  },
+  {
+    slug: 'tapti',
+    name: 'Tapti (ताप्ती / Tapi)',
+    sanskrit: 'ताप्ती',
+    length: 724,
+    origin: 'Multai (Multapi), Satpura Range, Madhya Pradesh (752 m)',
+    mouth: 'Gulf of Khambhat, Arabian Sea (near Surat, Gujarat)',
+    states: ['Madhya Pradesh', 'Maharashtra', 'Gujarat'],
+    goddessName: 'Goddess Tapti (Tapati, daughter of Surya)',
+    sacredGhats: [
+      'Surya Kund, Multai (Multapi)',
+      'Burhanpur Ghats, Madhya Pradesh',
+      'Prakasha Tirtha Ghats (Dakshin Kashi)',
+      'Changdev Maharaj Ghat, Edalabad',
+      'Ashwini Kumar Ghat, Surat',
+      'Magdalla Ghat, Surat',
+    ],
+    majorTirthas: [],
+    legend:
+      'Daughter of Surya and Chhaya, sister to Yamuna and Shani — born to cool Surya’s tapa (heat) which the earth could no longer bear. King Samvarana of the Lunar dynasty fell in love with her at sight and through severe tapas won her hand; from their union descended the Kuru lineage and ultimately the Pandavas. Tapti is therefore the foremother of Bharata Varsha’s royal heroes.',
+    spiritualSignificance:
+      'One of the seven rivers westward-flowing (paschima-vahini) and one of the only two — with Narmada — that grant moksha. Prakasha Tirtha on her banks is called Dakshin Kashi: dying here is held to give the same liberation as Manikarnika. Bathing during her Jayanti in Ashadha is said to neutralise the affliction of Shani (her brother) for those undergoing Sade Sati.',
+    bestPilgrimSeason: 'Tapti Jayanti, Ashadha Shukla Saptami (June–July); Shani Jayanti for Shani relief',
+    mentionedIn: ['Skanda Purana (Tapi Khanda)', 'Padma Purana', 'Mahabharata Adi Parva (Sambharana–Tapati)', 'Brahma Purana'],
+  },
+];
+
+export function sacredRiverSlugs(): string[] {
+  return SACRED_RIVERS.map((r) => r.slug);
+}
+
+export function getSacredRiver(slug: string): SacredRiver | undefined {
+  return SACRED_RIVERS.find((r) => r.slug === slug);
+}

@@ -68,6 +68,8 @@ const TARGETS = [
   { url: '/dashavatar/krishna', expected: ['BreadcrumbList', 'Article'] },
   { url: '/sapta-rishis', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/sapta-rishis/vasishtha', expected: ['BreadcrumbList', 'Article'] },
+  { url: '/chakras', expected: ['ItemList', 'BreadcrumbList'] },
+  { url: '/chakras/muladhara', expected: ['BreadcrumbList', 'Article'] },
   { url: '/discover', expected: ['ItemList', 'BreadcrumbList', 'CollectionPage'] },
   { url: '/wellness/vipassana/centers', expected: ['ItemList', 'BreadcrumbList'] },
   { url: '/wellness/vipassana/learn', expected: ['BreadcrumbList', 'Article'] },
