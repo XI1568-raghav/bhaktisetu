@@ -350,6 +350,15 @@ export default function RootLayout({
  {/* Right side */}
  <div className="flex items-center gap-1.5 ml-auto md:ml-0 shrink-0">
  <ListYourBusinessDropdown />
+ {/* Today persistent chip — daily-return hook (Sri Mandir #1 retention lever, amber accent per brand color discipline) */}
+ <a
+ href="/today"
+ className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors whitespace-nowrap"
+ aria-label="Today's panchang and aarti"
+ >
+ <Calendar className="w-3.5 h-3.5" />
+ Today
+ </a>
  <GlobalSearch />
  <NavCartButton />
  <div className="hidden sm:block">
