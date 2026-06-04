@@ -1,6 +1,68 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (3rd update — dead-href cleanup + /discover GROUPS regen PUSHED + CF stale-layout rebuild).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (4th update — brand discipline + home revamp PUSHED — Trust Strip replaces Our Story+Stats).
+
+## HANDOFF 2026-06-05 #4 (PUSHED — brand discipline + home revamp — Trust Strip + getTempleHero dedupe)
+
+Resumed from #3 post-compact. User explicit complaint: "The brand colors are not there, UI is out for the model, the font , the home page check and rewamp based on market research is not done". Multi-agent recon prior session → execution this session.
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `2e0cf41` | feat(web): brand discipline + home revamp — serif+devanagari tokens, footer wordmark saffron, Trust Strip replaces Our Story+Stats, getTempleHero dedupe | slot 5/1 |
+
+### Edits shipped (3 files)
+
+| File | Change |
+|---|---|
+| `apps/web/app/globals.css` | `@theme` block: added `--font-family-serif` (Crimson Pro + Tiro Devanagari Sanskrit + Georgia fallback) + `--font-family-devanagari` (Noto Sans Devanagari + Tiro fallback). Phase A.2. Devotional/sacred typography tokens for serif H1 + sanskrit accent surfaces. |
+| `apps/web/app/layout.tsx` | Footer wordmark L377-380: `Logo color #D4A76A → #F99A48` + `text-temple-gold → text-saffron-400`. Phase B. Unifies w/ header saffron-600 family (saffron-400 readable on dark `#2a2520` footer bg). |
+| `apps/web/app/page.tsx` | 3 edits: (1) hero bento L149-160 hardcoded Wikipedia URL+srcSet → `getTempleHero('golden-temple')`; (2) Live Darshan section L320-330 same swap; (3) L223-261 dropped `Our Story` 4-step (investor copy on consumer surface) + `Stats grid` (1B/30M/900/$58B = TAM not trust) → replaced w/ 4-card `Trust Strip` (Verified Temples / Video Proof / 80G Receipts / NRI Dual-Currency) using already-imported `Shield/Video/CheckCircle/Heart` icons + saffron primary + emerald `#059669` accents per brand color discipline. Phases D-1..D-4. |
+
+### Local build
+
+`pnpm next build` (apps/web) clean. All 500+ routes rebuilt. New Trust Strip absorbs Shield/Video/CheckCircle/Heart icons (no new import needed). 0 TS new errors (existing `typescript.ignoreBuildErrors: true` tolerates pre-existing TS18048 noise).
+
+### Verify (in flight)
+
+Monitor `b9fdv2fce` polls home page every 20s, exits early when all 3 strings render (`Verified Temples` + `Video Proof` + `80G Receipts`). Expect CF deploy of `2e0cf41` ~3 min. Resume cheatsheet: `curl -s https://darshya.online/ | grep -c "Verified Temples"` expect ≥1.
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed: **5** (1574f02 + 6233a85 + ceb2dad + 2ff5d8d + 2e0cf41). Over daily-1 by 4.
+- User explicit override: standing autonomy directive "complete everything in your hand without waiting for me dont worry about tokens work for 6-7 hours straight". Continues.
+- Monthly projection: 5 today × healthy = ~150/500 max = 30%. Headroom intact.
+
+### Plan phase status (reflective-knitting-valiant.md)
+
+- P1 IA spine ✓ (prior sessions)
+- P2 Mobile parity ✓ (prior sessions)
+- P3 Footer + Discover ✓ (prior sessions)
+- P4 Home composition ✓ THIS SESSION (Trust Strip + getTempleHero dedupe)
+- P5 GlobalSearch upgrade ✓ (prior sessions)
+- P6 Color discipline sweep PARTIAL — globals.css tokens + footer wordmark unified, top-10 violations on tithi/masa/navaratna/nakshatra/rashi pages NOT touched this session
+- Brand recovery (Agent C audit) ✓ THIS SESSION — globals.css fonts + footer wordmark + Trust Strip recompose
+
+### Carried open
+
+1. **Phase C** — ॐ accent + Devanagari sub-tagline in header (h-14 tight, cosmetic, deferred)
+2. **Phase D-5** — drop duplicate chat FAB (LiveChatWidget + WhatsAppButton both render simultaneously — keep Ask Pandit chip canonical)
+3. **Phase D-6** — move IntentTrio component below H1 (currently L91-92 above hero)
+4. **Phase D-7** — `/og/default` localhost leak audit
+5. 5 mind-map gaps (Today chip / Today #1 / Gift Puja / Astrology split / Mobile lang)
+6. P6 color sweep tithi/masa/navaratna/nakshatra/rashi
+7. Surface 13 orphan dynamic detail families
+8. Batch-23 LOCAL staging (aarti+5 / chalisa+5 / upanishad+7)
+9. P1 #5/#6/#7 (refresh-token JTI / EmailSession + /auth/logout / CSP nonce)
+10. Astrologer slug↔UUID design pass
+
+### Resume cheatsheet next session
+
+1. `curl -s https://darshya.online/ | grep -c "Verified Temples"` — expect ≥1 (Trust Strip live)
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` — expect 200
+3. `git log --oneline -5` — HEAD past `2e0cf41`
+4. If user "continue": Phase D-5/D-6 home polish OR Phase C ॐ header OR P6 color sweep
+
+---
 
 ## HANDOFF 2026-06-05 #3 (PUSHED — dead-href fixes + /discover regen + CF rebuild stamp)
 
