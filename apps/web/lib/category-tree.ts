@@ -35,6 +35,11 @@ export const CATEGORY_TREE: Category[] = [
     featured: { label: "Today's Aarti", href: '/today', sublabel: 'Day-of-week deity + live aartis' },
     items: [
       {
+        label: "Today's Hub",
+        href: '/today',
+        description: 'Day-of-week deity, mantra, festival countdown.',
+      },
+      {
         label: 'Live Darshan',
         href: '/darshan',
         description: 'Stream live aartis from temples across India.',
@@ -43,6 +48,11 @@ export const CATEGORY_TREE: Category[] = [
         label: 'Book a Puja',
         href: '/pujas',
         description: 'Sponsor a ritual with priest video proof.',
+      },
+      {
+        label: 'Gift a Puja',
+        href: '/gift',
+        description: 'Send a puja to a loved one — NRI USD/INR dual-currency.',
       },
       {
         label: 'Temples',
@@ -63,11 +73,6 @@ export const CATEGORY_TREE: Category[] = [
         label: 'Panchang Today',
         href: '/panchang',
         description: "Today's tithi, nakshatra, and shubh muhurat.",
-      },
-      {
-        label: "Today's Hub",
-        href: '/today',
-        description: 'Day-of-week deity, mantra, festival countdown.',
       },
     ],
   },
