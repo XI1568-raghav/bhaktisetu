@@ -75,6 +75,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: '9 Navaratna Gems', href: '/navaratna', description: 'Nine sacred gems of Vedic gemology — Ruby, Pearl, Red Coral, Emerald, Yellow Sapphire, Diamond, Blue Sapphire, Hessonite, Cat\'s Eye. One per Nava-Graha. Finger, metal, day, mantra, benefits, side-effects, quality indicators, price range, substitutes, trial duration.', count: '9 gems' },
       { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, 12 Jyotirlinga, Shakti Peeth, Pancha Bhoota and other canonical circuits.', count: '8 circuits' },
       { label: 'Vipassana Retreats', href: '/wellness/vipassana', description: '10-day silent meditation in the S.N. Goenka tradition. Learn the technique, find a center, apply directly.', count: '27 centers' },
+      { label: 'Bhakti Saints', href: '/bhakti-saint', description: 'Twelve medieval saints who carried devotion to the people — Tulsidas, Mirabai, Kabir, Chaitanya, Adi Shankara, Ramanuja, Madhva, Ramakrishna and more.', count: '12 saints' },
       { label: '16 Samskaras', href: '/samskaras', description: 'The Vedic life-stage rites from garbhadhana to antyeshti.', count: '16 rites' },
     ],
   },
