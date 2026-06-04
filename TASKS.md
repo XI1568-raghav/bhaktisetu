@@ -1,6 +1,126 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (3rd update — dead-href cleanup + /discover GROUPS regen PUSHED + CF stale-layout rebuild).
+
+## HANDOFF 2026-06-05 #3 (PUSHED — dead-href fixes + /discover regen + CF rebuild stamp)
+
+Resumed from #2 post-compact. Closed the 4 staged files → push → CF partial-deploy investigation → forced rebuild.
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `ceb2dad` | fix(web): dead nav hrefs + /discover GROUPS 39→54 with NEW saints group | slot 3/1 |
+| `2ff5d8d` | chore(deploy): sitemap stamp — force CF rebuild of ceb2dad layout.tsx footer hrefs | slot 4/1 |
+
+### Bug fixed end-to-end
+
+Prior 6233a85 shipped 3 dead hrefs (`/mahavidyas`, `/navadurga`, `/dwadasha-aditya` → 404 in prod). Routes live at `/devi/mahavidyas`, `/devi/navadurga`, `/aditya`. ceb2dad corrected:
+- `apps/web/lib/category-tree.ts` L133 — `/dwadasha-aditya` → `/aditya` (Library mega-panel Saints & Deities col)
+- `apps/web/app/layout.tsx` L472-473 — footer Saints & Deities col `/mahavidyas` → `/devi/mahavidyas`, `/navadurga` → `/devi/navadurga`
+- `apps/web/components/MobileBottomTabs.tsx` L27 — Library tab prefixes 3 path subs
+- `apps/web/app/discover/page.tsx` — GROUPS regen 39→54, NEW saints group (anchor `#saints` matches Library hub href)
+
+### Partial-deploy discovery (CF caveat)
+
+ceb2dad CF check_run=success but home footer still served bare `/mahavidyas` + `/navadurga` while `/discover` route DID deploy correctly w/ new saints group (curl found `sapta-mathruka` + `ashta-lakshmi` slugs only present in regen). cf-cache-status=DYNAMIC ruled out edge cache. Hypothesis: layout.tsx layout chunk not re-built in same atomic deploy as discover/page.tsx, OR per-route partial deploy state on CF Pages free-tier.
+
+Fix: pushed 2ff5d8d w/ 1-line sitemap stamp (precedent `f067706` HANDOFF 2026-06-04). Forced full re-prerender of root layout. Monitor `bf9z2rpli` iter=1 (~30s) flipped all 3 paths live + ALL_DEVI_PATHS_LIVE end-state confirmed.
+
+**NEW CAVEAT for `docs/caveats.md`**: CF Pages git-integration may deploy individual route updates without rebuilding root layout chunk on same atomic deploy. If layout.tsx changes don't propagate to all routes after CF success: push 1-line sitemap stamp to force full re-prerender.
+
+### Verify GREEN (post 2ff5d8d, 5/5 routes 200)
+
+- `https://darshya.online/` = 200 + footer href="/devi/mahavidyas" + href="/devi/navadurga" + href="/aditya"
+- `https://darshya.online/devi/mahavidyas` = 200
+- `https://darshya.online/devi/navadurga` = 200
+- `https://darshya.online/aditya` = 200
+- `https://darshya.online/discover` = 200 (new saints group present)
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed: **4** (1574f02 + 6233a85 + ceb2dad + 2ff5d8d). Over daily-1 rule by 3.
+- User explicit override: "continue to push live so that i can see the changes" — directive respected.
+- Monthly projection: 4 today × avg-loadable 30 = max 120/500 = 24%. Still healthy headroom.
+
+### Ultrathink reasoning artifact (response this turn)
+
+Full IA-redesign rationale documented in chat: 5-nav decision (Miller + benchmark Sri Mandir 3 / Utsav 6 / YouVersion 5) / Library 4-col depth-absorber (24 orphans single-col impossible) / mobile bottom-tab thumb-zone / footer slim drop 35-link sub-grid / brand color codification (saffron=action only, indigo=Library+Astrology, emerald=Yatra+commerce, amber=today only) / GlobalSearch promotion (#2 use after nav per market research).
+
+Verdict delivered: design ship-as-is, iterate on live PostHog funnel data (post U8 paste), not more pre-launch mind-mapping. Customer mind-mapping at this stage = guessing without behavior signal.
+
+### Carried open (5 mind-map gaps for next session, NOT today)
+
+1. **"Today" persistent chip** near GlobalSearch — Sri Mandir #1 daily-return hook
+2. **Today's Hub → #1 in Worship** (currently last) — daily-return = retention
+3. **Gift Puja → Worship items** — NRI revenue lever, only on home strip currently
+4. **Astrology split 2 sub-cols** (Calculators / Doshas+Consult) — 12-item single col = wall of text
+5. **Mobile lang switcher in Profile drawer** — 6 langs shipped, bottom-bar no surface
+
+### Lower-priority carried
+
+- NRI lane geo-IP auto-chip
+- Shop sub-cats (Navaratna, Tirth-prasad)
+- P6 brand color sweep tithi/masa/navaratna/nakshatra/rashi (tithi already indigo-aligned, needs Agent B file:line refs)
+- Surface 13 orphan dynamic detail families (free-pandit-advice, yatra-packages, pujas/home-puja sub-types)
+- Batch-23 LOCAL staging carried from 2026-06-04: aarti+5 / chalisa+5 / upanishad+7
+- P1 #5/#6/#7 heavy scope: refresh-token JTI / EmailSession expiresAt + /auth/logout / CSP nonce migration
+- Astrologer slug↔UUID design pass (~6-8h, owner KYC decisions)
+
+### Resume cheatsheet next session
+
+1. `curl -sI https://darshya.online/ | grep cf-ray` — verify fresh CF edge
+2. `curl -s https://darshya.online/ | grep -oE 'href="/(devi/|aditya|mahavidyas|navadurga)[^"]*"' | sort -u` — expect ONLY `/devi/mahavidyas`, `/devi/navadurga`, `/aditya`
+3. `git log --oneline -5` — HEAD past 2ff5d8d
+4. If user "continue": gap #1 (Today chip) or #4 (Astrology split) ride next push as paired refinement
+
+---
+
+
+
+## HANDOFF 2026-06-05 #2 (LOCAL STAGING — dead-href fixes + /discover GROUPS regen — NO PUSH)
+
+Resumed post-compact. Discovered 6233a85 shipped dead hrefs (`/mahavidyas`, `/navadurga`, `/dwadasha-aditya` → all 404 in prod). Routes actually live at `/devi/mahavidyas`, `/devi/navadurga`, `/aditya`.
+
+### Edits this turn (4 files staged, NOT committed)
+
+| File | Change |
+|---|---|
+| `apps/web/lib/category-tree.ts` | line 133 `/dwadasha-aditya` → `/aditya` (Dwadasha Aditya entry in Library mega-panel Saints & Deities col) |
+| `apps/web/app/layout.tsx` | lines 472-473 footer Saints & Deities col `/mahavidyas` → `/devi/mahavidyas`, `/navadurga` → `/devi/navadurga` |
+| `apps/web/components/MobileBottomTabs.tsx` | line 27 Library tab prefixes: `/mahavidyas` → `/devi/mahavidyas`, `/navadurga` → `/devi/navadurga`, `/dwadasha-aditya` → `/aditya` |
+| `apps/web/app/discover/page.tsx` | GROUPS regen 39 → 54 items + NEW saints group (anchor `#saints` matches Library mega-panel hub href) |
+
+### /discover GROUPS regen detail
+
+- scriptures: 8 → 11 (+hindu-philosophies, +hindu-symbols, +sanskrit)
+- saints (NEW group, accent indigo, anchor `#saints`): 9 items — bhakti-saint, deity, devi/mahavidyas, devi/navadurga, dashavatar, sapta-rishis, aditya, sapta-mathruka, ashta-lakshmi
+- cosmology → renamed "Calendar & Cosmology": 5 → 11 (+festival, +calendar, +ekadashi, +tithi, +masa, +sacred-rivers, +sacred-trees, +sacred-mountains)
+- practice → renamed "Devotional Practice": 19 → 16 (moved saints/deities out into NEW group, kept tirth/jyotirlinga/shakti-peeth/pancha-bhoota/navaratna/pilgrimage/vipassana/samskaras; added chakras, vedic-yajnas, rudraksha)
+- tools: 7 unchanged
+- Total: 39 → 54 (covers 14 missing wisdom families flagged in plan)
+
+All 11 referenced new routes verified to exist via `ls app/`. TSC noEmit produces only pre-existing TS18048/TS2532/TS2344 noise — none caused by my edits. `typescript.ignoreBuildErrors: true` in `next.config.ts` means Next build passes regardless.
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed today: **2** (1574f02 + 6233a85). Over daily-1 by 1.
+- **NO push this turn**. Staged 4 modified files live in working tree for tomorrow's single batched push.
+- Monthly projection still healthy at 60/500 = 12%.
+
+### Carried open (resume cheatsheet for next session / tomorrow's push)
+
+1. **Tomorrow's single push** must include these 4 staged files + any further work. Commit subject draft: `fix(web): dead hrefs (/mahavidyas → /devi/mahavidyas etc) + /discover GROUPS 39→54 with NEW saints group`. Real apps/web diff required for CF to inspect (HEAD must NOT be [skip ci]).
+2. **Verify post-deploy**:
+   - `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/devi/mahavidyas` — expect 200
+   - `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/aditya` — expect 200
+   - `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/discover` — expect 200
+   - `curl -s https://darshya.online/discover | grep -c "Saints & Deities"` — expect ≥1
+3. **P6 color discipline sweep** — top 10 violations on tithi/masa/navaratna/nakshatra/rashi (still deferred, needs Agent B specific refs).
+4. **Surface 13 orphan dynamic detail families** — free-pandit-advice, yatra-packages, pujas/home-puja sub-types.
+5. **Batch-23 LOCAL staging** carried from 2026-06-04: aarti+5 / chalisa+5 / upanishad+7.
+6. **P1 #5/#6/#7** carried (heavy scope, separate sessions): refresh-token JTI / EmailSession expiresAt + /auth/logout / CSP nonce migration.
+7. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions).
+
+---
 
 ## HANDOFF 2026-06-05 (IA redesign batch — Library mega-panel + MobileBottomTabs + GlobalSearch + Discover expand)
 
