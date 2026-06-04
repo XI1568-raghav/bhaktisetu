@@ -59,6 +59,8 @@ const GROUPS: DiscoverGroup[] = [
     accent: 'emerald',
     items: [
       { label: 'Famous Chants', href: '/chants', description: 'Gayatri, Mahamrityunjaya, Hanuman Chalisa and other standalone Sanskrit mantras with how-to-recite guides.', count: '12 chants' },
+      { label: 'Aartis', href: '/aarti', description: 'Devanagari aarti lyrics with transliteration, meaning and recitation duration — Ganga, Shiva, Lakshmi, Durga and more.', count: '25 aartis' },
+      { label: 'Chalisas', href: '/chalisa', description: 'Forty-verse devotional hymns with composer, benefits and excerpts — Hanuman, Durga, Sai, Ganga, Lakshmi and more.', count: '20 chalisas' },
       { label: 'Vrats Guide', href: '/vrat', description: 'Ekadashi, Pradosh, Mangalvar and other fasting traditions with permitted foods and ritual steps.', count: '10 vrats' },
       { label: 'Muhurat Guide', href: '/muhurat', description: 'Brahma Muhurta, Abhijit, Rahu Kalam — auspicious and inauspicious times explained.', count: '10 muhurats' },
       { label: 'Sacred Tirthas', href: '/tirth', description: 'Single-destination pilgrim guides — Kashi, Tirupati, Vaishno Devi, Char Dham and more.', count: '12 tirthas' },
