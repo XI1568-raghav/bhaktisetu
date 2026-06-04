@@ -38,10 +38,15 @@ Standing all-day autonomy directive continues. Day-3 unattended batch. Compactio
 - **No more apps/web pushes today** — single-push-per-day discipline respected.
 - Render: 1 push triggered serial queue (1269d41 api-only [skip ci] — CF skipped, Render auto-deploys regardless of [skip ci] tag).
 
-### Pending verify (Monitor `bzdwee7zr` in flight)
+### Verify GREEN (Monitor `bzdwee7zr` iter=11, ~5.5 min)
 
-- 5 sample new routes — chakras / sacred-rivers / sacred-trees / hindu-symbols / vedic-yajnas — expect 200 once CF build completes (~3-5 min).
-- Iter 1 confirmed `cf=in_progress`. Empty-commit-skip hypothesis validated.
+- chakras=200 / sacred-rivers=200 / sacred-trees=200 / hindu-symbols=200 / vedic-yajnas=200 ✓
+- CF check_run conclusion=success on f067706 ✓
+- All 4 stacked apps/web commits (7a14aa5/d9a2c57/f3deb13/e9aaf38) live in prod via f067706 trigger
+- Empty-commit-skip hypothesis confirmed end-to-end:
+  1. 1f0d533 (zero file diff, no `[skip ci]` tag) → CF skipped, zero check_run created
+  2. f067706 (1-line sitemap comment diff) → CF triggered, deployed full HEAD state
+- **NEW CAVEAT**: log in `docs/caveats.md` next session — "empty CF trigger commits do NOT work; need ≥1 real file diff in HEAD"
 
 ### Carried open
 

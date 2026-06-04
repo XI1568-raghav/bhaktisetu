@@ -20,6 +20,10 @@ out/
 *.swp
 *.swo
 
+# Claude session junk (cmd-log, per-app .claude/)
+.claude/cmd-log.jsonl
+**/.claude/
+
 # OS
 .DS_Store
 Thumbs.db
