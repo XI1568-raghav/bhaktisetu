@@ -4,7 +4,7 @@ import { SHLOKAS } from '../lib/shlokas';
 import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
 
 const BASE_URL = 'https://darshya.online';
-// deploy-stamp 2026-06-05 — CF rebuild trigger; ceb2dad layout.tsx footer /devi/* hrefs not picked up first pass
+// deploy-stamp 2026-06-05 #7 — CF rebuild trigger for 5f71b48 dead-href + /discover GROUPS 54->61 (HEAD was [skip ci])
 
 // Build-time fetch tolerant of failures — if the API is asleep/cold or down,
 // we still ship a sitemap with the static paths + a curated fallback list
