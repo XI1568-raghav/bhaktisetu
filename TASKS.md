@@ -1,6 +1,71 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-04.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05.
+
+## HANDOFF 2026-06-05 (IA redesign batch — Library mega-panel + MobileBottomTabs + GlobalSearch + Discover expand)
+
+Standing all-day autonomy directive continues. Day-4 unattended batch. Compaction resumed mid-session, resumed P2+P3+P4+P5 from `C:\Users\DELL\.claude\plans\reflective-knitting-valiant.md`.
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `1574f02` | feat(seo): bhakti-saint programmatic-SEO — 12 medieval devotional masters | slot 1/1 (earlier today, pre-compact) |
+| `6233a85` | feat(web): IA redesign — Library mega-panel + MobileBottomTabs + GlobalSearch upgrade + Discover expand | slot 2/1 (over by 1) |
+
+### Shipped this session
+
+- **Top-nav rebuild**: 5 keys renamed worship/library/astrology/yatra/shop. Library gets 4-col mega-panel absorbing 24+ orphan SEO families w/o adding 6th nav slot.
+- **LibraryMegaPanel.tsx** (NEW): 4-col indigo grid w/ Scriptures / Devotional Practice / Saints & Deities / Calendar & Cosmology sub-groups. Each col gets "Browse all →" hub link. Footer "Browse all 500+ guides →" pill.
+- **MobileBottomTabs.tsx** (NEW): 5-tab fixed bottom bar (md:hidden) Home/Darshan/Book(primary saffron floating circle -mt-4 + ring-4)/Library/Profile. safe-area-inset-bottom aware. Returns null on /auth/* and /checkout/* to avoid CTA collision. 36 prefix matches for Library tab active state.
+- **GlobalSearch upgrade**: rotating placeholder array (6 prompts × 3.5s setInterval), "/" hotkey when not in input/textarea/contenteditable, wider desktop pill 260-320px w/ kbd hint, separate mobile icon button.
+- **Footer Discover extend**: +13 orphan family links (chakras/vedic-yajnas/sacred-rivers/trees/mountains/rudraksha/bhakti-saint/mahavidyas/navadurga/hindu-philosophies/hindu-symbols/ekadashi). Cosmology col → Saints & Deities. Browse-all pill added.
+- **layout.tsx mount**: MobileBottomTabs + `main pb-16 md:pb-0` guard prevents content under fixed bar on mobile.
+- **Dead href fix**: /upanishad → /upanishads, /puran → /puranas (Agent B repo audit catch — Glob verified plural-only routes exist).
+- **CategoryMegaMenu detect**: key==='library' → render LibraryMegaPanel; other categories keep single-col mega-menu (back-compat).
+- **MobileNavV2 no-op**: already consumes CATEGORY_TREE generically via .map() — auto-syncs to new keys.
+
+### Plan phase status (reflective-knitting-valiant.md)
+
+- P1 IA spine ✓ (category-tree.ts + LibraryMegaPanel + CategoryMegaMenu variant + layout.tsx top-nav)
+- P2 Mobile parity ✓ (MobileBottomTabs new + MobileNavV2 auto-sync)
+- P3 Footer + Discover ✓ (footer Discover grid extended, kept grid per Agent B note — dropping would cause SEO regression since /discover GROUPS only covers 37/65 families)
+- P4 Home composition ✓ (page.tsx quick-action chips + Library teaser — done pre-compact)
+- P5 GlobalSearch upgrade ✓ (rotating placeholder + wider pill + "/" hotkey)
+- P6 Color discipline sweep — DEFERRED (top 10 violations on tithi/masa/navaratna/nakshatra/rashi need separate pass; rides next push)
+- /discover GROUPS regen — DEFERRED (covers same 4 Library headings, ~14 missing families; lower priority than ship-now IA)
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed: **2** (1574f02 + 6233a85). Over daily-1 rule by 1.
+- Monthly projection: 2/day × 30 = 60 = 12% of 500. Healthy.
+- **No more apps/web pushes today**. TASKS.md update gets [skip ci].
+- Render: 0 api commits this session.
+
+### Verify post-deploy (next session resume)
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` — expect 200
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/discover` — expect 200
+3. `curl -s https://darshya.online/ | grep -c "Library"` — expect ≥3 (top-nav + footer + home teaser)
+4. Mobile viewport 375×667 Chrome DevTools: verify bottom-tab bar visible + Library tab opens drawer
+5. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/upanishads` — expect 200 (dead href fix verified)
+6. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/puranas` — expect 200
+
+### Carried open
+
+1. **P6 color discipline sweep** — tithi/masa/navaratna/nakshatra/rashi pages using emerald/amber where indigo expected per Library reference accent. ~10 violations identified by Agent B.
+2. **/discover GROUPS regen** — extend from 37 to ~65 families covering chakras/hindu-philosophies/hindu-symbols/sacred-mountains/rivers/trees/vedic-yajnas/mahavidyas/navadurga/deity/festival/city/shlokas/content. Add anchor IDs #scriptures, #practice, #saints, #cosmology referenced by Library mega-panel hub links.
+3. **Surface 13 orphan dynamic detail families** — free-pandit-advice, yatra-packages, pujas/home-puja sub-types, etc.
+4. **Batch-23 LOCAL staging** (carried from 2026-06-04): aarti+5 / chalisa+5 / upanishad+7 — drafts already in JSONL transcript.
+5. **P1 #5/#6/#7** carried (heavy scope, separate sessions): refresh-token JTI single-use persistence / EmailSession expiresAt + /auth/logout / CSP nonce migration.
+6. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC field decisions).
+
+### Resume cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` — verify CF deploy of 6233a85 landed
+2. `curl -sI https://darshya.online/discover | grep cf-cache-status` — verify cache state
+3. `git log --oneline -5` — HEAD past 6233a85
+4. If user "continue": P6 color sweep OR /discover GROUPS regen OR batch-23 lib expansion OR P1 #5 refresh-token JTI
+
+---
 
 ## HANDOFF 2026-06-04 (P1#4 HttpOnly cookies + 7 new wisdom-family libs + CF deploy diagnostic)
 
