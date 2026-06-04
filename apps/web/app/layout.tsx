@@ -32,6 +32,7 @@ import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNavV2 } from "../components/MobileNavV2";
+import { MobileBottomTabs } from "../components/MobileBottomTabs";
 import { CategoryNav } from "../components/CategoryNav";
 import OnboardingTrigger from "../components/OnboardingTrigger";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
@@ -359,8 +360,9 @@ export default function RootLayout({
  </nav>
  </header>
 
- {/* Main content — offset for fixed nav */}
- <main id="main" className="flex-1 pt-14">{children}</main>
+ {/* Main content — offset for fixed nav, bottom-padded on mobile for tab bar */}
+ <main id="main" className="flex-1 pt-14 pb-16 md:pb-0">{children}</main>
+ <MobileBottomTabs />
 
  {/* ── Footer ──────────────────────────────────────────────────── */}
  <footer className="bg-[#2a2520] text-surface-400">
@@ -459,11 +461,16 @@ export default function RootLayout({
  <li><Link href="/puranas" className="hover:text-saffron-400 transition-colors">18 Puranas</Link></li>
  <li><Link href="/darshanas" className="hover:text-saffron-400 transition-colors">6 Darshanas</Link></li>
  <li><Link href="/yoga-sutras" className="hover:text-saffron-400 transition-colors">Yoga Sutras</Link></li>
+ <li><Link href="/hindu-philosophies" className="hover:text-saffron-400 transition-colors">Hindu Philosophies</Link></li>
+ <li><Link href="/hindu-symbols" className="hover:text-saffron-400 transition-colors">Hindu Symbols</Link></li>
  </ul>
  </div>
  <div>
- <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Cosmology</h4>
+ <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Saints &amp; Deities</h4>
  <ul className="space-y-1.5 text-surface-500">
+ <li><Link href="/bhakti-saint" className="hover:text-saffron-400 transition-colors">12 Bhakti Saints</Link></li>
+ <li><Link href="/mahavidyas" className="hover:text-saffron-400 transition-colors">10 Mahavidyas</Link></li>
+ <li><Link href="/navadurga" className="hover:text-saffron-400 transition-colors">9 Navadurga</Link></li>
  <li><Link href="/nakshatra" className="hover:text-saffron-400 transition-colors">27 Nakshatras</Link></li>
  <li><Link href="/rashi" className="hover:text-saffron-400 transition-colors">12 Rashis</Link></li>
  <li><Link href="/nava-graha" className="hover:text-saffron-400 transition-colors">9 Nava-Graha</Link></li>
@@ -489,6 +496,13 @@ export default function RootLayout({
  <li><Link href="/navaratna" className="hover:text-saffron-400 transition-colors">9 Navaratna Gems</Link></li>
  <li><Link href="/pilgrimage" className="hover:text-saffron-400 transition-colors">Pilgrimage Circuits</Link></li>
  <li><Link href="/samskaras" className="hover:text-saffron-400 transition-colors">16 Samskaras</Link></li>
+ <li><Link href="/chakras" className="hover:text-saffron-400 transition-colors">7 Chakras</Link></li>
+ <li><Link href="/vedic-yajnas" className="hover:text-saffron-400 transition-colors">10 Vedic Yajnas</Link></li>
+ <li><Link href="/sacred-rivers" className="hover:text-saffron-400 transition-colors">Sacred Rivers</Link></li>
+ <li><Link href="/sacred-trees" className="hover:text-saffron-400 transition-colors">Sacred Trees</Link></li>
+ <li><Link href="/sacred-mountains" className="hover:text-saffron-400 transition-colors">Sacred Mountains</Link></li>
+ <li><Link href="/rudraksha" className="hover:text-saffron-400 transition-colors">18 Rudraksha</Link></li>
+ <li><Link href="/ekadashi" className="hover:text-saffron-400 transition-colors">24 Ekadashis</Link></li>
  </ul>
  </div>
  <div>
@@ -501,8 +515,19 @@ export default function RootLayout({
  <li><Link href="/gift" className="hover:text-saffron-400 transition-colors">Gift a Puja</Link></li>
  <li><Link href="/faqs" className="hover:text-saffron-400 transition-colors">FAQs</Link></li>
  <li><Link href="/why-darshya" className="hover:text-saffron-400 transition-colors">Why Darshya</Link></li>
+ <li><Link href="/discover" className="hover:text-saffron-400 transition-colors">All Guides</Link></li>
  </ul>
  </div>
+ </div>
+
+ {/* Browse all pill — single click into the Discover hub */}
+ <div className="mt-6 flex justify-center">
+ <Link
+ href="/discover"
+ className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-saffron-300 bg-white/5 hover:bg-white/10 hover:text-saffron-400 border border-saffron-700/40 rounded-full transition-colors"
+ >
+ Browse all 500+ guides &rarr;
+ </Link>
  </div>
  </div>
 

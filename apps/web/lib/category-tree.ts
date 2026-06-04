@@ -4,14 +4,26 @@ export type CategoryItem = {
   description: string;
 };
 
-export type CategoryKey = 'worship' | 'wisdom' | 'consult' | 'shop' | 'yatra';
+export type AccentColor = 'saffron' | 'indigo' | 'emerald' | 'amber';
+
+export type CategoryKey = 'worship' | 'library' | 'astrology' | 'yatra' | 'shop';
+
+export type LibrarySubGroup = {
+  heading: string;
+  hubHref: string;
+  hubLabel: string;
+  items: CategoryItem[];
+};
 
 export type Category = {
   key: CategoryKey;
   label: string;
   tagline: string;
+  accentColor: AccentColor;
   items: CategoryItem[];
   featured?: { label: string; href: string; sublabel?: string };
+  /** Only set for `library` — drives 4-col LibraryMegaPanel layout. */
+  subGroups?: LibrarySubGroup[];
 };
 
 export const CATEGORY_TREE: Category[] = [
@@ -19,6 +31,8 @@ export const CATEGORY_TREE: Category[] = [
     key: 'worship',
     label: 'Worship',
     tagline: 'Watch the divine, schedule a ritual, give to a cause.',
+    accentColor: 'saffron',
+    featured: { label: "Today's Aarti", href: '/today', sublabel: 'Day-of-week deity + live aartis' },
     items: [
       {
         label: 'Live Darshan',
@@ -46,164 +60,146 @@ export const CATEGORY_TREE: Category[] = [
         description: 'Tax-deductible giving with instant 80G receipt.',
       },
       {
-        label: 'Panchang',
+        label: 'Panchang Today',
         href: '/panchang',
-        description: 'Today’s tithi, nakshatra, and shubh muhurat.',
+        description: "Today's tithi, nakshatra, and shubh muhurat.",
       },
       {
-        label: 'Aarti / Chalisa / Mantra',
-        href: '/content',
-        description: 'Library of devotional texts with translations.',
+        label: "Today's Hub",
+        href: '/today',
+        description: 'Day-of-week deity, mantra, festival countdown.',
       },
     ],
   },
   {
-    key: 'wisdom',
-    label: 'Wisdom',
-    tagline: 'Knowledge hub, daily panchang, scriptures, learning paths.',
-    featured: { label: 'Discover All Guides', href: '/discover', sublabel: 'Index of 27 wisdom guides' },
+    key: 'library',
+    label: 'Library',
+    tagline: 'Scriptures, devotional practice, saints, calendar — 500+ guides.',
+    accentColor: 'indigo',
+    featured: { label: 'Discover All Guides', href: '/discover', sublabel: 'Browse 500+ wisdom guides' },
     items: [
+      { label: 'Discover All Guides', href: '/discover', description: 'Index of every Hindu wisdom guide on Darshya.' },
+      { label: 'Bhakti Saints', href: '/bhakti-saint', description: '12 medieval devotional masters.' },
+      { label: 'Deities', href: '/deity', description: 'Form, iconography, mantras for each deity.' },
+      { label: 'Festivals', href: '/festival', description: '30 Hindu festivals with rituals and dates.' },
+      { label: 'Aarti / Chalisa / Mantra', href: '/content', description: 'Devotional texts with translations.' },
+      { label: 'Vedas + Upanishads', href: '/ved', description: 'Sruti scriptures explained.' },
+      { label: 'Bhagavad Gita', href: '/bhagavad-gita', description: '18 chapters with commentary.' },
+      { label: 'Calendar 2026', href: '/calendar', description: 'Month-by-month festival + vrat calendar.' },
+    ],
+    subGroups: [
       {
-        label: 'Discover All Guides',
-        href: '/discover',
-        description: 'Index of all 27 Hindu wisdom guides — scriptures, cosmology, practice, tools.',
+        heading: 'Scriptures',
+        hubHref: '/discover#scriptures',
+        hubLabel: 'Browse all scriptures',
+        items: [
+          { label: 'Vedas', href: '/ved', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
+          { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads — Vedanta core texts.' },
+          { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas — itihasa-purana corpus.' },
+          { label: 'Bhagavad Gita', href: '/bhagavad-gita', description: '18 chapters of the Gita.' },
+          { label: 'Ramayana', href: '/ramayana', description: '7 Kandas of Valmiki Ramayana.' },
+          { label: 'Mahabharata', href: '/mahabharata', description: '18 Parvas + Bhishma Parva.' },
+          { label: 'Sanskrit', href: '/sanskrit', description: 'Grammar + devanagari + classical literature.' },
+          { label: 'Hindu Philosophies', href: '/hindu-philosophies', description: 'Shad-darshana + Vedanta schools.' },
+          { label: 'Hindu Symbols', href: '/hindu-symbols', description: 'Om, Swastika, Trishul, Sri Yantra…' },
+        ],
       },
       {
-        label: 'Sanskrit',
-        href: '/sanskrit',
-        description: 'Grammar, devanagari script, classical literature.',
+        heading: 'Devotional Practice',
+        hubHref: '/discover#practice',
+        hubLabel: 'Browse all practice guides',
+        items: [
+          { label: 'Aarti', href: '/aarti', description: 'Sanskrit aartis with transliteration.' },
+          { label: 'Chalisa', href: '/chalisa', description: 'Forty-verse devotional collections.' },
+          { label: 'Mantra', href: '/chants', description: 'Standalone Sanskrit mantras.' },
+          { label: 'Shlokas', href: '/shlokas', description: 'Shareable verse cards.' },
+          { label: 'Bhajan', href: '/content', description: 'Devotional songs with audio links.' },
+          { label: 'Sankalp Generator', href: '/sankalp', description: 'Build your Vedic vow in Sanskrit.' },
+          { label: 'Chakras', href: '/chakras', description: '7 chakras — Muladhara to Sahasrara.' },
+          { label: 'Vedic Yajnas', href: '/vedic-yajnas', description: '10 yajnas — Agnihotra, Soma, Vajapeya…' },
+        ],
       },
       {
-        label: 'Vedas',
-        href: '/ved',
-        description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda explained.',
+        heading: 'Saints & Deities',
+        hubHref: '/bhakti-saint',
+        hubLabel: 'Browse all saints',
+        items: [
+          { label: 'Bhakti Saints (12)', href: '/bhakti-saint', description: 'Tulsidas, Mirabai, Kabir, Surdas, Tukaram…' },
+          { label: 'Deities', href: '/deity', description: 'Vishnu, Shiva, Devi, Ganesha, Hanuman…' },
+          { label: 'Mahavidyas (10)', href: '/mahavidyas', description: 'Kali, Tara, Tripura Sundari, Bhuvaneshwari…' },
+          { label: 'Navadurga (9)', href: '/navadurga', description: '9 forms of Durga across Navratri.' },
+          { label: 'Dashavatar (10)', href: '/dashavatar', description: '10 avatars of Vishnu.' },
+          { label: 'Sapta Rishis (7)', href: '/sapta-rishis', description: '7 Vedic sages.' },
+          { label: 'Dwadasha Aditya (12)', href: '/dwadasha-aditya', description: '12 forms of Surya.' },
+        ],
       },
       {
-        label: 'Sanatan Dharma',
-        href: '/sanatan',
-        description: 'Philosophy, practices, festivals, and history.',
-      },
-      {
-        label: 'Learn Sanskrit',
-        href: '/learn-sanskrit',
-        description: 'Daily micro-lessons with quizzes and streaks.',
-      },
-      {
-        label: 'Gurukuls',
-        href: '/gurukuls',
-        description: 'Traditional gurukuls — discover and apply.',
-      },
-      {
-        label: 'Vipassana',
-        href: '/wellness/vipassana',
-        description: '10-day silent meditation retreats — Goenka tradition + 27 centers worldwide.',
-      },
-      {
-        label: 'Books',
-        href: '/content/books',
-        description: 'Sacred scriptures and commentaries to read.',
-      },
-      {
-        label: 'Blog',
-        href: '/blog',
-        description: 'Stories, festival guides, and devotional essays.',
+        heading: 'Calendar & Cosmology',
+        hubHref: '/discover#cosmology',
+        hubLabel: 'Browse calendar & cosmology',
+        items: [
+          { label: 'Festivals (30)', href: '/festival', description: 'Major Hindu festivals.' },
+          { label: 'Calendar 2026', href: '/calendar', description: 'Month-by-month festival + vrat dates.' },
+          { label: 'Tithi (30)', href: '/tithi', description: '30 lunar days w/ rituals.' },
+          { label: 'Nakshatra (27)', href: '/nakshatra', description: '27 lunar mansions.' },
+          { label: 'Ekadashi (24)', href: '/ekadashi', description: '24 Ekadashis with story + vrat.' },
+          { label: 'Vrat (10)', href: '/vrat', description: 'Fasting traditions.' },
+          { label: 'Muhurat', href: '/muhurat', description: 'Auspicious + inauspicious time windows.' },
+          { label: 'Sacred Rivers', href: '/sacred-rivers', description: 'Ganga, Yamuna, Sarasvati + 7 more.' },
+          { label: 'Sacred Trees', href: '/sacred-trees', description: 'Peepal, Banyan, Tulsi + 9 more.' },
+          { label: 'Sacred Mountains', href: '/sacred-mountains', description: 'Kailash, Govardhan, Tirumala + 7 more.' },
+        ],
       },
     ],
   },
   {
-    key: 'consult',
-    label: 'Consult',
-    tagline: 'Ask a Pandit, get a kundli, find a wedding muhurat.',
+    key: 'astrology',
+    label: 'Astrology',
+    tagline: 'Free kundli, daily horoscope, doshas, muhurat — talk to an astrologer.',
+    accentColor: 'indigo',
+    featured: { label: 'Consult ₹99/min', href: '/astrology', sublabel: 'Verified Vedic astrologers' },
     items: [
-      {
-        label: 'Ask Pandit',
-        href: '/ask-pandit',
-        description: 'Instant answers from verified Vedic experts.',
-      },
-      {
-        label: 'Astrologer Consult',
-        href: '/astrology',
-        description: 'Book a 1:1 consultation with an astrologer.',
-      },
-      {
-        label: 'Kundli',
-        href: '/astrology/kundli',
-        description: 'Generate a free Vedic birth chart in minutes.',
-      },
-      {
-        label: 'Wedding Muhurat',
-        href: '/weddings/muhurat',
-        description: 'Find the most auspicious wedding date.',
-      },
-      {
-        label: 'Wellness',
-        href: '/wellness',
-        description: 'Yoga, meditation, and Ayurveda guidance.',
-      },
-      {
-        label: 'Daily Horoscope',
-        href: '/astrology/horoscope',
-        description: 'Personalized rashi-based daily reading.',
-      },
-    ],
-  },
-  {
-    key: 'shop',
-    label: 'Shop',
-    tagline: 'Prasad, idols, books, sacred items.',
-    items: [
-      {
-        label: 'Storefront',
-        href: '/store',
-        description: 'Browse the full devotional marketplace.',
-      },
-      {
-        label: 'Prasad',
-        href: '/store?cat=prasad',
-        description: 'Temple prasad delivered to your doorstep.',
-      },
-      {
-        label: 'Idols',
-        href: '/store?cat=idols',
-        description: 'Brass, marble, and wood idols of deities.',
-      },
-      {
-        label: 'Books',
-        href: '/store?cat=books',
-        description: 'Hardcover scriptures, gita sets, and more.',
-      },
-      {
-        label: 'Cart',
-        href: '/store/cart',
-        description: 'Review and check out your saved items.',
-      },
+      { label: 'Free Kundli', href: '/astrology/kundli', description: 'Vedic birth chart with D9 Navamsa.' },
+      { label: 'Daily Horoscope', href: '/astrology/horoscope', description: 'Rashi-based daily reading.' },
+      { label: 'Wedding Muhurat', href: '/weddings/muhurat', description: 'Most auspicious wedding date.' },
+      { label: 'Manglik Dosh', href: '/astrology/manglik', description: 'Mars dosha analysis + remedies.' },
+      { label: 'Sade Sati', href: '/astrology/sade-sati', description: '7.5-year Saturn transit check.' },
+      { label: 'Kaal Sarp Dosh', href: '/astrology/kaal-sarp', description: 'Rahu-Ketu axis analysis.' },
+      { label: 'Pitra Dosh', href: '/astrology/pitra-dosh', description: 'Ancestor karma remedies.' },
+      { label: 'Numerology', href: '/astrology/numerology', description: 'Driver + conductor number reading.' },
+      { label: 'Baby Name', href: '/astrology/baby-name', description: 'Nakshatra-based name suggestions.' },
+      { label: 'Lal Kitab', href: '/astrology/lal-kitab', description: 'Remedial Vedic astrology.' },
+      { label: 'Talk to Astrologer', href: '/astrology', description: '1:1 paid consultation.' },
+      { label: 'Ask Pandit', href: '/ask-pandit', description: 'Instant LLM-assisted Q&A.' },
     ],
   },
   {
     key: 'yatra',
     label: 'Yatra',
-    tagline: 'Pilgrimage travel.',
+    tagline: 'Pilgrimage packages, destinations, wellness retreats.',
+    accentColor: 'emerald',
     items: [
-      {
-        label: 'Packages',
-        href: '/yatra',
-        description: 'Curated multi-day pilgrimage itineraries.',
-      },
-      {
-        label: 'Destinations',
-        href: '/yatra/destinations',
-        description: 'Char Dham, Jyotirlinga, Shakti Peeth, more.',
-      },
-      {
-        label: 'Plan a Trip',
-        href: '/yatra/plan',
-        description: 'Build a custom yatra with our trip builder.',
-      },
-      {
-        label: 'Companion',
-        href: '/yatra/companion',
-        description: 'On-yatra checklists, guides, and prayers.',
-      },
+      { label: 'Packages', href: '/yatra', description: 'Curated multi-day pilgrimage itineraries.' },
+      { label: 'Destinations', href: '/yatra/destinations', description: '35 sacred destinations across India.' },
+      { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, Jyotirlinga, Shakti Peeth…' },
+      { label: 'Tirth Guides', href: '/tirth', description: '62 single-destination pilgrim guides.' },
+      { label: 'Vipassana Centers', href: '/wellness/vipassana', description: '26 Goenka-tradition retreat centers.' },
+      { label: 'Wellness (Yoga + Ayurveda)', href: '/wellness', description: 'Yoga, meditation, Ayurveda guidance.' },
+      { label: 'Plan a Trip', href: '/yatra/plan', description: 'Custom yatra trip builder.' },
+    ],
+  },
+  {
+    key: 'shop',
+    label: 'Shop',
+    tagline: 'Prasad, idols, books, rudraksha — devotional store.',
+    accentColor: 'amber',
+    items: [
+      { label: 'Storefront', href: '/store', description: 'Browse the full devotional marketplace.' },
+      { label: 'Prasad', href: '/store?cat=prasad', description: 'Temple prasad delivered to your door.' },
+      { label: 'Idols', href: '/store?cat=idols', description: 'Brass, marble, wood deity idols.' },
+      { label: 'Books', href: '/store?cat=books', description: 'Hardcover scriptures + commentaries.' },
+      { label: 'Rudraksha (18)', href: '/rudraksha', description: '1- to 18-mukhi rudraksha guides.' },
+      { label: 'Cart', href: '/store/cart', description: 'Review and check out saved items.' },
     ],
   },
 ];
