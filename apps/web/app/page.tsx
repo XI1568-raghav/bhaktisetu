@@ -147,12 +147,10 @@ export default async function HomePage() {
  <div data-reveal="zoom-rotate" data-delay="1" className="hidden md:grid grid-cols-2 gap-2.5">
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
  <img
- src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg"
- srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/960px-The_Golden_Temple_of_Amrithsar_7.jpg 960w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg 1920w"
- sizes="(max-width: 768px) 100vw, 600px"
+ src={getTempleHero('golden-temple')}
  alt="Sri Harmandir Sahib (Golden Temple) — live darshan"
- width={1920}
- height={960}
+ width={1280}
+ height={640}
  className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
  loading="eager"
  fetchPriority="high"
@@ -220,40 +218,22 @@ export default async function HomePage() {
  </div>
  </section>
 
- {/* ═══ OUR STORY — wipe-in timeline ════════════════════════════════ */}
- <section className="py-8 md:py-10" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
- <p data-reveal="spring" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>{t('ourStory')}</p>
- <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
- {[
- { num: '01', title: t('story1Title'), text: t('story1Text') },
- { num: '02', title: t('story2Title'), text: t('story2Text') },
- { num: '03', title: t('story3Title'), text: t('story3Text') },
- { num: '04', title: t('story4Title'), text: t('story4Text') },
- ].map((ch, i) => (
- <div key={ch.num} data-reveal="cascade" data-delay={String(i + 1)} className="relative pl-4" style={{ borderLeft: '2px solid var(--color-primary)' }}>
- <span className="text-[10px] font-bold" style={{ color: 'var(--color-primary)' }}>{ch.num}</span>
- <h3 className="text-xs font-semibold mt-0.5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{ch.title}</h3>
- <p className="text-[11px] mt-1 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{ch.text}</p>
- </div>
- ))}
- </div>
- </div>
- </section>
-
- {/* ═══ SOCIAL PROOF — counter animation on scroll ════════════════ */}
- <section className="py-6 md:py-8">
+ {/* ═══ TRUST STRIP — verified, video-proof, 80G, NRI dual-currency ═══ */}
+ <section aria-label="Trust signals" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {[
- { number: '1B+', label: t('stat1') },
- { number: '30M+', label: t('stat2') },
- { number: '900+', label: t('stat3') },
- { number: '$58B', label: t('stat4') },
- ].map((stat, i) => (
- <div key={stat.number} data-reveal="cascade" data-delay={String(i + 1)} className="p-3 rounded-xl text-center" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p data-counter data-counter-target={stat.number} className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary)' }}>{stat.number}</p>
- <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{stat.label}</p>
+ { icon: Shield, title: 'Verified Temples', desc: 'Manager-signed, on-site audit', accent: 'var(--color-primary)' },
+ { icon: Video, title: 'Video Proof', desc: 'Every puja recorded + shared', accent: '#059669' },
+ { icon: CheckCircle, title: '80G Receipts', desc: 'Tax-deductible donations', accent: '#059669' },
+ { icon: Heart, title: 'NRI Dual-Currency', desc: 'INR · USD · GBP · AUD · CAD', accent: 'var(--color-primary)' },
+ ].map((t, i) => (
+ <div key={t.title} data-reveal="cascade" data-delay={String(i + 1)} className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+ <t.icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: t.accent }} />
+ <div>
+ <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{t.title}</p>
+ <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</p>
+ </div>
  </div>
  ))}
  </div>
@@ -320,12 +300,10 @@ export default async function HomePage() {
  <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/9] relative">
  <img
- src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg"
- srcSet="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/960px-The_Golden_Temple_of_Amrithsar_7.jpg 960w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg 1280w, https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg 1920w"
- sizes="(max-width: 768px) 100vw, 1200px"
+ src={getTempleHero('golden-temple')}
  alt="Sri Harmandir Sahib (Golden Temple), Amritsar — live darshan"
- width={1920}
- height={1080}
+ width={1280}
+ height={720}
  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
  fetchPriority="high"
  decoding="async"
