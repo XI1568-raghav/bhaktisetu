@@ -326,8 +326,15 @@ export default function RootLayout({
  aria-label="Main navigation"
  >
  {/* Logo */}
- <a href="/" className="flex items-center gap-2 shrink-0">
+ <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Darshya — home">
  <Logo size={28} />
+ {/* ॐ devanagari accent — sacred glyph, saffron, font-devanagari fallback chain per globals @theme */}
+ <span
+   aria-hidden="true"
+   className="text-saffron-600 text-lg leading-none font-[family-name:var(--font-family-devanagari)] hidden sm:inline"
+ >
+   ॐ
+ </span>
  <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline">
  Darsh<span className="text-saffron-600">ya</span>
  </span>
