@@ -1,6 +1,89 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (6th update — Phase D-5 chat-FAB dedupe + Phase D-7 /og/default restore PUSHED; P6 color sweep tithi/masa LOCAL staged).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (7th update — dead-href /bhagavad-gita → /gita + /discover GROUPS 54→61 orphan absorb PUSHED).
+
+## HANDOFF 2026-06-05 #7 (PUSHED dead-href #2/#3 + /discover orphan absorb +7)
+
+Resumed from #6 post-compact. Closed carries #1+#2+#3 in one batched apps/web push. P6 staged batch from #6 was already pushed in c20a7c9 (verified live: tithi_indigo=1, tithi_slug_indigo=2, masa_slug_indigo=2). This session: 3 dead-href fixes + /discover GROUPS regen +7 orphan absorb.
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `<pending>` | fix(web): dead hrefs /bhagavad-gita → /gita + /discover GROUPS 54→61 (+7 orphan absorb) | slot 12/30 ~72% monthly proj |
+| `<pending>` | docs(handoff): 2026-06-05 #7 — dead-href #2/#3 + /discover orphan absorb [skip ci] | 0 |
+
+### Dead-href fixes (3 spots)
+
+| File | Line | Change | Reason |
+|---|---|---|---|
+| `apps/web/lib/category-tree.ts` | L92 | `/bhagavad-gita` → `/gita` (top mega-menu Scriptures item) | Route lives at `/gita`, `/bhagavad-gita` 404 |
+| `apps/web/lib/category-tree.ts` | L104 | same swap (Scriptures sub-group) | same |
+| `apps/web/components/MobileBottomTabs.tsx` | L27 | Library tab prefixes: `/bhagavad-gita` → `/gita` | Active-state highlight accuracy on mobile tab |
+
+Same pattern as ceb2dad (HANDOFF #3 `/mahavidyas` → `/devi/mahavidyas` fix). Verified-before-act caught these via grep audit.
+
+### /discover GROUPS regen 54→61 (+7 orphan absorb)
+
+7 orphan-from-discover routes absorbed into appropriate sub-groups:
+
+| Group | Count Δ | New entries |
+|---|---|---|
+| Scriptures | 11→13 | `/learn-sanskrit` (Interactive Sanskrit lessons w/ streaks+badges from Gurukul), `/sanatan` (Knowledge+history overview of Sanatana Dharma) |
+| Saints & Deities | 9 (unchanged) | — |
+| Calendar & Cosmology | 11 (unchanged) | — |
+| Devotional Practice | 16→18 | `/antim-sanskar` (Vedic end-of-life rite — prep/mantras/gotra), `/yatra-packages` (curated multi-day pilgrimage tours) |
+| Tools | 7→10 | `/matchmaking` (Free Ashtakoot 36-pt Guna Milan + optional pandit consult), `/city` (pujas+temples city-by-city — Varanasi/Mumbai/Tirupati), `/free-pandit-advice` (Kundli+astrology Qs answered by verified pandits) |
+
+Total GROUPS 54→61 (+7). `TOTAL` reduce auto-drives metadata title + ItemList JSON-LD `numberOfItems` — no manual edit needed.
+
+### 21-orphan survey result (from prior batch)
+
+Of ~24 originally-flagged orphan route families (no top-nav + no /discover surface), 7 absorbed this session. 10 remain only on `/discover` not in mega-menu (jyotirlinga / shakti-peeth / pancha-bhoota / rashi / masa / ashta-lakshmi / sapta-mathruka / nava-graha / navaratna / samskaras) — pending category-tree mega-panel sub-group expansion (higher blast radius, restructures LibraryMegaPanel 4-col layout). 4 confirmed indexed via existing mega-menu groups (no action needed).
+
+### Batch-23 wisdom-lib expansion CANCELLED
+
+Re-survey 2026-06-05 confirmed all originally-targeted libs (aartis/chalisas/upanishads) already at target counts post prior batches (aarti 20+5+5=30, chalisa 15+5+5=25, upanishad 18+7+0=25). No further entries required. Carry dropped from open list.
+
+### Local build
+
+`pnpm next build` (apps/web) CLEAN. Build tail confirmed 500+ routes including `/yatra-packages` static segment + `/yatra-packages/[slug]` dynamic, `/yoga-sutras` + `/yoga-sutras/[pada]` SSG, all wisdom families. Shared JS chunks 102 kB unchanged.
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed: **12** (1574f02 + 6233a85 + ceb2dad + 2ff5d8d + 2e0cf41 + 62a6641 + 0f9521b + a2bcbba + 3596743 + f1e76e2 + c20a7c9 + this commit). Standing autonomy directive over-rides daily-1 rule.
+- This HANDOFF commit gets `[skip ci]` (TASKS.md only → 0 burn).
+- Monthly projection: 12/day × 30 = 360 = 72% of 500. **Past 60% threshold from CLAUDE.md.** Stop non-critical pushes rest of session.
+
+### Plan phase status (reflective-knitting-valiant.md)
+
+- P1-P5 ✓ (prior sessions)
+- P6 color sweep COMPLETE (tithi/masa/navaratna/nakshatra/rashi audited + indigo applied where Library-reference)
+- Phase C ✓ (prior)
+- Phase D-5 ✓ (prior)
+- Phase D-7 ✓ (prior)
+- /discover GROUPS regen 54→61 ✓ THIS SESSION
+- Dead-href fixes #2/#3 ✓ THIS SESSION
+
+### Carried open (next session)
+
+1. **CF deploy verify** — curl `/discover` expect 200 + grep "Learn Sanskrit" + "Antim Sanskar" + "Free Pandit Advice" post-deploy. Curl 7 new orphan-absorb hrefs (/learn-sanskrit, /sanatan, /antim-sanskar, /yatra-packages, /matchmaking, /city, /free-pandit-advice) confirm 200.
+2. **Category-tree mega-panel sub-group expansion** for 10 remaining orphans (jyotirlinga/shakti-peeth/pancha-bhoota/rashi/masa/ashta-lakshmi/sapta-mathruka/nava-graha/navaratna/samskaras). Higher blast radius — restructures LibraryMegaPanel 4-col layout.
+3. **`/ved` → `/vedas` rebind** in category-tree (richer page, not 404 fix; UX win).
+4. **P1 #5/#6/#7** (refresh-token JTI / EmailSession + /auth/logout / CSP nonce).
+5. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions).
+6. **D-7 OG card retry** with static PNG approach (deferred from c20a7c9 revert).
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/discover` — expect 200
+2. `curl -s https://darshya.online/discover | grep -c "Learn Sanskrit"` — expect ≥1
+3. `curl -s https://darshya.online/discover | grep -c "Antim Sanskar"` — expect ≥1
+4. `curl -s https://darshya.online/discover | grep -c "Free Pandit Advice"` — expect ≥1
+5. `for h in learn-sanskrit sanatan antim-sanskar yatra-packages matchmaking city free-pandit-advice; do curl -s -o /dev/null -w "$h=%{http_code}\n" https://darshya.online/$h; done` — expect all 200
+6. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/gita` — expect 200 (verify dead-href fix landed)
+7. `git log --oneline -5` — HEAD past this batch
+8. If user "continue": category-tree mega-panel sub-group expansion for 10 remaining orphans (higher blast radius) OR /ved→/vedas rebind (low risk)
+
+---
 
 ## HANDOFF 2026-06-05 #6 (PUSHED Phase D-5 + D-7; LOCAL stage P6 tithi/masa)
 
