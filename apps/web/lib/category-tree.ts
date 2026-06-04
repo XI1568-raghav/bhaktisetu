@@ -126,11 +126,11 @@ export const CATEGORY_TREE: Category[] = [
         items: [
           { label: 'Bhakti Saints (12)', href: '/bhakti-saint', description: 'Tulsidas, Mirabai, Kabir, Surdas, Tukaram…' },
           { label: 'Deities', href: '/deity', description: 'Vishnu, Shiva, Devi, Ganesha, Hanuman…' },
-          { label: 'Mahavidyas (10)', href: '/mahavidyas', description: 'Kali, Tara, Tripura Sundari, Bhuvaneshwari…' },
-          { label: 'Navadurga (9)', href: '/navadurga', description: '9 forms of Durga across Navratri.' },
+          { label: 'Mahavidyas (10)', href: '/devi/mahavidyas', description: 'Kali, Tara, Tripura Sundari, Bhuvaneshwari…' },
+          { label: 'Navadurga (9)', href: '/devi/navadurga', description: '9 forms of Durga across Navratri.' },
           { label: 'Dashavatar (10)', href: '/dashavatar', description: '10 avatars of Vishnu.' },
           { label: 'Sapta Rishis (7)', href: '/sapta-rishis', description: '7 Vedic sages.' },
-          { label: 'Dwadasha Aditya (12)', href: '/dwadasha-aditya', description: '12 forms of Surya.' },
+          { label: 'Dwadasha Aditya (12)', href: '/aditya', description: '12 forms of Surya.' },
         ],
       },
       {
