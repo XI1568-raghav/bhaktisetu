@@ -469,8 +469,8 @@ export default function RootLayout({
  <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Saints &amp; Deities</h4>
  <ul className="space-y-1.5 text-surface-500">
  <li><Link href="/bhakti-saint" className="hover:text-saffron-400 transition-colors">12 Bhakti Saints</Link></li>
- <li><Link href="/mahavidyas" className="hover:text-saffron-400 transition-colors">10 Mahavidyas</Link></li>
- <li><Link href="/navadurga" className="hover:text-saffron-400 transition-colors">9 Navadurga</Link></li>
+ <li><Link href="/devi/mahavidyas" className="hover:text-saffron-400 transition-colors">10 Mahavidyas</Link></li>
+ <li><Link href="/devi/navadurga" className="hover:text-saffron-400 transition-colors">9 Navadurga</Link></li>
  <li><Link href="/nakshatra" className="hover:text-saffron-400 transition-colors">27 Nakshatras</Link></li>
  <li><Link href="/rashi" className="hover:text-saffron-400 transition-colors">12 Rashis</Link></li>
  <li><Link href="/nava-graha" className="hover:text-saffron-400 transition-colors">9 Nava-Graha</Link></li>

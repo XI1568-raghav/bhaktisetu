@@ -24,7 +24,7 @@ const TABS: Tab[] = [
   { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/'] },
   { href: '/darshan', label: 'Darshan', icon: Video, prefixes: ['/darshan'] },
   { href: '/pujas', label: 'Book', icon: Flame, primary: true, prefixes: ['/pujas', '/checkout', '/booking'] },
-  { href: '/discover', label: 'Library', icon: BookOpen, prefixes: ['/discover', '/ved', '/upanishads', '/puranas', '/bhakti-saint', '/deity', '/festival', '/calendar', '/aarti', '/chalisa', '/chants', '/mantra', '/shlokas', '/sankalp', '/bhagavad-gita', '/ramayana', '/mahabharata', '/sanskrit', '/hindu-philosophies', '/hindu-symbols', '/mahavidyas', '/navadurga', '/dashavatar', '/sapta-rishis', '/dwadasha-aditya', '/chakras', '/vedic-yajnas', '/sacred-rivers', '/sacred-trees', '/sacred-mountains', '/rudraksha', '/tithi', '/nakshatra', '/ekadashi', '/vrat', '/muhurat'] },
+  { href: '/discover', label: 'Library', icon: BookOpen, prefixes: ['/discover', '/ved', '/upanishads', '/puranas', '/bhakti-saint', '/deity', '/festival', '/calendar', '/aarti', '/chalisa', '/chants', '/mantra', '/shlokas', '/sankalp', '/bhagavad-gita', '/ramayana', '/mahabharata', '/sanskrit', '/hindu-philosophies', '/hindu-symbols', '/devi/mahavidyas', '/devi/navadurga', '/dashavatar', '/sapta-rishis', '/aditya', '/chakras', '/vedic-yajnas', '/sacred-rivers', '/sacred-trees', '/sacred-mountains', '/rudraksha', '/tithi', '/nakshatra', '/ekadashi', '/vrat', '/muhurat'] },
   { href: '/profile', label: 'Profile', icon: User, prefixes: ['/profile', '/dashboard', '/bookings', '/auth'] },
 ];
 
