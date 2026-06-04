@@ -40,6 +40,8 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Hindu Philosophies', href: '/hindu-philosophies', description: 'Shad-darshana, Vedanta sub-schools and dharmic worldviews — Advaita to Dvaita.', count: '10 schools' },
       { label: 'Hindu Symbols', href: '/hindu-symbols', description: 'Om, Swastika, Trishul, Sri Yantra, Kalasha — sacred symbology with meaning and ritual use.', count: '12 symbols' },
       { label: 'Sanskrit', href: '/sanskrit', description: 'Devanagari script, grammar primer and classical literary tradition.', count: 'guides' },
+      { label: 'Learn Sanskrit', href: '/learn-sanskrit', description: 'Interactive Sanskrit lessons with streaks and badges from the Gurukul.', count: 'lessons' },
+      { label: 'Sanatan Dharm', href: '/sanatan', description: 'Knowledge and history overview of Sanatana Dharma — the eternal way.', count: 'overview' },
     ],
   },
   {
@@ -100,6 +102,8 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, 12 Jyotirlinga, Shakti Peeth, Pancha Bhoota and other canonical circuits.', count: '8 circuits' },
       { label: 'Vipassana Retreats', href: '/wellness/vipassana', description: '10-day silent meditation in the S.N. Goenka tradition. Learn the technique, find a center, apply directly.', count: '27 centers' },
       { label: '16 Samskaras', href: '/samskaras', description: 'The Vedic life-stage rites from garbhadhana to antyeshti.', count: '16 rites' },
+      { label: 'Antim Sanskar', href: '/antim-sanskar', description: 'The Vedic end-of-life rite — preparation, mantras, gotra observances.', count: 'rite' },
+      { label: 'Yatra Packages', href: '/yatra-packages', description: 'Curated multi-day pilgrimage tours with pandit, transport and stay.', count: 'tours' },
     ],
   },
   {
@@ -115,6 +119,9 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Gift a Puja', href: '/gift', description: 'NRI senders gift a puja to family in India with WhatsApp delivery and 80G receipt.' },
       { label: 'FAQs', href: '/faqs', description: '~20 questions across booking, darshan, refunds, NRI lane and yatra packages.' },
       { label: 'Why Darshya', href: '/why-darshya', description: '14-row honest comparison vs Sri Mandir, Utsav and AstroSage.' },
+      { label: 'Kundli Matchmaking', href: '/matchmaking', description: 'Free Ashtakoot 36-point Guna Milan with optional pandit consult.' },
+      { label: 'Pujas by City', href: '/city', description: 'Pujas and temples city by city — Varanasi, Mumbai, Tirupati and more.' },
+      { label: 'Free Pandit Advice', href: '/free-pandit-advice', description: 'Kundli and astrology questions answered by verified pandits.' },
     ],
   },
 ];
