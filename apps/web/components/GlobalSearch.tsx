@@ -5,6 +5,15 @@ import { Search, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '../lib/api-config';
 
+const ROTATING_PLACEHOLDERS = [
+  'Search puja, temple, kundli, saint…',
+  'Find your kundli…',
+  'Look up a saint…',
+  'Find an aarti or chalisa…',
+  'Search festivals + muhurat…',
+  'Find a tirth or pilgrimage…',
+];
+
 interface SearchResult {
  id: string;
  slug: string;
@@ -28,8 +37,30 @@ export function GlobalSearch() {
  const [query, setQuery] = useState('');
  const [data, setData] = useState<SearchResponse | null>(null);
  const [loading, setLoading] = useState(false);
+ const [placeholderIdx, setPlaceholderIdx] = useState(0);
  const inputRef = useRef<HTMLInputElement>(null);
  const containerRef = useRef<HTMLDivElement>(null);
+
+ useEffect(() => {
+   const id = setInterval(() => {
+     setPlaceholderIdx((i) => (i + 1) % ROTATING_PLACEHOLDERS.length);
+   }, 3500);
+   return () => clearInterval(id);
+ }, []);
+
+ useEffect(() => {
+   if (open) return;
+   const onKey = (e: KeyboardEvent) => {
+     if (e.key !== '/') return;
+     const tgt = e.target as HTMLElement | null;
+     if (tgt && /^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName)) return;
+     if (tgt?.isContentEditable) return;
+     e.preventDefault();
+     setOpen(true);
+   };
+   window.addEventListener('keydown', onKey);
+   return () => window.removeEventListener('keydown', onKey);
+ }, [open]);
 
  // Close on outside click
  useEffect(() => {
@@ -94,7 +125,21 @@ export function GlobalSearch() {
  type="button"
  aria-label="Search"
  onClick={() => setOpen(true)}
- className="p-2 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-md transition-colors"
+ className="hidden md:flex items-center gap-2 w-[260px] lg:w-[320px] px-3 py-2 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-lg transition-colors"
+ >
+ <Search className="w-4 h-4 shrink-0" />
+ <span className="truncate text-left flex-1">
+ {ROTATING_PLACEHOLDERS[placeholderIdx]}
+ </span>
+ <kbd className="hidden lg:inline-flex px-1.5 py-0.5 text-[10px] font-mono text-surface-400 bg-surface-100 rounded border border-surface-200">
+ /
+ </kbd>
+ </button>
+ <button
+ type="button"
+ aria-label="Search"
+ onClick={() => setOpen(true)}
+ className="md:hidden p-2 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-md transition-colors"
  >
  <Search className="w-[18px] h-[18px]" />
  </button>

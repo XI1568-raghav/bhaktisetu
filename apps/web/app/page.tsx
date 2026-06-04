@@ -16,6 +16,10 @@ import {
  Zap,
  CheckCircle,
  Leaf,
+ Flame,
+ Stars,
+ Compass,
+ BookOpen,
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
@@ -188,6 +192,33 @@ export default async function HomePage() {
 
  {/* ═══ NEXT FESTIVAL — countdown + book CTA ═══════════════════════ */}
  <NextFestivalStrip />
+
+ {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
+ <section aria-label="Quick actions" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="flex md:grid md:grid-cols-6 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
+ {[
+ { label: 'Darshan', href: '/darshan', Icon: Video },
+ { label: 'Book Puja', href: '/pujas', Icon: Flame },
+ { label: 'Kundli', href: '/astrology/kundli', Icon: Stars },
+ { label: 'Panchang', href: '/panchang', Icon: Calendar },
+ { label: 'Donate', href: '/donations', Icon: Heart },
+ { label: 'Yatra', href: '/yatra', Icon: Compass },
+ ].map((chip) => (
+ <Link
+ key={chip.label}
+ href={chip.href}
+ prefetch={false}
+ className="snap-start shrink-0 md:shrink flex flex-col items-center justify-center gap-1.5 min-w-[88px] md:min-w-0 px-3 py-3 rounded-xl card-hover transition-all"
+ style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+ >
+ <chip.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+ <span className="text-[11px] font-medium" style={{ color: 'var(--color-text)' }}>{chip.label}</span>
+ </Link>
+ ))}
+ </div>
+ </div>
+ </section>
 
  {/* ═══ OUR STORY — wipe-in timeline ════════════════════════════════ */}
  <section className="py-8 md:py-10" style={{ background: 'var(--color-surface)' }}>
@@ -587,6 +618,49 @@ export default async function HomePage() {
  <ConsultStrip />
  <ShopStrip />
  <YatraStrip />
+
+ {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
+ <section aria-label="Discover the Library" className="py-10 md:py-12" style={{ background: 'var(--color-surface)' }}>
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="flex items-end justify-between mb-5">
+ <div>
+ <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>Library</p>
+ <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ 500+ guides across scripture, practice, saints and the calendar.
+ </h2>
+ </div>
+ <Link href="/discover" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+ Browse all <ArrowRight className="w-3 h-3" />
+ </Link>
+ </div>
+ <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+ {[
+ { Icon: BookOpen, title: 'Scriptures', desc: 'Vedas, Upanishads, Puranas, Gita, Ramayana.', href: '/discover#scriptures' },
+ { Icon: Music, title: 'Devotional', desc: 'Aarti, chalisa, mantra, bhajan, sankalp.', href: '/discover#practice' },
+ { Icon: Users, title: 'Saints & Deities', desc: '12 bhakti saints, 10 mahavidyas, navadurga.', href: '/discover#saints' },
+ { Icon: Calendar, title: 'Calendar & Cosmology', desc: 'Festivals, tithi, nakshatra, ekadashi.', href: '/discover#cosmology' },
+ ].map((card) => (
+ <Link
+ key={card.title}
+ href={card.href}
+ prefetch={false}
+ className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
+ style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+ >
+ <card.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+ <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
+ <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
+ </Link>
+ ))}
+ </div>
+ <div className="sm:hidden mt-4 text-center">
+ <Link href="/discover" className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+ Browse all 500+ guides <ArrowRight className="w-3 h-3" />
+ </Link>
+ </div>
+ </div>
+ </section>
+
  <TrustStrip />
 
  {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
