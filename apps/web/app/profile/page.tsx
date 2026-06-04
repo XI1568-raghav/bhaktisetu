@@ -232,6 +232,21 @@ function ProfileContent() {
  </div>
  </div>
 
+ {/* Mobile lang switcher — 6 langs, profile-drawer surface (gap #5; desktop uses footer LanguageSwitcher) */}
+ <div className="md:hidden bg-white border-b border-surface-200">
+  <div className="max-w-3xl mx-auto px-4 py-3">
+   <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Language</p>
+   <div className="flex flex-wrap gap-2 text-sm">
+    <a href="/" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100">English</a>
+    <a href="/hi" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100" lang="hi">हिन्दी</a>
+    <a href="/ta" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100" lang="ta">தமிழ்</a>
+    <a href="/te" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100" lang="te">తెలుగు</a>
+    <a href="/bn" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100" lang="bn">বাংলা</a>
+    <a href="/mr" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100" lang="mr">मराठी</a>
+   </div>
+  </div>
+ </div>
+
  <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 -mt-4">
  {/* Status messages */}
  {error && (
