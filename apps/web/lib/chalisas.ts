@@ -1858,6 +1858,195 @@ export const CHALISAS: ChalisaInfo[] = [
       { label: 'Drik Panchang - Tara Jayanti', url: 'https://www.drikpanchang.com/festivals/tara-jayanti.html' },
     ],
   },
+  {
+    slug: 'durga-chalisa',
+    name: 'Durga Chalisa',
+    sanskrit: 'दुर्गा चालीसा',
+    deity: 'Goddess Durga',
+    deitySlug: 'durga',
+    composer: 'Devidas (traditional, 19th century)',
+    composedIn: 'Awadhi-Hindi (40 chaupais + opening doha)',
+    whenRecited: 'Daily morning for Shakti upasana; nine Navratri evenings; Tuesdays & Fridays of every month; Durgashtami; before any new venture or undertaking',
+    description:
+      'Forty-verse devotional hymn to Mother Durga in Awadhi composed by the 19th-century devotee Devidas. Recited across the Hindi-belt households especially during Navratri when each evening is dedicated to one of the nine forms of Durga. Many devotees pair it with Durga Saptashati path during Sharad Navratri.',
+    significance:
+      'Considered the simplest and most accessible Shakti stuti — eliminates fear, grants protection from negative forces, and is believed to dissolve mangal-dosha & shani-related afflictions. Often gifted to brides as part of dahej puja items in Bihar and UP.',
+    benefits: [
+      'Protection from accidents, enemies, and unseen negative forces',
+      'Removal of fear, anxiety, and mental restlessness',
+      'Success in court cases and family disputes',
+      'Strength to face adversity with grace',
+      'Children gain courage; women gain inner shakti',
+      'Believed to ward off black magic and tantric attacks',
+    ],
+    excerpt: [
+      'नमो नमो दुर्गे सुख करनी। नमो नमो अम्बे दुख हरनी॥',
+      'निरङ्कार है ज्योति तुम्हारी। तिहूं लोक फैली उजियारी॥',
+      'शशि ललाट मुख महाविशाला। नेत्र लाल भृकुटी विकराला॥',
+      'रूप मातु को अधिक सुहावे। दरश करत जन अति सुख पावे॥',
+      'तुम संसार शक्ति लय कीना। पालन हेतु अन्न धन दीना॥',
+      'अन्नपूर्णा हुई जग पाला। तुम ही आदि सुन्दरी बाला॥',
+    ],
+    excerptMeaning:
+      'Salutations again and again to Durga, giver of all happiness; salutations to Amba, remover of every sorrow. Your divine effulgence is formless, yet its light fills all three worlds. Your forehead glows like the moon, your face is vast, your eyes red with cosmic anger and brows arched in fury. Yet your maternal form is so enchanting that a single darshan grants the devotee infinite bliss. Into you the entire universe dissolves at pralaya; for its sustenance you bestow food and wealth. As Annapurna you nourish the world; you are the very first beauty, the eternal maiden.',
+    durationMinutes: 12,
+    relatedPujas: ['navratri-puja', 'durga-saptashati-path', 'durgashtami', 'mangala-gauri-vrat'],
+    externalSources: [
+      { label: 'Geeta Press Gorakhpur - Durga Chalisa', url: 'https://gitapress.org/' },
+      { label: 'Vaishno Devi Shrine Board', url: 'https://www.maavaishnodevi.org' },
+    ],
+  },
+  {
+    slug: 'sai-chalisa',
+    name: 'Sai Chalisa',
+    sanskrit: 'साईं चालीसा',
+    deity: 'Shirdi Sai Baba',
+    deitySlug: 'shirdi-sai-baba',
+    composer: 'Pt. Shri Hari Sharan Maheshwari',
+    composedIn: 'Hindi (40 chaupais + doha)',
+    whenRecited: 'Thursday evenings (Sai Baba\'s sacred day); during the 9-Thursday Sai Vrat; on Vijayadashami (Baba\'s mahasamadhi day); before undertaking the Shirdi yatra',
+    description:
+      'Forty-verse hymn praising Sai Baba of Shirdi (c. 1838-1918), the fakir-saint who lived at the Dwarakamai mosque and whose teachings of Shraddha (faith) and Saburi (patience) draw millions of devotees of all faiths. Recited as the centerpiece of the 9-week Sai Vrat undertaken by householders seeking resolution of any persistent worry.',
+    significance:
+      'Sai Baba\'s syncretic message of Sabka Malik Ek (One God of all) makes this chalisa universally accessible across Hindu, Muslim and Christian devotees. Recited at over 5000 Sai mandirs worldwide.',
+    benefits: [
+      'Resolution of long-standing family or financial problems',
+      'Cures for chronic illness (per countless Sai-leela accounts)',
+      'Strength to honour commitments and overcome procrastination',
+      'Spirit of tolerance and acceptance across faiths',
+      'Children gain discipline and elders find peace',
+    ],
+    excerpt: [
+      'पहले साईं के चरणों में, अपना श्याम झुकाऊं।',
+      'और बेज पुत्र गिरिजा का, सुमिरन कर सुख पाऊं॥',
+      'साईं रहम नज़र करना, बच्चों का पालन करना।',
+      'जा बालक तुम शरण तिहारे, तुमरी कृपा तत्व सुधारे॥',
+      'जय जय साईं देव दयाला, हर समय रहो रखवाला।',
+      'तुम बिन और न कोई हमारा, पार लगाओ नैय्या हमारा॥',
+    ],
+    excerptMeaning:
+      'First I bow my dark head at the feet of Sai; then meditating on the son of Girija (Ganesh) I receive joy. Sai, cast your merciful glance and protect the children. The child who comes to your shelter — let your grace refine the very essence of his being. Victory, victory to compassionate Sai Dev, ever-watchful guardian. Without you we have no one — carry our boat across the ocean of existence.',
+    durationMinutes: 10,
+    relatedPujas: ['guruvar-puja-sai', '9-thursday-sai-vrat', 'vijayadashami-shirdi', 'shirdi-pilgrimage'],
+    externalSources: [
+      { label: 'Shri Saibaba Sansthan Trust Shirdi - Official', url: 'https://www.sai.org.in' },
+      { label: 'Sai Satcharitra - Online Text', url: 'https://www.shrisaibabasansthan.org/Books/SaiSatcharitra' },
+    ],
+  },
+  {
+    slug: 'narsimha-chalisa',
+    name: 'Narsimha Chalisa',
+    sanskrit: 'नृसिंह चालीसा',
+    deity: 'Lord Narsimha (Narasimha)',
+    deitySlug: 'narasimha',
+    composer: 'Traditional Hindi devotional tradition (Vaishnav sampraday)',
+    composedIn: 'Hindi (40 chaupais)',
+    whenRecited: 'Narsimha Jayanti (Vaishakh Shukla Chaturdashi); when facing severe legal trouble or enemy harassment; for protection of children from evil eye; during black-magic removal rituals',
+    description:
+      'Forty-verse hymn to Lord Narsimha — the half-man half-lion avatar of Vishnu who emerged from a pillar at twilight to slay the demon king Hiranyakashipu and save the child-devotee Prahlad. Most powerful protective stuti in the Vaishnav tradition. Particularly invoked by parents seeking to protect their children from harm and by devotees facing existential threats.',
+    significance:
+      'Narsimha is the destroyer of every protection-loophole (Hiranyakashipu\'s boon protected him from man/animal, day/night, indoors/outdoors, weapons/elements — Narsimha appeared at twilight on a threshold, half-man-half-lion, tore him apart with claws). Devotees believe Narsimha removes ANY obstacle that has slipped through every other defense.',
+    benefits: [
+      'Strongest protection against enemies, court cases, and conspiracies',
+      'Removal of tantrik prayoga and black-magic attacks',
+      'Protection of children from kaal-sarpa-dosha and bal-arishta',
+      'Courage to confront injustice without fear',
+      'Devotion deepens like Prahlad\'s unwavering faith',
+    ],
+    excerpt: [
+      'श्री हरि देव दयाल कृपाला, दीन बंधु संकट हर ज्वाला।',
+      'नमो नमो अरि-कुल नाशन, प्रहलाद रखवारे भगवान॥',
+      'खम्भ फाड़ प्रकट हुए स्वामी, अद्भुत रूप जग वंदनकामी।',
+      'अर्ध सिंह नर रूप विशाला, धरि रद-दंत वीरता कराला॥',
+      'हिरण्यकश्यप उर विदारे, गोद बैठ नख से जब मारे।',
+      'देव ऋषि सब हर्षित भये, ब्रह्मा रुद्र शीश नवाए॥',
+    ],
+    excerptMeaning:
+      'O Shri Hari, compassionate and merciful, friend of the destitute, you remove the flames of every calamity. Salutations again and again, destroyer of the demon clan, protector of Prahlad — the Lord himself. Splitting the pillar you appeared, Master, in a form so extraordinary that the entire world is moved to praise. Half lion, half man, in a vast and terrifying form bearing fearsome fangs and an indomitable valour. You tore open Hiranyakashipu\'s chest, placing him on your lap and finishing him with your claws. Every god and rishi rejoiced; even Brahma and Rudra bowed their heads to you.',
+    durationMinutes: 11,
+    relatedPujas: ['narsimha-jayanti', 'enemy-pacification-puja', 'bal-arishta-shanti', 'court-case-rakshana-puja'],
+    externalSources: [
+      { label: 'ISKCON - Narasimha Aradhana', url: 'https://www.iskcon.org' },
+      { label: 'Ahobilam Mahasansthanam (Andhra Pradesh)', url: 'https://www.ahobilamutt.org' },
+    ],
+  },
+  {
+    slug: 'ganga-chalisa',
+    name: 'Ganga Chalisa',
+    sanskrit: 'गङ्गा चालीसा',
+    deity: 'Goddess Ganga',
+    deitySlug: 'ganga',
+    composer: 'Pt. Devidatt Vyas (traditional Hindi tradition)',
+    composedIn: 'Hindi (40 chaupais + doha)',
+    whenRecited: 'Ganga Dussehra (Jyeshtha Shukla Dashami — descent of Ganga); Ganga Saptami; daily morning by Banaras-Hardwar-Rishikesh residents; before any holy dip; on Vasant Panchami and Magh Mela mornings',
+    description:
+      'Forty-verse hymn to Mother Ganga, the celestial river who descended from Vishnu\'s feet through Shiva\'s matted locks to liberate the 60,000 sons of King Sagara. Recited at the riverbank by pilgrims before performing snan, tarpan and pinda-daan rituals. Central to the daily devotional life of every Ganga-tat (riverbank) city from Gangotri to Ganga-sagar.',
+    significance:
+      'Ganga is the only river worshipped as a goddess across every Hindu sampraday — Shaiva, Vaishnav, Shakta and Smarta. The chalisa is recited to invoke her purifying grace before sankalp of any major puja; her waters are kept in every home shrine for daily achaman and Yagya purna-ahuti.',
+    benefits: [
+      'Purification of accumulated karma (pap-mochan)',
+      'Liberation for departed ancestors via Tarpan',
+      'Cure of chronic skin and digestive ailments (Ganga-jal Ayurvedic tradition)',
+      'Spiritual elevation through bhakti to the eternal Mother',
+      'Sustains the snan-yatra tradition of Magh Mela & Kumbh',
+    ],
+    excerpt: [
+      'जय जय जय जग पावनि गंगा, भागीरथि सुरसरि अरु भंगा।',
+      'जय जय जय भगीरथ-नंदिनी, मुनि चय शंकर शीश सोहावनी॥',
+      'जय जय जय जल-निधि सुता रानी, जग-जननी पतित-पावन दानी।',
+      'जय अमृत-धारा पाप विनाशिनी, परम पुनीता त्रिविध तापहारिणी॥',
+      'धर्म-धुरंधर पाप पनाशिनी, सकल विश्व श्रेय-संपदा दायिनी।',
+      'सत्य सुधा सिंचित जन-मंदिर, स्वर्ग सोपान भव-तरण-कलित-दर॥',
+    ],
+    excerptMeaning:
+      'Victory, victory, victory to the world-purifying Ganga — Bhagirathi, the celestial Sursari with her many tides. Victory to the daughter of Bhagirath, beautifying the matted locks of muni-honoured Shankar. Victory to the queen-daughter of the ocean, mother of the world, the granter of liberation to the fallen. Victory to the nectar-stream that destroys sin, the supremely pure remover of the three afflictions (adhyatmik, adhibhautik, adhidaivik). Bearer of dharma, annihilator of sin, bestower of welfare and prosperity upon the entire universe. The temple-of-the-people anointed with the nectar of truth — you are the very staircase to heaven and the boat that ferries souls across the ocean of birth and death.',
+    durationMinutes: 11,
+    relatedPujas: ['ganga-dussehra', 'ganga-snan-magh-mela', 'tarpan-pitrupaksha', 'kumbh-snan'],
+    externalSources: [
+      { label: 'Namami Gange - Govt of India', url: 'https://nmcg.nic.in' },
+      { label: 'Kashi Vishwanath Trust', url: 'https://shrikashivishwanath.org' },
+    ],
+  },
+  {
+    slug: 'mahalakshmi-chalisa',
+    name: 'Mahalakshmi Chalisa',
+    sanskrit: 'महालक्ष्मी चालीसा',
+    deity: 'Goddess Mahalakshmi',
+    deitySlug: 'lakshmi',
+    composer: 'Sundardas (traditional, 17th century)',
+    composedIn: 'Brajbhasha-Hindi (40 chaupais)',
+    whenRecited: 'Friday evenings (Lakshmi\'s sacred day); Diwali Lakshmi Puja night; Sharad Purnima (Kojagiri); Akshaya Tritiya; opening day of every new business or financial year (April 1 & Vikram Samvat new year)',
+    description:
+      'Forty-verse hymn to Mahalakshmi, the goddess of wealth, abundance, beauty and auspiciousness — consort of Vishnu and giver of every prosperity. Recited in homes and shops across India on Friday evenings as part of the Lakshmi-vrat tradition. The most-recited chalisa during Diwali week alongside Ganesh and Saraswati stutis.',
+    significance:
+      'Mahalakshmi is invoked not just for material wealth but for the eight forms of Lakshmi (Ashta-Lakshmi): Adi, Dhana, Dhanya, Gaja, Santana, Veera, Vijaya, Vidya. The chalisa covers all eight — recitation grants holistic prosperity covering wealth, food, livestock, progeny, courage, victory and knowledge.',
+    benefits: [
+      'Removal of debt and financial obstructions',
+      'Steady inflow of dhana and stability of laxmi-vaas in the home',
+      'Marriage prospects for unmarried daughters',
+      'Resolution of family disputes over inheritance',
+      'Business growth and contract success',
+      'Sustained good fortune across generations',
+    ],
+    excerpt: [
+      'जय लक्ष्मी माता, मैया जय लक्ष्मी माता।',
+      'ब्रह्मा हरिहर शिव सेवित, चरण कमल जाता॥',
+      'सिंहासन पर विराजमान, स्वर्ण कलश धारिणी।',
+      'गज लक्ष्मी की कृपा से, धन-धान्य पाओगी॥',
+      'जग जननी विष्णु प्रिया, कमला कमल वासिनी।',
+      'पद्मा पद्मासन वाली, भक्तन की सुख दाई॥',
+      'जो नर नित चालीसा गावे, धन-धान्य सुख पावे।',
+      'दरिद्र दुख दूर भगावे, मन माँगा वर पावे॥',
+    ],
+    excerptMeaning:
+      'Victory to Mother Lakshmi, eternal mother — your lotus feet are served by Brahma, Hari, Hara and Shiva. Seated on a lion-throne bearing a golden water-pot; by the grace of Gaja-Lakshmi (with her bathing elephants) the devotee receives wealth and grain. World-mother, beloved of Vishnu, Kamala dwelling in the lotus; bearing the lotus and seated on it, you are the joy-giver of devotees. Whoever sings this chalisa daily receives wealth, grain and happiness; poverty and sorrow flee far and every cherished boon is granted.',
+    durationMinutes: 11,
+    relatedPujas: ['diwali-lakshmi-puja', 'sharad-purnima-puja', 'shukravar-vrat', 'akshaya-tritiya-puja', 'griha-pravesh', 'business-inauguration'],
+    externalSources: [
+      { label: 'Mumbadevi Mahalakshmi Mandir', url: 'https://mahalakshmi-temple.com' },
+      { label: 'Kolhapur Mahalakshmi Sansthan', url: 'https://mahalaxmikolhapur.com' },
+    ],
+  },
 ];
 
 export function getChalisa(slug: string): ChalisaInfo | undefined {
