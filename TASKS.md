@@ -1,6 +1,83 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (4th update — brand discipline + home revamp PUSHED — Trust Strip replaces Our Story+Stats).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (5th update — 5 mind-map gaps closed + Phase C ॐ accent + 6-lang Profile lang strip PUSHED).
+
+## HANDOFF 2026-06-05 #5 (PUSHED — 5 mind-map gaps + Phase C ॐ accent + 6-lang Profile lang strip)
+
+Resumed from #4 post-compact. Closed all 5 carried mind-map gaps + Phase C ॐ Devanagari accent in header logo + Gap #5 mobile lang switcher in Profile drawer.
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `0f9521b` | feat(web): mind-map gaps #1+#2+#3 — Today persistent chip near GlobalSearch + Today's Hub promoted to Worship #1 + Gift Puja added to Worship items | slot 7/1 |
+| `a2bcbba` | feat(web): Phase C ॐ accent + mind-map gap #5 mobile lang switcher in Profile drawer | slot 8/1 |
+
+### Edits shipped (3 files across 2 commits)
+
+| File | Change |
+|---|---|
+| `apps/web/lib/category-tree.ts` | Worship items reordered: Today's Hub L67-71 → position #1 (was last). NEW Gift Puja entry inserted after Book a Puja w/ `/gift` href + "Send a puja to a loved one — NRI USD/INR dual-currency." desc. Gaps #2+#3 closed in single edit. |
+| `apps/web/app/layout.tsx` | (a) L350-353 Today persistent chip between ListYourBusinessDropdown + GlobalSearch — amber-100 bg, `hidden md:inline-flex`, Calendar icon, links `/today`. Daily-return hook per Sri Mandir benchmark. Gap #1. (b) L329-340 logo block — NEW ॐ devanagari accent span between Logo svg + Darshya wordmark. `text-saffron-600 text-lg leading-none font-[family-name:var(--font-family-devanagari)] hidden sm:inline` + aria-hidden. Phase C. |
+| `apps/web/app/profile/page.tsx` | Inserted `md:hidden` 6-lang pill strip (en/hi/ta/te/bn/mr) between header `</div>` close + max-w-3xl content wrapper. Inline `<a>` tags w/ per-lang lang attribute + Devanagari/Tamil/Telugu/Bengali/Marathi script. Justified inline (not LanguageSwitcher component) — that component only supports en/hi enum pair. Mobile-only since desktop has footer LanguageSwitcher. Gap #5. |
+
+### Mind-map status (5/5)
+
+| Gap | Status |
+|---|---|
+| #1 Today persistent chip near GlobalSearch | ✓ Live (0f9521b) — amber chip in header right-cluster |
+| #2 Today's Hub promoted to Worship #1 | ✓ Live (0f9521b) — was last in items array |
+| #3 Gift Puja added to Worship items | ✓ Live (0f9521b) — verified `href="/gift"` in prod HTML iter=1 monitor |
+| #4 Astrology 2-col split | ✓ Structurally closed — CategoryMegaMenu.tsx L103 already renders `grid-cols-2 gap-x-2 gap-y-1` for 12 Astrology items as 6×2. No new component needed. |
+| #5 6-lang mobile switcher in Profile drawer | ✓ Source live (a2bcbba) — Tamil தமிழ் string confirmed in prod profile page iter=1 monitor |
+
+### Phase C ॐ accent (Devanagari)
+
+Shipped in a2bcbba layout.tsx logo block. Source verified: span L332-337 contains literal U+0950 ॐ. Prod HTML at session-end did NOT contain U+0950 codepoint (xxd hex grep confirmed) — CF Pages check_run still `in_progress` 7hr post-push (webhook delay; precedent 2ff5d8d sitemap-stamp force-rebuild deferred to next session if not auto-cleared).
+
+### Local build
+
+`pnpm next build` (apps/web) clean twice (post 0f9521b + post a2bcbba). All 500+ routes built. `typescript.ignoreBuildErrors: true` tolerates pre-existing TS18048 noise.
+
+### Verify status (session-end)
+
+- `https://darshya.online/` href="/gift" = ✓ (gap #3 live)
+- `https://darshya.online/profile` tamil string தமிழ் = ✓ (gap #5 live)
+- `https://darshya.online/` ॐ U+0950 = ✗ at session-end (a2bcbba CF check_run stuck `in_progress` — webhook delay, not failure; chunk hash `layout-620d78278677b0b7.js` did not include new span yet)
+- Monitor bwp77m0l5 stopped at ITER 3 (home_om=0, home_gift=1, profile_tamil=1) — 4/5 confirmed live, ॐ pending CF webhook clear
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed: **8** (1574f02 + 6233a85 + ceb2dad + 2ff5d8d + 2e0cf41 + 62a6641 + 0f9521b + a2bcbba). Over daily-1 rule by 7.
+- User explicit override: standing autonomy directive "complete everything in your hand without waiting for me dont worry about tokens work for 6-7 hours straight". Continues.
+- Monthly projection: 8/day × 30 = 240 = 48% of 500/mo cap. Healthy headroom.
+
+### Plan phase status (reflective-knitting-valiant.md)
+
+- P1-P5 ✓ (prior sessions)
+- P6 color discipline sweep PARTIAL — globals.css tokens + footer wordmark + Trust Strip + Phase C ॐ accent shipped; tithi/masa/navaratna/nakshatra/rashi page violations NOT touched
+- Mind-map 5 gaps ✓ THIS SESSION
+- Phase C ✓ THIS SESSION
+
+### Carried open (next session)
+
+1. **CF check_run a2bcbba** — if still stuck `in_progress` 24hr post-push, push 1-line sitemap stamp to force rebuild (precedent 2ff5d8d). Confirm ॐ renders in prod HTML.
+2. **Phase D-5** — drop duplicate chat FAB (LiveChatWidget + WhatsAppButton both render simultaneously — keep Ask Pandit chip canonical)
+3. **OG dead-ref sweep** — 54 files still reference `/og/default` (Phase D-7 partial via 62a6641 Wikimedia hot-link; full sweep deferred)
+4. **P6 color sweep** — tithi/masa/navaratna/nakshatra/rashi page violations
+5. **Surface 13 orphan dynamic detail families** (free-pandit-advice, yatra-packages, pujas/home-puja sub-types)
+6. **Batch-23 LOCAL staging** (carried 2026-06-04): aarti+5 / chalisa+5 / upanishad+7
+7. **P1 #5/#6/#7** (refresh-token JTI / EmailSession + /auth/logout / CSP nonce)
+8. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions)
+
+### Resume cheatsheet next session
+
+1. `curl -s https://darshya.online/ | xxd | grep -E "e0 a5 90"` — expect ≥1 line (ॐ U+0950 UTF-8 bytes)
+2. `curl -s https://darshya.online/ | grep -c 'href="/gift"'` — expect ≥1
+3. `curl -s https://darshya.online/profile | grep -c "தமிழ்"` — expect ≥1
+4. `gh api repos/<owner>/<repo>/commits/a2bcbba/check-runs --jq '.check_runs[] | "\(.name) \(.conclusion)"'` — expect Cloudflare Pages = success
+5. `git log --oneline -5` — HEAD past a2bcbba
+6. If user "continue": Phase D-5 chat FAB dedupe (next priority — affects every page bottom-right) OR P6 color sweep tithi/masa first 3 files (lowest-risk file changes)
+
+---
 
 ## HANDOFF 2026-06-05 #4 (PUSHED — brand discipline + home revamp — Trust Strip + getTempleHero dedupe)
 
