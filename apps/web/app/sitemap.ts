@@ -179,6 +179,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/sacred-trees', priority: 0.9 },
     { path: '/hindu-symbols', priority: 0.9 },
     { path: '/sacred-mountains', priority: 0.9 },
+    { path: '/bhakti-saint', priority: 0.9 },
     { path: '/feed.xml', priority: 0.3 },
   ];
 
@@ -729,6 +730,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const { bhaktiSaintSlugs } = await import('../lib/bhakti-saints');
+  const bhaktiSaintEntries = bhaktiSaintSlugs().map((slug) => ({
+    url: `${BASE_URL}/bhakti-saint/${slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const { vedicYajnaSlugs } = await import('../lib/vedic-yajnas');
   const vedicYajnaEntries = [
     { url: `${BASE_URL}/vedic-yajnas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
@@ -846,6 +855,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...hinduSymbolEntries,
     ...sacredRiverEntries,
     ...vedicYajnaEntries,
+    ...bhaktiSaintEntries,
     ...langEntries,
     ...shlokaEntries,
     ...freePanditEntries,
