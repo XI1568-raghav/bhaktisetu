@@ -89,7 +89,7 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Festivals', href: '/festival', description: '30 Hindu festivals with rituals and dates.' },
       { label: 'Aarti / Chalisa / Mantra', href: '/content', description: 'Devotional texts with translations.' },
       { label: 'Vedas + Upanishads', href: '/ved', description: 'Sruti scriptures explained.' },
-      { label: 'Bhagavad Gita', href: '/bhagavad-gita', description: '18 chapters with commentary.' },
+      { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters with commentary.' },
       { label: 'Calendar 2026', href: '/calendar', description: 'Month-by-month festival + vrat calendar.' },
     ],
     subGroups: [
@@ -101,7 +101,7 @@ export const CATEGORY_TREE: Category[] = [
           { label: 'Vedas', href: '/ved', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
           { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads — Vedanta core texts.' },
           { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas — itihasa-purana corpus.' },
-          { label: 'Bhagavad Gita', href: '/bhagavad-gita', description: '18 chapters of the Gita.' },
+          { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters of the Gita.' },
           { label: 'Ramayana', href: '/ramayana', description: '7 Kandas of Valmiki Ramayana.' },
           { label: 'Mahabharata', href: '/mahabharata', description: '18 Parvas + Bhishma Parva.' },
           { label: 'Sanskrit', href: '/sanskrit', description: 'Grammar + devanagari + classical literature.' },
