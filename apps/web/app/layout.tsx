@@ -374,9 +374,9 @@ export default function RootLayout({
  {/* Brand column */}
  <div className="col-span-2">
  <div className="flex items-center gap-2.5 mb-5">
- <Logo size={36} color="#D4A76A" />
+ <Logo size={36} color="#F99A48" />
  <span className="text-xl font-semibold text-white tracking-tight">
- Darsh<span className="text-temple-gold">ya</span>
+ Darsh<span className="text-saffron-400">ya</span>
  </span>
  </div>
  <p className="text-sm text-surface-500 mb-6 max-w-xs leading-relaxed">
