@@ -87,10 +87,6 @@ export default async function HomePage() {
  </div>
  <div style={{ background: 'var(--color-bg)' }}>
 
- {/* ═══ ONBOARDING — intent trio (anon) / continue card (returning) ═══ */}
- <ContinueJourneyCard />
- <IntentTrio />
-
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  <section className="flex flex-col justify-center relative overflow-hidden">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
@@ -187,6 +183,10 @@ export default async function HomePage() {
  <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-text-faint)' }} />
  </div>
  </section>
+
+ {/* ═══ ONBOARDING — intent trio (anon) / continue card (returning) — moved below hero per Phase D-6 ═══ */}
+ <ContinueJourneyCard />
+ <IntentTrio />
 
  {/* ═══ NEXT FESTIVAL — countdown + book CTA ═══════════════════════ */}
  <NextFestivalStrip />
