@@ -1,6 +1,75 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (5th update — 5 mind-map gaps closed + Phase C ॐ accent + 6-lang Profile lang strip PUSHED).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (6th update — Phase D-5 chat-FAB dedupe + Phase D-7 /og/default restore PUSHED; P6 color sweep tithi/masa LOCAL staged).
+
+## HANDOFF 2026-06-05 #6 (PUSHED Phase D-5 + D-7; LOCAL stage P6 tithi/masa)
+
+Resumed from #5 post-compact. Closed 2 carries from #5 list (Phase D-5 chat FAB dedupe + Phase D-7 OG dead-ref sweep). Started P6 color sweep on tithi/masa Library-reference pages — 3 files staged LOCAL (no push, ride next batched push to keep daily-CF burn at 2 vs 11).
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `3596743` | fix(web): Phase D-5 — drop duplicate chat FAB (keep LiveChatWidget AI canonical, drop WhatsAppButton) | slot 9/1 |
+| `f1e76e2` | feat(web): Phase D-7 — restore /og/default brand OG card (saffron→amber gradient + ॐ + wordmark) — closes 66 dead refs across 55 pages | slot 10/1 |
+
+### Phase D-5 detail (3596743)
+
+`apps/web/components/DeferredClientWidgets.tsx` — dropped `WhatsAppButton` dynamic import + JSX line. Reason: 2 chat FABs (LiveChatWidget `bottom-5 right-5 z-[60]` saffron MessageSquare + WhatsAppButton `bottom-20 right-5 z-[59]` green MessageCircle) stacked = clutter. LiveChatWidget canonical (AI Asha + Claude API + escalate-to-ticket richer flow). WhatsApp still reachable via Ask Pandit nav chip + /contact + /support/ticket/new. Added Phase D-5 comment block documenting drop.
+
+Verify GREEN: bg monitor bx57tpbq9 final state `wa.me_count=0 chat_fab_count=0` (LiveChatWidget mounted client-side post-hydration, `bottom-5 right-5` absent from initial HTML = expected, ssr:false dynamic).
+
+### Phase D-7 detail (f1e76e2)
+
+NEW `apps/web/app/og/default/route.tsx` — edge `ImageResponse` GET handler (1200×630). Saffron→amber linear-gradient(135deg #E16318 → #F99A48 → #FFC107) + ॐ glyph 220px + Darshya wordmark 96px 800wt + tagline + 4 feature pills (Live Darshan / Puja Booking / Vedic Astrology / 80G Receipts) + darshya.online wordmark. `runtime='edge'`, `contentType='image/png'`, 24h immutable cache. Closes 66 dead refs across 55 pages where `openGraph.images: ['/og/default']` was set after the original asset was lost.
+
+Build: `ƒ /og/default 203 B 102 kB` (edge route registered). CF check_run still `in_progress` at HANDOFF write — early-morning push, expect green within ~15 min.
+
+### P6 color sweep — 3 LOCAL staged files (NOT PUSHED)
+
+| File | Line | Change | Reason |
+|---|---|---|---|
+| `apps/web/app/tithi/page.tsx` | L114 | `/vrat` CTA `bg-emerald-600 hover:bg-emerald-700` → `bg-indigo-600 hover:bg-indigo-700` | vrat = Library reference, emerald reserved for Yatra/commerce/success |
+| `apps/web/app/masa/[slug]/page.tsx` | L132 | same /vrat CTA emerald→indigo | same |
+| `apps/web/app/tithi/[slug]/page.tsx` | L138 | same /vrat CTA emerald→indigo | same |
+
+NOT TOUCHED (verified clean per audit):
+- `rashi/[slug]/page.tsx` L206 — emerald CTAs link to `/pujas/{slug}` (commerce). CORRECT per brand rule. Leave.
+- `nakshatra/[slug]/page.tsx` L179 — emerald CTA links to `/pujas` (commerce). CORRECT.
+- `nakshatra/page.tsx`, `rashi/page.tsx`, `masa/page.tsx`, `navaratna/*` — no emerald violations.
+
+### Day-budget check (2026-06-05)
+
+- CF builds consumed: **10** (1574f02 + 6233a85 + ceb2dad + 2ff5d8d + 2e0cf41 + 62a6641 + 0f9521b + a2bcbba + 3596743 + f1e76e2).
+- This HANDOFF commit gets `[skip ci]` per CLAUDE.md rule (TASKS.md only → 0 burn).
+- Monthly projection: 10/day × 30 = 300 = 60% of 500. Healthy but at the edge of "stop pushing rest of session" threshold from CLAUDE.md.
+- P6 3 staged files held back for next session's batched push (would be 11th burn = 66% projection).
+
+### Plan phase status (reflective-knitting-valiant.md)
+
+- P1-P5 ✓ (prior)
+- P6 color sweep PARTIAL (tithi+masa staged, navaratna/nakshatra/rashi audited CLEAN — emerald on /pujas links is CORRECT not a violation)
+- Phase C ✓ (prior)
+- Phase D-5 ✓ THIS SESSION
+- Phase D-7 ✓ THIS SESSION
+
+### Carried open (next session)
+
+1. **CF check_run a2bcbba + f1e76e2** — if either stuck `in_progress` 24h post-push, sitemap-stamp force-rebuild per precedent 2ff5d8d. Confirm ॐ + /og/default both live.
+2. **P6 3 staged files** — commit + push next session as part of batched apps/web push (rides any other apps/web change).
+3. **Surface 13 orphan dynamic detail families** — free-pandit-advice, yatra-packages/[slug], pujas/home-puja sub-types.
+4. **Batch-23 LOCAL staging** (carried 2026-06-04): aarti+5 / chalisa+5 / upanishad+7.
+5. **P1 #5/#6/#7** (refresh-token JTI / EmailSession + /auth/logout / CSP nonce).
+6. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions).
+
+### Verify cheatsheet next session
+
+1. `curl -sI https://darshya.online/og/default | grep content-type` — expect `image/png`
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/og/default` — expect 200
+3. `curl -s https://darshya.online/ | xxd | grep -E "e0 a5 90"` — ॐ U+0950 UTF-8 bytes ≥1
+4. `git status --short` — should show 3 P6 files still modified (M apps/web/app/tithi/page.tsx, M apps/web/app/tithi/[slug]/page.tsx, M apps/web/app/masa/[slug]/page.tsx)
+5. `git log --oneline -5` — HEAD past this HANDOFF commit
+6. If user "continue": commit P6 3-file batch + push (11th CF burn, ~66% monthly proj) OR pivot to batch-23 wisdom-lib LOCAL staging OR orphan-families surface work
+
+---
 
 ## HANDOFF 2026-06-05 #5 (PUSHED — 5 mind-map gaps + Phase C ॐ accent + 6-lang Profile lang strip)
 

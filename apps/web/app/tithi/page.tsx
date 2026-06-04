@@ -111,7 +111,7 @@ export default function TithiIndexPage() {
             See the full schedule on the Hindu festival calendar.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/vrat" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+            <Link href="/vrat" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
               Browse vrata traditions
             </Link>
             <Link href="/calendar" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
