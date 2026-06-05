@@ -203,7 +203,7 @@ function BookContent() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-indigo-50">
         <Loader2 className="w-8 h-8 text-saffron-600 animate-spin" />
       </div>
     );
@@ -211,7 +211,7 @@ function BookContent() {
 
   if (fetchError || !astrologer) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50 px-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-indigo-50 px-4">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold text-surface-700 mb-2">Astrologer unavailable</h2>
           <p className="text-surface-500 mb-6">{fetchError ?? 'Could not load this astrologer.'}</p>
@@ -224,7 +224,7 @@ function BookContent() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-saffron-50">
+    <div className="min-h-[100dvh] bg-indigo-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href={`/astrology/view?id=${astrologer.id}`}
@@ -291,7 +291,7 @@ function BookContent() {
           </div>
 
           {/* Summary */}
-          <div className="bg-saffron-50 border border-saffron-100 rounded-lg p-4 mb-6">
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between text-sm text-surface-600 mb-1">
               <span>{minutes} min × ₹{astrologer.perMinuteRate}</span>
               <span>₹{amountInr}</span>

@@ -81,7 +81,7 @@ export default function VipassanaCentersIndexPage() {
       </nav>
 
       <header className="mb-10 max-w-3xl">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">
+        <p className="text-xs uppercase tracking-wider text-emerald-600">
           {VIPASSANA_CENTERS.length} centers worldwide
         </p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">
@@ -136,7 +136,7 @@ export default function VipassanaCentersIndexPage() {
                     {c.name}
                   </h3>
                   {c.isFlagshipCenter ? (
-                    <span className="shrink-0 rounded-full bg-saffron-100 px-2 py-0.5 text-[10px] font-semibold text-saffron-800">
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
                       Flagship
                     </span>
                   ) : null}
