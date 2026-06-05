@@ -7,11 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Bhagavad Gita — All 18 Chapters with Sanskrit, Meaning & Key Verses | Darshya',
+  title: 'Bhagavad Gita, All 18 Chapters with Sanskrit, Meaning & Key Verses | Darshya',
   description: `Complete chapter-by-chapter guide to the Bhagavad Gita: all 18 chapters, ${TOTAL_VERSES} verses, themes, key shlokas, and the yoga path each chapter teaches. Krishna's teaching to Arjuna at Kurukshetra.`,
   alternates: { canonical: `${BASE_URL}/gita` },
   openGraph: {
-    title: 'Bhagavad Gita — 18 chapters complete guide',
+    title: 'Bhagavad Gita, 18 chapters complete guide',
     description: `Sanskrit, transliteration, key verses, and teaching of each of the Gita's 18 chapters across ${TOTAL_VERSES} verses.`,
     url: `${BASE_URL}/gita`,
     type: 'website',
@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 };
 
 const SECTIONS = [
-  { title: 'Karma Khanda (chapters 1-6) — Path of Action', range: [1, 6], color: 'saffron' },
-  { title: 'Bhakti Khanda (chapters 7-12) — Path of Devotion', range: [7, 12], color: 'rose' },
-  { title: 'Jnana Khanda (chapters 13-18) — Path of Knowledge', range: [13, 18], color: 'indigo' },
+  { title: 'Karma Khanda (chapters 1-6), Path of Action', range: [1, 6], color: 'saffron' },
+  { title: 'Bhakti Khanda (chapters 7-12), Path of Devotion', range: [7, 12], color: 'rose' },
+  { title: 'Jnana Khanda (chapters 13-18), Path of Knowledge', range: [13, 18], color: 'indigo' },
 ] as const;
 
 export default function GitaIndexPage() {
@@ -58,11 +58,11 @@ export default function GitaIndexPage() {
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">18 chapters · {TOTAL_VERSES} verses · Krishna&apos;s teaching to Arjuna</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">श्रीमद्भगवद्गीता</h1>
-        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Bhagavad Gita — All 18 Chapters</p>
+        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Bhagavad Gita, All 18 Chapters</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           Spoken on the battlefield of Kurukshetra by Lord Krishna to the warrior Arjuna,
           the Gita is a complete spiritual manual: how to act, how to love, how to know.
-          Each chapter teaches a distinct yoga — a way to liberation.
+          Each chapter teaches a distinct yoga, a way to liberation.
         </p>
       </header>
 

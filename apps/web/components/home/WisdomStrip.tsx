@@ -14,7 +14,7 @@ const CARDS: WisdomCard[] = [
   {
     href: '/panchang',
     label: "Today's Panchang",
-    body: 'Tithi, vara, nakshatra for today — auspicious timings at a glance.',
+    body: 'Tithi, vara, nakshatra for today. Auspicious timings at a glance.',
     cta: 'Open panchang',
     Icon: Calendar,
     accent: 'var(--color-art-1)',
@@ -22,7 +22,7 @@ const CARDS: WisdomCard[] = [
   {
     href: '/content/books',
     label: 'Sacred Texts',
-    body: 'Bhagavad Gita · Ramayana · Upanishads — read with translations.',
+    body: 'Bhagavad Gita · Ramayana · Upanishads. Read with translations.',
     cta: 'Browse texts',
     Icon: BookOpen,
     accent: 'var(--color-art-2)',

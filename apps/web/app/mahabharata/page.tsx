@@ -8,12 +8,12 @@ const BASE_URL = 'https://darshya.online';
 const TOTAL_ADHYAYAS = MAHABHARATA_PARVAS.reduce((sum, p) => sum + p.adhyayaCount, 0);
 
 export const metadata: Metadata = {
-  title: `Mahabharata — All 18 Parvas: Adi, Sabha, Vana, Virata, Udyoga, Bhishma, Drona, Karna, Shalya, Sauptika, Stri, Shanti, Anushasana, Ashvamedhika, Ashramavasika, Mausala, Mahaprasthanika, Svargarohana | Darshya`,
-  description: `Complete parva-by-parva guide to Vyasa's Mahabharata — all 18 books across ${TOTAL_ADHYAYAS.toLocaleString()} adhyayas, ~100,000 shlokas. Episodes, key characters, central teachings of the world's longest epic.`,
+  title: `Mahabharata, All 18 Parvas: Adi, Sabha, Vana, Virata, Udyoga, Bhishma, Drona, Karna, Shalya, Sauptika, Stri, Shanti, Anushasana, Ashvamedhika, Ashramavasika, Mausala, Mahaprasthanika, Svargarohana | Darshya`,
+  description: `Complete parva-by-parva guide to Vyasa's Mahabharata, all 18 books across ${TOTAL_ADHYAYAS.toLocaleString()} adhyayas, ~100,000 shlokas. Episodes, key characters, central teachings of the world's longest epic.`,
   alternates: { canonical: `${BASE_URL}/mahabharata` },
   openGraph: {
-    title: 'Mahabharata — 18 parvas complete guide',
-    description: `From the lacquer house to Svargarohana — every parva's story, key episodes, and central teaching.`,
+    title: 'Mahabharata, 18 parvas complete guide',
+    description: `From the lacquer house to Svargarohana, every parva's story, key episodes, and central teaching.`,
     url: `${BASE_URL}/mahabharata`,
     type: 'website',
   },
@@ -53,12 +53,12 @@ export default function MahabharataIndexPage() {
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">18 parvas · {TOTAL_ADHYAYAS.toLocaleString()} adhyayas · ~100,000 shlokas</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">महाभारत</h1>
-        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Mahabharata — All 18 Parvas</p>
+        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Mahabharata, All 18 Parvas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
-          The longest epic ever composed — Vyasa&apos;s account of the Kuru dynasty&apos;s
+          The longest epic ever composed, Vyasa&apos;s account of the Kuru dynasty&apos;s
           self-destruction, the eighteen-day Kurukshetra war, and the Pandavas&apos; final
           ascent. Eight times the length of the Iliad and Odyssey combined. Every parva
-          contains within it the whole — dharma in collision with itself, kingship in
+          contains within it the whole, dharma in collision with itself, kingship in
           collision with kinship, and Krishna&apos;s teaching at the heart.
         </p>
       </header>
@@ -68,7 +68,7 @@ export default function MahabharataIndexPage() {
         <p className="mt-2 text-sm text-indigo-900/80">
           Most readers begin with Adi, Sabha, Vana, Virata, Udyoga (the lead-up) and
           then the war parvas. <strong>Bhishma Parva</strong> (Book 6) contains the
-          <strong> Bhagavad Gita</strong> (chapters 25-42 of the parva) — Krishna&apos;s
+          <strong> Bhagavad Gita</strong> (chapters 25-42 of the parva), Krishna&apos;s
           counsel to Arjuna on the eve of war. Shanti and Anushasana are Bhishma&apos;s
           deathbed dharma-instruction; the closing four parvas are short and devastating.
         </p>

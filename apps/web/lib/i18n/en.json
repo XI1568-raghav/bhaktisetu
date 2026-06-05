@@ -72,10 +72,10 @@
   "home": {
     "bannerEarlyAccess": "1000-devotee early access",
     "bannerCta": "Join the waitlist",
-    "heroBadge": "Early access — 1,000 founding devotees",
-    "heroTitle1": "Darshya — your bridge to",
+    "heroBadge": "Early access, 1,000 founding devotees",
+    "heroTitle1": "Darshya, your bridge to",
     "heroTitle2": "sacred traditions",
-    "heroSubtitle": "Watch live temple darshan. Book authentic pujas with verified priests. Get AI-powered spiritual guidance rooted in ancient wisdom.",
+    "heroSubtitle": "Live temple darshan. Authentic pujas with verified priests and video proof. Vedic wisdom guided by AI, rooted in scripture.",
     "heroCtaPrimary": "Watch Live Darshan",
     "heroCtaSecondary": "Book a Puja",
     "heroBadgeVerified": "Verified",
@@ -88,7 +88,7 @@
     "story1Title": "The Gap",
     "story1Text": "Millions of Hindus worldwide are disconnected from their spiritual roots and temple traditions.",
     "story2Title": "The Market",
-    "story2Text": "A $58B religious market is moving online — yet no single platform serves the full devotional journey.",
+    "story2Text": "A $58B religious market is moving online, yet no single platform serves the full devotional journey.",
     "story3Title": "The Bridge",
     "story3Text": "Darshya brings live darshan, verified pujas, AI guidance, and sacred commerce into one app.",
     "story4Title": "The Impact",
@@ -137,7 +137,7 @@
     "aiSpiritualGuide": "AI Spiritual Guide",
     "bhaktiStoreLabel": "Bhakti Store",
     "bhaktiStoreTitle": "Everything for daily worship",
-    "bhaktiStoreDesc": "Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols — all delivered to your doorstep. Free shipping on orders above Rs 499.",
+    "bhaktiStoreDesc": "Premium brass puja thalis, authentic rudraksha malas, sandalwood incense, marble idols. All delivered to your doorstep. Free shipping on orders above Rs 499.",
     "shopEssentials": "Shop Essentials",
     "gauSevaTitle": "Gau Seva",
     "gauSevaDesc": "Adopt a cow from Rs 51/day",
@@ -148,7 +148,7 @@
     "wellnessTitle": "Wellness",
     "wellnessDesc": "Yoga & meditation",
     "finalCtaTitle": "Join the early-access community",
-    "finalCtaDesc": "Begin your spiritual journey today. Live darshan, authentic pujas, AI guidance — all in one place.",
+    "finalCtaDesc": "Begin your spiritual journey today. Live darshan, authentic pujas, AI guidance. All in one place.",
     "exploreFirst": "Explore First"
   },
   "temples": {
@@ -233,7 +233,7 @@
   },
   "content": {
     "pageTitle": "Devotional Content Library",
-    "pageSubtitle": "Explore a vast library of devotional content — Aartis, Chalisas, Mantras, Bhajans, and spiritual stories. Stream or download for offline listening.",
+    "pageSubtitle": "Explore a vast library of devotional content. Aartis, Chalisas, Mantras, Bhajans, and spiritual stories. Stream or download for offline listening.",
     "tabAll": "All",
     "tabAarti": "Aarti",
     "tabChalisa": "Chalisa",
@@ -253,7 +253,7 @@
   },
   "store": {
     "pageTitle": "Bhakti Store",
-    "pageSubtitle": "Authentic puja samagri, handcrafted idols, sacred rudraksha, and spiritual essentials — sourced from trusted artisans and blessed at temples.",
+    "pageSubtitle": "Authentic puja samagri, handcrafted idols, sacred rudraksha, and spiritual essentials, sourced from trusted artisans and blessed at temples.",
     "freeDelivery": "Free Delivery above Rs 499",
     "secureCheckout": "Secure Checkout",
     "easyReturns": "Easy Returns",
@@ -337,7 +337,7 @@
   "yatra": {
     "destinationsTitle": "10 Sacred Yatra Destinations You Must Visit",
     "destinationsBadge": "Most-Visited Pilgrimage Destinations",
-    "destinationsSubtitle": "India's most visited pilgrimage sites with curated itineraries, best season to visit, how to reach, and direct booking through trusted partners — MakeMyTrip, Goibibo and IRCTC Tourism.",
+    "destinationsSubtitle": "India's most visited pilgrimage sites with curated itineraries, best season to visit, how to reach, and direct booking through trusted partners including MakeMyTrip, Goibibo and IRCTC Tourism.",
     "days": "days",
     "from": "From",
     "perPerson": "per person",

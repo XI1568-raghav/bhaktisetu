@@ -293,7 +293,7 @@ export default function RootLayout({
  <link rel="alternate" hrefLang="bn" href="https://darshya.online/bn" />
  <link rel="alternate" hrefLang="mr" href="https://darshya.online/mr" />
  <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
- <link rel="alternate" type="application/rss+xml" title="Darshya — RSS" href="https://darshya.online/feed.xml" />
+ <link rel="alternate" type="application/rss+xml" title="Darshya RSS" href="https://darshya.online/feed.xml" />
 
  {/* Site-wide JSON-LD: Organization + WebSite (SearchAction). Per-page JSON-LD
      (Article, Product, Event, Place) is injected by the page itself. */}
@@ -326,7 +326,7 @@ export default function RootLayout({
  aria-label="Main navigation"
  >
  {/* Logo */}
- <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Darshya — home">
+ <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Darshya home">
  <Logo size={28} />
  {/* ॐ devanagari accent — sacred glyph, saffron, font-devanagari fallback chain per globals @theme */}
  <span
