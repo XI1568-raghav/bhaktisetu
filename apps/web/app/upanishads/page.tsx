@@ -7,12 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 10 Principal Upanishads (Dashopanishads) — Mahavakyas & Summaries | Darshya',
-  description: 'Complete guide to the 10 principal Upanishads commented on by Adi Shankaracharya — Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chhandogya, Brihadaranyaka. Sanskrit, mahavakyas, key concepts.',
+  title: 'The 10 Principal Upanishads (Dashopanishads), Mahavakyas & Summaries | Darshya',
+  description: 'Complete guide to the 10 principal Upanishads commented on by Adi Shankaracharya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chhandogya, Brihadaranyaka. Sanskrit, mahavakyas, key concepts.',
   alternates: { canonical: `${BASE_URL}/upanishads` },
   openGraph: {
     title: 'The 10 Principal Upanishads',
-    description: 'The Vedanta foundation — 10 Upanishads, 4 mahavakyas, the path of self-knowledge.',
+    description: 'The Vedanta foundation, 10 Upanishads, 4 mahavakyas, the path of self-knowledge.',
     url: `${BASE_URL}/upanishads`,
     type: 'website',
   },
@@ -60,7 +60,7 @@ export default function UpanishadsIndexPage() {
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">दशोपनिषद्</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 10 Principal Upanishads</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
-          The Upanishads are the philosophical conclusion of the Vedas — sitting
+          The Upanishads are the philosophical conclusion of the Vedas, sitting
           (upa-ni-shad) close to the teacher. Of the 108 Upanishads in the Muktika
           canon, ten are considered principal because Adi Shankaracharya wrote bhashyas
           (commentaries) on them. They are the source of the four Mahavakyas and the
@@ -73,22 +73,22 @@ export default function UpanishadsIndexPage() {
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <div className="rounded-lg bg-white p-3 text-sm">
             <p className="font-serif text-base text-gray-900">प्रज्ञानं ब्रह्म</p>
-            <p className="text-xs italic text-gray-600">Prajñānaṁ brahma — Consciousness is Brahman</p>
+            <p className="text-xs italic text-gray-600">Prajñānaṁ brahma, Consciousness is Brahman</p>
             <p className="mt-1 text-xs text-indigo-700">Aitareya (Rig Veda)</p>
           </div>
           <div className="rounded-lg bg-white p-3 text-sm">
             <p className="font-serif text-base text-gray-900">अहं ब्रह्मास्मि</p>
-            <p className="text-xs italic text-gray-600">Ahaṁ brahmāsmi — I am Brahman</p>
+            <p className="text-xs italic text-gray-600">Ahaṁ brahmāsmi, I am Brahman</p>
             <p className="mt-1 text-xs text-indigo-700">Brihadaranyaka (Yajur Veda)</p>
           </div>
           <div className="rounded-lg bg-white p-3 text-sm">
             <p className="font-serif text-base text-gray-900">तत्त्वमसि</p>
-            <p className="text-xs italic text-gray-600">Tat tvam asi — That thou art</p>
+            <p className="text-xs italic text-gray-600">Tat tvam asi, That thou art</p>
             <p className="mt-1 text-xs text-indigo-700">Chandogya (Sama Veda)</p>
           </div>
           <div className="rounded-lg bg-white p-3 text-sm">
             <p className="font-serif text-base text-gray-900">अयमात्मा ब्रह्म</p>
-            <p className="text-xs italic text-gray-600">Ayam ātmā brahma — This Self is Brahman</p>
+            <p className="text-xs italic text-gray-600">Ayam ātmā brahma, This Self is Brahman</p>
             <p className="mt-1 text-xs text-indigo-700">Mandukya (Atharva Veda)</p>
           </div>
         </div>

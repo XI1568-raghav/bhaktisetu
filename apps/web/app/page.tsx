@@ -37,9 +37,9 @@ import EmailCapture from '../components/EmailCapture';
 import NextFestivalStrip from '../components/home/NextFestivalStrip';
 
 export const metadata: Metadata = {
- title: "Darshya — India's Devotional Super App",
+ title: "Darshya, India's Devotional Super App",
  description:
-   'Live darshan from sacred temples, online puja booking with verified pandits, daily panchang, Vedic astrology, Sanskrit lessons, gaushala donations and AI spiritual guidance — your complete Sanatan Dharma companion.',
+   'Live darshan from sacred temples, online puja booking with verified pandits, daily panchang, Vedic astrology, Sanskrit lessons, gaushala donations and AI spiritual guidance. Your complete Sanatan Dharma companion.',
  alternates: {
    canonical: 'https://darshya.online',
    languages: {
@@ -52,16 +52,16 @@ export const metadata: Metadata = {
    },
  },
  openGraph: {
-   title: "Darshya — India's Devotional Super App",
+   title: "Darshya, India's Devotional Super App",
    description:
-     'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit & Vedic learning, gaushala donations and AI pandit guidance — one app for daily devotional practice.',
+     'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit and Vedic learning, gaushala donations and AI pandit guidance. One app for daily devotional practice.',
    url: 'https://darshya.online',
    type: 'website',
    images: ['/og/default'],
  },
  twitter: {
    card: 'summary_large_image',
-   title: "Darshya — India's Devotional Super App",
+   title: "Darshya, India's Devotional Super App",
    description:
      'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit & Vedic learning, gaushala donations and AI pandit guidance.',
    images: ['/og/default'],
@@ -80,7 +80,7 @@ export default async function HomePage() {
    style={{ background: 'var(--color-primary)', color: '#fff' }}
  >
    <span className="font-medium">{t('bannerEarlyAccess')}</span>
-   <span className="mx-2 opacity-70">—</span>
+   <span className="mx-2 opacity-70">·</span>
    <Link href="/waitlist" className="underline underline-offset-2 font-semibold whitespace-nowrap">
      {t('bannerCta')} →
    </Link>
@@ -147,7 +147,7 @@ export default async function HomePage() {
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
  <img
  src={getTempleHero('golden-temple')}
- alt="Sri Harmandir Sahib (Golden Temple) — live darshan"
+ alt="Sri Harmandir Sahib (Golden Temple), live darshan"
  width={1280}
  height={640}
  className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
@@ -192,6 +192,37 @@ export default async function HomePage() {
  <IntentTrio />
 
  {/* ═══ NEXT FESTIVAL — moved above hero per audit §3 delta #3 ═════ */}
+
+ {/* ═══ CATEGORY COLOR STRIP — 5 brand worlds visible above fold ═══════ */}
+ {/* User complaint 2026-06-05: above-fold reads as saffron monoculture. */}
+ {/* This strip immediately signals Worship saffron, Library indigo, Astrology indigo, Yatra emerald, Shop amber. */}
+ <section aria-label="Browse by category" className="py-5 md:py-7" style={{ background: 'var(--color-bg)' }}>
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
+ {[
+ { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF4EC', border: '#FBD0A8', text: '#9E3F0A', icon: '#E16318' },
+ { label: 'Library', sub: '500 plus wisdom guides', href: '/discover', Icon: BookOpen, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
+ { label: 'Astrology', sub: 'Kundli, Horoscope, Doshas', href: '/astrology', Icon: Stars, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
+ { label: 'Yatra', sub: 'Pilgrimage, Wellness', href: '/yatra', Icon: Compass, bg: '#ECFDF5', border: '#A7F3D0', text: '#065F46', icon: '#059669' },
+ { label: 'Shop', sub: 'Prasad, Idols, Rudraksha', href: '/store', Icon: Heart, bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: '#D97706' },
+ ].map((cat) => (
+ <Link
+ key={cat.label}
+ href={cat.href}
+ prefetch={false}
+ className="snap-start shrink-0 md:shrink flex flex-col items-start justify-between gap-2 min-w-[164px] md:min-w-0 p-3.5 rounded-xl card-hover transition-all"
+ style={{ background: cat.bg, border: `1px solid ${cat.border}` }}
+ >
+ <cat.Icon className="w-5 h-5" style={{ color: cat.icon }} />
+ <div>
+ <p className="text-sm font-semibold" style={{ color: cat.text }}>{cat.label}</p>
+ <p className="text-[11px] mt-0.5" style={{ color: cat.text, opacity: 0.75 }}>{cat.sub}</p>
+ </div>
+ </Link>
+ ))}
+ </div>
+ </div>
+ </section>
 
  {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
  <section aria-label="Quick actions" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
@@ -303,7 +334,7 @@ export default async function HomePage() {
  <div className="aspect-[16/9] relative">
  <img
  src={getTempleHero('golden-temple')}
- alt="Sri Harmandir Sahib (Golden Temple), Amritsar — live darshan"
+ alt="Sri Harmandir Sahib (Golden Temple), Amritsar, live darshan"
  width={1280}
  height={720}
  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
@@ -648,7 +679,7 @@ export default async function HomePage() {
  <div>
  <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#059669' }}>Yatra</p>
  <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Walk the sacred circuits — Char Dham, 12 Jyotirlinga, 62 Tirth.
+ Walk the sacred circuits of India. Char Dham, 12 Jyotirlinga, 62 Tirth.
  </h2>
  </div>
  <Link href="/yatra" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
@@ -657,7 +688,7 @@ export default async function HomePage() {
  </div>
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  {[
- { Icon: Compass, title: 'Char Dham', desc: 'Yamunotri, Gangotri, Kedarnath, Badrinath — Himalayan moksha route.', href: '/pilgrimage/char-dham' },
+ { Icon: Compass, title: 'Char Dham', desc: 'Yamunotri, Gangotri, Kedarnath, Badrinath. Himalayan moksha route.', href: '/pilgrimage/char-dham' },
  { Icon: Flame, title: '12 Jyotirlinga', desc: 'Shiva self-manifest lights from Somnath to Rameswaram.', href: '/jyotirlinga' },
  { Icon: Leaf, title: '62 Tirth Guides', desc: 'Darshan timings, dress code, vip-darshan tips per shrine.', href: '/tirth' },
  ].map((card) => (
@@ -689,7 +720,7 @@ export default async function HomePage() {
  <EmailCapture
  source="home-hero"
  title="Daily panchang in your inbox"
- subtitle="Tithi, nakshatra, festival reminders + launch credits — free forever, unsubscribe any time."
+ subtitle="Tithi, nakshatra, festival reminders and launch credits. Free forever, unsubscribe any time."
  cta="Get free panchang"
  />
  </section>

@@ -7,12 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 4 Vedas — Rigveda, Samaveda, Yajurveda, Atharvaveda | Darshya',
-  description: 'The four Vedas of Sanatana Dharma — Rig (hymns), Sama (melody), Yajur (ritual), Atharva (life). ~20,000 mantras, principal Upanishads, shakhas, presiding priests.',
+  title: 'The 4 Vedas, Rigveda, Samaveda, Yajurveda, Atharvaveda | Darshya',
+  description: 'The four Vedas of Sanatana Dharma, Rig (hymns), Sama (melody), Yajur (ritual), Atharva (life). ~20,000 mantras, principal Upanishads, shakhas, presiding priests.',
   alternates: { canonical: `${BASE_URL}/vedas` },
   openGraph: {
-    title: 'The 4 Vedas — Shruti foundation',
-    description: 'The oldest sacred literature preserved continuously by human civilisation — ~20,000 mantras across four Vedas, each with samhita, brahmana, aranyaka, upanishad.',
+    title: 'The 4 Vedas, Shruti foundation',
+    description: 'The oldest sacred literature preserved continuously by human civilisation, ~20,000 mantras across four Vedas, each with samhita, brahmana, aranyaka, upanishad.',
     url: `${BASE_URL}/vedas`,
     type: 'website',
   },
@@ -49,15 +49,15 @@ export default function VedasIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-indigo-600">4 Vedas · ~{(TOTAL_MANTRAS / 1000).toFixed(0)}k mantras · Shruti — the heard, revealed scripture</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">4 Vedas · ~{(TOTAL_MANTRAS / 1000).toFixed(0)}k mantras · Shruti, the heard, revealed scripture</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">चत्वारो वेदाः</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 4 Vedas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           The Vedas are the oldest sacred literature continuously preserved by any human
-          civilisation. They are shruti — that which was heard by the rishis in deep
-          contemplation, not composed by them. Each Veda has four parts — Samhita
+          civilisation. They are shruti, that which was heard by the rishis in deep
+          contemplation, not composed by them. Each Veda has four parts, Samhita
           (mantras), Brahmana (ritual exegesis), Aranyaka (forest contemplation), and
-          Upanishad (philosophical inquiry) — together comprising the complete Vedic
+          Upanishad (philosophical inquiry), together comprising the complete Vedic
           corpus.
         </p>
       </header>
@@ -102,7 +102,7 @@ export default function VedasIndexPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <Link href="/upanishads" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
             <div className="text-sm font-semibold text-indigo-900">10 Upanishads</div>
-            <div className="text-xs text-indigo-700">Vedanta — concluding part of each Veda</div>
+            <div className="text-xs text-indigo-700">Vedanta, concluding part of each Veda</div>
           </Link>
           <Link href="/darshanas" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
             <div className="text-sm font-semibold text-indigo-900">6 Darshanas</div>
