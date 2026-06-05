@@ -1,6 +1,88 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (9th update — UI revamp audit doc shipped + P1 type-scale fix LOCAL).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (10th update — P4 mobile sweep + deck PDF + Opus 4.7 fix PUSHED ac9f1b9).
+
+## HANDOFF 2026-06-05 #10 (PUSHED ac9f1b9 — P4 mobile sweep + deck PDF + Blackbox model fix + CF VERIFY GREEN)
+
+Closed deck-revamp anchor (PDF rendered + committed `752ebd1`) + P4 mobile sweep (96 files: iOS focus-zoom + 100dvh + safe-area) + batched push of 5 prior staged web edits. Blackbox model config fixed (4.8 → 4.7 across all 5 slots, 4.8 free-tier 403 confirmed empirically).
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `752ebd1` | docs(deck): client pitch deck 12->20 slides — all 10 revenue lanes + emotion-driven copy + 3-track CTA [skip ci] | 0 |
+| `ac9f1b9` | feat(web): P4 mobile responsive sweep — iOS focus-zoom fix + 100dvh + safe-area + 5 prior batched edits | slot 13/30 ~78% proj |
+
+### CF verify GREEN (Monitor bu4s5tw1s iter=1)
+
+`https://darshya.online/` = 200, `/astrology` = 200, `/pujas` = 200 — ALL_200_VERIFIED. ac9f1b9 live ~3 min post-push.
+
+### Deck revamp CLOSED end-to-end
+
+- HTML: 60709 bytes, 20 slides (10 revenue lanes + emotion + 3-track CTA) — prior session shipped local
+- PDF: 821300 bytes regenerated this session via NEW `scripts/build-pitch-deck-pdf.mjs` (Playwright Chromium, 1280×720 @page CSS honored, font.ready awaited)
+- Render script reusable: `node scripts/build-pitch-deck-pdf.mjs`
+- Owner can re-render anytime after HTML edits
+
+### P4 mobile sweep — 96 files
+
+| Fix | Location | Reason |
+|---|---|---|
+| iOS focus-zoom suppression | `globals.css` after L286 autofill | `input:not([type=checkbox/radio/range/file]), textarea, select { font-size: max(16px, 1rem) }` — kills 14px form-input zoom |
+| MobileBottomTabs clearance | `layout.tsx` L380 `<main>` | `pb-20` + safe-area-inset-bottom calc — 64px tab bar + iPhone home-indicator gap |
+| Viewport unit upgrade | 94 files global sed sweep | `min-h-screen` → `min-h-[100dvh]` — iOS Safari URL-bar correction |
+| astrology/[id]/book L206/214/227 | absorbed by global | — |
+
+### Prior session 5 web edits (rode this push)
+
+- `nakshatra-finder/page.tsx` — 3 brand edits saffron→indigo (Library reference accent)
+- `globals.css` — 4 type-scale tokens clamp-based + body 15→17px WCAG floor
+- `layout.tsx` — /ved→/vedas i18n nav href
+- `MobileBottomTabs.tsx` — /vedas added to Library prefixes
+- `category-tree.ts` — /ved→/vedas L91+L101
+
+### Build verify
+
+`pnpm next build` (apps/web) CLEAN. All 500+ routes built. Shared JS 102 kB unchanged. 269 insertions / 219 deletions across 106 files (mostly mechanical 1-line min-h swaps).
+
+### Blackbox model config — 4.7 confirmed working, 4.8 BLOCKED
+
+Curl test via local beta-strip-proxy `http://127.0.0.1:8787`:
+- Opus 4.7 → 200 `{"content":[{"text":"OK"}]}` ✓
+- Opus 4.8 → 403 `Free tier users do not have access to this model. Upgrade to paid credits at Vercel AI Gateway`
+
+Updated `C:\Users\DELL\.claude\settings.json` — flipped 4 env slots (CLAUDE_CODE_SUBAGENT_MODEL + ANTHROPIC_DEFAULT_OPUS_MODEL + ANTHROPIC_DEFAULT_SONNET_MODEL + ANTHROPIC_DEFAULT_HAIKU_MODEL) from 4.8 → 4.7. Main `model` slot already 4.7. Subagent dispatch path UNBLOCKED on next Claude restart.
+
+### Day-budget (2026-06-05)
+
+- CF builds: **13** (12 prior + ac9f1b9). Slot 13/30 = ~78% monthly proj. Past 60% threshold — stop non-critical pushes rest of session.
+- 752ebd1 + this HANDOFF = `[skip ci]` = 0 burn.
+
+### Plan phase status
+
+- Deck revamp ✓ THIS SESSION (HTML prior + PDF + script committed)
+- P4 Mobile responsive sweep ✓ THIS SESSION (iOS zoom + 100dvh + safe-area + global)
+- P1 Brand + P2 Typography still in_progress (5 prior staged edits rode this push, full sweep deferred)
+- Blackbox subagent path UNBLOCKED next session (4.7 confirmed)
+
+### Carried open (next session)
+
+1. **P1 brand sweep full** — 56 Scripture + 50+ Astrology + 15+ Wellness violations per audit doc §1 (top-10 violations on tithi/masa/navaratna/nakshatra/rashi pages NOT touched yet)
+2. **P2 type-scale verify in prod** — H1 visibly larger than H2 on desktop ≥1280px after CF deploy (curl + visual check)
+3. **31 bare grid-cols-(3-6) manual sweep** — audit doc cited 207 occurrences, verify-before-act found 31 truly bare. Manual pass safer than blind regex (risks breaking tuned grids)
+4. **Mega-panel sub-group expansion for 10 remaining orphans** (jyotirlinga/shakti-peeth/pancha-bhoota/rashi/masa/ashta-lakshmi/sapta-mathruka/nava-graha/navaratna/samskaras)
+5. **P1 #5/#6/#7** refresh-token JTI / EmailSession / /auth/logout / CSP nonce (heavy auth refactor)
+6. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions)
+7. **Subagent dispatch test** — verify Opus 4.7 subagent calls succeed post-restart
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200 (ac9f1b9 deployed)
+2. `git status --short` → clean
+3. `git log --oneline -5` → HEAD past this HANDOFF
+4. Continue: P1 brand sweep top-10 OR mega-panel orphan expansion OR auth refactor
+
+---
 
 ## HANDOFF 2026-06-05 #9 (UI revamp audit shipped + P1 type-scale + body-text fix LOCAL)
 
