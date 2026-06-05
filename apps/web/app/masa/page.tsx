@@ -47,7 +47,7 @@ export default function MasaIndexPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-saffron-50 via-white to-amber-50">
+    <main className="min-h-[100dvh] bg-gradient-to-b from-saffron-50 via-white to-amber-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 

@@ -46,7 +46,7 @@ export default function WeddingsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
+      <main className="min-h-[100dvh] bg-gradient-to-b from-amber-50 to-white">
         <section className="px-4 sm:px-8 py-16 max-w-6xl mx-auto text-center">
           <p className="uppercase tracking-widest text-amber-700 text-sm">
             Vedic Hindu Wedding Planning

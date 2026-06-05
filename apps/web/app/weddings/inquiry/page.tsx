@@ -188,7 +188,7 @@ function InquiryForm() {
 
 export default function InquiryPage() {
   return (
-    <main className="min-h-screen bg-amber-50/40 py-12 px-4">
+    <main className="min-h-[100dvh] bg-amber-50/40 py-12 px-4">
       <h1 className="font-serif text-3xl text-amber-900 text-center">Wedding inquiry</h1>
       <p className="mt-2 text-stone-700 text-center max-w-2xl mx-auto">
         Tell us a little about your wedding. A Darshya concierge will respond within 24 hours.

@@ -61,7 +61,7 @@ export default async function BookDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#fbf6ec]">
+    <div className="min-h-[100dvh] bg-[#fbf6ec]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ldJson) }}

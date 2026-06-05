@@ -105,7 +105,7 @@ export default async function PanditDetailPage({ params }: PageProps) {
  if (!priest) notFound();
 
  return (
-  <div className="min-h-screen bg-[var(--color-bg)]">
+  <div className="min-h-[100dvh] bg-[var(--color-bg)]">
    <div className="max-w-4xl mx-auto px-4 py-6">
     <Link
      href="/pandits"

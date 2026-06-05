@@ -69,7 +69,7 @@ export default async function DonationsLandingPage({
   if (sp.causeId && sp.causeName) {
     const causeKind = sp.causeKind === 'temple' ? 'temple' : 'gaushala';
     return (
-      <div className="min-h-screen bg-surface-50">
+      <div className="min-h-[100dvh] bg-surface-50">
         <div className="border-b border-surface-100 bg-white">
           <div className="mx-auto max-w-4xl px-4 py-3 sm:px-6">
             <nav className="flex items-center gap-2 text-sm text-surface-500">
@@ -105,7 +105,7 @@ export default async function DonationsLandingPage({
   }
 
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-[100dvh] bg-surface-50">
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-saffron-50 via-amber-50 to-rose-50">
         <div className="mx-auto max-w-5xl px-6 py-14 sm:py-20">

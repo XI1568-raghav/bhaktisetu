@@ -1767,7 +1767,7 @@ export function RoleDemoClient({ role }: { role: string }) {
 
  if (!screens || !meta) {
  return (
- <div className="min-h-screen bg-surface-900 flex items-center justify-center">
+ <div className="min-h-[100dvh] bg-surface-900 flex items-center justify-center">
  <div className="text-center">
  <p className="text-white text-lg font-bold">Role not found</p>
  <Link href="/demo" className="text-saffron-400 text-sm mt-2 inline-block">Back to demos</Link>
@@ -1782,7 +1782,7 @@ export function RoleDemoClient({ role }: { role: string }) {
  const CurrentScreenComponent = currentEntry.component;
 
  return (
- <div className="min-h-screen bg-gradient-to-b from-surface-900 via-surface-800 to-surface-900">
+ <div className="min-h-[100dvh] bg-gradient-to-b from-surface-900 via-surface-800 to-surface-900">
  {/* Top nav */}
  <div className="max-w-6xl mx-auto px-6 pt-8 flex items-center justify-between">
  <Link

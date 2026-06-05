@@ -458,7 +458,7 @@ export default async function PanchangPage({
  const dateOffset = offset ? parseInt(offset, 10) : 0;
 
  return (
- <div className="min-h-screen bg-saffron-50">
+ <div className="min-h-[100dvh] bg-saffron-50">
  {/* Hero */}
  <section className="bg-gradient-to-r from-saffron-600 via-saffron-500 to-temple-gold py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

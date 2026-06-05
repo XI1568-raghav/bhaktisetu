@@ -86,7 +86,7 @@ function AccountSubscriptionsInner() {
   }
 
   return (
-    <div className="min-h-screen px-4 py-12" style={{ background: 'var(--color-bg, #fffbf5)' }}>
+    <div className="min-h-[100dvh] px-4 py-12" style={{ background: 'var(--color-bg, #fffbf5)' }}>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-10">
           <div className="w-14 h-14 gradient-saffron rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">

@@ -89,7 +89,7 @@ const wikimediaCredits: Credit[] = [
 
 export default function CreditsPage() {
  return (
- <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+ <div className="min-h-[100dvh]" style={{ background: "var(--color-bg)" }}>
  <section
  className="py-14 sm:py-20"
  style={{ background: "var(--color-surface)" }}

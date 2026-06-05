@@ -110,7 +110,7 @@ export default async function TemplesPage() {
  }
 
  return (
-  <Suspense fallback={<div className="min-h-screen" />}>
+  <Suspense fallback={<div className="min-h-[100dvh]" />}>
    <TemplesBrowser temples={merged} total={totalFromApi} />
   </Suspense>
  );

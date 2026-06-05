@@ -432,7 +432,7 @@ function OfferingCheckoutInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[var(--color-bg)] flex items-center justify-center">
         <Loader2 className="w-6 h-6 text-saffron-500 animate-spin" />
       </div>
     );
@@ -440,7 +440,7 @@ function OfferingCheckoutInner() {
 
   if (loadError || !offering || !priest) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg)]">
+      <div className="min-h-[100dvh] bg-[var(--color-bg)]">
         <div className="max-w-2xl mx-auto px-4 py-10">
           <Link
             href="/pandits"
@@ -469,7 +469,7 @@ function OfferingCheckoutInner() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg)]">
+      <div className="min-h-[100dvh] bg-[var(--color-bg)]">
         <div className="max-w-2xl mx-auto px-4 py-10">
           <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-8 text-center">
             <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -509,7 +509,7 @@ function OfferingCheckoutInner() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="min-h-[100dvh] bg-[var(--color-bg)]">
       <div className="max-w-2xl mx-auto px-4 py-6">
         <Link
           href={`/pandits/${priest.id}`}
@@ -754,7 +754,7 @@ function OfferingCheckoutInner() {
 
 export default function OfferingCheckoutPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#faf7f0]"><div className="text-surface-500">Loading…</div></div>}>
+    <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center bg-[#faf7f0]"><div className="text-surface-500">Loading…</div></div>}>
       <OfferingCheckoutInner />
     </Suspense>
   );

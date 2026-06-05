@@ -142,7 +142,7 @@ export function TemplesBrowser({
  };
 
  return (
- <div className="min-h-screen bg-[color:var(--color-bg,#fbf7f1)]">
+ <div className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]">
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

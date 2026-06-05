@@ -50,7 +50,7 @@ export default function ConsultationRoomPage() {
  `&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
 
  return (
- <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-bg)' }}>
+ <div className="min-h-[100dvh] flex flex-col" style={{ background: 'var(--color-bg)' }}>
  {/* Header */}
  <div className="border-b border-surface-100 bg-white">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">

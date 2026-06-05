@@ -292,7 +292,7 @@ function BookingDetailContent() {
 
  if (loading) {
  return (
- <div className="flex min-h-screen items-center justify-center bg-saffron-50">
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
  <div className="text-center">
  <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-saffron-500" />
  <p className="text-sm text-surface-500">Loading booking details...</p>
@@ -303,7 +303,7 @@ function BookingDetailContent() {
 
  if (!booking) {
  return (
- <div className="flex min-h-screen items-center justify-center bg-saffron-50">
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
  <div className="text-center">
  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-surface-300" />
  <h2 className="mb-2 text-xl font-bold text-surface-700">Booking Not Found</h2>
@@ -347,7 +347,7 @@ function BookingDetailContent() {
  booking.status === 'completed');
 
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* Breadcrumb */}
  <div className="border-b border-surface-100 bg-white">
  <div className="mx-auto max-w-4xl px-4 py-3 sm:px-6">

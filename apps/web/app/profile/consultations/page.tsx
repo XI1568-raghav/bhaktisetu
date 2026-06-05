@@ -116,7 +116,7 @@ function ListContent() {
   }
 
   return (
-    <div className="min-h-screen bg-saffron-50">
+    <div className="min-h-[100dvh] bg-saffron-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-surface-800">My Consultations</h1>

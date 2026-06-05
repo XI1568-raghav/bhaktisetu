@@ -51,7 +51,7 @@ export default function MahabharataIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">18 parvas · {TOTAL_ADHYAYAS.toLocaleString()} adhyayas · ~100,000 shlokas</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">18 parvas · {TOTAL_ADHYAYAS.toLocaleString()} adhyayas · ~100,000 shlokas</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">महाभारत</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Mahabharata — All 18 Parvas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
@@ -63,9 +63,9 @@ export default function MahabharataIndexPage() {
         </p>
       </header>
 
-      <section className="mb-10 rounded-2xl border border-saffron-200 bg-gradient-to-br from-saffron-50 to-amber-50 p-6">
-        <h2 className="text-base font-semibold text-saffron-900">Reading order &amp; tip</h2>
-        <p className="mt-2 text-sm text-saffron-900/80">
+      <section className="mb-10 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-amber-50 p-6">
+        <h2 className="text-base font-semibold text-indigo-900">Reading order &amp; tip</h2>
+        <p className="mt-2 text-sm text-indigo-900/80">
           Most readers begin with Adi, Sabha, Vana, Virata, Udyoga (the lead-up) and
           then the war parvas. <strong>Bhishma Parva</strong> (Book 6) contains the
           <strong> Bhagavad Gita</strong> (chapters 25-42 of the parva) — Krishna&apos;s
@@ -79,19 +79,19 @@ export default function MahabharataIndexPage() {
           <Link
             key={p.slug}
             href={`/mahabharata/${p.slug}`}
-            className="group block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-saffron-300 hover:shadow-md"
+            className="group block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-md"
           >
             <div className="flex items-baseline justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="rounded-full bg-saffron-100 px-2.5 py-1 text-sm font-bold text-saffron-900">{p.number}</span>
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-saffron-700">{p.english}</h3>
+                <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-sm font-bold text-indigo-900">{p.number}</span>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-700">{p.english}</h3>
               </div>
               <span className="text-xs text-gray-500">{p.adhyayaCount} adhyayas</span>
             </div>
             <p className="mt-1 font-serif text-base text-gray-700">{p.sanskrit} <span className="ml-2 text-xs italic text-gray-500">({p.iast})</span></p>
             <p className="mt-2 text-xs uppercase tracking-wider text-gray-500">Setting: {p.setting}</p>
             <p className="mt-2 text-sm text-gray-700 line-clamp-3">{p.summary}</p>
-            <p className="mt-3 text-xs font-semibold text-saffron-700">Central figure: <span className="font-normal text-gray-700">{p.centralCharacter}</span></p>
+            <p className="mt-3 text-xs font-semibold text-indigo-700">Central figure: <span className="font-normal text-gray-700">{p.centralCharacter}</span></p>
           </Link>
         ))}
       </div>
@@ -107,9 +107,9 @@ export default function MahabharataIndexPage() {
             <div className="text-sm font-semibold text-blue-900">About Lord Krishna</div>
             <div className="text-xs text-blue-700">Charioteer, counselor, divine</div>
           </Link>
-          <Link href="/ramayana" className="rounded-xl border border-saffron-200 bg-saffron-50/40 p-4 hover:bg-saffron-100">
-            <div className="text-sm font-semibold text-saffron-900">Valmiki Ramayana</div>
-            <div className="text-xs text-saffron-700">India&apos;s other great epic</div>
+          <Link href="/ramayana" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
+            <div className="text-sm font-semibold text-indigo-900">Valmiki Ramayana</div>
+            <div className="text-xs text-indigo-700">India&apos;s other great epic</div>
           </Link>
           <Link href="/dashavatar/krishna" className="rounded-xl border border-purple-200 bg-purple-50/40 p-4 hover:bg-purple-100">
             <div className="text-sm font-semibold text-purple-900">Krishna avatar</div>

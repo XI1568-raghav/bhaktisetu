@@ -87,6 +87,9 @@ export default async function HomePage() {
  </div>
  <div style={{ background: 'var(--color-bg)' }}>
 
+ {/* ═══ TODAY/PANCHANG — promoted above hero per audit §3 delta #3 ═══ */}
+ <NextFestivalStrip />
+
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  <section className="flex flex-col justify-center relative overflow-hidden">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
@@ -188,20 +191,19 @@ export default async function HomePage() {
  <ContinueJourneyCard />
  <IntentTrio />
 
- {/* ═══ NEXT FESTIVAL — countdown + book CTA ═══════════════════════ */}
- <NextFestivalStrip />
+ {/* ═══ NEXT FESTIVAL — moved above hero per audit §3 delta #3 ═════ */}
 
  {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
  <section aria-label="Quick actions" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex md:grid md:grid-cols-6 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
  {[
- { label: 'Darshan', href: '/darshan', Icon: Video },
- { label: 'Book Puja', href: '/pujas', Icon: Flame },
- { label: 'Kundli', href: '/astrology/kundli', Icon: Stars },
- { label: 'Panchang', href: '/panchang', Icon: Calendar },
- { label: 'Donate', href: '/donations', Icon: Heart },
- { label: 'Yatra', href: '/yatra', Icon: Compass },
+ { label: 'Darshan', href: '/darshan', Icon: Video, color: 'var(--color-primary)' },
+ { label: 'Book Puja', href: '/pujas', Icon: Flame, color: 'var(--color-primary)' },
+ { label: 'Kundli', href: '/astrology/kundli', Icon: Stars, color: '#4f46e5' },
+ { label: 'Panchang', href: '/panchang', Icon: Calendar, color: '#d97706' },
+ { label: 'Donate', href: '/donations', Icon: Heart, color: '#059669' },
+ { label: 'Yatra', href: '/yatra', Icon: Compass, color: '#059669' },
  ].map((chip) => (
  <Link
  key={chip.label}
@@ -210,7 +212,7 @@ export default async function HomePage() {
  className="snap-start shrink-0 md:shrink flex flex-col items-center justify-center gap-1.5 min-w-[88px] md:min-w-0 px-3 py-3 rounded-xl card-hover transition-all"
  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
  >
- <chip.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+ <chip.Icon className="w-5 h-5" style={{ color: chip.color }} />
  <span className="text-[11px] font-medium" style={{ color: 'var(--color-text)' }}>{chip.label}</span>
  </Link>
  ))}
@@ -370,9 +372,9 @@ export default async function HomePage() {
  </Link>
  </div>
 
- {/* Astrology card */}
- <div data-reveal="right" className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('astrologyLabel')}</p>
+ {/* Astrology card — indigo accent per audit §3 section 7 (reference/decision lane, not action) */}
+ <div data-reveal="right" className="rounded-xl p-5" style={{ background: 'linear-gradient(180deg, #eef2ff 0%, var(--color-surface) 60%)', border: '1px solid #c7d2fe' }}>
+ <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: '#4f46e5' }}>{t('astrologyLabel')}</p>
  <h3 className="text-lg font-semibold tracking-tight mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  {t('astrologyTitle')}
  </h3>
@@ -385,7 +387,7 @@ export default async function HomePage() {
  {/* Featured astrologer */}
  <div className="col-span-3 row-span-2 rounded-lg p-3 flex flex-col justify-between relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--color-art-3), var(--color-art-2))' }}>
  <div className="flex items-center gap-2">
- <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{ background: 'var(--color-primary)' }}>PK</div>
+ <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{ background: '#4f46e5' }}>PK</div>
  <div>
  <p className="text-[11px] font-semibold" style={{ color: 'var(--color-text)' }}>Pandit Kamal</p>
  <p className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Vedic • 15yr exp</p>
@@ -393,12 +395,12 @@ export default async function HomePage() {
  </div>
  <div className="flex items-center gap-1">
  {[1,2,3,4,5].map(i => (
- <span key={i} className="text-[10px]" style={{ color: 'var(--color-primary)' }}></span>
+ <span key={i} className="text-[10px]" style={{ color: '#4f46e5' }}></span>
  ))}
  <span className="text-[9px] ml-1" style={{ color: 'var(--color-text-muted)' }}>preview</span>
  </div>
  <div className="flex items-center justify-between">
- <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(184, 115, 51, 0.15)', color: 'var(--color-primary)' }}>Online</span>
+ <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(79, 70, 229, 0.12)', color: '#4f46e5' }}>Online</span>
  <p className="text-[10px] font-semibold" style={{ color: 'var(--color-text)' }}>₹25/min</p>
  </div>
  </div>
@@ -409,8 +411,8 @@ export default async function HomePage() {
  <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Lucky: 7</p>
  </div>
  {/* Kundli chart icon */}
- <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center items-center text-center" style={{ background: 'var(--color-primary-highlight)' }}>
- <p data-counter data-counter-target="15+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary)' }}>15+</p>
+ <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center items-center text-center" style={{ background: 'rgba(79, 70, 229, 0.10)' }}>
+ <p data-counter data-counter-target="15+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#4f46e5' }}>15+</p>
  <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Astrologers</p>
  </div>
  </div>
@@ -423,14 +425,14 @@ export default async function HomePage() {
  ].map((card) => (
  <Link key={card.title} href={card.href} prefetch={false} className="group flex items-center justify-between p-2.5 rounded-lg transition-all" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <div className="flex items-center gap-2">
- <Moon className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
+ <Moon className="w-3.5 h-3.5" style={{ color: '#4f46e5' }} />
  <span className="text-xs font-medium group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</span>
  </div>
- <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>{card.badge}</span>
+ <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(79, 70, 229, 0.10)', color: '#4f46e5' }}>{card.badge}</span>
  </Link>
  ))}
  </div>
- <Link href="/astrology" className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+ <Link href="/astrology" className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: '#4f46e5' }}>
  {t('talkToAstrologer')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
@@ -602,12 +604,12 @@ export default async function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-end justify-between mb-5">
  <div>
- <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>Library</p>
+ <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#4f46e5' }}>Library</p>
  <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  500+ guides across scripture, practice, saints and the calendar.
  </h2>
  </div>
- <Link href="/discover" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+ <Link href="/discover" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
  Browse all <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
@@ -625,15 +627,56 @@ export default async function HomePage() {
  className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
  style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
  >
- <card.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+ <card.Icon className="w-5 h-5" style={{ color: '#4f46e5' }} />
  <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
  <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
  </Link>
  ))}
  </div>
  <div className="sm:hidden mt-4 text-center">
- <Link href="/discover" className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+ <Link href="/discover" className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
  Browse all 500+ guides <ArrowRight className="w-3 h-3" />
+ </Link>
+ </div>
+ </div>
+ </section>
+
+ {/* ═══ YATRA TEASER — 3-card emerald row per audit §3 delta #1 ═══════════ */}
+ <section aria-label="Pilgrimage circuits" className="py-10 md:py-12" style={{ background: 'var(--color-bg)' }}>
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="flex items-end justify-between mb-5">
+ <div>
+ <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#059669' }}>Yatra</p>
+ <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ Walk the sacred circuits — Char Dham, 12 Jyotirlinga, 62 Tirth.
+ </h2>
+ </div>
+ <Link href="/yatra" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
+ Plan a trip <ArrowRight className="w-3 h-3" />
+ </Link>
+ </div>
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+ {[
+ { Icon: Compass, title: 'Char Dham', desc: 'Yamunotri, Gangotri, Kedarnath, Badrinath — Himalayan moksha route.', href: '/pilgrimage/char-dham' },
+ { Icon: Flame, title: '12 Jyotirlinga', desc: 'Shiva self-manifest lights from Somnath to Rameswaram.', href: '/jyotirlinga' },
+ { Icon: Leaf, title: '62 Tirth Guides', desc: 'Darshan timings, dress code, vip-darshan tips per shrine.', href: '/tirth' },
+ ].map((card) => (
+ <Link
+ key={card.title}
+ href={card.href}
+ prefetch={false}
+ className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
+ style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+ >
+ <card.Icon className="w-5 h-5" style={{ color: '#059669' }} />
+ <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
+ <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
+ </Link>
+ ))}
+ </div>
+ <div className="sm:hidden mt-4 text-center">
+ <Link href="/yatra" className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
+ Plan a trip <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
  </div>

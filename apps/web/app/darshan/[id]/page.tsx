@@ -462,7 +462,7 @@ export default async function DarshanDetailPage({
  ? activeRelated.slice(0, 6)
  : Object.values(FALLBACK_TEMPLE_LIBRARY).slice(0, 6);
  return (
- <div className="min-h-screen bg-[#2a2520]">
+ <div className="min-h-[100dvh] bg-[#2a2520]">
  <div className="border-b border-surface-700">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
  <nav className="flex items-center gap-1.5 text-sm text-surface-500">
@@ -569,7 +569,7 @@ export default async function DarshanDetailPage({
  const nowMinIST = nowMinutesIST();
 
  return (
- <div className="min-h-screen bg-[#2a2520]">
+ <div className="min-h-[100dvh] bg-[#2a2520]">
  {/* Breadcrumb */}
  <div className="border-b border-surface-700">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">

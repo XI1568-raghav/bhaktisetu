@@ -76,7 +76,7 @@ function ProductDetailInner() {
 
  if (!product) {
  return (
- <div className="min-h-screen bg-saffron-50 flex items-center justify-center">
+ <div className="min-h-[100dvh] bg-saffron-50 flex items-center justify-center">
  <div className="text-center">
  <ShoppingBag className="w-16 h-16 text-surface-300 mx-auto mb-4" />
  <h2 className="text-xl font-bold text-surface-700 mb-2">Product Not Found</h2>
@@ -101,7 +101,7 @@ function ProductDetailInner() {
  ).slice(0, 4);
 
  return (
- <div className="min-h-screen bg-saffron-50">
+ <div className="min-h-[100dvh] bg-saffron-50">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
  {/* Breadcrumb */}
  <nav className="flex items-center gap-2 text-sm text-surface-500 mb-6">
@@ -376,7 +376,7 @@ function ProductDetailInner() {
 
 export default function ProductDetailPage() {
  return (
-  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-surface-500">Loading…</div></div>}>
+  <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center"><div className="text-surface-500">Loading…</div></div>}>
    <ProductDetailInner />
   </Suspense>
  );

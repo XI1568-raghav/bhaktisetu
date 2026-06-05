@@ -83,7 +83,7 @@ export default function AuthCallbackPage() {
  }, []);
 
  return (
- <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
+ <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--color-bg)] px-4">
  <div className="max-w-sm w-full bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-8 text-center">
  {status === 'working' ? (
  <>

@@ -99,7 +99,7 @@ export default function HoroscopePage() {
  };
 
  return (
- <div className="min-h-screen">
+ <div className="min-h-[100dvh]">
  {/* Header */}
  <section className="bg-[#ede9e3]">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6 pb-8">

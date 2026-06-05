@@ -38,7 +38,7 @@ export default function CartPage() {
 
  if (items.length === 0) {
  return (
- <div className="min-h-screen bg-saffron-50">
+ <div className="min-h-[100dvh] bg-saffron-50">
  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
  <div className="bg-white rounded-xl border border-surface-100 p-12 text-center">
  <div className="w-24 h-24 bg-saffron-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -63,7 +63,7 @@ export default function CartPage() {
  }
 
  return (
- <div className="min-h-screen bg-saffron-50">
+ <div className="min-h-[100dvh] bg-saffron-50">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
  {/* Header */}
  <div className="flex items-center justify-between mb-8">

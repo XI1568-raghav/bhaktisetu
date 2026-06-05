@@ -167,7 +167,7 @@ export default function AstrologyPage() {
  <>
  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(TOOLS_LD) }} />
 
- <Suspense fallback={<div className="min-h-screen" />}>
+ <Suspense fallback={<div className="min-h-[100dvh]" />}>
   <AstrologyClient />
  </Suspense>
 

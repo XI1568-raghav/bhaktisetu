@@ -50,7 +50,7 @@ export default function RamayanaIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">7 kandas · {TOTAL_SARGAS} sargas · ~24,000 shlokas</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">7 kandas · {TOTAL_SARGAS} sargas · ~24,000 shlokas</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">वाल्मीकि रामायण</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Valmiki Ramayana — All 7 Kandas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
@@ -62,9 +62,9 @@ export default function RamayanaIndexPage() {
         </p>
       </header>
 
-      <section className="mb-10 rounded-2xl border border-saffron-200 bg-gradient-to-br from-saffron-50 to-amber-50 p-6">
-        <h2 className="text-base font-semibold text-saffron-900">Reading order &amp; tip</h2>
-        <p className="mt-2 text-sm text-saffron-900/80">
+      <section className="mb-10 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-amber-50 p-6">
+        <h2 className="text-base font-semibold text-indigo-900">Reading order &amp; tip</h2>
+        <p className="mt-2 text-sm text-indigo-900/80">
           Read in order if first-time. <strong>Sundara Kanda</strong> (Book 5, Hanuman&apos;s
           deeds) is traditionally recited on Tuesdays and Saturdays for wish-fulfillment
           and is often read standalone. Bala Kanda gives the back-story; Uttara Kanda is
@@ -77,19 +77,19 @@ export default function RamayanaIndexPage() {
           <Link
             key={k.slug}
             href={`/ramayana/${k.slug}`}
-            className="group block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-saffron-300 hover:shadow-md"
+            className="group block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-md"
           >
             <div className="flex items-baseline justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="rounded-full bg-saffron-100 px-2.5 py-1 text-sm font-bold text-saffron-900">{k.number}</span>
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-saffron-700">{k.english}</h3>
+                <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-sm font-bold text-indigo-900">{k.number}</span>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-700">{k.english}</h3>
               </div>
               <span className="text-xs text-gray-500">{k.sargaCount} sargas</span>
             </div>
             <p className="mt-1 font-serif text-base text-gray-700">{k.sanskrit} <span className="ml-2 text-xs italic text-gray-500">({k.iast})</span></p>
             <p className="mt-2 text-xs uppercase tracking-wider text-gray-500">Setting: {k.setting}</p>
             <p className="mt-2 text-sm text-gray-700 line-clamp-3">{k.summary}</p>
-            <p className="mt-3 text-xs font-semibold text-saffron-700">Central figure: <span className="font-normal text-gray-700">{k.centralCharacter}</span></p>
+            <p className="mt-3 text-xs font-semibold text-indigo-700">Central figure: <span className="font-normal text-gray-700">{k.centralCharacter}</span></p>
           </Link>
         ))}
       </div>
@@ -97,9 +97,9 @@ export default function RamayanaIndexPage() {
       <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Related study</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Link href="/deity/rama" className="rounded-xl border border-saffron-200 bg-saffron-50/40 p-4 hover:bg-saffron-100">
-            <div className="text-sm font-semibold text-saffron-900">About Lord Rama</div>
-            <div className="text-xs text-saffron-700">The protagonist of the epic</div>
+          <Link href="/deity/rama" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
+            <div className="text-sm font-semibold text-indigo-900">About Lord Rama</div>
+            <div className="text-xs text-indigo-700">The protagonist of the epic</div>
           </Link>
           <Link href="/deity/hanuman" className="rounded-xl border border-rose-200 bg-rose-50/40 p-4 hover:bg-rose-100">
             <div className="text-sm font-semibold text-rose-900">About Hanuman</div>

@@ -175,7 +175,7 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  { href: "/panchang", t: "nav", key: "panchang" },
  { href: "/wellness", t: "nav", key: "wellness" },
  { href: "/sanskrit", t: "nav", key: "sanskrit" },
- { href: "/ved", t: "nav", key: "ved" },
+ { href: "/vedas", t: "nav", key: "ved" },
  { href: "/sanatan", t: "nav", key: "sanatan" },
  { href: "/learn-sanskrit", t: "nav", key: "learnSanskrit" },
  { href: "/gurukuls", t: "nav", key: "gurukuls" },
@@ -306,7 +306,7 @@ export default function RootLayout({
    dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
  />
  </head>
- <body className="font-[family-name:var(--font-body)] min-h-screen flex flex-col bg-[#f5f3ef]" data-locale="en">
+ <body className="font-[family-name:var(--font-body)] min-h-[100dvh] flex flex-col bg-[#f5f3ef]" data-locale="en">
  {/* a11y — skip-to-main-content link, keyboard-only visible on focus. */}
  <a
  href="#main"
@@ -377,7 +377,7 @@ export default function RootLayout({
  </header>
 
  {/* Main content — offset for fixed nav, bottom-padded on mobile for tab bar */}
- <main id="main" className="flex-1 pt-14 pb-16 md:pb-0">{children}</main>
+ <main id="main" className="flex-1 pt-14 pb-20 md:pb-0 [@supports(padding:env(safe-area-inset-bottom))]:pb-[calc(5rem+env(safe-area-inset-bottom))] md:[@supports(padding:env(safe-area-inset-bottom))]:pb-0">{children}</main>
  <MobileBottomTabs />
 
  {/* ── Footer ──────────────────────────────────────────────────── */}

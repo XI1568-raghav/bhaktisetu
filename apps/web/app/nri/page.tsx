@@ -108,7 +108,7 @@ const faqs = [
 
 export default function NriPremiumLanding() {
   return (
-    <main className="bg-surface-50 min-h-screen">
+    <main className="bg-surface-50 min-h-[100dvh]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(nriPremiumServiceJsonLd) }}

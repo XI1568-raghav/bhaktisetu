@@ -316,7 +316,7 @@ How may I guide you today?`,
 
  if (!birthDetailsSubmitted) {
  return (
- <div className="min-h-screen">
+ <div className="min-h-[100dvh]">
  <section className="bg-[#ede9e3]">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6 pb-8">
  <Link
