@@ -1,6 +1,52 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (7th update — dead-href /bhagavad-gita → /gita + /discover GROUPS 54→61 orphan absorb PUSHED).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (8th update — CF d8a838b verified GREEN + /ved→/vedas LOCAL staged uncommitted).
+
+## HANDOFF 2026-06-05 #8 (VERIFY d8a838b GREEN + /ved→/vedas LOCAL staged)
+
+Resumed post-compact. #7 carry #1 (CF verify d8a838b) CLOSED. #7 carry #3 (/ved→/vedas rebind) STAGED LOCAL (uncommitted, awaits next batched apps/web push). No new pushes this session — day-budget at 12/30 = ~72% projection, past 60% threshold.
+
+### CF verify end-to-end (d8a838b)
+
+| Probe | Result |
+|---|---|
+| `gh api .../commits/d8a838b/check-runs` Cloudflare Pages | `completed success updated=2026-06-05T00:00:30Z` |
+| `/discover` HTML size | 198,588 bytes |
+| Per-orphan grep on `/discover` (antim-sanskar, matchmaking, free-pandit-advice, yatra-packages, sanatan) | 5/5 = 1 each |
+| Orphan absorb routes 200 (7/7) | learn-sanskrit, sanatan, antim-sanskar, yatra-packages, matchmaking, city, free-pandit-advice |
+| Bonus 200s | gita, vedas, ved |
+| Monitor `bmp3aq2p0` iter 14 end-state | `ALL_ORPHAN_ABSORB_LIVE` |
+
+### /ved → /vedas LOCAL stage (UNCOMMITTED — 4 edits across 3 files)
+
+| File | Line | Change |
+|---|---|---|
+| `apps/web/lib/category-tree.ts` | L91 | `'/ved'` → `'/vedas'` (Library mega-menu "Vedas + Upanishads") |
+| `apps/web/lib/category-tree.ts` | L101 | `'/ved'` → `'/vedas'` (Scriptures sub-group "Vedas") |
+| `apps/web/app/layout.tsx` | L178 | `href: "/ved"` → `href: "/vedas"` (site-wide i18n nav; `key: "ved"` preserved) |
+| `apps/web/components/MobileBottomTabs.tsx` | L27 | ADDED `'/vedas'` alongside `'/ved'` in Library tab prefixes (both routes 200, back-compat active-state) |
+
+Reasoning: `/vedas` = richer canonical (119-line custom page + `lib/vedas` + `TOTAL_MANTRAS` metric). `/ved` = 18-line `CategoryIndex` wrapper. Both routes live + indexed (sitemap L127 + L667). HANDOFF #7 claim validated by head-of-source inspection despite misleading raw HTML byte sizes (/ved 203KB > /vedas 115KB — explained by CategoryIndex auto-listing children).
+
+### Local build verify
+`pnpm next build` (apps/web) CLEAN, 500+ routes, shared JS 102 kB unchanged. 4 staged edits don't break build.
+
+### Day-budget
+12 CF builds × 30 = 360 = ~72% monthly projection, past 60% threshold. Zero pushes this session.
+
+### Carried open (refresh)
+1. Commit + push 4 LOCAL staged `/ved→/vedas` edits (~slot 13, ~78% monthly proj) — owner-gated next session.
+2. Category-tree mega-panel sub-group expansion for 10 remaining orphans (jyotirlinga, shakti-peeth, pancha-bhoota, rashi, masa, ashta-lakshmi, sapta-mathruka, nava-graha, navaratna, samskaras). Note: rashi+nava-graha → Astrology nav, navaratna → Shop, leaving ~7 truly Library-bound. Higher blast radius (restructures `LibraryMegaPanel` 4-col).
+3. P1 #5/#6/#7 refresh-token JTI / EmailSession + `/auth/logout` / CSP nonce — heavy auth refactor, separate sessions.
+4. Astrologer slug↔UUID design pass (~6-8h, owner KYC decisions).
+5. D-7 OG card retry static PNG approach (deferred from c20a7c9 revert).
+6. Brand/UI/font sweep + home-page market-research-driven revamp — most recent user task anchor, multi-agent plan required, not started this session.
+
+### Verify cheatsheet next session
+1. `git status --short` → expect M category-tree.ts, M layout.tsx, M MobileBottomTabs.tsx + untracked docs/ pitch-deck files (not mine, leave alone)
+2. `git log --oneline -5` → HEAD = this HANDOFF commit (`[skip ci]`), past that = d8a838b
+3. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/vedas` → 200
+4. Continue path: (a) commit + push 4 staged edits (slot 13) OR (b) start brand/UI/font/home-page revamp (multi-agent dispatch, LOCAL-only work, 0 CF burn) OR (c) mega-panel sub-group expansion (LOCAL-only, 0 CF burn)
 
 ## HANDOFF 2026-06-05 #7 (PUSHED dead-href #2/#3 + /discover orphan absorb +7)
 
