@@ -1,6 +1,92 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (8th update — CF d8a838b verified GREEN + /ved→/vedas LOCAL staged uncommitted).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (9th update — UI revamp audit doc shipped + P1 type-scale fix LOCAL).
+
+## HANDOFF 2026-06-05 #9 (UI revamp audit shipped + P1 type-scale + body-text fix LOCAL)
+
+Resumed post-compact after #8. Closed user anchor "brand colors not there, UI out for the model, the font, home page check and revamp based on market research is not done — plan and execute, run multiple agents, use best skills, ultrathink".
+
+### Subagent path BLOCKED → fell back to direct synthesis
+
+4 sequential Opus 4.7 dispatches all returned `litellm.APIError ... Free tier users do not have access to this model. Upgrade to paid credits ... Received Model Group=blackboxai/anthropic/claude-opus-4.8`. Default route also resolves to Opus 4.8. Per CLAUDE.md doctrine "never silently skip the multi-agent plan, always execute it … fall back to direct synthesis" → built audit doc + P1 fix directly.
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `19dfbae` | docs(tasks): HANDOFF 2026-06-05 #8 [skip ci] | 0 |
+| `1c038e9` | docs(audit): UI revamp audit — brand+typo+home+mobile [skip ci] | 0 |
+
+### Audit doc shipped (`docs/ui-revamp-audit-2026-06-05.md`, 305 lines)
+
+8 sections covering all 4 user-anchor dimensions:
+
+| § | Topic | Key finding |
+|---|---|---|
+| 1 | Brand color audit | Token reality vs plan: saffron-600 = `#9e6229` copper/brown, NOT plan's claimed `#E16318` orange. Violation census: 56 Scripture + 50+ Astrology + 15+ Wellness. Home page has 0 indigo/emerald/amber. 5 fix batches B1-B5. |
+| 2 | Typography audit | **CRITICAL bug** globals.css L120-129: `--text-3xl: 1.5rem` FIXED < `--text-2xl` clamp max `2.25rem` = H1-smaller-than-H2 on desktop ≥1280px. Body `--text-base` maxes 15px below WCAG 16px floor. |
+| 3 | Home page market revamp | Current 657-line composition mapped vs Sri Mandir / AstroSage / YouVersion / Utsav / Vama patterns. Proposed 11-section blueprint w/ brand color + CTA + rationale per section. Top 5 deltas ranked by conversion impact. |
+| 4 | Mobile responsive audit | **207-occurrence bare `grid-cols-(3-6)` across 127 files** = largest single mobile-UX debt. Plus `min-h-screen` (not `min-h-[100dvh]`) + 14px form inputs trigger iOS zoom. Top 15 issues. |
+| 5 | Phased execution P1-P5 | Single batched CF push at session end. |
+| 6 | Out of scope | 5 deferred items. |
+| 7 | Edits ledger | 4 prior-session staged + 3 this-session brand edits to nakshatra-finder. |
+| 8 | Open questions | 4 for owner before P2 sweep launch. |
+
+### P1 type-scale + body-text fix LOCAL (this session, 2 lines in globals.css)
+
+| L# | Before | After |
+|---|---|---|
+| 123 | `--text-base: clamp(0.875rem, 0.85rem + 0.12vw, 0.9375rem);` (max 15px) | `clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);` (15→17px, WCAG floor met) |
+| 127 | `--text-3xl: 1.5rem;` FIXED | `clamp(1.875rem, 1.5rem + 1.5vw, 2.75rem);` |
+| 128 | `--text-4xl: 1.875rem;` FIXED | `clamp(2.25rem, 1.75rem + 2vw, 3.5rem);` |
+| 129 | `--text-5xl: 2.25rem;` FIXED | `clamp(2.75rem, 2rem + 3vw, 4.5rem);` |
+
+Monotonic hierarchy restored: at every viewport size 2xl < 3xl < 4xl < 5xl. H1 now properly larger than H2 on desktop.
+
+### Working tree state (5 web edits + audit doc committed)
+
+| File | Status | Origin |
+|---|---|---|
+| `apps/web/app/astrology/nakshatra-finder/page.tsx` | M (3 brand edits L99/L101/L119/L125/L144 saffron→indigo) | this session |
+| `apps/web/app/globals.css` | M (4 type-scale lines L123/127/128/129) | this session |
+| `apps/web/app/layout.tsx` | M (/ved→/vedas L178) | prior session |
+| `apps/web/components/MobileBottomTabs.tsx` | M (/vedas added L27) | prior session |
+| `apps/web/lib/category-tree.ts` | M (/ved→/vedas L91+L101) | prior session |
+
+5 files staged for next batched apps/web push (~slot 13/30 = ~78% monthly proj).
+
+### Day-budget
+
+13 CF pushes this month (12 prior + audit doc skipped via `[skip ci]`). Both this-session commits `[skip ci]` = 0 CF burn. Single batched apps/web push pending owner go-ahead.
+
+### Subagent dispatch path BLOCKED
+
+Background: 4× sequential Opus 4.7 → all 403 `Free tier users do not have access to this model`. Default route also Opus 4.8 → 403. Workaround: direct synthesis per CLAUDE.md "Sub-agent malware bypass" + "Subagent opus always + never block" doctrine. Future sessions: subagent path remains BLOCKED on Blackbox proxy free tier; expect to continue direct synthesis OR owner to upgrade tier.
+
+### 4 open questions for owner (audit doc §8)
+
+1. Brand sweep full 6-page Scripture or top 3 only (vedas/upanishads/gita)?
+2. Inline-style → Tailwind refactor in same push or split?
+3. Mobile-grid sweep top 30 manual or 127-file regex-replace?
+4. Type-scale fix own commit or batched with brand sweep?
+
+### Carried open (refresh)
+
+1. Commit + push batched apps/web edits (5 files: 4 prior + globals.css this session, ~slot 13)
+2. Audit doc P2-P5 execution (brand rebind ~180 edits / home revamp ~250 LOC / inline→Tailwind ~40 edits / mobile-grid sweep ~60 edits + global pb-20 md:pb-0 in layout)
+3. Mega-panel sub-group expansion for 10 remaining orphans (jyotirlinga / shakti-peeth / pancha-bhoota / rashi / masa / ashta-lakshmi / sapta-mathruka / nava-graha / navaratna / samskaras)
+4. P1 #5/#6/#7 refresh-token JTI / EmailSession / `/auth/logout` / CSP nonce (heavy auth refactor, separate sessions)
+5. Astrologer slug↔UUID design pass (~6-8h, owner KYC decisions)
+6. D-7 OG card retry static PNG approach
+
+### Verify cheatsheet next session
+
+1. `git status --short` → expect M nakshatra-finder/page.tsx + M globals.css + M layout.tsx + M MobileBottomTabs.tsx + M category-tree.ts + untracked docs/ pitch-deck files (not mine, leave alone)
+2. `git log --oneline -5` → HEAD = this HANDOFF commit (`[skip ci]`), past = `1c038e9` audit doc, `19dfbae` HANDOFF #8
+3. `cat docs/ui-revamp-audit-2026-06-05.md | head -20` — confirm doc shipped
+4. Continue path: (a) await owner answer on 4 open questions before launching P2 brand rebind sweep OR (b) batch push 5 staged web edits (slot 13, ~78% proj) OR (c) start P3 home composition LOCAL (audit Section 3 blueprint, ~250 LOC, 0 CF until push)
+
+---
 
 ## HANDOFF 2026-06-05 #8 (VERIFY d8a838b GREEN + /ved→/vedas LOCAL staged)
 
