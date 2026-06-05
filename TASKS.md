@@ -1,6 +1,99 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (10th update — P4 mobile sweep + deck PDF + Opus 4.7 fix PUSHED ac9f1b9).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (11th update — mega-panel orphan absorption +10 + P6 brand sweep B1+B3 PUSHED 44fbfe0).
+
+## HANDOFF 2026-06-05 #11 (PUSHED 44fbfe0 — mega-panel +10 orphans + P6 brand B1 astrology + B3 wellness)
+
+Continued from #10 per user "continue and complete end to end" directive. Closed mega-panel orphan absorption (10 routes) + P6 brand sweep batch B1 (Astrology rebind) + B3 (Wellness rebind). 7 files, single batched push, slot 14/30 = ~84% monthly proj.
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `44fbfe0` | feat(web): mega-panel orphan absorption +10 routes + P6 brand sweep B1+B3 (astrology + wellness rebind) | slot 14/30 ~84% proj |
+
+### IA mega-panel orphan absorption (10 routes)
+
+`apps/web/lib/category-tree.ts` — 5 edits across 3 sub-groups + 2 nav groups:
+
+| Group | Added |
+|---|---|
+| Library → Saints & Deities | jyotirlinga (12) / shakti-peeth (51) / pancha-bhoota (5) / ashta-lakshmi (8) / sapta-mathruka (7) |
+| Library → Calendar & Cosmology | masa (12) |
+| Library → Devotional Practice | samskaras (16) |
+| Astrology nav | rashi (12) / nava-graha (9) |
+| Shop nav | navaratna (9) |
+
+All 10 routes pre-existed (verified via Glob `apps/web/app/{...}/page.tsx`). Zero new pages — pure IA absorption. Closes audit doc carry #4 (10 orphans) end-to-end.
+
+### P6 brand sweep B1 — Astrology rebind (3 files, 22 edits)
+
+| File | Change |
+|---|---|
+| `astrology/[id]/book/page.tsx` | L206/214/227/294 page-bg `bg-saffron-50` → `bg-indigo-50` (reference page, not action) |
+| `astrology/kaal-sarp/page.tsx` | 9 swaps `saffron-{200,300,400,600,700}` → `indigo-*` on text/border/hover-bg. Retained CTA `bg-saffron-600 hover:bg-saffron-700` Link (action) |
+| `astrology/choghadiya/page.tsx` | 9 same-pattern swaps. Retained CTA Link |
+
+Pattern: sed-based safe rebind: `text-saffron-{600,700}`, `border-saffron-{200,300,400}`, `from-saffron-50`, `hover:bg-saffron-50`, `hover:text-saffron-700`, `group-open:text-saffron-700` → indigo equivalents. Primary action CTAs (lines w/ `bg-saffron-600`) preserved per brand discipline (saffron = action).
+
+### P6 brand sweep B3 — Wellness rebind (3 files, 8 edits)
+
+| File | Change |
+|---|---|
+| `wellness/vipassana/learn/page.tsx` | L72 eyebrow `text-saffron-600` → emerald, L336 section surface `border+bg-saffron-{300,50}` → emerald, L338 body `text-saffron-800` → emerald |
+| `wellness/vipassana/centers/page.tsx` | L84 eyebrow + L139 chip (bg+text) → emerald |
+| `wellness/vipassana/centers/[slug]/page.tsx` | L109 eyebrow + L117 chip + L185 section surface + L187 body text → emerald |
+
+Retained 5 saffron CTAs (Link href = action color). Wellness = emerald surfaces + saffron actions per brand rule.
+
+### Build verify
+
+`pnpm next build` (apps/web) CLEAN exit 0. 500+ routes built. Shared JS 102 kB unchanged. 38 insertions / 28 deletions across 7 files.
+
+### Deferred B2 Scripture (heavy, hand-pick risk)
+
+`vedas/` (19) + `upanishads/` (20) + `gita/` (17) = 56 saffron occurrences. Blanket sed risks breaking intended gradient surfaces (e.g. `from-saffron-50 to-amber-50` warm-tone cards on Gita verse pages). Next session: hand-pick visit each file w/ Read first.
+
+### Day-budget (2026-06-05)
+
+- CF builds: **14** (13 prior + 44fbfe0). Slot 14/30 = ~84% monthly proj.
+- Past 60% threshold significantly — stop all non-critical pushes rest of session unless user directive overrides.
+- This HANDOFF commit gets `[skip ci]` = 0 burn.
+
+### Verify (Monitor bvl70zuiz)
+
+Polling home + 3 newly-absorbed orphan routes (jyotirlinga + samskaras + nava-graha) every 30s until ALL_200_VERIFIED.
+
+### Plan phase status (audit doc P1-P5)
+
+- P1 IA spine ✓ + mega-panel orphan absorption ✓ THIS SESSION
+- P2 Mobile parity ✓
+- P3 Footer + Discover ✓
+- P4 Home composition ✓
+- P5 GlobalSearch upgrade ✓
+- P6 Color discipline sweep: B1 (Astrology) ✓ + B3 (Wellness) ✓ + B5 audit re-check ✓; B2 (Scripture 56 violations) DEFERRED + B4 (home page already uses inline-style indigo, audit ref was about Tailwind classes — non-issue)
+
+### Carried open (next session)
+
+1. **B2 Scripture rebind** — vedas/upanishads/gita ~56 saffron→indigo hand-pick (avoid breaking gradients). Plus ramayana/mahabharata/puranas re-survey.
+2. **Inline-style → Tailwind refactor** (audit doc carry, ~30 occurrences on home page Astrology + Yatra teaser cards — cosmetic, lower priority)
+3. **P1 #5/#6/#7** refresh-token JTI / EmailSession / /auth/logout / CSP nonce (heavy auth refactor, separate sessions)
+4. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions)
+5. **D-7 OG card retry** with static PNG approach (deferred)
+6. **Subagent dispatch test** — verify Opus 4.7 calls succeed post-Claude-restart (settings.json updated 4.8 → 4.7)
+7. **31 bare grid-cols-(3-6) manual sweep** — verify-before-act subset of 207 audit estimate, manual pass safer than blind regex
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/jyotirlinga` → 200 (orphan absorbed in mega-panel)
+2. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/samskaras` → 200
+3. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/astrology/kaal-sarp` → 200 (B1 rebind landed)
+4. `curl -s https://darshya.online/astrology/kaal-sarp | grep -c "text-indigo-600"` → ≥1 (eyebrow indigo'd)
+5. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/wellness/vipassana/centers` → 200
+6. `git log --oneline -5` → HEAD past 44fbfe0 + this HANDOFF
+7. Continue: B2 Scripture hand-pick (lowest-risk batch ~3h) OR auth refactor P1 #5-#7 OR mobile-grid manual sweep
+
+---
 
 ## HANDOFF 2026-06-05 #10 (PUSHED ac9f1b9 — P4 mobile sweep + deck PDF + Blackbox model fix + CF VERIFY GREEN)
 
