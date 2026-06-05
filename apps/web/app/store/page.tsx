@@ -79,7 +79,7 @@ export default async function StorePage() {
  const t = await getTranslations('store');
  const itemListJsonLd = storeItemListJsonLd(products as StoreProductLite[]);
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  <script
    type="application/ld+json"
    dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}

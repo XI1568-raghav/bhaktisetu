@@ -65,7 +65,7 @@ export default function MyTicketsPage() {
  }, [tickets, statusFilter, categoryFilter]);
 
  return (
- <div className="bg-[#faf7f0] min-h-screen py-10">
+ <div className="bg-[#faf7f0] min-h-[100dvh] py-10">
  <div className="max-w-6xl mx-auto px-6">
  <div className="flex items-center justify-between mb-8">
  <div>

@@ -203,7 +203,7 @@ function BookContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-saffron-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50">
         <Loader2 className="w-8 h-8 text-saffron-600 animate-spin" />
       </div>
     );
@@ -211,7 +211,7 @@ function BookContent() {
 
   if (fetchError || !astrologer) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-saffron-50 px-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50 px-4">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold text-surface-700 mb-2">Astrologer unavailable</h2>
           <p className="text-surface-500 mb-6">{fetchError ?? 'Could not load this astrologer.'}</p>
@@ -224,7 +224,7 @@ function BookContent() {
   }
 
   return (
-    <div className="min-h-screen bg-saffron-50">
+    <div className="min-h-[100dvh] bg-saffron-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href={`/astrology/view?id=${astrologer.id}`}

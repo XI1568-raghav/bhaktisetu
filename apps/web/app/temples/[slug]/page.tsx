@@ -285,7 +285,7 @@ function RichTemplePage({
  const liveDarshanEnabled = apiTemple?.liveDarshanEnabled ?? true;
 
  return (
- <div className="min-h-screen bg-[color:var(--color-bg,#fbf7f1)]">
+ <div className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]">
  {/* Breadcrumb */}
  <div className="border-b border-[var(--color-border)] bg-white">
  <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
@@ -879,7 +879,7 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  const gallery = getTempleGallery(slug);
 
  return (
- <div className="min-h-screen bg-[color:var(--color-bg,#fbf7f1)]">
+ <div className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]">
  <div className="border-b border-[var(--color-border)] bg-white">
  <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
  <nav className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">

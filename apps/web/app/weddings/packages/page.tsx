@@ -65,7 +65,7 @@ const PACKAGES: Package[] = [
 
 export default function PackagesPage() {
   return (
-    <main className="min-h-screen bg-amber-50/40 py-12 px-4 sm:px-8">
+    <main className="min-h-[100dvh] bg-amber-50/40 py-12 px-4 sm:px-8">
       <div className="max-w-6xl mx-auto">
         <header className="text-center">
           <h1 className="font-serif text-4xl text-amber-900">Wedding packages</h1>

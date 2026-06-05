@@ -61,7 +61,7 @@ export default function PuranasIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">18 mahapuranas · ~{(TOTAL_VERSES / 1000).toFixed(0)}k verses · Smriti encyclopedia</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">18 mahapuranas · ~{(TOTAL_VERSES / 1000).toFixed(0)}k verses · Smriti encyclopedia</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">अष्टादश महापुराण</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 18 Mahapuranas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
@@ -91,17 +91,17 @@ export default function PuranasIndexPage() {
                 <Link
                   key={p.slug}
                   href={`/puranas/${p.slug}`}
-                  className="group rounded-xl border border-gray-200 bg-white p-4 transition hover:border-saffron-300 hover:shadow-md"
+                  className="group rounded-xl border border-gray-200 bg-white p-4 transition hover:border-indigo-300 hover:shadow-md"
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs font-semibold text-gray-500">#{p.number}</span>
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">{p.verseCount.toLocaleString()} verses</span>
                   </div>
-                  <h3 className="mt-1 text-base font-semibold text-gray-900 group-hover:text-saffron-700">{p.name}</h3>
+                  <h3 className="mt-1 text-base font-semibold text-gray-900 group-hover:text-indigo-700">{p.name}</h3>
                   <p className="mt-0.5 font-serif text-sm text-gray-700">{p.sanskrit}</p>
                   <p className="mt-1 text-xs text-gray-500">Presiding: {p.presidingDeity}</p>
                   <p className="mt-2 text-xs text-gray-700 line-clamp-2">{p.centralTheme}</p>
-                  <p className="mt-2 rounded bg-saffron-50 px-2 py-1 text-[11px] font-medium text-saffron-900">{p.bestKnownFor}</p>
+                  <p className="mt-2 rounded bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-900">{p.bestKnownFor}</p>
                 </Link>
               ))}
             </div>
@@ -112,9 +112,9 @@ export default function PuranasIndexPage() {
       <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Related study</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Link href="/upanishads" className="rounded-xl border border-saffron-200 bg-saffron-50/40 p-4 hover:bg-saffron-100">
-            <div className="text-sm font-semibold text-saffron-900">10 Upanishads</div>
-            <div className="text-xs text-saffron-700">Shruti — philosophical root</div>
+          <Link href="/upanishads" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
+            <div className="text-sm font-semibold text-indigo-900">10 Upanishads</div>
+            <div className="text-xs text-indigo-700">Shruti — philosophical root</div>
           </Link>
           <Link href="/ramayana" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
             <div className="text-sm font-semibold text-indigo-900">Ramayana</div>

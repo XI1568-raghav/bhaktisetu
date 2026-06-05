@@ -747,7 +747,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export default function BookYatraPage() {
  return (
-  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#faf7f0]"><div className="text-surface-500">Loading…</div></div>}>
+  <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center bg-[#faf7f0]"><div className="text-surface-500">Loading…</div></div>}>
    <BookYatraInner />
   </Suspense>
  );

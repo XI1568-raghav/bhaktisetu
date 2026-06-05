@@ -49,7 +49,7 @@ export default function VedasIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">4 Vedas · ~{(TOTAL_MANTRAS / 1000).toFixed(0)}k mantras · Shruti — the heard, revealed scripture</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">4 Vedas · ~{(TOTAL_MANTRAS / 1000).toFixed(0)}k mantras · Shruti — the heard, revealed scripture</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">चत्वारो वेदाः</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 4 Vedas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
@@ -78,13 +78,13 @@ export default function VedasIndexPage() {
           <Link
             key={v.slug}
             href={`/vedas/${v.slug}`}
-            className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-saffron-300 hover:shadow-md"
+            className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-md"
           >
             <div className="flex items-baseline justify-between">
               <span className="text-xs font-semibold text-gray-500">#{v.number} of 4</span>
-              <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-[10px] font-medium text-saffron-900">{v.totalMantras.toLocaleString()} mantras</span>
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-900">{v.totalMantras.toLocaleString()} mantras</span>
             </div>
-            <h2 className="mt-1 text-xl font-bold text-gray-900 group-hover:text-saffron-700">{v.name}</h2>
+            <h2 className="mt-1 text-xl font-bold text-gray-900 group-hover:text-indigo-700">{v.name}</h2>
             <p className="mt-1 font-serif text-lg text-gray-700">{v.sanskrit}</p>
             <p className="mt-0.5 italic text-xs text-gray-500">{v.iast} · {v.meaning}</p>
             <p className="mt-3 text-sm text-gray-700">{v.primaryFocus}</p>
@@ -100,9 +100,9 @@ export default function VedasIndexPage() {
       <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Related study</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Link href="/upanishads" className="rounded-xl border border-saffron-200 bg-saffron-50/40 p-4 hover:bg-saffron-100">
-            <div className="text-sm font-semibold text-saffron-900">10 Upanishads</div>
-            <div className="text-xs text-saffron-700">Vedanta — concluding part of each Veda</div>
+          <Link href="/upanishads" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
+            <div className="text-sm font-semibold text-indigo-900">10 Upanishads</div>
+            <div className="text-xs text-indigo-700">Vedanta — concluding part of each Veda</div>
           </Link>
           <Link href="/darshanas" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
             <div className="text-sm font-semibold text-indigo-900">6 Darshanas</div>

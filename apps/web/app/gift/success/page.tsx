@@ -67,7 +67,7 @@ function VerifyContent() {
 
   if (state === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-saffron-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50">
         <div className="text-center">
           <Loader2 className="w-10 h-10 text-saffron-600 animate-spin mx-auto" />
           <p className="text-sm text-surface-500 mt-3">Confirming payment…</p>
@@ -78,7 +78,7 @@ function VerifyContent() {
 
   if (state === 'error' || !verify) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-saffron-50 px-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50 px-4">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
           <h2 className="text-xl font-bold text-surface-700 mb-2">Could not confirm payment</h2>
@@ -94,7 +94,7 @@ function VerifyContent() {
   const waSent = verify.whatsappDelivery === 'sent';
 
   return (
-    <div className="min-h-screen bg-saffron-50">
+    <div className="min-h-[100dvh] bg-saffron-50">
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl border border-surface-100 p-8 shadow-sm">
           <div className="flex flex-col items-center text-center mb-6">
@@ -148,7 +148,7 @@ function VerifyContent() {
 export default function GiftSuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-saffron-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-saffron-50">
         <Loader2 className="w-8 h-8 text-saffron-600 animate-spin" />
       </div>
     }>

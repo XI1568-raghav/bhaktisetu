@@ -884,7 +884,7 @@ function PujaBookingInner() {
 
  if (loading) {
  return (
- <div className="flex min-h-screen items-center justify-center bg-saffron-50">
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
  <div className="text-center">
  <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-saffron-200 border-t-saffron-600" />
  <p className="text-sm text-surface-500">Loading puja details...</p>
@@ -895,7 +895,7 @@ function PujaBookingInner() {
 
  if (!puja) {
  return (
- <div className="flex min-h-screen items-center justify-center bg-saffron-50">
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
  <div className="text-center">
  <Flame className="mx-auto mb-4 h-12 w-12 text-surface-300" />
  <h2 className="mb-2 text-xl font-bold text-surface-700">Puja Not Found</h2>
@@ -915,7 +915,7 @@ function PujaBookingInner() {
 
  if (bookingSuccess) {
  return (
- <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-saffron-50 to-white px-4">
+ <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-b from-saffron-50 to-white px-4">
  <div className="w-full max-w-lg text-center">
  {/* Success animation */}
  <div className="relative mx-auto mb-6 h-24 w-24">
@@ -1014,7 +1014,7 @@ function PujaBookingInner() {
  // ─── Main Booking Form ──────────────────────────────────────
 
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* Breadcrumb */}
  <div className="border-b border-surface-100 bg-white">
  <div className="mx-auto max-w-4xl px-4 py-3 sm:px-6">

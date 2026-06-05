@@ -26,7 +26,7 @@ export default function FaqPage() {
  const totalMatches = Object.values(filteredBySection).reduce((sum, arr) => sum + arr.length, 0);
 
  return (
- <div className="min-h-screen bg-[#faf7f0]">
+ <div className="min-h-[100dvh] bg-[#faf7f0]">
  <section className="bg-gradient-to-b from-[#fdf6e7] to-[#faf7f0] border-b border-amber-200/40 py-14">
  <div className="max-w-4xl mx-auto px-6 text-center">
  <Link

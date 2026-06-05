@@ -98,7 +98,7 @@ export default function BookMarriage() {
 
  if (paid) {
  return (
- <div className="min-h-screen bg-surface-50 flex items-center justify-center p-6">
+ <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center p-6">
  <div className="max-w-md w-full bg-white border border-[var(--color-border)] rounded-2xl shadow-warm-md p-8 text-center">
  <div className="w-16 h-16 rounded-full bg-tulsi-green/15 flex items-center justify-center mx-auto mb-4">
  <Heart className="w-8 h-8 text-vermillion-500" />
@@ -133,7 +133,7 @@ export default function BookMarriage() {
  }
 
  return (
- <div className="min-h-screen bg-surface-50 pb-20">
+ <div className="min-h-[100dvh] bg-surface-50 pb-20">
  {/* Breadcrumb */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
  <nav className="text-sm text-surface-500 flex items-center gap-1.5">

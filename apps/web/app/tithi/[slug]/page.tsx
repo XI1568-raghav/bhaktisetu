@@ -56,7 +56,7 @@ export default async function TithiDetailPage({ params }: { params: Promise<{ sl
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-violet-50">
+    <main className="min-h-[100dvh] bg-gradient-to-b from-indigo-50 via-white to-violet-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
 

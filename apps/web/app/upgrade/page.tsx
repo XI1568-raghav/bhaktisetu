@@ -162,7 +162,7 @@ function UpgradeInner() {
 
   return (
     <div
-      className="min-h-screen px-4 py-12"
+      className="min-h-[100dvh] px-4 py-12"
       style={{ background: 'var(--color-bg, #fffbf5)' }}
     >
       <div className="max-w-5xl mx-auto">

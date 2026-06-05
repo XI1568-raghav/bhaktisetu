@@ -59,7 +59,7 @@ const TRUST = [
 
 export default function GiftPujaPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-saffron-50 via-white to-amber-50">
+    <main className="min-h-[100dvh] bg-gradient-to-b from-saffron-50 via-white to-amber-50">
       <section className="max-w-5xl mx-auto px-4 pt-12 pb-8">
         <div className="text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-saffron-100 px-3 py-1 text-xs font-semibold text-saffron-700 mb-4">

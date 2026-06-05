@@ -78,7 +78,7 @@ function SubscriptionInner() {
  }
 
  return (
- <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+ <div className="min-h-[100dvh]" style={{ background: "var(--color-bg)" }}>
  {/* Header */}
  <section className="py-10 sm:py-14">
  <div className="max-w-4xl mx-auto px-6 sm:px-8">

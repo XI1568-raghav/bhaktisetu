@@ -113,7 +113,7 @@ function TicketDetailInner() {
 
  if (loading) {
  return (
- <div className="min-h-screen p-10 text-sm text-surface-500 bg-[#faf7f0] flex items-center gap-2">
+ <div className="min-h-[100dvh] p-10 text-sm text-surface-500 bg-[#faf7f0] flex items-center gap-2">
  <Loader2 className="w-4 h-4 animate-spin" /> Loading ticket…
  </div>
  );
@@ -121,7 +121,7 @@ function TicketDetailInner() {
 
  if (!ticket) {
  return (
- <div className="min-h-screen bg-[#faf7f0] py-16">
+ <div className="min-h-[100dvh] bg-[#faf7f0] py-16">
  <div className="max-w-2xl mx-auto px-6 bg-white rounded-xl border border-surface-200 p-10 text-center">
  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
  <h2 className="font-semibold text-surface-900 mb-1">Ticket not found</h2>
@@ -142,7 +142,7 @@ function TicketDetailInner() {
  const cat = CATEGORY_MAP[ticket.category];
 
  return (
- <div className="min-h-screen bg-[#faf7f0] py-10">
+ <div className="min-h-[100dvh] bg-[#faf7f0] py-10">
  <div className="max-w-6xl mx-auto px-6">
  <Link
  href="/support/tickets"

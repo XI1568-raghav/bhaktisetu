@@ -75,7 +75,7 @@ export function ReaderClient({ chapter, bookTitle, prev, next }: Props) {
     <div
       data-reader-theme={prefs.theme}
       data-reader-font-size={prefs.fontSize}
-      className="min-h-screen"
+      className="min-h-[100dvh]"
     >
       <ScrollProgressBar onChange={handleScroll} />
 

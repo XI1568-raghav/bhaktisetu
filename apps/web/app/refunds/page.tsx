@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RefundsPage() {
  return (
- <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+ <div className="min-h-[100dvh]" style={{ background: "var(--color-bg)" }}>
  {/* Header */}
  <section
  className="py-14 sm:py-20"

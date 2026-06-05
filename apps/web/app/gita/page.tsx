@@ -56,7 +56,7 @@ export default function GitaIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">18 chapters · {TOTAL_VERSES} verses · Krishna&apos;s teaching to Arjuna</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">18 chapters · {TOTAL_VERSES} verses · Krishna&apos;s teaching to Arjuna</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">श्रीमद्भगवद्गीता</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Bhagavad Gita — All 18 Chapters</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
@@ -85,12 +85,12 @@ export default function GitaIndexPage() {
                 <Link
                   key={c.slug}
                   href={`/gita/${c.slug}`}
-                  className="group rounded-xl border border-gray-200 bg-white p-4 transition hover:border-saffron-300 hover:shadow-md"
+                  className="group rounded-xl border border-gray-200 bg-white p-4 transition hover:border-indigo-300 hover:shadow-md"
                 >
                   <div className="flex items-baseline justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-xs font-bold text-saffron-900">{c.number}</span>
-                      <h3 className="text-base font-semibold text-gray-900 group-hover:text-saffron-700">{c.english}</h3>
+                      <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-900">{c.number}</span>
+                      <h3 className="text-base font-semibold text-gray-900 group-hover:text-indigo-700">{c.english}</h3>
                     </div>
                     <span className="text-xs text-gray-500">{c.verseCount} verses</span>
                   </div>
@@ -106,9 +106,9 @@ export default function GitaIndexPage() {
       <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Related study</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Link href="/chants/gita-jayanti" className="rounded-xl border border-saffron-200 bg-saffron-50/40 p-4 hover:bg-saffron-100">
-            <div className="text-sm font-semibold text-saffron-900">Gita Jayanti Mantras</div>
-            <div className="text-xs text-saffron-700">Verses recited on Gita&apos;s birth day</div>
+          <Link href="/chants/gita-jayanti" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
+            <div className="text-sm font-semibold text-indigo-900">Gita Jayanti Mantras</div>
+            <div className="text-xs text-indigo-700">Verses recited on Gita&apos;s birth day</div>
           </Link>
           <Link href="/shlokas" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
             <div className="text-sm font-semibold text-indigo-900">All Shlokas</div>

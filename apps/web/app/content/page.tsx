@@ -757,7 +757,7 @@ export default async function ContentPage({
  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
  return (
- <div className="min-h-screen bg-saffron-50">
+ <div className="min-h-[100dvh] bg-saffron-50">
  {/* Hero with Language Switcher */}
  <ContentPageHeader currentType={type} currentSearch={search} />
 

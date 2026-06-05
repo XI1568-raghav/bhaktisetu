@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
  return (
- <div className="min-h-screen relative flex items-center justify-center overflow-hidden py-8">
+ <div className="min-h-[100dvh] relative flex items-center justify-center overflow-hidden py-8">
  {/* Background gradient — warm saffron tones */}
  <div className="absolute inset-0 bg-gradient-to-br from-saffron-700 via-saffron-600 to-temple-gold" />
 

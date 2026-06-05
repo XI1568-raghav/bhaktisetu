@@ -199,7 +199,7 @@ function BookingsContent() {
  ];
 
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* Header */}
  <div className="border-b border-surface-100 bg-white">
  <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
