@@ -106,7 +106,7 @@ export default async function VipassanaCenterDetailPage(
       </nav>
 
       <header className="mb-8">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">
+        <p className="text-xs uppercase tracking-wider text-emerald-600">
           {LINEAGE_LABEL[c.lineage]} · {REGION_LABEL[c.region]}
         </p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">{c.name}</h1>
@@ -114,7 +114,7 @@ export default async function VipassanaCenterDetailPage(
           {c.city}, {c.state}, {c.country}
         </p>
         {c.isFlagshipCenter ? (
-          <span className="mt-3 inline-block rounded-full bg-saffron-100 px-3 py-1 text-xs font-semibold text-saffron-800">
+          <span className="mt-3 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
             Flagship center
           </span>
         ) : null}
@@ -182,9 +182,9 @@ export default async function VipassanaCenterDetailPage(
         </p>
       </section>
 
-      <section className="mb-10 rounded-2xl border border-saffron-300 bg-saffron-50 p-6">
+      <section className="mb-10 rounded-2xl border border-emerald-300 bg-emerald-50 p-6">
         <h2 className="font-serif text-xl text-saffron-900">Apply for a course</h2>
-        <p className="mt-2 text-sm text-saffron-800">
+        <p className="mt-2 text-sm text-emerald-800">
           Applications go directly to {c.name}. Darshya does not handle bookings — the
           center reviews each applicant personally. The course itself is{' '}
           <strong>donation-based</strong> (no fee).

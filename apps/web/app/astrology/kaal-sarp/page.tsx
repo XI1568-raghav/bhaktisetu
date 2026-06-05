@@ -91,15 +91,15 @@ export default function KaalSarpPage() {
    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(APP_LD) }} />
 
    <nav className="text-xs text-gray-500">
-    <Link href="/" className="hover:text-saffron-700">Home</Link>
+    <Link href="/" className="hover:text-indigo-700">Home</Link>
     {' · '}
-    <Link href="/astrology" className="hover:text-saffron-700">Astrology</Link>
+    <Link href="/astrology" className="hover:text-indigo-700">Astrology</Link>
     {' · '}
     <span className="text-gray-700">Kaal Sarp Dosh</span>
    </nav>
 
    <header className="mt-4 text-center">
-    <p className="text-xs uppercase tracking-widest text-saffron-600">काल सर्प दोष · Kalsarpa Yoga</p>
+    <p className="text-xs uppercase tracking-widest text-indigo-600">काल सर्प दोष · Kalsarpa Yoga</p>
     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Kaal Sarp Dosh Calculator — Free Online</h1>
     <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
      Detect all 12 types of Kaal Sarp Yoga from your birth chart. When all 7 classical planets fall
@@ -150,8 +150,8 @@ export default function KaalSarpPage() {
     <h2 className="font-serif text-2xl text-gray-900">Frequently asked questions</h2>
     <div className="mt-5 space-y-3">
      {FAQS.map((f, i) => (
-      <details key={i} className="group rounded-xl border border-saffron-200 bg-white/80 p-4 open:border-saffron-400">
-       <summary className="cursor-pointer list-none font-serif text-base font-semibold text-gray-900 group-open:text-saffron-700">
+      <details key={i} className="group rounded-xl border border-indigo-200 bg-white/80 p-4 open:border-indigo-400">
+       <summary className="cursor-pointer list-none font-serif text-base font-semibold text-gray-900 group-open:text-indigo-700">
         {f.q}
        </summary>
        <p className="mt-2 text-sm leading-relaxed text-gray-700">{f.a}</p>
@@ -160,7 +160,7 @@ export default function KaalSarpPage() {
     </div>
    </section>
 
-   <section className="mt-12 rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
+   <section className="mt-12 rounded-2xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-amber-50 p-6 text-center">
     <p className="font-serif text-lg text-gray-900">Layer your dosh checks</p>
     <p className="mt-2 text-sm text-gray-700">
      Kaal Sarp often combines with Manglik Dosh or Sade Sati. Check all three before booking a Naga puja —
@@ -170,13 +170,13 @@ export default function KaalSarpPage() {
      <Link href="/astrology/manglik" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
       Manglik Dosh
      </Link>
-     <Link href="/astrology/sade-sati" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+     <Link href="/astrology/sade-sati" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
       Sade Sati
      </Link>
-     <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+     <Link href="/astrology/kundli" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
       Full Kundli
      </Link>
-     <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+     <Link href="/ask-pandit" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
       Ask a Pandit
      </Link>
     </div>

@@ -96,9 +96,9 @@ export default function ChoghadiyaPage() {
    </nav>
 
    <header className="mb-8">
-    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool · no birth-data needed</p>
+    <p className="text-xs uppercase tracking-wider text-indigo-600">Free Vedic tool · no birth-data needed</p>
     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Choghadiya Today — Free Muhurat Calculator</h1>
-    <p className="mt-2 text-saffron-700">चौघड़िया मुहूर्त · Choghadiya / Chaughadia</p>
+    <p className="mt-2 text-indigo-700">चौघड़िया मुहूर्त · Choghadiya / Chaughadia</p>
     <p className="mt-4 text-base text-gray-700">
      Pick your date + city to see 8 day-periods (sunrise → sunset) and 8 night-periods (sunset →
      next sunrise), each classified as auspicious (Amrit / Shubh / Labh), neutral (Char), or
@@ -152,7 +152,7 @@ export default function ChoghadiyaPage() {
     </div>
    </section>
 
-   <section className="mt-12 rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
+   <section className="mt-12 rounded-2xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-amber-50 p-6 text-center">
     <h2 className="font-serif text-xl text-gray-900">Pair with the rest of your Vedic stack</h2>
     <p className="mt-2 text-sm text-gray-700">
      For high-stakes muhurat (wedding, griha pravesh, business launch), combine Choghadiya with
@@ -162,13 +162,13 @@ export default function ChoghadiyaPage() {
      <Link href="/panchang" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
       Today's Panchang
      </Link>
-     <Link href="/muhurat" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+     <Link href="/muhurat" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
       Muhurat Reference Guide
      </Link>
-     <Link href="/astrology/nakshatra-finder" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+     <Link href="/astrology/nakshatra-finder" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
       Find My Nakshatra
      </Link>
-     <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+     <Link href="/ask-pandit" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
       Ask a Pandit Live
      </Link>
     </div>
