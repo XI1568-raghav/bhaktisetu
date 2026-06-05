@@ -69,7 +69,7 @@ export default function VipassanaLearnPage() {
       </nav>
 
       <header className="mb-8">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">Complete guide</p>
+        <p className="text-xs uppercase tracking-wider text-emerald-600">Complete guide</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">
           Learn Vipassana — The 10-Day Course
         </h1>
@@ -333,9 +333,9 @@ export default function VipassanaLearnPage() {
         </div>
       </section>
 
-      <section className="mt-12 rounded-2xl border border-saffron-300 bg-saffron-50 p-6">
+      <section className="mt-12 rounded-2xl border border-emerald-300 bg-emerald-50 p-6">
         <h2 className="font-serif text-xl text-saffron-900">Ready to apply?</h2>
-        <p className="mt-2 text-sm text-saffron-800">
+        <p className="mt-2 text-sm text-emerald-800">
           Pick a center and apply directly. Darshya is a discovery resource — applications
           go to the center, not to us.
         </p>
