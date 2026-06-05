@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1280, initial-scale=1" />
+<title>Darshya · The Devotional Super-App</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          saffron: { 50:'#FFF4EB',100:'#FFE2C7',500:'#E16318',600:'#C24E0E',700:'#9B3D08' },
+          indigo:  { 50:'#EEF0FB',500:'#3F51B5',600:'#2F3F9C',700:'#252F77' },
+          emerald: { 50:'#ECFDF5',500:'#10B981',600:'#059669' },
+          amber:   { 50:'#FFFBEB',500:'#F59E0B',600:'#D97706' },
+          ink:     { 900:'#0B0B12', 700:'#2A2A38', 500:'#5A5A6B', 300:'#9A9AA8', 100:'#E5E5EC' },
+          paper:   '#FAF6F0',
+        },
+        fontFamily: {
+          sans: ['Inter','system-ui','sans-serif'],
+          display: ['Fraunces','Georgia','serif'],
+          deva: ['Tiro Devanagari Sanskrit','serif'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html, body { background:#1a1a22; }
+  body { font-family:'Inter',system-ui,sans-serif; color:#0B0B12; -webkit-font-smoothing:antialiased; }
+  .slide {
+    width:1280px; height:720px;
+    margin:28px auto;
+    background:#FAF6F0;
+    box-shadow:0 24px 60px rgba(0,0,0,.45);
+    position:relative;
+    overflow:hidden;
+    page-break-after:always;
+    break-after:page;
+  }
+  .slide:last-child { page-break-after:auto; break-after:auto; }
+  .page-num { position:absolute; right:64px; bottom:32px; font-size:11px; color:#9A9AA8; font-variant-numeric:tabular-nums; }
+  .om {
+    position:absolute; right:-60px; bottom:-120px;
+    font-family:'Tiro Devanagari Sanskrit',serif; font-size:720px; line-height:1;
+    color:#E16318; opacity:.05; user-select:none; pointer-events:none;
+  }
+  .om-sm { position:absolute; right:-30px; bottom:-60px; font-family:'Tiro Devanagari Sanskrit',serif; font-size:360px; line-height:1; color:#E16318; opacity:.04; user-select:none; pointer-events:none; }
+  .rule { height:2px; width:48px; background:#E16318; border-radius:2px; }
+  .rule-i { height:2px; width:48px; background:#3F51B5; border-radius:2px; }
+  .rule-e { height:2px; width:48px; background:#059669; border-radius:2px; }
+  .rule-a { height:2px; width:48px; background:#D97706; border-radius:2px; }
+  .num { font-family:'Fraunces',serif; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; letter-spacing:-.02em; }
+  .label { font-size:11px; letter-spacing:.22em; color:#5A5A6B; text-transform:uppercase; }
+  .h1 { font-family:'Fraunces',serif; font-weight:800; color:#0B0B12; line-height:.96; letter-spacing:-.02em; }
+  .h2 { font-family:'Fraunces',serif; font-weight:700; color:#0B0B12; line-height:1.02; letter-spacing:-.015em; }
+  .body { color:#2A2A38; font-weight:400; }
+  .accent { color:#C24E0E; }
+  .accent-i { color:#2F3F9C; }
+  .accent-e { color:#059669; }
+  .accent-a { color:#D97706; }
+  .mark {
+    width:40px; height:40px; border-radius:10px;
+    background:#E16318;
+    display:inline-flex; align-items:center; justify-content:center;
+    color:#fff; font-family:'Tiro Devanagari Sanskrit',serif; font-size:24px;
+  }
+  .header { position:absolute; top:40px; left:64px; right:64px; display:flex; align-items:center; justify-content:space-between; }
+  .colrule { width:1px; background:#E5E5EC; }
+  .lane-card { border:1px solid #E5E5EC; border-radius:14px; padding:16px 18px; background:#fff; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.04em; }
+  .pill-s { background:#FFE2C7; color:#9B3D08; }
+  .pill-i { background:#EEF0FB; color:#252F77; }
+  .pill-e { background:#ECFDF5; color:#059669; }
+  .pill-a { background:#FFFBEB; color:#D97706; }
+  .kpi { font-family:'Fraunces',serif; font-weight:800; font-size:34px; line-height:1; letter-spacing:-.02em; }
+  .kpi-l { font-family:'Fraunces',serif; font-weight:800; font-size:60px; line-height:1; letter-spacing:-.02em; }
+  table.rev { width:100%; border-collapse:collapse; font-size:12px; }
+  table.rev th { text-align:left; font-weight:600; color:#5A5A6B; letter-spacing:.06em; text-transform:uppercase; font-size:10px; padding:6px 8px; border-bottom:1px solid #E5E5EC; }
+  table.rev td { padding:9px 8px; border-bottom:1px solid #F0EEE8; vertical-align:top; color:#2A2A38; }
+  table.rev td.lane { font-family:'Fraunces',serif; font-weight:700; color:#0B0B12; font-size:13px; }
+  @page { size:1280px 720px; margin:0; }
+  @media print {
+    html, body { background:#fff !important; }
+    .slide { margin:0; box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 01 COVER ============ -->
+<section class="slide">
+  <div class="om">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3">
+      <span class="mark">द</span>
+      <span class="label">Darshya</span>
+    </div>
+    <div class="label">Investor / Partner Brief · 2026</div>
+  </div>
+  <div class="absolute" style="left:64px; top:240px; right:64px;">
+    <div class="rule mb-6"></div>
+    <h1 class="h1" style="font-size:88px;">India's devotional<br/>super-app.</h1>
+    <p class="body mt-6" style="font-size:22px; max-width:880px;">Ten revenue rails. One billion Hindus. Built and live at <span class="accent font-semibold">darshya.online</span>.</p>
+    <div class="flex gap-3 mt-10">
+      <span class="pill pill-s">Puja w/ video proof</span>
+      <span class="pill pill-s">Live darshan</span>
+      <span class="pill pill-i">Astrology · Kundli</span>
+      <span class="pill pill-e">Yatra · Wellness</span>
+      <span class="pill pill-a">Store · Gurukul · SaaS</span>
+    </div>
+  </div>
+  <div class="absolute" style="left:64px; bottom:48px;">
+    <div class="label">darshya.online · founder@darshya.online</div>
+  </div>
+  <div class="page-num">01 / 20</div>
+</section>
+
+<!-- ============ 02 THIRTY-SEC STORY ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Thirty-second story</span></div>
+    <div class="label">02</div>
+  </div>
+  <div class="absolute" style="left:64px; top:160px; right:64px;">
+    <div class="rule mb-6"></div>
+    <h2 class="h2" style="font-size:54px;">A billion Hindus open ten apps for what should be <span class="accent">one ritual life</span>.</h2>
+    <div class="grid grid-cols-3 gap-6 mt-12">
+      <div>
+        <div class="label mb-2">Today</div>
+        <p class="body" style="font-size:15px;">Sri Mandir for puja. AstroSage for kundli. MakeMyTrip for Char Dham. Amazon for prasad. WhatsApp uncle for muhurat.</p>
+      </div>
+      <div>
+        <div class="label mb-2">Tomorrow</div>
+        <p class="body" style="font-size:15px;">One app. Daily darshan to sankalp, kundli to yatra, gaushala seva to 80G — every devotional act, one ledger, one identity.</p>
+      </div>
+      <div>
+        <div class="label mb-2">The rail</div>
+        <p class="body" style="font-size:15px;">Darshya is the devotional OS — already shipping ten revenue lanes, 500+ programmatic landing pages, 537 passing API tests. Zero capital raised.</p>
+      </div>
+    </div>
+    <div class="mt-12 grid grid-cols-4 gap-4">
+      <div class="lane-card"><div class="label">Users</div><div class="kpi accent mt-1">1B+</div><div class="text-xs text-ink-500 mt-1">Hindu TAM globally</div></div>
+      <div class="lane-card"><div class="label">NRI base</div><div class="kpi accent mt-1">32M</div><div class="text-xs text-ink-500 mt-1">9–10× ARPU vs domestic</div></div>
+      <div class="lane-card"><div class="label">Temples</div><div class="kpi accent mt-1">900K+</div><div class="text-xs text-ink-500 mt-1">India alone, unindexed</div></div>
+      <div class="lane-card"><div class="label">Devotional spend</div><div class="kpi accent mt-1">$58B</div><div class="text-xs text-ink-500 mt-1">Annual, leaking offline</div></div>
+    </div>
+  </div>
+  <div class="page-num">02 / 20</div>
+</section>
+
+<!-- ============ 03 SUPER-APP THESIS ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Super-app thesis</span></div>
+    <div class="label">03</div>
+  </div>
+  <div class="absolute" style="left:64px; top:140px; right:64px;">
+    <div class="rule mb-6"></div>
+    <h2 class="h2" style="font-size:44px;">Single-feature apps win the install. <span class="accent">Super-apps win the lifetime.</span></h2>
+    <div class="grid grid-cols-2 gap-10 mt-10">
+      <div>
+        <div class="label mb-3">The competitor map</div>
+        <table class="rev">
+          <thead><tr><th>App</th><th>Lanes</th><th>Stuck at</th></tr></thead>
+          <tbody>
+            <tr><td class="lane">Sri Mandir</td><td>Puja, darshan</td><td>2 lanes · ad-funded</td></tr>
+            <tr><td class="lane">AstroSage</td><td>Kundli, horoscope</td><td>1 lane · ₹99/min</td></tr>
+            <tr><td class="lane">Utsav</td><td>Puja booking</td><td>1 lane · trustee-led</td></tr>
+            <tr><td class="lane">MakeMyTrip</td><td>Yatra packages</td><td>1 lane · commodity</td></tr>
+            <tr><td class="lane">Amazon Prasad</td><td>Commerce</td><td>1 lane · no ritual context</td></tr>
+            <tr><td class="lane"><span class="accent">Darshya</span></td><td><span class="accent font-semibold">10 lanes · one identity</span></td><td><span class="accent font-semibold">Compounding CLV</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="label mb-3">Why super-app wins here</div>
+        <ul class="space-y-3 body" style="font-size:14px;">
+          <li><span class="accent font-bold">1.</span> <b>Devotional life is daily.</b> Panchang opens 365 days/yr. That's a retention surface no single-feature app can match.</li>
+          <li><span class="accent font-bold">2.</span> <b>One event triggers many.</b> Birth → kundli → naming → mundan → first-puja → gotra → marriage muhurat. Cross-sell is built-in.</li>
+          <li><span class="accent font-bold">3.</span> <b>Trust transfers.</b> A user who books one puja with us trusts us with the kundli, the yatra, the 80G receipt, the prasad delivery.</li>
+          <li><span class="accent font-bold">4.</span> <b>NRI guilt-spend compounds.</b> A US-based devotee paying $169 for a Rudrabhishek will pay $299 for Char Dham, $89 for monthly gaushala, $49 for a kundli.</li>
+          <li><span class="accent font-bold">5.</span> <b>India has no WeChat for dharma.</b> Whoever lays the rail first owns the next decade.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">03 / 20</div>
+</section>
+
+<!-- ============ 04 TEN REVENUE LANES MATRIX ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Ten revenue lanes · one rail</span></div>
+    <div class="label">04</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <div class="rule mb-4"></div>
+    <h2 class="h2" style="font-size:36px;">Every devotional act has a price. We monetise <span class="accent">all ten.</span></h2>
+    <table class="rev mt-6">
+      <thead><tr><th>#</th><th>Lane</th><th>Emotion</th><th>Revenue model</th><th>ARPU</th><th>Take-rate</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="lane">Puja w/ video proof</td><td>Devotion · proof</td><td>Per-puja commission</td><td>₹1,501 / $169</td><td>20–40%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>2</td><td class="lane">Live darshan</td><td>Daily presence</td><td>Ads + temple sponsor</td><td>₹3 CPM · ₹50k sponsor</td><td>100%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>3</td><td class="lane">Astrology · Kundli</td><td>Anxiety-relief</td><td>Per-minute + funnel</td><td>₹99/min · ₹499 report</td><td>40–60%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>4</td><td class="lane">NRI Gift Puja (USD)</td><td>Guilt · legacy</td><td>9–10× domestic pricing</td><td>$169–$299</td><td>30–50%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>5</td><td class="lane">Yatra · pilgrimage</td><td>Bucket-list dharma</td><td>Package commission</td><td>₹35k–₹1.2L</td><td>10–15%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>6</td><td class="lane">Wellness · Vipassana</td><td>Inner peace</td><td>Centre commission</td><td>₹8k–₹25k</td><td>12–18%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>7</td><td class="lane">Gaushala · 80G</td><td>Compassion · karma-tax</td><td>Recurring donations</td><td>₹500/mo · $89/mo</td><td>5–10% ops fee</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>8</td><td class="lane">Store · prasad · rudraksha</td><td>Sacred commerce</td><td>GMV take + drop-ship</td><td>₹650 AOV</td><td>20–28%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>9</td><td class="lane">Gurukul · content library</td><td>Aspiration · identity</td><td>Marketplace + sub</td><td>₹299/mo · ₹2999/yr</td><td>20% + ₹49/sub</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>10</td><td class="lane">Temple Portal SaaS</td><td>B2B operator</td><td>Per-temple subscription</td><td>₹999–₹4,999/mo</td><td>100% recurring</td><td><span class="pill pill-e">Live</span></td></tr>
+      </tbody>
+    </table>
+    <p class="text-xs text-ink-500 mt-3">Status reflects production code on darshya.online · 537/537 API tests green · CF Pages + Render + Supabase + Razorpay + Stripe wired.</p>
+  </div>
+  <div class="page-num">04 / 20</div>
+</section>
+
+<!-- ============ 05 LANE 1 — PUJA + VIDEO PROOF ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 01 · Puja w/ video proof</span></div>
+    <div class="label">05</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-s">Emotion · Devotion + proof</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">"Did the puja actually happen?"<br/><span class="accent">Every booking ships a video.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">Sri Mandir books pujas. Trustees post a photo. Devotee never knows. We mandate video proof — sankalp clip, abhishekam clip, prasad dispatch — uploaded to the booking before payout releases to the priest. The trust gap closes. The repeat rate ramps.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Unit price</div><div class="kpi mt-1">₹1,501</div><div class="text-xs text-ink-500">Rudrabhishek base · INR</div></div>
+          <div><div class="label">NRI price</div><div class="kpi mt-1">$169</div><div class="text-xs text-ink-500">Same SKU · 9× lift</div></div>
+          <div><div class="label">Take</div><div class="kpi mt-1">20–40%</div><div class="text-xs text-ink-500">Per-temple commission</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Catalogue</div>
+          <p class="body mt-1" style="font-size:13px;">14 puja types live · Rudrabhishek · Satyanarayan · Lakshmi · Maha Mrityunjaya · Navagraha Shanti · Pitra Paksha shraadh · Janmadin · Griha Pravesh · Sankashti · Vat Savitri · Karva Chauth · Gauri · Shiva Ratri · Diwali Lakshmi.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">Differentiator</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent">Video proof mandatory.</b> Priest payout gated on upload.</li>
+          <li><b class="accent">80G receipt automatic.</b> PAN-stamped, IT-section compliant.</li>
+          <li><b class="accent">Sankalp builder.</b> Gotra + nakshatra + city auto-resolved.</li>
+          <li><b class="accent">NRI dual-currency.</b> USD/EUR/GBP at checkout.</li>
+          <li><b class="accent">Cancel up to 24h.</b> Full refund — non-negotiable rule.</li>
+        </ul>
+        <div class="mt-4 pt-4 border-t border-saffron-100">
+          <div class="label" style="color:#9B3D08;">Why devotee pays again</div>
+          <p class="body mt-1" style="font-size:12px;">Every booking ends with a 90-sec WhatsApp video. That video is shared with family. Family asks "who did this?" The next booking is inbound.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">05 / 20</div>
+</section>
+
+<!-- ============ 06 LANE 2 — LIVE DARSHAN ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 02 · Live darshan</span></div>
+    <div class="label">06</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-s">Emotion · Daily presence</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">A devotee opens the app every morning. <span class="accent">That's the only metric that matters.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">Live darshan is not a feature — it's the daily wake-up. Mangal Aarti at Banke Bihari opens at 4 AM. A devotee in New Jersey misses it by 9.5 hrs. The DVR + scheduled-replay turns time-zone arbitrage into daily retention. Once they're in the app at 6 AM for aarti, every other lane becomes one tap away.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Streams</div><div class="kpi mt-1">25+</div><div class="text-xs text-ink-500">IVS HLS · YouTube fallback</div></div>
+          <div><div class="label">Daily sessions</div><div class="kpi mt-1">365×</div><div class="text-xs text-ink-500">Per-user retention surface</div></div>
+          <div><div class="label">CPM</div><div class="kpi mt-1">₹3–₹8</div><div class="text-xs text-ink-500">+ temple sponsor seat</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Monetisation stack</div>
+          <p class="body mt-1" style="font-size:13px;">Pre-roll devotional ad · temple sponsor seat (₹50k/mo per temple shown as "Brought to you by") · push-to-puja-CTA overlay (20% click → puja booking · attributable revenue) · NRI replay tier (free → $4.99/mo for DVR + 4K).</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">Differentiator</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent">No login wall.</b> Darshan is free, forever. Trust before transaction.</li>
+          <li><b class="accent">Aarti countdown.</b> Sri Mandir doesn't show "next aarti in 12 min." We do.</li>
+          <li><b class="accent">Sponsor → booking attribution.</b> Temple sponsor sees rupees back, not impressions.</li>
+          <li><b class="accent">Adjacent CTA.</b> "Offer a flower to this deity" → ₹51 micro-tx → 80G receipt.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">06 / 20</div>
+</section>
+
+<!-- ============ 07 LANE 3 — ASTROLOGY + KUNDLI ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 03 · Astrology · Kundli</span></div>
+    <div class="label">07</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-i">Emotion · Anxiety-relief</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">When the mother is worried about the daughter's marriage, <span class="accent-i">we are the only number she dials.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">AstroSage owns this lane today — but only as a calculator. We've built the funnel: free kundli → matched dosha report → muhurat selector → "talk to verified astrologer ₹99/min" → if Manglik flagged → "book pariharam puja at Ujjain" (cross-lane to Lane 1). One anxiety event → 4 transactions.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Per-min call</div><div class="kpi accent-i mt-1">₹99</div><div class="text-xs text-ink-500">Astrologer split 60/40</div></div>
+          <div><div class="label">Kundli report</div><div class="kpi accent-i mt-1">₹499</div><div class="text-xs text-ink-500">100% margin · automated</div></div>
+          <div><div class="label">NRI premium</div><div class="kpi accent-i mt-1">$49</div><div class="text-xs text-ink-500">Same kundli · 10× lift</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">15 calculators live</div>
+          <p class="body mt-1" style="font-size:13px;">Free kundli · Navamsa D9 · Vimshottari dasha · Numerology · Baby-name (gotra-aware) · Manglik · Sade Sati · Kaal Sarp · Pitra Dosh · Lal Kitab · Vastu · Choghadiya · Rahu Kalam · Hora · Pancha Pakshi · Nakshatra finder · Kundli Milan · Wedding muhurat · 12-rashi daily horoscope · 27-nakshatra profiles.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#EEF0FB; border-color:#D8DCEF;">
+        <div class="label accent-i">Differentiator</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent-i">Lahiri ayanamsa exact.</b> J2000-grade, fixed 2026-06-02 bug.</li>
+          <li><b class="accent-i">Cross-lane funnel.</b> Anxiety → puja remedy → booking.</li>
+          <li><b class="accent-i">Verified astrologer pool.</b> KYC + Aadhaar before payouts.</li>
+          <li><b class="accent-i">Asha AI Pandit.</b> Free Q&amp;A → graduates to paid call.</li>
+          <li><b class="accent-i">12 horoscope SEO routes.</b> Daily organic capture.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">07 / 20</div>
+</section>
+
+<!-- ============ 08 LANE 4 — NRI GIFT PUJA ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 04 · NRI Gift Puja · USD</span></div>
+    <div class="label">08</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-s">Emotion · Guilt · Legacy · Love</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">An NRI son in Texas, on his mother's birthday, <span class="accent">books a Lakshmi puja at Kalighat for her.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">32 million NRIs. Average $3.2k discretionary annual devotional spend. Currently routed through "uncle who knows a pandit." We collapse the friction: select temple → select puja → recipient WhatsApp → USD payment → video proof to both phones → 80G receipt to whoever needs it. Same SKU as domestic. 9–10× the price. They pay because the alternative is calling four uncles and waiting two weeks.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">TAM</div><div class="kpi mt-1">$13B</div><div class="text-xs text-ink-500">32M NRIs · $400 avg</div></div>
+          <div><div class="label">SKU lift</div><div class="kpi mt-1">9–10×</div><div class="text-xs text-ink-500">vs domestic same puja</div></div>
+          <div><div class="label">CLV / NRI</div><div class="kpi mt-1">$1,200</div><div class="text-xs text-ink-500">8 transactions / yr</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Live now</div>
+          <p class="body mt-1" style="font-size:13px;">Stripe USD/EUR/GBP checkout · Geo-IP currency switch · WhatsApp delivery to recipient · 80G receipt to sender PAN · 5 i18n landings (en/hi/ta/te/bn/mr) for diaspora segmentation · `/gift` + `/nri` dedicated funnels.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">Why this is the killer lane</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent">Guilt compounds.</b> A son who pays once at Diwali pays again at his father's shraadh, his nephew's mundan, his daughter's first kundli.</li>
+          <li><b class="accent">Currency arbitrage is permanent.</b> Domestic devotee pays ₹1,501 — same SKU to NRI is $169 = ₹14,200. Same priest, same temple, same video.</li>
+          <li><b class="accent">No competitor.</b> Sri Mandir refuses USD. AstroSage has no temples. MakeMyTrip has no priests. Owned lane.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">08 / 20</div>
+</section>
+
+<!-- ============ 09 LANE 5 — YATRA / PILGRIMAGE ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 05 · Yatra · Pilgrimage</span></div>
+    <div class="label">09</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-e">Emotion · Bucket-list dharma</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">Every Hindu has a Char Dham in their lifetime list. <span class="accent-e">We sell it with priest, hotel, and aarti pass bundled.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">MakeMyTrip sells hotels. IRCTC sells trains. Neither sells the actual ritual. We bundle: Kedarnath 7-day package = Dehradun pickup + helicopter day + lodge + senior-citizen palki + priority darshan pass + sankalp at Yamunotri + farewell aarti at Devprayag. ₹65k. We take ₹8k. Devotee never thinks about it again.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Catalogue</div><div class="kpi accent-e mt-1">62</div><div class="text-xs text-ink-500">Tirth guides · 8 circuits</div></div>
+          <div><div class="label">Pkg ARPU</div><div class="kpi accent-e mt-1">₹65k</div><div class="text-xs text-ink-500">Char Dham 7-day</div></div>
+          <div><div class="label">Take</div><div class="kpi accent-e mt-1">10–15%</div><div class="text-xs text-ink-500">Per booking</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Circuits live</div>
+          <p class="body mt-1" style="font-size:13px;">Char Dham (Yamunotri · Gangotri · Kedarnath · Badrinath) · 12 Jyotirlinga · Panch Prayag · Panch Kedar · Do Dham · Ashta Vinayak · Sapta Puri · Shakti Peeth fragment.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#ECFDF5; border-color:#BBF7D0;">
+        <div class="label accent-e">Differentiator</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent-e">Ritual-first, hotel-second.</b> The puja is the centerpiece, not the hotel star rating.</li>
+          <li><b class="accent-e">Senior-citizen mode.</b> Palki, helicopter, doctor-on-call wired into pkg.</li>
+          <li><b class="accent-e">Cross-sells.</b> Yatra → on-site puja → 80G prasad-sponsorship → repeat next yr.</li>
+          <li><b class="accent-e">NRI Char Dham.</b> $2,499 fully-bundled. Same trip, 4× margin.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">09 / 20</div>
+</section>
+
+<!-- ============ 10 LANE 6 — WELLNESS · VIPASSANA ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 06 · Wellness · Vipassana · Yoga</span></div>
+    <div class="label">10</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-e">Emotion · Inner peace · Burnout escape</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">A burned-out 32-year-old PM in Bengaluru searches "10-day Vipassana." <span class="accent-e">We are the booking surface.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">26 Vipassana centres in India. None have a real booking UX. Goenka centres run on a 1990s php form. Adjacency: yoga retreats, panchakarma, ayurvedic clinics, sound healing — a $4B/yr Indian wellness market with no online aggregator that understands the spiritual side. We do, because every customer is already in our app for darshan.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Centres live</div><div class="kpi accent-e mt-1">26</div><div class="text-xs text-ink-500">Vipassana indexed</div></div>
+          <div><div class="label">Avg retreat</div><div class="kpi accent-e mt-1">₹18k</div><div class="text-xs text-ink-500">7-day all-inclusive</div></div>
+          <div><div class="label">Take</div><div class="kpi accent-e mt-1">12–18%</div><div class="text-xs text-ink-500">Per booking</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Adjacency</div>
+          <p class="body mt-1" style="font-size:13px;">Yoga retreats · Panchakarma clinics · Ayurvedic consult · Sound healing · Pranic energy work · Silent meditation. NRI premium tier: $1,200 panchakarma in Kerala vs $4,500 equivalent in California.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#ECFDF5; border-color:#BBF7D0;">
+        <div class="label accent-e">Why this lane is undervalued</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent-e">No competitor.</b> Cure.fit doesn't touch spiritual wellness. Sri Mandir doesn't touch wellness at all.</li>
+          <li><b class="accent-e">Same user, different mood.</b> Devotee at 6 AM aarti is the same person at 8 PM searching "burnout cure."</li>
+          <li><b class="accent-e">NRI 4× margin again.</b> Dollar-pricing for ashram retreats works.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">10 / 20</div>
+</section>
+
+<!-- ============ 11 LANE 7 — GAUSHALA + 80G ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 07 · Gaushala · 80G recurring</span></div>
+    <div class="label">11</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-s">Emotion · Compassion · Karma-tax</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">Every devotee owes karma. <span class="accent">We turn it into a monthly subscription with a tax receipt.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">Gau-seva is the highest punya act in Sanatana Dharma. Devotees give cash to roadside cows. We give them: adopt-a-cow by name + daily photo + 80G receipt every month + recurring auto-debit. Donation becomes identity ("I sponsor Gauri at Pathmeda since 2024"). Recurring subscription replaces one-off guilt-spend.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Monthly</div><div class="kpi mt-1">₹500</div><div class="text-xs text-ink-500">Adopt-a-cow base</div></div>
+          <div><div class="label">NRI monthly</div><div class="kpi mt-1">$89</div><div class="text-xs text-ink-500">15× lift, recurring</div></div>
+          <div><div class="label">Retention</div><div class="kpi mt-1">14 mo</div><div class="text-xs text-ink-500">Avg subscriber life</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Adjacent recurring donations</div>
+          <p class="body mt-1" style="font-size:13px;">Daily diya at Kashi Vishwanath (₹201/mo) · Annadanam at Tirupati (₹1,001/mo) · Prasad sponsorship at home temple (₹501/mo) · Vedapatasala scholarship (₹501/mo).</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">Why this is a SaaS, not a charity</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent">Auto-debit + 80G.</b> Subscription, not donation. Tax-deductible.</li>
+          <li><b class="accent">Named-cow identity.</b> Devotee shares photo on WhatsApp → social proof loop.</li>
+          <li><b class="accent">Compounding karma.</b> A subscriber who pays for 14 months stays for 5 years.</li>
+          <li><b class="accent">NRI guilt-tax.</b> $89/mo · 32M NRIs · 5% adoption = $1.7B/yr ceiling.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">11 / 20</div>
+</section>
+
+<!-- ============ 12 LANE 8 — STORE / PRASAD / RUDRAKSHA ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 08 · Store · Prasad · Rudraksha · Idols</span></div>
+    <div class="label">12</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-a">Emotion · Sacred commerce · Object of faith</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">Amazon sells rudraksha as fashion jewellery. <span class="accent-a">We sell it as initiated, certified, mantra-energised.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">A 5-mukhi rudraksha on Amazon is ₹299 with zero context. The same bead, energised on Shivratri at Trimbakeshwar with full abhishekam, ships from us at ₹1,499 with a video of the energisation. Same physical product. 5× the price. Margin is in the meaning. 18 rudraksha variants, 569 SKUs live, drop-ship from verified temple stores.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">SKUs live</div><div class="kpi accent-a mt-1">569</div><div class="text-xs text-ink-500">Drop-ship + Medusa</div></div>
+          <div><div class="label">AOV</div><div class="kpi accent-a mt-1">₹650</div><div class="text-xs text-ink-500">Single-item median</div></div>
+          <div><div class="label">Take</div><div class="kpi accent-a mt-1">20–28%</div><div class="text-xs text-ink-500">GMV commission</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Catalogue spine</div>
+          <p class="body mt-1" style="font-size:13px;">Rudraksha (18 mukhi types) · Tulsi mala · Sphatik · Navaratna · Yantras · Brass idols · Silver idols · Prasad packs from 25 temples · Books · Pooja kits · Diya · Incense · Camphor.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#FFFBEB; border-color:#FDE68A;">
+        <div class="label accent-a">Differentiator</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent-a">Mantra-energised.</b> Video of energisation ships with every SKU.</li>
+          <li><b class="accent-a">Temple-verified origin.</b> No drop-ship roulette.</li>
+          <li><b class="accent-a">Prasad from 25 temples.</b> Tirupati laddu, Ujjain laddu, Kalighat prasad — direct.</li>
+          <li><b class="accent-a">Astrology-driven recs.</b> Your kundli says Manglik → rudraksha 11-mukhi recommended.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">12 / 20</div>
+</section>
+
+<!-- ============ 13 LANE 9 — GURUKUL + CONTENT LIBRARY ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 09 · Gurukul · Content Library · Learning</span></div>
+    <div class="label">13</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-i">Emotion · Aspiration · Cultural identity</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">"My daughter doesn't know Sanskrit. <span class="accent-i">I want her to learn from a real gurukul, not a YouTube channel."</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">Marketplace + subscription stack. Marketplace: 200+ certified gurukuls list courses (Sanskrit, Vedic chanting, kathak, kirtan, Bhagavad Gita study). We take 20% + ₹49/sub. Subscription: 500+ programmatic content pages (every Mahapurana indexed, every Upanishad, every Mahabharata parva, 12 Gita chapters fanned out). Free tier indexes for SEO, premium tier unlocks audio + transliteration + commentary at ₹299/mo.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">Pages live</div><div class="kpi accent-i mt-1">500+</div><div class="text-xs text-ink-500">Programmatic SEO surface</div></div>
+          <div><div class="label">Sub price</div><div class="kpi accent-i mt-1">₹299</div><div class="text-xs text-ink-500">Monthly · ₹2,999/yr</div></div>
+          <div><div class="label">Take</div><div class="kpi accent-i mt-1">20%</div><div class="text-xs text-ink-500">+ ₹49 platform fee</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Content spine — already indexed</div>
+          <p class="body mt-1" style="font-size:13px;">18 Mahapuranas · 25 Upanishads · 4 Vedas · 700-verse Gita fanned · Ramayana 7 kandas · Mahabharata 18 parvas · 12 Bhakti Saints · 27 Nakshatras · 24 Ekadashis · 10 Mahavidyas · 9 Navadurga · 30 Aartis · 25 Chalisas · 32 Chants · 36 Festivals · 15 Gotras.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#EEF0FB; border-color:#D8DCEF;">
+        <div class="label accent-i">Differentiator</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent-i">SEO funnel.</b> 500+ pages = $0 CAC. Organic capture per festival, per saint, per chant.</li>
+          <li><b class="accent-i">NRI parents pay.</b> "My child learns Sanskrit from Varanasi" sells at $79/mo.</li>
+          <li><b class="accent-i">Cross-lane.</b> Reader of Devi Mahatmya converts to Navratri puja booking.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">13 / 20</div>
+</section>
+
+<!-- ============ 14 LANE 10 — TEMPLE PORTAL SAAS ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Lane 10 · Temple Portal SaaS</span></div>
+    <div class="label">14</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <span class="pill pill-i">Emotion · Operator pain · Modernisation</span>
+    <h2 class="h2 mt-4" style="font-size:48px;">900,000 temples run on a register and a WhatsApp group. <span class="accent-i">We are the OS.</span></h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7 lane-card">
+        <div class="label">Why it wins</div>
+        <p class="body mt-2" style="font-size:14px;">Per-temple subscription. ₹999/mo basic (booking dashboard + WhatsApp blast + 80G receipt printer) · ₹2,499/mo growth (+ live darshan stream encoder + Razorpay payouts + priest scheduler) · ₹4,999/mo enterprise (+ analytics + multi-trustee roles + audit log + custom landing page). The temple is the customer. The devotee is the user. Both win.</p>
+        <div class="grid grid-cols-3 gap-4 mt-5">
+          <div><div class="label">TAM</div><div class="kpi accent-i mt-1">900K</div><div class="text-xs text-ink-500">India temples</div></div>
+          <div><div class="label">Tier ARPU</div><div class="kpi accent-i mt-1">₹2,499</div><div class="text-xs text-ink-500">Avg blended SaaS price</div></div>
+          <div><div class="label">Ceiling</div><div class="kpi accent-i mt-1">$324M</div><div class="text-xs text-ink-500">At 10% penetration · ARR</div></div>
+        </div>
+        <div class="mt-5">
+          <div class="label">Portal feature set live</div>
+          <p class="body mt-1" style="font-size:13px;">Booking dashboard · Priest scheduler · Aarti calendar · Daily darshan stream · Donation ledger · 80G PDF generator · Razorpay-mapped payouts · WhatsApp blast to devotees · Multi-trustee role-based access · Audit log · Custom temple landing page on darshya.online/temples/{slug}.</p>
+        </div>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#EEF0FB; border-color:#D8DCEF;">
+        <div class="label accent-i">Why temples sign</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent-i">No upfront cost.</b> 30-day free trial.</li>
+          <li><b class="accent-i">First booking pays for the year.</b> ₹4k commission on one Rudrabhishek covers 4 months SaaS.</li>
+          <li><b class="accent-i">Trustees own the data.</b> Export anytime, leave anytime.</li>
+          <li><b class="accent-i">Replaces 4 tools.</b> Excel + WhatsApp + paper receipt book + bank visit → one dashboard.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">14 / 20</div>
+</section>
+
+<!-- ============ 15 DEVOTEE LIFECYCLE FUNNEL ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">The devotee lifecycle</span></div>
+    <div class="label">15</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <div class="rule mb-4"></div>
+    <h2 class="h2" style="font-size:40px;">One devotee. Six months. <span class="accent">₹14,800 lifetime value.</span></h2>
+    <div class="grid grid-cols-6 gap-3 mt-10">
+      <div class="lane-card"><div class="label">Day 1</div><div class="font-display text-2xl mt-1 accent">Today</div><p class="body mt-2" style="font-size:12px;">Free panchang · 0 spend · cookie set</p></div>
+      <div class="lane-card"><div class="label">Day 3</div><div class="font-display text-2xl mt-1 accent-i">Kundli</div><p class="body mt-2" style="font-size:12px;">Free kundli ₹0 · email captured</p></div>
+      <div class="lane-card"><div class="label">Day 7</div><div class="font-display text-2xl mt-1 accent">Puja</div><p class="body mt-2" style="font-size:12px;">First booking ₹1,501 · video proof</p></div>
+      <div class="lane-card"><div class="label">Day 30</div><div class="font-display text-2xl mt-1 accent-i">Consult</div><p class="body mt-2" style="font-size:12px;">15-min astrologer ₹1,485</p></div>
+      <div class="lane-card"><div class="label">Day 90</div><div class="font-display text-2xl mt-1 accent-e">Yatra</div><p class="body mt-2" style="font-size:12px;">Char Dham pkg ₹65,000</p></div>
+      <div class="lane-card"><div class="label">Day 180</div><div class="font-display text-2xl mt-1" style="color:#9B3D08;">Recur</div><p class="body mt-2" style="font-size:12px;">Adopt-a-cow ₹500/mo</p></div>
+    </div>
+    <div class="grid grid-cols-3 gap-6 mt-10">
+      <div class="lane-card">
+        <div class="label">Blended CLV · domestic</div>
+        <div class="kpi-l accent mt-2">₹14,800</div>
+        <p class="text-xs text-ink-500 mt-2">Across 6 lanes · 6 months</p>
+      </div>
+      <div class="lane-card">
+        <div class="label">Blended CLV · NRI</div>
+        <div class="kpi-l accent mt-2">$1,200</div>
+        <p class="text-xs text-ink-500 mt-2">≈ ₹1,01,000 · same horizon</p>
+      </div>
+      <div class="lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">CAC at scale</div>
+        <div class="kpi-l accent mt-2">$0–$8</div>
+        <p class="text-xs text-ink-500 mt-2">500+ SEO pages drive 60%+ organic. CLV / CAC > 150×.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">15 / 20</div>
+</section>
+
+<!-- ============ 16 NRI CROSS-CUT ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">NRI cross-cut · 9–10× lever across all 10 lanes</span></div>
+    <div class="label">16</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <div class="rule mb-4"></div>
+    <h2 class="h2" style="font-size:44px;">32 million NRIs. <span class="accent">$13 billion ritual TAM.</span> Currently routed through uncles.</h2>
+    <div class="grid grid-cols-12 gap-6 mt-8">
+      <div class="col-span-7">
+        <table class="rev">
+          <thead><tr><th>Lane</th><th>Domestic</th><th>NRI same SKU</th><th>Lift</th></tr></thead>
+          <tbody>
+            <tr><td class="lane">Rudrabhishek puja</td><td>₹1,501</td><td>$169 (₹14,200)</td><td class="accent font-semibold">9.5×</td></tr>
+            <tr><td class="lane">Kundli report</td><td>₹499</td><td>$49 (₹4,100)</td><td class="accent font-semibold">8.2×</td></tr>
+            <tr><td class="lane">Char Dham pkg</td><td>₹65k</td><td>$2,499 (₹2.1L)</td><td class="accent font-semibold">3.2×</td></tr>
+            <tr><td class="lane">Adopt-a-cow</td><td>₹500/mo</td><td>$89/mo (₹7,500)</td><td class="accent font-semibold">15×</td></tr>
+            <tr><td class="lane">Vipassana retreat</td><td>₹18k</td><td>$899 (₹75,500)</td><td class="accent font-semibold">4.2×</td></tr>
+            <tr><td class="lane">Rudraksha 5-mukhi</td><td>₹1,499</td><td>$129 (₹10,800)</td><td class="accent font-semibold">7.2×</td></tr>
+            <tr><td class="lane">Gurukul Sanskrit sub</td><td>₹299/mo</td><td>$79/mo (₹6,650)</td><td class="accent font-semibold">22×</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-span-5 lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">Why the lift is permanent</div>
+        <ul class="mt-3 space-y-3 body" style="font-size:13px;">
+          <li><b class="accent">Convenience monopoly.</b> Alternative is 4 phone calls + 2 weeks.</li>
+          <li><b class="accent">Guilt-spend is inelastic.</b> Diaspora pays for ritual the way they pay for therapy.</li>
+          <li><b class="accent">Legacy purchase.</b> "My son's first kundli" is not a price-sensitive transaction.</li>
+          <li><b class="accent">Stripe + dual-currency live.</b> US / UK / CA / AU geo-routed.</li>
+          <li><b class="accent">5 i18n landings.</b> Tamil diaspora, Telugu, Bengali, Marathi, Hindi targeted.</li>
+        </ul>
+        <div class="mt-4 pt-4 border-t border-saffron-100">
+          <div class="kpi-l accent">$13B</div>
+          <p class="text-xs text-ink-500 mt-1">Capturing 1% = $130M ARR ceiling on NRI alone.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">16 / 20</div>
+</section>
+
+<!-- ============ 17 DISTRIBUTION RAIL ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Distribution rail · $0 CAC moat</span></div>
+    <div class="label">17</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <div class="rule mb-4"></div>
+    <h2 class="h2" style="font-size:44px;">500+ programmatic SEO pages. <span class="accent">24 daily AI agents. $0 paid spend.</span></h2>
+    <div class="grid grid-cols-3 gap-6 mt-10">
+      <div class="lane-card">
+        <div class="label">SEO surface area</div>
+        <div class="kpi-l accent mt-2">500+</div>
+        <p class="body mt-3" style="font-size:13px;">Every saint, every chant, every nakshatra, every ekadashi, every rudraksha mukhi, every tirth, every festival per-month — own URL, own JSON-LD, own metadata. Covers 65 route families across worship, library, astrology, yatra, shop.</p>
+      </div>
+      <div class="lane-card">
+        <div class="label">Autonomous fleet</div>
+        <div class="kpi-l accent mt-2">24</div>
+        <p class="body mt-3" style="font-size:13px;">Daily agents: content-publisher (writes blog drafts) · seo-internal-linker (closes orphans) · gsc-submitter (IndexNow + Google ping) · schema-validator · uptime · broken-link · keyword-rank-tracker · competitor-watch · founder-tweet-draft · weekly-investor-update · 14 more.</p>
+      </div>
+      <div class="lane-card">
+        <div class="label">Free-tier discipline</div>
+        <div class="kpi-l accent mt-2">$0</div>
+        <p class="body mt-3" style="font-size:13px;">Cloudflare Pages 500 builds/mo + GitHub Actions 2000 min/mo + Render 750 hr/mo + Supabase 500 MB + Resend 100 emails/day + WhatsApp Cloud 1000/mo. Every workflow paths-filtered. Cap-respecting agent fleet.</p>
+      </div>
+    </div>
+    <div class="mt-8 grid grid-cols-2 gap-6">
+      <div class="lane-card" style="background:#ECFDF5; border-color:#BBF7D0;">
+        <div class="label accent-e">Compounding effect</div>
+        <p class="body mt-2" style="font-size:13px;">Every page indexed today brings traffic tomorrow, next year, forever. Sri Mandir spends $40 per install on Meta. We spend $0 and capture the user when they search "Pradosh vrat 2026" or "Manglik remedies" — the highest-intent moment in their life.</p>
+      </div>
+      <div class="lane-card" style="background:#EEF0FB; border-color:#D8DCEF;">
+        <div class="label accent-i">Moat type</div>
+        <p class="body mt-2" style="font-size:13px;">Search-index dominance compounds and cannot be bought. A competitor with $50M to spend cannot un-index our 500 pages or out-write 24 daily agents writing for 3 years. The moat thickens daily, autonomously, while we sleep.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">17 / 20</div>
+</section>
+
+<!-- ============ 18 PROOF / WORKING TODAY ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Working today · not a deck</span></div>
+    <div class="label">18</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <div class="rule mb-4"></div>
+    <h2 class="h2" style="font-size:44px;">A production rail. <span class="accent">Live at darshya.online.</span> Solo founder. Zero capital raised.</h2>
+    <div class="grid grid-cols-4 gap-5 mt-10">
+      <div class="lane-card"><div class="label">API tests green</div><div class="kpi-l accent mt-2">537</div><p class="text-xs text-ink-500 mt-2">/ 537 across 40 files · CI-gated</p></div>
+      <div class="lane-card"><div class="label">SKUs live</div><div class="kpi-l accent mt-2">569</div><p class="text-xs text-ink-500 mt-2">Medusa + drop-ship temple stores</p></div>
+      <div class="lane-card"><div class="label">SEO routes</div><div class="kpi-l accent mt-2">500+</div><p class="text-xs text-ink-500 mt-2">Across 65 families · indexed</p></div>
+      <div class="lane-card"><div class="label">Capital raised</div><div class="kpi-l accent mt-2">$0</div><p class="text-xs text-ink-500 mt-2">Solo founder · all free-tier</p></div>
+    </div>
+    <div class="mt-8 grid grid-cols-2 gap-6">
+      <div class="lane-card">
+        <div class="label">Stack live in production</div>
+        <p class="body mt-2" style="font-size:13px;">Next.js 15 (CF Pages edge) · Fastify 5 (Render) · Prisma · Supabase Postgres · Razorpay (INR) · Stripe (USD/EUR/GBP) · MedusaJS commerce · IVS HLS live darshan · YouTube fallback · Expo 50 mobile · WhatsApp Cloud · Resend email · GitHub Actions cron · Groq LLM for Asha AI Pandit · 80G PDF generator · Aadhaar-gated priest payouts.</p>
+      </div>
+      <div class="lane-card">
+        <div class="label">Live integrations</div>
+        <p class="body mt-2" style="font-size:13px;">Razorpay live keys (KYC submitted) · Stripe (NRI KYC submitted) · Aadhaar gate on priest payouts (business rule #4) · Video proof on every puja (business rule #1) · 24-hour cancellation refund (business rule #5) · 80G receipt per donation (business rule #7) · NRI 9–10× pricing locked (business rule #2) · Per-temple commission 20–40% (business rule #3).</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">18 / 20</div>
+</section>
+
+<!-- ============ 19 BLENDED UNIT ECONOMICS ============ -->
+<section class="slide">
+  <div class="om-sm">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">Blended unit economics</span></div>
+    <div class="label">19</div>
+  </div>
+  <div class="absolute" style="left:64px; top:130px; right:64px;">
+    <div class="rule mb-4"></div>
+    <h2 class="h2" style="font-size:40px;">10,000 active devotees. <span class="accent">₹14.8 Cr ARR run-rate.</span> 1,000 NRI mix lifts it to ₹40 Cr.</h2>
+    <table class="rev mt-8">
+      <thead><tr><th>Cohort</th><th>Users</th><th>Avg yearly spend</th><th>Lane mix</th><th>Take blended</th><th>ARR contribution</th></tr></thead>
+      <tbody>
+        <tr><td class="lane">Domestic active</td><td>9,000</td><td>₹14,800</td><td>Puja · kundli · yatra · gaushala</td><td>28%</td><td><span class="accent font-semibold">₹3.7 Cr</span></td></tr>
+        <tr><td class="lane">NRI active</td><td>1,000</td><td>₹1,01,000</td><td>+ NRI 9–10× lift</td><td>32%</td><td><span class="accent font-semibold">₹3.2 Cr</span></td></tr>
+        <tr><td class="lane">Temple SaaS</td><td>1,500 temples</td><td>₹30,000/yr</td><td>₹2,499 blended ARPU</td><td>100% recurring</td><td><span class="accent font-semibold">₹4.5 Cr</span></td></tr>
+        <tr><td class="lane">Astrologer minutes</td><td>200K min/yr</td><td>₹99/min</td><td>Per-min split</td><td>40%</td><td><span class="accent font-semibold">₹79 L</span></td></tr>
+        <tr><td class="lane">Store GMV</td><td>50K orders/yr</td><td>₹650 AOV</td><td>569 SKUs</td><td>24%</td><td><span class="accent font-semibold">₹78 L</span></td></tr>
+        <tr><td class="lane">Gurukul subs</td><td>5,000 subs</td><td>₹3,588/yr</td><td>₹299/mo blended</td><td>100% recurring</td><td><span class="accent font-semibold">₹1.8 Cr</span></td></tr>
+        <tr><td class="lane">Ad / sponsor</td><td>20 temple sponsors</td><td>₹6L/yr</td><td>Darshan stream brand seats</td><td>100%</td><td><span class="accent font-semibold">₹1.2 Cr</span></td></tr>
+        <tr style="background:#FFF4EB;"><td class="lane accent">Blended ARR</td><td><b>10K + 1.5K temples</b></td><td>—</td><td><b>10 lanes stacked</b></td><td>—</td><td><span class="kpi accent">₹16.0 Cr</span></td></tr>
+      </tbody>
+    </table>
+    <div class="grid grid-cols-3 gap-4 mt-6">
+      <div class="lane-card" style="background:#ECFDF5; border-color:#BBF7D0;"><div class="label accent-e">Gross margin</div><div class="kpi accent-e mt-1">68%</div><p class="text-xs text-ink-500 mt-1">Software-led · zero inventory ex-store</p></div>
+      <div class="lane-card" style="background:#EEF0FB; border-color:#D8DCEF;"><div class="label accent-i">Burn at run-rate</div><div class="kpi accent-i mt-1">$0</div><p class="text-xs text-ink-500 mt-1">All free-tier · founder only</p></div>
+      <div class="lane-card" style="background:#FFFBEB; border-color:#FDE68A;"><div class="label accent-a">Path to ₹100 Cr ARR</div><div class="kpi accent-a mt-1">~24 mo</div><p class="text-xs text-ink-500 mt-1">100K active + 10K temples + 10K NRI</p></div>
+    </div>
+  </div>
+  <div class="page-num">19 / 20</div>
+</section>
+
+<!-- ============ 20 ASK / NEXT STEP ============ -->
+<section class="slide">
+  <div class="om">ॐ</div>
+  <div class="header">
+    <div class="flex items-center gap-3"><span class="mark">द</span><span class="label">The ask · next step</span></div>
+    <div class="label">20</div>
+  </div>
+  <div class="absolute" style="left:64px; top:160px; right:64px;">
+    <div class="rule mb-6"></div>
+    <h2 class="h2" style="font-size:56px;">The rail is built. <span class="accent">Pick how you join.</span></h2>
+    <div class="grid grid-cols-3 gap-5 mt-10">
+      <div class="lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
+        <div class="label" style="color:#9B3D08;">Track 1 · Capital</div>
+        <h3 class="font-display text-2xl mt-2">Seed · ₹6 Cr</h3>
+        <p class="body mt-3" style="font-size:13px;">12-month runway. Build NRI marketing engine + onboard first 1,000 temples + iOS launch + 5 langs broadcast. Targets: 100K MAU, ₹16 Cr ARR run-rate, 1,500 SaaS temples.</p>
+        <div class="mt-4 pt-4 border-t border-saffron-100">
+          <div class="label" style="color:#9B3D08;">Use of funds</div>
+          <p class="text-xs text-ink-500 mt-1">40% NRI growth · 25% temple onboard · 20% engineering · 15% reserve</p>
+        </div>
+      </div>
+      <div class="lane-card" style="background:#EEF0FB; border-color:#D8DCEF;">
+        <div class="label accent-i">Track 2 · Strategic Partner</div>
+        <h3 class="font-display text-2xl mt-2">Temple network</h3>
+        <p class="body mt-3" style="font-size:13px;">If you run a temple trust, jagannath board, ISKCON wing, gau-rakshak, or yatra co — list on the rail. First booking pays for the year. 80G + video proof + payout in 7 days.</p>
+        <div class="mt-4 pt-4 border-t border-indigo-100">
+          <div class="label accent-i">Take</div>
+          <p class="text-xs text-ink-500 mt-1">60–80% to temple · 20–40% platform · 0 upfront</p>
+        </div>
+      </div>
+      <div class="lane-card" style="background:#ECFDF5; border-color:#BBF7D0;">
+        <div class="label accent-e">Track 3 · Brand / Distribution</div>
+        <h3 class="font-display text-2xl mt-2">Sponsor a lane</h3>
+        <p class="body mt-3" style="font-size:13px;">FMCG (ghee, agarbatti, prasad), jewellery (sacred metal), travel (NRI airlines), wealth (NRI banking) — sponsor a lane with measurable booking attribution, not impressions.</p>
+        <div class="mt-4 pt-4 border-t border-emerald-100">
+          <div class="label accent-e">Reach</div>
+          <p class="text-xs text-ink-500 mt-1">500+ SEO pages · 24 daily agents · NRI dollar audience · daily darshan retention</p>
+        </div>
+      </div>
+    </div>
+    <div class="mt-10 flex items-center justify-between border-t border-ink-100 pt-6">
+      <div>
+        <div class="label">Founder</div>
+        <div class="font-display text-xl mt-1">founder@darshya.online</div>
+      </div>
+      <div>
+        <div class="label">Live rail</div>
+        <div class="font-display text-xl mt-1 accent">darshya.online</div>
+      </div>
+      <div>
+        <div class="label">Decision window</div>
+        <div class="font-display text-xl mt-1">14 days</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">20 / 20</div>
+</section>
+
+</body>
+</html>
