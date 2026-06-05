@@ -7,12 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: `Valmiki Ramayana — All 7 Kandas: Bala, Ayodhya, Aranya, Kishkindha, Sundara, Yuddha, Uttara | Darshya`,
-  description: `Complete kanda-by-kanda guide to the Valmiki Ramayana — all 7 books across ${TOTAL_SARGAS} sargas. Episodes, central characters, key teachings of the story of Rama, Sita and Hanuman.`,
+  title: `Valmiki Ramayana, All 7 Kandas: Bala, Ayodhya, Aranya, Kishkindha, Sundara, Yuddha, Uttara | Darshya`,
+  description: `Complete kanda-by-kanda guide to the Valmiki Ramayana, all 7 books across ${TOTAL_SARGAS} sargas. Episodes, central characters, key teachings of the story of Rama, Sita and Hanuman.`,
   alternates: { canonical: `${BASE_URL}/ramayana` },
   openGraph: {
-    title: 'Valmiki Ramayana — 7 kandas complete guide',
-    description: `From Rama's birth to his return — every kanda's story, key episodes, and central teaching.`,
+    title: 'Valmiki Ramayana, 7 kandas complete guide',
+    description: `From Rama's birth to his return, every kanda's story, key episodes, and central teaching.`,
     url: `${BASE_URL}/ramayana`,
     type: 'website',
   },
@@ -52,13 +52,13 @@ export default function RamayanaIndexPage() {
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">7 kandas · {TOTAL_SARGAS} sargas · ~24,000 shlokas</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">वाल्मीकि रामायण</h1>
-        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Valmiki Ramayana — All 7 Kandas</p>
+        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Valmiki Ramayana, All 7 Kandas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
-          The story of Rama, prince of Ayodhya — composed by sage Valmiki in Sanskrit,
+          The story of Rama, prince of Ayodhya, composed by sage Valmiki in Sanskrit,
           the Ramayana is the older of India&apos;s two great epics. From Rama&apos;s birth and
           marriage to Sita through fourteen years of exile, the abduction by Ravana, the
           alliance with Hanuman and the vanaras, the war at Lanka, and the return to
-          Ayodhya — each kanda is a distinct stage of the great journey.
+          Ayodhya, each kanda is a distinct stage of the great journey.
         </p>
       </header>
 

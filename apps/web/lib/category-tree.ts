@@ -22,7 +22,7 @@ export type Category = {
   accentColor: AccentColor;
   items: CategoryItem[];
   featured?: { label: string; href: string; sublabel?: string };
-  /** Only set for `library` — drives 4-col LibraryMegaPanel layout. */
+  /** Only set for `library` · drives 4-col LibraryMegaPanel layout. */
   subGroups?: LibrarySubGroup[];
 };
 
@@ -52,7 +52,7 @@ export const CATEGORY_TREE: Category[] = [
       {
         label: 'Gift a Puja',
         href: '/gift',
-        description: 'Send a puja to a loved one — NRI USD/INR dual-currency.',
+        description: 'Send a puja to a loved one · NRI USD/INR dual-currency.',
       },
       {
         label: 'Temples',
@@ -79,7 +79,7 @@ export const CATEGORY_TREE: Category[] = [
   {
     key: 'library',
     label: 'Library',
-    tagline: 'Scriptures, devotional practice, saints, calendar — 500+ guides.',
+    tagline: 'Scriptures, devotional practice, saints, calendar · 500+ guides.',
     accentColor: 'indigo',
     featured: { label: 'Discover All Guides', href: '/discover', sublabel: 'Browse 500+ wisdom guides' },
     items: [
@@ -99,8 +99,8 @@ export const CATEGORY_TREE: Category[] = [
         hubLabel: 'Browse all scriptures',
         items: [
           { label: 'Vedas', href: '/vedas', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
-          { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads — Vedanta core texts.' },
-          { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas — itihasa-purana corpus.' },
+          { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads · Vedanta core texts.' },
+          { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas · itihasa-purana corpus.' },
           { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters of the Gita.' },
           { label: 'Ramayana', href: '/ramayana', description: '7 Kandas of Valmiki Ramayana.' },
           { label: 'Mahabharata', href: '/mahabharata', description: '18 Parvas + Bhishma Parva.' },
@@ -120,9 +120,9 @@ export const CATEGORY_TREE: Category[] = [
           { label: 'Shlokas', href: '/shlokas', description: 'Shareable verse cards.' },
           { label: 'Bhajan', href: '/content', description: 'Devotional songs with audio links.' },
           { label: 'Sankalp Generator', href: '/sankalp', description: 'Build your Vedic vow in Sanskrit.' },
-          { label: 'Chakras', href: '/chakras', description: '7 chakras — Muladhara to Sahasrara.' },
-          { label: 'Vedic Yajnas', href: '/vedic-yajnas', description: '10 yajnas — Agnihotra, Soma, Vajapeya…' },
-          { label: 'Samskaras (16)', href: '/samskaras', description: '16 Vedic life-rites — Garbhadhana to Antyeshti.' },
+          { label: 'Chakras', href: '/chakras', description: '7 chakras · Muladhara to Sahasrara.' },
+          { label: 'Vedic Yajnas', href: '/vedic-yajnas', description: '10 yajnas · Agnihotra, Soma, Vajapeya…' },
+          { label: 'Samskaras (16)', href: '/samskaras', description: '16 Vedic life-rites · Garbhadhana to Antyeshti.' },
         ],
       },
       {
@@ -167,7 +167,7 @@ export const CATEGORY_TREE: Category[] = [
   {
     key: 'astrology',
     label: 'Astrology',
-    tagline: 'Free kundli, daily horoscope, doshas, muhurat — talk to an astrologer.',
+    tagline: 'Free kundli, daily horoscope, doshas, muhurat · talk to an astrologer.',
     accentColor: 'indigo',
     featured: { label: 'Consult ₹99/min', href: '/astrology', sublabel: 'Verified Vedic astrologers' },
     items: [
@@ -205,7 +205,7 @@ export const CATEGORY_TREE: Category[] = [
   {
     key: 'shop',
     label: 'Shop',
-    tagline: 'Prasad, idols, books, rudraksha — devotional store.',
+    tagline: 'Prasad, idols, books, rudraksha · devotional store.',
     accentColor: 'amber',
     items: [
       { label: 'Storefront', href: '/store', description: 'Browse the full devotional marketplace.' },
