@@ -89,7 +89,7 @@ const roles = [
 
 export default function DemoHub() {
  return (
- <div className="min-h-screen bg-gradient-to-b from-surface-900 via-surface-800 to-surface-900">
+ <div className="min-h-[100dvh] bg-gradient-to-b from-surface-900 via-surface-800 to-surface-900">
  {/* Back link */}
  <div className="max-w-5xl mx-auto px-6 pt-8">
  <Link

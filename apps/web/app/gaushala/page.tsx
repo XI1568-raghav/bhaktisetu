@@ -267,7 +267,7 @@ function healthBadge(status: string) {
 
 export default function GaushalaPage() {
  return (
- <div className="min-h-screen">
+ <div className="min-h-[100dvh]">
  {/* ── Hero ────────────────────────────────────────────────────────────────── */}
  <section className="relative overflow-hidden bg-[#ede9e3]">
 

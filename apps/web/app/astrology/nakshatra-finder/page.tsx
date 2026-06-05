@@ -96,9 +96,9 @@ export default function NakshatraFinderPage() {
    </nav>
 
    <header className="mb-8">
-    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool · no signup</p>
+    <p className="text-xs uppercase tracking-wider text-indigo-600">Free Vedic tool · no signup</p>
     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Find My Nakshatra by Date of Birth — Free Vedic Birth Star Calculator</h1>
-    <p className="mt-2 text-saffron-700">जन्म नक्षत्र · Janma Nakshatra</p>
+    <p className="mt-2 text-indigo-700">जन्म नक्षत्र · Janma Nakshatra</p>
     <p className="mt-4 text-base text-gray-700">
      Enter your date of birth, time of birth, and timezone to compute your janma nakshatra (Vedic
      birth star), pada (quarter), rashi (moon sign), ruling planet, and presiding deity. Pure Vedic
@@ -116,13 +116,13 @@ export default function NakshatraFinderPage() {
       <Link
        key={n.slug}
        href={`/nakshatra/${n.slug}`}
-       className="rounded-lg border border-saffron-200 bg-saffron-50/40 p-3 transition hover:border-saffron-400 hover:bg-saffron-50"
+       className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-3 transition hover:border-indigo-400 hover:bg-indigo-50"
       >
        <div className="flex items-baseline justify-between">
         <p className="font-serif text-sm font-semibold text-gray-900">{n.name}</p>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{n.lord}</span>
        </div>
-       <p className="text-[11px] text-saffron-700">{n.sanskritName}</p>
+       <p className="text-[11px] text-indigo-700">{n.sanskritName}</p>
        <p className="mt-1 text-[11px] text-gray-600">Deity: {n.deity}</p>
       </Link>
      ))}
@@ -141,7 +141,7 @@ export default function NakshatraFinderPage() {
     </div>
    </section>
 
-   <section className="mt-12 rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
+   <section className="mt-12 rounded-2xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-saffron-50 p-6 text-center">
     <h2 className="font-serif text-xl text-gray-900">Use your nakshatra across all Vedic tools</h2>
     <p className="mt-2 text-sm text-gray-700">
      Once you know your janma nakshatra, plug it into our other free Vedic calculators — baby

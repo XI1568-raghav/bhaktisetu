@@ -51,7 +51,7 @@ export default async function NavaratnaDetailPage({ params }: { params: Promise<
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-saffron-50 via-white to-amber-50">
+    <main className="min-h-[100dvh] bg-gradient-to-b from-saffron-50 via-white to-amber-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
 

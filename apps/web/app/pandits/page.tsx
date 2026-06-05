@@ -123,7 +123,7 @@ export default async function PanditsListingPage() {
  const priests = await getPublicPriests();
 
  return (
-  <div className="min-h-screen bg-[var(--color-bg)]">
+  <div className="min-h-[100dvh] bg-[var(--color-bg)]">
    {/* Hero */}
    <section className="bg-gradient-to-b from-saffron-50 to-[var(--color-bg)] py-12 px-4">
     <div className="max-w-6xl mx-auto">

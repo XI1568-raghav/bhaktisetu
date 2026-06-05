@@ -429,7 +429,7 @@ export default async function CowDetailPage({
  const gsInfo = (gaushalaInfo[cow.gaushalaId] ?? gaushalaInfo["gs_001"])!;
 
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* ── Breadcrumb ────────────────────────────────────────────────────────── */}
  <div className="bg-white border-b border-surface-100">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-3">

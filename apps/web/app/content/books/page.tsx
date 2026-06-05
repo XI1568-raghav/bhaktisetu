@@ -22,7 +22,7 @@ export default async function BooksIndexPage() {
   const books = await loadAllManifests();
 
   return (
-    <div className="min-h-screen bg-[#fbf6ec]">
+    <div className="min-h-[100dvh] bg-[#fbf6ec]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Link
           href="/content"

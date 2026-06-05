@@ -50,7 +50,7 @@ export default async function MarriagePage() {
  const weddingPriests: PriestSummary[] = (filtered.length > 0 ? filtered : allPriests).slice(0, 6);
  const usingFallback = filtered.length === 0 && allPriests.length > 0;
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* ── Breadcrumb ─────────────────────────────────────────────── */}
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
  <nav className="text-sm text-surface-500 flex items-center gap-1.5">

@@ -80,7 +80,7 @@ export default function MuhuratPage() {
   }
 
   return (
-    <main className="min-h-screen bg-amber-50/40 py-10 px-4 sm:px-8">
+    <main className="min-h-[100dvh] bg-amber-50/40 py-10 px-4 sm:px-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="font-serif text-3xl sm:text-4xl text-amber-900">Find your muhurat</h1>
         <p className="text-stone-700 mt-2">

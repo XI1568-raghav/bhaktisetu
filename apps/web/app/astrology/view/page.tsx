@@ -211,7 +211,7 @@ function AstrologerDetailInner() {
  ];
 
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* ── Cosmic Header ────────────────────────────────────────────────────── */}
  <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 pb-24">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6">
@@ -565,7 +565,7 @@ function AstrologerDetailInner() {
 
 export default function AstrologerDetailPage() {
  return (
-  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#fefcf7]"><div className="text-surface-500">Loading…</div></div>}>
+  <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center bg-[#fefcf7]"><div className="text-surface-500">Loading…</div></div>}>
    <AstrologerDetailInner />
   </Suspense>
  );

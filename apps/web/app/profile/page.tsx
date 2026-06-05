@@ -204,7 +204,7 @@ function ProfileContent() {
 
  if (isLoading) {
  return (
- <div className="min-h-screen flex items-center justify-center bg-surface-50">
+ <div className="min-h-[100dvh] flex items-center justify-center bg-surface-50">
  <div className="text-center">
  <div className="w-10 h-10 border-3 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-3" />
  <p className="text-surface-400 text-sm">Loading profile...</p>
@@ -214,7 +214,7 @@ function ProfileContent() {
  }
 
  return (
- <div className="min-h-screen bg-surface-50">
+ <div className="min-h-[100dvh] bg-surface-50">
  {/* Header */}
  <div className="bg-[#ede9e3] border-b border-[var(--color-border)]">
  <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">

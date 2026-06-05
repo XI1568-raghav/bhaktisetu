@@ -21,7 +21,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
  const pathname = usePathname();
 
  return (
- <div className="flex items-center justify-center min-h-screen bg-surface-200 py-8">
+ <div className="flex items-center justify-center min-h-[100dvh] bg-surface-200 py-8">
  {/* Phone frame */}
  <div className="relative w-[390px] h-[844px] bg-surface-50 rounded-[3rem] shadow-2xl shadow-black/20 border-[8px] border-surface-800 overflow-hidden flex flex-col">
  {/* Status bar */}

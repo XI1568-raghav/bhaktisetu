@@ -105,7 +105,7 @@ export default function AntimSanskarBookPage() {
     return (
       <div
         data-ad-quarantine="true"
-        className="min-h-screen flex items-center"
+        className="min-h-[100dvh] flex items-center"
         style={{ background: 'var(--color-bg)' }}
       >
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">

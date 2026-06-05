@@ -69,7 +69,7 @@ const faqs = [
 
 export default function PricingPage() {
  return (
- <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+ <div className="min-h-[100dvh]" style={{ background: "var(--color-bg)" }}>
  {/* ── Hero ────────────────────────────────────────────────────────── */}
  <section
  className="relative overflow-hidden py-16 sm:py-24"

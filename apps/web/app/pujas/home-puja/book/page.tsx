@@ -80,7 +80,7 @@ function BookHomePujaInner() {
 
  if (!category) {
  return (
- <div className="min-h-screen flex items-center justify-center p-6">
+ <div className="min-h-[100dvh] flex items-center justify-center p-6">
  <div className="text-center">
  <h1 className="text-2xl font-bold text-surface-800">Puja not found</h1>
  <Link href="/pujas/home-puja" className="text-saffron-600 font-medium mt-4 inline-block">
@@ -116,7 +116,7 @@ function BookHomePujaInner() {
 
  if (paid) {
  return (
- <div className="min-h-screen bg-surface-50 flex items-center justify-center p-6">
+ <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center p-6">
  <div className="max-w-md w-full bg-white border border-[var(--color-border)] rounded-2xl shadow-warm-md p-8 text-center">
  <div className="w-16 h-16 rounded-full bg-tulsi-green/15 flex items-center justify-center mx-auto mb-4">
  <CheckCircle className="w-8 h-8 text-tulsi-green" />
@@ -150,7 +150,7 @@ function BookHomePujaInner() {
  }
 
  return (
- <div className="min-h-screen bg-surface-50 pb-20">
+ <div className="min-h-[100dvh] bg-surface-50 pb-20">
  {/* Breadcrumb */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
  <nav className="text-sm text-surface-500 flex items-center gap-1.5">
@@ -632,7 +632,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default function BookHomePuja() {
  return (
-  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-surface-500">Loading…</div></div>}>
+  <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center"><div className="text-surface-500">Loading…</div></div>}>
    <BookHomePujaInner />
   </Suspense>
  );

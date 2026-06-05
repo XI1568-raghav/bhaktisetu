@@ -88,7 +88,7 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Deities', href: '/deity', description: 'Form, iconography, mantras for each deity.' },
       { label: 'Festivals', href: '/festival', description: '30 Hindu festivals with rituals and dates.' },
       { label: 'Aarti / Chalisa / Mantra', href: '/content', description: 'Devotional texts with translations.' },
-      { label: 'Vedas + Upanishads', href: '/ved', description: 'Sruti scriptures explained.' },
+      { label: 'Vedas + Upanishads', href: '/vedas', description: 'Sruti scriptures explained.' },
       { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters with commentary.' },
       { label: 'Calendar 2026', href: '/calendar', description: 'Month-by-month festival + vrat calendar.' },
     ],
@@ -98,7 +98,7 @@ export const CATEGORY_TREE: Category[] = [
         hubHref: '/discover#scriptures',
         hubLabel: 'Browse all scriptures',
         items: [
-          { label: 'Vedas', href: '/ved', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
+          { label: 'Vedas', href: '/vedas', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
           { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads — Vedanta core texts.' },
           { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas — itihasa-purana corpus.' },
           { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters of the Gita.' },

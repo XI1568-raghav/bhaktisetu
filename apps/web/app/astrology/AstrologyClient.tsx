@@ -335,7 +335,7 @@ export default function AstrologyPage() {
  }
 
  return (
- <div className="min-h-screen">
+ <div className="min-h-[100dvh]">
  {/* ── Hero Section ─────────────────────────────────────────────────────── */}
  <section className="bg-[#ede9e3]">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-24">

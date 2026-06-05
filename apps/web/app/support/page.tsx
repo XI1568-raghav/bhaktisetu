@@ -20,7 +20,7 @@ export const metadata = {
 
 export default function SupportPage() {
  return (
- <div className="bg-[#faf7f0] min-h-screen">
+ <div className="bg-[#faf7f0] min-h-[100dvh]">
  {/* Hero */}
  <section className="bg-gradient-to-b from-[#fdf6e7] to-[#faf7f0] border-b border-amber-200/40">
  <div className="max-w-5xl mx-auto px-6 py-16 lg:py-20 text-center">

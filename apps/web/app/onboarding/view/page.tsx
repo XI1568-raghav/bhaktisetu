@@ -579,7 +579,7 @@ function OnboardingInner() {
 
  if (!role) {
  return (
- <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-4">
+ <div className="min-h-[100dvh] bg-[var(--color-bg)] flex items-center justify-center p-4">
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-8 max-w-md text-center">
  <h1 className="text-lg font-semibold text-surface-800 mb-2">Invalid Role</h1>
  <p className="text-sm text-surface-500 mb-4">
@@ -601,7 +601,7 @@ function OnboardingInner() {
  if (isSubmitted) {
  const dashPath = getRoleDashboardPath(role as UserRole);
  return (
- <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-4">
+ <div className="min-h-[100dvh] bg-[var(--color-bg)] flex items-center justify-center p-4">
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-8 max-w-md text-center shadow-warm">
  <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
  <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -1079,7 +1079,7 @@ function OnboardingInner() {
  // ─── Main render ──────────────────────────────────────────────────────────
 
  return (
- <div className="min-h-screen bg-[var(--color-bg)]">
+ <div className="min-h-[100dvh] bg-[var(--color-bg)]">
  {/* Top bar */}
  <div className="bg-[var(--color-surface)] border-b border-[var(--color-border)] px-4 py-3">
  <div className="max-w-2xl mx-auto flex items-center justify-between">

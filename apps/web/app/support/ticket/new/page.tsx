@@ -127,7 +127,7 @@ export default function NewTicketPage() {
  };
 
  return (
- <div className="bg-[#faf7f0] min-h-screen py-10">
+ <div className="bg-[#faf7f0] min-h-[100dvh] py-10">
  <div className="max-w-3xl mx-auto px-6">
  <Link
  href="/support"

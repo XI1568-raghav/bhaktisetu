@@ -21,7 +21,7 @@ export default async function CheckoutSuccessPage({
   const status = typeof sp.redirect_status === 'string' ? sp.redirect_status : '';
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] py-12">
+    <div className="min-h-[100dvh] bg-[var(--color-bg)] py-12">
       <div className="max-w-xl mx-auto px-4">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
           <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
