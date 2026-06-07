@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description: '8 canonical yatra circuits with itineraries, costs, best season, practical tips.',
     url: 'https://darshya.online/pilgrimage',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

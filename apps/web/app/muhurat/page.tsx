@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'Daily and planning muhurats with timing, significance, modern application.',
     url: `${BASE_URL}/muhurat`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

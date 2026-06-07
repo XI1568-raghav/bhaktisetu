@@ -29,7 +29,7 @@ export async function generateMetadata({
       description,
       url: `${BASE_URL}/chakras/${c.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

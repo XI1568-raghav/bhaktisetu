@@ -30,7 +30,7 @@ export async function generateMetadata({
       description: c.benefits.slice(0, 200),
       url: `${BASE_URL}/chants/${c.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

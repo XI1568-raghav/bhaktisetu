@@ -10,13 +10,13 @@ export const metadata: Metadata = {
    title: 'Darshya — Sign In',
    description: 'Sign in to Darshya with your phone number. Access live darshan, book pujas, and manage your spiritual journey.',
    type: 'website',
-   images: ['/og/default'],
+   images: ['/og/default.png'],
  },
  twitter: {
    card: 'summary_large_image',
    title: 'Darshya — Sign In',
    description: 'Sign in to Darshya. Access live darshan, book pujas, and manage your spiritual journey.',
-   images: ['/og/default'],
+   images: ['/og/default.png'],
  },
 };
 

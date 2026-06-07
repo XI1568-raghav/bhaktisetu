@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description: 'Pujas, mantras, festivals — deity by deity.',
     url: 'https://darshya.online/deity',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

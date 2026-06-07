@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'All 7 chakras with bija mantras, deities, petals, element, awakening practices.',
     url: `${BASE_URL}/chakras`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

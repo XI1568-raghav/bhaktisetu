@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     description: 'Side-by-side comparison with leading devotional apps in India.',
     url: `${BASE_URL}/why-darshya`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

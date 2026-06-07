@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     description: 'Essays on Hindu traditions, temple technology, and dharma.',
     url: 'https://darshya.online/blog',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

@@ -24,13 +24,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       url: `https://darshya.online/blog/${p.slug}`,
       type: 'article',
       publishedTime: p.date,
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
     twitter: {
       card: 'summary_large_image',
       title: p.title,
       description: p.excerpt,
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }
@@ -57,7 +57,7 @@ export default async function BlogPostPage({ params }: Params) {
     publisher: {
       '@type': 'Organization',
       name: 'Darshya',
-      logo: { '@type': 'ImageObject', url: 'https://darshya.online/og/default' },
+      logo: { '@type': 'ImageObject', url: 'https://darshya.online/og/default.png' },
     },
     description: post.excerpt,
     url: `https://darshya.online/blog/${post.slug}`,

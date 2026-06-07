@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: `Recitation guide for ${mantras.length} ${d.name} mantras with meanings.`,
       url: `https://darshya.online/deity/${d.slug}/mantras`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

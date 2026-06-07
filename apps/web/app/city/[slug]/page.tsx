@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: c.description,
       url: `https://darshya.online/city/${c.slug}`,
       type: 'website',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

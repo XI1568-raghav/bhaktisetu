@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description: 'Answers to common questions about puja booking, live darshan, NRI pricing, yatra.',
     url: 'https://darshya.online/faqs',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

@@ -57,14 +57,14 @@ export const metadata: Metadata = {
      'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit and Vedic learning, gaushala donations and AI pandit guidance. One app for daily devotional practice.',
    url: 'https://darshya.online',
    type: 'website',
-   images: ['/og/default'],
+   images: ['/og/default.png'],
  },
  twitter: {
    card: 'summary_large_image',
    title: "Darshya, India's Devotional Super App",
    description:
      'Live darshan, online puja booking, panchang, Vedic astrology, Sanskrit & Vedic learning, gaushala donations and AI pandit guidance.',
-   images: ['/og/default'],
+   images: ['/og/default.png'],
  },
 };
 

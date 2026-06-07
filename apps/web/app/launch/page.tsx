@@ -13,14 +13,14 @@ export const metadata: Metadata = {
       'Live darshan, puja with video proof, daily panchang, Sanskrit, gurukul admissions, gaushala seva, AI pandit. One app for Sanatan Dharma practice.',
     url: 'https://darshya.online/launch',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Darshya — launching on Product Hunt',
     description:
       'One app for daily devotional practice. Live darshan + verified puja with video proof + panchang + Sanskrit + AI pandit.',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

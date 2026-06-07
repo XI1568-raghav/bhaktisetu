@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       'Spiritual significance, associated deities, planting muhurta, and traditional uses of the twelve most sacred trees of Hindu tradition.',
     url: `${BASE_URL}/sacred-trees`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

@@ -29,7 +29,7 @@ export async function generateMetadata({
       description,
       url: `${BASE_URL}/sacred-trees/${t.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

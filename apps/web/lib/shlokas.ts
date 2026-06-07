@@ -565,7 +565,7 @@ export function shlokaShareUrl(slug: string): string {
 
 export function shlokaOgUrl(slug: string): string {
   const s = getShloka(slug);
-  if (!s) return 'https://darshya.online/og/default';
+  if (!s) return 'https://darshya.online/og/default.png';
   const q = new URLSearchParams({
     text: s.text,
     ...(s.translit ? { translit: s.translit } : {}),

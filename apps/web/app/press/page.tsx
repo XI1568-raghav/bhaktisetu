@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description: 'Logos, founder bio, screenshots, one-liner.',
     url: 'https://darshya.online/press',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 
@@ -91,7 +91,7 @@ export default function PressKitPage() {
             <p className="text-2xl font-bold text-surface-900">Darshya</p>
             <p className="text-sm text-surface-600 mt-1">Saffron #E16318 · OM symbol · serif wordmark</p>
             <a
-              href="/og/default"
+              href="/og/default.png"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-saffron-700 hover:underline mt-2 inline-block"

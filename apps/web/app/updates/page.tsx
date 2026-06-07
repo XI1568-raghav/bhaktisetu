@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       'Every report our agent fleet writes: SEO audits, content drafts, social queue, investor pipeline, infra health. Public, transparent, daily.',
     url: 'https://darshya.online/updates',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

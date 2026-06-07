@@ -30,7 +30,7 @@ export async function generateMetadata({
       description: m.shortDesc,
       url: `${BASE_URL}/muhurat/${m.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }
