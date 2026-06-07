@@ -153,10 +153,10 @@ export function CategoryNav() {
               setOpenKey((prev) => (prev === category.key ? null : category.key));
             }}
             onKeyDown={(e) => onTriggerKeyDown(e, category.key)}
-            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors whitespace-nowrap ${
               isOpen
                 ? 'text-surface-900 bg-surface-100'
-                : 'text-surface-500 hover:text-surface-800 hover:bg-surface-100'
+                : 'text-surface-700 hover:text-surface-900 hover:bg-surface-100'
             }`}
           >
             {category.label}

@@ -322,20 +322,13 @@ export default function RootLayout({
  {/* ── Navigation ─────────────────────────────────────────────── */}
  <header className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-surface-200/40">
  <nav
- className="mx-auto max-w-6xl flex items-center h-14 px-4 sm:px-6 lg:px-8"
+ className="mx-auto max-w-6xl flex items-center h-16 px-4 sm:px-6 lg:px-8"
  aria-label="Main navigation"
  >
  {/* Logo */}
  <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Darshya home">
  <Logo size={28} />
- {/* ॐ devanagari accent — sacred glyph, saffron, font-devanagari fallback chain per globals @theme */}
- <span
-   aria-hidden="true"
-   className="text-saffron-600 text-lg leading-none font-[family-name:var(--font-family-devanagari)] hidden sm:inline"
- >
-   ॐ
- </span>
- <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline">
+ <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline leading-none">
  Darsh<span className="text-saffron-600">ya</span>
  </span>
  </a>
@@ -377,7 +370,7 @@ export default function RootLayout({
  </header>
 
  {/* Main content — offset for fixed nav, bottom-padded on mobile for tab bar */}
- <main id="main" className="flex-1 pt-14 pb-20 md:pb-0 [@supports(padding:env(safe-area-inset-bottom))]:pb-[calc(5rem+env(safe-area-inset-bottom))] md:[@supports(padding:env(safe-area-inset-bottom))]:pb-0">{children}</main>
+ <main id="main" className="flex-1 pt-16 pb-20 md:pb-0 [@supports(padding:env(safe-area-inset-bottom))]:pb-[calc(5rem+env(safe-area-inset-bottom))] md:[@supports(padding:env(safe-area-inset-bottom))]:pb-0">{children}</main>
  <MobileBottomTabs />
 
  {/* ── Footer ──────────────────────────────────────────────────── */}
