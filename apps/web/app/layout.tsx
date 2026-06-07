@@ -460,7 +460,7 @@ export default function RootLayout({
  </h3>
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 text-sm">
  <div>
- <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Scriptures</h4>
+ <h4 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Scriptures</h4>
  <ul className="space-y-1.5 text-surface-500">
  <li><Link href="/gita" className="hover:text-saffron-400 transition-colors">Bhagavad Gita</Link></li>
  <li><Link href="/ramayana" className="hover:text-saffron-400 transition-colors">Ramayana 7 Kandas</Link></li>
@@ -475,7 +475,7 @@ export default function RootLayout({
  </ul>
  </div>
  <div>
- <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Saints &amp; Deities</h4>
+ <h4 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Saints &amp; Deities</h4>
  <ul className="space-y-1.5 text-surface-500">
  <li><Link href="/bhakti-saint" className="hover:text-saffron-400 transition-colors">12 Bhakti Saints</Link></li>
  <li><Link href="/devi/mahavidyas" className="hover:text-saffron-400 transition-colors">10 Mahavidyas</Link></li>
@@ -488,7 +488,7 @@ export default function RootLayout({
  </ul>
  </div>
  <div>
- <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Practice</h4>
+ <h4 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Practice</h4>
  <ul className="space-y-1.5 text-surface-500">
  <li><Link href="/chants" className="hover:text-saffron-400 transition-colors">Famous Chants</Link></li>
  <li><Link href="/vrat" className="hover:text-saffron-400 transition-colors">Vrats Guide</Link></li>
@@ -515,7 +515,7 @@ export default function RootLayout({
  </ul>
  </div>
  <div>
- <h4 className="text-xs font-semibold text-saffron-400 uppercase tracking-wider mb-2">Tools</h4>
+ <h4 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Tools</h4>
  <ul className="space-y-1.5 text-surface-500">
  <li><Link href="/sankalp" className="hover:text-saffron-400 transition-colors">Sankalp Generator</Link></li>
  <li><Link href="/today" className="hover:text-saffron-400 transition-colors">Today&apos;s Panchang</Link></li>
