@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Calendar, BookOpen, Music, Moon, ArrowRight } from 'lucide-react';
+import TextReveal from '../motion/TextReveal';
 
 type WisdomCard = {
   href: string;
@@ -61,13 +62,12 @@ export default function WisdomStrip() {
             >
               Wisdom
             </p>
-            <h2
-              id="wisdom-strip-heading"
-              className="text-xl sm:text-2xl font-semibold tracking-tight"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+            <TextReveal
+              as="h2"
+              className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
             >
               Daily panchang, scriptures, audio, horoscope.
-            </h2>
+            </TextReveal>
           </div>
         </header>
 

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MessageCircleQuestion, Sparkles, Phone, CalendarHeart, ArrowRight } from 'lucide-react';
+import TextReveal from '../motion/TextReveal';
 
 type ConsultCard = {
   href: string;
@@ -55,13 +56,12 @@ export default function ConsultStrip() {
           >
             Consult
           </p>
-          <h2
-            id="consult-strip-heading"
-            className="text-xl sm:text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+          <TextReveal
+            as="h2"
+            className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
           >
             Talk to an expert.
-          </h2>
+          </TextReveal>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
