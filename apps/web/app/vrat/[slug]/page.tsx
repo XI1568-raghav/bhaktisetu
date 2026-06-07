@@ -30,7 +30,7 @@ export async function generateMetadata({
       description: v.significance.slice(0, 200),
       url: `${BASE_URL}/vrat/${v.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

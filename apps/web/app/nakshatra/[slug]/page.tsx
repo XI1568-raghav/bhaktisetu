@@ -33,7 +33,7 @@ export async function generateMetadata({
       description: n.meaning,
       url: `${BASE_URL}/nakshatra/${n.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

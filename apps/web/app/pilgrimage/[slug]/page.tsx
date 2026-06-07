@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: c.shortDesc,
       url: `https://darshya.online/pilgrimage/${c.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

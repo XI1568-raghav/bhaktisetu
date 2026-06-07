@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'Dates, rituals, pujas — every major Sanatan festival.',
     url: 'https://darshya.online/festival',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description: 'Verified pujas, famous temples, online booking — by city.',
     url: 'https://darshya.online/city',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

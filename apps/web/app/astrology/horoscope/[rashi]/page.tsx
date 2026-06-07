@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: r.prediction.slice(0, 200),
       url: `https://darshya.online/astrology/horoscope/${r.rashi}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

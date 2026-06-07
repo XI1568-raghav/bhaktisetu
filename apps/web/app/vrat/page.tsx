@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'Fasting rules, rituals, prasad, mantras for 10 major Hindu vrats.',
     url: `${BASE_URL}/vrat`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

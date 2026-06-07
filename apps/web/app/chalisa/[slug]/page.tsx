@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: c.description,
       url: `https://darshya.online/chalisa/${c.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

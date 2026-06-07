@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'Sanskrit text + transliteration + how-to-chant for the most powerful Hindu mantras.',
     url: `${BASE_URL}/chants`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

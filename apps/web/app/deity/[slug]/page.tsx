@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: `Verified ${d.name} pujas. Festival: ${d.festival}.`,
       url: `https://darshya.online/deity/${d.slug}`,
       type: 'website',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

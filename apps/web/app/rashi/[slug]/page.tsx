@@ -35,7 +35,7 @@ export async function generateMetadata({
       description,
       url: `${BASE_URL}/rashi/${r.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

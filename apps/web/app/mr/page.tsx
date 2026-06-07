@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     url: 'https://darshya.online/mr',
     type: 'website',
     locale: 'mr_IN',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

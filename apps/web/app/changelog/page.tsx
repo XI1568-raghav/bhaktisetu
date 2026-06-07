@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     description: 'Every commit shipped. Public, hourly, no spin.',
     url: 'https://darshya.online/changelog',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

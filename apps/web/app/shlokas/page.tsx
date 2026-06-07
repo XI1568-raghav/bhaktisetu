@@ -13,7 +13,7 @@ export const metadata: Metadata = {
       'Bhagavad Gita, Vedas, Upanishads — devanagari shlokas with transliteration, meaning and one-tap share.',
     url: 'https://darshya.online/shlokas',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

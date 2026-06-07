@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: `${f.deity} · ${f.fastingType} fast · ${f.rituals.length} rituals`,
       url: `https://darshya.online/festival/${f.slug}`,
       type: 'website',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'All 12 zodiac signs with traits, career, compatibility, gemstone, mantra.',
     url: `${BASE_URL}/rashi`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 
