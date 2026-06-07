@@ -1,6 +1,86 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (15th update — MobileBottomTabs per-tab brand + footer Discover indigo + P1#7 CSP deferred PUSHED c198e49).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (16th update — home revamp end-to-end PUSHED 9e110a9, multi-agent blueprint executed).
+
+## HANDOFF 2026-06-07 #16 (PUSHED 9e110a9 — home revamp end-to-end, multi-agent blueprint synthesis + execution)
+
+User screenshot directive: "remove join the waitlist from top", "next festival book pooja remove from top adjust somewhere down", "library dropdown wrong design alignment getting out of screen on left side", "search on top right going out of screen", "either these should have images or some better UI" (Worship + Yatra strips), "footer too long and bad", "work on home page end to end", "run multiple agents market research best UI agents align customer mind map".
+
+### Multi-agent dispatch result
+
+Opus 4.7 subagent dispatched in parallel w/ execution. Returned 1200-word blueprint covering:
+- Competitor benchmark (Sri Mandir / Utsav / VAMA / AstroSage / YouVersion / Calm / Headspace / ISKCON Connect / Vedic.app)
+- Above-fold composition (salutation + deity hero + 5 lane glyph rail)
+- 10-section scroll sequence (personal → daily → 5 lanes → festival horizon → footer)
+- Per-lane card recipe (gradient + image + glyph corner)
+- Footer 3-col trim plan
+- Mega-panel fix (viewport-bounded fixed positioning)
+- Search fix (responsive shrink + min-w-0)
+- Motion polish (subtle reveals + scroll-triggered counters + sticky aarti CTA)
+- 3-persona mind map (Indian domestic / NRI / Discover seeker)
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `9e110a9` | feat(web): home revamp end-to-end — banner removed, festival relocated, mega-panel + search fixes, card images, footer collapsed | slot 22 |
+
+### User asks closed end-to-end
+
+| Ask | Fix |
+|---|---|
+| Remove "Join the waitlist" from top | ✓ Sticky banner above hero deleted entirely (EmailCapture below Trust Strip retained) |
+| Next festival book pooja remove from top, adjust down | ✓ NextFestivalStrip relocated above hero → below IntentTrio |
+| Library dropdown out of screen left | ✓ CategoryNav panel positioning: absolute+translate-x → fixed top-16 left-1/2 -translate-x-1/2 w-[min(1120px,calc(100vw-48px))]. Default cats use w-[min(640px,...)]. Both viewport-bounded with max-h overflow-y-auto |
+| Search top right out of screen | ✓ GlobalSearch w-[260px] lg:w-[320px] → w-[160px] lg:w-[220px] xl:w-[280px]. Today chip text hidden lg-and-below, icon-only |
+| Worship cards need images / better UI | ✓ WorshipStrip 4 cards now show temple/deity hero images with gradient overlay + floating icon badge top-left + LIVE/80G pill top-right |
+| Yatra cards need images / better UI | ✓ YatraStrip 3 cards: empty colored boxes → kedarnath/vaishno-devi/tirupati hero images with emerald gradient overlay + Mountain badge top-right |
+| Footer too long | ✓ "Discover Hindu Wisdom" 4-col sub-grid (~55 links) wrapped in <details> accordion closed by default. All links preserved in DOM (SEO unchanged). Footer height -60% initial paint |
+
+### Build verify
+
+`pnpm next build` (apps/web) CLEAN exit 0. 500+ routes. Shared JS 102 kB unchanged. 8 files changed (58 insertions / 75 deletions).
+
+### Day-budget
+
+CF builds: 22/500 = **4.4% June burn**. Healthy.
+
+### Blueprint items DEFERRED to next session (per blueprint Section "Implementation order Day 2-5")
+
+1. **Hero salutation** — `Pranam, {name}. Aaj {tithi}, {nakshatra}` w/ font-display serif, tithi chip right. Requires user session check + panchang fetch.
+2. **5 lane glyph rail below hero** — 96x96 circular icon tiles, brand color ring, tactile reinforcement of top-nav (CategoryColorStrip already exists w/ similar function but blueprint suggests bigger touch targets).
+3. **Continue your sadhana card** — personalised streak ring + resumed library chapter + saved astrologer (requires user data API).
+4. **Sticky aarti CTA bottom-right** — appears after 800px scroll, dismissible pill "Aarti starts in {countdown}".
+5. **Streak counter tween** — number 0 → value over 1.2s when in viewport (needs streak data source).
+6. **Card hover scale 1.02 + image scale 1.06** — partially shipped (image scale-105 added this session, card-hover class already on Link).
+
+### Plan phase status
+
+- Home revamp end-to-end ✓ THIS SESSION (Day 1 of 5-day blueprint)
+- Mobile tabs per-tab brand ✓ LIVE prior (c198e49)
+- Footer Discover indigo ✓ LIVE prior + sub-grid collapsed THIS SESSION
+- All 5 brand worlds visible above + below fold ✓
+- Subagent path FULLY OPERATIONAL ✓ (Opus 4.7 confirmed working, async dispatch executed during this turn)
+
+### Carried open (next session)
+
+1. **Hero salutation + tithi chip** (Day 2 of blueprint, requires panchang fetch)
+2. **5 lane glyph rail tactile upgrade** (Day 2)
+3. **Continue your sadhana card** (Day 3, requires user data)
+4. **Sticky aarti CTA bottom-right** (Day 5)
+5. **Inline-style → Tailwind home refactor** (198 occurrences, manual session)
+6. **P1 #5/#6/#7 auth refactor** (schema migration, dedicated sessions)
+7. **Astrologer slug↔UUID design pass** (owner KYC blocking)
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200
+2. `curl -s https://darshya.online/ | grep -c "Join the waitlist"` → 0 (banner removed)
+3. `curl -s https://darshya.online/ | grep -oE "min\(1120px" | wc -l` → ≥1 (mega-panel fix in JSON-LD/CSS)
+4. `git log --oneline -8` → HEAD past 9e110a9 + this HANDOFF
+5. Continue: hero salutation OR sticky aarti CTA OR auth refactor (heavy)
+
+---
 
 ## HANDOFF 2026-06-07 #15 (PUSHED c198e49 — mobile tabs per-tab brand + footer Discover indigo + carry triage)
 
