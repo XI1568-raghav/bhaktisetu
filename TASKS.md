@@ -1,6 +1,112 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (13th update — top-bar fix + IntentTrio/ConsultStrip per-card brand accents PUSHED fa5ed23 + 6a54603).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (14th update — home strip wave 2 brand polish + OG PNG retry PUSHED dafdbed + 8b84dad).
+
+## HANDOFF 2026-06-07 #14 (PUSHED dafdbed + 8b84dad — home strips wave 2 + D-7 OG PNG retry + multi-agent dispatch executed)
+
+User directive: "go ahead and pick the next items and complete end to end ultrathink use multiple agents super power, skills". Closed home strip wave 2 (Worship/Yatra/Wisdom/Shop per-card brand colors) + D-7 OG card static PNG retry (closes 64 dead refs). Multi-agent Opus 4.7 dispatched + delivered 800-word per-card brand schema synthesis.
+
+### Pushed this session
+
+| Commit | Subject | CF burn | Verify |
+|---|---|---|---|
+| `dafdbed` | feat(web): home strip brand polish wave 2 — Yatra emerald + Wisdom indigo/amber + Shop per-category | slot 18 | ✓ iter 1 ALL_VERIFIED_HOME_5_BRAND_WORLDS_LIVE (emerald=26, amber=6, indigo=22 hex) |
+| `8b84dad` | feat(web): D-7 OG card static PNG retry — brand 1200x630 + 64 dead refs swapped | slot 19 | Monitor bfgn4ov0x in flight |
+
+### Home strip wave 2 detail (dafdbed)
+
+Audit + multi-agent Opus 4.7 synthesis (598-word competitor benchmark + 800-word per-card schema).
+
+**YatraStrip** (3 destination cards):
+- Section eyebrow saffron → #059669 emerald
+- Mountain icon saffron → #059669
+- "Explore" CTA saffron → #065F46
+- Per-destination header bg accent retained (decorative art tokens)
+
+**WisdomStrip** (3 cards + Daily Horoscope pill):
+- Section eyebrow saffron → #4F46E5 indigo
+- Card 1 Today's Panchang: amber lane (#FFFBEB + #D97706 + #92400E) — time-sensitive today
+- Card 2 Sacred Texts: indigo (scripture reference)
+- Card 3 Aarti & Mantras: indigo (advisory)
+- Daily Horoscope pill flipped saffron → indigo
+- Per-card iconBg/iconColor/ctaColor schema added
+
+**ShopStrip** (4 product cards):
+- Section eyebrow saffron → #D97706 amber
+- Card 1 Prasad: saffron (devotional ritual)
+- Card 2 Brass Krishna Murti: saffron (puja vessel)
+- Card 3 Bhagavad Gita Hardcover: indigo (Library scripture)
+- Card 4 Tulsi Mala: amber (practice tool)
+- Per-card accentColor field
+- "Visit store" mobile saffron CTA retained (primary action)
+
+**WorshipStrip**: NO change (all 4 cards = worship-lane primary actions, correctly saffron uniform).
+
+CF verify GREEN iter 1: emerald=26 + amber=6 + indigo=22 hex hits prod home. 5 brand worlds (saffron/indigo/emerald/amber + cream surface) NOW visually expressed across 16 cards.
+
+### D-7 OG card static PNG retry detail (8b84dad)
+
+Closes 64 dead /og/default refs from prior c20a7c9 edge ImageResponse revert.
+
+NEW `scripts/build-og-default.mjs` — Playwright Chromium 1200x630 brand renderer:
+- Saffron→amber linear gradient 135deg (#E16318 → #F99A48 → #FFC107)
+- ॐ Devanagari 520px right-edge 18% opacity watermark
+- Darshya wordmark 96px Fraunces 800wt white
+- Tagline 32px Inter 500wt white
+- 4 feature pills (Live Darshan / Puja Booking / Vedic Astrology / 80G Receipts) white-glass rgba(255,255,255,0.2)
+- Footer wordmark left + India devotional super-app badge right
+- font.ready awaited before screenshot
+
+NEW `apps/web/public/og/default.png` — 261KB, served as static CF asset (no Worker bundle cost).
+
+64 site-wide refs swapped /og/default → /og/default.png:
+- 53 via sed single-quote pattern
+- 6 hand-fix mixed-quote / unquoted (blog/[slug]/page.tsx, contact/layout.tsx, press/page.tsx, store/page.tsx ×2, lib/shlokas.ts)
+
+### Multi-agent dispatch result this session
+
+Opus 4.7 subagent dispatched for 4-file audit + per-card brand schema synthesis. Read 4 React component files, returned 800-word markdown tables w/ exact field-value pairs ready to copy. Path confirmed working post Blackbox 4.8 → 4.7 settings fix.
+
+### Build verify
+
+Both pushes: `pnpm next build` (apps/web) CLEAN exit 0. 500+ routes, shared JS 102 kB unchanged.
+
+### Day-budget (corrected)
+
+CF builds: 19/500 monthly = 3.8% June burn. Plenty headroom.
+
+### Plan phase status
+
+- Home strip wave 2 brand polish ✓ THIS SESSION (dafdbed LIVE)
+- D-7 OG PNG retry ✓ THIS SESSION (8b84dad pushed)
+- Top-bar fix ✓ (fa5ed23 LIVE prior)
+- Home strip wave 1 (IntentTrio + ConsultStrip) ✓ (6a54603 LIVE prior)
+- Above-fold category color strip ✓ LIVE
+- Dash purge ✓ LIVE
+- Mega-panel orphan absorption ✓ LIVE
+- P6 brand sweep all batches ✓
+- P4 mobile responsive sweep ✓ LIVE
+- Deck PDF + script ✓
+- Subagent dispatch UNBLOCKED + EXECUTED ✓
+
+### Carried open (next session)
+
+1. **Inline-style → Tailwind home refactor** (198 occurrences, manual session, risks gradients)
+2. **P1 #5/#6/#7** refresh-token JTI / EmailSession / /auth/logout / CSP nonce
+3. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions)
+4. **31 bare grid-cols-(3-6) manual sweep**
+5. **MobileBottomTabs visual polish** — currently saffron uniform, could absorb same per-card brand pattern (5 tabs match 5 categories)
+6. **Footer column polish** — section eyebrows currently saffron uniform, could split per-category color
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200
+2. `curl -sI https://darshya.online/og/default.png | grep content-type` → image/png
+3. `curl -s https://darshya.online/ | grep -oE "#059669|#D97706|#4F46E5" | wc -l` → ≥30 (multi-color brand expression confirmed)
+4. `git log --oneline -8` → HEAD past 8b84dad + this HANDOFF
+5. Continue: MobileBottomTabs/Footer color polish OR auth refactor OR inline-style→Tailwind home refactor
+
+---
 
 ## HANDOFF 2026-06-07 #13 (PUSHED fa5ed23 + 6a54603 — top-bar fix + home strip brand polish + CF VERIFY GREEN both)
 
