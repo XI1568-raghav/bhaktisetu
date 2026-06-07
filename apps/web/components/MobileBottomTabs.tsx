@@ -18,14 +18,16 @@ type Tab = {
   primary?: boolean;
   /** Active when pathname starts with one of these prefixes. */
   prefixes: string[];
+  /** Active-state color per brand lane. */
+  activeColor: string;
 };
 
 const TABS: Tab[] = [
-  { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/'] },
-  { href: '/darshan', label: 'Darshan', icon: Video, prefixes: ['/darshan'] },
-  { href: '/pujas', label: 'Book', icon: Flame, primary: true, prefixes: ['/pujas', '/checkout', '/booking'] },
-  { href: '/discover', label: 'Library', icon: BookOpen, prefixes: ['/discover', '/ved', '/vedas', '/upanishads', '/puranas', '/bhakti-saint', '/deity', '/festival', '/calendar', '/aarti', '/chalisa', '/chants', '/mantra', '/shlokas', '/sankalp', '/gita', '/ramayana', '/mahabharata', '/sanskrit', '/hindu-philosophies', '/hindu-symbols', '/devi/mahavidyas', '/devi/navadurga', '/dashavatar', '/sapta-rishis', '/aditya', '/chakras', '/vedic-yajnas', '/sacred-rivers', '/sacred-trees', '/sacred-mountains', '/rudraksha', '/tithi', '/nakshatra', '/ekadashi', '/vrat', '/muhurat'] },
-  { href: '/profile', label: 'Profile', icon: User, prefixes: ['/profile', '/dashboard', '/bookings', '/auth'] },
+  { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/'], activeColor: '#9E3F0A' },
+  { href: '/darshan', label: 'Darshan', icon: Video, prefixes: ['/darshan'], activeColor: '#9E3F0A' },
+  { href: '/pujas', label: 'Book', icon: Flame, primary: true, prefixes: ['/pujas', '/checkout', '/booking'], activeColor: '#9E3F0A' },
+  { href: '/discover', label: 'Library', icon: BookOpen, prefixes: ['/discover', '/ved', '/vedas', '/upanishads', '/puranas', '/bhakti-saint', '/deity', '/festival', '/calendar', '/aarti', '/chalisa', '/chants', '/mantra', '/shlokas', '/sankalp', '/gita', '/ramayana', '/mahabharata', '/sanskrit', '/hindu-philosophies', '/hindu-symbols', '/devi/mahavidyas', '/devi/navadurga', '/dashavatar', '/sapta-rishis', '/aditya', '/chakras', '/vedic-yajnas', '/sacred-rivers', '/sacred-trees', '/sacred-mountains', '/rudraksha', '/tithi', '/nakshatra', '/ekadashi', '/vrat', '/muhurat'], activeColor: '#3730A3' },
+  { href: '/profile', label: 'Profile', icon: User, prefixes: ['/profile', '/dashboard', '/bookings', '/auth'], activeColor: '#3a3530' },
 ];
 
 function isActive(pathname: string, prefixes: string[], href: string): boolean {
@@ -78,11 +80,10 @@ export function MobileBottomTabs() {
                 href={tab.href}
                 aria-label={tab.label}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center gap-0.5 w-full h-full ${
-                  active ? 'text-saffron-700' : 'text-surface-500'
-                }`}
+                className="flex flex-col items-center justify-center gap-0.5 w-full h-full"
+                style={{ color: active ? tab.activeColor : '#7a756e' }}
               >
-                <Icon className={`w-5 h-5 ${active ? 'text-saffron-700' : 'text-surface-500'}`} />
+                <Icon className="w-5 h-5" style={{ color: active ? tab.activeColor : '#7a756e' }} />
                 <span className="text-[10px] font-medium">{tab.label}</span>
               </Link>
             </li>
