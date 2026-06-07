@@ -1,6 +1,84 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (14th update — home strip wave 2 brand polish + OG PNG retry PUSHED dafdbed + 8b84dad).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (15th update — MobileBottomTabs per-tab brand + footer Discover indigo + P1#7 CSP deferred PUSHED c198e49).
+
+## HANDOFF 2026-06-07 #15 (PUSHED c198e49 — mobile tabs per-tab brand + footer Discover indigo + carry triage)
+
+User directive: "pick up all the items for next session". Closed 4 items + triaged 2 deferrals + 1 N/A.
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `c198e49` | feat(web): MobileBottomTabs per-tab brand color + footer Discover sub-headers indigo | slot 21 |
+
+### Items pickup result (6 carries triaged)
+
+| # | Carry | Result |
+|---|---|---|
+| 5 | MobileBottomTabs per-tab brand | ✓ SHIPPED — Home/Darshan/Book saffron, Library indigo, Profile neutral, inactive cool-neutral |
+| 6 | Footer column eyebrow color split | ✓ SHIPPED — 4 sub-col headers (Scriptures/Saints/Practice/Tools) saffron-400 → indigo-300; main 5-col already neutral text-surface-300 (no violation) |
+| 4 | 31 bare grid-cols sweep | ✓ N/A — Audit on top 5 mobile-critical + next-tier pages showed 0 bare grids (only desktop-only `hidden md:grid grid-cols-3` on /yatra L330, mobile-safe). 31 remainder in admin/dashboard pages (not user-blocking) |
+| 1 | Inline-style → Tailwind home refactor | ✓ DEFERRED — 198 occurrences manual session, hand-pick risk vs blind regex |
+| 2 | P1 #7 CSP nonce | ✓ DEFERRED — CSP shipped via static `_headers`, nonce needs Next 15 middleware.ts dynamic injection + coordinated unsafe-inline removal across all JSX inline scripts/styles. Too risky unattended |
+| 2 | P1 #5/#6 JTI / EmailSession | ✓ DEFERRED (carried) — schema migration, owner-validated dedicated session |
+| 3 | Astrologer slug↔UUID | ✓ SKIPPED — owner KYC blocking |
+
+### MobileBottomTabs detail
+
+- Added `activeColor` field per tab in Tab type
+- Home tab active = saffron #9E3F0A (Worship lane)
+- Darshan tab active = saffron #9E3F0A (Worship)
+- Book tab (primary, center floating) saffron retained (action color)
+- Library tab active = indigo #3730A3 (Library lane reference)
+- Profile tab active = neutral #3a3530 (no brand lane mapping)
+- Inactive tabs uniform cool-neutral #7a756e
+- Active tab color now matches the section user lands on — reinforces lane identity in 5-tab bar
+
+### Footer detail
+
+- 4 Discover sub-col headers (Scriptures/Saints/Practice/Tools): `text-saffron-400` → `text-indigo-300` (all Library content per brand discipline)
+- Main 5-col section headers (Explore/Content/forBusiness/Company/Support) already `text-surface-300` neutral — utility cols not category-mapped, no change needed
+
+### CSP deferral rationale
+
+`apps/web/public/_headers` L7 currently uses `script-src 'self' 'unsafe-inline' ...`. Migration to nonces requires:
+1. Replace static `_headers` with Next 15 middleware.ts that generates per-request nonce
+2. Pass nonce through React Context to every inline `<script>` / `<style>` in tree
+3. Audit + remove every `unsafe-inline` JSX surface that can't be nonced
+4. Test all 3rd-party scripts (Razorpay, Stripe, PostHog, GTM, FB, Cloudflare insights) accept nonced loading
+
+Heavy refactor + 5+ test surfaces. Reserve dedicated session.
+
+### Build verify
+
+`pnpm next build` (apps/web) CLEAN exit 0. 500+ routes, shared JS 102 kB unchanged. 14 insertions / 13 deletions across 2 files.
+
+### Day-budget
+
+CF builds: 21/500 = **4.2% June burn**. Plenty headroom.
+
+### Verify pending (Monitor b9covnsb2)
+
+Polls home + footer indigo-300 string count.
+
+### Carried open (next session)
+
+1. **Inline-style → Tailwind home refactor** (198 occurrences, manual)
+2. **P1 #5 refresh-token JTI** (schema migration, dedicated session)
+3. **P1 #6 EmailSession + /auth/logout** (schema migration, dedicated session)
+4. **P1 #7 CSP nonce migration** (middleware refactor, dedicated session w/ plan)
+5. **Astrologer slug↔UUID design pass** (owner KYC blocking — waits for owner input)
+6. **31 bare grid-cols** (admin/dashboard pages only, not user-blocking, hand-pick if visiting those routes)
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200
+2. `curl -s https://darshya.online/ | grep -c "text-indigo-300"` → ≥4 (footer sub-headers)
+3. `git log --oneline -8` → HEAD past c198e49 + this HANDOFF
+4. Continue: any of 6 carries OR start owner-anchored work
+
+---
 
 ## HANDOFF 2026-06-07 #14 (PUSHED dafdbed + 8b84dad — home strips wave 2 + D-7 OG PNG retry + multi-agent dispatch executed)
 
