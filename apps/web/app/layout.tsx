@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro } from "next/font/google";
 import { t } from "../lib/t";
 import {
@@ -232,11 +233,13 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  },
 ];
 
-export default function RootLayout({
+export default async function RootLayout({
  children,
 }: {
  children: React.ReactNode;
 }) {
+ // CSP nonce read from middleware-injected x-nonce header. Pass to inline JSON-LD + 3rd-party Script tags.
+ const nonce = (await headers()).get('x-nonce') ?? undefined;
  const tNav = t('nav') as unknown as (k: string) => string;
  const tFooter = t('footer') as unknown as (k: string) => string;
  const tTerms = t('terms') as unknown as (k: string) => string;
@@ -299,10 +302,12 @@ export default function RootLayout({
      (Article, Product, Event, Place) is injected by the page itself. */}
  <script
    type="application/ld+json"
+   nonce={nonce}
    dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
  />
  <script
    type="application/ld+json"
+   nonce={nonce}
    dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
  />
  </head>
