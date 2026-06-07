@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Video, Flame, Heart, Gift, ArrowRight } from 'lucide-react';
 import { getTempleHero, getDeityImage } from '../../lib/images';
+import TextReveal from '../motion/TextReveal';
 
 type WorshipCard = {
   href: string;
@@ -60,13 +61,12 @@ export default function WorshipStrip() {
           >
             Worship
           </p>
-          <h2
-            id="worship-strip-heading"
-            className="text-xl sm:text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+          <TextReveal
+            as="h2"
+            className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
           >
             Watch the divine, schedule a ritual, give to a cause.
-          </h2>
+          </TextReveal>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {CARDS.map((card) => (
