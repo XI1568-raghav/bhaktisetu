@@ -7,7 +7,9 @@ type WisdomCard = {
   body: string;
   cta: string;
   Icon: typeof Calendar;
-  accent: string;
+  iconBg: string;
+  iconColor: string;
+  ctaColor: string;
 };
 
 const CARDS: WisdomCard[] = [
@@ -17,7 +19,9 @@ const CARDS: WisdomCard[] = [
     body: 'Tithi, vara, nakshatra for today. Auspicious timings at a glance.',
     cta: 'Open panchang',
     Icon: Calendar,
-    accent: 'var(--color-art-1)',
+    iconBg: '#FFFBEB',
+    iconColor: '#D97706',
+    ctaColor: '#92400E',
   },
   {
     href: '/content/books',
@@ -25,7 +29,9 @@ const CARDS: WisdomCard[] = [
     body: 'Bhagavad Gita · Ramayana · Upanishads. Read with translations.',
     cta: 'Browse texts',
     Icon: BookOpen,
-    accent: 'var(--color-art-2)',
+    iconBg: '#EEF2FF',
+    iconColor: '#4F46E5',
+    ctaColor: '#3730A3',
   },
   {
     href: '/content',
@@ -33,7 +39,9 @@ const CARDS: WisdomCard[] = [
     body: 'Listen to evening aarti, daily chalisa, and curated bhajans.',
     cta: 'Listen now',
     Icon: Music,
-    accent: 'var(--color-art-3)',
+    iconBg: '#EEF2FF',
+    iconColor: '#4F46E5',
+    ctaColor: '#3730A3',
   },
 ];
 
@@ -49,7 +57,7 @@ export default function WisdomStrip() {
           <div>
             <p
               className="text-xs font-medium uppercase tracking-widest mb-1"
-              style={{ color: 'var(--color-primary)' }}
+              style={{ color: '#4F46E5' }}
             >
               Wisdom
             </p>
@@ -77,11 +85,11 @@ export default function WisdomStrip() {
             >
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
-                style={{ background: card.accent }}
+                style={{ background: card.iconBg }}
               >
                 <card.Icon
                   className="w-5 h-5"
-                  style={{ color: 'var(--color-primary)' }}
+                  style={{ color: card.iconColor }}
                   aria-hidden="true"
                 />
               </div>
@@ -99,7 +107,7 @@ export default function WisdomStrip() {
               </p>
               <span
                 className="inline-flex items-center gap-1 text-xs font-medium link-underline"
-                style={{ color: 'var(--color-primary)' }}
+                style={{ color: card.ctaColor }}
               >
                 {card.cta}{' '}
                 <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
@@ -114,9 +122,9 @@ export default function WisdomStrip() {
             prefetch={false}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:shadow-sm"
             style={{
-              background: 'var(--color-primary-highlight)',
-              color: 'var(--color-primary)',
-              border: '1px solid var(--color-border)',
+              background: '#EEF2FF',
+              color: '#3730A3',
+              border: '1px solid #C7D2FE',
             }}
           >
             <Moon className="w-3.5 h-3.5" aria-hidden="true" />

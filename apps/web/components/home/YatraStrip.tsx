@@ -40,7 +40,7 @@ export default function YatraStrip() {
         <header className="mb-5">
           <p
             className="text-xs font-medium uppercase tracking-widest mb-1"
-            style={{ color: 'var(--color-primary)' }}
+            style={{ color: '#059669' }}
           >
             Yatra
           </p>
@@ -75,7 +75,7 @@ export default function YatraStrip() {
                 >
                   <Mountain
                     className="w-5 h-5"
-                    style={{ color: 'var(--color-primary)' }}
+                    style={{ color: '#059669' }}
                     aria-hidden="true"
                   />
                 </div>
@@ -102,7 +102,7 @@ export default function YatraStrip() {
                   </p>
                   <span
                     className="inline-flex items-center gap-1 text-xs font-medium link-underline"
-                    style={{ color: 'var(--color-primary)' }}
+                    style={{ color: '#065F46' }}
                   >
                     Explore{' '}
                     <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
