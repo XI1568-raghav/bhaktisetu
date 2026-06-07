@@ -18,7 +18,7 @@ export function LibraryMegaPanel({ category, onItemClick }: Props) {
   const groups = category.subGroups ?? [];
 
   return (
-    <div className="w-[960px] max-w-[calc(100vw-2rem)] rounded-xl bg-white p-6 shadow-xl ring-1 ring-surface-200">
+    <div className="w-full rounded-xl bg-white p-6 shadow-xl ring-1 ring-surface-200">
       <div className="mb-4">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">
           {category.label}
