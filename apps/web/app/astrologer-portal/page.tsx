@@ -122,7 +122,7 @@ export default function AstrologerDashboard() {
  <EarningsCard
  totalPaid={liveStats?.totalEarningsInr ?? ZERO_STATS.totalEarnings}
  thisMonth={liveStats?.earningsMonthInr ?? ZERO_STATS.earningsThisMonth}
- pending={liveStats?.earningsTodayInr ?? ZERO_STATS.earningsToday}
+ pending={null}
  />
 
  {/* Quick Stats */}

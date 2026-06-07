@@ -173,8 +173,8 @@ export default function TempleDashboard() {
  </div>
  <div className="px-5 py-8 text-center">
  <Heart className="w-10 h-10 text-surface-300 mx-auto mb-3" />
- <p className="text-sm text-surface-500">No donations yet</p>
- <p className="text-xs text-surface-400 mt-1">Donations from devotees will appear here.</p>
+ <p className="text-sm text-surface-500">Live donations feed pending</p>
+ <p className="text-xs text-surface-400 mt-1">Visit the donations page for the full list.</p>
  </div>
  </div>
  </div>
