@@ -10,6 +10,9 @@ type IntentCard = {
   body: string;
   cta: string;
   href: string;
+  iconBg: string;
+  iconColor: string;
+  ctaColor: string;
 };
 
 const CARDS: IntentCard[] = [
@@ -19,6 +22,9 @@ const CARDS: IntentCard[] = [
     body: 'Watch live aarti from 200+ temples',
     cta: 'Watch now',
     href: '/darshan',
+    iconBg: '#FFF4EC',
+    iconColor: '#E16318',
+    ctaColor: '#9E3F0A',
   },
   {
     Icon: Flame,
@@ -26,6 +32,9 @@ const CARDS: IntentCard[] = [
     body: 'Schedule a ritual at a temple',
     cta: 'Book now',
     href: '/pujas',
+    iconBg: '#FFF4EC',
+    iconColor: '#E16318',
+    ctaColor: '#9E3F0A',
   },
   {
     Icon: MessageCircleQuestion,
@@ -33,6 +42,9 @@ const CARDS: IntentCard[] = [
     body: 'AI guidance on dharma, rituals',
     cta: 'Ask now',
     href: '/ask-pandit',
+    iconBg: '#EEF2FF',
+    iconColor: '#4F46E5',
+    ctaColor: '#3730A3',
   },
 ];
 
@@ -61,11 +73,11 @@ function TrioCards() {
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'var(--color-primary-highlight)' }}
+                  style={{ background: card.iconBg }}
                 >
                   <card.Icon
                     className="w-5 h-5"
-                    style={{ color: 'var(--color-primary)' }}
+                    style={{ color: card.iconColor }}
                     aria-hidden="true"
                   />
                 </div>
@@ -84,7 +96,7 @@ function TrioCards() {
               </p>
               <span
                 className="inline-flex items-center gap-1 text-xs font-semibold"
-                style={{ color: 'var(--color-primary)' }}
+                style={{ color: card.ctaColor }}
               >
                 {card.cta}{' '}
                 <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />

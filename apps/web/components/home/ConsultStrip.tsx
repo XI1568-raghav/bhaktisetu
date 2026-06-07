@@ -8,6 +8,9 @@ type ConsultCard = {
   cta: string;
   Icon: typeof Sparkles;
   emphasis?: boolean;
+  iconBg?: string;
+  iconColor?: string;
+  ctaColor?: string;
 };
 
 const CARDS: ConsultCard[] = [
@@ -25,6 +28,9 @@ const CARDS: ConsultCard[] = [
     body: 'Live consultations with verified Vedic astrologers, from ₹15/min.',
     cta: 'Start a call',
     Icon: Phone,
+    iconBg: '#EEF2FF',
+    iconColor: '#4F46E5',
+    ctaColor: '#3730A3',
   },
   {
     href: '/weddings/muhurat',
@@ -32,6 +38,9 @@ const CARDS: ConsultCard[] = [
     body: 'Auspicious dates and timings tailored to your kundli match.',
     cta: 'Find muhurat',
     Icon: CalendarHeart,
+    iconBg: '#EEF2FF',
+    iconColor: '#4F46E5',
+    ctaColor: '#3730A3',
   },
 ];
 
@@ -79,13 +88,13 @@ export default function ConsultStrip() {
                     style={{
                       background: isEmphasis
                         ? 'var(--color-primary)'
-                        : 'var(--color-primary-highlight)',
+                        : (card.iconBg ?? 'var(--color-primary-highlight)'),
                     }}
                   >
                     <card.Icon
                       className="w-4.5 h-4.5"
                       style={{
-                        color: isEmphasis ? '#ffffff' : 'var(--color-primary)',
+                        color: isEmphasis ? '#ffffff' : (card.iconColor ?? 'var(--color-primary)'),
                         width: 18,
                         height: 18,
                       }}
@@ -107,7 +116,7 @@ export default function ConsultStrip() {
                 </p>
                 <span
                   className="inline-flex items-center gap-1 text-xs font-semibold"
-                  style={{ color: 'var(--color-primary)' }}
+                  style={{ color: isEmphasis ? 'var(--color-primary)' : (card.ctaColor ?? 'var(--color-primary)') }}
                 >
                   {card.cta}{' '}
                   <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
