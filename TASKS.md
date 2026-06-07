@@ -1,6 +1,88 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (16th update — home revamp end-to-end PUSHED 9e110a9, multi-agent blueprint executed).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (17th update — blueprint Day 2 hero tithi + sticky aarti PUSHED 0f1e797).
+
+## HANDOFF 2026-06-07 #17 (PUSHED 0f1e797 — blueprint Day 2 hero tithi chip + sticky aarti countdown, multi-agent scaffold)
+
+User directive: "PICK NEXT PLANNED ITEMS". Continued from #16 home revamp Day 1. Executed blueprint Day 2 items per HANDOFF #16 carry list.
+
+### Multi-agent dispatch result this session
+
+Opus 4.7 subagent scaffolded `StickyAartiCta.tsx` (~140-line client component) in 21 seconds. Spec covered: 4 IST aarti slots, scroll trigger 800px, sessionStorage dismiss, 1s countdown tick via Intl.DateTimeFormat, hover/focus a11y, dynamic ssr:false mount. Returned production-ready code.
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `0f1e797` | feat(web): blueprint Day 2 — hero tithi chip + sticky aarti countdown CTA | slot 23 |
+
+### Hero tithi chip detail
+
+- Added above hero badge in page.tsx: amber pill `Aaj {tithi}, {nakshatra}`
+- Server-fetched via `getTodayPanchang()` w/ tolerant try/catch (graceful degradation when API cold)
+- Amber palette (#FFFBEB bg, #92400E text, #FDE68A border) per brand "today/time-sensitive" rule
+- Sri Mandir #1 daily-return retention lever + NRI homesick anchor (per blueprint persona mind map)
+- Hidden when panchang API cold (no chip render, no error trace)
+
+### Sticky aarti CTA detail
+
+- NEW `apps/web/components/home/StickyAartiCta.tsx` (~140 lines client component)
+- Fixed bottom-6 right-6, desktop-only (`hidden md:block`), MobileBottomTabs occupies bottom on mobile
+- Appears after scroll > 800px (smooth opacity + translateY 12px → 0 transition 500ms ease-in)
+- 4 aarti slots IST: Mangal 4:30am, Shringar 7:00am, Sandhya 6:00pm, Shayan 9:00pm
+- Picks next slot from current IST via Intl.DateTimeFormat (timeZone: Asia/Kolkata)
+- Rolls to next-day Mangal if past Shayan
+- Countdown "HH:MM:SS" tick every 1s via setInterval (cleanup on unmount)
+- Dismissible via X button → sessionStorage flag `darshya:sticky-aarti-cta:dismissed` (per-session, returns next visit)
+- Click pill → /today
+- Saffron-600 bg (var(--color-primary)), white text, Flame icon left, ArrowRight + X right, h-14 px-5 rounded-full
+- Mounted via DeferredClientWidgets (dynamic ssr:false, lazy-loaded, zero initial-bundle cost)
+
+### Build verify
+
+`pnpm next build` (apps/web) CLEAN exit 0. 500+ routes. Shared JS 102 kB unchanged. 3 files changed (166 insertions).
+
+### Day-budget
+
+CF builds: 23/500 = **4.6% June burn**. Healthy.
+
+### Verify caveat
+
+Sticky aarti CTA is `dynamic(ssr: false)` — invisible in raw SSR HTML curl. Will appear ONLY after client hydration + scroll past 800px. Cannot verify via grep on prod HTML. Use browser DevTools or Playwright to confirm post-hydration.
+
+### Blueprint Day 2 items status
+
+| Item | Status |
+|---|---|
+| Hero tithi chip | ✓ SHIPPED |
+| Sticky aarti CTA | ✓ SHIPPED |
+| 5 lane glyph rail tactile upgrade | DEFERRED next session (CategoryColorStrip already serves similar function; tactile 96x96 circular glyphs blueprint suggests would be redesign — needs owner confirm) |
+
+### Plan phase status
+
+- Day 1 home revamp ✓ LIVE (9e110a9)
+- Day 2 hero tithi + sticky aarti ✓ SHIPPED THIS SESSION (0f1e797)
+- Subagent path FULLY OPERATIONAL ✓ Opus 4.7 confirmed working, async dispatch executed
+
+### Carried open (next session)
+
+1. **5 lane glyph rail tactile upgrade** (Day 2 remainder, needs owner confirm vs existing CategoryColorStrip)
+2. **Continue your sadhana card** (Day 3, requires user data API)
+3. **Streak counter tween** (Day 5, needs streak data source)
+4. **Inline-style → Tailwind home refactor** (198 occurrences, manual session)
+5. **P1 #5/#6/#7 auth refactor** (heavy, dedicated sessions)
+6. **Astrologer slug↔UUID design pass** (owner KYC blocking)
+7. **Streak counter / continue sadhana** — needs user authenticated state + API hooks
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200
+2. `curl -s https://darshya.online/ | grep -c "Aaj "` → ≥1 if panchang API live (tithi chip rendered server-side)
+3. Browser DevTools on darshya.online: scroll past 800px → sticky saffron aarti pill bottom-right appears, click X → disappears for session
+4. `git log --oneline -5` → HEAD past 0f1e797 + this HANDOFF
+5. Continue: blueprint Day 3 (continue your sadhana card requires user data) OR auth refactor OR lane glyph rail
+
+---
 
 ## HANDOFF 2026-06-07 #16 (PUSHED 9e110a9 — home revamp end-to-end, multi-agent blueprint synthesis + execution)
 
