@@ -82,8 +82,28 @@ export default function StickyAartiCta(): JSX.Element | null {
   }, []);
 
   useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
+    // Visibility-pause: only tick when tab is visible (Phase D P1 #8 battery drain fix).
+    let id: number | null = null;
+    const start = (): void => {
+      if (id !== null) return;
+      id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    };
+    const stop = (): void => {
+      if (id !== null) {
+        window.clearInterval(id);
+        id = null;
+      }
+    };
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
+    };
   }, []);
 
   const { label, countdown } = useMemo(() => {

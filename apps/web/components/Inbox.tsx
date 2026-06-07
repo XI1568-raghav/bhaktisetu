@@ -75,8 +75,28 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
 
   useEffect(() => {
     fetchConvs();
-    const i = setInterval(fetchConvs, POLL_INTERVAL_MS);
-    return () => clearInterval(i);
+    // Phase D P1 #1: visibility-pause — poll only when tab visible.
+    let i: ReturnType<typeof setInterval> | null = null;
+    const start = (): void => {
+      if (i !== null) return;
+      i = setInterval(fetchConvs, POLL_INTERVAL_MS);
+    };
+    const stop = (): void => {
+      if (i !== null) {
+        clearInterval(i);
+        i = null;
+      }
+    };
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
+    };
   }, [fetchConvs]);
 
   if (loading) {
@@ -243,8 +263,28 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => undefined);
 
-    const i = setInterval(() => fetchMessages(false), POLL_INTERVAL_MS);
-    return () => clearInterval(i);
+    // Phase D P1 #1: visibility-pause for active thread polling.
+    let i: ReturnType<typeof setInterval> | null = null;
+    const start = (): void => {
+      if (i !== null) return;
+      i = setInterval(() => fetchMessages(false), POLL_INTERVAL_MS);
+    };
+    const stop = (): void => {
+      if (i !== null) {
+        clearInterval(i);
+        i = null;
+      }
+    };
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
+    };
   }, [conversationId, fetchMessages, token]);
 
   // Autoscroll

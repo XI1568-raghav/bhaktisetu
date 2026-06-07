@@ -53,10 +53,28 @@ function WelcomeContent() {
       }
     }
     void load();
-    const interval = setInterval(load, 10_000);
+    // Phase D P1 #2: visibility-pause + slower poll. Was 10s indefinite, now 60s + skip when hidden.
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = (): void => {
+      if (interval !== null) return;
+      interval = setInterval(load, 60_000);
+    };
+    const stop = (): void => {
+      if (interval !== null) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
     };
   }, [code]);
 
