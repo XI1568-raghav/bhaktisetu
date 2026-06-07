@@ -207,7 +207,7 @@ export default function GaushalaDashboard() {
  <h2 className="font-semibold mb-4 text-sm" style={{ color: 'var(--color-text)' }}>Quick Actions</h2>
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
  {[
- { label: 'Record Donation', href: '/gaushala-portal/donations', Icon: IndianRupee },
+ { label: 'View Donations', href: '/gaushala-portal/donations', Icon: IndianRupee },
  { label: 'Add New Cow', href: '/gaushala-portal/cows', Icon: Plus },
  { label: 'Manage Volunteers', href: '/gaushala-portal/volunteers', Icon: Users },
  { label: 'Update Profile', href: '/gaushala-portal/profile', Icon: Settings },

@@ -242,7 +242,7 @@ export default function PriestDashboard() {
  return (
  <Link
  key={booking.id}
- href={`/priest/bookings/${booking.id}`}
+ href={`/priest/bookings/view?id=${booking.id}`}
  className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors"
  >
  <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center shrink-0">
