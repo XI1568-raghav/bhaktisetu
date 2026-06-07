@@ -22,6 +22,7 @@ import {
  BookOpen,
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
+import { getTodayPanchang } from '../lib/api';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
@@ -71,6 +72,16 @@ export const metadata: Metadata = {
 export default async function HomePage() {
  const t = await getTranslations('home');
  const tCommon = await getTranslations('common');
+
+ // Tolerant panchang fetch — surface tithi + nakshatra chip in hero per blueprint Day 2.
+ let panchangChip: { tithi: string; nakshatra: string } | null = null;
+ try {
+   const p = await getTodayPanchang();
+   panchangChip = { tithi: p.tithi, nakshatra: p.nakshatra };
+ } catch {
+   panchangChip = null;
+ }
+
  return (
  <ScrollReveal>
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
@@ -83,6 +94,16 @@ export default async function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
+ {panchangChip && (
+ <div
+ data-reveal="up"
+ className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-3"
+ style={{ background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A' }}
+ >
+ <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#D97706' }} />
+ Aaj {panchangChip.tithi}, {panchangChip.nakshatra}
+ </div>
+ )}
  <div
  data-reveal="spring"
  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-6"
