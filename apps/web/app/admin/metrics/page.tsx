@@ -66,21 +66,19 @@ export default function MetricsPage() {
     if (!token) return;
     setLoading(true);
     setErr(null);
-    try {
-      const hdr = { headers: { authorization: `Bearer ${token}` } };
-      const [d, i, f] = await Promise.all([
-        fetch(`${API_BASE_URL}/admin/metrics/dashboard`, hdr).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/metrics/investor`, hdr).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/metrics/funnel?days=7`, hdr).then((r) => r.json()),
-      ]);
-      setDashboard(d);
-      setInvestor(i);
-      setFunnel(f);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'load failed');
-    } finally {
-      setLoading(false);
-    }
+    const hdr = { headers: { authorization: `Bearer ${token}` } };
+    // Phase B Admin P0-1: Promise.allSettled — one panel failure does not kill the other two.
+    const results = await Promise.allSettled([
+      fetch(`${API_BASE_URL}/admin/metrics/dashboard`, hdr).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`dashboard ${r.status}`)))),
+      fetch(`${API_BASE_URL}/admin/metrics/investor`, hdr).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`investor ${r.status}`)))),
+      fetch(`${API_BASE_URL}/admin/metrics/funnel?days=7`, hdr).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`funnel ${r.status}`)))),
+    ]);
+    const failed: string[] = [];
+    if (results[0].status === 'fulfilled') setDashboard(results[0].value); else failed.push(`dashboard (${results[0].reason?.message ?? 'err'})`);
+    if (results[1].status === 'fulfilled') setInvestor(results[1].value); else failed.push(`investor (${results[1].reason?.message ?? 'err'})`);
+    if (results[2].status === 'fulfilled') setFunnel(results[2].value); else failed.push(`funnel (${results[2].reason?.message ?? 'err'})`);
+    setErr(failed.length === 3 ? `All panels failed: ${failed.join(', ')}` : failed.length > 0 ? `Partial: ${failed.join(', ')}` : null);
+    setLoading(false);
   }
 
   useEffect(() => { load(); }, [token]);
