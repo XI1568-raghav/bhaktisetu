@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTodayPanchang } from '../lib/api';
+import TextReveal from '../components/motion/TextReveal';
+import ParallaxLayer from '../components/motion/ParallaxLayer';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
@@ -151,8 +153,9 @@ export default async function HomePage() {
  </div>
  </div>
 
- {/* Right — Bento with parallax float */}
- <div data-reveal="zoom-rotate" data-delay="1" className="hidden md:grid grid-cols-2 gap-2.5">
+ {/* Right — Bento with explicit ParallaxLayer + scroll-driven depth */}
+ <ParallaxLayer speed={0.12} maxOffset={48} className="hidden md:block">
+ <div data-reveal="zoom-rotate" data-delay="1" className="grid grid-cols-2 gap-2.5">
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
  <img
  src={getTempleHero('golden-temple')}
@@ -188,6 +191,7 @@ export default async function HomePage() {
  </div>
  </div>
  </div>
+ </ParallaxLayer>
  </div>
  </div>
 
