@@ -125,7 +125,7 @@ export function GlobalSearch() {
  type="button"
  aria-label="Search"
  onClick={() => setOpen(true)}
- className="hidden md:flex items-center gap-2 w-[260px] lg:w-[320px] px-3 py-2 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-lg transition-colors"
+ className="hidden md:flex items-center gap-2 w-[160px] lg:w-[220px] xl:w-[280px] px-3 py-2 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-lg transition-colors"
  >
  <Search className="w-4 h-4 shrink-0" />
  <span className="truncate text-left flex-1">

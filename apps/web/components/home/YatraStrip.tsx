@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { Mountain, ArrowRight } from 'lucide-react';
+import { getTempleHero } from '../../lib/images';
 
 type Destination = {
   name: string;
   region: string;
   fromPrice: string;
   href: string;
-  accent: string;
+  image: string;
 };
 
 const DESTINATIONS: Destination[] = [
@@ -15,21 +16,21 @@ const DESTINATIONS: Destination[] = [
     region: 'Uttarakhand Himalayas',
     fromPrice: 'From ₹24,999',
     href: '/yatra/destinations',
-    accent: 'var(--color-art-1)',
+    image: getTempleHero('kedarnath'),
   },
   {
     name: 'Vaishno Devi',
     region: 'Katra, Jammu',
     fromPrice: 'From ₹8,499',
     href: '/yatra/destinations',
-    accent: 'var(--color-art-2)',
+    image: getTempleHero('vaishno-devi'),
   },
   {
     name: 'Tirupati',
     region: 'Andhra Pradesh',
     fromPrice: 'From ₹6,999',
     href: '/yatra/destinations',
-    accent: 'var(--color-art-3)',
+    image: getTempleHero('tirupati'),
   },
 ];
 
@@ -65,19 +66,17 @@ export default function YatraStrip() {
                 border: '1px solid var(--color-border)',
               }}
             >
-              <div
-                className="relative h-32 sm:h-36 flex items-start justify-end p-4"
-                style={{ background: d.accent }}
-              >
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.7)' }}
-                >
-                  <Mountain
-                    className="w-5 h-5"
-                    style={{ color: '#059669' }}
-                    aria-hidden="true"
-                  />
+              <div className="relative h-40 sm:h-44 overflow-hidden">
+                <img
+                  src={d.image}
+                  alt={d.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/40 via-transparent to-transparent" />
+                <div className="absolute top-3 right-3 w-9 h-9 rounded-lg flex items-center justify-center backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.85)' }}>
+                  <Mountain className="w-5 h-5" style={{ color: '#059669' }} aria-hidden="true" />
                 </div>
               </div>
               <div className="p-4">

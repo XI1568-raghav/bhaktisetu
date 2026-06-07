@@ -355,9 +355,10 @@ export default function RootLayout({
  href="/today"
  className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors whitespace-nowrap"
  aria-label="Today's panchang and aarti"
+ title="Today's panchang and aarti"
  >
  <Calendar className="w-3.5 h-3.5" />
- Today
+ <span className="hidden lg:inline">Today</span>
  </a>
  <GlobalSearch />
  <NavCartButton />
@@ -453,11 +454,12 @@ export default function RootLayout({
  ))}
  </div>
 
- {/* Discover — programmatic-SEO routes grouped by theme. All links rendered in DOM (SEO preserved). */}
- <div className="mt-12 pt-6 border-t border-surface-800/60">
- <h3 className="text-xs font-semibold text-surface-300 mb-5 uppercase tracking-widest text-center">
- Discover Hindu Wisdom
- </h3>
+ {/* Discover — programmatic-SEO routes. Collapsed by default per footer-trim 2026-06-07. All links in DOM (SEO preserved). */}
+ <details className="mt-10 pt-6 border-t border-surface-800/60 group">
+ <summary className="cursor-pointer list-none flex items-center justify-center gap-2 text-xs font-semibold text-surface-300 mb-5 uppercase tracking-widest text-center hover:text-saffron-400 transition-colors">
+ <span>Discover Hindu Wisdom</span>
+ <span className="text-surface-500 group-open:rotate-180 transition-transform">&#9662;</span>
+ </summary>
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 text-sm">
  <div>
  <h4 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Scriptures</h4>
@@ -538,7 +540,7 @@ export default function RootLayout({
  Browse all 500+ guides &rarr;
  </Link>
  </div>
- </div>
+ </details>
 
  {/* Lang switcher — surfaces translated landings */}
  <div className="mt-10 pt-8 border-t border-surface-800/60">

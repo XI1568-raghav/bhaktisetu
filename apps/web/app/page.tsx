@@ -74,21 +74,9 @@ export default async function HomePage() {
  return (
  <ScrollReveal>
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
- {/* Sticky early-access banner — pinned just below the fixed nav. */}
- <div
-   className="sticky top-14 z-[55] w-full text-center text-[12px] sm:text-xs px-4 py-2"
-   style={{ background: 'var(--color-primary)', color: '#fff' }}
- >
-   <span className="font-medium">{t('bannerEarlyAccess')}</span>
-   <span className="mx-2 opacity-70">·</span>
-   <Link href="/waitlist" className="underline underline-offset-2 font-semibold whitespace-nowrap">
-     {t('bannerCta')} →
-   </Link>
- </div>
  <div style={{ background: 'var(--color-bg)' }}>
 
- {/* ═══ TODAY/PANCHANG — promoted above hero per audit §3 delta #3 ═══ */}
- <NextFestivalStrip />
+ {/* Waitlist banner + NextFestivalStrip moved below hero per user feedback 2026-06-07. */}
 
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  <section className="flex flex-col justify-center relative overflow-hidden">
@@ -191,7 +179,8 @@ export default async function HomePage() {
  <ContinueJourneyCard />
  <IntentTrio />
 
- {/* ═══ NEXT FESTIVAL — moved above hero per audit §3 delta #3 ═════ */}
+ {/* ═══ NEXT FESTIVAL countdown — relocated below intent trio per user feedback 2026-06-07 ═════ */}
+ <NextFestivalStrip />
 
  {/* ═══ CATEGORY COLOR STRIP — 5 brand worlds visible above fold ═══════ */}
  {/* User complaint 2026-06-05: above-fold reads as saffron monoculture. */}

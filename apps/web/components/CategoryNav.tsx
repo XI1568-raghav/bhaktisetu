@@ -173,7 +173,11 @@ export function CategoryNav() {
       {openCategory && (
         <div
           id={`${baseId}-panel-${openCategory.key}`}
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50"
+          className={
+            openCategory.key === 'library'
+              ? 'fixed top-16 left-1/2 -translate-x-1/2 w-[min(1120px,calc(100vw-48px))] max-h-[min(720px,calc(100vh-120px))] overflow-y-auto z-50'
+              : 'fixed top-16 left-1/2 -translate-x-1/2 w-[min(640px,calc(100vw-48px))] max-h-[min(720px,calc(100vh-120px))] overflow-y-auto z-50'
+          }
           onMouseEnter={clearTimers}
           onMouseLeave={scheduleClose}
         >

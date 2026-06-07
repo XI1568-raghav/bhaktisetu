@@ -91,7 +91,7 @@ export function CategoryMegaMenu({ category, onItemClick, labelledBy }: Props) {
     <div
       role="menu"
       aria-labelledby={labelledBy}
-      className="w-[640px] max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-surface-200/60 shadow-xl shadow-surface-900/10 p-6"
+      className="w-full bg-white rounded-xl border border-surface-200/60 shadow-xl shadow-surface-900/10 p-6"
     >
       <div className="mb-5 px-1">
         <p className={`text-[11px] font-semibold uppercase tracking-widest ${a.eyebrow}`}>
