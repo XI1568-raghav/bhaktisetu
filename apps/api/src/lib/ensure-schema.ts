@@ -419,6 +419,60 @@ const STATEMENTS: string[] = [
   END $$`,
   `CREATE INDEX IF NOT EXISTS "referral_claims_referrer_id_status_idx" ON "referral_claims" ("referrer_id", "status")`,
   `CREATE INDEX IF NOT EXISTS "referral_claims_referee_id_idx" ON "referral_claims" ("referee_id")`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // EmailSession w/ expiresAt + revokedAt (Phase C P1 #5, 2026-06-08).
+  // Powers /auth/logout server-side revocation + middleware enforcement.
+  // ─────────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "email_sessions" (
+    "id"         TEXT PRIMARY KEY,
+    "user_id"    UUID NOT NULL,
+    "expires_at" TIMESTAMPTZ NOT NULL,
+    "revoked_at" TIMESTAMPTZ,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'email_sessions_user_id_fkey') THEN
+      ALTER TABLE "email_sessions" ADD CONSTRAINT "email_sessions_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `CREATE INDEX IF NOT EXISTS "email_sessions_user_id_expires_at_idx"
+    ON "email_sessions" ("user_id", "expires_at")`,
+  `CREATE INDEX IF NOT EXISTS "email_sessions_expires_at_idx"
+    ON "email_sessions" ("expires_at") WHERE "revoked_at" IS NULL`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // RefreshTokenJTI single-use ledger (Phase C P1 #4, 2026-06-08).
+  // Detects refresh-token replay; revokes family on reuse.
+  // ─────────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "refresh_token_jtis" (
+    "jti"        TEXT PRIMARY KEY,
+    "user_id"    UUID NOT NULL,
+    "issued_at"  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "used_at"    TIMESTAMPTZ,
+    "expires_at" TIMESTAMPTZ NOT NULL
+  )`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'refresh_token_jtis_user_id_fkey') THEN
+      ALTER TABLE "refresh_token_jtis" ADD CONSTRAINT "refresh_token_jtis_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `CREATE INDEX IF NOT EXISTS "refresh_token_jtis_user_id_expires_at_idx"
+    ON "refresh_token_jtis" ("user_id", "expires_at")`,
+  `CREATE INDEX IF NOT EXISTS "refresh_token_jtis_used_at_idx"
+    ON "refresh_token_jtis" ("used_at") WHERE "used_at" IS NOT NULL`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // astrologer_consultations composite indexes (Phase D P1 #6, 2026-06-08).
+  // Speeds up /consultation/admin/all ORDER BY scheduled_at and per-user history.
+  // ─────────────────────────────────────────────────────────────────
+  `CREATE INDEX IF NOT EXISTS "astrologer_consultations_sched_idx"
+    ON "astrologer_consultations"
+    USING btree ((COALESCE("scheduled_at", "created_at")) DESC NULLS LAST)`,
+  `CREATE INDEX IF NOT EXISTS "astrologer_consultations_user_status_idx"
+    ON "astrologer_consultations" ("user_id", "status", "created_at" DESC)`,
 ];
 
 export async function ensureSchemaInvariants(
