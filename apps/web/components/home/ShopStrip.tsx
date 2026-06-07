@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
+import TextReveal from '../motion/TextReveal';
 
 type Product = {
   name: string;
@@ -56,13 +57,12 @@ export default function ShopStrip() {
             >
               Shop
             </p>
-            <h2
-              id="shop-strip-heading"
-              className="text-xl sm:text-2xl font-semibold tracking-tight"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+            <TextReveal
+              as="h2"
+              className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
             >
               Prasad, idols, books, sacred items.
-            </h2>
+            </TextReveal>
           </div>
           <Link
             href="/store"

@@ -101,6 +101,7 @@ export default function PriestDashboard() {
  const { session, user } = useAuth();
  const [data, setData] = useState<DashboardData | null>(null);
  const [loading, setLoading] = useState(true);
+ const [fetchError, setFetchError] = useState<string | null>(null);
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
 
@@ -113,10 +114,13 @@ export default function PriestDashboard() {
  });
  if (res.ok) {
  setData(await res.json());
+ setFetchError(null);
  } else {
+ setFetchError(`Could not load dashboard (status ${res.status}). Showing baseline.`);
  setData(zeroDashboard(displayName));
  }
- } catch {
+ } catch (e) {
+ setFetchError(e instanceof Error ? e.message : 'Network error loading dashboard. Showing baseline.');
  setData(zeroDashboard(displayName));
  } finally {
  setLoading(false);
@@ -188,6 +192,12 @@ export default function PriestDashboard() {
  pending={data.earnings.pending}
  thisMonth={data.earnings.thisMonth}
  />
+
+ {fetchError && (
+ <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+ {fetchError}
+ </div>
+ )}
 
  {/* Quick Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
