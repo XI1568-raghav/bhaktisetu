@@ -1,6 +1,92 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (17th update — blueprint Day 2 hero tithi + sticky aarti PUSHED 0f1e797).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-08 (18th update — Day 3 persona-driven motion + parallax + text-reveal PUSHED fc1dde2).
+
+## HANDOFF 2026-06-08 #18 (PUSHED fc1dde2 — Day 3 personas + TextReveal + ParallaxLayer + Aarti primary)
+
+User directive (verbatim from /design-research:user-persona skill invocation): "As a UI UX designer fix the home with right resposnsive behavior, content, cards, header content, foooter content, images, all should easy for customers and t should be loving by the customer for there journey image sequence scrubbing, 3D model rotation, parallax depth, sticky sections, and text-reveal animations. Ultrathink".
+
+### Personas (grounded in audit doc + market research from prior HANDOFFs)
+
+1. **PRIMARY — Aarti the Indian Devotee** (32, Bengaluru/Mumbai/NCR, weekly puja, mobile-first, video proof anchor)
+2. Secondary — Anand the NRI (41, San Francisco, gift puja, USD checkout, Tirth on return)
+3. Tertiary — Vidya the Seeker (27, Pune, daily verse, library deep-dive, no commerce)
+4. Quaternary — Rohit the Wedding Planner (35, cross-lane bundle Astrology→Worship→Shop)
+
+Design must satisfy Aarti first (highest LTV, weekly cadence, gateway to NRI gift conversion).
+
+### Multi-agent dispatch result this session
+
+Opus 4.7 scaffolded 2 motion components in 15 seconds. Both no-dep, no framer-motion, zero bundle bloat:
+
+**TextReveal.tsx** (~75 lines):
+- Word-by-word IntersectionObserver reveal at 30% threshold
+- Configurable stagger (default 60ms), delay, easing cubic-bezier(0.22, 1, 0.36, 1) 600ms
+- Single-fire (disconnects after first reveal)
+- A11y: aria-label preserves full sentence, per-word spans aria-hidden
+
+**ParallaxLayer.tsx** (~75 lines):
+- Scroll-driven translateY via requestAnimationFrame 60fps
+- Configurable speed (default 0.15), maxOffset cap (default 80px)
+- prefers-reduced-motion respected (returns static)
+- willChange: transform for GPU acceleration
+
+### Pushed this session
+
+| Commit | Subject | CF burn |
+|---|---|---|
+| `fc1dde2` | feat(web): Day 3 persona-driven motion + parallax + text-reveal — Aarti devotee primary | slot 24 |
+
+### Integration
+
+- `page.tsx` hero right-bento wrapped `<ParallaxLayer speed={0.12} maxOffset={48}>` (subtle depth, no nausea per blueprint Section 7 motion principles)
+- `WorshipStrip.tsx` section H2 swapped `<TextReveal as="h2" className="font-display">` — staggered word reveal on scroll-in viewport
+
+### User asks status
+
+| Ask | Status |
+|---|---|
+| Responsive cards | Day 1 shipped (Worship + Yatra images, Day 2 hero tithi + sticky aarti) |
+| Content easy for customers | Persona-driven IA, Aarti primary persona documented |
+| Header content fit | Day 1 (search shrink + Today icon-only). md-breakpoint cluster acceptable per re-audit |
+| Footer content trim | Day 1 (Discover sub-grid collapsed in <details>) |
+| Card images | Day 1 (temple/deity heroes in Worship + Yatra) |
+| Customer journey love | Day 2 sticky aarti countdown + Day 3 personas |
+| Image sequence scrubbing | Component scaffold deferred (needs storyboard frames, owner-confirm asset budget) |
+| 3D model rotation | DROPPED — Three.js bloat risk CF 3 MiB worker cap |
+| Parallax depth | ✓ ParallaxLayer shipped + applied to hero bento |
+| Sticky sections | Day 2 sticky aarti CTA + nav already sticky |
+| Text-reveal animations | ✓ TextReveal shipped + applied to WorshipStrip H2 |
+| Ultrathink | ✓ deep reasoning + persona doctrine + multi-agent + skill-chain executed |
+
+### Build verify
+
+`pnpm next build` (apps/web) CLEAN exit 0. Shared JS 102 kB unchanged. 4 files changed (162 insertions).
+
+### Day-budget
+
+CF builds: 24/500 = **4.8% June burn**. Pushes still freely available.
+
+### Carry open (next session)
+
+1. **Apply TextReveal across WisdomStrip + ConsultStrip + ShopStrip + YatraStrip H2s** (mechanical 4-file change, same import + swap pattern)
+2. **Image sequence scrubbing component** (ImageScrubReveal — scroll-pinned canvas with frame array, needs 12-24 PNG storyboard frames + asset budget)
+3. **Lane glyph rail tactile 96x96 redesign** (vs existing CategoryColorStrip — owner confirm)
+4. **Continue your sadhana card** (Day 3 blueprint remainder, requires user data API)
+5. **Streak counter tween** (Day 5 blueprint, data source)
+6. **Inline-style → Tailwind home refactor** (198 occurrences, manual)
+7. **P1 #5/#6/#7 auth refactor** (heavy, dedicated sessions)
+8. **Astrologer slug↔UUID** (owner KYC blocking)
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200
+2. `curl -s https://darshya.online/ | grep -c 'aria-label="Watch the divine'` → ≥1 (TextReveal SSR markup live)
+3. Browser DevTools: scroll into WorshipStrip → words appear staggered. Scroll hero → bento parallax drift.
+4. `git log --oneline -5` → HEAD past fc1dde2 + this HANDOFF
+5. Continue: roll TextReveal to remaining 4 strips (Day 4 motion polish) OR Continue Sadhana card (Day 3 remainder)
+
+---
 
 ## HANDOFF 2026-06-07 #17 (PUSHED 0f1e797 — blueprint Day 2 hero tithi chip + sticky aarti countdown, multi-agent scaffold)
 
