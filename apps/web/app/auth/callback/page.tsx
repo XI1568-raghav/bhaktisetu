@@ -73,7 +73,21 @@ export default function AuthCallbackPage() {
  setCookie(STORAGE_KEYS.USER, JSON.stringify(persistedUser));
 
  const params = new URLSearchParams(window.location.search);
- const redirectTarget = params.get('redirect') || getRoleDashboardPath(persistedUser.role);
+ const rawRedirect = params.get('redirect');
+ // Open-redirect guard: only allow same-origin OR root-relative paths.
+ let redirectTarget = getRoleDashboardPath(persistedUser.role);
+ if (rawRedirect) {
+   if (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')) {
+     redirectTarget = rawRedirect;
+   } else {
+     try {
+       const u = new URL(rawRedirect, window.location.origin);
+       if (u.origin === window.location.origin) redirectTarget = u.pathname + u.search + u.hash;
+     } catch {
+       /* ignore malformed redirect param */
+     }
+   }
+ }
  window.location.href = redirectTarget;
  } catch (err) {
  setStatus('error');

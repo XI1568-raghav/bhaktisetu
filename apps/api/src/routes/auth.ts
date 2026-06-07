@@ -621,7 +621,7 @@ export async function authRoutes(server: FastifyInstance) {
       request.log.error({ err, email: emailLower }, 'Login failed — DB unavailable');
       return reply.code(401).send({
         error: 'Unauthorized',
-        message: 'Invalid credentials. Try a demo account: devotee@demo.com / demo123',
+        message: 'Invalid credentials.',
       });
     }
   });

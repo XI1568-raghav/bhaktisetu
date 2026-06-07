@@ -13,6 +13,7 @@ const InquiryBody = z.object({
   weddingDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'weddingDate must be YYYY-MM-DD')
+    .refine((d) => new Date(d).getTime() > Date.now(), 'weddingDate must be future')
     .optional(),
   package: z.enum(['basic', 'premium', 'royal']).optional(),
   guests: z.coerce.number().int().min(0).max(50000).optional(),

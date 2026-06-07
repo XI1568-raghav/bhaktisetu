@@ -90,7 +90,10 @@ const bookSchema = z.object({
   astrologerId: z.string().min(1).max(64),
   minutes: z.number().int().min(5).max(60),
   scheduledAt: z.string().datetime().optional(),
-});
+}).refine(
+  (v) => !v.scheduledAt || new Date(v.scheduledAt).getTime() > Date.now(),
+  { message: 'scheduledAt must be in the future', path: ['scheduledAt'] },
+);
 
 const verifySchema = z.object({
   consultationId: z.string().uuid(),

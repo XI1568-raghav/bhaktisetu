@@ -35,7 +35,7 @@ const inquirySchema = z.object({
   }),
   recipient: z.object({
     name: z.string().min(1).max(120),
-    whatsapp: z.string().min(6).max(20),
+    whatsapp: z.string().regex(/^\+?[1-9]\d{6,14}$/, 'invalid phone format (use E.164 e.g. +919876543210)'),
     city: z.string().max(80).optional().default(''),
   }),
   puja: z.string().max(120).optional().default(''),
