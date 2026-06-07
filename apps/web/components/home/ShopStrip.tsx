@@ -6,6 +6,7 @@ type Product = {
   category: string;
   price: string;
   href: string;
+  accentColor: string;
 };
 
 const PRODUCTS: Product[] = [
@@ -14,24 +15,28 @@ const PRODUCTS: Product[] = [
     category: 'Prasad',
     price: '₹399',
     href: '/store',
+    accentColor: '#E16318',
   },
   {
     name: 'Brass Krishna Murti',
     category: 'Idols',
     price: '₹2,499',
     href: '/store',
+    accentColor: '#E16318',
   },
   {
     name: 'Bhagavad Gita Hardcover',
     category: 'Books',
     price: '₹599',
     href: '/store',
+    accentColor: '#4F46E5',
   },
   {
     name: 'Tulsi Mala',
     category: 'Sacred items',
     price: '₹299',
     href: '/store',
+    accentColor: '#D97706',
   },
 ];
 
@@ -47,7 +52,7 @@ export default function ShopStrip() {
           <div>
             <p
               className="text-xs font-medium uppercase tracking-widest mb-1"
-              style={{ color: 'var(--color-primary)' }}
+              style={{ color: '#D97706' }}
             >
               Shop
             </p>
@@ -99,13 +104,13 @@ export default function ShopStrip() {
               <div className="flex items-center justify-between">
                 <p
                   className="text-sm font-semibold"
-                  style={{ color: 'var(--color-primary)' }}
+                  style={{ color: p.accentColor }}
                 >
                   {p.price}
                 </p>
                 <ArrowRight
                   className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
-                  style={{ color: 'var(--color-primary)' }}
+                  style={{ color: p.accentColor }}
                 />
               </div>
             </Link>
