@@ -1,6 +1,93 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-05 (12th update — above-fold color strip + dash purge + Scripture clean PUSHED 3694253).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-07 (13th update — top-bar fix + IntentTrio/ConsultStrip per-card brand accents PUSHED fa5ed23 + 6a54603).
+
+## HANDOFF 2026-06-07 #13 (PUSHED fa5ed23 + 6a54603 — top-bar fix + home strip brand polish + CF VERIFY GREEN both)
+
+User screenshot 2026-06-07: ॐ icon misaligned, Astrology trigger reads bluish, fonts thin, top-bar tight. User explicit: "remove om icon, why astrogoly in blueish color follow brand guidlines, continue working on next session and work items".
+
+### Pushed this session
+
+| Commit | Subject | CF burn | Verify |
+|---|---|---|---|
+| `fa5ed23` | fix(web): top-bar alignment + drop ॐ + warm-gray nav triggers (uniform brand-coherent) | slot 16 | ✓ iter 9 ALL_VERIFIED_TOPBAR_FIXED (om_count=0, warm_gray=1) |
+| `6a54603` | feat(web): home strip brand-color polish — IntentTrio + ConsultStrip per-card category accent | slot 17 | ✓ iter 1 ALL_VERIFIED_HOME_INDIGO_LIVE (indigo_hex_count=12) |
+
+### Top-bar fix detail (fa5ed23)
+
+| File | Change | Reason |
+|---|---|---|
+| `app/layout.tsx` | Dropped ॐ devanagari span entirely (was between Logo + Darshya wordmark) | User explicit ask; baseline mismatch w/ different font caused logo+wordmark misalignment |
+| `app/layout.tsx` | nav `h-14` → `h-16` + main `pt-14` → `pt-16` | More breathing room, fits Today + Ask Pandit chips cleanly |
+| `app/layout.tsx` | Wordmark added `leading-none` | Baseline reset for clean align w/ logo svg |
+| `components/CategoryNav.tsx` | Trigger `text-surface-500` (#7a756e cool-gray) → `text-surface-700` (#3a3530 warm-dark) | Astrology "looked bluish" because cool-gray renders cool on monitors; warm-gray fits brand |
+| `components/CategoryNav.tsx` | `font-medium` → `font-semibold` | Matches Ask Pandit weight, reads less thin |
+| `components/CategoryNav.tsx` | Hover `text-surface-800` → `text-surface-900` | Stronger contrast on hover (was barely visible delta) |
+
+All 5 top-nav triggers (Worship/Library/Astrology/Yatra/Shop) now render uniform warm-gray brand-coherent. Astrology no longer reads blue.
+
+### IntentTrio + ConsultStrip brand polish detail (6a54603)
+
+Audit doc §1 + user "look + feel eye-catching not confusing":
+
+**IntentTrio** 3 cards above-fold below hero:
+- Card 1 Live Darshan: saffron icon (#E16318)
+- Card 2 Book a Puja: saffron icon
+- Card 3 Ask a Pandit: **indigo icon (#4F46E5) + indigo-50 bg + indigo-900 CTA** (advisory lane)
+
+**ConsultStrip** 3 cards in Consult section:
+- Card 1 Ask Pandit: emphasis saffron gradient retained (primary action)
+- Card 2 Talk to Astrologer: **indigo per-card schema** (astrology lane)
+- Card 3 Wedding Muhurat: **indigo per-card schema**
+
+Per-card `iconBg`/`iconColor`/`ctaColor` fields added to ConsultCard type, backward-compat fallback to var(--color-primary).
+
+Home now visually expresses 2-lane brand color story (action saffron + advisory indigo) across 6 above-fold cards. Was monochrome saffron.
+
+### Subagent dispatch result this session
+
+Single Opus 4.7 dispatch returned 598-word market research synthesis covering 7 devotional super-apps. Confirmed subagent path fully functional post 4.8 → 4.7 settings fix.
+
+### Build verify
+
+Both pushes: `pnpm next build` (apps/web) CLEAN exit 0. 500+ routes, shared JS 102 kB unchanged.
+
+### Day-budget reality check (CORRECTED from prior HANDOFF #11)
+
+Prior HANDOFF #11 claimed "30/day cap" — WRONG. CLAUDE.md actual cap is **500/month** CF Pages builds. 17 commits so far June = 17/500 = **3.4% June burn**. Plenty headroom (~30/day for rest of month).
+
+### Plan phase status (refreshed)
+
+- Top-bar/header fix ✓ THIS SESSION (fa5ed23 LIVE)
+- Home strip brand polish ✓ THIS SESSION (6a54603 LIVE)
+- Above-fold category color strip ✓ (3694253 LIVE prior)
+- Dash purge ✓ (3694253 LIVE prior)
+- P4 mobile responsive sweep ✓ (ac9f1b9 LIVE prior)
+- Mega-panel orphan absorption ✓ (44fbfe0 LIVE prior)
+- P6 color sweep all batches ✓
+- Deck PDF + script ✓ (752ebd1 prior)
+- Subagent unblocked ✓ (Opus 4.7 confirmed)
+
+### Carried open (next session)
+
+1. **Inline-style → Tailwind home refactor** (198 occurrences across 9 home component files) — manual session, risks breaking gradients/animations
+2. **P1 #5/#6/#7** refresh-token JTI / EmailSession / /auth/logout / CSP nonce (heavy auth, separate sessions)
+3. **Astrologer slug↔UUID design pass** (~6-8h, owner KYC decisions)
+4. **31 bare grid-cols-(3-6) manual sweep**
+5. **D-7 OG card retry** with static PNG approach
+6. **Home component deep-polish** — WorshipStrip + YatraStrip + ShopStrip + WisdomStrip same per-card brand color pattern as IntentTrio/ConsultStrip
+7. **Mobile header padding audit** — verify h-16 doesn't crowd mobile (likely fine, MobileBottomTabs handles bottom)
+
+### Verify cheatsheet next session
+
+1. `curl -s -o /dev/null -w "%{http_code}" https://darshya.online/` → 200
+2. `curl -s https://darshya.online/ | grep -c "ॐ"` → 0 (no devanagari glyph in top-bar)
+3. `curl -s https://darshya.online/ | grep -c "Browse by category"` → ≥1 (chip strip)
+4. `curl -s https://darshya.online/ | grep -oE "#4F46E5" | wc -l` → ≥10 (indigo accents on IntentTrio + ConsultStrip + chip strip)
+5. `git log --oneline -5` → HEAD past 6a54603 + this HANDOFF
+6. Continue: home component deep-polish (WorshipStrip/YatraStrip/ShopStrip/WisdomStrip same per-card pattern) OR P1 auth refactor OR mobile-grid manual sweep
+
+---
 
 ## HANDOFF 2026-06-05 #12 (PUSHED 3694253 — above-fold 5-category color strip + dash purge site-wide + Scripture copy clean + SUBAGENT OPUS 4.7 UNBLOCKED)
 
