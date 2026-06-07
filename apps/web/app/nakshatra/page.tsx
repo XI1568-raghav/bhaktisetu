@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'All 27 lunar mansions with lord, deity, qualities, career, compatibility.',
     url: `${BASE_URL}/nakshatra`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

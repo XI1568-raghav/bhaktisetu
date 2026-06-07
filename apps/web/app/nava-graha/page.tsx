@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: 'Each graha with deity, beej mantra, gemstone, fasting day, charity, and remedies.',
     url: `${BASE_URL}/nava-graha`,
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

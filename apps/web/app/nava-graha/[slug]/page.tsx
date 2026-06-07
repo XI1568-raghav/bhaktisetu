@@ -33,7 +33,7 @@ export async function generateMetadata({
       description,
       url: `${BASE_URL}/nava-graha/${g.slug}`,
       type: 'article',
-      images: ['/og/default'],
+      images: ['/og/default.png'],
     },
   };
 }

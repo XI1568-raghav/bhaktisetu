@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     description: 'Your daily one-glance devotional dashboard.',
     url: 'https://darshya.online/today',
     type: 'website',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
 };
 

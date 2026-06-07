@@ -22,7 +22,7 @@ export const metadata: Metadata = {
       'Pay in your currency. Recipient gets WhatsApp + video. Performed at the temple of your choice.',
     type: 'website',
     url: 'https://darshya.online/gift',
-    images: ['/og/default'],
+    images: ['/og/default.png'],
   },
   alternates: { canonical: 'https://darshya.online/gift' },
 };
