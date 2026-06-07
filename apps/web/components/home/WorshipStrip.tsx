@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Video, Flame, Heart, Gift, ArrowRight } from 'lucide-react';
+import { getTempleHero, getDeityImage } from '../../lib/images';
 
 type WorshipCard = {
   href: string;
@@ -7,7 +8,7 @@ type WorshipCard = {
   body: string;
   cta: string;
   Icon: typeof Video;
-  accent: string;
+  image: string;
   badge?: string;
 };
 
@@ -18,32 +19,32 @@ const CARDS: WorshipCard[] = [
     body: 'Watch live aarti from 200+ temples',
     cta: 'Watch live',
     Icon: Video,
-    accent: 'var(--color-primary-highlight)',
+    image: getTempleHero('golden-temple'),
     badge: 'LIVE',
   },
   {
     href: '/pujas',
     label: 'Popular Puja',
-    body: 'Rudrabhishek at Kashi · ₹1,100',
+    body: 'Rudrabhishek at Kashi, ₹1,100',
     cta: 'Book a puja',
     Icon: Flame,
-    accent: 'var(--color-art-2)',
+    image: getTempleHero('kashi-vishwanath'),
   },
   {
     href: '/gaushala',
     label: 'Gaushala Seva',
-    body: 'Adopt a cow from ₹500/mo',
+    body: 'Adopt a cow from ₹500 a month',
     cta: 'Sponsor seva',
     Icon: Heart,
-    accent: 'var(--color-art-3)',
+    image: getDeityImage('krishna'),
   },
   {
     href: '/donations',
     label: 'Donate (80G)',
-    body: 'Tax-deductible giving',
+    body: 'Tax deductible giving',
     cta: 'Donate now',
     Icon: Gift,
-    accent: 'var(--color-art-4)',
+    image: getTempleHero('tirupati'),
     badge: '80G',
   },
 ];
@@ -79,34 +80,22 @@ export default function WorshipStrip() {
                 border: '1px solid var(--color-border)',
               }}
             >
-              <div
-                className="relative h-24 sm:h-28 flex items-end justify-between p-3"
-                style={{ background: card.accent }}
-              >
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.7)' }}
-                >
-                  <card.Icon
-                    className="w-5 h-5"
-                    style={{ color: 'var(--color-primary)' }}
-                    aria-hidden="true"
-                  />
+              <div className="relative h-32 sm:h-36 overflow-hidden">
+                <img
+                  src={card.image}
+                  alt={card.label}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                <div className="absolute top-3 left-3 w-9 h-9 rounded-lg flex items-center justify-center backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.85)' }}>
+                  <card.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
                 </div>
                 {card.badge && (
-                  <span
-                    className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full"
-                    style={{
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      border: '1px solid var(--color-border)',
-                    }}
-                  >
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full bg-white shadow-sm" style={{ color: 'var(--color-text)' }}>
                     {card.badge === 'LIVE' && (
-                      <span
-                        className="w-1.5 h-1.5 rounded-full animate-pulse"
-                        style={{ background: '#C53030' }}
-                      />
+                      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#C53030' }} />
                     )}
                     {card.badge}
                   </span>
