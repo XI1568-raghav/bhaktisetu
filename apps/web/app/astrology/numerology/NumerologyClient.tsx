@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { computeNumerology, type NumerologyResult, type NumberMeaning } from '../../../lib/numerology';
-import { DateInput } from '../../../components/ui/DateInput';
 
 export default function NumerologyClient() {
  const [dob, setDob] = useState('');
@@ -58,9 +57,14 @@ export default function NumerologyClient() {
        Date of birth <span className="text-red-500">*</span>
       </label>
       <p className="mt-0.5 text-xs text-gray-500">Local birth date (Indian Standard Time recommended).</p>
-      <DateInput value={dob} onChange={(v) => setDob(v)} />
+      <input
+       type="date"
+       value={dob}
+       onChange={(e) => setDob(e.target.value)}
        max="2030-12-31"
        min="1900-01-01"
+       className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+      />
      </div>
     </div>
 
