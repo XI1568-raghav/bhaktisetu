@@ -483,6 +483,26 @@ const STATEMENTS: string[] = [
         ON "astrologer_consultations" ("user_id", "status", "created_at" DESC);
     END IF;
   END $$`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // astrologer_slug_map — public slug → Supabase user UUID resolver
+  // (Phase #10, 2026-06-08). Populated lazily on admin KYC approval.
+  // Resolver lib: apps/api/src/lib/astrologer-resolver.ts
+  // ─────────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "astrologer_slug_map" (
+    "slug"        TEXT PRIMARY KEY,
+    "user_id"     UUID NOT NULL,
+    "verified_at" TIMESTAMPTZ,
+    "created_at"  TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'astrologer_slug_map_user_id_fkey') THEN
+      ALTER TABLE "astrologer_slug_map" ADD CONSTRAINT "astrologer_slug_map_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "astrologer_slug_map_user_id_idx"
+    ON "astrologer_slug_map" ("user_id")`,
 ];
 
 export async function ensureSchemaInvariants(
