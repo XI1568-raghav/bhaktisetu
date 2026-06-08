@@ -165,6 +165,31 @@ export async function authenticateUser(
         return;
       }
       const userId = match[1];
+
+      // Phase C P1 #5 (2026-06-08): EmailSession enforcement — check revoked + expired.
+      // Best-effort: if row exists, enforce strictly. If row missing (legacy in-memory token
+      // pre-table-migration), allow through w/ backward-compat to avoid breaking in-flight sessions.
+      try {
+        const sessionRow = await prisma.$queryRawUnsafe<Array<{ revoked_at: Date | null; expires_at: Date }>>(
+          `SELECT revoked_at, expires_at FROM email_sessions WHERE id = $1 LIMIT 1`,
+          token,
+        );
+        const row = sessionRow[0];
+        if (row) {
+          if (row.revoked_at !== null) {
+            reply.code(401).send({ error: 'Unauthorized', message: 'Session revoked.' });
+            return;
+          }
+          if (new Date(row.expires_at).getTime() < Date.now()) {
+            reply.code(401).send({ error: 'Unauthorized', message: 'Session expired.' });
+            return;
+          }
+        }
+        // Row missing → backward-compat allow (legacy in-memory tokens, pre-7adbd87 migration).
+      } catch (err) {
+        request.log.warn({ err }, 'EmailSession lookup failed — falling back to legacy accept');
+      }
+
       const dbUser = await prisma.user.findUnique({ where: { id: userId } });
       if (!dbUser) {
         reply.code(401).send({ error: 'Unauthorized', message: 'User not found for session token.' });

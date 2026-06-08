@@ -385,8 +385,52 @@ export async function authRoutes(server: FastifyInstance) {
     }
 
     const { refreshToken } = parseResult.data;
-    const supabase = createSupabaseClient();
 
+    // Phase C P1 #4 (2026-06-08): JTI single-use replay detection.
+    // Hash the opaque Supabase refresh token to use as JTI key (no plaintext in DB).
+    const { createHash } = await import('node:crypto');
+    const jti = createHash('sha256').update(refreshToken).digest('hex');
+
+    // Check ledger BEFORE Supabase refresh — replay detection.
+    let replayDetected = false;
+    let knownUserId: string | null = null;
+    try {
+      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date }>>(
+        `SELECT user_id, used_at, expires_at FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
+        jti,
+      );
+      const row = existing[0];
+      if (row) {
+        knownUserId = row.user_id;
+        if (row.used_at !== null) {
+          replayDetected = true;
+        }
+        if (new Date(row.expires_at).getTime() < Date.now()) {
+          // Expired — let Supabase deny naturally below.
+        }
+      }
+    } catch (err) {
+      request.log.warn({ err }, 'JTI ledger lookup failed — proceeding w/o replay check');
+    }
+
+    if (replayDetected && knownUserId) {
+      // Family-wide revoke — mark all of this user's JTIs as used.
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+          knownUserId,
+        );
+      } catch (err) {
+        request.log.error({ err, userId: knownUserId }, 'JTI family revoke after replay detection FAILED');
+      }
+      clearAuthCookies(reply);
+      return reply.code(401).send({
+        error: 'Token Reuse Detected',
+        message: 'Refresh token replay detected. All sessions for this user have been revoked. Please log in again.',
+      });
+    }
+
+    const supabase = createSupabaseClient();
     const { data, error } = await supabase.auth.refreshSession({
       refresh_token: refreshToken,
     });
@@ -396,6 +440,29 @@ export async function authRoutes(server: FastifyInstance) {
         error: 'Refresh Error',
         message: error?.message || 'Failed to refresh session. Please log in again.',
       });
+    }
+
+    // Mark old JTI used + insert new JTI for the new refresh token.
+    try {
+      const newJti = createHash('sha256').update(data.session.refresh_token).digest('hex');
+      const userId = data.session.user.id;
+      // 30-day TTL for new JTI (Supabase default refresh token lifetime).
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      if (knownUserId) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_token_jtis SET used_at = now() WHERE jti = $1 AND used_at IS NULL`,
+          jti,
+        );
+      }
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_token_jtis (jti, user_id, expires_at) VALUES ($1, $2::uuid, $3::timestamptz)
+         ON CONFLICT (jti) DO NOTHING`,
+        newJti,
+        userId,
+        expiresAt.toISOString(),
+      );
+    } catch (err) {
+      request.log.warn({ err }, 'JTI rotation write failed — refresh succeeded but ledger out of sync');
     }
 
     setAuthCookies(reply, data.session.access_token, data.session.refresh_token);
