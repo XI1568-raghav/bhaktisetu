@@ -10,15 +10,7 @@ const profileUpdateSchema = z.object({
   description: z.string().max(2000).optional(),
 });
 
-const cowCreateSchema = z.object({
-  tagNumber: z.string().min(1).max(50).trim(),
-  name: z.string().min(1).max(150).trim(),
-  breed: z.string().max(100).trim().optional(),
-  ageYears: z.coerce.number().int().min(0).max(40).optional(),
-  gender: z.enum(['female', 'male']).default('female'),
-  healthStatus: z.enum(['healthy', 'recovering', 'critical', 'quarantine']).default('healthy'),
-  notes: z.string().max(2000).optional(),
-});
+// cowCreateSchema lives in gaushala-cows.ts (sibling route file).
 
 // Donation.gaushalaId is a stringified user_id (no FK — see schema.prisma:1056-1059
 // for the rationale). All aggregates here filter on `gaushalaId = currentUser.id`.
@@ -130,65 +122,7 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
     });
   });
 
-  // GET /cows — list cows for the current gaushala manager.
-  server.get('/cows', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const userId = request.currentUser!.id;
-    const roles = request.currentUser!.roles ?? [];
-    if (!roles.includes('GAUSHALA_MANAGER')) {
-      return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
-    }
-    const profile = await prisma.gaushalaProfile.findUnique({ where: { userId } });
-    if (!profile) {
-      return reply.send({ cows: [], total: 0 });
-    }
-    const cows = await prisma.cow.findMany({
-      where: { gaushalaId: profile.id },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
-    return reply.send({ cows, total: cows.length });
-  });
-
-  // POST /cows — register a new cow. Phase B Gaushala P0-2 fix (2026-06-08).
-  server.post('/cows', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const userId = request.currentUser!.id;
-    const roles = request.currentUser!.roles ?? [];
-    if (!roles.includes('GAUSHALA_MANAGER')) {
-      return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
-    }
-    const parsed = cowCreateSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
-    }
-    const profile = await prisma.gaushalaProfile.findUnique({ where: { userId } });
-    if (!profile) {
-      return reply.code(409).send({
-        error: 'Profile required',
-        message: 'Create a gaushala profile before registering cows.',
-      });
-    }
-    // Unique tagNumber per gaushala — prevent duplicates.
-    const existing = await prisma.cow.findFirst({
-      where: { gaushalaId: profile.id, tagNumber: parsed.data.tagNumber },
-    });
-    if (existing) {
-      return reply.code(409).send({ error: 'Tag number already exists in this gaushala.' });
-    }
-    const cow = await prisma.cow.create({
-      data: {
-        gaushalaId: profile.id,
-        tagNumber: parsed.data.tagNumber,
-        name: parsed.data.name,
-        breed: parsed.data.breed ?? null,
-        ageYears: parsed.data.ageYears ?? null,
-        gender: parsed.data.gender,
-        healthStatus: parsed.data.healthStatus,
-        notes: parsed.data.notes ?? null,
-      },
-    });
-    return reply.code(201).send({ cow });
-  });
-
+  // Note: GET/POST/PATCH/DELETE /cows live in gaushala-cows.ts (sibling route file).
   // Note: GET/POST/PATCH/DELETE /volunteers live in gaushala-volunteers.ts
   // (registered under the same /gaushala-portal prefix). Keep them there to
   // avoid duplicate route registration at boot.

@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTodayPanchang } from '../lib/api';
-import { headers } from 'next/headers';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
 import { brandFaqJsonLd } from '../lib/jsonld';
@@ -81,7 +80,6 @@ export const metadata: Metadata = {
 export default async function HomePage() {
  const t = await getTranslations('home');
  const tCommon = await getTranslations('common');
- const nonce = (await headers()).get('x-nonce') ?? undefined;
 
  // Tolerant panchang fetch — surface tithi + nakshatra chip in hero per blueprint Day 2.
  let panchangChip: { tithi: string; nakshatra: string } | null = null;
@@ -96,7 +94,6 @@ export default async function HomePage() {
  <ScrollReveal>
  <script
    type="application/ld+json"
-   nonce={nonce}
    dangerouslySetInnerHTML={{ __html: JSON.stringify(brandFaqJsonLd) }}
  />
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
