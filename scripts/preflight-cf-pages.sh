@@ -18,9 +18,28 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DIRTY_WEB=$(git diff --cached --name-only --diff-filter=ACM | grep -c '^apps/web/' || true)
+# Detect apps/web changes:
+#   1. Cached (pre-commit hook context) — git diff --cached
+#   2. Working tree (manual run) — git diff
+#   3. Pushed range (pre-push hook context) — env var WEB_CHANGED_RANGE set by hook
+# If none match but env var set "FORCE=1", run anyway.
+DIRTY_WEB=0
+if [ -n "${WEB_CHANGED_RANGE:-}" ]; then
+  if git diff --name-only "$WEB_CHANGED_RANGE" 2>/dev/null | grep -q '^apps/web/'; then
+    DIRTY_WEB=1
+  fi
+elif [ "${FORCE:-0}" = "1" ]; then
+  DIRTY_WEB=1
+else
+  CACHED=$(git diff --cached --name-only --diff-filter=ACM | grep -c '^apps/web/' || true)
+  WORKING=$(git diff --name-only --diff-filter=ACM | grep -c '^apps/web/' || true)
+  if [ "$CACHED" != "0" ] || [ "$WORKING" != "0" ]; then
+    DIRTY_WEB=1
+  fi
+fi
 if [ "$DIRTY_WEB" = "0" ]; then
-  echo "[preflight-cf-pages] No staged apps/web changes — skipping CF Pages dry-run."
+  echo "[preflight-cf-pages] No apps/web changes detected — skipping CF Pages dry-run."
+  echo "[preflight-cf-pages] (Set FORCE=1 to run anyway.)"
   exit 0
 fi
 
