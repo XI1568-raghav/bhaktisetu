@@ -180,21 +180,48 @@ export default function StoreAdminDashboard() {
      setLoading(true);
      setError(null);
      try {
-       // Try the consolidated revenue endpoint first; fall back to deriving
-       // from full order list if it's not implemented.
+       // Phase B Store P0-3 fix (2026-06-08): prefer server-aggregated
+       // /store-admin/revenue (scales past 100 orders) over client reduce.
+       // Falls back to /admin/revenue then client aggregation if both miss.
        let revenue: DashboardData['revenue'] | null = null;
+       let serverTopProducts: DashboardData['topProducts'] | null = null;
        try {
-         const rev = await fetch(`${API_BASE_URL}/admin/revenue?source=store`, { headers });
+         const rev = await fetch(`${API_BASE_URL}/store-admin/revenue`, { headers });
          if (rev.ok) {
            const j = await rev.json();
-           revenue = {
-             total: Number(j.total) || 0,
-             thisMonth: Number(j.thisMonth) || 0,
-             pending: Number(j.pending) || 0,
-           };
+           if (j?.totals) {
+             revenue = {
+               total: Number(j.totals.yearInr) || 0,
+               thisMonth: Number(j.totals.monthInr) || 0,
+               pending: 0,
+             };
+           }
+           if (Array.isArray(j?.topProducts)) {
+             serverTopProducts = j.topProducts.map((p: { name: string; sold?: number; revenueInr?: number; rating?: number }) => ({
+               name: p.name,
+               sold: Number(p.sold) || 0,
+               revenue: Number(p.revenueInr) || 0,
+               rating: Number(p.rating) || 0,
+             }));
+           }
          }
        } catch {
-         /* fall through */
+         /* fall through to legacy /admin/revenue */
+       }
+       if (!revenue) {
+         try {
+           const rev = await fetch(`${API_BASE_URL}/admin/revenue?source=store`, { headers });
+           if (rev.ok) {
+             const j = await rev.json();
+             revenue = {
+               total: Number(j.total) || 0,
+               thisMonth: Number(j.thisMonth) || 0,
+               pending: Number(j.pending) || 0,
+             };
+           }
+         } catch {
+           /* fall through to client aggregate */
+         }
        }
 
        const ordersRes = await fetch(`${API_BASE_URL}/store/orders`, { headers });
@@ -232,16 +259,21 @@ export default function StoreAdminDashboard() {
              active: list.filter((p) => p.isActive !== false).length,
              outOfStock: list.filter((p) => (p.stock ?? 0) <= 0).length,
            };
-           topProducts = list
-             .filter((p) => (p.soldCount ?? 0) > 0)
-             .sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0))
-             .slice(0, 4)
-             .map((p) => ({
-               name: p.name,
-               sold: p.soldCount ?? 0,
-               revenue: p.revenue ?? 0,
-               rating: p.rating ?? 0,
-             }));
+           // Only fall back to client product-list aggregation if server endpoint did not return topProducts.
+           if (!serverTopProducts || serverTopProducts.length === 0) {
+             topProducts = list
+               .filter((p) => (p.soldCount ?? 0) > 0)
+               .sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0))
+               .slice(0, 4)
+               .map((p) => ({
+                 name: p.name,
+                 sold: p.soldCount ?? 0,
+                 revenue: p.revenue ?? 0,
+                 rating: p.rating ?? 0,
+               }));
+           } else {
+             topProducts = serverTopProducts;
+           }
          }
        } catch {
          /* skip products section */
