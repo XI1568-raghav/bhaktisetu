@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { DateInput } from '../../../components/ui/DateInput';
 
 function apiBase(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -117,7 +116,12 @@ function InquiryForm() {
       <div className="grid sm:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm text-stone-700">Wedding date (if known)</span>
-          <DateInput value={form.weddingDate} onChange={(v) => update('weddingDate', v)} />
+          <input
+            type="date"
+            value={form.weddingDate}
+            onChange={(e) => update('weddingDate', e.target.value)}
+            className="mt-1 w-full rounded-md border border-stone-300 p-2"
+          />
         </label>
         <label className="block">
           <span className="text-sm text-stone-700">Package</span>

@@ -17,7 +17,6 @@ import {
  MessageCircle,
 } from 'lucide-react';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { DateInput } from '../../../components/ui/DateInput';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -374,7 +373,12 @@ How may I guide you today?`,
  <Calendar className="w-4 h-4 inline mr-1.5 text-saffron-400" />
  Date of Birth
  </label>
- <DateInput value={birthDetails.date} onChange={(v) => setBirthDetails(v)} />
+ <input
+ type="date"
+ value={birthDetails.date}
+ onChange={(e) => setBirthDetails({ ...birthDetails, date: e.target.value })}
+ className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none"
+ />
  </div>
  <div>
  <label className="block text-sm font-semibold text-surface-700 mb-1.5">

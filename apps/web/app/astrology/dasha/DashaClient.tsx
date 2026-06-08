@@ -3,7 +3,6 @@
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { computeDasha, DASHA_LORD_PLANET_HINDI, DASHA_LORD_NATURE, type DashaResult } from '../../../lib/dasha-vimshottari';
-import { DateInput } from '../../../components/ui/DateInput';
 
 type TimezoneOption = { value: number; label: string };
 
@@ -54,9 +53,12 @@ export default function DashaClient({ options }: { options: TimezoneOption[] }) 
     <div className="grid gap-4 sm:grid-cols-3">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date of birth</span>
-      <DateInput
+      <input
+       type="date"
        value={dob}
-       onChange={(v) => setDob(v)}
+       onChange={(e) => setDob(e.target.value)}
+       required
+       className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
       />
      </label>
      <label className="block">

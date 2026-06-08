@@ -62,12 +62,12 @@ export default function WisdomStrip() {
             >
               Wisdom
             </p>
-            <FadeScaleReveal
+            <TextReveal
               as="h2"
               className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
             >
               Daily panchang, scriptures, audio, horoscope.
-            </FadeScaleReveal>
+            </TextReveal>
           </div>
         </header>
 
