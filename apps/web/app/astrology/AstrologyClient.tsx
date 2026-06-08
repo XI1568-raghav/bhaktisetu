@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { DateInput } from '../../components/ui/DateInput';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { getAstrologerImage } from '../../lib/images';
 import {
-import { DateInput } from '../../components/ui/DateInput';
  Star,
  Moon,
  Sun,

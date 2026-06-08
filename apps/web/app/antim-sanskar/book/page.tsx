@@ -248,12 +248,6 @@ export default function AntimSanskarBookPage() {
               Preferred date
             </label>
             <DateInput value={preferredDate} onChange={(v) => setPreferredDate(v)} />
-              style={{
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-text)',
-              }}
-            />
             <p
               className="text-xs mt-1.5"
               style={{ color: 'var(--color-text-muted)' }}
