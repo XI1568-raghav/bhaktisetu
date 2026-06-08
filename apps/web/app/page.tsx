@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTodayPanchang } from '../lib/api';
+import Image from 'next/image';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
 import { brandFaqJsonLd } from '../lib/jsonld';
@@ -167,15 +168,15 @@ export default async function HomePage() {
  <ParallaxLayer speed={0.12} maxOffset={48} className="hidden md:block">
  <div data-reveal="zoom-rotate" data-delay="1" className="grid grid-cols-2 gap-2.5">
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
- <img
+ <Image
  src={getTempleHero('golden-temple')}
  alt="Sri Harmandir Sahib (Golden Temple), live darshan"
  width={1280}
  height={640}
+ sizes="(max-width: 768px) 100vw, 50vw"
  className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
- loading="eager"
- fetchPriority="high"
- decoding="async"
+ priority
+ unoptimized
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">

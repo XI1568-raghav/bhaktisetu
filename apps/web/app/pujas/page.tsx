@@ -286,8 +286,16 @@ async function loadPujas(): Promise<PujaCard[]> {
  }
 }
 
-export default async function PujasPage() {
- const pujas = await loadPujas();
+const PAGE_SIZE = 12;
+
+export default async function PujasPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+ const allPujas = await loadPujas();
+ const sp = await searchParams;
+ const requestedPage = Math.max(1, Math.min(Number(sp.page) || 1, 50));
+ const visibleCount = Math.min(requestedPage * PAGE_SIZE, allPujas.length);
+ const pujas = allPujas.slice(0, visibleCount);
+ const hasMore = visibleCount < allPujas.length;
+ const nextPage = requestedPage + 1;
  const t = await getTranslations('pujas');
  return (
  <div className="min-h-[100dvh] bg-surface-50">
@@ -478,7 +486,7 @@ export default async function PujasPage() {
 
  {/* Results */}
  <p className="text-sm text-surface-500 mb-6">
- Showing <span className="font-semibold text-surface-600">{pujas.length}</span> pujas
+ Showing <span className="font-semibold text-surface-600">{pujas.length}</span> of <span className="font-semibold text-surface-600">{allPujas.length}</span> pujas
  </p>
 
  {/* Sponsored — between trending tags and the All Pujas grid */}
@@ -582,6 +590,19 @@ export default async function PujasPage() {
  </div>
  ))}
  </div>
+
+ {hasMore && (
+ <div className="mt-8 flex justify-center">
+ <Link
+ href={`/pujas?page=${nextPage}`}
+ className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300 focus-visible:ring-offset-2"
+ prefetch={false}
+ aria-label={`Load next ${PAGE_SIZE} pujas`}
+ >
+ Load more pujas
+ </Link>
+ </div>
+ )}
 
  </div>
  </div>
