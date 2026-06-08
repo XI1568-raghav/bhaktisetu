@@ -27,6 +27,11 @@ const StickyAartiCta = dynamic(() => import('./home/StickyAartiCta'), {
  loading: () => null,
 });
 
+const HeaderScrollShadow = dynamic(() => import('./HeaderScrollShadow'), {
+ ssr: false,
+ loading: () => null,
+});
+
 // Phase D-5 (2026-06-05): WhatsAppButton dropped — duplicate chat FAB collision.
 // LiveChatWidget canonical (AI Asha + Claude API + escalate-to-ticket richer flow).
 // WhatsApp still reachable via Ask Pandit nav chip + /contact + /support/ticket/new.
@@ -37,6 +42,7 @@ export function DeferredClientWidgets() {
  <CartDrawer />
  <LiveChatWidget />
  <StickyAartiCta />
+ <HeaderScrollShadow />
  </>
  );
 }

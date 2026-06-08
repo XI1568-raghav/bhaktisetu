@@ -320,12 +320,16 @@ export default function RootLayout({
  <CartProvider>
 
  {/* ── Navigation ─────────────────────────────────────────────── */}
- <header className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-surface-200/40">
+ <header
+   data-scroll-shadow
+   className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-transparent transition-[border,background] duration-200"
+   style={{ WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
+ >
  <nav
- className="mx-auto max-w-6xl flex items-center h-16 px-4 sm:px-6 lg:px-8"
+ className="mx-auto max-w-7xl flex items-center h-16 px-4 sm:px-6 lg:px-8 gap-3"
  aria-label="Main navigation"
  >
- {/* Logo */}
+ {/* Logo — fixed left, shrink-0 */}
  <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Darshya home">
  <Logo size={28} />
  <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline leading-none">
@@ -333,38 +337,56 @@ export default function RootLayout({
  </span>
  </a>
 
- {/* Desktop nav — 5-category mega-menu */}
- <div className="hidden md:flex items-center gap-1 mx-auto">
+ {/* Desktop nav — center; flex-1 reserves space so right cluster never gets pushed off-screen.
+     min-w-0 lets center shrink before it overflows. Hidden below lg (1024px) — drawer takes over. */}
+ <div className="hidden lg:flex flex-1 items-center justify-center gap-1 min-w-0">
  <CategoryNav />
+ </div>
 
- {/* Ask Pandit — highlighted CTA */}
+ {/* Right cluster — shrink-0 guarantees visibility at every viewport. Items reveal progressively. */}
+ <div className="flex items-center gap-1 ml-auto lg:ml-0 shrink-0">
+ {/* Ask Pandit — icon-only below xl, label visible 1280px+ */}
  <a
  href={highlightLink.href}
- className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-saffron-600 hover:bg-saffron-700 rounded-md transition-colors whitespace-nowrap ml-1 btn-press"
+ className="hidden md:inline-flex items-center gap-1.5 h-9 px-2.5 xl:px-3 text-sm font-medium text-white bg-saffron-600 hover:bg-saffron-700 rounded-md transition-colors whitespace-nowrap btn-press"
+ aria-label={tNav(highlightLink.labelKey)}
+ title={tNav(highlightLink.labelKey)}
  >
- <MessageCircleQuestion className="w-3.5 h-3.5" />
- {tNav(highlightLink.labelKey)}
+ <MessageCircleQuestion className="w-4 h-4" />
+ <span className="hidden xl:inline">{tNav(highlightLink.labelKey)}</span>
  </a>
+
+ {/* List your business — only at 2xl (1536px+). Below that, lives in mobile drawer. */}
+ <div className="hidden 2xl:block">
+ <ListYourBusinessDropdown />
  </div>
 
- {/* Right side */}
- <div className="flex items-center gap-1.5 ml-auto md:ml-0 shrink-0">
- <ListYourBusinessDropdown />
- {/* Today persistent chip — daily-return hook (Sri Mandir #1 retention lever, amber accent per brand color discipline) */}
+ {/* Today — icon-only below xl. Always visible md+ for daily-return hook. */}
  <a
  href="/today"
- className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors whitespace-nowrap"
+ className="hidden md:inline-flex items-center justify-center gap-1 h-9 w-9 xl:w-auto xl:px-2.5 text-xs font-medium text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors whitespace-nowrap"
  aria-label="Today's panchang and aarti"
+ title="Today's panchang and aarti"
  >
- <Calendar className="w-3.5 h-3.5" />
- <span className="hidden lg:inline">Today</span>
+ <Calendar className="w-4 h-4" />
+ <span className="hidden xl:inline">Today</span>
  </a>
+
+ {/* Search — icon-only collapses to expand-on-click below xl */}
  <GlobalSearch />
+
+ {/* Cart — always visible */}
  <NavCartButton />
- <div className="hidden sm:block">
+
+ {/* Auth — md+ */}
+ <div className="hidden md:block">
  <NavAuthButton />
  </div>
+
+ {/* Mobile drawer trigger — only below lg, absorbs full nav */}
+ <div className="lg:hidden">
  <MobileNavV2 />
+ </div>
  </div>
  </nav>
  </header>
