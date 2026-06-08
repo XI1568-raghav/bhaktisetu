@@ -308,6 +308,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  } catch {
  // localStorage may be unavailable
  }
+ // Pillar Analytics — identify PostHog user on session persistence (was never called).
+ try {
+   if (typeof window !== 'undefined' && window.posthog?.identify) {
+     window.posthog.identify(usr.id, {
+       email: usr.email,
+       role: usr.role,
+       display_name: usr.displayName,
+     });
+   }
+ } catch {
+   /* posthog not loaded — skip */
+ }
  } else {
  removeCookie(STORAGE_KEYS.SESSION);
  removeCookie(STORAGE_KEYS.USER);
@@ -630,6 +642,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  setSession(null);
  setUser(null);
  persistSession(null, null);
+ // Pillar Analytics — reset PostHog identity on logout (was never called).
+ try {
+   if (typeof window !== 'undefined' && window.posthog?.reset) {
+     window.posthog.reset();
+   }
+ } catch {
+   /* posthog not loaded — skip */
+ }
  }
  }, [session, persistSession]);
 

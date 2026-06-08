@@ -19,7 +19,8 @@ function AnalyticsInner() {
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     if (!key || window.posthog) return;
-    const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+    // Align with lib/posthog.ts EU default — avoids double-init split across 2 PostHog projects.
+    const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com';
     const s = document.createElement('script');
     s.async = true;
     s.src = `${host}/static/array.js`;
