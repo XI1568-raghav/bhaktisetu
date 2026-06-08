@@ -467,12 +467,22 @@ const STATEMENTS: string[] = [
   // ─────────────────────────────────────────────────────────────────
   // astrologer_consultations composite indexes (Phase D P1 #6, 2026-06-08).
   // Speeds up /consultation/admin/all ORDER BY scheduled_at and per-user history.
+  // Wrapped in to_regclass guard — table only exists in stacks where consultation
+  // routes have been deployed; skip cleanly on cold-start before table created.
   // ─────────────────────────────────────────────────────────────────
-  `CREATE INDEX IF NOT EXISTS "astrologer_consultations_sched_idx"
-    ON "astrologer_consultations"
-    USING btree ((COALESCE("scheduled_at", "created_at")) DESC NULLS LAST)`,
-  `CREATE INDEX IF NOT EXISTS "astrologer_consultations_user_status_idx"
-    ON "astrologer_consultations" ("user_id", "status", "created_at" DESC)`,
+  `DO $$ BEGIN
+    IF to_regclass('public.astrologer_consultations') IS NOT NULL THEN
+      CREATE INDEX IF NOT EXISTS "astrologer_consultations_sched_idx"
+        ON "astrologer_consultations"
+        USING btree ((COALESCE("scheduled_at", "created_at")) DESC NULLS LAST);
+    END IF;
+  END $$`,
+  `DO $$ BEGIN
+    IF to_regclass('public.astrologer_consultations') IS NOT NULL THEN
+      CREATE INDEX IF NOT EXISTS "astrologer_consultations_user_status_idx"
+        ON "astrologer_consultations" ("user_id", "status", "created_at" DESC);
+    END IF;
+  END $$`,
 ];
 
 export async function ensureSchemaInvariants(
