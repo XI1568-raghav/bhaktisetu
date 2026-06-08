@@ -20,7 +20,7 @@ const CARDS: WorshipCard[] = [
     body: 'Watch live aarti from 200+ temples',
     cta: 'Watch live',
     Icon: Video,
-    image: getTempleHero('golden-temple'),
+    image: getTempleHero('jagannath-puri'),
     badge: 'LIVE',
   },
   {
@@ -45,7 +45,7 @@ const CARDS: WorshipCard[] = [
     body: 'Tax deductible giving',
     cta: 'Donate now',
     Icon: Gift,
-    image: getTempleHero('tirupati'),
+    image: getTempleHero('somnath'),
     badge: '80G',
   },
 ];
