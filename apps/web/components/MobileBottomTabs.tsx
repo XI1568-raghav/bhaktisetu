@@ -22,9 +22,10 @@ type Tab = {
   activeColor: string;
 };
 
+// 4-tab pattern (was 5) per UX rebuke 2026-06-08 — "bottom-nav too much content".
+// Apple/Linear ship 4 tabs max. Darshan absorbed into Library prefixes + Home hero.
 const TABS: Tab[] = [
-  { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/'], activeColor: '#9E3F0A' },
-  { href: '/darshan', label: 'Darshan', icon: Video, prefixes: ['/darshan'], activeColor: '#9E3F0A' },
+  { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/', '/darshan'], activeColor: '#9E3F0A' },
   { href: '/pujas', label: 'Book', icon: Flame, primary: true, prefixes: ['/pujas', '/checkout', '/booking'], activeColor: '#9E3F0A' },
   { href: '/discover', label: 'Library', icon: BookOpen, prefixes: ['/discover', '/ved', '/vedas', '/upanishads', '/puranas', '/bhakti-saint', '/deity', '/festival', '/calendar', '/aarti', '/chalisa', '/chants', '/mantra', '/shlokas', '/sankalp', '/gita', '/ramayana', '/mahabharata', '/sanskrit', '/hindu-philosophies', '/hindu-symbols', '/devi/mahavidyas', '/devi/navadurga', '/dashavatar', '/sapta-rishis', '/aditya', '/chakras', '/vedic-yajnas', '/sacred-rivers', '/sacred-trees', '/sacred-mountains', '/rudraksha', '/tithi', '/nakshatra', '/ekadashi', '/vrat', '/muhurat'], activeColor: '#3730A3' },
   { href: '/profile', label: 'Profile', icon: User, prefixes: ['/profile', '/dashboard', '/bookings', '/auth'], activeColor: '#3a3530' },
@@ -52,7 +53,7 @@ export function MobileBottomTabs() {
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-surface-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <ul className="grid grid-cols-5 items-stretch h-14">
+      <ul className="grid grid-cols-4 items-stretch h-14">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(pathname, tab.prefixes, tab.href);
