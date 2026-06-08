@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Mountain, ArrowRight } from 'lucide-react';
 import { getTempleHero } from '../../lib/images';
 import TextReveal from '../motion/TextReveal';
+import ScrambleReveal from '../motion/ScrambleReveal';
 
 type Destination = {
   name: string;
@@ -46,12 +47,12 @@ export default function YatraStrip() {
           >
             Yatra
           </p>
-          <TextReveal
+          <ScrambleReveal
             as="h2"
             className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
           >
             Pilgrimage with peace of mind.
-          </TextReveal>
+          </ScrambleReveal>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">

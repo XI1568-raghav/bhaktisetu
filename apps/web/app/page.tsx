@@ -26,6 +26,8 @@ import { getTodayPanchang } from '../lib/api';
 import Image from 'next/image';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
+import ScrambleReveal from '../components/motion/ScrambleReveal';
+import StickyHeadlinePin from '../components/motion/StickyHeadlinePin';
 import { brandFaqJsonLd } from '../lib/jsonld';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
@@ -358,8 +360,8 @@ export default async function HomePage() {
  <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/9] relative">
  <img
- src={getTempleHero('golden-temple')}
- alt="Sri Harmandir Sahib (Golden Temple), Amritsar, live darshan"
+ src={getTempleHero('mahakaleshwar')}
+ alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
  width={1280}
  height={720}
  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
@@ -647,6 +649,11 @@ export default async function HomePage() {
  </div>
  </div>
  </section>
+
+ {/* ═══ STICKY HEADLINE PIN — Apple-style scroll moment of pause ═══════ */}
+ <StickyHeadlinePin headline="See divinity. Hear devotion. Feel home.">
+   Every aarti, every chant, every sankalp carried across oceans for those who can no longer be at the temple gate.
+ </StickyHeadlinePin>
 
  {/* ═══ 5-CATEGORY DISCOVERY STRIPS — Worship → Wisdom → Consult → Shop → Yatra → Trust */}
  <WorshipStrip />

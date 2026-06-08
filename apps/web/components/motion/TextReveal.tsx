@@ -68,9 +68,14 @@ export default function TextReveal({
           transition: `opacity 600ms ${easing} ${ms}ms, transform 600ms ${easing} ${ms}ms`,
           willChange: 'opacity, transform',
         };
+        // Space rendered as separate text-node sibling so browser preserves it
+        // for line-break + visible inter-word gap. `inline-block` on the span
+        // otherwise collapses trailing whitespace inside the box.
+        const isLast = i === words.length - 1;
         return (
-          <span key={`${word}-${i}`} aria-hidden="true" style={style}>
-            {word + ' '}
+          <span key={`${word}-${i}`} style={{ display: 'inline' }}>
+            <span aria-hidden="true" style={style}>{word}</span>
+            {!isLast && ' '}
           </span>
         );
       })}
