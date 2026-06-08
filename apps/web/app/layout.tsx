@@ -360,7 +360,6 @@ export default async function RootLayout({
  href="/today"
  className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors whitespace-nowrap"
  aria-label="Today's panchang and aarti"
- title="Today's panchang and aarti"
  >
  <Calendar className="w-3.5 h-3.5" />
  <span className="hidden lg:inline">Today</span>
@@ -380,7 +379,8 @@ export default async function RootLayout({
  <MobileBottomTabs />
 
  {/* ── Footer ──────────────────────────────────────────────────── */}
- <footer className="bg-[#2a2520] text-surface-400">
+ <footer className="bg-[#2a2520] text-surface-400" aria-labelledby="footer-heading">
+ <h2 id="footer-heading" className="sr-only">Site footer</h2>
  {/* Decorative top border */}
  <div className="h-px bg-gradient-to-r from-transparent via-saffron-600/40 to-transparent" />
 
