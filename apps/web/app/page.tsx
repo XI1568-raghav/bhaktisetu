@@ -26,8 +26,9 @@ import { getTodayPanchang } from '../lib/api';
 import Image from 'next/image';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
-import ScrambleReveal from '../components/motion/ScrambleReveal';
+import FadeScaleReveal from '../components/motion/FadeScaleReveal';
 import StickyHeadlinePin from '../components/motion/StickyHeadlinePin';
+import CategoryStackLift from '../components/motion/CategoryStackLift';
 import { brandFaqJsonLd } from '../lib/jsonld';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
@@ -157,13 +158,19 @@ export default async function HomePage() {
  </Link>
  </div>
 
- <div data-reveal="fade" data-delay="4" className="mt-8 flex items-center gap-6 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeVerified')}</span> {t('heroBadgeTemples')}</div>
- <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeAadhaar')}</span> {t('heroBadgePriests')}</div>
- <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
- <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeHd')}</span> {t('heroBadgeStreams')}</div>
+ <FadeScaleReveal as="div" delay={400} className="mt-8 flex items-center gap-6 text-xs" >
+ <div style={{ color: 'var(--color-text-muted)' }}>
+ <span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeVerified')}</span> {t('heroBadgeTemples')}
  </div>
+ <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
+ <div style={{ color: 'var(--color-text-muted)' }}>
+ <span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeAadhaar')}</span> {t('heroBadgePriests')}
+ </div>
+ <div className="w-px h-4" style={{ background: 'var(--color-divider)' }} />
+ <div style={{ color: 'var(--color-text-muted)' }}>
+ <span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeHd')}</span> {t('heroBadgeStreams')}
+ </div>
+ </FadeScaleReveal>
  </div>
 
  {/* Right — Bento with explicit ParallaxLayer + scroll-driven depth */}
@@ -225,7 +232,7 @@ export default async function HomePage() {
  {/* This strip immediately signals Worship saffron, Library indigo, Astrology indigo, Yatra emerald, Shop amber. */}
  <section aria-label="Browse by category" className="py-5 md:py-7" style={{ background: 'var(--color-bg)' }}>
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
- <div className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
+ <CategoryStackLift className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
  {[
  { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF4EC', border: '#FBD0A8', text: '#9E3F0A', icon: '#E16318' },
  { label: 'Library', sub: '500 plus wisdom guides', href: '/discover', Icon: BookOpen, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
@@ -237,7 +244,8 @@ export default async function HomePage() {
  key={cat.label}
  href={cat.href}
  prefetch={false}
- className="snap-start shrink-0 md:shrink flex flex-col items-start justify-between gap-2 min-w-[164px] md:min-w-0 p-3.5 rounded-xl card-hover transition-all"
+ data-card
+ className="snap-start shrink-0 md:shrink flex flex-col items-start justify-between gap-2 min-w-[164px] md:min-w-0 p-3.5 rounded-xl card-hover transition-colors"
  style={{ background: cat.bg, border: `1px solid ${cat.border}` }}
  >
  <cat.Icon className="w-5 h-5" style={{ color: cat.icon }} />
@@ -247,7 +255,7 @@ export default async function HomePage() {
  </div>
  </Link>
  ))}
- </div>
+ </CategoryStackLift>
  </div>
  </section>
 
@@ -348,9 +356,9 @@ export default async function HomePage() {
  <div className="flex items-center justify-between mb-5">
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>{t('liveDarshanLabel')}</p>
- <ScrambleReveal as="h2" className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <FadeScaleReveal as="h2" className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800">
    Watch live aarti from sacred temples across India.
- </ScrambleReveal>
+ </FadeScaleReveal>
  </div>
  <Link href="/darshan" data-reveal="fade" className="inline-flex items-center gap-1 text-xs font-medium link-underline" style={{ color: 'var(--color-primary)' }}>
  {t('allStreams')} <ArrowRight className="w-3 h-3" />

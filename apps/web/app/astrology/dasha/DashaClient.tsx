@@ -57,7 +57,6 @@ export default function DashaClient({ options }: { options: TimezoneOption[] }) 
       <DateInput
        value={dob}
        onChange={(v) => setDob(v)}
-       required
       />
      </label>
      <label className="block">

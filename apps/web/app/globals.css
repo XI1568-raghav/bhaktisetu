@@ -725,3 +725,33 @@ input[type="date"]::-moz-calendar-picker-indicator,
 input[type="datetime-local"]::-moz-calendar-picker-indicator {
   display: none !important;
 }
+
+/* Branded date/time inputs site-wide — hides native browser chrome,
+   applies brand saffron focus ring. Per user request 2026-06-08:
+   "calendar option should not be native for the entire application". */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--color-surface-200, #ede9e3);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text, #2a2520);
+  background: white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="time"]:focus {
+  outline: none;
+  border-color: var(--color-saffron-500, #b87333);
+  box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.15);
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+  filter: invert(40%) sepia(80%) saturate(500%) hue-rotate(10deg);
+}
