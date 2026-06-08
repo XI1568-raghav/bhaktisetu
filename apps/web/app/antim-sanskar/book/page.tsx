@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { DateInput } from '../../../components/ui/DateInput';
 
 // Layer AT — booking flow. Single-page form, no multi-step wizard.
 // Defaults preferredDate to today since most rites are needed same-day.
@@ -246,11 +247,7 @@ export default function AntimSanskarBookPage() {
             >
               Preferred date
             </label>
-            <input
-              type="date"
-              value={preferredDate}
-              onChange={(e) => setPreferredDate(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-md text-sm"
+            <DateInput value={preferredDate} onChange={(v) => setPreferredDate(v)} />
               style={{
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',

@@ -3,6 +3,7 @@
 import { useState, useMemo, FormEvent } from 'react';
 import Link from 'next/link';
 import { computeKaalSarp, KAAL_SARP_REMEDIES, type KaalSarpResult } from '../../../lib/kaal-sarp';
+import { DateInput } from '../../../components/ui/DateInput';
 
 const CITY_PRESETS = [
  { label: 'Delhi',     lat: 28.6139, lng: 77.2090, tz: 5.5 },
@@ -68,10 +69,7 @@ export default function KaalSarpClient() {
     <div className="grid gap-4 sm:grid-cols-3">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date of birth</span>
-      <input
-       type="date" value={dob} onChange={(e) => setDob(e.target.value)} required
-       className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
-      />
+      <DateInput value={dob} onChange={(v) => setDob(v)} required />
      </label>
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Birth time (local)</span>
