@@ -286,6 +286,8 @@ async function loadPujas(): Promise<PujaCard[]> {
  }
 }
 
+export const runtime = 'edge';
+
 const PAGE_SIZE = 12;
 
 export default async function PujasPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {

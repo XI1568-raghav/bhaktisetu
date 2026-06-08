@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# .githooks/pre-push
+# Enable: git config core.hooksPath .githooks
+#
+# Runs preflight CF Pages check before allowing push.
+# Blocks push if apps/web changes would break CF Pages build.
+
+set -e
+
+# Only check if pushing to remote main (or any branch — keep simple).
+REMOTE="${1:-}"
+URL="${2:-}"
+
+# Find files in commits being pushed.
+while read local_ref local_oid remote_ref remote_oid; do
+  if [ "$local_oid" = "0000000000000000000000000000000000000000" ]; then
+    # Branch deletion — skip.
+    continue
+  fi
+
+  if [ "$remote_oid" = "0000000000000000000000000000000000000000" ]; then
+    # New branch — check last 5 commits.
+    RANGE="HEAD~5..HEAD"
+  else
+    RANGE="$remote_oid..$local_oid"
+  fi
+
+  # Check if any commit in range touches apps/web/**
+  if git diff --name-only "$RANGE" 2>/dev/null | grep -q '^apps/web/'; then
+    echo ""
+    echo "[pre-push] apps/web changes detected — running CF Pages preflight..."
+    echo ""
+    if ! bash scripts/preflight-cf-pages.sh; then
+      echo ""
+      echo "[pre-push] BLOCKED: CF Pages preflight failed."
+      echo "[pre-push] Fix errors above. To bypass (NOT RECOMMENDED): git push --no-verify"
+      exit 1
+    fi
+  fi
+done
+
+exit 0
