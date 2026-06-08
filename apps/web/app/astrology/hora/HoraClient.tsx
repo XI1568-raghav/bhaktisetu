@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, FormEvent } from 'react';
-import { DateInput } from '../../../components/ui/DateInput';
 import Link from 'next/link';
 import {
  computeHora,
@@ -52,7 +51,13 @@ export default function HoraClient() {
     <div className="grid gap-4 sm:grid-cols-2">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date</span>
-      <DateInput value={date} onChange={(v) => setDate(v)} />
+      <input
+       type="date"
+       value={date}
+       onChange={(e) => setDate(e.target.value)}
+       required
+       className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
+      />
      </label>
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">City</span>

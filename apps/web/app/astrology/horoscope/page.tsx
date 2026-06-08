@@ -16,7 +16,6 @@ import {
  Globe,
 } from 'lucide-react';
 import { RASHIS, type RashiInfo } from '../../../lib/rashis';
-import { DateInput } from '../../../components/ui/DateInput';
 
 type DailyHoroscope = RashiInfo;
 
@@ -123,7 +122,12 @@ export default function HoroscopePage() {
  {/* Date Selector */}
  <div className="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-xl px-4 py-2">
  <Calendar className="w-4 h-4 text-saffron-500" />
- <DateInput value={selectedDate} onChange={(v) => setSelectedDate(v)} />
+ <input
+ type="date"
+ value={selectedDate}
+ onChange={(e) => setSelectedDate(e.target.value)}
+ className="bg-transparent text-sm text-surface-800 border-none outline-none focus:ring-0"
+ />
  </div>
  </div>
  </div>

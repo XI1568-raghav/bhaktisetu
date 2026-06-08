@@ -19,7 +19,6 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { StripeClientSecretCheckout } from '../../../components/StripeClientSecretCheckout';
-import { DateInput } from '../../../components/ui/DateInput';
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // Lifted verbatim from /pujas/[slug]/book — keep the two flows
@@ -570,7 +569,13 @@ function OfferingCheckoutInner() {
               <Calendar className="w-3.5 h-3.5 inline mr-1" />
               Scheduled date
             </label>
-            <DateInput value={scheduledDate} min={getTomorrow()} onChange={(v) => setScheduledDate(v)} />
+            <input
+              type="date"
+              min={getTomorrow()}
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg text-sm focus:border-saffron-500 focus:ring-1 focus:ring-saffron-500 outline-none"
+            />
           </div>
 
           <div>

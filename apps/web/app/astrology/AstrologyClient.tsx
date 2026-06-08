@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DateInput } from '../../components/ui/DateInput';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -582,7 +581,12 @@ export default function AstrologyPage() {
  onChange={(e) => setKundliName(e.target.value)}
  className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
  />
- <DateInput value={kundliDate} onChange={(v) => setKundliDate(v)} />
+ <input
+ type="date"
+ value={kundliDate}
+ onChange={(e) => setKundliDate(e.target.value)}
+ className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
+ />
  <input
  type="time"
  value={kundliTime}

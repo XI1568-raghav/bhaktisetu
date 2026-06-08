@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { DateInput } from '../../../../components/ui/DateInput';
 import Link from 'next/link';
 import {
  CheckCircle,
@@ -229,8 +228,13 @@ export default function BookMarriage() {
  <label className="block text-sm font-medium text-surface-700 mb-1.5">
  Wedding date
  </label>
- <DateInput value={weddingDate} onChange={(v) => setWeddingDate(v)} />
+ <input
+ type="date"
+ value={weddingDate}
+ onChange={(e) => setWeddingDate(e.target.value)}
  min={new Date().toISOString().split('T')[0]}
+ className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-saffron-200"
+ />
  </div>
  <div>
  <label className="block text-sm font-medium text-surface-700 mb-1.5">
