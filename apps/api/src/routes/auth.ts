@@ -425,12 +425,38 @@ export async function authRoutes(server: FastifyInstance) {
     }
 
     const { accessToken } = parseResult.data;
-    const supabase = createSupabaseClient(accessToken);
 
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      request.log.warn(error, 'Supabase signOut error (non-critical)');
+    // Phase C P1 #5 (2026-06-08): email-session revocation server-side.
+    // If token matches the email-{userId}-{hex} format, mark revoked_at in email_sessions.
+    if (typeof accessToken === 'string' && /^email-/.test(accessToken)) {
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE email_sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
+          accessToken,
+        );
+      } catch (err) {
+        request.log.warn({ err }, 'EmailSession revoke best-effort failed');
+      }
+    } else if (typeof accessToken === 'string') {
+      // Supabase JWT path: call signOut + best-effort revoke any JTIs for the user.
+      const supabase = createSupabaseClient(accessToken);
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        request.log.warn(error, 'Supabase signOut error (non-critical)');
+      }
+      // Best-effort: revoke active JTIs for this user from extracted sub claim.
+      try {
+        const claims = await supabase.auth.getUser(accessToken);
+        const userId = claims.data?.user?.id;
+        if (userId) {
+          await prisma.$executeRawUnsafe(
+            `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+            userId,
+          );
+        }
+      } catch (err) {
+        request.log.warn({ err }, 'JTI revoke best-effort failed');
+      }
     }
 
     clearAuthCookies(reply);
