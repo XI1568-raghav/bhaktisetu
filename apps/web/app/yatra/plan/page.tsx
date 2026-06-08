@@ -227,15 +227,11 @@ export default function CustomPlanPage() {
  <div className="grid sm:grid-cols-2 gap-3 mb-4">
  <div>
  <label className="text-xs block mb-1" style={{ color: 'var(--color-text)' }}>Start date</label>
- <DateInput value={data.startDate} onChange={(v) => setData(v)} />
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
- />
+ <DateInput value={data.startDate} onChange={(v) => setData({ ...data, startDate: v })} />
  </div>
  <div>
  <label className="text-xs block mb-1" style={{ color: 'var(--color-text)' }}>End date</label>
- <DateInput value={data.endDate} onChange={(v) => setData(v)} />
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
- />
+ <DateInput value={data.endDate} onChange={(v) => setData({ ...data, endDate: v })} />
  </div>
  </div>
  {durationDays > 0 && (
