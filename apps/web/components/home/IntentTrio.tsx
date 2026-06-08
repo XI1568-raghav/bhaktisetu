@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Video, Flame, MessageCircleQuestion, ArrowRight } from 'lucide-react';
 import { OnboardingGate } from './_useOnboardingSafe';
+import { capture } from '../../lib/posthog';
 
 type IntentCard = {
   Icon: typeof Video;
@@ -64,6 +65,7 @@ function TrioCards() {
               key={card.href}
               href={card.href}
               prefetch={false}
+              onClick={() => capture('intent_card_click', { lane: card.title, href: card.href })}
               className="group relative flex flex-col rounded-xl p-5 card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               style={{
                 background: 'var(--color-surface)',
