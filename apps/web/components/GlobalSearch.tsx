@@ -121,27 +121,30 @@ export function GlobalSearch() {
 
  return (
  <div ref={containerRef} className="relative">
+ {/* Pill — only at xl+ (1280px+). Below xl uses icon-only to fit right cluster. */}
  <button
  type="button"
  aria-label="Search"
  onClick={() => setOpen(true)}
- className="hidden md:flex items-center gap-2 w-[160px] lg:w-[220px] xl:w-[280px] px-3 py-2 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-lg transition-colors"
+ className="hidden xl:flex items-center gap-2 w-[240px] 2xl:w-[300px] h-9 px-3 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-md transition-colors"
  >
  <Search className="w-4 h-4 shrink-0" />
  <span className="truncate text-left flex-1">
  {ROTATING_PLACEHOLDERS[placeholderIdx]}
  </span>
- <kbd className="hidden lg:inline-flex px-1.5 py-0.5 text-[10px] font-mono text-surface-400 bg-surface-100 rounded border border-surface-200">
+ <kbd className="inline-flex px-1.5 py-0.5 text-[10px] font-mono text-surface-400 bg-surface-100 rounded border border-surface-200">
  /
  </kbd>
  </button>
+ {/* Icon-only — below xl (covers md + lg + mobile). */}
  <button
  type="button"
  aria-label="Search"
+ title="Search"
  onClick={() => setOpen(true)}
- className="md:hidden p-2 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-md transition-colors"
+ className="xl:hidden inline-flex items-center justify-center h-9 w-9 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
  >
- <Search className="w-[18px] h-[18px]" />
+ <Search className="w-4 h-4" />
  </button>
 
  {open && (
