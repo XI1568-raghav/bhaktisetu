@@ -20,6 +20,9 @@ import {
  Flame,
 } from 'lucide-react';
 import { calculateKundli, type KundliData } from '../../../lib/vedic-astrology';
+import { DateInput } from '../../../components/ui/DateInput';
+import CityAutocomplete from '../../../components/ui/CityAutocomplete';
+import type { CityRecord } from '../../../lib/indian-cities';
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
@@ -28,20 +31,24 @@ export default function KundliPage() {
  name: '',
  date: '',
  time: '',
- place: '',
  });
+ const [city, setCity] = useState<CityRecord | null>(null);
  const [kundli, setKundli] = useState<KundliData | null>(null);
  const [isLoading, setIsLoading] = useState(false);
  const [activeTab, setActiveTab] = useState<'chart' | 'planets' | 'dasha' | 'dosha'>('chart');
 
  function handleSubmit(e: React.FormEvent) {
  e.preventDefault();
- if (!formData.name || !formData.date || !formData.time || !formData.place) return;
+ if (!formData.name || !formData.date || !formData.time || !city) return;
 
  setIsLoading(true);
- // Small delay for UX
  setTimeout(() => {
- const result = calculateKundli(formData.name, formData.date, formData.time, formData.place);
+ // Pass city name for display + direct lat/lng for computation (bypasses silent New Delhi fallback)
+ const result = calculateKundli(formData.name, formData.date, formData.time, city.name, {
+   lat: city.lat,
+   lng: city.lng,
+   tzOffset: city.tzOffsetMin / 60,
+ });
  setKundli(result);
  setIsLoading(false);
  }, 800);
@@ -113,19 +120,14 @@ export default function KundliPage() {
  />
  </div>
 
- <div>
- <label className="block text-sm font-semibold text-surface-700 mb-1.5">
- <Calendar className="w-4 h-4 inline mr-1.5 text-saffron-400" />
- Date of Birth
- </label>
- <input
- type="date"
+ <DateInput
+ label="Date of Birth"
  value={formData.date}
- onChange={(e) => setFormData({ ...formData, date: e.target.value })}
- className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
+ onChange={(v) => setFormData({ ...formData, date: v })}
+ min="1900-01-01"
+ max={new Date().toISOString().split('T')[0]}
  required
  />
- </div>
 
  <div>
  <label className="block text-sm font-semibold text-surface-700 mb-1.5">
@@ -146,19 +148,17 @@ export default function KundliPage() {
  <MapPin className="w-4 h-4 inline mr-1.5 text-saffron-400" />
  Place of Birth
  </label>
- <input
- type="text"
- value={formData.place}
- onChange={(e) => setFormData({ ...formData, place: e.target.value })}
- placeholder="e.g., New Delhi, Mumbai, Varanasi"
- className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
+ <CityAutocomplete
+ value={city}
+ onChange={setCity}
+ placeholder="Type city name, e.g. Mumbai, Varanasi"
  required
  />
  </div>
 
  <button
  type="submit"
- disabled={isLoading}
+ disabled={isLoading || !city}
  className="w-full py-3.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
  >
  {isLoading ? (
