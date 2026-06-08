@@ -56,12 +56,12 @@ export default function ConsultStrip() {
           >
             Consult
           </p>
-          <TextReveal
+          <FadeScaleReveal
             as="h2"
             className="text-xl sm:text-2xl font-semibold tracking-tight font-[family-name:var(--font-display)] text-surface-800"
           >
             Talk to an expert.
-          </TextReveal>
+          </FadeScaleReveal>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">

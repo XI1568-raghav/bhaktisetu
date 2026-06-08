@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import {
+import { DateInput } from '../../../components/ui/DateInput';
  computeSadeSati,
  SADE_SATI_REMEDIES,
  SADE_SATI_DOS_DONTS,
@@ -60,10 +61,7 @@ export default function SadeSatiClient({ options }: { options: TimezoneOption[] 
     <div className="grid gap-4 sm:grid-cols-3">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date of birth</span>
-      <input
-       type="date"
-       value={dob}
-       onChange={(e) => setDob(e.target.value)}
+      <DateInput value={dob} onChange={(v) => setDob(v)} />
        required
        className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
       />
