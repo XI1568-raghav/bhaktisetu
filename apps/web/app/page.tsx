@@ -23,8 +23,10 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
 import { getTodayPanchang } from '../lib/api';
+import { headers } from 'next/headers';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
+import { brandFaqJsonLd } from '../lib/jsonld';
 import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
@@ -38,6 +40,11 @@ import YatraStrip from '../components/home/YatraStrip';
 import TrustStrip from '../components/home/TrustStrip';
 import EmailCapture from '../components/EmailCapture';
 import NextFestivalStrip from '../components/home/NextFestivalStrip';
+
+// Edge runtime + 1-hour revalidate — TTFB win per Pillar 4 audit (2026-06-08).
+// Panchang chip cache OK at 1h granularity. Personal salutation deferred to client.
+export const runtime = 'edge';
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
  title: "Darshya, India's Devotional Super App",
@@ -74,6 +81,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
  const t = await getTranslations('home');
  const tCommon = await getTranslations('common');
+ const nonce = (await headers()).get('x-nonce') ?? undefined;
 
  // Tolerant panchang fetch — surface tithi + nakshatra chip in hero per blueprint Day 2.
  let panchangChip: { tithi: string; nakshatra: string } | null = null;
@@ -86,6 +94,11 @@ export default async function HomePage() {
 
  return (
  <ScrollReveal>
+ <script
+   type="application/ld+json"
+   nonce={nonce}
+   dangerouslySetInnerHTML={{ __html: JSON.stringify(brandFaqJsonLd) }}
+ />
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
  <div style={{ background: 'var(--color-bg)' }}>
 
@@ -390,10 +403,10 @@ export default async function HomePage() {
  </p>
  <div className="grid grid-cols-5 grid-rows-2 gap-2 mb-4" style={{ height: '160px' }}>
  <div className="col-span-3 row-span-2 rounded-lg overflow-hidden" data-parallax="0.04">
- <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" width={480} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="col-span-2 rounded-lg overflow-hidden">
- <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti" width={320} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
  <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>HD</p>
