@@ -819,6 +819,8 @@ export function calculateKundli(
  birthDate: string, // YYYY-MM-DD
  birthTime: string, // HH:MM
  birthPlace: string,
+ /** Direct lat/lng/tz override — bypasses getCityCoordinates() silent New Delhi fallback. */
+ coordsOverride?: { lat: number; lng: number; tzOffset: number },
 ): KundliData {
  // Parse date and time
  const [yearStr, monthStr, dayStr] = birthDate.split('-');
@@ -829,8 +831,10 @@ export function calculateKundli(
  const hour = parseInt(hourStr!, 10);
  const minute = parseInt(minuteStr!, 10);
 
- // Get coordinates for birth place
- const coords = getCityCoordinates(birthPlace);
+ // Get coordinates — prefer direct override (from CityAutocomplete) over string lookup (fallback-prone).
+ const coords = coordsOverride
+   ? { latitude: coordsOverride.lat, longitude: coordsOverride.lng, timezone: coordsOverride.tzOffset }
+   : getCityCoordinates(birthPlace);
 
  // Convert local time to UT
  const utHour = hour + minute / 60 - coords.timezone;
