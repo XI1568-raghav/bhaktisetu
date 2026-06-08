@@ -16,6 +16,13 @@ Repo `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — n
 - Verify "memory says X" by reading current source before acting.
 - **Every push = 1 CF Pages build. Cap 500/mo.** Before pushing, check if commit is docs-only or non-deploy (TASKS.md / ROADMAP.md / PROJECT_CONTEXT.md / docs/** / *.md only / scripts/agents/** with no `apps/web/**` change). If yes → append `[skip ci]` to commit subject line. CF Pages git integration skips queue entirely → no build, no quota burn. Incident 2026-05-30: docs-only `a358f92` pushed without tag, blocked at 500/500 along with `72a6da1` code commit.
 - **Batch commits before pushing.** Stage all session work, push once. Multiple `git push` calls in same session = waste. Prefer single push at session end.
+- **MANDATORY pre-push CF Pages preflight (NEVER skip, NEVER use --no-verify).** `bash scripts/preflight-cf-pages.sh` runs the EXACT `@cloudflare/next-on-pages` build CF runs in prod. Pre-push git hook at `.githooks/pre-push` auto-enforces (activate via `git config core.hooksPath .githooks` — done in repo). Catches what `next build` misses: dynamic route without `runtime='edge'`, middleware.ts forcing route-level edge, invalid prerender configs. Incidents 2026-06-08 (CSP middleware + /pujas searchParams) both would have been caught.
+- **Edge-runtime triggers** (each requires `export const runtime = 'edge'` on EVERY non-static route):
+  1. `apps/web/middleware.ts` present at root → forces ALL routes to declare edge
+  2. Page using `searchParams` in server component (becomes dynamic)
+  3. Page using `headers()` / `cookies()` / `draftMode()` from `next/headers`
+  4. `revalidate = 0` (force-dynamic)
+  Before adding ANY of these features: plan migration sweep for all ~250 routes OR confine to a single edge-runtime'd page. PUSH PREFLIGHT WILL BLOCK YOU OTHERWISE.
 
 ## Deeper docs (lazy-load)
 
