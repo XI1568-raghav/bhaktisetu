@@ -4,6 +4,7 @@ import { useState, useMemo, FormEvent } from 'react';
 import Link from 'next/link';
 import { CITY_OPTIONS } from '../../../lib/hora';
 import {
+import { DateInput } from '../../../components/ui/DateInput';
  computeShubhMuhurat,
  EVENT_OPTIONS,
  type EventType,
@@ -55,10 +56,7 @@ export default function ShubhMuhuratClient() {
     <div className="grid gap-4 sm:grid-cols-3">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date</span>
-      <input
-       type="date"
-       value={date}
-       onChange={(e) => setDate(e.target.value)}
+      <DateInput value={date} onChange={(v) => setDate(v)} />
        required
        className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
       />

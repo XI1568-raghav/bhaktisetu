@@ -348,9 +348,9 @@ export default async function HomePage() {
  <div className="flex items-center justify-between mb-5">
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>{t('liveDarshanLabel')}</p>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('liveDarshanTitle')}
- </h2>
+ <ScrambleReveal as="h2" className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+   Watch live aarti from sacred temples across India.
+ </ScrambleReveal>
  </div>
  <Link href="/darshan" data-reveal="fade" className="inline-flex items-center gap-1 text-xs font-medium link-underline" style={{ color: 'var(--color-primary)' }}>
  {t('allStreams')} <ArrowRight className="w-3 h-3" />
@@ -653,6 +653,11 @@ export default async function HomePage() {
  {/* ═══ STICKY HEADLINE PIN — Apple-style scroll moment of pause ═══════ */}
  <StickyHeadlinePin headline="See divinity. Hear devotion. Feel home.">
    Every aarti, every chant, every sankalp carried across oceans for those who can no longer be at the temple gate.
+ </StickyHeadlinePin>
+
+ {/* Apple-style pinned headline — scroll anchor between trust + worship sections */}
+ <StickyHeadlinePin headline="See divinity. Hear devotion. Feel home.">
+   <p>Live darshan from 200+ temples. Authentic pujas with video proof. Vedic wisdom guided by AI.</p>
  </StickyHeadlinePin>
 
  {/* ═══ 5-CATEGORY DISCOVERY STRIPS — Worship → Wisdom → Consult → Shop → Yatra → Trust */}
