@@ -1,0 +1,6 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-SA-001,Q1,sales,sales,2,P1,DM 5 ISKCON Bengaluru priests Tactic A WhatsApp template,iskcon_intros_made,5,count,manual,0,4,,,b2b;iskcon;outreach;p1,
+R-Q1-SA-002,Q1,sales,sales,3,P1,BAPS intro via Hindu American Foundation diaspora amplifier,baps_intro_status,1,count,manual,0,4,,,b2b;baps;diaspora;p1,
+R-Q1-SA-003,Q1,sales,sales,3,P2,Sringeri Math direct outreach (anchor temple chain LOI candidate),sringeri_intro_status,1,count,manual,0,3,,,b2b;sringeri;loi;p2,
+R-Q1-SA-004,Q1,sales,sales,2,P2,Reach Hindu American Foundation + Sewa International (diaspora orgs),diaspora_orgs_engaged,2,count,manual,0,3,,,nri;diaspora;outreach;p2,
+R-Q1-SA-005,Q1,sales,sales,3,P1,First investor email batch (5 angels — friends/family round),investor_emails_sent,5,count,manual,0,4,,,fundraising;ff;investor;p1,

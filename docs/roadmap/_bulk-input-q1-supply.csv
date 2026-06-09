@@ -1,0 +1,11 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-S-002,Q1,supply,sales,1,P0,Onboard 30 verified pandits in Bengaluru,verified_pandits_count_bengaluru,30,count,supabase,90000,40,,,supply;pandit;bengaluru;p0,
+R-Q1-S-003,Q1,supply,sales,2,P0,Onboard 25 verified pandits in Mumbai,verified_pandits_count_mumbai,25,count,supabase,75000,32,,,supply;pandit;mumbai;p0,
+R-Q1-S-004,Q1,supply,sales,1,P1,Onboard 10 verified temples Varanasi (live darshan + 80G ready),verified_temples_count_varanasi,10,count,manual,50000,24,,,supply;temple;varanasi;p1,
+R-Q1-S-005,Q1,supply,sales,2,P1,Onboard 10 verified temples Bengaluru,verified_temples_count_bengaluru,10,count,manual,50000,20,,,supply;temple;bengaluru;p1,
+R-Q1-S-006,Q1,supply,sales,2,P1,Onboard 5 verified temples Mumbai,verified_temples_count_mumbai,5,count,manual,25000,16,,,supply;temple;mumbai;p1,
+R-Q1-S-007,Q1,supply,sales,1,P2,Onboard 10 verified astrologers (lowest-friction supply),verified_astrologers_count,10,count,supabase,40000,16,,,supply;astrology;p2,
+R-Q1-S-008,Q1,supply,sales,2,P2,Onboard 5 gaushalas (Pathmeda + Vrindavan + Haryana),verified_gaushalas_count,5,count,supabase,15000,12,,,supply;gaushala;adopt-a-cow;p2,
+R-Q1-S-009,Q1,supply,sales,2,P2,Onboard 3 gurukuls (Vedic schools),verified_gurukuls_count,3,count,supabase,8000,10,,,supply;gurukul;p2,
+R-Q1-S-010,Q1,supply,sales,3,P2,Onboard 5 wellness instructors (yoga + Ayurveda),verified_wellness_count,5,count,supabase,15000,8,,,supply;wellness;p2,
+R-Q1-S-011,Q1,supply,sales,3,P3,Onboard 10 store owners (prasad + brass + texts),verified_stores_count,10,count,supabase,12000,8,,,supply;store;p3,

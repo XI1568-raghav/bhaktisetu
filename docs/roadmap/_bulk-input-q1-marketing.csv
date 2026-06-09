@@ -1,0 +1,11 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-M-002,Q1,marketing,cmo,1,P0,GSC + Bing Webmaster verification + sitemap.xml submit,gsc_verified,1,count,manual,0,2,,,seo;week-1;p0,
+R-Q1-M-003,Q1,marketing,cmo,1,P0,PostHog cloud wired into web layout (Provider),posthog_web_active,1,count,gh_repo,0,3,,,analytics;week-1;p0,U8
+R-Q1-M-004,Q1,marketing,cmo,1,P1,Twitter+LinkedIn+Instagram+YouTube accounts created with bio+pinned,social_accounts_active,4,count,manual,0,3,,,social;week-1;p1,
+R-Q1-M-005,Q1,marketing,cmo,1,P1,Buffer free schedule first 21 social posts from social-queue agent,social_posts_scheduled,21,count,manual,0,2,,,social;buffer;week-1;p1,
+R-Q1-M-006,Q1,marketing,cmo,2,P1,First press pitch: YourStory + Inc42 (one each tailored),press_pitches_sent,2,count,manual,0,3,,,pr;press;week-3;p1,
+R-Q1-M-007,Q1,marketing,cmo,2,P1,Pillar page /sanatan 5-10K words evergreen Sanatan Dharma overview,pillar_pages_shipped,1,count,gh_repo,0,12,,,seo;pillar;content;p1,
+R-Q1-M-008,Q1,marketing,cmo,2,P1,Pillar page /nri-pujas (high commercial intent NRI-specific guide),pillar_pages_shipped,2,count,gh_repo,0,10,,,seo;pillar;nri;content;p1,
+R-Q1-M-009,Q1,marketing,cmo,2,P2,Daily deity-of-day cluster articles (7 weekly),cluster_articles_shipped,28,count,gh_repo,0,16,,,seo;cluster;content;p2,
+R-Q1-M-010,Q1,marketing,cmo,3,P1,WhatsApp Cloud API business verification submitted,wa_meta_verified,1,count,manual,0,3,,,wa;onboarding;p1,U7
+R-Q1-M-011,Q1,marketing,cmo,3,P2,NRI-targeted Facebook ads $50 budget 3 creatives × 2 audiences,nri_ads_live,1,count,manual,0,6,,,ads;nri;experiment;p2,
