@@ -1,0 +1,4 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-IT-001,Q2,it,cto,4,P1,Sentry quota tuning — sampling + filters to stay under free tier 5K events/mo,sentry_events_monthly,5000,count,manual,0,4,R-Q1-E-014,,it;sentry;quota;free-tier,U6
+R-Q2-IT-002,Q2,it,cto,5,P1,Render scaling plan — instance upgrade trigger at 80%CPU + budget approved,render_scale_plan_documented,1,count,gh_repo,0,4,,,it;render;scale;plan,
+R-Q2-IT-003,Q2,it,cto,6,P2,Supabase backup automation — daily pg_dump to S3 + 30d retention,supabase_backup_active,1,count,manual,0,6,,,it;supabase;backup;dr,

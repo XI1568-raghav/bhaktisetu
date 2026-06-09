@@ -1,0 +1,7 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-P-001,Q2,product,cpo,4,P0,AI Pandit MVP launch — ₹199/mo subscription + free 3 questions/day tier,ai_pandit_paying_users,200,users,supabase,40000,24,R-Q2-E-001,,product;ai-pandit;subscription;mvp,
+R-Q2-P-002,Q2,product,cpo,5,P1,Wedding muhurat tool — date+location+couple-kundli matching engine,wedding_muhurat_lookups,2000,count,posthog,60000,24,,,product;wedding;muhurat;astrology,
+R-Q2-P-003,Q2,product,cpo,5,P1,Yatra package commerce — 5 packages live w/ real Razorpay (Char Dham + others),yatra_packages_booked,50,count,supabase,250000,32,R-Q1-P-001,,product;yatra;commerce;razorpay,
+R-Q2-P-004,Q2,product,cpo,6,P1,Gaushala adopt-a-cow subscription — ₹501/mo per cow w/ monthly video update,adopt_a_cow_subscribers,100,users,supabase,50100,24,R-Q2-S-010,,product;gaushala;subscription;recurring,
+R-Q2-P-005,Q2,product,cpo,5,P0,iOS TestFlight — internal beta w/ 50 testers + crash reporting,ios_testflight_users,50,users,manual,0,24,R-Q2-E-004,,product;ios;testflight;beta,U3
+R-Q2-P-006,Q2,product,cpo,6,P1,Push notifications strategy — daily aarti + festival + booking-status,push_notification_open_rate,25,pct,manual,0,12,R-Q2-E-009,,product;push;engagement;retention,U5

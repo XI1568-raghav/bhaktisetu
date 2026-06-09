@@ -1,0 +1,5 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-F-001,Q2,finance,cfo,4,P0,Pre-seed pitch deck v2 — unit economics + 12mo financial model,pitch_deck_v2_shipped,1,count,gh_repo,0,16,R-Q2-M-002,,fundraising;deck;financials,
+R-Q2-F-002,Q2,finance,cfo,5,P1,Unit economics refresh — CAC + LTV + payback per channel (NRI/domestic),unit_econ_dashboard_live,1,count,manual,0,12,,,finance;unit-econ;cac;ltv,
+R-Q2-F-003,Q2,finance,cfo,5,P1,₹5L MRR milestone tracking — weekly cadence with breakdown by lane,mrr_inr_monthly,500000,inr,supabase,500000,8,,,finance;mrr;milestone,
+R-Q2-F-004,Q2,finance,cfo,6,P1,Accelerator applications — Antler INR + Surge USD financial requirements,accelerator_applications,3,count,manual,0,8,R-Q2-M-013,,fundraising;accelerator;financials,

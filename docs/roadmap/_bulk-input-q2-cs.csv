@@ -1,0 +1,5 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-CS-001,Q2,cs,cpo,4,P1,NPS survey deployed — quarterly auto-send to active users post booking,nps_responses_collected,500,count,supabase,0,12,,,cs;nps;feedback;quality,
+R-Q2-CS-002,Q2,cs,cpo,5,P1,Churn analysis — 30d cohort retention dashboard + top 5 churn reasons,churn_dashboard_live,1,count,supabase,0,12,,,cs;churn;retention;dashboard,
+R-Q2-CS-003,Q2,cs,cpo,5,P1,Multilingual macros — Tamil + Telugu + Bengali + Marathi support templates,multilingual_macros_count,40,count,gh_repo,0,16,R-Q2-E-003,,cs;multilingual;macros,
+R-Q2-CS-004,Q2,cs,cpo,6,P2,Tier-2 support escalation flow — sev levels + on-call rotation,tier2_escalation_live,1,count,manual,0,8,,,cs;escalation;tier2,
