@@ -1,0 +1,16 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-E-001,Q3,engineering,cto,7,P0,Voice AI Pandit v1 — Whisper STT + Groq LLM + ElevenLabs TTS round-trip <3s,voice_pandit_sessions_daily,300,count,posthog,400000,48,R-Q2-E-001,R-Q3-P-001,voice;ai;pandit;whisper;tts,
+R-Q3-E-002,Q3,engineering,cto,7,P0,iOS production release — App Store submission + TestFlight 500 users,ios_app_store_live,1,count,manual,200000,40,,R-Q3-M-005,ios;app-store;mobile;release,U1
+R-Q3-E-003,Q3,engineering,cto,8,P0,Android Play Store production release — public listing + 1K installs,android_installs,1000,count,gplay,150000,32,,R-Q3-M-005,android;playstore;mobile;release,U1
+R-Q3-E-004,Q3,engineering,cto,7,P0,FCM push notifications — booking reminders + aarti live alerts + festival nudges,push_notifications_delivered_daily,5000,count,fcm,80000,24,,,push;fcm;notifications;engagement,
+R-Q3-E-005,Q3,engineering,cto,8,P0,i18n full sweep — en/hi/ta/te/bn/mr 100% string coverage + RTL safety,i18n_string_coverage_pct,100,percent,gh_repo,50000,36,R-Q2-E-003,,i18n;localization;multilingual,
+R-Q3-E-006,Q3,engineering,cto,9,P0,Scale test — 50K concurrent MAU load test + Render auto-scale verified,scale_test_max_concurrent,50000,users,k6,0,32,R-Q2-E-013,,scale;load;k6;perf,
+R-Q3-E-007,Q3,engineering,cto,8,P0,B2B Temple SaaS API v1 — REST endpoints + API keys + rate limits + docs,b2b_api_endpoints_live,15,count,gh_repo,500000,48,,R-Q3-SA-001;R-Q3-P-002,b2b;saas;api;temple,
+R-Q3-E-008,Q3,engineering,cto,7,P1,Recurring donations engine — Razorpay subscriptions + monthly puja auto-debit,recurring_subscriptions_active,500,count,razorpay,300000,32,R-Q2-E-006,,recurring;razorpay;subscriptions,
+R-Q3-E-009,Q3,engineering,cto,8,P1,Affiliate tracking system — UTM links + referral codes + payout reports,affiliate_tracked_signups,2000,count,posthog,100000,24,,R-Q3-P-003,affiliate;tracking;referral,
+R-Q3-E-010,Q3,engineering,cto,9,P1,Multi-tenant temple admin panel — sub-domain routing + custom branding,temple_admin_panels_live,10,count,supabase,200000,40,R-Q3-E-007,,multi-tenant;admin;temple;saas,
+R-Q3-E-011,Q3,engineering,cto,7,P1,Search v2 — semantic search via pgvector + Hindi/Sanskrit embeddings,search_queries_daily,8000,count,supabase,40000,28,,,search;pgvector;semantic;ai,
+R-Q3-E-012,Q3,engineering,cto,8,P1,Image CDN optimization — Cloudflare Images + AVIF + lazy load — LCP <2s,page_lcp_p75_ms,2000,milliseconds,lighthouse,30000,16,,,perf;cdn;images;lcp,
+R-Q3-E-013,Q3,engineering,cto,9,P1,Sentry SLO dashboard — error budget tracking + alerting at 50%/75%/90% burn,sentry_slo_dashboard_live,1,count,gh_repo,0,12,R-Q2-IT-001,,sre;sentry;slo;alerts,
+R-Q3-E-014,Q3,engineering,cto,8,P2,UGC reviews v2 — photo upload + moderation queue + verified badge,ugc_reviews_with_photo,800,count,supabase,40000,24,,R-Q3-P-005,ugc;reviews;moderation,
+R-Q3-E-015,Q3,engineering,cto,9,P2,Sanskrit voice tutor — pronunciation guide + audio playback + 20 mantras,sanskrit_tutor_sessions_daily,200,count,posthog,50000,28,R-Q3-E-001,R-Q3-P-001,sanskrit;voice;tutor;education,

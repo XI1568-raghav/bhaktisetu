@@ -1,0 +1,11 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-S-001,Q3,supply,sales,7,P0,Onboard 25 verified pandits in Chennai (new city — south expansion),verified_pandits_count_chennai,25,count,supabase,75000,36,,,supply;pandit;chennai;south,
+R-Q3-S-002,Q3,supply,sales,7,P0,Onboard 25 verified pandits in Kolkata (new city — east expansion),verified_pandits_count_kolkata,25,count,supabase,75000,36,,,supply;pandit;kolkata;east,
+R-Q3-S-003,Q3,supply,sales,8,P0,Onboard 25 verified pandits in Ahmedabad (new city — west expansion),verified_pandits_count_ahmedabad,25,count,supabase,75000,36,,,supply;pandit;ahmedabad;west,
+R-Q3-S-004,Q3,supply,sales,8,P0,Onboard 25 verified pandits in Jaipur (new city — Rajasthan),verified_pandits_count_jaipur,25,count,supabase,75000,36,,,supply;pandit;jaipur;rajasthan,
+R-Q3-S-005,Q3,supply,sales,9,P0,Onboard 25 verified pandits in Lucknow (new city — UP),verified_pandits_count_lucknow,25,count,supabase,75000,36,,,supply;pandit;lucknow;up,
+R-Q3-S-006,Q3,supply,sales,7,P0,Onboard 15 UK-based verified pandits (London + Birmingham + Leicester),verified_pandits_count_uk,15,count,supabase,180000,48,R-Q2-G-006,R-Q3-G-001,supply;pandit;uk;nri,
+R-Q3-S-007,Q3,supply,sales,8,P0,Onboard 10 Canada-based verified pandits (Toronto + Vancouver + Brampton),verified_pandits_count_canada,10,count,supabase,150000,40,,R-Q3-G-002,supply;pandit;canada;nri,
+R-Q3-S-008,Q3,supply,sales,7,P0,Pandit lifecycle automation — onboarding emails + training videos + KYC reminders,pandit_lifecycle_active,50,count,supabase,30000,24,,,supply;pandit;automation;lifecycle,
+R-Q3-S-009,Q3,supply,sales,8,P1,Onboard +5 verified temples each Chennai/Kolkata/Ahmedabad (15 total),verified_temples_new_cities,15,count,manual,75000,32,R-Q3-S-001;R-Q3-S-002;R-Q3-S-003,,supply;temple;new-cities,
+R-Q3-S-010,Q3,supply,sales,9,P1,BAPS Swaminarayan central pipeline — 5 BAPS temples onboarded,baps_temples_onboarded,5,count,manual,100000,32,R-Q2-SA-002,R-Q3-SA-002,supply;partnership;baps;b2b,

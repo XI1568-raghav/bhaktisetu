@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-IT-001,Q3,it,cto,7,P1,Sentry SLO tuning — alert thresholds + ignore noisy patterns + on-call rotation,sentry_slo_alerts_actionable_pct,80,percent,manual,0,8,R-Q2-IT-001;R-Q3-E-013,,it;sentry;slo;alerts,
+R-Q3-IT-002,Q3,it,cto,9,P1,Supabase read-replica evaluation + Cloudflare analytics dashboard live,read_replica_decision_documented,1,count,gh_repo,0,12,R-Q2-IT-002,,it;supabase;replica;cloudflare;analytics,
