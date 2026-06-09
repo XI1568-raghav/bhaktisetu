@@ -1,0 +1,16 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-E-002,Q1,engineering,cto,1,P0,Razorpay raw-body HMAC flip after test-mode validation,razorpay_verify_raw_enabled,1,count,manual,0,6,,,security;p0;razorpay,U1
+R-Q1-E-003,Q1,engineering,cto,1,P0,Promote donations from in-memory Map to Prisma Donation table,donations_persisted,1,count,manual,0,4,,,data;p0;donations,
+R-Q1-E-004,Q1,engineering,cto,2,P1,Refresh token JTI single-use rotation logic,jti_rotation_enabled,1,count,manual,0,4,,,auth;p1;security,
+R-Q1-E-005,Q1,engineering,cto,2,P1,EmailSession.expiresAt enforcement in auth middleware,email_session_expiry_enforced,1,count,manual,0,3,,,auth;p1;session,
+R-Q1-E-006,Q1,engineering,cto,1,P1,147 page-level JSON-LD nonce codemod via jscodeshift,pages_with_csp_nonce,250,count,gh_repo,0,8,R-Q1-E-001,,csp;nonce;security;codemod,
+R-Q1-E-007,Q1,engineering,cto,2,P1,9 page-level schema additions per audit Pillar 2,pages_with_page_schema,9,count,gh_repo,0,6,,,schema;seo;jsonld,
+R-Q1-E-008,Q1,engineering,cto,1,P0,5 funnel events instrumentation via PostHog,funnel_events_wired,5,count,posthog,0,4,,,analytics;funnel;posthog,U8
+R-Q1-E-009,Q1,engineering,cpo,2,P2,3 A/B feature flags hero_copy/cta_color/nri_lane,ab_flags_active,3,count,posthog,0,5,R-Q1-E-008,,growth;ab;flags,U8
+R-Q1-E-010,Q1,engineering,cpo,3,P2,Astrologer slug to UUID design pass + migration,astrologer_uuid_migrated,1,count,manual,0,8,,,astrology;schema;migration,
+R-Q1-E-011,Q1,engineering,cto,2,P2,Wire FCM server key (env-or-noop already in place),fcm_push_live,1,count,manual,0,2,,,mobile;push;fcm,U5
+R-Q1-E-012,Q1,engineering,cto,2,P2,Embedded Stripe Elements full Provider (E9 carry),stripe_elements_embedded,1,count,manual,0,6,,,payments;stripe;nri,U2
+R-Q1-E-013,Q1,engineering,cto,1,P2,getPublicPriests server-side filter by specialization+deity,server_side_priest_filter,1,count,manual,0,3,,,api;filter;priests,
+R-Q1-E-014,Q1,engineering,it,2,P2,Sentry MCP + Postgres MCP env-var setup,mcp_servers_configured,2,count,manual,0,2,,,observability;mcp;setup,U6
+R-Q1-E-015,Q1,engineering,cto,3,P1,Top 10 WCAG fixes per audit Pillar 1,wcag_fixes_shipped,10,count,gh_repo,0,6,,,a11y;wcag;p1,
+R-Q1-E-016,Q1,engineering,cto,3,P3,Inline-style to Tailwind home refactor (198 occurrences),inline_styles_remaining,0,count,gh_repo,0,8,,,refactor;tailwind;cleanup,
