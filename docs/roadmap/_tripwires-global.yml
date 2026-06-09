@@ -1,0 +1,76 @@
+# Global tripwires. Evaluated each orchestrator cycle.
+# Conditions = sandboxed JS expressions w/ frozen `ctx` (signal-context.json).
+version: 1
+tripwires:
+  - id: T-001
+    name: NRI Day-30 retention low
+    condition: "ctx.kpis.nriD30Retention?.current < 25 && new Date(ctx.cycle.ts) > new Date('2026-08-01')"
+    action: spawn_subagent
+    spawnRole: cpo
+    spawnBrief: "Tripwire T-001 fired. Fold to NRI-only SKU per docs/strategy/appsforbharat-steelman.md."
+    weight: 1.0
+
+  - id: T-002
+    name: Sri Mandir USD launch
+    condition: "ctx.external?.competitorReleases?.some(r => r.competitor === 'Sri Mandir' && /USD/.test(r.release))"
+    action: defer_to_founder
+    deferMessage: "URGENT: Sri Mandir launched USD tier. Execute NRI pivot now."
+    weight: 2.0
+
+  - id: T-003
+    name: GH minutes overrun
+    condition: "ctx.budget.ghMinutesMonth.pct > 80 && ctx.cycle.dayOfMonth < 25"
+    action: throttle
+    throttleConfig: { cronCadenceHours: 12, skipSpawn: true }
+    weight: 0.5
+
+  - id: T-004
+    name: CF builds overrun
+    condition: "ctx.budget.cfBuildsMonth.pct > 60 && ctx.cycle.dayOfMonth < 20"
+    action: defer_to_founder
+    deferMessage: "CF builds 60%+ pre-day-20. Pause non-critical web pushes."
+    weight: 0.7
+
+  - id: T-005
+    name: Anthropic proxy blocked
+    condition: "ctx.external?.lastAnthropicError && /Free tier|forbidden|403/.test(ctx.external.lastAnthropicError)"
+    action: kill_workflow
+    killMessage: "Halt — Blackbox rejected Opus 4.7. Founder must upgrade OR approve model swap."
+    weight: 3.0
+
+  - id: T-006
+    name: Render saturated
+    condition: "ctx.budget.renderHoursMonth.pct > 95"
+    action: defer_to_founder
+    deferMessage: "Render 95% used. Cold-start risk imminent."
+    weight: 1.5
+
+  - id: T-007
+    name: Engineering velocity flatline
+    condition: "ctx.verticals.engineering.commits7d < 3 && ctx.verticals.engineering.openP0Bugs === 0"
+    action: spawn_subagent
+    spawnRole: cto
+    spawnBrief: "7-day commit count < 3. Review planned items, propose 3 ready-to-ship."
+    weight: 0.8
+
+  - id: T-008
+    name: Roadmap drained
+    condition: "ctx.items.byStatus.planned < 30"
+    action: spawn_subagent
+    spawnRole: cpo
+    spawnBrief: "Backlog < 30 planned. Generate 50 new items from CEO roadmap Q3/Q4."
+    weight: 1.0
+
+  - id: T-009
+    name: Single role over-spawned
+    condition: "ctx.queue.depth >= 5 && (Math.max(...Object.values(ctx.queue.byRole)) / ctx.queue.depth) > 0.6"
+    action: rebalance
+    rebalanceMessage: "One role dominates queue. Decision Agent must diversify next cycle."
+    weight: 0.6
+
+  - id: T-010
+    name: Queue stale
+    condition: "ctx.queue.oldestAgeHours > 72"
+    action: defer_to_founder
+    deferMessage: "Queue oldest item > 72h unconsumed. Triage."
+    weight: 1.0
