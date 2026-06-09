@@ -1,0 +1,10 @@
+# Founder-updated KPIs that no system auto-tracks.
+# Update by hand; orchestrator reads on every cycle.
+last_updated: 2026-06-10
+values:
+  verified_temples_count: 12
+  press_hits_count: 1
+  investor_meetings_count: 3
+  iskcon_loi_status: prospect          # prospect|introd|meeting|term_sheet|signed
+  product_hunt_launched: false
+  nri_d30_retention: null              # measured starting M3
