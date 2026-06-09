@@ -1,0 +1,5 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-F-001,Q1,finance,cfo,1,P0,Decide incorporate vs sole-prop (founder decision #1),incorp_decision_made,1,count,manual,0,1,,,founder-decision;incorp;p0,
+R-Q1-F-002,Q1,finance,cfo,2,P1,Open separate business bank account + book-keeping spreadsheet,business_bank_open,1,count,manual,0,4,R-Q1-F-001,,finance;bank;p1,
+R-Q1-F-003,Q1,finance,cfo,2,P1,Razorpay live KYC submission for domestic real payments,razorpay_live_active,1,count,manual,0,3,,,fundraising;razorpay;kyc;p1,U1
+R-Q1-F-004,Q1,finance,cfo,3,P1,Stripe NRI KYC (US/UK/CA/AU activation),stripe_live_active,1,count,manual,0,3,,,fundraising;stripe;nri;kyc;p1,U2

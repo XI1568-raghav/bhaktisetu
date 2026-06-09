@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-H-001,Q1,hr,talent,2,P2,Document first-contractor-hire trigger metric (50 bookings/wk OR 2h+ support OR 15h+ moderation),first_hire_trigger_documented,1,count,manual,0,2,,,hr;hiring;trigger;p2,
+R-Q1-H-002,Q1,hr,talent,3,P3,Draft 3 contractor JDs (CS lead + content ops + NRI growth),contractor_jds_drafted,3,count,manual,0,4,,,hr;jd;p3,

@@ -1,0 +1,4 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-IT-001,Q1,it,it,1,P0,UptimeRobot setup on api.darshya.online/health + darshya.online (SMS alerts),uptime_monitors_active,2,count,manual,0,2,,,observability;uptime;p0,
+R-Q1-IT-002,Q1,it,it,2,P1,CRON_AUTH_TOKEN GH secret + Render env (daily-cron unblock),cron_auth_token_set,1,count,manual,0,1,,,observability;cron;p1,
+R-Q1-IT-003,Q1,it,it,2,P1,Sentry DSN setup (CF Pages + Render),sentry_dsn_active,1,count,manual,0,2,,,observability;sentry;errors;p1,U6

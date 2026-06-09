@@ -1,0 +1,5 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-CS-001,Q1,cs,cs,1,P1,Document 10 support macros (payment failed + booking delay + refund + ...),cs_macros_documented,10,count,manual,0,4,,,cs;macros;p1,
+R-Q1-CS-002,Q1,cs,cs,2,P1,Setup WhatsApp founder phone as support escalation channel,wa_support_active,1,count,manual,0,2,,,cs;wa;support;p1,U7
+R-Q1-CS-003,Q1,cs,cs,3,P2,First 5 user phone interviews (NPS + churn signals),user_interviews_completed,5,count,manual,0,5,,,cs;interview;nps;p2,
+R-Q1-CS-004,Q1,cs,cs,3,P2,Multilingual macros — Hindi + Tamil + Telugu translations of top 5,multilingual_macros_shipped,5,count,manual,0,3,,,cs;i18n;p2,

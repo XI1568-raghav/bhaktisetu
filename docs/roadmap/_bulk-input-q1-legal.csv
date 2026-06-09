@@ -1,0 +1,4 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-L-001,Q1,legal,legal,2,P1,Strip fabricated 'Pvt. Ltd.' from refunds/page.tsx if not incorporated,fabricated_entity_removed,1,count,gh_repo,0,1,R-Q1-F-001,,legal;p1;compliance,
+R-Q1-L-002,Q1,legal,legal,3,P2,Refund-policy stress test + real lawyer review,refund_policy_lawyer_reviewed,1,count,manual,15000,4,,,legal;refunds;p2,
+R-Q1-L-003,Q1,legal,legal,3,P2,Priest contract template (Aadhaar gate + payout terms),priest_contract_template,1,count,manual,0,4,R-Q1-F-001,,legal;contracts;priest;p2,
