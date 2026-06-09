@@ -1,0 +1,8 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-G-001,Q3,geo,sales,7,P0,UK launch — landing page + Stripe GBP + 1.5K paid NRI users (London/Birmingham/Leicester),uk_paid_users,1500,users,supabase,750000,40,R-Q2-G-006;R-Q3-S-006,R-Q3-L-002;R-Q3-M-009,geo;nri;uk;launch,U2
+R-Q3-G-002,Q3,geo,sales,8,P0,Canada launch — landing page + Stripe CAD + 1K paid NRI users (Toronto/Vancouver/Brampton),canada_paid_users,1000,users,supabase,500000,36,R-Q3-S-007,R-Q3-M-010,geo;nri;canada;launch,U2
+R-Q3-G-003,Q3,geo,sales,7,P0,Chennai soft launch — 25 pandits + 5 temples + 1.2K MAU,chennai_mau,1200,users,supabase,120000,32,R-Q3-S-001;R-Q3-S-009,,geo;chennai;south;new-city,
+R-Q3-G-004,Q3,geo,sales,7,P0,Kolkata soft launch — 25 pandits + 5 temples + 1K MAU,kolkata_mau,1000,users,supabase,100000,32,R-Q3-S-002;R-Q3-S-009,,geo;kolkata;east;new-city,
+R-Q3-G-005,Q3,geo,sales,8,P1,Ahmedabad soft launch — 25 pandits + 5 temples + 1K MAU,ahmedabad_mau,1000,users,supabase,100000,32,R-Q3-S-003;R-Q3-S-009,,geo;ahmedabad;west;new-city,
+R-Q3-G-006,Q3,geo,sales,8,P1,Jaipur soft launch — 25 pandits + 4 temples + 800 MAU,jaipur_mau,800,users,supabase,80000,28,R-Q3-S-004,,geo;jaipur;rajasthan;new-city,
+R-Q3-G-007,Q3,geo,sales,9,P1,Lucknow soft launch — 25 pandits + 4 temples + 800 MAU,lucknow_mau,800,users,supabase,80000,28,R-Q3-S-005,,geo;lucknow;up;new-city,

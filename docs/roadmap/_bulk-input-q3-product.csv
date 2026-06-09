@@ -1,0 +1,6 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-P-001,Q3,product,cpo,7,P0,Sanskrit voice tutor product spec — pronunciation grading + 20 starter mantras + UX flows,sanskrit_tutor_dau,500,users,posthog,80000,16,R-Q3-E-001;R-Q3-E-015,,product;sanskrit;voice;tutor,
+R-Q3-P-002,Q3,product,cpo,8,P0,B2B Donations SaaS spec — temple dashboard + donor CRM + Razorpay split payouts,b2b_donations_temple_count,15,count,supabase,300000,20,R-Q3-E-007;R-Q3-E-010,,product;b2b;saas;donations,
+R-Q3-P-003,Q3,product,cpo,7,P1,Affiliates v1 product flow — signup + dashboard + payout + leaderboard UX,affiliates_active,300,count,supabase,100000,16,R-Q3-E-009,,product;affiliates;referral,
+R-Q3-P-004,Q3,product,cpo,9,P1,Gurukul recurring tuition product — monthly subscription + class scheduler + parent app,gurukul_subscribers,200,count,supabase,200000,24,R-Q3-E-008,,product;gurukul;education;recurring,
+R-Q3-P-005,Q3,product,cpo,8,P2,UGC reviews v2 spec — photo prompts + reviewer XP + verified pilgrim badge,ugc_reviews_with_photo_pct,30,percent,supabase,30000,12,R-Q3-E-014,,product;ugc;reviews;trust,
