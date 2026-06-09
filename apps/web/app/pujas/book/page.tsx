@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { DateInput } from '../../../components/ui/DateInput';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -1168,13 +1169,11 @@ function PujaBookingInner() {
  <AlertCircle className="h-4 w-4" /> {errors.date}
  </p>
  )}
- <input
- type="date"
+ <DateInput
  value={selectedDate}
  min={getTomorrow()}
  max={getMaxDate()}
- onChange={(e) => setSelectedDate(e.target.value)}
- className="w-full rounded-xl border border-surface-200 px-4 py-3 text-surface-700 focus:border-saffron-400 focus:outline-none focus:ring-2 focus:ring-saffron-200 sm:max-w-xs"
+ onChange={(v) => setSelectedDate(v)}
  />
  {selectedDate && (
  <p className="mt-2 text-sm text-surface-500">{formatDate(selectedDate)}</p>

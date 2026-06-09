@@ -26,6 +26,7 @@ import {
  type WellnessSessionType,
  type WellnessSessionStatus,
 } from '../../../lib/wellness-api';
+import { DateTimeInput } from '../../../components/ui/DateInput';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -324,11 +325,9 @@ function WellnessSessionsPageContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
        <div>
         <label className="block text-sm font-medium text-surface-700 mb-1.5">Scheduled At *</label>
-        <input
-         type="datetime-local"
+        <DateTimeInput
          value={formScheduledAt}
-         onChange={(e) => setFormScheduledAt(e.target.value)}
-         className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
+         onChange={(v) => setFormScheduledAt(v)}
          required
         />
        </div>

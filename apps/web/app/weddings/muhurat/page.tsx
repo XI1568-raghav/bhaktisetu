@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { DateInput } from '../../../components/ui/DateInput';
 
 const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -97,12 +98,10 @@ export default function MuhuratPage() {
           </fieldset>
           <label className="block">
             <span className="text-sm text-stone-700">Date of birth</span>
-            <input
-              type="date"
+            <DateInput
               required
               value={form.brideDob}
-              onChange={(e) => update('brideDob', e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 p-2"
+              onChange={(v) => update('brideDob', v)}
             />
           </label>
           <label className="block">
@@ -136,12 +135,10 @@ export default function MuhuratPage() {
           </fieldset>
           <label className="block">
             <span className="text-sm text-stone-700">Date of birth</span>
-            <input
-              type="date"
+            <DateInput
               required
               value={form.groomDob}
-              onChange={(e) => update('groomDob', e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 p-2"
+              onChange={(v) => update('groomDob', v)}
             />
           </label>
           <label className="block">
@@ -175,22 +172,18 @@ export default function MuhuratPage() {
           </fieldset>
           <label className="block">
             <span className="text-sm text-stone-700">From</span>
-            <input
-              type="date"
+            <DateInput
               required
               value={form.fromDate}
-              onChange={(e) => update('fromDate', e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 p-2"
+              onChange={(v) => update('fromDate', v)}
             />
           </label>
           <label className="block">
             <span className="text-sm text-stone-700">To</span>
-            <input
-              type="date"
+            <DateInput
               required
               value={form.toDate}
-              onChange={(e) => update('toDate', e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 p-2"
+              onChange={(v) => update('toDate', v)}
             />
           </label>
           <label className="block sm:col-span-2">

@@ -25,6 +25,7 @@ import {
  marriageAddOns,
  marriageTypes,
 } from '../../../../lib/home-pujas';
+import { DateInput } from '../../../../components/ui/DateInput';
 
 type StepId = 1 | 2 | 3 | 4 | 5;
 
@@ -228,12 +229,10 @@ export default function BookMarriage() {
  <label className="block text-sm font-medium text-surface-700 mb-1.5">
  Wedding date
  </label>
- <input
- type="date"
+ <DateInput
  value={weddingDate}
- onChange={(e) => setWeddingDate(e.target.value)}
+ onChange={(v) => setWeddingDate(v)}
  min={new Date().toISOString().split('T')[0]}
- className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-saffron-200"
  />
  </div>
  <div>
