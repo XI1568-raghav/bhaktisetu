@@ -46,5 +46,25 @@ for (const file of files) {
     console.error(`${file}: ${e.message}`); errors++;
   }
 }
+
+// Global id-uniqueness check
+const idCounts = new Map();
+for (const file of files) {
+  try {
+    const fm = parseFrontmatter(readFileSync(file, 'utf8'));
+    if (fm.id) {
+      if (!idCounts.has(fm.id)) idCounts.set(fm.id, []);
+      idCounts.get(fm.id).push(file);
+    }
+  } catch {}
+}
+for (const [id, paths] of idCounts) {
+  if (paths.length > 1) {
+    console.error(`ID COLLISION: ${id} appears in ${paths.length} files:`);
+    for (const p of paths) console.error(`  - ${p}`);
+    errors++;
+  }
+}
+
 console.log(`Validated ${files.length} items, ${errors} errors.`);
 process.exit(errors > 0 ? 1 : 0);

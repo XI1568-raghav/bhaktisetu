@@ -11,13 +11,16 @@ export function buildIndex(itemsRoot = ITEMS_ROOT) {
   for (const file of walk(itemsRoot)) {
     const content = readFileSync(file, 'utf8');
     let fm;
-    try { fm = parseFrontmatter(content); } catch { continue; }
+    try { fm = parseFrontmatter(content); } catch (e) {
+      console.warn(`[index-build] skipping ${file}: ${e.message}`);
+      continue;
+    }
     // Drop verbose body + prompt_skeleton from index; keep context_files for filtering
     const compact = { ...fm };
     if (compact.agent_brief?.prompt_skeleton) {
       compact.agent_brief = { context_files: compact.agent_brief.context_files || [] };
     }
-    compact._file = file;
+    compact._file = file.replaceAll('\\', '/');
     items.push(compact);
   }
   return { generatedAt: new Date().toISOString(), items };
