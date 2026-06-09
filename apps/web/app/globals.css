@@ -712,3 +712,14 @@ header[data-scroll-shadow].is-scrolled {
   border-bottom-color: rgba(0, 0, 0, 0.06);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
+
+/* Firefox-specific: suppress native date picker chrome.
+   Chrome/Edge handled via [&::-webkit-*]:hidden in DateInput component. */
+input[type="date"],
+input[type="datetime-local"] {
+  -moz-appearance: textfield;
+}
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="datetime-local"]::-moz-calendar-picker-indicator {
+  display: none !important;
+}
