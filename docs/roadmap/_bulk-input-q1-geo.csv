@@ -1,0 +1,8 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-G-001,Q1,geo,sales,1,P0,Open Bengaluru market (5 pandits + 5 temples first city),city_active_bengaluru,1,count,manual,0,16,R-Q1-S-002,,geo;bengaluru;city-1;p0,
+R-Q1-G-002,Q1,geo,sales,2,P0,Open Varanasi market (10 temples + 50 pandits second city),city_active_varanasi,1,count,manual,0,16,R-Q1-S-001;R-Q1-S-004,,geo;varanasi;city-2;p0,
+R-Q1-G-003,Q1,geo,sales,2,P0,Open Mumbai market (third city),city_active_mumbai,1,count,manual,0,16,R-Q1-S-003;R-Q1-S-006,,geo;mumbai;city-3;p0,
+R-Q1-G-004,Q1,geo,sales,3,P1,Tirupati supply onboarding (4th city candidate),city_active_tirupati,1,count,manual,0,12,,,geo;tirupati;p1,
+R-Q1-G-005,Q1,geo,sales,3,P1,Delhi supply onboarding (5th city),city_active_delhi,1,count,manual,0,12,,,geo;delhi;p1,
+R-Q1-G-006,Q1,geo,sales,3,P2,Pune supply onboarding (6th city),city_active_pune,1,count,manual,0,10,,,geo;pune;p2,
+R-Q1-G-007,Q1,geo,sales,3,P2,Hyderabad supply onboarding (7th city),city_active_hyderabad,1,count,manual,0,10,,,geo;hyderabad;p2,

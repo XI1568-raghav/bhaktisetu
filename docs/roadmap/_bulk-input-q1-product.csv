@@ -1,0 +1,8 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-P-001,Q1,product,cpo,1,P0,Kill silent mock fallback in pujas/[slug]/book/page.tsx:549 (CPO #1),mock_fallback_killed,1,count,gh_repo,0,8,,,product;p0;mocks,
+R-Q1-P-002,Q1,product,cpo,2,P1,Audit + remove 8 portal pages with hardcoded mock arrays (CPO §1),mock_portals_cleaned,8,count,gh_repo,0,16,R-Q1-P-001,,product;mocks;p1,
+R-Q1-P-003,Q1,product,cpo,1,P1,Decision: astrology surface — fix or delete (founder #2),astrology_decision_made,1,count,manual,0,1,,,founder-decision;astrology;p1,
+R-Q1-P-004,Q1,product,cpo,2,P1,Decision: NRI subscription this quarter (founder #3),nri_sub_decision_made,1,count,manual,0,1,,,founder-decision;nri;p1,
+R-Q1-P-005,Q1,product,cpo,3,P2,Shareable shloka-card generator (viral feature CEO doc Day 31-60),shloka_card_live,1,count,gh_repo,0,8,,,product;viral;content;p2,
+R-Q1-P-006,Q1,product,cpo,3,P2,Referral 100 INR credit each side (after first paid booking),referral_active,1,count,gh_repo,0,12,,,product;referral;growth;p2,
+R-Q1-P-007,Q1,product,cpo,3,P3,Live darshan recording on-demand (replay last 24h aartis),replay_24h_active,1,count,manual,0,12,,,product;darshan;recording;p3,
