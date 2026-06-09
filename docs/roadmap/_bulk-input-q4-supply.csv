@@ -1,0 +1,10 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-S-001,Q4,supply,sales,10,P0,Onboard 25 verified pandits in Indore + Bhopal + Nagpur (central India trio),verified_pandits_count_central,25,count,supabase,75000,40,,,supply;pandit;central-india;mp,
+R-Q4-S-002,Q4,supply,sales,11,P0,Onboard 25 verified pandits in Patna + Bhubaneswar + Guwahati (east expansion),verified_pandits_count_east,25,count,supabase,75000,40,,,supply;pandit;east;tier2,
+R-Q4-S-003,Q4,supply,sales,10,P0,Total temple count to 100 — onboard 25 new across 25 cities,verified_temples_total,100,count,manual,200000,48,R-Q3-S-009,R-Q4-SA-001,supply;temple;scale;coverage,
+R-Q4-S-004,Q4,supply,sales,11,P0,Onboard 10 Australia-based verified pandits (Sydney + Melbourne + Brisbane),verified_pandits_count_au,10,count,supabase,180000,40,R-Q3-S-007,R-Q4-G-001,supply;pandit;au;nri,
+R-Q4-S-005,Q4,supply,sales,12,P0,Gaushala network scale to 25 — onboard 15 new verified gaushalas across India,gaushala_count_verified,25,count,supabase,150000,40,,,supply;gaushala;scale;seva,
+R-Q4-S-006,Q4,supply,sales,11,P0,B2B temple chain rollout — anchor chain 5 temples live + custom branding deployed,b2b_chain_temples_live,5,count,manual,800000,32,R-Q3-S-010,R-Q4-SA-001,supply;b2b;chain;rollout,
+R-Q4-S-007,Q4,supply,sales,10,P1,Onboard 20 antim sanskar specialist pandits — Kashi + Haridwar + Prayagraj ghats,antim_specialist_pandits,20,count,supabase,100000,32,,R-Q4-E-001,supply;antim-sanskar;specialist;ghat,
+R-Q4-S-008,Q4,supply,sales,12,P1,Astrologer network 50 → 100 — onboard 50 verified astrologers across specializations,astrologers_verified_total,100,count,supabase,200000,40,R-Q3-S-008,,supply;astrologer;scale;consultation,
+R-Q4-S-009,Q4,supply,sales,11,P2,Wedding vendor network — 30 photographers + 20 caterers + 15 decorators verified,wedding_vendors_verified,65,count,supabase,80000,32,,R-Q4-E-010,supply;wedding;vendor;ecosystem,

@@ -1,0 +1,4 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-F-001,Q4,finance,cfo,11,P0,Seed round close — $1.5M-$3M raised + SAFEs/SHA signed + bank wire received,seed_raised_usd,2000000,usd,manual,0,48,R-Q4-SA-003,R-Q4-F-002,fundraising;seed;close;1m-3m,U4
+R-Q4-F-002,Q4,finance,cfo,12,P0,Series A prep model — 18-month forecast + cohort LTV + market sizing + Series A deck,series_a_deck_complete,1,count,manual,0,40,R-Q4-F-001;R-Q4-M-013,,fundraising;series-a;model;deck,
+R-Q4-F-003,Q4,finance,cfo,12,P0,Profitability M12 audit — confirm M8+ profitable + audited financials Q4 close,profitable_months_streak,5,count,manual,0,32,R-Q3-F-002,,profitability;audit;financials;series-a,

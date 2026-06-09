@@ -1,0 +1,9 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-G-001,Q4,geo,cmo,10,P0,Australia launch full — Sydney + Melbourne + Brisbane diaspora + AUD checkout,au_paying_users_monthly,500,users,stripe,1200000,40,R-Q3-G-002;R-Q4-S-004;R-Q4-M-012,,nri;au;launch;geo,U3
+R-Q4-G-002,Q4,geo,cmo,11,P0,EU NRI hub evaluation — Frankfurt + Amsterdam + Zurich + Stockholm market sizing,eu_nri_market_size_usd,15000000,usd,manual,0,32,R-Q3-G-003,,nri;eu;market-sizing;evaluation,
+R-Q4-G-003,Q4,geo,sales,10,P0,Onboard new India city Indore (8 of 25 — central),city_active_users_indore,3000,users,posthog,120000,32,R-Q4-S-001,,geo;india;indore;tier2,
+R-Q4-G-004,Q4,geo,sales,10,P0,Onboard new India city Bhopal (9 of 25 — central),city_active_users_bhopal,3000,users,posthog,100000,32,R-Q4-S-001,,geo;india;bhopal;tier2,
+R-Q4-G-005,Q4,geo,sales,11,P0,Onboard new India city Nagpur (10 of 25 — central),city_active_users_nagpur,3000,users,posthog,100000,32,R-Q4-S-001,,geo;india;nagpur;tier2,
+R-Q4-G-006,Q4,geo,sales,11,P0,Onboard new India city Patna (11 of 25 — east),city_active_users_patna,3000,users,posthog,100000,32,R-Q4-S-002,,geo;india;patna;tier2,
+R-Q4-G-007,Q4,geo,sales,11,P1,Onboard new India city Bhubaneswar (12 of 25 — east),city_active_users_bhubaneswar,2500,users,posthog,80000,32,R-Q4-S-002,,geo;india;bhubaneswar;tier2,
+R-Q4-G-008,Q4,geo,sales,12,P1,Onboard new India cities Guwahati + Coimbatore + Vizag + Surat (16-25 of 25),new_cities_live_total,25,count,posthog,200000,40,R-Q4-S-002,,geo;india;25cities;tier2,
