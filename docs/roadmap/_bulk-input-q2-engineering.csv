@@ -1,0 +1,17 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-E-001,Q2,engineering,cto,4,P0,AI Pandit MVP — Groq LLM proxy + Sanskrit/Hindi knowledge base ingest,ai_pandit_responses_per_day,500,count,posthog,200000,40,,R-Q2-P-001,ai;pandit;mvp;groq,
+R-Q2-E-002,Q2,engineering,cto,4,P0,Live aarti recording pipeline — IVS rec → S3 → CDN replay,live_recordings_archived,200,count,supabase,0,24,,,live;darshan;recording;cdn,
+R-Q2-E-003,Q2,engineering,cto,5,P0,i18n string extraction sweep — Tamil + Telugu + Bengali + Marathi to 90%,i18n_coverage_pct,90,pct,gh_repo,0,32,R-Q1-E-001,,i18n;localization;mau,
+R-Q2-E-004,Q2,engineering,cto,5,P0,Mobile parity audit — Expo 50 booking flow + Razorpay native checkout,mobile_booking_flow_live,1,count,manual,0,28,,,mobile;parity;razorpay;ios;android,U3
+R-Q2-E-005,Q2,engineering,cto,4,P1,API p95 latency < 400ms — Fastify cache layer + Render tier check,api_p95_ms,400,count,render_logs,0,16,,,perf;scale;render;p95,
+R-Q2-E-006,Q2,engineering,cto,5,P1,CDN caching for /pujas + /temples + /darshan/live (CF Pages KV),pages_cdn_cached,3,count,cf_analytics,0,8,,,perf;cdn;cache;scale,
+R-Q2-E-007,Q2,engineering,cto,5,P1,Search indexing — Algolia free tier for puja+temple+pandit unified search,unified_search_active,1,count,manual,0,12,,,search;algolia;ux,
+R-Q2-E-008,Q2,engineering,cto,6,P1,Image optimization sweep — next/image migration + CF Image Resizing,images_optimized_pct,80,pct,gh_repo,0,16,,,perf;cwv;images,
+R-Q2-E-009,Q2,engineering,cto,6,P1,Push notifications backend — FCM topics + per-user delivery preferences,push_notifications_active,1,count,manual,0,16,R-Q1-E-011,,push;fcm;mobile,U5
+R-Q2-E-010,Q2,engineering,cto,4,P1,Webhook reliability — Razorpay/Stripe idempotency keys + retry queue,webhook_idempotency_active,1,count,manual,0,12,,,payments;webhook;reliability,
+R-Q2-E-011,Q2,engineering,cto,5,P2,Database query analyzer — slow query log + 10 worst N+1 fixes,n_plus_1_queries_fixed,10,count,manual,0,16,,,perf;db;query,
+R-Q2-E-012,Q2,engineering,cto,5,P2,Background job queue — BullMQ + Upstash for email/wa/payout async,job_queue_active,1,count,manual,0,12,,,jobs;async;queue,U14
+R-Q2-E-013,Q2,engineering,cto,6,P2,API rate limiting per-user + per-IP — Fastify rate-limit plugin tightening,rate_limit_enforced,1,count,manual,0,6,,,security;rate-limit,
+R-Q2-E-014,Q2,engineering,cto,6,P2,Mobile push tap deep-linking — expo-router schemes per puja+darshan,push_deep_link_active,1,count,manual,0,8,R-Q2-E-009,,mobile;deep-link;push,
+R-Q2-E-015,Q2,engineering,cto,4,P2,Sentry source maps upload + release tracking — both web + api,sentry_release_tracking,1,count,manual,0,4,R-Q1-E-014,,observability;sentry,U6
+R-Q2-E-016,Q2,engineering,cto,6,P2,Service worker + offline page for /pujas/[slug] + /darshan/live,offline_page_active,1,count,manual,0,10,,,pwa;offline;mobile,

@@ -1,0 +1,14 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-M-001,Q2,marketing,cmo,4,P0,ProductHunt launch — coordinated Tuesday IST submit + 20 hunter votes,producthunt_rank_day,5,count,manual,0,16,,,launch;producthunt;growth,
+R-Q2-M-002,Q2,marketing,cmo,4,P0,Investor pitch deck v2 — pre-seed ready w/ Q1 MAU + MRR + retention,pitch_deck_v2_shipped,1,count,gh_repo,0,16,,R-Q2-F-001,fundraising;deck;pitch,
+R-Q2-M-003,Q2,marketing,cmo,4,P1,5 pillar pages live — Q2 cycle (/festivals + /yatra + /astrology + /shop + /community),pillar_pages_shipped,5,count,gh_repo,0,40,R-Q1-M-007;R-Q1-M-008,,seo;pillar;content,
+R-Q2-M-004,Q2,marketing,cmo,5,P1,Sanskrit voice content — daily 60sec aarti/shloka clips for Instagram+YouTube,voice_content_published,60,count,manual,0,24,,,content;voice;social;daily,
+R-Q2-M-005,Q2,marketing,cmo,5,P1,Influencer outreach — 10 micro-influencers (5K-50K) in devotional niche,influencer_partnerships,10,count,manual,30000,16,,,influencer;outreach;social,
+R-Q2-M-006,Q2,marketing,cmo,4,P1,NRI Google Ads scale — $200/mo budget across US+UK+CA+AU,nri_ads_spend_monthly,200,usd,manual,0,8,R-Q1-M-011,,ads;nri;scale,U2
+R-Q2-M-007,Q2,marketing,cmo,5,P1,Programmatic SEO — 50 new long-tail templates (puja+city+language matrix),programmatic_pages_live,500,count,gh_repo,0,24,R-Q1-M-002,,seo;programmatic;long-tail,
+R-Q2-M-008,Q2,marketing,cmo,6,P2,WhatsApp daily devotional broadcast — 1000 opt-in users (under free tier),wa_broadcast_subscribers,1000,count,supabase,0,12,R-Q1-M-010,,wa;broadcast;retention,U7
+R-Q2-M-009,Q2,marketing,cmo,6,P1,YouTube channel — weekly live darshan recordings + how-to-puja content,youtube_subscribers,500,count,manual,0,16,R-Q2-E-002,,youtube;content;darshan,
+R-Q2-M-010,Q2,marketing,cmo,5,P2,Press cycle 2 — Economic Times + LiveMint + Mint (post-PH launch),press_pitches_sent,3,count,manual,0,8,R-Q2-M-001,,pr;press;tier-1,
+R-Q2-M-011,Q2,marketing,cmo,6,P2,Referral program — formal launch w/ ₹100 credit per converted referee,referral_conversions,200,count,supabase,40000,8,,,growth;referral;viral,
+R-Q2-M-012,Q2,marketing,cmo,5,P2,Founder Twitter — 100 followers via 3 build-in-public threads weekly,twitter_followers,1000,count,manual,0,12,,,social;twitter;founder,
+R-Q2-M-013,Q2,marketing,cmo,6,P2,Accelerator pitches — apply to Antler + Sequoia Surge + 100x.vc,accelerator_applications,3,count,manual,0,12,R-Q2-M-002,R-Q2-F-004,fundraising;accelerator,

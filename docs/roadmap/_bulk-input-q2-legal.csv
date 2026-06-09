@@ -1,0 +1,4 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-L-001,Q2,legal,legal,4,P0,DPDP Act 2023 compliance audit — privacy policy + consent flows + DPO,dpdp_audit_completed,1,count,manual,0,16,R-Q1-L-001,,legal;dpdp;compliance;privacy,
+R-Q2-L-002,Q2,legal,legal,5,P1,Priest contracts signed — 100 pandits with revenue-share template,priest_contracts_signed,100,count,supabase,0,24,,,legal;contracts;priest;supply,
+R-Q2-L-003,Q2,legal,legal,6,P1,DPDP user-rights API — export + delete + correct endpoints + admin UI,dpdp_user_rights_endpoint_live,1,count,gh_repo,0,12,R-Q2-L-001,,legal;dpdp;api;user-rights,

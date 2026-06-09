@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-09T21:51:22.225Z",
+  "generatedAt": "2026-06-09T21:57:22.687Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -3596,6 +3596,3726 @@
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/supply/011-onboard-10-store-owners-prasad-brass-texts.md"
+    },
+    {
+      "id": "R-Q2-CS-001",
+      "title": "NPS survey deployed — quarterly auto-send to active users post booking",
+      "category": "cs",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "nps_responses_collected",
+        "current": 0,
+        "target": 500,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "cs",
+        "nps",
+        "feedback",
+        "quality"
+      ],
+      "created_at": "2026-06-09T21:55:15.909Z",
+      "updated_at": "2026-06-09T21:55:15.909Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/cs/001-nps-survey-deployed-quarterly-auto-send-to-active-.md"
+    },
+    {
+      "id": "R-Q2-CS-002",
+      "title": "Churn analysis — 30d cohort retention dashboard + top 5 churn reasons",
+      "category": "cs",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "churn_dashboard_live",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "cs",
+        "churn",
+        "retention",
+        "dashboard"
+      ],
+      "created_at": "2026-06-09T21:55:15.909Z",
+      "updated_at": "2026-06-09T21:55:15.909Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/cs/002-churn-analysis-30d-cohort-retention-dashboard-top-.md"
+    },
+    {
+      "id": "R-Q2-CS-003",
+      "title": "Multilingual macros — Tamil + Telugu + Bengali + Marathi support templates",
+      "category": "cs",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-E-003"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "multilingual_macros_count",
+        "current": 0,
+        "target": 40,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "cs",
+        "multilingual",
+        "macros"
+      ],
+      "created_at": "2026-06-09T21:55:15.909Z",
+      "updated_at": "2026-06-09T21:55:15.909Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/cs/003-multilingual-macros-tamil-telugu-bengali-marathi-s.md"
+    },
+    {
+      "id": "R-Q2-CS-004",
+      "title": "Tier-2 support escalation flow — sev levels + on-call rotation",
+      "category": "cs",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "tier2_escalation_live",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "cs",
+        "escalation",
+        "tier2"
+      ],
+      "created_at": "2026-06-09T21:55:15.909Z",
+      "updated_at": "2026-06-09T21:55:15.909Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/cs/004-tier-2-support-escalation-flow-sev-levels-on-call-.md"
+    },
+    {
+      "id": "R-Q2-E-001",
+      "title": "AI Pandit MVP — Groq LLM proxy + Sanskrit/Hindi knowledge base ingest",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [
+        "R-Q2-P-001"
+      ],
+      "kpi": {
+        "metric": "ai_pandit_responses_per_day",
+        "current": 0,
+        "target": 500,
+        "unit": "count",
+        "source": "posthog",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 200000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 40,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "ai",
+        "pandit",
+        "mvp",
+        "groq"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/001-ai-pandit-mvp-groq-llm-proxy-sanskrit-hindi-knowle.md"
+    },
+    {
+      "id": "R-Q2-E-002",
+      "title": "Live aarti recording pipeline — IVS rec → S3 → CDN replay",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "live_recordings_archived",
+        "current": 0,
+        "target": 200,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "live",
+        "darshan",
+        "recording",
+        "cdn"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/002-live-aarti-recording-pipeline-ivs-rec-s3-cdn-repla.md"
+    },
+    {
+      "id": "R-Q2-E-003",
+      "title": "i18n string extraction sweep — Tamil + Telugu + Bengali + Marathi to 90%",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-E-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "i18n_coverage_pct",
+        "current": 0,
+        "target": 90,
+        "unit": "pct",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "i18n",
+        "localization",
+        "mau"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/003-i18n-string-extraction-sweep-tamil-telugu-bengali-.md"
+    },
+    {
+      "id": "R-Q2-E-004",
+      "title": "Mobile parity audit — Expo 50 booking flow + Razorpay native checkout",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U3",
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "mobile_booking_flow_live",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 28,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "mobile",
+        "parity",
+        "razorpay",
+        "ios",
+        "android"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/004-mobile-parity-audit-expo-50-booking-flow-razorpay-.md"
+    },
+    {
+      "id": "R-Q2-E-005",
+      "title": "API p95 latency < 400ms — Fastify cache layer + Render tier check",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "api_p95_ms",
+        "current": 0,
+        "target": 400,
+        "unit": "count",
+        "source": "render_logs",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "perf",
+        "scale",
+        "render",
+        "p95"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/005-api-p95-latency-400ms-fastify-cache-layer-render-t.md"
+    },
+    {
+      "id": "R-Q2-E-006",
+      "title": "CDN caching for /pujas + /temples + /darshan/live (CF Pages KV)",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "pages_cdn_cached",
+        "current": 0,
+        "target": 3,
+        "unit": "count",
+        "source": "cf_analytics",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "perf",
+        "cdn",
+        "cache",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/006-cdn-caching-for-pujas-temples-darshan-live-cf-page.md"
+    },
+    {
+      "id": "R-Q2-E-007",
+      "title": "Search indexing — Algolia free tier for puja+temple+pandit unified search",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "unified_search_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "search",
+        "algolia",
+        "ux"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/007-search-indexing-algolia-free-tier-for-puja-temple-.md"
+    },
+    {
+      "id": "R-Q2-E-008",
+      "title": "Image optimization sweep — next/image migration + CF Image Resizing",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "images_optimized_pct",
+        "current": 0,
+        "target": 80,
+        "unit": "pct",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "perf",
+        "cwv",
+        "images"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/008-image-optimization-sweep-next-image-migration-cf-i.md"
+    },
+    {
+      "id": "R-Q2-E-009",
+      "title": "Push notifications backend — FCM topics + per-user delivery preferences",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U5",
+      "depends_on": [
+        "R-Q1-E-011"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "push_notifications_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "push",
+        "fcm",
+        "mobile"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/009-push-notifications-backend-fcm-topics-per-user-del.md"
+    },
+    {
+      "id": "R-Q2-E-010",
+      "title": "Webhook reliability — Razorpay/Stripe idempotency keys + retry queue",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "webhook_idempotency_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "payments",
+        "webhook",
+        "reliability"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/010-webhook-reliability-razorpay-stripe-idempotency-ke.md"
+    },
+    {
+      "id": "R-Q2-E-011",
+      "title": "Database query analyzer — slow query log + 10 worst N+1 fixes",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "n_plus_1_queries_fixed",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "perf",
+        "db",
+        "query"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/011-database-query-analyzer-slow-query-log-10-worst-n-.md"
+    },
+    {
+      "id": "R-Q2-E-012",
+      "title": "Background job queue — BullMQ + Upstash for email/wa/payout async",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U14",
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "job_queue_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "jobs",
+        "async",
+        "queue"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/012-background-job-queue-bullmq-upstash-for-email-wa-p.md"
+    },
+    {
+      "id": "R-Q2-E-013",
+      "title": "API rate limiting per-user + per-IP — Fastify rate-limit plugin tightening",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "rate_limit_enforced",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 6,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "security",
+        "rate-limit"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/013-api-rate-limiting-per-user-per-ip-fastify-rate-lim.md"
+    },
+    {
+      "id": "R-Q2-E-014",
+      "title": "Mobile push tap deep-linking — expo-router schemes per puja+darshan",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-E-009"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "push_deep_link_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "mobile",
+        "deep-link",
+        "push"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/014-mobile-push-tap-deep-linking-expo-router-schemes-p.md"
+    },
+    {
+      "id": "R-Q2-E-015",
+      "title": "Sentry source maps upload + release tracking — both web + api",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U6",
+      "depends_on": [
+        "R-Q1-E-014"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "sentry_release_tracking",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "observability",
+        "sentry"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/015-sentry-source-maps-upload-release-tracking-both-we.md"
+    },
+    {
+      "id": "R-Q2-E-016",
+      "title": "Service worker + offline page for /pujas/[slug] + /darshan/live",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "offline_page_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 10,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "pwa",
+        "offline",
+        "mobile"
+      ],
+      "created_at": "2026-06-09T21:55:16.790Z",
+      "updated_at": "2026-06-09T21:55:16.790Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/engineering/016-service-worker-offline-page-for-pujas-slug-darshan.md"
+    },
+    {
+      "id": "R-Q2-F-001",
+      "title": "Pre-seed pitch deck v2 — unit economics + 12mo financial model",
+      "category": "finance",
+      "owner_role": "cfo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-M-002"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "pitch_deck_v2_shipped",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "deck",
+        "financials"
+      ],
+      "created_at": "2026-06-09T21:56:41.463Z",
+      "updated_at": "2026-06-09T21:56:41.463Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/finance/001-pre-seed-pitch-deck-v2-unit-economics-12mo-financi.md"
+    },
+    {
+      "id": "R-Q2-F-002",
+      "title": "Unit economics refresh — CAC + LTV + payback per channel (NRI/domestic)",
+      "category": "finance",
+      "owner_role": "cfo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "unit_econ_dashboard_live",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "finance",
+        "unit-econ",
+        "cac",
+        "ltv"
+      ],
+      "created_at": "2026-06-09T21:56:41.463Z",
+      "updated_at": "2026-06-09T21:56:41.463Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/finance/002-unit-economics-refresh-cac-ltv-payback-per-channel.md"
+    },
+    {
+      "id": "R-Q2-F-003",
+      "title": "₹5L MRR milestone tracking — weekly cadence with breakdown by lane",
+      "category": "finance",
+      "owner_role": "cfo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "mrr_inr_monthly",
+        "current": 0,
+        "target": 500000,
+        "unit": "inr",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 500000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "finance",
+        "mrr",
+        "milestone"
+      ],
+      "created_at": "2026-06-09T21:56:41.463Z",
+      "updated_at": "2026-06-09T21:56:41.463Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/finance/003-5l-mrr-milestone-tracking-weekly-cadence-with-brea.md"
+    },
+    {
+      "id": "R-Q2-F-004",
+      "title": "Accelerator applications — Antler INR + Surge USD financial requirements",
+      "category": "finance",
+      "owner_role": "cfo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-M-013"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "accelerator_applications",
+        "current": 0,
+        "target": 3,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "accelerator",
+        "financials"
+      ],
+      "created_at": "2026-06-09T21:56:41.463Z",
+      "updated_at": "2026-06-09T21:56:41.463Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/finance/004-accelerator-applications-antler-inr-surge-usd-fina.md"
+    },
+    {
+      "id": "R-Q2-G-001",
+      "title": "Bengaluru scaled to 80% target — 55 pandits + 10 temples + 2K MAU",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-G-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "bengaluru_mau",
+        "current": 0,
+        "target": 2000,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 200000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "bengaluru",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/001-bengaluru-scaled-to-80-target-55-pandits-10-temple.md"
+    },
+    {
+      "id": "R-Q2-G-002",
+      "title": "Mumbai scaled to 80% target — 50 pandits + 10 temples + 2K MAU",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-G-002"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "mumbai_mau",
+        "current": 0,
+        "target": 2000,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 200000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "mumbai",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/002-mumbai-scaled-to-80-target-50-pandits-10-temples-2.md"
+    },
+    {
+      "id": "R-Q2-G-003",
+      "title": "Delhi soft launch — 25 pandits + 5 temples + 1K MAU",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-S-003",
+        "R-Q2-S-006"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "delhi_mau",
+        "current": 0,
+        "target": 1000,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 100000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 40,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "delhi",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/003-delhi-soft-launch-25-pandits-5-temples-1k-mau.md"
+    },
+    {
+      "id": "R-Q2-G-004",
+      "title": "Pune soft launch — 25 pandits + 5 temples + 1K MAU",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-S-004",
+        "R-Q2-S-007"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "pune_mau",
+        "current": 0,
+        "target": 1000,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 100000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 36,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "pune",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/004-pune-soft-launch-25-pandits-5-temples-1k-mau.md"
+    },
+    {
+      "id": "R-Q2-G-005",
+      "title": "Hyderabad soft launch — 25 pandits + 5 temples + 800 MAU",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-S-005",
+        "R-Q2-S-008"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "hyderabad_mau",
+        "current": 0,
+        "target": 800,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 80000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 36,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "hyderabad",
+        "south",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/005-hyderabad-soft-launch-25-pandits-5-temples-800-mau.md"
+    },
+    {
+      "id": "R-Q2-G-006",
+      "title": "US NRI soft launch — landing page + Stripe USD + first 100 paid users",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U2",
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "us_nri_paid_users",
+        "current": 0,
+        "target": 100,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 300000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "nri",
+        "us",
+        "soft-launch"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/006-us-nri-soft-launch-landing-page-stripe-usd-first-1.md"
+    },
+    {
+      "id": "R-Q2-G-007",
+      "title": "WhatsApp diaspora groups — seed 10 NRI WA groups (Bay Area + NJ + LDN)",
+      "category": "geo",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U7",
+      "depends_on": [
+        "R-Q1-G-008"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "wa_diaspora_groups_seeded",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 50000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "nri",
+        "wa",
+        "diaspora"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/007-whatsapp-diaspora-groups-seed-10-nri-wa-groups-bay.md"
+    },
+    {
+      "id": "R-Q2-G-008",
+      "title": "Varanasi expansion — +5 temples + 15 pandits (yatra gateway play)",
+      "category": "geo",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-G-003"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "varanasi_pandits",
+        "current": 0,
+        "target": 15,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 45000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "geo",
+        "varanasi",
+        "yatra"
+      ],
+      "created_at": "2026-06-09T21:55:18.035Z",
+      "updated_at": "2026-06-09T21:55:18.035Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/geo/008-varanasi-expansion-5-temples-15-pandits-yatra-gate.md"
+    },
+    {
+      "id": "R-Q2-H-001",
+      "title": "First contractor hire — CS+ops generalist if MAU > 15K trigger met",
+      "category": "hr",
+      "owner_role": "hr",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "contractors_hired",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "hr",
+        "hire",
+        "contractor",
+        "trigger"
+      ],
+      "created_at": "2026-06-09T21:56:43.063Z",
+      "updated_at": "2026-06-09T21:56:43.063Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/hr/001-first-contractor-hire-cs-ops-generalist-if-mau-15k.md"
+    },
+    {
+      "id": "R-Q2-H-002",
+      "title": "CS macros expanded to 25 — multilingual support templates",
+      "category": "hr",
+      "owner_role": "hr",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-CS-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "cs_macros_count",
+        "current": 0,
+        "target": 25,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "hr",
+        "cs",
+        "macros",
+        "ops"
+      ],
+      "created_at": "2026-06-09T21:56:43.063Z",
+      "updated_at": "2026-06-09T21:56:43.063Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/hr/002-cs-macros-expanded-to-25-multilingual-support-temp.md"
+    },
+    {
+      "id": "R-Q2-IT-001",
+      "title": "Sentry quota tuning — sampling + filters to stay under free tier 5K events/mo",
+      "category": "it",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U6",
+      "depends_on": [
+        "R-Q1-E-014"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "sentry_events_monthly",
+        "current": 0,
+        "target": 5000,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "it",
+        "sentry",
+        "quota",
+        "free-tier"
+      ],
+      "created_at": "2026-06-09T21:55:18.961Z",
+      "updated_at": "2026-06-09T21:55:18.961Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/it/001-sentry-quota-tuning-sampling-filters-to-stay-under.md"
+    },
+    {
+      "id": "R-Q2-IT-002",
+      "title": "Render scaling plan — instance upgrade trigger at 80%CPU + budget approved",
+      "category": "it",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "render_scale_plan_documented",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "it",
+        "render",
+        "scale",
+        "plan"
+      ],
+      "created_at": "2026-06-09T21:55:18.961Z",
+      "updated_at": "2026-06-09T21:55:18.961Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/it/002-render-scaling-plan-instance-upgrade-trigger-at-80.md"
+    },
+    {
+      "id": "R-Q2-IT-003",
+      "title": "Supabase backup automation — daily pg_dump to S3 + 30d retention",
+      "category": "it",
+      "owner_role": "cto",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "supabase_backup_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 6,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "it",
+        "supabase",
+        "backup",
+        "dr"
+      ],
+      "created_at": "2026-06-09T21:55:18.961Z",
+      "updated_at": "2026-06-09T21:55:18.961Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/it/003-supabase-backup-automation-daily-pg-dump-to-s3-30d.md"
+    },
+    {
+      "id": "R-Q2-L-001",
+      "title": "DPDP Act 2023 compliance audit — privacy policy + consent flows + DPO",
+      "category": "legal",
+      "owner_role": "legal",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-L-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "dpdp_audit_completed",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "legal",
+        "dpdp",
+        "compliance",
+        "privacy"
+      ],
+      "created_at": "2026-06-09T21:56:42.385Z",
+      "updated_at": "2026-06-09T21:56:42.385Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/legal/001-dpdp-act-2023-compliance-audit-privacy-policy-cons.md"
+    },
+    {
+      "id": "R-Q2-L-002",
+      "title": "Priest contracts signed — 100 pandits with revenue-share template",
+      "category": "legal",
+      "owner_role": "legal",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "priest_contracts_signed",
+        "current": 0,
+        "target": 100,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "legal",
+        "contracts",
+        "priest",
+        "supply"
+      ],
+      "created_at": "2026-06-09T21:56:42.385Z",
+      "updated_at": "2026-06-09T21:56:42.385Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/legal/002-priest-contracts-signed-100-pandits-with-revenue-s.md"
+    },
+    {
+      "id": "R-Q2-L-003",
+      "title": "DPDP user-rights API — export + delete + correct endpoints + admin UI",
+      "category": "legal",
+      "owner_role": "legal",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-L-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "dpdp_user_rights_endpoint_live",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "legal",
+        "dpdp",
+        "api",
+        "user-rights"
+      ],
+      "created_at": "2026-06-09T21:56:42.385Z",
+      "updated_at": "2026-06-09T21:56:42.385Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/legal/003-dpdp-user-rights-api-export-delete-correct-endpoin.md"
+    },
+    {
+      "id": "R-Q2-M-001",
+      "title": "ProductHunt launch — coordinated Tuesday IST submit + 20 hunter votes",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "producthunt_rank_day",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "launch",
+        "producthunt",
+        "growth"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/001-producthunt-launch-coordinated-tuesday-ist-submit-.md"
+    },
+    {
+      "id": "R-Q2-M-002",
+      "title": "Investor pitch deck v2 — pre-seed ready w/ Q1 MAU + MRR + retention",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [
+        "R-Q2-F-001"
+      ],
+      "kpi": {
+        "metric": "pitch_deck_v2_shipped",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "deck",
+        "pitch"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/002-investor-pitch-deck-v2-pre-seed-ready-w-q1-mau-mrr.md"
+    },
+    {
+      "id": "R-Q2-M-003",
+      "title": "5 pillar pages live — Q2 cycle (/festivals + /yatra + /astrology + /shop + /community)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-M-007",
+        "R-Q1-M-008"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "pillar_pages_shipped",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 40,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "seo",
+        "pillar",
+        "content"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/003-5-pillar-pages-live-q2-cycle-festivals-yatra-astro.md"
+    },
+    {
+      "id": "R-Q2-M-004",
+      "title": "Sanskrit voice content — daily 60sec aarti/shloka clips for Instagram+YouTube",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "voice_content_published",
+        "current": 0,
+        "target": 60,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "content",
+        "voice",
+        "social",
+        "daily"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/004-sanskrit-voice-content-daily-60sec-aarti-shloka-cl.md"
+    },
+    {
+      "id": "R-Q2-M-005",
+      "title": "Influencer outreach — 10 micro-influencers (5K-50K) in devotional niche",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "influencer_partnerships",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 30000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "influencer",
+        "outreach",
+        "social"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/005-influencer-outreach-10-micro-influencers-5k-50k-in.md"
+    },
+    {
+      "id": "R-Q2-M-006",
+      "title": "NRI Google Ads scale — $200/mo budget across US+UK+CA+AU",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U2",
+      "depends_on": [
+        "R-Q1-M-011"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "nri_ads_spend_monthly",
+        "current": 0,
+        "target": 200,
+        "unit": "usd",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "ads",
+        "nri",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/006-nri-google-ads-scale-200-mo-budget-across-us-uk-ca.md"
+    },
+    {
+      "id": "R-Q2-M-007",
+      "title": "Programmatic SEO — 50 new long-tail templates (puja+city+language matrix)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-M-002"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "programmatic_pages_live",
+        "current": 0,
+        "target": 500,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "seo",
+        "programmatic",
+        "long-tail"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/007-programmatic-seo-50-new-long-tail-templates-puja-c.md"
+    },
+    {
+      "id": "R-Q2-M-008",
+      "title": "WhatsApp daily devotional broadcast — 1000 opt-in users (under free tier)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U7",
+      "depends_on": [
+        "R-Q1-M-010"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "wa_broadcast_subscribers",
+        "current": 0,
+        "target": 1000,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "wa",
+        "broadcast",
+        "retention"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/008-whatsapp-daily-devotional-broadcast-1000-opt-in-us.md"
+    },
+    {
+      "id": "R-Q2-M-009",
+      "title": "YouTube channel — weekly live darshan recordings + how-to-puja content",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-E-002"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "youtube_subscribers",
+        "current": 0,
+        "target": 500,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "youtube",
+        "content",
+        "darshan"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/009-youtube-channel-weekly-live-darshan-recordings-how.md"
+    },
+    {
+      "id": "R-Q2-M-010",
+      "title": "Press cycle 2 — Economic Times + LiveMint + Mint (post-PH launch)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-M-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "press_pitches_sent",
+        "current": 0,
+        "target": 3,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "pr",
+        "press",
+        "tier-1"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/010-press-cycle-2-economic-times-livemint-mint-post-ph.md"
+    },
+    {
+      "id": "R-Q2-M-011",
+      "title": "Referral program — formal launch w/ ₹100 credit per converted referee",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "referral_conversions",
+        "current": 0,
+        "target": 200,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 40000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "growth",
+        "referral",
+        "viral"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/011-referral-program-formal-launch-w-100-credit-per-co.md"
+    },
+    {
+      "id": "R-Q2-M-012",
+      "title": "Founder Twitter — 100 followers via 3 build-in-public threads weekly",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "twitter_followers",
+        "current": 0,
+        "target": 1000,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "social",
+        "twitter",
+        "founder"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/012-founder-twitter-100-followers-via-3-build-in-publi.md"
+    },
+    {
+      "id": "R-Q2-M-013",
+      "title": "Accelerator pitches — apply to Antler + Sequoia Surge + 100x.vc",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-M-002"
+      ],
+      "blocks": [
+        "R-Q2-F-004"
+      ],
+      "kpi": {
+        "metric": "accelerator_applications",
+        "current": 0,
+        "target": 3,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "accelerator"
+      ],
+      "created_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-09T21:55:19.892Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/marketing/013-accelerator-pitches-apply-to-antler-sequoia-surge-.md"
+    },
+    {
+      "id": "R-Q2-P-001",
+      "title": "AI Pandit MVP launch — ₹199/mo subscription + free 3 questions/day tier",
+      "category": "product",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-E-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "ai_pandit_paying_users",
+        "current": 0,
+        "target": 200,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 40000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "product",
+        "ai-pandit",
+        "subscription",
+        "mvp"
+      ],
+      "created_at": "2026-06-09T21:55:20.368Z",
+      "updated_at": "2026-06-09T21:55:20.368Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/product/001-ai-pandit-mvp-launch-199-mo-subscription-free-3-qu.md"
+    },
+    {
+      "id": "R-Q2-P-002",
+      "title": "Wedding muhurat tool — date+location+couple-kundli matching engine",
+      "category": "product",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "wedding_muhurat_lookups",
+        "current": 0,
+        "target": 2000,
+        "unit": "count",
+        "source": "posthog",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 60000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "product",
+        "wedding",
+        "muhurat",
+        "astrology"
+      ],
+      "created_at": "2026-06-09T21:55:20.368Z",
+      "updated_at": "2026-06-09T21:55:20.368Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/product/002-wedding-muhurat-tool-date-location-couple-kundli-m.md"
+    },
+    {
+      "id": "R-Q2-P-003",
+      "title": "Yatra package commerce — 5 packages live w/ real Razorpay (Char Dham + others)",
+      "category": "product",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-P-001"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "yatra_packages_booked",
+        "current": 0,
+        "target": 50,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 250000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "product",
+        "yatra",
+        "commerce",
+        "razorpay"
+      ],
+      "created_at": "2026-06-09T21:55:20.368Z",
+      "updated_at": "2026-06-09T21:55:20.368Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/product/003-yatra-package-commerce-5-packages-live-w-real-razo.md"
+    },
+    {
+      "id": "R-Q2-P-004",
+      "title": "Gaushala adopt-a-cow subscription — ₹501/mo per cow w/ monthly video update",
+      "category": "product",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-S-010"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "adopt_a_cow_subscribers",
+        "current": 0,
+        "target": 100,
+        "unit": "users",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 50100,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "product",
+        "gaushala",
+        "subscription",
+        "recurring"
+      ],
+      "created_at": "2026-06-09T21:55:20.368Z",
+      "updated_at": "2026-06-09T21:55:20.368Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/product/004-gaushala-adopt-a-cow-subscription-501-mo-per-cow-w.md"
+    },
+    {
+      "id": "R-Q2-P-005",
+      "title": "iOS TestFlight — internal beta w/ 50 testers + crash reporting",
+      "category": "product",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U3",
+      "depends_on": [
+        "R-Q2-E-004"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "ios_testflight_users",
+        "current": 0,
+        "target": 50,
+        "unit": "users",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "product",
+        "ios",
+        "testflight",
+        "beta"
+      ],
+      "created_at": "2026-06-09T21:55:20.368Z",
+      "updated_at": "2026-06-09T21:55:20.368Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/product/005-ios-testflight-internal-beta-w-50-testers-crash-re.md"
+    },
+    {
+      "id": "R-Q2-P-006",
+      "title": "Push notifications strategy — daily aarti + festival + booking-status",
+      "category": "product",
+      "owner_role": "cpo",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U5",
+      "depends_on": [
+        "R-Q2-E-009"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "push_notification_open_rate",
+        "current": 0,
+        "target": 25,
+        "unit": "pct",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "product",
+        "push",
+        "engagement",
+        "retention"
+      ],
+      "created_at": "2026-06-09T21:55:20.368Z",
+      "updated_at": "2026-06-09T21:55:20.368Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/product/006-push-notifications-strategy-daily-aarti-festival-b.md"
+    },
+    {
+      "id": "R-Q2-SA-001",
+      "title": "ISKCON central partnership LOI signed — 5 temple onboarding pipeline",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-S-011"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "iskcon_loi_signed",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 150000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "b2b",
+        "iskcon",
+        "partnership",
+        "loi"
+      ],
+      "created_at": "2026-06-09T21:56:43.738Z",
+      "updated_at": "2026-06-09T21:56:43.738Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/sales/001-iskcon-central-partnership-loi-signed-5-temple-onb.md"
+    },
+    {
+      "id": "R-Q2-SA-002",
+      "title": "BAPS Swaminarayan outreach — first meeting + scoping note",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "baps_meeting_held",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "b2b",
+        "baps",
+        "outreach"
+      ],
+      "created_at": "2026-06-09T21:56:43.738Z",
+      "updated_at": "2026-06-09T21:56:43.738Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/sales/002-baps-swaminarayan-outreach-first-meeting-scoping-n.md"
+    },
+    {
+      "id": "R-Q2-SA-003",
+      "title": "3 angel investor meetings — pitch deck v2 + Q2 metrics walkthrough",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-M-002"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "angel_meetings_held",
+        "current": 0,
+        "target": 3,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "angel",
+        "pitch"
+      ],
+      "created_at": "2026-06-09T21:56:43.738Z",
+      "updated_at": "2026-06-09T21:56:43.738Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/sales/003-3-angel-investor-meetings-pitch-deck-v2-q2-metrics.md"
+    },
+    {
+      "id": "R-Q2-SA-004",
+      "title": "B2B white-label scoping — 2 corporate gifting pilots (Diwali ready Q3)",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "b2b_pilots_scoped",
+        "current": 0,
+        "target": 2,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "b2b",
+        "white-label",
+        "corporate-gifting"
+      ],
+      "created_at": "2026-06-09T21:56:43.738Z",
+      "updated_at": "2026-06-09T21:56:43.738Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/sales/004-b2b-white-label-scoping-2-corporate-gifting-pilots.md"
+    },
+    {
+      "id": "R-Q2-SA-005",
+      "title": "Pre-seed term sheet — 1 lead committed by end Q2",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q2-SA-003"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "term_sheets_received",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "term-sheet",
+        "pre-seed"
+      ],
+      "created_at": "2026-06-09T21:56:43.738Z",
+      "updated_at": "2026-06-09T21:56:43.738Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/sales/005-pre-seed-term-sheet-1-lead-committed-by-end-q2.md"
+    },
+    {
+      "id": "R-Q2-S-001",
+      "title": "Onboard +25 verified pandits in Bengaluru (cumulative 55)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-S-002"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_bengaluru",
+        "current": 0,
+        "target": 55,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "bengaluru",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/001-onboard-25-verified-pandits-in-bengaluru-cumulativ.md"
+    },
+    {
+      "id": "R-Q2-S-002",
+      "title": "Onboard +25 verified pandits in Mumbai (cumulative 50)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-S-003"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_mumbai",
+        "current": 0,
+        "target": 50,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "mumbai",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/002-onboard-25-verified-pandits-in-mumbai-cumulative-5.md"
+    },
+    {
+      "id": "R-Q2-S-003",
+      "title": "Onboard 25 verified pandits in Delhi (new city)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_delhi",
+        "current": 0,
+        "target": 25,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 40,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "delhi",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/003-onboard-25-verified-pandits-in-delhi-new-city.md"
+    },
+    {
+      "id": "R-Q2-S-004",
+      "title": "Onboard 25 verified pandits in Pune (new city)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_pune",
+        "current": 0,
+        "target": 25,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 36,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "pune",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/004-onboard-25-verified-pandits-in-pune-new-city.md"
+    },
+    {
+      "id": "R-Q2-S-005",
+      "title": "Onboard 25 verified pandits in Hyderabad (new city — south expansion)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_hyderabad",
+        "current": 0,
+        "target": 25,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 36,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "hyderabad",
+        "south"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/005-onboard-25-verified-pandits-in-hyderabad-new-city-.md"
+    },
+    {
+      "id": "R-Q2-S-006",
+      "title": "Onboard +5 verified temples Delhi (Akshardham+Birla+ISKCON+Chhatarpur+Lotus)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_temples_count_delhi",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 25000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "temple",
+        "delhi",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/006-onboard-5-verified-temples-delhi-akshardham-birla-.md"
+    },
+    {
+      "id": "R-Q2-S-007",
+      "title": "Onboard +5 verified temples Pune (Dagdusheth+Chaturshringi+ISKCON+others)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_temples_count_pune",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 25000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 14,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "temple",
+        "pune",
+        "new-city"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/007-onboard-5-verified-temples-pune-dagdusheth-chaturs.md"
+    },
+    {
+      "id": "R-Q2-S-008",
+      "title": "Onboard +5 verified temples Hyderabad (Birla Mandir+Chilkur+Yadagirigutta)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_temples_count_hyderabad",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 25000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 14,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "temple",
+        "hyderabad",
+        "south"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/008-onboard-5-verified-temples-hyderabad-birla-mandir-.md"
+    },
+    {
+      "id": "R-Q2-S-009",
+      "title": "Onboard +10 verified astrologers (cumulative 20)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 4,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-S-007"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_astrologers_count",
+        "current": 0,
+        "target": 20,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 80000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 20,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "astrology",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/009-onboard-10-verified-astrologers-cumulative-20.md"
+    },
+    {
+      "id": "R-Q2-S-010",
+      "title": "Onboard +3 gaushalas (cumulative 8 — UP + MP + Rajasthan additions)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 5,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-S-008"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_gaushalas_count",
+        "current": 0,
+        "target": 8,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 24000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "gaushala",
+        "scale"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/010-onboard-3-gaushalas-cumulative-8-up-mp-rajasthan-a.md"
+    },
+    {
+      "id": "R-Q2-S-011",
+      "title": "ISKCON partnership LOI — central onboarding pipeline for 5 ISKCON temples",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q2",
+      "month_target": 6,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [
+        "R-Q2-SA-001"
+      ],
+      "kpi": {
+        "metric": "iskcon_temples_onboarded",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "partnership",
+        "iskcon",
+        "b2b"
+      ],
+      "created_at": "2026-06-09T21:55:22.029Z",
+      "updated_at": "2026-06-09T21:55:22.029Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q2/supply/011-iskcon-partnership-loi-central-onboarding-pipeline.md"
     }
   ]
 }

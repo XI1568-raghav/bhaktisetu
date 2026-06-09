@@ -1,0 +1,6 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-SA-001,Q2,sales,sales,4,P0,ISKCON central partnership LOI signed — 5 temple onboarding pipeline,iskcon_loi_signed,1,count,manual,150000,24,R-Q2-S-011,,b2b;iskcon;partnership;loi,
+R-Q2-SA-002,Q2,sales,sales,5,P1,BAPS Swaminarayan outreach — first meeting + scoping note,baps_meeting_held,1,count,manual,0,16,,,b2b;baps;outreach,
+R-Q2-SA-003,Q2,sales,sales,5,P1,3 angel investor meetings — pitch deck v2 + Q2 metrics walkthrough,angel_meetings_held,3,count,manual,0,12,R-Q2-M-002,,fundraising;angel;pitch,
+R-Q2-SA-004,Q2,sales,sales,6,P2,B2B white-label scoping — 2 corporate gifting pilots (Diwali ready Q3),b2b_pilots_scoped,2,count,manual,0,16,,,b2b;white-label;corporate-gifting,
+R-Q2-SA-005,Q2,sales,sales,6,P2,Pre-seed term sheet — 1 lead committed by end Q2,term_sheets_received,1,count,manual,0,24,R-Q2-SA-003,,fundraising;term-sheet;pre-seed,
