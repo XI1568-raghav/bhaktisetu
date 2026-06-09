@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-H-001,Q4,hr,talent,10,P0,3rd contractor hire — full-stack engineer for scale workstream,contractors_total,3,count,manual,0,40,R-Q3-H-001,,hr;contractor;hire;engineering,U7
+R-Q4-H-002,Q4,hr,talent,11,P0,On-call rotation v1 — 3-person rotation + PagerDuty + escalation matrix,oncall_rotation_live,1,count,manual,0,24,R-Q4-H-001;R-Q4-E-005,,hr;oncall;pagerduty;ops,

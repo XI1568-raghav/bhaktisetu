@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-IT-001,Q4,it,it,10,P0,Multi-region failover plan documented — Mumbai primary + Singapore standby + RTO 15min,failover_runbook_complete,1,count,gh_repo,0,28,R-Q3-IT-001,R-Q4-E-014,it;failover;runbook;dr,
+R-Q4-IT-002,Q4,it,it,12,P0,Post-scale cost optimization audit — Render + Cloudflare + Supabase + Razorpay spend,monthly_infra_cost_inr,150000,inr,manual,0,24,R-Q4-E-004,,it;cost;optimization;audit,

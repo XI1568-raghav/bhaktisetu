@@ -1,0 +1,8 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-P-001,Q4,product,cpo,10,P0,Antim sanskar product spec — dignity-first UX + pandit dispatch flow + family co-ord,antim_sanskar_csat,90,percent,supabase,80000,20,,R-Q4-E-001,product;antim-sanskar;dignity;ux,
+R-Q4-P-002,Q4,product,cpo,11,P0,Adopt-a-temple subscription spec — tiers + temple impact reports + 80G monthly,adopt_temple_conversion_pct,8,percent,posthog,120000,16,,R-Q4-E-012,product;adopt-temple;subscription;recurring,
+R-Q4-P-003,Q4,product,cpo,10,P0,Wedding planner end-to-end spec — muhurat + venue + pandit + vendors + checklist,wedding_planner_csat,85,percent,supabase,200000,24,,R-Q4-E-010,product;wedding;planner;e2e,
+R-Q4-P-004,Q4,product,cpo,11,P0,Sanskrit voice tutor v2 paid tier — advanced mantras + pronunciation grading + cert,sanskrit_tutor_paid_subs,500,count,razorpay,150000,20,R-Q3-P-001,,product;sanskrit;voice;paid-tier,
+R-Q4-P-005,Q4,product,cpo,12,P1,Gurukul payment escrow spec — guru/student/parent trust + refund policy,gurukul_escrow_csat,90,percent,supabase,40000,16,R-Q3-P-004,R-Q4-E-013,product;gurukul;escrow;trust,
+R-Q4-P-006,Q4,product,cpo,11,P1,B2B white-label v1 spec — custom domain + branding + multi-tenant admin,whitelabel_temple_csat,90,percent,manual,200000,20,,R-Q4-E-009,product;whitelabel;b2b;multi-tenant,
+R-Q4-P-007,Q4,product,cpo,12,P2,Festival pre-sale calendar UX — 60d advance booking + waitlist + early-bird,festival_pre_sale_conv_pct,12,percent,posthog,80000,16,,R-Q4-E-011,product;festival;pre-sale;calendar,

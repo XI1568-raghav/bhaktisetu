@@ -1,0 +1,4 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-CS-001,Q4,cs,cs,10,P0,24h response globally — UK + US + AU + IN timezone coverage + SLA 24h hard,response_sla_24h_pct,98,percent,supabase,0,32,R-Q3-CS-001,,cs;sla;24h;global,
+R-Q4-CS-002,Q4,cs,cs,11,P0,Automated tier-3 escalation — AI triage + auto-route to specialist + founder escape hatch,tier3_auto_escalation_pct,80,percent,supabase,0,32,R-Q3-CS-002,R-Q4-E-002,cs;tier3;escalation;ai,
+R-Q4-CS-003,Q4,cs,cs,12,P1,NPS 60+ at 200K MAU — survey + cohort analysis + 12 closed-loop actions,nps_score,60,count,posthog,0,28,,,cs;nps;retention;survey,

@@ -1,0 +1,6 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-SA-001,Q4,sales,sales,10,P0,Anchor temple chain master agreement signed — 50+ temple commit + revenue share,anchor_chain_temples_committed,50,count,manual,2500000,40,R-Q3-SA-001;R-Q4-S-006,R-Q4-S-003,b2b;anchor;contract;chain,U6
+R-Q4-SA-002,Q4,sales,sales,11,P0,B2B SaaS 5 pilot customers signed — temple chains + ashrams + matha networks,b2b_pilot_customers_signed,5,count,manual,1500000,40,R-Q3-SA-002,,b2b;saas;pilot;commercial,
+R-Q4-SA-003,Q4,sales,sales,10,P0,Seed VC close meetings — 6 tier-1 funds + 2 term sheets received,vc_term_sheets,2,count,manual,0,40,R-Q3-SA-003,R-Q4-F-001,vc;seed;term-sheet;close,U4
+R-Q4-SA-004,Q4,sales,sales,11,P0,Corporate Diwali contracts — convert 5 Q3 pilots into ₹50L+ commitments,corporate_diwali_revenue,5000000,inr,manual,5000000,32,R-Q3-SA-005,,b2b;corporate;diwali;contract,
+R-Q4-SA-005,Q4,sales,sales,12,P1,B2B Series A pipeline — 15 enterprise leads qualified for FY27 Q1 close,b2b_qualified_leads,15,count,supabase,0,28,R-Q4-SA-002,R-Q4-F-002,b2b;pipeline;enterprise;series-a,

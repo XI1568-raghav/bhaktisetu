@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q4-L-001,Q4,legal,legal,10,P0,Privacy policy v2 multi-geo — IN DPDP + EU GDPR + US CCPA + UK + CA + AU,privacy_policy_v2_live,1,count,gh_repo,0,32,R-Q3-L-001,R-Q4-G-002,legal;privacy;multi-geo;dpdp,
+R-Q4-L-002,Q4,legal,legal,11,P0,Temple chain master agreement — anchor chain commercial + revenue share + IP + indemnity,temple_master_agreement_signed,1,count,manual,0,40,R-Q4-SA-001,,legal;agreement;master;chain,U6
