@@ -45,6 +45,8 @@ docs/roadmap/
 
 Item file = `<slug>.md` with frontmatter (id, category, quarter, estimatedHours, dependsOn, killSwitch, emittedAt, status).
 
+Schema enforced by `scripts/roadmap/_validate.mjs` (Task 0.4 — not yet built).
+
 ---
 
 ## Adding an item
@@ -68,7 +70,9 @@ Item file = `<slug>.md` with frontmatter (id, category, quarter, estimatedHours,
 3. Body = task description, acceptance criteria, links.
 4. Commit. Engine picks up on next cron.
 
-### Via `_bulk-create.mjs`
+### Via `_bulk-create.mjs` (Phase 1 — not yet built)
+
+_Not yet built — Phase 1._
 
 For batch seeding (e.g., quarterly planning):
 
@@ -92,7 +96,9 @@ Killed items archived, never re-emitted. Decision logged to `decisions/<date>-ki
 
 ---
 
-## Override slash commands
+## Override slash commands (Phase 4 — not yet built)
+
+_Not yet built — Phase 4._
 
 - `/roadmap-emit <id>` — force emit specific item now, bypass cap
 - `/roadmap-kill <id>` — kill item, log decision
@@ -122,11 +128,11 @@ Full list in `scripts/roadmap/commands/` (Phase 2).
 7. `sentry-error-rate-spike` — error rate >2× 7d baseline
 8. `prod-deploy-failure-3x` — 3 consecutive prod deploys fail
 9. `queue-depth-gt-50` — emitted-but-not-picked items >50 (backpressure)
-10. `owner-pause-global` — `_alerts/PAUSE_ALL` file present
+10. `owner-pause-global` — `_alerts/PAUSE_ALL` file present _(Phase 3 — not yet built)_. Create: `touch docs/roadmap/_alerts/PAUSE_ALL`. Remove file (or `/roadmap-resume global`) to unfreeze.
 
 ### Per-item tripwires
 
-Item frontmatter `killSwitch:` references condition name. Engine checks before emit; if fires, item moved to `done/` with `killed-by-tripwire-<name>`. Categories can register custom checks in `scripts/roadmap/tripwires/<category>.mjs`.
+Item frontmatter `killSwitch:` references condition name. Engine checks before emit; if fires, item moved to `done/` with `killed-by-tripwire-<name>`. Categories can register custom checks in `scripts/roadmap/tripwires/<category>.mjs` _(Phase 2-3 — not yet built)_.
 
 Tripwire fires written to `_alerts/<timestamp>-<name>.json`. Stop hook reads + injects warning into next session.
 
@@ -188,8 +194,13 @@ ADRs never deleted. Audit trail.
 `queue/` = emitted items waiting agent pickup. FIFO by `emittedAt` timestamp in frontmatter.
 
 ```bash
-ls -t docs/roadmap/queue/*.md  # oldest first
+# True FIFO head (oldest emittedAt frontmatter first):
+grep -l '^status: emitted' docs/roadmap/queue/*.md \
+  | xargs grep -H '^emittedAt:' \
+  | sort -t: -k3
 ```
+
+Sort by `emittedAt` field in frontmatter, not file mtime.
 
 Agent picks `head(queue)` each session, moves to in-progress (frontmatter `status: in-progress`), ships, moves to `done/` with `status: done` + `completedAt`.
 
