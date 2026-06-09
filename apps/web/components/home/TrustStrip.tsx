@@ -17,19 +17,19 @@ export default function TrustStrip() {
   return (
     <section
       aria-label="Trust and verification signals"
-      className="w-full text-white"
-      style={{ background: '#1E1B16' }}
+      className="w-full"
+      style={{ background: 'var(--color-surface-offset)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] sm:text-xs font-medium">
           {ITEMS.map((item, i) => (
             <li key={item.text} className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1.5">
-                <item.Icon className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-                <span className="text-white/95">{item.text}</span>
+                <item.Icon className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+                <span style={{ color: 'var(--color-text)' }}>{item.text}</span>
               </span>
               {i < ITEMS.length - 1 && (
-                <span className="hidden sm:inline w-1 h-1 rounded-full bg-white/30" aria-hidden="true" />
+                <span className="hidden sm:inline w-1 h-1 rounded-full" style={{ background: 'var(--color-text-faint)' }} aria-hidden="true" />
               )}
             </li>
           ))}

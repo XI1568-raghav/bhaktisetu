@@ -9,6 +9,7 @@ import {
  type SadeSatiResult,
  type SadeSatiPhaseKind,
 } from '../../../lib/sade-sati';
+import { DateInput } from '../../../components/ui/DateInput';
 
 type TimezoneOption = { value: number; label: string };
 
@@ -60,12 +61,10 @@ export default function SadeSatiClient({ options }: { options: TimezoneOption[] 
     <div className="grid gap-4 sm:grid-cols-3">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date of birth</span>
-      <input
-       type="date"
+      <DateInput
        value={dob}
-       onChange={(e) => setDob(e.target.value)}
+       onChange={(v) => setDob(v)}
        required
-       className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
       />
      </label>
      <label className="block">

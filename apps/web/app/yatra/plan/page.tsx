@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
 import { sacredSites, formatINR } from '../../../lib/yatra-data';
+import { DateInput } from '../../../components/ui/DateInput';
 
 type PlanData = {
  destinations: string[]; // site ids
@@ -226,22 +227,16 @@ export default function CustomPlanPage() {
  <div className="grid sm:grid-cols-2 gap-3 mb-4">
  <div>
  <label className="text-xs block mb-1" style={{ color: 'var(--color-text)' }}>Start date</label>
- <input
- type="date"
+ <DateInput
  value={data.startDate}
- onChange={(e) => setData({ ...data, startDate: e.target.value })}
- className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ onChange={(v) => setData({ ...data, startDate: v })}
  />
  </div>
  <div>
  <label className="text-xs block mb-1" style={{ color: 'var(--color-text)' }}>End date</label>
- <input
- type="date"
+ <DateInput
  value={data.endDate}
- onChange={(e) => setData({ ...data, endDate: e.target.value })}
- className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ onChange={(v) => setData({ ...data, endDate: v })}
  />
  </div>
  </div>
