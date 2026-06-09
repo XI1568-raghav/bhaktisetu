@@ -1,1 +1,188 @@
-{"generatedAt":null,"items":[]}
+{
+  "generatedAt": "2026-06-09T21:17:04.676Z",
+  "items": [
+    {
+      "id": "R-Q1-E-001",
+      "title": "CSP nonce middleware completion + per-page schema",
+      "category": "engineering",
+      "owner_role": "cto",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P1",
+      "status": "in_progress",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [
+        "R-Q1-E-002"
+      ],
+      "kpi": {
+        "metric": "pages_with_csp_nonce",
+        "current": 1,
+        "target": 250,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "grep -r 'nonce={nonce}' apps/web/app/ --include=*.tsx | wc -l"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "high",
+        "basis": "security hygiene; no direct revenue"
+      },
+      "est_hours": 6,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "curl -sI https://darshya.online/ returns CSP header with nonce-{base64} + strict-dynamic, NO unsafe-inline in script-src",
+        "Browser DevTools console on home: NO CSP violations across Razorpay/Stripe/PostHog/GTM/CF/AdSense",
+        "≥ 100 pages have inline scripts with nonce attr"
+      ],
+      "agent_brief": {
+        "context_files": [
+          "apps/web/middleware.ts",
+          "apps/web/app/layout.tsx",
+          "docs/company/01-cto.md"
+        ]
+      },
+      "handoff_notes": "2026-06-08 commit 7adbd87 shipped middleware + layout wiring. 146 pages still pending codemod.\n2026-06-10: created roadmap item from TASKS.md deferred list.\n",
+      "tags": [
+        "security",
+        "csp",
+        "nonce",
+        "p1"
+      ],
+      "created_at": "2026-06-10T19:00:00.000Z",
+      "updated_at": "2026-06-10T19:00:00.000Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs\\roadmap\\items\\Q1\\engineering\\001-csp-nonce-middleware.md"
+    },
+    {
+      "id": "R-Q1-M-001",
+      "title": "Reddit week-3 plant-flags — r/hinduism + r/india_speaks",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": false,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [
+        "R-Q1-M-002"
+      ],
+      "kpi": {
+        "metric": "reddit_comments_posted",
+        "current": 0,
+        "target": 21,
+        "unit": "count",
+        "source": "manual",
+        "query": "manual count from _manual-kpis.yml field reddit_comments_count"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "low",
+        "basis": "indirect — referral traffic, brand awareness"
+      },
+      "est_hours": 2,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "21 helpful comments posted across r/hinduism + r/india_speaks (comment-only, no asks per CMO §2 week 1)",
+        "0 mod removals",
+        "Manual KPI updated"
+      ],
+      "agent_brief": {
+        "context_files": [
+          "docs/company/02-cmo.md"
+        ]
+      },
+      "handoff_notes": "2026-06-10: created from CMO doc week-1 plant-flags activity.\n",
+      "tags": [
+        "reddit",
+        "week-1",
+        "plant-flags",
+        "marketing"
+      ],
+      "created_at": "2026-06-10T19:00:00.000Z",
+      "updated_at": "2026-06-10T19:00:00.000Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs\\roadmap\\items\\Q1\\marketing\\001-reddit-week-3-plant-flags.md"
+    },
+    {
+      "id": "R-Q1-S-001",
+      "title": "Onboard 50 verified pandits in Varanasi",
+      "category": "supply",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-E-003"
+      ],
+      "blocks": [
+        "R-Q1-S-002"
+      ],
+      "kpi": {
+        "metric": "verified_pandits_count_varanasi",
+        "current": 8,
+        "target": 50,
+        "unit": "count",
+        "source": "supabase",
+        "query": "SELECT COUNT(*) FROM \"Priest\" WHERE aadhaar_verified=true AND city='Varanasi'"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "50 pandits × 3 pujas/mo × ₹1500 × 30% commission"
+      },
+      "geo": {
+        "scope": "city",
+        "values": [
+          "Varanasi"
+        ]
+      },
+      "est_hours": 40,
+      "est_cost_inr": 0,
+      "tripwire": [
+        {
+          "condition": "verified_pandits_count_varanasi < 15 by 2026-08-01",
+          "action": "pivot_to_remote_onboarding"
+        }
+      ],
+      "success_criteria": [
+        "Supabase: SELECT COUNT(*) ≥ 50 verified Varanasi pandits",
+        "≥ 30 of those completed ≥ 1 paid puja in last 30d",
+        "Churn (no puja in 45d) < 20%"
+      ],
+      "agent_brief": {
+        "context_files": [
+          "docs/company/02-cmo.md",
+          "docs/company/05-sales.md",
+          "apps/api/src/routes/priest-onboarding.ts"
+        ]
+      },
+      "handoff_notes": "2026-06-10: created from year-1 import.\n",
+      "tags": [
+        "varanasi",
+        "pandit",
+        "supply",
+        "year-1"
+      ],
+      "created_at": "2026-06-10T19:00:00.000Z",
+      "updated_at": "2026-06-10T19:00:00.000Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs\\roadmap\\items\\Q1\\supply\\001-onboard-50-pandits-varanasi.md"
+    }
+  ]
+}
