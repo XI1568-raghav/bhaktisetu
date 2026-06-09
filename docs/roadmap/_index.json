@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-09T21:29:31.908Z",
+  "generatedAt": "2026-06-09T21:47:26.237Z",
   "items": [
     {
       "id": "R-Q1-E-001",
@@ -839,6 +839,738 @@
       "_file": "docs/roadmap/items/Q1/marketing/001-reddit-week-3-plant-flags.md"
     },
     {
+      "id": "R-Q1-M-002",
+      "title": "GSC + Bing Webmaster verification + sitemap.xml submit",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "gsc_verified",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 2,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "seo",
+        "week-1",
+        "p0"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/002-gsc-bing-webmaster-verification-sitemap-xml-submit.md"
+    },
+    {
+      "id": "R-Q1-M-003",
+      "title": "PostHog cloud wired into web layout (Provider)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U8",
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "posthog_web_active",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 3,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "analytics",
+        "week-1",
+        "p0"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/003-posthog-cloud-wired-into-web-layout-provider.md"
+    },
+    {
+      "id": "R-Q1-M-004",
+      "title": "Twitter+LinkedIn+Instagram+YouTube accounts created with bio+pinned",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "social_accounts_active",
+        "current": 0,
+        "target": 4,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 3,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "social",
+        "week-1",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/004-twitter-linkedin-instagram-youtube-accounts-create.md"
+    },
+    {
+      "id": "R-Q1-M-005",
+      "title": "Buffer free schedule first 21 social posts from social-queue agent",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "social_posts_scheduled",
+        "current": 0,
+        "target": 21,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 2,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "social",
+        "buffer",
+        "week-1",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/005-buffer-free-schedule-first-21-social-posts-from-so.md"
+    },
+    {
+      "id": "R-Q1-M-006",
+      "title": "First press pitch: YourStory + Inc42 (one each tailored)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "press_pitches_sent",
+        "current": 0,
+        "target": 2,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 3,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "pr",
+        "press",
+        "week-3",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/006-first-press-pitch-yourstory-inc42-one-each-tailore.md"
+    },
+    {
+      "id": "R-Q1-M-007",
+      "title": "Pillar page /sanatan 5-10K words evergreen Sanatan Dharma overview",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "pillar_pages_shipped",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "seo",
+        "pillar",
+        "content",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/007-pillar-page-sanatan-5-10k-words-evergreen-sanatan-.md"
+    },
+    {
+      "id": "R-Q1-M-008",
+      "title": "Pillar page /nri-pujas (high commercial intent NRI-specific guide)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "pillar_pages_shipped",
+        "current": 0,
+        "target": 2,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 10,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "seo",
+        "pillar",
+        "nri",
+        "content",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/008-pillar-page-nri-pujas-high-commercial-intent-nri-s.md"
+    },
+    {
+      "id": "R-Q1-M-009",
+      "title": "Daily deity-of-day cluster articles (7 weekly)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "cluster_articles_shipped",
+        "current": 0,
+        "target": 28,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "seo",
+        "cluster",
+        "content",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/009-daily-deity-of-day-cluster-articles-7-weekly.md"
+    },
+    {
+      "id": "R-Q1-M-010",
+      "title": "WhatsApp Cloud API business verification submitted",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": "U7",
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "wa_meta_verified",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 3,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "wa",
+        "onboarding",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/010-whatsapp-cloud-api-business-verification-submitted.md"
+    },
+    {
+      "id": "R-Q1-M-011",
+      "title": "NRI-targeted Facebook ads $50 budget 3 creatives × 2 audiences",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "nri_ads_live",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 6,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "ads",
+        "nri",
+        "experiment",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:07.357Z",
+      "updated_at": "2026-06-09T21:47:07.357Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/011-nri-targeted-facebook-ads-50-budget-3-creatives-2-.md"
+    },
+    {
+      "id": "R-Q1-SA-001",
+      "title": "DM 5 ISKCON Bengaluru priests Tactic A WhatsApp template",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "iskcon_intros_made",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "b2b",
+        "iskcon",
+        "outreach",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:15.182Z",
+      "updated_at": "2026-06-09T21:47:15.182Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/sales/001-dm-5-iskcon-bengaluru-priests-tactic-a-whatsapp-te.md"
+    },
+    {
+      "id": "R-Q1-SA-002",
+      "title": "BAPS intro via Hindu American Foundation diaspora amplifier",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "baps_intro_status",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "b2b",
+        "baps",
+        "diaspora",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:15.182Z",
+      "updated_at": "2026-06-09T21:47:15.182Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/sales/002-baps-intro-via-hindu-american-foundation-diaspora-.md"
+    },
+    {
+      "id": "R-Q1-SA-003",
+      "title": "Sringeri Math direct outreach (anchor temple chain LOI candidate)",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "sringeri_intro_status",
+        "current": 0,
+        "target": 1,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 3,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "b2b",
+        "sringeri",
+        "loi",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:15.182Z",
+      "updated_at": "2026-06-09T21:47:15.182Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/sales/003-sringeri-math-direct-outreach-anchor-temple-chain-.md"
+    },
+    {
+      "id": "R-Q1-SA-004",
+      "title": "Reach Hindu American Foundation + Sewa International (diaspora orgs)",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "diaspora_orgs_engaged",
+        "current": 0,
+        "target": 2,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 3,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "nri",
+        "diaspora",
+        "outreach",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:15.182Z",
+      "updated_at": "2026-06-09T21:47:15.182Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/sales/004-reach-hindu-american-foundation-sewa-international.md"
+    },
+    {
+      "id": "R-Q1-SA-005",
+      "title": "First investor email batch (5 angels — friends/family round)",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "investor_emails_sent",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "fundraising",
+        "ff",
+        "investor",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:15.182Z",
+      "updated_at": "2026-06-09T21:47:15.182Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/sales/005-first-investor-email-batch-5-angels-friends-family.md"
+    },
+    {
       "id": "R-Q1-S-001",
       "title": "Onboard 50 verified pandits in Varanasi",
       "category": "supply",
@@ -908,6 +1640,492 @@
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/supply/001-onboard-50-pandits-varanasi.md"
+    },
+    {
+      "id": "R-Q1-S-002",
+      "title": "Onboard 30 verified pandits in Bengaluru",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_bengaluru",
+        "current": 0,
+        "target": 30,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 90000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 40,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "bengaluru",
+        "p0"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/002-onboard-30-verified-pandits-in-bengaluru.md"
+    },
+    {
+      "id": "R-Q1-S-003",
+      "title": "Onboard 25 verified pandits in Mumbai",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_pandits_count_mumbai",
+        "current": 0,
+        "target": 25,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 75000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 32,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "pandit",
+        "mumbai",
+        "p0"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/003-onboard-25-verified-pandits-in-mumbai.md"
+    },
+    {
+      "id": "R-Q1-S-004",
+      "title": "Onboard 10 verified temples Varanasi (live darshan + 80G ready)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_temples_count_varanasi",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 50000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 24,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "temple",
+        "varanasi",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/004-onboard-10-verified-temples-varanasi-live-darshan-.md"
+    },
+    {
+      "id": "R-Q1-S-005",
+      "title": "Onboard 10 verified temples Bengaluru",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_temples_count_bengaluru",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 50000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 20,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "temple",
+        "bengaluru",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/005-onboard-10-verified-temples-bengaluru.md"
+    },
+    {
+      "id": "R-Q1-S-006",
+      "title": "Onboard 5 verified temples Mumbai",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_temples_count_mumbai",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 25000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "temple",
+        "mumbai",
+        "p1"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/006-onboard-5-verified-temples-mumbai.md"
+    },
+    {
+      "id": "R-Q1-S-007",
+      "title": "Onboard 10 verified astrologers (lowest-friction supply)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_astrologers_count",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 40000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "astrology",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/007-onboard-10-verified-astrologers-lowest-friction-su.md"
+    },
+    {
+      "id": "R-Q1-S-008",
+      "title": "Onboard 5 gaushalas (Pathmeda + Vrindavan + Haryana)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_gaushalas_count",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 15000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "gaushala",
+        "adopt-a-cow",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/008-onboard-5-gaushalas-pathmeda-vrindavan-haryana.md"
+    },
+    {
+      "id": "R-Q1-S-009",
+      "title": "Onboard 3 gurukuls (Vedic schools)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_gurukuls_count",
+        "current": 0,
+        "target": 3,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 8000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 10,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "gurukul",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/009-onboard-3-gurukuls-vedic-schools.md"
+    },
+    {
+      "id": "R-Q1-S-010",
+      "title": "Onboard 5 wellness instructors (yoga + Ayurveda)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_wellness_count",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 15000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "wellness",
+        "p2"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/010-onboard-5-wellness-instructors-yoga-ayurveda.md"
+    },
+    {
+      "id": "R-Q1-S-011",
+      "title": "Onboard 10 store owners (prasad + brass + texts)",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P3",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "verified_stores_count",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 12000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "supply",
+        "store",
+        "p3"
+      ],
+      "created_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-09T21:47:01.131Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/011-onboard-10-store-owners-prasad-brass-texts.md"
     }
   ]
 }
