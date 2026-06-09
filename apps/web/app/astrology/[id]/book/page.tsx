@@ -9,6 +9,7 @@ import { ArrowLeft, Clock, IndianRupee, Loader2, Sparkles, Phone } from 'lucide-
 import AuthGuard from '../../../../components/AuthGuard';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { DateTimeInput } from '../../../../components/ui/DateInput';
 
 type Astrologer = {
   id: string;
@@ -280,12 +281,9 @@ function BookContent() {
             <label className="block text-sm font-semibold text-surface-700 mb-2" htmlFor="when">
               Preferred slot <span className="text-xs font-normal text-surface-400">(optional — leave blank to start as soon as the astrologer joins)</span>
             </label>
-            <input
-              id="when"
-              type="datetime-local"
+            <DateTimeInput
               value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full border border-surface-200 rounded-lg px-3 py-2 text-sm"
+              onChange={(v) => setScheduledAt(v)}
               min={new Date().toISOString().slice(0, 16)}
             />
           </div>

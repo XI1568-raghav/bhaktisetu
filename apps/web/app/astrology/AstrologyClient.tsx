@@ -30,6 +30,7 @@ import {
  Award,
  Compass,
 } from 'lucide-react';
+import { DateInput } from '../../components/ui/DateInput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -581,11 +582,9 @@ export default function AstrologyPage() {
  onChange={(e) => setKundliName(e.target.value)}
  className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
  />
- <input
- type="date"
+ <DateInput
  value={kundliDate}
- onChange={(e) => setKundliDate(e.target.value)}
- className="w-full px-3 py-2 bg-surface-50 border border-[var(--color-border)] rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400 outline-none"
+ onChange={(v) => setKundliDate(v)}
  />
  <input
  type="time"

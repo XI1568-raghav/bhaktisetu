@@ -20,6 +20,7 @@ import {
  CheckCircle2,
 } from 'lucide-react';
 import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
+import { DateInput } from '../../../components/ui/DateInput';
 
 type Traveler = {
  name: string;
@@ -314,12 +315,9 @@ function BookYatraInner() {
  <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text)' }}>Start date</label>
  <div className="relative">
  <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-faint)' }} />
- <input
- type="date"
+ <DateInput
  value={data.startDate}
- onChange={(e) => setData({ ...data, startDate: e.target.value })}
- className="w-full pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2"
- style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+ onChange={(v) => setData({ ...data, startDate: v })}
  />
  </div>
  <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>Best time: {yatra.bestTime}</p>

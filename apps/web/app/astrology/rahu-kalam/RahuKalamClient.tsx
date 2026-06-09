@@ -8,6 +8,7 @@ import {
  type RahuKalamDay,
  type DoshaWindow,
 } from '../../../lib/rahu-kalam';
+import { DateInput } from '../../../components/ui/DateInput';
 
 const DOSHA_STYLE: Record<DoshaWindow['kind'], { border: string; bg: string; pill: string; accent: string }> = {
  rahu:      { border: 'border-rose-400',   bg: 'bg-rose-50/70',   pill: 'bg-rose-200 text-rose-900',     accent: 'text-rose-700' },
@@ -43,13 +44,7 @@ export default function RahuKalamClient() {
     <div className="grid gap-4 sm:grid-cols-2">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date</span>
-      <input
-       type="date"
-       value={date}
-       onChange={(e) => setDate(e.target.value)}
-       required
-       className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
-      />
+      <DateInput value={date} onChange={(v) => setDate(v)} required />
      </label>
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">City</span>

@@ -10,6 +10,7 @@ import {
  type MuhuratResult,
  type MuhuratWindow,
 } from '../../../lib/shubh-muhurat';
+import { DateInput } from '../../../components/ui/DateInput';
 
 const VERDICT_STYLE: Record<MuhuratWindow['verdict'], { border: string; bg: string; pill: string; label: string }> = {
  excellent: { border: 'border-emerald-400', bg: 'bg-emerald-50/70', pill: 'bg-emerald-200 text-emerald-900', label: 'Excellent' },
@@ -55,12 +56,10 @@ export default function ShubhMuhuratClient() {
     <div className="grid gap-4 sm:grid-cols-3">
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Date</span>
-      <input
-       type="date"
+      <DateInput
        value={date}
-       onChange={(e) => setDate(e.target.value)}
+       onChange={(v) => setDate(v)}
        required
-       className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
       />
      </label>
      <label className="block">
