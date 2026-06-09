@@ -1,0 +1,12 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-S-001,Q2,supply,sales,4,P0,Onboard +25 verified pandits in Bengaluru (cumulative 55),verified_pandits_count_bengaluru,55,count,supabase,75000,32,R-Q1-S-002,,supply;pandit;bengaluru;scale,
+R-Q2-S-002,Q2,supply,sales,4,P0,Onboard +25 verified pandits in Mumbai (cumulative 50),verified_pandits_count_mumbai,50,count,supabase,75000,32,R-Q1-S-003,,supply;pandit;mumbai;scale,
+R-Q2-S-003,Q2,supply,sales,5,P0,Onboard 25 verified pandits in Delhi (new city),verified_pandits_count_delhi,25,count,supabase,75000,40,,,supply;pandit;delhi;new-city,
+R-Q2-S-004,Q2,supply,sales,5,P0,Onboard 25 verified pandits in Pune (new city),verified_pandits_count_pune,25,count,supabase,75000,36,,,supply;pandit;pune;new-city,
+R-Q2-S-005,Q2,supply,sales,6,P1,Onboard 25 verified pandits in Hyderabad (new city — south expansion),verified_pandits_count_hyderabad,25,count,supabase,75000,36,,,supply;pandit;hyderabad;south,
+R-Q2-S-006,Q2,supply,sales,4,P1,Onboard +5 verified temples Delhi (Akshardham+Birla+ISKCON+Chhatarpur+Lotus),verified_temples_count_delhi,5,count,manual,25000,16,,,supply;temple;delhi;new-city,
+R-Q2-S-007,Q2,supply,sales,5,P1,Onboard +5 verified temples Pune (Dagdusheth+Chaturshringi+ISKCON+others),verified_temples_count_pune,5,count,manual,25000,14,,,supply;temple;pune;new-city,
+R-Q2-S-008,Q2,supply,sales,6,P1,Onboard +5 verified temples Hyderabad (Birla Mandir+Chilkur+Yadagirigutta),verified_temples_count_hyderabad,5,count,manual,25000,14,,,supply;temple;hyderabad;south,
+R-Q2-S-009,Q2,supply,sales,4,P1,Onboard +10 verified astrologers (cumulative 20),verified_astrologers_count,20,count,supabase,80000,20,R-Q1-S-007,,supply;astrology;scale,
+R-Q2-S-010,Q2,supply,sales,5,P2,Onboard +3 gaushalas (cumulative 8 — UP + MP + Rajasthan additions),verified_gaushalas_count,8,count,supabase,24000,16,R-Q1-S-008,,supply;gaushala;scale,
+R-Q2-S-011,Q2,supply,sales,6,P2,ISKCON partnership LOI — central onboarding pipeline for 5 ISKCON temples,iskcon_temples_onboarded,5,count,manual,75000,24,,R-Q2-SA-001,supply;partnership;iskcon;b2b,

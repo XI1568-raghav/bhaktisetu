@@ -1,0 +1,9 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-G-001,Q2,geo,sales,4,P0,Bengaluru scaled to 80% target — 55 pandits + 10 temples + 2K MAU,bengaluru_mau,2000,users,supabase,200000,32,R-Q1-G-001,,geo;bengaluru;scale,
+R-Q2-G-002,Q2,geo,sales,4,P0,Mumbai scaled to 80% target — 50 pandits + 10 temples + 2K MAU,mumbai_mau,2000,users,supabase,200000,32,R-Q1-G-002,,geo;mumbai;scale,
+R-Q2-G-003,Q2,geo,sales,5,P0,Delhi soft launch — 25 pandits + 5 temples + 1K MAU,delhi_mau,1000,users,supabase,100000,40,R-Q2-S-003;R-Q2-S-006,,geo;delhi;new-city,
+R-Q2-G-004,Q2,geo,sales,5,P0,Pune soft launch — 25 pandits + 5 temples + 1K MAU,pune_mau,1000,users,supabase,100000,36,R-Q2-S-004;R-Q2-S-007,,geo;pune;new-city,
+R-Q2-G-005,Q2,geo,sales,6,P1,Hyderabad soft launch — 25 pandits + 5 temples + 800 MAU,hyderabad_mau,800,users,supabase,80000,36,R-Q2-S-005;R-Q2-S-008,,geo;hyderabad;south;new-city,
+R-Q2-G-006,Q2,geo,sales,5,P1,US NRI soft launch — landing page + Stripe USD + first 100 paid users,us_nri_paid_users,100,users,supabase,300000,24,,,geo;nri;us;soft-launch,U2
+R-Q2-G-007,Q2,geo,cmo,6,P1,WhatsApp diaspora groups — seed 10 NRI WA groups (Bay Area + NJ + LDN),wa_diaspora_groups_seeded,10,count,manual,50000,12,R-Q1-G-008,,geo;nri;wa;diaspora,U7
+R-Q2-G-008,Q2,geo,sales,6,P2,Varanasi expansion — +5 temples + 15 pandits (yatra gateway play),varanasi_pandits,15,count,supabase,45000,24,R-Q1-G-003,,geo;varanasi;yatra,

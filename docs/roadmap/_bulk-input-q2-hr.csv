@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q2-H-001,Q2,hr,hr,5,P1,First contractor hire — CS+ops generalist if MAU > 15K trigger met,contractors_hired,1,count,manual,0,16,,,hr;hire;contractor;trigger,
+R-Q2-H-002,Q2,hr,hr,6,P2,CS macros expanded to 25 — multilingual support templates,cs_macros_count,25,count,gh_repo,0,8,R-Q1-CS-001,,hr;cs;macros;ops,
