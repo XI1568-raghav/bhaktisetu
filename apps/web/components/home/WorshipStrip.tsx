@@ -52,7 +52,7 @@ const CARDS: WorshipCard[] = [
 
 export default function WorshipStrip() {
   return (
-    <section className="py-10 md:py-12" aria-labelledby="worship-strip-heading">
+    <section className="py-6 md:py-8" aria-labelledby="worship-strip-heading">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="mb-5">
           <p
