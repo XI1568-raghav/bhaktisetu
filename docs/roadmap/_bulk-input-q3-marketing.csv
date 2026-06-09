@@ -1,0 +1,15 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-M-001,Q3,marketing,cmo,7,P0,Founder narrative weekly thread — 12 Twitter threads on building Bhaktisetu,founder_threads_published,12,count,manual,0,24,,,founder;narrative;twitter;content,U3
+R-Q3-M-002,Q3,marketing,cmo,7,P0,First AMA on r/india — pre-seed announcement + community Q&A 500+ upvotes,reddit_ama_upvotes,500,count,manual,30000,8,,,reddit;ama;community;narrative,U3
+R-Q3-M-003,Q3,marketing,cmo,8,P0,14-day pre-seed campaign — PR + investor outreach + landing page conversion,preseed_landing_signups,2000,count,posthog,0,40,R-Q3-SA-003,,fundraising;campaign;pr;preseed,U4
+R-Q3-M-004,Q3,marketing,cmo,7,P0,Twitter Spaces live series — 4 weekly Spaces on devotional tech with guests,spaces_live_attendees_avg,150,count,manual,15000,16,R-Q3-M-001,,spaces;live;community;founder,U3
+R-Q3-M-005,Q3,marketing,cmo,8,P0,App store launch campaign — ASO + paid installs + influencer + press release,total_app_installs,15000,count,gplay,200000,40,R-Q3-E-002;R-Q3-E-003,,aso;mobile;launch;campaign,
+R-Q3-M-006,Q3,marketing,cmo,9,P0,Diwali festival mega-campaign — 7-day push + paid + influencer (target 30K bookings),diwali_bookings,30000,count,supabase,1500000,40,,,festival;diwali;campaign;mega,U5
+R-Q3-M-007,Q3,marketing,cmo,7,P1,Press release — pre-seed close announcement (YourStory + Inc42 + ET Tech),press_articles_published,5,count,manual,0,12,R-Q3-F-001,,pr;press;preseed;announcement,
+R-Q3-M-008,Q3,marketing,cmo,8,P1,YouTube channel launch — 10 devotional shorts/week + 1 long-form podcast,youtube_subscribers,5000,count,youtube,40000,32,,,youtube;content;video;podcast,
+R-Q3-M-009,Q3,marketing,cmo,7,P1,UK NRI launch campaign — UK Punjabi/Tamil/Gujarati FB groups + Diwali UK push,uk_nri_signups,1500,count,supabase,150000,24,R-Q3-G-001,,nri;uk;campaign;launch,
+R-Q3-M-010,Q3,marketing,cmo,8,P1,Canada NRI launch campaign — Toronto Brampton WA groups + cultural orgs,canada_nri_signups,1000,count,supabase,100000,20,R-Q3-G-002,,nri;canada;campaign;launch,
+R-Q3-M-011,Q3,marketing,cmo,9,P1,Tier-2 5-city launch campaigns — Chennai+Kolkata+Ahmedabad+Jaipur+Lucknow,tier2_city_mau_sum,5000,users,posthog,250000,40,R-Q3-G-003;R-Q3-G-004;R-Q3-G-005;R-Q3-G-006;R-Q3-G-007,,tier2;city;launch;campaign,
+R-Q3-M-012,Q3,marketing,cmo,8,P2,Founder podcast tour — guest on 5 Indian startup podcasts + 2 NRI podcasts,podcasts_guested,7,count,manual,0,16,,,founder;podcast;narrative;earned-media,U3
+R-Q3-M-013,Q3,marketing,cmo,7,P2,Referral program v2 — affiliate rewards launch + leaderboard + cash + prasad,referral_signups_q3,5000,count,supabase,80000,16,R-Q3-E-009,,referral;affiliate;rewards;viral,
+R-Q3-M-014,Q3,marketing,cmo,9,P2,SEO push — 100 city+puja landing pages + Hindi content + backlinks,seo_organic_sessions_monthly,80000,sessions,gsc,60000,40,,,seo;content;landing-pages;organic,

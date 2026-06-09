@@ -1,0 +1,6 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-SA-001,Q3,sales,sales,7,P0,Anchor temple chain LOI — ISKCON OR BAPS OR Sringeri signed (B2B SaaS),anchor_loi_signed,1,count,manual,500000,32,R-Q2-SA-001;R-Q3-E-007,,b2b;anchor;loi;saas,U6
+R-Q3-SA-002,Q3,sales,sales,8,P0,BAPS Swaminarayan 5-temple commercial agreement signed,baps_agreement_signed,1,count,manual,400000,24,R-Q3-S-010,,b2b;baps;agreement,
+R-Q3-SA-003,Q3,sales,sales,7,P0,First seed VC meetings — 8 tier-1 funds (Blume+Lightspeed+Accel+Matrix+Nexus+Stellaris+Elevation+SaaS),vc_meetings_held,8,count,manual,0,32,R-Q2-SA-005,R-Q3-F-001,vc;seed;fundraising;meetings,U4
+R-Q3-SA-004,Q3,sales,sales,8,P0,AngelList syndicate launch — first $100K committed by 20 angels,angellist_committed_usd,100000,usd,manual,0,24,R-Q3-SA-003,R-Q3-F-001,fundraising;angellist;syndicate;angels,U4
+R-Q3-SA-005,Q3,sales,sales,9,P1,Corporate Diwali gifting — 5 pilot accounts signed (Infosys+TCS+Wipro+Tata+ICICI),corporate_diwali_accounts,5,count,manual,500000,40,R-Q2-SA-004,,b2b;corporate;diwali;gifting,

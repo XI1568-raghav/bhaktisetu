@@ -1,0 +1,5 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-F-001,Q3,finance,cfo,8,P0,Pre-seed round close — $250K-$500K raised + SAFEs signed + bank wire received,preseed_raised_usd,400000,usd,manual,0,40,R-Q3-SA-003;R-Q3-SA-004,,fundraising;preseed;close;safe,U4
+R-Q3-F-002,Q3,finance,cfo,9,P0,Unit economics M9 audit — CAC/LTV/payback period + cohort + investor-ready board memo,unit_econ_memo_published,1,count,manual,0,24,R-Q3-F-001,,unit-econ;ltv;cac;board-memo,
+R-Q3-F-003,Q3,finance,cfo,7,P1,Bank-grade Q1 GST + TDS filings — CA reviewed + zero notices,gst_tds_filings_clean,4,count,manual,0,16,,,tax;gst;tds;compliance,
+R-Q3-F-004,Q3,finance,cfo,9,P2,Spend dashboard v2 — burn forecast + runway alerts + monthly board pack auto-export,burn_dashboard_live,1,count,gh_repo,0,16,,,finance;burn;dashboard;runway,

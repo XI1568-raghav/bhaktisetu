@@ -1,0 +1,3 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q3-H-001,Q3,hr,hr,7,P0,Senior backend contractor onboarded — 30hr/week Node + Postgres + India based,senior_contractor_active,1,count,manual,0,24,,,hr;contractor;backend;senior,
+R-Q3-H-002,Q3,hr,hr,9,P1,4 contractor JDs filled — supply ops + content + iOS dev + customer success,contractors_filled_count,4,count,manual,0,32,,,hr;contractor;jd;hiring,
