@@ -3,7 +3,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['apps/api/src/**/*.test.ts', 'packages/shared/src/**/*.test.ts'],
+    include: ['apps/api/src/**/*.test.ts', 'packages/shared/src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

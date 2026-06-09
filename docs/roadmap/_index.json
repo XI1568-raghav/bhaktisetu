@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-09T21:17:04.676Z",
+  "generatedAt": "2026-06-09T21:21:55.660Z",
   "items": [
     {
       "id": "R-Q1-E-001",
@@ -56,7 +56,7 @@
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
-      "_file": "docs\\roadmap\\items\\Q1\\engineering\\001-csp-nonce-middleware.md"
+      "_file": "docs/roadmap/items/Q1/engineering/001-csp-nonce-middleware.md"
     },
     {
       "id": "R-Q1-M-001",
@@ -111,7 +111,7 @@
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
-      "_file": "docs\\roadmap\\items\\Q1\\marketing\\001-reddit-week-3-plant-flags.md"
+      "_file": "docs/roadmap/items/Q1/marketing/001-reddit-week-3-plant-flags.md"
     },
     {
       "id": "R-Q1-S-001",
@@ -182,7 +182,7 @@
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
-      "_file": "docs\\roadmap\\items\\Q1\\supply\\001-onboard-50-pandits-varanasi.md"
+      "_file": "docs/roadmap/items/Q1/supply/001-onboard-50-pandits-varanasi.md"
     }
   ]
 }

@@ -1,9 +1,0 @@
-import { defineConfig } from 'vitest/config';
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['scripts/agents/roadmap/**/*.test.mjs'],
-    exclude: ['**/node_modules/**', '**/.pnpm-store/**', '**/dist/**'],
-  },
-});
