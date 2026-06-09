@@ -25,6 +25,7 @@ const PRIORITIES = ['P0','P1','P2','P3'];
 const STATUSES = ['planned','in_progress','blocked','shipped','verified','killed'];
 
 let errors = 0;
+let warnings = 0;
 const files = walk(ITEMS_ROOT);
 for (const file of files) {
   try {
@@ -66,5 +67,23 @@ for (const [id, paths] of idCounts) {
   }
 }
 
-console.log(`Validated ${files.length} items, ${errors} errors.`);
+// Warn (don't error) on TBD placeholders — these MUST be populated before orchestrator go-live.
+for (const file of files) {
+  let fm;
+  try { fm = parseFrontmatter(readFileSync(file, 'utf8')); } catch { continue; }
+  if (typeof fm.kpi?.query === 'string' && fm.kpi.query.startsWith('TBD')) {
+    console.warn(`WARN ${file}: kpi.query unpopulated`);
+    warnings++;
+  }
+  if (Array.isArray(fm.success_criteria) && fm.success_criteria.length > 0 && typeof fm.success_criteria[0] === 'string' && fm.success_criteria[0].includes('Populate during first')) {
+    console.warn(`WARN ${file}: success_criteria unpopulated`);
+    warnings++;
+  }
+  if (typeof fm.agent_brief?.prompt_skeleton === 'string' && fm.agent_brief.prompt_skeleton.startsWith('TBD')) {
+    console.warn(`WARN ${file}: agent_brief.prompt_skeleton unpopulated`);
+    warnings++;
+  }
+}
+
+console.log(`Validated ${files.length} items, ${errors} errors, ${warnings} warnings.`);
 process.exit(errors > 0 ? 1 : 0);
