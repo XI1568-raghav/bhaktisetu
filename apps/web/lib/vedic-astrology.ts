@@ -848,7 +848,7 @@ export function calculateKundli(
  // Calculate tropical positions and convert to sidereal
  const sunTrop = getSunLongitude(jd);
  const moonTrop = getMoonLongitude(jd);
- const ascTrop = getAscendant(jd, coords.lat, coords.lng);
+ const ascTrop = getAscendant(jd, coords.latitude, coords.longitude);
 
  const sunSid = tropicalToSidereal(sunTrop, ayanamsa);
  const moonSid = tropicalToSidereal(moonTrop, ayanamsa);
