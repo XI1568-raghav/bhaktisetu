@@ -106,7 +106,7 @@ export default async function HomePage() {
 
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  <section className="flex flex-col justify-center relative overflow-hidden">
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
  {panchangChip && (
@@ -176,7 +176,7 @@ export default async function HomePage() {
  width={1280}
  height={640}
  sizes="(max-width: 768px) 100vw, 50vw"
- className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+ className="w-full h-40 object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
  priority
  unoptimized
  />
@@ -304,7 +304,7 @@ export default async function HomePage() {
  <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
  {/* ═══ WHAT WE OFFER — cascade card grid ════════════════════════════ */}
- <section className="py-10 md:py-12">
+ <section className="py-6 md:py-8">
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-center gap-2.5 mb-3">
  <Zap className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
@@ -343,7 +343,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ LIVE DARSHAN — cinematic image reveal ════════════════════════ */}
- <section className="py-10 md:py-12" style={{ background: 'var(--color-surface)' }}>
+ <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-center justify-between mb-5">
  <div>
@@ -389,7 +389,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ PUJA BOOKING + ASTROLOGY — side by side ═══════════════════ */}
- <section className="py-10 md:py-12">
+ <section className="py-6 md:py-8">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid md:grid-cols-2 gap-5">
  {/* Puja Booking card */}
@@ -502,7 +502,7 @@ export default async function HomePage() {
  <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
  {/* ═══ AI PANDIT — blur-in chat mockup ════════════════════════════ */}
- <section className="py-10 md:py-14" style={{ background: 'var(--color-surface)' }}>
+ <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
@@ -550,7 +550,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ BHAKTI STORE — showcase ═══════════════════════════════════ */}
- <section className="py-10 md:py-12">
+ <section className="py-6 md:py-8">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
@@ -623,7 +623,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ FINAL CTA — cinematic + spring ════════════════════════════ */}
- <section className="py-10 md:py-12">
+ <section className="py-6 md:py-8">
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
  <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  {t('finalCtaTitle')}
@@ -650,12 +650,7 @@ export default async function HomePage() {
  </div>
  </section>
 
- {/* ═══ STICKY HEADLINE PIN — Apple-style scroll moment of pause ═══════ */}
- <StickyHeadlinePin headline="See divinity. Hear devotion. Feel home.">
-   Every aarti, every chant, every sankalp carried across oceans for those who can no longer be at the temple gate.
- </StickyHeadlinePin>
-
- {/* ═══ 5-CATEGORY DISCOVERY STRIPS — Worship → Wisdom → Consult → Shop → Yatra → Trust */}
+ {/* ═══ 5-CATEGORY DISCOVERY STRIPS ═══════════════════════════════════ */}
  <WorshipStrip />
  <WisdomStrip />
  <ConsultStrip />
@@ -663,7 +658,7 @@ export default async function HomePage() {
  <YatraStrip />
 
  {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
- <section aria-label="Discover the Library" className="py-10 md:py-12" style={{ background: 'var(--color-surface)' }}>
+ <section aria-label="Discover the Library" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-end justify-between mb-5">
  <div>
@@ -705,7 +700,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ YATRA TEASER — 3-card emerald row per audit §3 delta #1 ═══════════ */}
- <section aria-label="Pilgrimage circuits" className="py-10 md:py-12" style={{ background: 'var(--color-bg)' }}>
+ <section aria-label="Pilgrimage circuits" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-end justify-between mb-5">
  <div>
