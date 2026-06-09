@@ -34,7 +34,7 @@ for (const file of files) {
         console.error(`${file}: missing or null ${k}`); errors++;
       }
     }
-    if (fm.kpi && (typeof fm.kpi !== 'object' || !fm.kpi.metric || !fm.kpi.target || !fm.kpi.source || !fm.kpi.query)) {
+    if (fm.kpi && (typeof fm.kpi !== 'object' || !fm.kpi.metric || fm.kpi.target === undefined || fm.kpi.target === null || !fm.kpi.source || !fm.kpi.query)) {
       console.error(`${file}: kpi missing required sub-keys (metric/target/source/query)`); errors++;
     }
     if (fm.category && !CATEGORIES.includes(fm.category)) { console.error(`${file}: bad category ${fm.category}`); errors++; }
