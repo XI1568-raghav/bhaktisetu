@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { buildIndex } from './_index-build.mjs';
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-const FIXTURE = 'docs/roadmap/_test-fixture';
+const FIXTURE = mkdtempSync(join(tmpdir(), 'are-test-'));
 
 describe('buildIndex', () => {
   it('parses items and emits compact array', () => {
-    mkdirSync(`${FIXTURE}/items/Q1/engineering`, { recursive: true });
-    writeFileSync(`${FIXTURE}/items/Q1/engineering/001-foo.md`, `---
+    try {
+      mkdirSync(`${FIXTURE}/items/Q1/engineering`, { recursive: true });
+      writeFileSync(`${FIXTURE}/items/Q1/engineering/001-foo.md`, `---
 id: R-Q1-E-001
 title: Foo
 category: engineering
@@ -30,11 +33,13 @@ created_at: 2026-06-10T00:00:00Z
 updated_at: 2026-06-10T00:00:00Z
 ---
 # body`);
-    const idx = buildIndex(`${FIXTURE}/items`);
-    expect(idx.items).toHaveLength(1);
-    expect(idx.items[0].id).toBe('R-Q1-E-001');
-    // body excluded, prompt_skeleton dropped from agent_brief
-    expect(idx.items[0].agent_brief?.prompt_skeleton).toBeUndefined();
-    rmSync(FIXTURE, { recursive: true });
+      const idx = buildIndex(`${FIXTURE}/items`);
+      expect(idx.items).toHaveLength(1);
+      expect(idx.items[0].id).toBe('R-Q1-E-001');
+      // body excluded, prompt_skeleton dropped from agent_brief
+      expect(idx.items[0].agent_brief?.prompt_skeleton).toBeUndefined();
+    } finally {
+      rmSync(FIXTURE, { recursive: true, force: true });
+    }
   });
 });
