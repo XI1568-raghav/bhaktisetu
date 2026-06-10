@@ -17,8 +17,8 @@ kpi:
   current: 0
   target: 5000
   unit: "count"
-  source: "razorpay"
-  query: "TBD-populate-before-orchestrator-go-live"
+  source: "supabase"
+  query: "SELECT COUNT(*) FROM bookings WHERE festival_slug IN ('diwali','dhanteras','govardhan-puja','bhai-dooj') AND booked_at >= '2026-09-15' AND scheduled_at <= '2026-11-15'"
 
 revenue_impact:
   amount_inr: 1500000
@@ -29,12 +29,21 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5000 pre-bookings across 4 Diwali-cluster festivals by Nov 15 2026"
+  - "Meta + Google paid spend <= 5L INR for blended CAC <= 100 INR per pre-booking"
+  - "WA-broadcast + email drip sequence launched 45 days pre-Diwali to existing devotees + waitlist"
+  - "PostHog funnel diwali_landing > book_clicked > paid >= 8% end-to-end conversion"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/06-marketing.md
+    - apps/web/app/festivals/page.tsx
+    - scripts/agents/daily-devotional-broadcast.mjs
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CMO sub-agent. Build 45-day pre-Diwali drip: 8 WA messages + 6 emails + 3 landing variants.
+    Coordinate with R-Q4-E-011 festival calendar engineering; cannot pre-sell without bookable backend.
+    Paid ads require founder Razorpay live keys (U1) + Meta business manager owner action.
+    Sub-agent owns content/creative/copy/funnel-instrumentation; founder owns budget + ad-account access.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

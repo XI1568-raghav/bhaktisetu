@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T15:13:42.622Z",
+  "generatedAt": "2026-06-10T15:20:25.026Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -11394,7 +11394,7 @@
         "target": 150,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM bookings WHERE puja_type = 'antim_sanskar' AND status IN ('dispatched','completed') AND created_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 450000,
@@ -11404,10 +11404,18 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Antim sanskar coordination flow live at /antim-sanskar/book with 24h SLA contract",
+        "150 monthly bookings by Dec 31 2026 across 10 cities with pandit + ghat dispatched",
+        "On-call pandit roster + ghat partner contracts in place for top 10 cities",
+        "Dignity-first UX validated: zero pricing on landing, post-call quote model, WhatsApp-first comms"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/antim-sanskar/page.tsx",
+          "apps/api/src/routes/pujas.ts",
+          "docs/company/03-cpo.md",
+          "docs/runbooks"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -11809,7 +11817,7 @@
         "target": 3,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM temples WHERE whitelabel_status = 'live' AND custom_domain IS NOT NULL"
       },
       "revenue_impact": {
         "amount_inr": 600000,
@@ -11819,10 +11827,18 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "3 white-label temple sites live with custom domain + branding + Razorpay sub-merchant by Nov 30 2026",
+        "Tenant resolution middleware lit up: temple-x.example.com -> temple_id = X",
+        "Per-tenant branding tokens (logo, colors, fonts) loaded from temples.branding_json column",
+        "Race-condition test: 2 tenants on same backend cannot read each other's bookings"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/middleware.ts",
+          "apps/api/src/routes/temple-portal.ts",
+          "prisma/schema.prisma",
+          "docs/company/01-cto.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -11860,7 +11876,7 @@
         "target": 30,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM weddings WHERE status IN ('booked','paid','completed') AND created_at >= '2026-10-01'"
       },
       "revenue_impact": {
         "amount_inr": 900000,
@@ -11870,10 +11886,18 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Wedding planner UI live at /weddings/planner with 5-step flow (muhurat > pandit > venue > catering > photographer)",
+        "Weddings table + WeddingVendor table migrated to prod via prisma db execute",
+        "30 paid wedding bookings by Dec 31 2026 with avg ticket >= 30K INR",
+        "Vendor marketplace integration: pandit/venue/catering/photographer all bookable in 1 transaction"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/weddings/page.tsx",
+          "apps/web/app/weddings/inquiry/page.tsx",
+          "apps/api/src/routes/weddings.ts",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -11908,8 +11932,8 @@
         "current": 0,
         "target": 5000,
         "unit": "count",
-        "source": "razorpay",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT COUNT(*) FROM bookings WHERE festival_slug IS NOT NULL AND scheduled_at - booked_at >= INTERVAL '30 days' AND booked_at >= '2026-09-01' AND booked_at < '2026-12-01'"
       },
       "revenue_impact": {
         "amount_inr": 1500000,
@@ -11919,10 +11943,18 @@
       "est_hours": 28,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Festival calendar UI live at apps/web/app/festivals/[slug] with 60-day-ahead booking enabled for 8 major festivals",
+        "Bookings table gains festival_slug column + migration shipped via prisma db execute on prod",
+        "5000+ pre-bookings recorded across Diwali/Navratri/Karwa-Chauth by Nov 30 2026",
+        "Festival-aware Razorpay invoice template tested with capacity caps per temple per festival"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/festivals/page.tsx",
+          "apps/web/lib/festivals.ts",
+          "apps/api/src/routes/pujas.ts",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -11961,8 +11993,8 @@
         "current": 0,
         "target": 500,
         "unit": "count",
-        "source": "razorpay",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT COUNT(*) FROM subscriptions WHERE plan_type = 'adopt_temple' AND status = 'active' AND next_charge_at > NOW()"
       },
       "revenue_impact": {
         "amount_inr": 500000,
@@ -11972,10 +12004,18 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Adopt-a-temple subscription engine live with 3 tiers (500/1500/5000 INR monthly)",
+        "500 active subscriptions by Dec 31 2026 via Razorpay recurring subscriptions API",
+        "Monthly 80G receipt auto-generated + emailed via Resend on each successful charge",
+        "Temple-side payout split: 70% to adopted temple + 30% platform fee tracked in payouts table"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/donations.ts",
+          "apps/api/src/routes/razorpay-webhook.ts",
+          "apps/web/app/adopt-a-temple/page.tsx",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -12273,8 +12313,8 @@
         "current": 0,
         "target": 500,
         "unit": "users",
-        "source": "stripe",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT COUNT(DISTINCT user_id) FROM payments WHERE currency = 'AUD' AND status = 'captured' AND paid_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 1200000,
@@ -12284,10 +12324,18 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Stripe AUD activated for live AUD checkouts (founder U2 extension required)",
+        "500 AU-paying users by Dec 31 2026 verified via supabase currency=AUD query",
+        "/au landing page + 3 city sub-routes (sydney/melbourne/brisbane) live with AUD pricing",
+        "10 AU-based verified pandits onboarded per R-Q4-S-004 dependency"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/08-geo.md",
+          "apps/web/app/nri/page.tsx",
+          "apps/web/lib/currency.ts",
+          "apps/api/src/routes/stripe-webhook.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -13347,8 +13395,8 @@
         "current": 0,
         "target": 5000,
         "unit": "count",
-        "source": "razorpay",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT COUNT(*) FROM bookings WHERE festival_slug IN ('diwali','dhanteras','govardhan-puja','bhai-dooj') AND booked_at >= '2026-09-15' AND scheduled_at <= '2026-11-15'"
       },
       "revenue_impact": {
         "amount_inr": 1500000,
@@ -13358,10 +13406,17 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5000 pre-bookings across 4 Diwali-cluster festivals by Nov 15 2026",
+        "Meta + Google paid spend <= 5L INR for blended CAC <= 100 INR per pre-booking",
+        "WA-broadcast + email drip sequence launched 45 days pre-Diwali to existing devotees + waitlist",
+        "PostHog funnel diwali_landing > book_clicked > paid >= 8% end-to-end conversion"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/06-marketing.md",
+          "apps/web/app/festivals/page.tsx",
+          "scripts/agents/daily-devotional-broadcast.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -14010,7 +14065,7 @@
         "target": 50,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-count-temples-listed-in-signed-master-agreement-with-anchor-chain"
       },
       "revenue_impact": {
         "amount_inr": 2500000,
@@ -14020,10 +14075,16 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Master agreement signed with anchor chain (ISKCON or similar) by Oct 31 2026",
+        "Agreement schedule lists >= 50 temples with revenue-share % per temple",
+        "Schema migration adds chain_id FK on Temple table + 5 anchor temples seeded"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "prisma/schema.prisma",
+          "apps/api/src/routes/admin-leads.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -14061,7 +14122,7 @@
         "target": 5,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-count-signed-pilot-MSA-temple-chains-ashrams-matha-with-30day-paid-trial"
       },
       "revenue_impact": {
         "amount_inr": 1500000,
@@ -14071,10 +14132,17 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 pilot MSAs signed by Nov 30 2026 with 3 temple chains + 1 ashram network + 1 matha",
+        "Each pilot has activated white-label subdomain + custom branding deployed via R-Q4-E-009",
+        "Pilot pricing locked at 30K INR / month SaaS fee + 5% transaction take rate",
+        "All 5 pilots onboarded to /admin/b2b-clients dashboard with churn tracking"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "docs/company/03-cpo.md",
+          "apps/web/app/admin/leads/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -14165,7 +14233,7 @@
         "target": 5000000,
         "unit": "inr",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-corporate-diwali-revenue-inr-sum-of-signed-contract-values-Oct-Nov-2026"
       },
       "revenue_impact": {
         "amount_inr": 5000000,
@@ -14175,10 +14243,16 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 corporate Diwali contracts signed by Nov 5 2026 totaling >= 50L INR",
+        "Each contract has signed PO + 50% advance via Razorpay invoice",
+        "Booking dates locked in admin/leads with status=CONVERTED + dealValue>=1000000"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "docs/ceo-roadmap-2026-05-27.md",
+          "apps/web/app/admin/leads/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -14523,8 +14597,8 @@
         "current": 0,
         "target": 5,
         "unit": "count",
-        "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT COUNT(*) FROM temples WHERE chain_id IS NOT NULL AND whitelabel_status = 'live' AND went_live_at >= '2026-10-01'"
       },
       "revenue_impact": {
         "amount_inr": 800000,
@@ -14534,10 +14608,18 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 anchor chain temples live with custom branding deployed by Nov 30 2026",
+        "Each temple has dedicated subdomain (temple-slug.darshya.online) + verified ssl + custom logo",
+        "Razorpay sub-merchant account per temple for direct payouts (no platform escrow delay)",
+        "Onboarding playbook documented in docs/runbooks/b2b-temple-onboarding.md"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "apps/web/middleware.ts",
+          "apps/api/src/routes/temple-portal.ts",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [

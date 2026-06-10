@@ -18,7 +18,7 @@ kpi:
   target: 5
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-count-signed-pilot-MSA-temple-chains-ashrams-matha-with-30day-paid-trial"
 
 revenue_impact:
   amount_inr: 1500000
@@ -29,12 +29,21 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5 pilot MSAs signed by Nov 30 2026 with 3 temple chains + 1 ashram network + 1 matha"
+  - "Each pilot has activated white-label subdomain + custom branding deployed via R-Q4-E-009"
+  - "Pilot pricing locked at 30K INR / month SaaS fee + 5% transaction take rate"
+  - "All 5 pilots onboarded to /admin/b2b-clients dashboard with churn tracking"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - docs/company/03-cpo.md
+    - apps/web/app/admin/leads/page.tsx
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action required for relationship-driven B2B sales.
+    Sub-agent can: build B2B SaaS landing page + ROI calculator + comparison vs Razorpay-only setup
+    + prep 30K MSA template + automate /admin/leads pipeline tracking. Founder owns: cold outreach
+    via diaspora networks + LinkedIn + temple-chain CXO intros + pilot pricing negotiation + closing.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

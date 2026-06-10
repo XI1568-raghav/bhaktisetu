@@ -18,7 +18,7 @@ kpi:
   target: 30
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM weddings WHERE status IN ('booked','paid','completed') AND created_at >= '2026-10-01'"
 
 revenue_impact:
   amount_inr: 900000
@@ -29,12 +29,22 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Wedding planner UI live at /weddings/planner with 5-step flow (muhurat > pandit > venue > catering > photographer)"
+  - "Weddings table + WeddingVendor table migrated to prod via prisma db execute"
+  - "30 paid wedding bookings by Dec 31 2026 with avg ticket >= 30K INR"
+  - "Vendor marketplace integration: pandit/venue/catering/photographer all bookable in 1 transaction"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/weddings/page.tsx
+    - apps/web/app/weddings/inquiry/page.tsx
+    - apps/api/src/routes/weddings.ts
+    - prisma/schema.prisma
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CTO sub-agent. Extend existing /weddings module (inquiry-only today) into full e2e flow.
+    Add WeddingVendor model (type enum: venue/catering/photographer) + Wedding-> vendor[] FK array.
+    Build /weddings/planner 5-step wizard with muhurat from /astrology/muhurat + pandit from /pandits.
+    Razorpay split-payment to multiple vendors per booking. Verify per success_criteria above.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
