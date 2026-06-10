@@ -862,4 +862,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];
 }
-// force CF Pages full re-deploy 1780954990
+// force CF Pages full re-deploy ARE-phase5-1780955800
