@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/agents/roadmap/_bulk-create.mjs
 // Reads CSV → creates per-item .md files under docs/roadmap/items/{quarter}/{category}/
 // CSV cols: id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker

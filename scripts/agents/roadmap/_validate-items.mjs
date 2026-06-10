@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Validates all docs/roadmap/items/**/*.md frontmatter against schema.
 // Category-letter codes used in item id (R-Q1-X-NNN):
 //   E = engineering        L = legal
