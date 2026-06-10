@@ -1,22 +1,22 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-10 (ARE Phase 0+1 shipped local, Phase 2 1/5).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-10 (ARE Phases 0-5 ALL SHIPPED local, ready to push).
 
 ## HANDOFF ARE — Autonomous Roadmap Engine (Sub-project 1 of 5)
 
 > Spec: `docs/superpowers/specs/2026-06-10-bhaktisetu-autonomous-roadmap-engine-design.md`
 > Plan: `docs/superpowers/plans/2026-06-10-bhaktisetu-autonomous-roadmap-engine-plan.md`
-> Started: 2026-06-10. Status: Phase 2 IN PROGRESS (1/5 — Task 2.1 Anthropic client GREEN).
+> Started: 2026-06-10. Status: **Phases 0-5 ALL SHIPPED. Only Phase 6 (14d soak) remains.**
 
-### Phase progress (10/25 tasks shipped = 40%)
+### Phase progress (24/24 code tasks shipped = 100%)
 
 - Phase 0 ✅ scaffold + README + 10 tripwires + 5 seeds + 3 samples + validator + index-builder + _lib.mjs (8 commits)
 - Phase 1 ✅ 286 items (Q1 73 / Q2 75 / Q3 70 / Q4 68) + _bulk-create hardened RFC-4180 + TBD warnings (7 commits)
-- **Phase 2 🟡 1/5** — Task 2.1 done (Anthropic client w/ no-silent-swap + Opus 4.7 forced + ModelRejectedError + 3x retry). Next: Task 2.2 Supabase KPI scraper TDD
-- Phase 3 ⏳ orchestrator + Decision Agent + sub-agent runner + cron yml + 7d dry-run gate (6 tasks)
-- Phase 4 ⏳ session-pickup PS1 + finalize workflow + 5 slash commands (5 tasks)
-- Phase 5 ⏳ /admin/roadmap dashboard + API endpoint (3 tasks)
-- Phase 6 ⏳ 14-day soak protocol
+- Phase 2 ✅ Anthropic client + 6 KPI scrapers + cache + tripwire sandbox eval (10 commits, 46 vitest tests)
+- Phase 3 ✅ orchestrator + Decision Agent + sub-agent runner + cron yml + 7d dry-run gate (11 commits, 71 vitest tests)
+- Phase 4 ✅ queue-pop PS1 + UserPromptSubmit hook docs + finalize workflow + 5 slash commands + e2e smoke (6 commits)
+- Phase 5 ✅ API endpoint /admin/roadmap + Next.js dashboard 6 panels (2 commits — first apps/web push, 1 CF burn)
+- Phase 6 ⏳ 14-day soak protocol (process, not code — docs/roadmap/README.md has full protocol)
 
 ### Commits since plan (18 total, ALL `[skip ci]` = 0 CF burn)
 
