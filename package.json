@@ -12,7 +12,8 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "clean": "turbo clean",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "lint:specs": "node scripts/lint-product-specs.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
