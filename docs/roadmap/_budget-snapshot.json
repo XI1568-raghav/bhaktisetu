@@ -8,7 +8,7 @@
     "used": 0,
     "cap": 500
   },
-  "orchestratorPaused": true,
+  "orchestratorPaused": false,
   "lastCycle": "2026-06-10T16:23:19.025Z",
   "lastCycleSpawned": 6,
   "lastCycleQueueFiles": 5
