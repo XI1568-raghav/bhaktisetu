@@ -112,6 +112,17 @@ describe('buildSignalContext', () => {
     expect(ctx.cycle.ts).toMatch(/^2026-06-10T/);
   });
 
+  it('normalizes raw budget into tripwire-compatible shape', () => {
+    const ctx = buildSignalContext({
+      items: [], kpis: [], queue: [], tripwiresFired: [],
+      budgets: { ghMinutes: { used: 500, cap: 2000 }, cfBuilds: { used: 30, cap: 500 } },
+      now: Date.now(),
+    });
+    expect(ctx.budget.ghMinutesMonth.pct).toBe(25);
+    expect(ctx.budget.cfBuildsMonth.pct).toBe(6);
+    expect(ctx.budget.renderHoursMonth.pct).toBe(0); // default
+  });
+
   it('passes firedTripwires through', () => {
     const fired = [{ id: 'T-001', firedAt: '2026-06-10T00:00:00Z' }];
     const ctx = buildSignalContext({
