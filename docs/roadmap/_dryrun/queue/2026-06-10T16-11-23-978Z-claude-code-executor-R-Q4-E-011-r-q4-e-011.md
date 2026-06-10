@@ -1,4 +1,4 @@
----
+﻿---
 queueId: Q-C-20260610T1611-R-Q4-E-011
 itemId: R-Q4-E-011
 role: claude-code-executor
@@ -10,6 +10,9 @@ estMinutes: 90
 featureFlag: festival_presale_enabled
 prFlag: separate-pr
 founderActionRequired: false
+consumedAt: 2026-06-10T18:37:46Z
+consumedBy: claude-code
+consumedInSessionId: unknown-session
 ---
 
 # /goal Festival pre-sale calendar (R-Q4-E-011)
