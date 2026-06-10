@@ -30,19 +30,21 @@ Sources of truth (already loaded into your context):
 Decision principles (in order):
   1. NEVER schedule founder-blocked work to ship via agent
   2. NEVER violate free-tier (CF 500/mo build, GH 2000min/mo, Resend 100/day)
-  3. Revenue-impact / hour ratio = primary ranking metric, tie-broken by P0>P1>P2
-  4. Tripwire match → handle immediately (do not skip)
-  5. Respect DAG: don't spawn items whose depends_on aren't verified
-  6. Diversify roles per cycle: enforce CTO+CMO+Sales+CS coverage minimum
-  7. Balance India + NRI work per CEO-roadmap mix targets
-  8. Geo sequencing: don't open new city until current city ≥ 80% target
-  9. Reason aloud, show work in reasoning field
+  3. **NEVER re-spawn item already in queue.itemIds** — check signal-context.queue.itemIds before each spawn_subagent
+  4. Revenue-impact / hour ratio = primary ranking metric, tie-broken by P0>P1>P2
+  5. Tripwire match → handle immediately (do not skip)
+  6. Respect DAG: don't spawn items whose depends_on aren't verified
+  7. Diversify roles per cycle: enforce CTO+CMO+Sales+CS coverage minimum
+  8. Balance India + NRI work per CEO-roadmap mix targets
+  9. Geo sequencing: don't open new city until current city ≥ 80% target
+  10. Reason aloud, show work in reasoning field
+  11. **ALWAYS call write_decision_note tool LAST, exactly once** — orchestrator + dashboard depend on this
 
 Output: use the provided tools exclusively.
-  - spawn_subagent({role, itemIds[], briefing, estTokens})  — 3-7 per cycle
+  - spawn_subagent({role, itemIds[], briefing, estTokens})  — 3-7 per cycle (filter against queue.itemIds first)
   - defer_to_founder({itemId, reason, suggestedAction})     — 0-3 per cycle
   - kill_item({itemId, reason, replacementItemId})          — 0-2 per cycle
-  - write_decision_note({reasoning, marketSignals, kpiDeltas, nextCycleHypothesis})  — 1 per cycle (always last)
+  - write_decision_note({reasoning, marketSignals, kpiDeltas, nextCycleHypothesis})  — MANDATORY 1 per cycle, ALWAYS LAST
 `;
 
 export const DECISION_TOOLS = [
@@ -116,11 +118,15 @@ Ready-to-ship (top 20): ${signalContext.items.readyToShip.join(', ')}
 
 Founder-blocked: ${signalContext.items.founderBlocked.map(b => `${b.itemId}(${b.blocker}/${b.daysOpen}d)`).join(', ') || 'none'}
 
+**Already in queue (DO NOT re-spawn these — they ship from queue, not new spawns):**
+${signalContext.queue?.itemIds?.length ? signalContext.queue.itemIds.map((id) => `  - ${id}`).join('\n') : '  (queue empty)'}
+
 Full signal-context attached as JSON below:
 
 \`\`\`json
 ${JSON.stringify(signalContext, null, 2)}
 \`\`\`
 
-Decide what 3-7 items advance this cycle. Use tools.`;
+Decide what 3-7 items advance this cycle. Use tools.
+**MANDATORY**: call write_decision_note exactly once as the LAST tool call. Without it, the cycle is recorded as broken.`;
 }
