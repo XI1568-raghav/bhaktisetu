@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/agents/roadmap/orchestrator-pause.mjs
 // Toggle `orchestratorPaused` in docs/roadmap/_budget-snapshot.json.
 import { readFileSync, writeFileSync } from 'node:fs';

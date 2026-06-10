@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/agents/roadmap/queue-list.mjs
 // Lists top 10 unconsumed queue items in a table.
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
