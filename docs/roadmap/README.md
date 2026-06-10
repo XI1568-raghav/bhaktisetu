@@ -283,11 +283,38 @@ If T-005 fires (proxy rejects Opus 4.7):
 
 ---
 
-## Session pickup setup
+## Session pickup setup (Windows founder workstation)
 
-Placeholder. Full content added in Task 4.2.
+Add to `C:\Users\DELL\.claude\settings.json` under `hooks`:
 
-Session pickup = SessionStart hook reads `queue/` head, injects item context into Claude's first turn. Agent ships item without owner prompting.
+```jsonc
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "^/goal\\s*$",
+        "command": "powershell -ExecutionPolicy Bypass -File E:\\NewClaude\\bhaktisetu\\scripts\\agents\\roadmap\\queue-pop.ps1"
+      }
+    ]
+  }
+}
+```
+
+When founder types bare `/goal` (no args), `queue-pop.ps1` runs:
+1. Reads `docs/roadmap/queue/` oldest unconsumed .md by filename (which encodes cycle ts)
+2. Echoes body to stdout → injected as context into next Claude prompt
+3. Marks `consumedAt + consumedBy + consumedInSessionId` in-place
+
+Founder then sees the queue prompt, executes work, commits with `Closes: Q-<queueId>` trailer in commit body. Finalize workflow (Phase 4.3) moves file to `done/` once verified.
+
+### Manual cherry-pick
+
+If founder wants a specific item not the oldest:
+- `/goal-from-roadmap <queueId|itemId|next|next-cmo>` (Phase 4.4 slash command)
+
+### Skip + view
+
+- `/roadmap-list` — view top 10 queue items, don't consume (Phase 4.4)
 
 ---
 
