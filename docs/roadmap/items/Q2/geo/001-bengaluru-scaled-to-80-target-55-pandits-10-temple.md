@@ -18,7 +18,7 @@ kpi:
   target: 2000
   unit: "users"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(DISTINCT u.id) FROM \"User\" u JOIN \"UserSession\" s ON s.user_id=u.id WHERE u.city ILIKE '%bengaluru%' OR u.city ILIKE '%bangalore%' AND s.created_at >= NOW() - INTERVAL '30 days'"
 
 revenue_impact:
   amount_inr: 200000
@@ -29,12 +29,24 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "55 verified pandits onboarded in Bengaluru (cumulative from R-Q1-S-002 30 + Q2 25)"
+  - "10 verified temples onboarded in Bengaluru (cumulative from Q1 5 + Q2 5)"
+  - "2000 Bengaluru MAU (SQL count distinct UserSession in 30d where User.city=Bengaluru)"
+  - "Bengaluru-specific landing /city/bengaluru live w/ temples + pujas + pandits real data"
+  - "Sales pipeline: 5+ leads/week from /city/bengaluru PostHog cohort"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/05-sales.md
+    - apps/web/app/city/[slug]/page.tsx
+    - apps/web/lib/cities.ts
+    - scripts/agents/cold-temple-outreach.mjs
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P0 Bengaluru scale milestone — depends on R-Q1-G-001 base.
+    Verify /city/bengaluru live w/ 10 temples + 55 pandits + pujas data via API.
+    Run cold-temple-outreach.mjs Bengaluru segment weekly for temple acquisition.
+    Coordinate w/ pandit-onboarding agent — must hit 55 cumulative pandits.
+    Track MAU via PostHog city cohort + supabase SQL on User+UserSession join.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

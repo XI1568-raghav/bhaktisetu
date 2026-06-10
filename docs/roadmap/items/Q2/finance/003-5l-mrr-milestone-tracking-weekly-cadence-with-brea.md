@@ -18,7 +18,7 @@ kpi:
   target: 500000
   unit: "inr"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT SUM(amount_inr) / 100 AS mrr_inr FROM \"Booking\" WHERE status='completed' AND created_at >= date_trunc('month', NOW()) UNION ALL SELECT SUM(amount_inr) / 100 FROM \"Donation\" WHERE created_at >= date_trunc('month', NOW())"
 
 revenue_impact:
   amount_inr: 500000
@@ -29,12 +29,24 @@ est_hours: 8
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Weekly cadence MRR snapshot stored in docs/agent-reports/YYYY-MM-DD-mrr-snapshot.md"
+  - "Breakdown by lane: pujas / donations / yatra / consultations / store / wellness — each lane ≥1 row"
+  - "Sum of lanes equals SQL aggregate of Booking.status='completed' + Donation rows month-to-date"
+  - "₹5L MRR milestone alert fires when mrr_inr ≥ 500000 (PostHog cohort + Resend email to founder)"
+  - "Investor-weekly-digest-v2 agent consumes snapshot for weekly investor update"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/03-cfo.md
+    - apps/api/src/routes/admin-metrics.ts
+    - scripts/agents/weekly-investor-update.mjs
+    - prisma/schema.prisma
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CFO sub-agent. P1 MRR milestone tracking — weekly cadence with breakdown by lane.
+    Read apps/api/src/routes/admin-metrics.ts (admin metrics aggregator already shipped Sprint 3.4).
+    Build SQL: SUM(amount_inr) grouped by source lane (Booking.type / Donation / yatra-inquiry / AstrologerConsultation / Order / wellness-session).
+    Write daily snapshot to docs/agent-reports/YYYY-MM-DD-mrr-snapshot.md w/ lane breakdown table + week-over-week delta.
+    Trigger Resend email to founder when mrr_inr crosses ₹5L threshold for the first time this month.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

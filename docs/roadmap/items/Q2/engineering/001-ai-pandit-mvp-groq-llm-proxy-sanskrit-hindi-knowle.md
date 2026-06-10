@@ -18,7 +18,7 @@ kpi:
   target: 500
   unit: "count"
   source: "posthog"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "posthog-insight-TBD-create-via-ui (event=ai_pandit_response_emitted, unique distinct_id daily, target ≥500/day)"
 
 revenue_impact:
   amount_inr: 200000
@@ -29,12 +29,25 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Groq LLM proxy live at /api/v1/ask-pandit w/ rate-limit (5/min/IP) per Sprint 1 P0"
+  - "Sanskrit/Hindi knowledge base ingested: 6 Scripture (vedas/upanishads/gita/puranas/ramayana/mahabharata) + aartis + chalisas + chants"
+  - "PostHog event ai_pandit_response_emitted fires per response (daily ≥500 target)"
+  - "Response latency p95 < 3s (Groq inference + KB retrieval)"
+  - "Blocks R-Q2-P-001 (AI Pandit ₹199/mo subscription launch)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/ask-pandit.ts
+    - apps/web/app/ask-pandit/page.tsx
+    - apps/web/lib/vedas.ts
+    - apps/web/lib/upanishads.ts
+    - docs/company/01-cto.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CTO sub-agent. P0 AI Pandit MVP — Groq LLM proxy + Sanskrit/Hindi KB ingest.
+    Read apps/api/src/routes/ask-pandit.ts (existing rate-limited Groq proxy from Sprint 1 P0).
+    Ingest 6 Scripture libs (vedas/upanishads/gita/puranas/ramayana/mahabharata) + chants/aartis/chalisas into RAG index.
+    Add PostHog event ai_pandit_response_emitted on every successful response (token count + latency).
+    Verify p95 latency < 3s with KB retrieval. Blocks R-Q2-P-001 (₹199/mo subscription).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

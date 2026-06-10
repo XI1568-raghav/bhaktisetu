@@ -18,7 +18,7 @@ kpi:
   target: 50
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM \"YatraInquiry\" WHERE status='paid' AND created_at >= '2026-04-01'"
 
 revenue_impact:
   amount_inr: 250000
@@ -29,12 +29,24 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5 yatra packages live in /yatra (Char Dham + Vaishno Devi + Tirupati + Kashi + Shirdi minimum)"
+  - "Real Razorpay checkout wired (apps/api/src/routes/yatra-inquiry.ts) replacing setTimeout mock (P17 HANDOFF 2026-05-27)"
+  - "Reference IDs follow YTR-YYYYMMDD-XXXXX format"
+  - "≥10 yatra inquiries converted to paid bookings in Q2 (SQL count YatraInquiry status=paid)"
+  - "Per-package landing pages at /yatra/[slug]/book/page.tsx work end-to-end"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/yatra-inquiry.ts
+    - apps/web/app/yatra/[slug]/book/page.tsx
+    - apps/web/lib/pilgrimage-circuits.ts
+    - docs/company/04-cpo.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CPO sub-agent. P1 yatra commerce — 5 packages live w/ real Razorpay.
+    Read apps/api/src/routes/yatra-inquiry.ts (real POST replacing setTimeout mock per P17 HANDOFF 2026-05-27).
+    Verify /yatra/[slug]/book/page.tsx checkout flow end-to-end for all 5 packages.
+    Confirm Razorpay HMAC verification (R-Q1-E-002 dep) lights up payment webhook.
+    Coordinate w/ supply onboarding: each package needs verified pandit + temple anchor.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
