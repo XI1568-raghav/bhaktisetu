@@ -1,0 +1,5 @@
+{
+  "lastRun": null,
+  "contacts": {},
+  "_note": "Seed empty. Founder OR lead-gen agent adds contacts as: contacts[role:abc] = { role, name, phone, city, joinedAt, touches: {}, status: active }"
+}
