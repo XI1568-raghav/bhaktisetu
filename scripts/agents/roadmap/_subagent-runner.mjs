@@ -49,7 +49,7 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
     response = await opusFn({
       system: SUBAGENT_SYSTEM(role),
       messages: [{ role: 'user', content: userMsg }],
-      maxTokens: 8000,
+      maxTokens: 6000,
     });
   } catch (e) {
     return { queueFiles: [], errors: [e.message], usage: null };

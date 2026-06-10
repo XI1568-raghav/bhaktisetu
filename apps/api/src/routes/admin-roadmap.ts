@@ -96,8 +96,7 @@ function parseTripwiresYaml(yaml: string): Array<Record<string, unknown>> {
   return out;
 }
 
-function readQueue(root: string): Array<Record<string, unknown>> {
-  const dir = join(root, 'queue');
+function readQueueFromDir(dir: string, sourceLabel: string): Array<Record<string, unknown>> {
   if (!existsSync(dir)) return [];
   const out: Array<Record<string, unknown>> = [];
   for (const f of readdirSync(dir)) {
@@ -107,7 +106,7 @@ function readQueue(root: string): Array<Record<string, unknown>> {
       const m = content.match(/^---\r?\n([\s\S]+?)\r?\n---/);
       if (!m) continue;
       const fm = parseFrontmatter(m[1]!);
-      out.push({ filename: f, ...fm });
+      out.push({ filename: f, source: sourceLabel, ...fm });
     } catch {
       /* skip */
     }
@@ -115,9 +114,21 @@ function readQueue(root: string): Array<Record<string, unknown>> {
   return out;
 }
 
+function readQueue(root: string): Array<Record<string, unknown>> {
+  // Prefer live queue. Fall back to _dryrun/queue while orchestrator in dry-run mode.
+  const live = readQueueFromDir(join(root, 'queue'), 'live');
+  if (live.length > 0) return live;
+  return readQueueFromDir(join(root, '_dryrun', 'queue'), 'dryrun');
+}
+
 function readLastDecisions(root: string, n = 20): Array<{ filename: string; content: string }> {
-  const dir = join(root, 'decisions');
-  if (!existsSync(dir)) return [];
+  // Prefer live decisions/, fall back to _dryrun/decisions/
+  let dir = join(root, 'decisions');
+  if (!existsSync(dir) || readdirSync(dir).length === 0) {
+    const dryrun = join(root, '_dryrun', 'decisions');
+    if (existsSync(dryrun)) dir = dryrun;
+    else return [];
+  }
   // Walk recursively (decisions stored by YYYY-MM/ subdirs per Phase 4.3
   // finalize structure).
   const walkRecursive = (d: string): string[] => {
