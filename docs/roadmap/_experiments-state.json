@@ -1,0 +1,50 @@
+{
+  "compiledAt": "2026-06-10T16:01:03.428Z",
+  "experimentCount": 3,
+  "decided": 0,
+  "underSampled": 0,
+  "results": [
+    {
+      "id": "EXP-001",
+      "name": "hero_copy_v2",
+      "item_id": "R-Q1-E-009",
+      "status": "planned",
+      "metric": "signup_conversion_pct",
+      "stale": true,
+      "error": "POSTHOG env missing",
+      "decision": {
+        "winner": null,
+        "reason": "POSTHOG env missing"
+      },
+      "checkedAt": "2026-06-10T16:01:03.426Z"
+    },
+    {
+      "id": "EXP-002",
+      "name": "cta_color_test",
+      "item_id": "R-Q1-E-009",
+      "status": "planned",
+      "metric": "book_clicked_event",
+      "stale": true,
+      "error": "POSTHOG env missing",
+      "decision": {
+        "winner": null,
+        "reason": "POSTHOG env missing"
+      },
+      "checkedAt": "2026-06-10T16:01:03.428Z"
+    },
+    {
+      "id": "EXP-003",
+      "name": "nri_lane_above_fold",
+      "item_id": "R-Q1-E-009",
+      "status": "planned",
+      "metric": "nri_signup_conversion_pct",
+      "stale": true,
+      "error": "POSTHOG env missing",
+      "decision": {
+        "winner": null,
+        "reason": "POSTHOG env missing"
+      },
+      "checkedAt": "2026-06-10T16:01:03.428Z"
+    }
+  ]
+}
