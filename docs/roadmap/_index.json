@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-09T22:09:35.924Z",
+  "generatedAt": "2026-06-10T11:32:39.137Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -271,7 +271,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual KPI _manual-kpis.yml field razorpay_verify_raw_enabled (1 when Render env RAZORPAY_VERIFY_RAW=true AND test-mode webhook signature validated)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -281,10 +281,17 @@
       "est_hours": 6,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Render env RAZORPAY_VERIFY_RAW=true set via dashboard (founder action)",
+        "curl POST /api/v1/payments/webhook with valid raw body + test-mode signature returns 200",
+        "Razorpay test-mode webhook delivers + signature verifies in Render logs",
+        "Zero prod webhook signature failures in Sentry for 7 days post-flip"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/payments.ts",
+          "docs/company/01-cto.md",
+          "docs/operational-context.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -318,8 +325,8 @@
         "current": 0,
         "target": 1,
         "unit": "count",
-        "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT COUNT(*) FROM \"Donation\" WHERE created_at > NOW() - INTERVAL '24 hours'"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -329,10 +336,19 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Prisma Donation table exists with all required cols (donorId, amount, currency, templeId, status, razorpayPaymentId, panNumber, eightyG receipt fields)",
+        "POST /api/v1/donations writes to Donation table (not in-memory Map)",
+        "Supabase: SELECT COUNT(*) FROM Donation increases on each new donation",
+        "Render restart preserves all donations (in-memory Map lost on restart, Prisma persists)",
+        "80G receipt generation reads from Donation row (not Map)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/donations.ts",
+          "apps/api/src/routes/admin-donations-export.ts",
+          "apps/api/prisma/schema.prisma",
+          "docs/company/01-cto.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -562,7 +578,7 @@
         "target": 5,
         "unit": "count",
         "source": "posthog",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "posthog-insight-TBD-create-via-ui (insight counting distinct event names from puja_card_click,book_clicked,payment_initiated,payment_success,video_proof_viewed in last 7d)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -572,10 +588,19 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 posthog.capture() calls in source: puja_card_click, book_clicked, payment_initiated, payment_success, video_proof_viewed",
+        "PostHog UI funnel insight shows all 5 events firing within 24h of deploy",
+        "Drop-off ratios visible per step (booked / payment-initiated, etc)",
+        "Per-event properties captured: pujaSlug, templeId, amount_inr, nri_flag"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/lib/posthog.ts",
+          "apps/web/components/Analytics.tsx",
+          "apps/web/app/pujas/book/page.tsx",
+          "apps/web/components/home/IntentTrio.tsx",
+          "docs/company/02-cmo.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -996,7 +1021,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual KPI _manual-kpis.yml field incorp_decision_made (1 when founder writes decision in docs/company/00-orchestrator.md with rationale)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1006,10 +1031,17 @@
       "est_hours": 1,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Founder writes decision in docs/company/00-orchestrator.md: 'Incorporate as Pvt Ltd' OR 'Continue sole-prop until ₹X MRR'",
+        "Rationale documented: liability shield need, tax bracket, investor-readiness, ~₹15k incorp cost",
+        "If incorporate chosen: CA/IndiaFilings engaged, MCA filing initiated",
+        "If sole-prop chosen: tripwire condition documented (e.g. flip to Pvt Ltd at ₹5L MRR OR pre-seed term-sheet)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/03-cfo.md",
+          "docs/company/00-orchestrator.md",
+          "docs/company/08-legal.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1194,8 +1226,8 @@
         "current": 0,
         "target": 1,
         "unit": "count",
-        "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT CASE WHEN (SELECT COUNT(*) FROM \"Priest\" WHERE city='Bengaluru' AND aadhaar_verified=true) >= 5 AND (SELECT COUNT(*) FROM \"Temple\" WHERE city='Bengaluru' AND verified=true) >= 5 THEN 1 ELSE 0 END"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1205,10 +1237,17 @@
       "est_hours": 16,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Supabase: ≥5 verified pandits in Bengaluru (Priest table, city='Bengaluru', aadhaar_verified=true)",
+        "Supabase: ≥5 verified temples in Bengaluru (Temple table, city='Bengaluru', verified=true)",
+        "≥3 paid bookings completed via Bengaluru pandits in last 30d",
+        "/city/bengaluru page lists ≥5 temples + ≥10 puja offerings"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "docs/company/02-cmo.md",
+          "apps/web/app/city/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1246,8 +1285,8 @@
         "current": 0,
         "target": 1,
         "unit": "count",
-        "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT CASE WHEN (SELECT COUNT(*) FROM \"Priest\" WHERE city='Varanasi' AND aadhaar_verified=true) >= 50 AND (SELECT COUNT(*) FROM \"Temple\" WHERE city='Varanasi' AND verified=true) >= 10 THEN 1 ELSE 0 END"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1257,10 +1296,17 @@
       "est_hours": 16,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Supabase: ≥50 verified pandits in Varanasi (Priest table)",
+        "Supabase: ≥10 verified temples in Varanasi (Temple table)",
+        "≥10 paid bookings completed via Varanasi pandits in last 30d",
+        "/city/varanasi page live with temple + puja inventory"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "docs/company/02-cmo.md",
+          "apps/web/app/city/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1298,8 +1344,8 @@
         "current": 0,
         "target": 1,
         "unit": "count",
-        "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "supabase",
+        "query": "SELECT CASE WHEN (SELECT COUNT(*) FROM \"Priest\" WHERE city='Mumbai' AND aadhaar_verified=true) >= 25 AND (SELECT COUNT(*) FROM \"Temple\" WHERE city='Mumbai' AND verified=true) >= 5 THEN 1 ELSE 0 END"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1309,10 +1355,16 @@
       "est_hours": 16,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Supabase: ≥25 verified pandits in Mumbai (Priest table)",
+        "Supabase: ≥5 verified temples in Mumbai (Temple table — Siddhivinayak + ISKCON Juhu + 3 others)",
+        "≥5 paid bookings completed via Mumbai pandits in last 30d",
+        "Mumbai NRI gift-puja conversion (USD payment) lights up"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "apps/web/app/city/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1637,7 +1689,7 @@
         "target": 2,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual KPI _manual-kpis.yml field uptime_monitors_active (count of active UptimeRobot monitors with SMS alert configured)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1647,10 +1699,17 @@
       "est_hours": 2,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "UptimeRobot HTTPS monitor on https://api.darshya.online/health (5min interval, expect 200)",
+        "UptimeRobot HTTPS monitor on https://darshya.online (5min interval, expect 200)",
+        "SMS + email alert contacts configured for founder phone (downtime > 5min triggers alert)",
+        "Public status page URL captured in docs/operational-context.md"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/09-it.md",
+          "docs/operational-context.md",
+          "scripts/agents/uptime-pinger.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1986,7 +2045,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual KPI _manual-kpis.yml field gsc_verified (1 when both GSC + Bing Webmaster show darshya.online as verified AND sitemap.xml submitted with > 0 URLs indexed)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1996,10 +2055,19 @@
       "est_hours": 2,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Google Search Console: darshya.online verified via DNS TXT or HTML meta tag (apps/web/app/layout.tsx)",
+        "Bing Webmaster Tools: same verification",
+        "https://darshya.online/sitemap.xml submitted to both — ≥ 500 URLs detected",
+        "GSC Coverage report shows ≥ 50 URLs indexed within 14d of submission",
+        "Existing scripts/agents/gsc-submitter.mjs pings on every run (Google sitemap ping + Bing IndexNow)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/02-cmo.md",
+          "apps/web/app/layout.tsx",
+          "apps/web/app/sitemap.ts",
+          "scripts/agents/gsc-submitter.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2034,7 +2102,7 @@
         "target": 1,
         "unit": "count",
         "source": "gh_repo",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "grep -rE 'posthog\\.init|PostHogProvider' apps/web/app/layout.tsx apps/web/components/Analytics.tsx | wc -l (target: ≥1)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -2044,10 +2112,20 @@
       "est_hours": 3,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "CF Pages env NEXT_PUBLIC_POSTHOG_KEY + NEXT_PUBLIC_POSTHOG_HOST set (founder action)",
+        "apps/web/components/Analytics.tsx PostHogProvider mounted in layout.tsx",
+        "Live darshya.online page load fires posthog $pageview event (verify in PostHog Live dashboard)",
+        "identify() + reset() wired on login/logout flows (apps/web/app/auth/callback/page.tsx)",
+        "EU host alignment confirmed (no US/EU mismatch — already fixed prior commit per TASKS.md HANDOFF #20)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/lib/posthog.ts",
+          "apps/web/components/Analytics.tsx",
+          "apps/web/app/layout.tsx",
+          "docs/company/02-cmo.md",
+          "docs/env-vars.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2473,7 +2551,7 @@
         "target": 1,
         "unit": "count",
         "source": "gh_repo",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "grep -nE 'mockData|fallback.*mock|silent.*fallback' apps/web/app/pujas/book/page.tsx | wc -l (target: 0)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -2483,10 +2561,17 @@
       "est_hours": 8,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "apps/web/app/pujas/book/page.tsx line ~549 silent mock fallback REMOVED — API failure throws/shows error UI instead",
+        "grep mockData|fallback.*mock returns 0 hits in pujas/book/page.tsx",
+        "When API returns 5xx, user sees explicit error banner (not silently rendered mock data)",
+        "PostHog event book_api_error fires on failure path"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/pujas/book/page.tsx",
+          "apps/web/lib/api-client.ts",
+          "docs/company/04-cpo.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -3130,7 +3215,7 @@
         "target": 30,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" WHERE aadhaar_verified=true AND city='Bengaluru'"
       },
       "revenue_impact": {
         "amount_inr": 90000,
@@ -3140,10 +3225,17 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Supabase: SELECT COUNT(*) ≥ 30 verified Bengaluru pandits (aadhaar_verified=true, city='Bengaluru')",
+        "≥ 20 of those completed ≥ 1 paid puja in last 30d",
+        "Churn (no puja in 45d) < 25%",
+        "Avg pandit rating ≥ 4.5/5 from devotee reviews"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/02-cmo.md",
+          "docs/company/05-sales.md",
+          "apps/api/src/routes/priests-public.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -3179,7 +3271,7 @@
         "target": 25,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" WHERE aadhaar_verified=true AND city='Mumbai'"
       },
       "revenue_impact": {
         "amount_inr": 75000,
@@ -3189,10 +3281,17 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Supabase: SELECT COUNT(*) ≥ 25 verified Mumbai pandits (aadhaar_verified=true, city='Mumbai')",
+        "≥ 15 of those completed ≥ 1 paid puja in last 30d",
+        "Churn (no puja in 45d) < 25%",
+        "≥ 5 NRI gift-puja conversions delivered via Mumbai pandits"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/02-cmo.md",
+          "docs/company/05-sales.md",
+          "apps/api/src/routes/priests-public.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [

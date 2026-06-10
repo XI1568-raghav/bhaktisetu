@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "grep -rE 'posthog\\.init|PostHogProvider' apps/web/app/layout.tsx apps/web/components/Analytics.tsx | wc -l (target: ≥1)"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,25 @@ est_hours: 3
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "CF Pages env NEXT_PUBLIC_POSTHOG_KEY + NEXT_PUBLIC_POSTHOG_HOST set (founder action)"
+  - "apps/web/components/Analytics.tsx PostHogProvider mounted in layout.tsx"
+  - "Live darshya.online page load fires posthog $pageview event (verify in PostHog Live dashboard)"
+  - "identify() + reset() wired on login/logout flows (apps/web/app/auth/callback/page.tsx)"
+  - "EU host alignment confirmed (no US/EU mismatch — already fixed prior commit per TASKS.md HANDOFF #20)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/lib/posthog.ts
+    - apps/web/components/Analytics.tsx
+    - apps/web/app/layout.tsx
+    - docs/company/02-cmo.md
+    - docs/env-vars.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CMO + CTO sub-agent. P0 analytics foundation — wraps R-Q1-E-008 (5 funnel events).
+    Read apps/web/lib/posthog.ts (already exists per TASKS.md). Verify Analytics.tsx mounts PostHogProvider in layout.tsx.
+    Founder action: paste NEXT_PUBLIC_POSTHOG_KEY + NEXT_PUBLIC_POSTHOG_HOST in CF Pages env (gate U8 per activation-gates.md).
+    Verify: open darshya.online, check PostHog Live dashboard for $pageview event within 30s.
+    Existing pillar Analytics identify/reset wiring shipped per HANDOFF #20 — confirm not regressed.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
