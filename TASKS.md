@@ -1,6 +1,120 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-08 (20th update — /goal heavy 10 + 11 pillars CSP+schema+pillars LIVE PUSHED 7adbd87+2573d34+ebc7375+e500fef).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-10 (ARE Phase 0+1 shipped local, Phase 2 1/5).
+
+## HANDOFF ARE — Autonomous Roadmap Engine (Sub-project 1 of 5)
+
+> Spec: `docs/superpowers/specs/2026-06-10-bhaktisetu-autonomous-roadmap-engine-design.md`
+> Plan: `docs/superpowers/plans/2026-06-10-bhaktisetu-autonomous-roadmap-engine-plan.md`
+> Started: 2026-06-10. Status: Phase 2 IN PROGRESS (1/5 — Task 2.1 Anthropic client GREEN).
+
+### Phase progress (10/25 tasks shipped = 40%)
+
+- Phase 0 ✅ scaffold + README + 10 tripwires + 5 seeds + 3 samples + validator + index-builder + _lib.mjs (8 commits)
+- Phase 1 ✅ 286 items (Q1 73 / Q2 75 / Q3 70 / Q4 68) + _bulk-create hardened RFC-4180 + TBD warnings (7 commits)
+- **Phase 2 🟡 1/5** — Task 2.1 done (Anthropic client w/ no-silent-swap + Opus 4.7 forced + ModelRejectedError + 3x retry). Next: Task 2.2 Supabase KPI scraper TDD
+- Phase 3 ⏳ orchestrator + Decision Agent + sub-agent runner + cron yml + 7d dry-run gate (6 tasks)
+- Phase 4 ⏳ session-pickup PS1 + finalize workflow + 5 slash commands (5 tasks)
+- Phase 5 ⏳ /admin/roadmap dashboard + API endpoint (3 tasks)
+- Phase 6 ⏳ 14-day soak protocol
+
+### Commits since plan (18 total, ALL `[skip ci]` = 0 CF burn)
+
+Plan: `5784df7` spec + `661b9ce` plan
+
+Phase 0:
+- `243de91` scaffold + README
+- `cf387b5` README fixes (queue ordering + Phase tags + PAUSE_ALL)
+- `28c661e` 10 tripwires yaml
+- `a8372fe` manual KPI + JSON seeds
+- `0caed7b` 3 samples + validator
+- `27b6180` _lib.mjs + validator fixes
+- `b59ba29` index builder + TDD
+- `b80a1e7` retro fixes (root vitest + id-collision + posix + tmpdir)
+
+Phase 1:
+- `8313067` Q1 eng 15 + _bulk-create
+- `82f0037` bulk-create hardening (RFC-4180 + dup-id + id-format + YAML-quote + BOM + ENOENT)
+- `022d258` Q1 supply 10 + marketing 10 + sales 5
+- `9063f8e` Q1 remaining 30 (finance/legal/hr/cs/it/geo/product)
+- `064360b` Q2 75 items
+- `cc17457` Q3 70 items
+- `bfa2f53` Q4 68 items
+- `42eb913` validator TBD warnings
+
+Phase 2:
+- `5462e0b` RED — callOpus47 test (stub fails 3/3)
+- `720dda6` GREEN — Anthropic client w/ ModelRejectedError + 3x retry + no-silent-swap
+
+### Next task: Phase 2 Task 2.2 — Supabase KPI scraper (TDD)
+
+File: `scripts/agents/roadmap/_kpi-supabase.mjs` + `.test.mjs`
+Behavior: SELECT-only regex guard, 5s statement timeout via pg, stale fallback on error, returns `[{metric, value, stale, fetchedAt}]`
+Pattern: import from `./_lib.mjs` (extend lib if helpful)
+TDD ritual: RED commit (stub) → GREEN commit (impl + pg lockfile)
+
+### Phase 2 remaining tasks
+
+- 2.2 Supabase scraper (TDD)
+- 2.3 PostHog/Render/CF/GH/manual scrapers (5 files, TDD each)
+- 2.4 KPI scraper orchestrator + cache layer (Promise.allSettled + TTL by source)
+- 2.5 Tripwire engine (sandboxed Function evaluator, blocks process.exit/require)
+
+### Free-tier state (ARE work session)
+
+- CF builds: 32/500 (6.4%) — all ARE commits `[skip ci]`
+- GH min: 0/2000 (0%) — no workflow runs yet (Phase 3 only)
+- Render: unchanged
+- Supabase: unchanged
+- Anthropic Blackbox proxy: ~2.5M tokens consumed across sub-agent dispatches (free)
+
+### Pending founder decisions (no blockers — defaults locked)
+
+1. Supabase read-only role hardening (Phase 2 recommendation) — defaulted to existing `SUPABASE_DIRECT_URL` for now
+2. PostHog insight IDs — TBD per-KPI until insights created in PostHog UI
+3. `ROADMAP_DRY_RUN` GH repo variable — default true, flip after 7d soak
+4. Push 18 ARE commits to origin — waiting until Phase 2 ships
+5. Anthropic proxy reliability — single dependency; if 403 long-term founder upgrades Vercel AI Gateway paid tier
+
+### Tools in scripts/agents/roadmap/ (current state)
+
+- `_lib.mjs` — walk + parseFrontmatter + ITEMS_ROOT (shared)
+- `_validate-items.mjs` — 20 required + 4 enums + id regex + id-collision + ENOENT + null-tolerant + TBD warnings (849 known warnings on bulk-imports)
+- `_index-build.mjs` — compact + posix paths + parse-warn + Windows-safe CLI (vitest 1/1 green)
+- `_bulk-create.mjs` — RFC-4180 + dup-id + id-format + category-letter + YAML-quote + BOM + ENOENT (6 edge-case tests passed)
+- `_anthropic-client.mjs` — no-silent-swap + Opus 4.7 forced + ModelRejectedError + 3x retry (vitest 3/3 green)
+- 22 CSV bulk-input files
+- 286 item .md files across 44 category/quarter dirs
+
+### Item counts
+
+- Q1: 73 items (40 bulk + 3 samples + 30 categorical remainder)
+- Q2: 75 items (all 11 categories)
+- Q3: 70 items (all 11 categories)
+- Q4: 68 items (all 11 categories)
+- **Total: 286 items** (1.1% over plan 283 target — within tolerance)
+- All validate clean (0 errors). 849 TBD placeholder warnings (3 per bulk-created item) — Phase 3 dry-run gate populates before live.
+
+### Sub-projects 2-5 deferred (post 14d ARE soak)
+
+2. CXO advisory layer (10 sector agents: CTO/CFO/CMO/CPO/Sales/Talent/CS/Legal/IT/HR weekly)
+3. Year-1 content — FOLDED INTO ARE Phase 1 ✅
+4. Supply onboarding agent fleet v2 (per-role drip + KYC + activation per pundit/temple/astrologer/gaushala/gurukul/wellness/store)
+5. Closed-loop KPI feedback / A/B orchestration / auto-experiment
+
+### Plan confidence (overall: ★★★★☆ HIGH-MEDIUM)
+
+High: schema correctness, tool correctness, free-tier safety
+Medium: Anthropic proxy reliability, Decision Agent reasoning quality (untested until 7d soak), 283 TBD population at scale, sub-agent paste-ready output quality
+Low-medium: year-1 revenue targets (₹9 Cr base / ₹25 Cr stretch — tripwires force pivot)
+Low: solo founder bandwidth for queue consumption + supply onboarding scaling (sub-project 4 addresses)
+
+Top risks:
+1. Blackbox proxy permanently blocks Opus 4.7 (no silent swap = workflow halts, founder must upgrade or approve model change)
+2. Decision Agent emits low-quality prompts (7d soak gate exists to catch + tune)
+3. Supply onboarding can't scale solo (sub-project 4 + first hire trigger)
+
+---
 
 ## HANDOFF 2026-06-08 #20 (PUSHED 7adbd87+2573d34+ebc7375+e500fef — /goal HEAVY 10 items + 11 platform pillars)
 
