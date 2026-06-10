@@ -53,14 +53,16 @@ async function main() {
   run('git fetch origin main');
   run('git reset --hard origin/main');
 
-  // Step 2: Run orchestrator (unlimited time on Render bg)
+  // Step 2: Run orchestrator. Hard 60min ceiling (Render free tier safety).
+  // 4 cycles/day × 60min = 4h/day × 30 = 120h/mo = 16% of 750h free tier.
+  // Opus 4.7 tokens uncapped per user directive — cycle ends on wall-clock not tokens.
   log('---- orchestrator start ----');
   const t0 = Date.now();
   const orchResult = spawnSync('node', ['scripts/agents/roadmap-orchestrator.mjs'], {
     cwd: process.cwd(),
     env: process.env,
     stdio: ['ignore', 'inherit', 'inherit'],
-    timeout: 30 * 60 * 1000,  // 30min cap as safety
+    timeout: 60 * 60 * 1000,
   });
   const dur = ((Date.now() - t0) / 1000).toFixed(1);
   log(`---- orchestrator end (exit=${orchResult.status}, ${dur}s) ----`);
