@@ -1,0 +1,35 @@
+name: CXO Advisory
+
+on:
+  schedule:
+    - cron: '7 8 * * 1'   # Monday 08:07 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cxo-advisory
+  cancel-in-progress: false
+
+jobs:
+  cxo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: corepack enable && corepack prepare pnpm@10.33.0 --activate
+      - run: pnpm install --frozen-lockfile --filter=!@poojly/web --filter=!@poojly/api --prefer-offline
+      - run: node scripts/agents/roadmap/cxo/run-all.mjs
+      - name: Commit advisory
+        run: |
+          git config user.name "cxo-advisory[bot]"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/roadmap/advisory/
+          if ! git diff --cached --quiet; then
+            git commit -m "cxo: weekly advisory $(date -u +%Y-W%V) [skip ci]"
+            git pull --rebase
+            git push
+          fi
