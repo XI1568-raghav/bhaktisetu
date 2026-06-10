@@ -18,7 +18,7 @@ kpi:
   target: 15
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "grep -c 'fastify.(get|post|patch|delete).*\\\"/api/v1/b2b' apps/api/src/routes/b2b-*.ts -- count of B2B REST endpoints registered; target 15"
 
 revenue_impact:
   amount_inr: 500000

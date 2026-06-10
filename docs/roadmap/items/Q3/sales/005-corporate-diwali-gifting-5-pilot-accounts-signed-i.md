@@ -18,7 +18,7 @@ kpi:
   target: 5
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "docs/roadmap/_manual-kpis.yml key=corporate_diwali_accounts (founder updates weekly per signed MSA from Infosys/TCS/Wipro/Tata/ICICI; target 5)"
 
 revenue_impact:
   amount_inr: 500000
@@ -29,12 +29,24 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5 enterprise MSA signed (Infosys + TCS + Wipro + Tata + ICICI HR/CSR head)"
+  - "Each pilot covers 200-500 employees x ₹500-2000 puja voucher = ₹1L-5L MSA per account"
+  - "Gift-puja redemption flow live for corporate codes via apps/web/app/gift/page.tsx + apps/api/src/routes/gift-puja.ts"
+  - "Sales pipeline tracked in admin-leads w/ source='corp_diwali_2026' for attribution"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/admin-leads.ts
+    - apps/api/src/routes/gift-puja.ts
+    - apps/web/app/gift/page.tsx
+    - scripts/agents/cold-temple-outreach.mjs
+    - docs/company/05-sales.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P1 corporate Diwali gifting pilot — 5 enterprise MSA by Sep 30.
+    Read docs/company/05-sales.md outbound playbook + scripts/agents/cold-temple-outreach.mjs for cold-email scaffolding.
+    Draft 5 personalized outreach sequences (HR + CSR head per target) w/ ROI deck attached.
+    Wire admin-leads w/ source='corp_diwali_2026' so funnel-drop-analyzer can attribute lift.
+    Bulk gift-code generator endpoint (POST /api/v1/gift-puja/corporate-codes) needs scaffolding too.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
