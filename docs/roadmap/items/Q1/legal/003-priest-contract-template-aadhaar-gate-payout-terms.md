@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-docs-legal-priest-contract-template-md-exists-with-aadhaar-clause-and-payout-terms-section-and-cancellation-24h-clause"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 4
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Priest contract template MD shipped to docs/legal/priest-contract-template.md"
+  - "Includes Aadhaar verification clause, 20-40% platform commission, 24h cancellation, video proof mandatory"
+  - "Lawyer reviewed alongside R-Q1-L-002 refund policy"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/06-legal.md
+    - docs/ceo-roadmap-2026-05-27.md
+    - apps/api/src/routes/admin-leads.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Draft 4-page priest contract template. Cover business rule #4 (Aadhaar gate for payout),
+    20-40% platform commission, business rule #5 (24h cancellation), video proof mandatory.
+    Add NDA + IP clause + termination terms. Save to docs/legal/priest-contract-template.md.
+    Founder reviews; bundles with R-Q1-L-002 lawyer engagement.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

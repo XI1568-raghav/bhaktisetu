@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: count
   source: manual
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-FCM_SERVER_KEY-set-in-render-env-and-test-push-delivered-to-1-device-else-0"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 2
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "FCM_SERVER_KEY env var set in Render production"
+  - "Test push delivered to founder device from mobile devotee app"
+  - "Push notification fires on booking confirmation event"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/lib/fcm.ts
+    - apps/mobile/app/_layout.tsx
+    - docs/env-vars.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action U5 (FCM key paste in Render env) required.
+    Code already env-or-noop in apps/api/src/lib/fcm.ts. After paste:
+    Sub-agent can write smoke-test script to POST 1 test push to founder's expo-push-token.
+    Confirms server keys works end-to-end. Then enable push trigger on booking.created event.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

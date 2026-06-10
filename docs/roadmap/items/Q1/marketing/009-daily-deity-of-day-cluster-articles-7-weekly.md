@@ -18,7 +18,7 @@ kpi:
   target: 28
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "gh-count-md-files-in-docs-agent-reports-blog-drafts-where-tag-includes-deity-of-day-cluster-and-created-after-2026-01-01"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 16
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "28 articles shipped to docs/agent-reports/blog-drafts (7/wk x 4 wks Feb)"
+  - "Each clusters around vaar devata (Mon-Sun deity map): Shiva, Mangal, Ganesh, Vishnu, Lakshmi, Santoshi Maa, Hanuman"
+  - "Each links to /deity/[slug] + /pujas/[slug] + /aarti/[slug] for internal SEO"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - scripts/agents/content-publisher.mjs
+    - apps/web/lib/deity-of-day.ts
+    - apps/web/app/today/page.tsx
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Extend scripts/agents/content-publisher.mjs to seed deity-of-day cluster pattern.
+    7-day rotation: Mon Shiva, Tue Mangal/Hanuman, Wed Ganesh, Thu Vishnu, Fri Lakshmi, Sat Santoshi/Shani, Sun Surya.
+    Each article 800-1200 words. Cross-link 3 internal pages min: deity slug + matching puja + aarti.
+    Output to docs/agent-reports/blog-drafts/YYYY-MM-DD-{slug}.md. Auto-pick up by /blog reader.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

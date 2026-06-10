@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "supabase-select-1-if-count-priest-where-city-equals-Hyderabad-and-aadhaar-verified-true-and-active-true-gte-3-else-0"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,19 @@ est_hours: 10
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "3 verified pandits onboarded in Hyderabad by Mar 31 2026"
+  - "1 Hyderabad temple partner signed (Birla Mandir or Chilkur Balaji)"
+  - "Telugu macro added to apps/web/lib/i18n for Hyderabad market"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - apps/web/app/city/page.tsx
+    - apps/api/src/routes/priests-public.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Draft Hyderabad priest outreach list. Top 20 from Birla + Chilkur Balaji + Yadagirigutta clusters.
+    Telugu-first script ready. Founder makes calls; sub-agent logs to docs/agent-reports/hyderabad-outreach.md.
+    On signup: city=Hyderabad in Priest row + aadhaar gate. Add Telugu cs macros.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
