@@ -105,7 +105,6 @@ async function main() {
       messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
       tools: DECISION_TOOLS,
       maxTokens: 8000,
-      temperature: 0.3,
     });
   } catch (e) {
     if (e instanceof ModelRejectedError) {

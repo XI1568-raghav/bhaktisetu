@@ -16,7 +16,8 @@ export class ModelRejectedError extends Error {
   }
 }
 
-export async function callOpus47({ messages, maxTokens = 8000, temperature = 0.3, tools, system, client, retryDelayMs }) {
+export async function callOpus47({ messages, maxTokens = 8000, temperature, tools, system, client, retryDelayMs }) {
+  // NOTE: temperature deprecated on Opus 4.7. Default undefined (omitted). Set explicitly only for testing.
   const c = client || new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
     baseURL: process.env.ANTHROPIC_BASE_URL,
@@ -36,7 +37,7 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature = 0.3
       return await c.messages.create({
         model,
         max_tokens: maxTokens,
-        temperature,
+        ...(temperature !== undefined ? { temperature } : {}),
         ...(system ? { system } : {}),
         ...(tools ? { tools } : {}),
         messages,
