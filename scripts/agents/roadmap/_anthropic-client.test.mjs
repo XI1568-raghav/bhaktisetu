@@ -1,7 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { callOpus47, ModelRejectedError } from './_anthropic-client.mjs';
 
 describe('callOpus47', () => {
+  const _origModel = process.env.ANTHROPIC_MODEL;
+  beforeEach(() => { delete process.env.ANTHROPIC_MODEL; }); // isolate from host env (default = opus-4-7)
+  afterEach(() => { if (_origModel !== undefined) process.env.ANTHROPIC_MODEL = _origModel; });
+
   it('throws ModelRejectedError on 403 Free tier reject (never silent-swaps)', async () => {
     const mockClient = {
       messages: {
