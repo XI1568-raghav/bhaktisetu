@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/agents/roadmap/item-kill.mjs
 // Marks a roadmap item as killed, logs to _alerts/, lists downstream blocked.
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';

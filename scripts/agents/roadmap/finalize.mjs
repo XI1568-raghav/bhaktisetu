@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/agents/roadmap/finalize.mjs
 // Parses Closes: Q-... trailers from recent commits, moves matching queue files to done/.
 

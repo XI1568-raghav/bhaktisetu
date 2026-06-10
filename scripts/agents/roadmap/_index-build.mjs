@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Build compact _index.json from docs/roadmap/items/**/*.md frontmatter.
 // Drops verbose fields (body, agent_brief.prompt_skeleton) to keep Orchestrator context tight.
 // Usage: node scripts/agents/roadmap/_index-build.mjs

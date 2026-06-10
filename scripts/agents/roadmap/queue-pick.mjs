@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/agents/roadmap/queue-pick.mjs
 // Picks a queue item by queueId, itemId, `next`, or `next-<role>`.
 // Marks it consumed in-place (mirrors queue-pop.ps1) and echoes the body.
