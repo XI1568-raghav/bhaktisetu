@@ -37,4 +37,16 @@ describe('callOpus47', () => {
     const callArgs = mockClient.messages.create.mock.calls[0][0];
     expect(callArgs.model).toMatch(/opus-4[\.-]7/);
   });
+
+  it('throws ModelRejectedError on non-Opus-4.7 model env override', async () => {
+    process.env.ANTHROPIC_MODEL = 'claude-sonnet-4-5';
+    const mockClient = { messages: { create: vi.fn() } };
+    try {
+      await expect(callOpus47({ messages: [], maxTokens: 100, client: mockClient }))
+        .rejects.toThrow(ModelRejectedError);
+    } finally {
+      delete process.env.ANTHROPIC_MODEL;
+    }
+    expect(mockClient.messages.create).not.toHaveBeenCalled();
+  });
 });
