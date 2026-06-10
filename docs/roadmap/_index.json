@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T14:27:07.618Z",
+  "generatedAt": "2026-06-10T15:07:05.566Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -8081,7 +8081,7 @@
         "target": 15,
         "unit": "count",
         "source": "gh_repo",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "grep -c 'fastify.(get|post|patch|delete).*\\\"/api/v1/b2b' apps/api/src/routes/b2b-*.ts -- count of B2B REST endpoints registered; target 15"
       },
       "revenue_impact": {
         "amount_inr": 500000,
@@ -8740,7 +8740,7 @@
         "target": 1500,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT user_id)::int AS value FROM bookings WHERE payment_currency = 'GBP' AND payment_status = 'PAID' AND created_at >= '2026-07-01' -- UK NRI distinct paid users; target 1500"
       },
       "revenue_impact": {
         "amount_inr": 750000,
@@ -8750,7 +8750,11 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Cannot agent-assign — founder action U2 (Stripe NRI KYC for UK GBP) required before any UK paid path lights up",
+        "Stripe GBP rail live + Stripe Elements UK card capture rendering on /pujas/[slug]/book?cc=GB",
+        "1500 distinct paid GBP users in Supabase by Q3 close (London/Birmingham/Leicester top 3)",
+        "UK NRI 9-10x domestic pricing rule enforced (formatPrice GBP path in apps/web/lib)",
+        "GDPR compliance + DPA + cookie banner shipped per R-Q3-L-002"
       ],
       "agent_brief": {
         "context_files": []
@@ -8793,7 +8797,7 @@
         "target": 1000,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT user_id)::int AS value FROM bookings WHERE payment_currency = 'CAD' AND payment_status = 'PAID' AND created_at >= '2026-08-01' -- Canada NRI distinct paid users; target 1000"
       },
       "revenue_impact": {
         "amount_inr": 500000,
@@ -8803,7 +8807,11 @@
       "est_hours": 36,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Cannot agent-assign — founder action U2 (Stripe NRI activation w/ CAD) required before any Canada paid path lights up",
+        "Stripe CAD rail live + Stripe Elements CA card capture on /pujas/[slug]/book?cc=CA",
+        "1000 distinct paid CAD users by Q3 close (Toronto/Vancouver/Brampton top 3 metros)",
+        "Canada NRI 9-10x domestic pricing rule enforced (formatPrice CAD path)",
+        "Depends on R-Q3-S-007 (10 Canada-based verified pandits onboarded)"
       ],
       "agent_brief": {
         "context_files": []
@@ -9654,7 +9662,7 @@
         "target": 30000,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*)::int AS value FROM bookings WHERE created_at >= '2026-11-08' AND created_at <= '2026-11-15' AND payment_status = 'PAID' AND (utm_campaign ILIKE 'diwali%' OR meta->>'campaign' = 'diwali-2026') -- 7-day Diwali window paid bookings; target 30000"
       },
       "revenue_impact": {
         "amount_inr": 1500000,
@@ -9664,10 +9672,21 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "7-day Diwali campaign live Nov 8-15 across web + WA + paid Meta/Google + 5 influencers (≥100k followers each)",
+        "30000 paid bookings logged with utm_campaign='diwali-2026' attribution (Supabase query above)",
+        "Push notif fan-out via FCM 4 days pre-Diwali to all installed app users (founder-blocked on U5 FCM)",
+        "ROAS ≥3x on paid Meta/Google spend (revenue tracked via PostHog payment_success event)",
+        "Influencer UGC content drives ≥5K organic referral signups via affiliate codes (R-Q3-E-009)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/payments.ts",
+          "apps/web/lib/posthog.ts",
+          "apps/web/app/pujas/[slug]/book/page.tsx",
+          "scripts/agents/content-publisher.mjs",
+          "docs/company/02-cmo.md",
+          "docs/ceo-roadmap-2026-05-27.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -10368,7 +10387,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "docs/roadmap/_manual-kpis.yml key=anchor_loi_signed (founder updates on LOI signature from ISKCON OR BAPS OR Sringeri central; target 1)"
       },
       "revenue_impact": {
         "amount_inr": 500000,
@@ -10378,7 +10397,11 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Cannot agent-assign — founder action U6 (Sentry DSN) required for B2B SLO commitments before LOI countersign",
+        "1 LOI signed (ISKCON central OR BAPS Akshardham OR Sringeri Math)",
+        "LOI covers ≥10 federated temples + commercial split (20-40% per CTO platform-commission rule)",
+        "B2B Temple SaaS API v1 (R-Q3-E-007) demoed end-to-end before LOI ask",
+        "Builds on R-Q2-SA-001 ISKCON central LOI groundwork (5-temple pipeline)"
       ],
       "agent_brief": {
         "context_files": []
@@ -10575,7 +10598,7 @@
         "target": 5,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "docs/roadmap/_manual-kpis.yml key=corporate_diwali_accounts (founder updates weekly per signed MSA from Infosys/TCS/Wipro/Tata/ICICI; target 5)"
       },
       "revenue_impact": {
         "amount_inr": 500000,
@@ -10585,10 +10608,19 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 enterprise MSA signed (Infosys + TCS + Wipro + Tata + ICICI HR/CSR head)",
+        "Each pilot covers 200-500 employees x ₹500-2000 puja voucher = ₹1L-5L MSA per account",
+        "Gift-puja redemption flow live for corporate codes via apps/web/app/gift/page.tsx + apps/api/src/routes/gift-puja.ts",
+        "Sales pipeline tracked in admin-leads w/ source='corp_diwali_2026' for attribution"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/admin-leads.ts",
+          "apps/api/src/routes/gift-puja.ts",
+          "apps/web/app/gift/page.tsx",
+          "scripts/agents/cold-temple-outreach.mjs",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
