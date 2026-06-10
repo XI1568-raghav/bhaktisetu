@@ -18,7 +18,7 @@ kpi:
   target: 1500
   unit: "users"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(DISTINCT user_id)::int AS value FROM bookings WHERE payment_currency = 'GBP' AND payment_status = 'PAID' AND created_at >= '2026-07-01' -- UK NRI distinct paid users; target 1500"
 
 revenue_impact:
   amount_inr: 750000
@@ -29,12 +29,18 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Cannot agent-assign — founder action U2 (Stripe NRI KYC for UK GBP) required before any UK paid path lights up"
+  - "Stripe GBP rail live + Stripe Elements UK card capture rendering on /pujas/[slug]/book?cc=GB"
+  - "1500 distinct paid GBP users in Supabase by Q3 close (London/Birmingham/Leicester top 3)"
+  - "UK NRI 9-10x domestic pricing rule enforced (formatPrice GBP path in apps/web/lib)"
+  - "GDPR compliance + DPA + cookie banner shipped per R-Q3-L-002"
 
 agent_brief:
   context_files: []
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action U2 (Stripe NRI activation w/ UK GBP) required before this item can move.
+    Sub-agent CMO can prep landing copy + influencer pipeline draft (R-Q3-M-009) but launch is hard-gated on U2.
+    Reference: docs/activation-gates.md U2, apps/api/src/routes/payments.ts Stripe path, R-Q3-S-006 supply onboarding 15 UK pandits.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
