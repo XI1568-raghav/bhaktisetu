@@ -18,7 +18,7 @@ kpi:
   target: 2
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-count-diaspora-orgs-engaged-from-set-HAF-sewa-international-with-intro-call-completed-and-logged-in-docs-agent-reports-diaspora-outreach-md"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,21 @@ est_hours: 3
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "2 diaspora org intro calls completed (HAF + Sewa International) by Feb 28"
+  - "Partnership angle pitched: gift-puja referral commission + 80G receipts for US donors"
+  - "Outreach logged in docs/agent-reports/diaspora-outreach.md"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/nri/page.tsx
+    - apps/web/app/gift/page.tsx
+    - docs/company/04-sales.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action for relationship calls.
+    Sub-agent prepares outreach pack: 1-pager on darshya NRI value prop.
+    Drafts 2 cold emails to HAF + Sewa International program directors.
+    Pitch: referral commission for diaspora members using gift-puja + 80G compliance.
+    Founder sends + does follow-up calls. Sub-agent logs to docs/agent-reports/diaspora-outreach.md.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

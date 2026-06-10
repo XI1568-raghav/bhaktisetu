@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T15:20:25.026Z",
+  "generatedAt": "2026-06-10T15:54:43.278Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -117,7 +117,7 @@
         "target": 5,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-count-completed-30min-phone-interviews-logged-in-docs-agent-reports-user-interviews-md-with-nps-and-churn-signal-fields"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -127,10 +127,16 @@
       "est_hours": 5,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 users completed 30-min phone interviews by month 3",
+        "NPS score captured for each (0-10 scale)",
+        "Top 3 churn signals + top 3 wow moments aggregated in docs/agent-reports/user-interviews.md"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/07-cs.md",
+          "apps/web/lib/posthog.ts",
+          "docs/agent-reports/"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -166,7 +172,7 @@
         "target": 5,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-count-translated-support-macros-shipped-to-apps-web-lib-i18n-cs-macros-json-with-hi-ta-te-keys-on-top-5-issue-types"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -176,10 +182,16 @@
       "est_hours": 3,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Top 5 support issue types identified from ticket volume past 30 days",
+        "All 5 macros translated en + hi + ta + te (15 strings total) in apps/web/lib/i18n/cs-macros.json",
+        "Language detection from user phone locale on inbound support ticket"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/lib/i18n/en.json",
+          "docs/company/07-cs.md",
+          "apps/api/src/routes/support.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -637,7 +649,7 @@
         "target": 3,
         "unit": "count",
         "source": "posthog",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "posthog-insight-TBD-create-via-ui-count-active-feature-flags-named-hero-copy-v2-cta-color-test-nri-lane-above-fold-with-min-100-exposures-each"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -647,10 +659,16 @@
       "est_hours": 5,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "3 PostHog feature flags created: hero_copy_v2, cta_color_test, nri_lane_above_fold",
+        "Each flag wired into apps/web/app/page.tsx with default + variant code path",
+        "Min 100 exposures per variant captured before declaring winner"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/page.tsx",
+          "apps/web/lib/posthog.ts",
+          "docs/company/02-product.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -685,7 +703,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-astrologer-table-has-uuid-pk-with-slug-as-unique-index-and-all-existing-rows-migrated-else-0"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -695,10 +713,17 @@
       "est_hours": 8,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Prisma migration adds uuid PK to Astrologer table with slug as unique index",
+        "All existing astrologer rows backfilled with uuid",
+        "FK references in AstrologerConsultation + AstrologerAvailability updated to uuid",
+        "apps/web/app/astrology/[id]/page.tsx + apps/api/src/routes/astrology.ts handle both slug + uuid lookup"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "prisma/schema.prisma",
+          "apps/api/src/routes/astrology.ts",
+          "apps/web/app/astrology/[id]/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -733,7 +758,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-FCM_SERVER_KEY-set-in-render-env-and-test-push-delivered-to-1-device-else-0"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -743,10 +768,16 @@
       "est_hours": 2,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "FCM_SERVER_KEY env var set in Render production",
+        "Test push delivered to founder device from mobile devotee app",
+        "Push notification fires on booking confirmation event"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/lib/fcm.ts",
+          "apps/mobile/app/_layout.tsx",
+          "docs/env-vars.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -781,7 +812,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-StripeClientSecretCheckout-wrapped-in-Elements-provider-with-PaymentElement-and-1-test-card-succeeded-on-checkout-offering-id-page"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -791,10 +822,17 @@
       "est_hours": 6,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "@stripe/stripe-js + @stripe/react-stripe-js packages added to apps/web",
+        "StripeClientSecretCheckout wrapped in Elements provider with PaymentElement",
+        "1 successful test card 4242-4242 payment on /checkout/offering/[offeringId]",
+        "mailto fallback retained for Stripe.js load failure"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/components/StripeClientSecretCheckout.tsx",
+          "apps/web/app/checkout/offering/[offeringId]/page.tsx",
+          "apps/api/src/routes/checkout.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -829,7 +867,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-priests-public-route-accepts-specialization-and-deity-query-params-with-prisma-has-and-some-filter-applied-server-side"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -839,10 +877,17 @@
       "est_hours": 3,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "GET /api/v1/priests accepts specialization + deity query params",
+        "Prisma where clause uses has: on specialization string[] and some: on offerings.deity relation",
+        "apps/web/lib/pandit-api.ts client typed with query params",
+        "Filter response cached 5min via fastify route hook"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/priests-public.ts",
+          "apps/web/lib/pandit-api.ts",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -877,7 +922,7 @@
         "target": 2,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-count-mcp-servers-configured-in-claude-settings-json-from-set-sentry-postgres-with-tokens-set-and-1-test-query-succeeded-each"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -887,10 +932,16 @@
       "est_hours": 2,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Sentry MCP server configured in claude settings.json with SENTRY_AUTH_TOKEN",
+        "Postgres MCP server configured with SUPABASE_DIRECT_URL (read-only role)",
+        "1 test query each: Sentry recent issues + Postgres count of priests succeeds"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/mcp-paste-once.md",
+          "docs/env-vars.md",
+          "docs/operational-context.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1496,7 +1547,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "supabase-select-1-if-count-priest-where-city-equals-Pune-and-aadhaar-verified-true-and-active-true-gte-3-else-0"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1506,10 +1557,16 @@
       "est_hours": 10,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "3 verified pandits onboarded in Pune by Mar 31 2026",
+        "1 Pune temple partner signed",
+        "5+ pujas listed at Pune temples in pujas table with city=Pune"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "apps/web/app/city/page.tsx",
+          "apps/api/src/routes/priests-public.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1544,7 +1601,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "supabase-select-1-if-count-priest-where-city-equals-Hyderabad-and-aadhaar-verified-true-and-active-true-gte-3-else-0"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1554,10 +1611,16 @@
       "est_hours": 10,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "3 verified pandits onboarded in Hyderabad by Mar 31 2026",
+        "1 Hyderabad temple partner signed (Birla Mandir or Chilkur Balaji)",
+        "Telugu macro added to apps/web/lib/i18n for Hyderabad market"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "apps/web/app/city/page.tsx",
+          "apps/api/src/routes/priests-public.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1592,7 +1655,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-docs-company-08-talent-md-has-section-titled-first-hire-trigger-with-3-quant-metrics-50-bookings-per-week-or-2h-daily-support-or-15h-weekly-moderation"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1602,10 +1665,16 @@
       "est_hours": 2,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "docs/company/08-talent.md has First Hire Trigger section with 3 quant metrics",
+        "Trigger thresholds: 50+ bookings/wk OR 2h+ daily support OR 15h+ weekly moderation",
+        "Documented role spec (CS contractor) + budget cap (₹25k/mo) + onboarding doc link"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/08-talent.md",
+          "docs/ceo-roadmap-2026-05-27.md",
+          "docs/agent-reports/"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1891,7 +1960,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-apps-web-app-refund-policy-page-tsx-content-reviewed-by-Indian-lawyer-with-signed-engagement-letter-on-file"
       },
       "revenue_impact": {
         "amount_inr": 15000,
@@ -1901,10 +1970,16 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Refund policy reviewed by Indian lawyer (₹15k engagement)",
+        "5 edge cases stress-tested: video-not-delivered, priest-no-show, NRI dispute, partial-puja, force-majeure",
+        "Updated apps/web/app/refund-policy/page.tsx with lawyer-approved language"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/refund-policy/page.tsx",
+          "docs/company/06-legal.md",
+          "apps/api/src/routes/consultation.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -1941,7 +2016,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-docs-legal-priest-contract-template-md-exists-with-aadhaar-clause-and-payout-terms-section-and-cancellation-24h-clause"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -1951,10 +2026,16 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Priest contract template MD shipped to docs/legal/priest-contract-template.md",
+        "Includes Aadhaar verification clause, 20-40% platform commission, 24h cancellation, video proof mandatory",
+        "Lawyer reviewed alongside R-Q1-L-002 refund policy"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/06-legal.md",
+          "docs/ceo-roadmap-2026-05-27.md",
+          "apps/api/src/routes/admin-leads.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2405,7 +2486,7 @@
         "target": 28,
         "unit": "count",
         "source": "gh_repo",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "gh-count-md-files-in-docs-agent-reports-blog-drafts-where-tag-includes-deity-of-day-cluster-and-created-after-2026-01-01"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -2415,10 +2496,16 @@
       "est_hours": 16,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "28 articles shipped to docs/agent-reports/blog-drafts (7/wk x 4 wks Feb)",
+        "Each clusters around vaar devata (Mon-Sun deity map): Shiva, Mangal, Ganesh, Vishnu, Lakshmi, Santoshi Maa, Hanuman",
+        "Each links to /deity/[slug] + /pujas/[slug] + /aarti/[slug] for internal SEO"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "scripts/agents/content-publisher.mjs",
+          "apps/web/lib/deity-of-day.ts",
+          "apps/web/app/today/page.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2502,7 +2589,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-fb-ads-manager-shows-1-active-campaign-budget-50-USD-with-3-creatives-and-2-audience-sets-US-NRI-and-UK-NRI"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -2512,10 +2599,17 @@
       "est_hours": 6,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "FB Ads Manager campaign live with $50 budget",
+        "3 creatives shipped: gift-puja-NRI, live-darshan-NRI, 80G-receipt-NRI",
+        "2 audience segments: US Hindu diaspora 25-45, UK Hindu diaspora 25-45",
+        "UTM params tracked to PostHog conversion funnel"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/nri/page.tsx",
+          "apps/web/app/gift/page.tsx",
+          "docs/company/03-marketing.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2752,7 +2846,7 @@
         "target": 1,
         "unit": "count",
         "source": "gh_repo",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "gh-1-if-apps-web-app-shloka-card-page-tsx-exists-and-route-returns-200-on-darshya-online-shloka-card-with-og-preview-and-share-buttons"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -2762,10 +2856,16 @@
       "est_hours": 8,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "/shloka-card page live (already shipped per HANDOFF 2026-05-27)",
+        "PostHog events fire on copy/download/share with utm_source=shloka-card",
+        "Min 100 shares logged in 30 days post-launch"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/shloka-card/page.tsx",
+          "apps/web/app/og/default/route.tsx",
+          "apps/web/lib/posthog.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2801,7 +2901,7 @@
         "target": 1,
         "unit": "count",
         "source": "gh_repo",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "gh-1-if-apps-api-src-routes-referrals-ts-exists-and-referral-credit-100-inr-applied-on-claim-after-first-paid-booking-and-refer-page-tsx-live"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -2811,10 +2911,17 @@
       "est_hours": 12,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "/refer page live (already shipped per HANDOFF 2026-05-27)",
+        "Credit applied: ₹100 to both referrer + referee on first paid booking",
+        "ReferralClaimStatus enum + referral_codes + referral_claims tables in prisma",
+        "30-day cookie capture + auto-claim on auth"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/referrals.ts",
+          "apps/web/app/refer/page.tsx",
+          "apps/web/components/ReferralCapture.tsx"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -2997,7 +3104,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-1-if-docs-agent-reports-sringeri-outreach-md-has-status-equals-intro-call-completed-or-LOI-signed-with-date-stamp"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -3007,10 +3114,16 @@
       "est_hours": 3,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "1 intro call with Sringeri Math administration completed by Mar 31",
+        "Outreach attempts logged in docs/agent-reports/sringeri-outreach.md",
+        "Path to LOI documented (decision-maker name + next step)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/04-sales.md",
+          "docs/ceo-roadmap-2026-05-27.md",
+          "docs/agent-reports/"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -3046,7 +3159,7 @@
         "target": 2,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual-kpi-count-diaspora-orgs-engaged-from-set-HAF-sewa-international-with-intro-call-completed-and-logged-in-docs-agent-reports-diaspora-outreach-md"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -3056,10 +3169,16 @@
       "est_hours": 3,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "2 diaspora org intro calls completed (HAF + Sewa International) by Feb 28",
+        "Partnership angle pitched: gift-puja referral commission + 80G receipts for US donors",
+        "Outreach logged in docs/agent-reports/diaspora-outreach.md"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/nri/page.tsx",
+          "apps/web/app/gift/page.tsx",
+          "docs/company/04-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -3474,7 +3593,7 @@
         "target": 10,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM astrologers WHERE verified = true AND active = true"
       },
       "revenue_impact": {
         "amount_inr": 40000,
@@ -3484,10 +3603,16 @@
       "est_hours": 16,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "10 verified astrologers active in astrologers table by Jan 31",
+        "Each has KYC + sample reading + price per minute set",
+        "Aadhaar-gate enforced on payout per business rule #4"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/astrology.ts",
+          "apps/web/app/astrology/page.tsx",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [

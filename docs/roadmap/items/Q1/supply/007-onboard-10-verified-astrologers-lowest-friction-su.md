@@ -18,7 +18,7 @@ kpi:
   target: 10
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM astrologers WHERE verified = true AND active = true"
 
 revenue_impact:
   amount_inr: 40000
@@ -29,12 +29,20 @@ est_hours: 16
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "10 verified astrologers active in astrologers table by Jan 31"
+  - "Each has KYC + sample reading + price per minute set"
+  - "Aadhaar-gate enforced on payout per business rule #4"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/astrology.ts
+    - apps/web/app/astrology/page.tsx
+    - prisma/schema.prisma
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Astrology is lowest-friction supply (no physical temple visit, remote-first).
+    Sub-agent scrapes top 50 verified astrologers from AstroSage + AstroVed public profiles.
+    Drafts WhatsApp cold-pitch in Hindi + English. Founder sends + does intake calls.
+    On signup: insert astrologer row with verified=false; flip to true post-KYC + sample reading.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-apps-web-app-refund-policy-page-tsx-content-reviewed-by-Indian-lawyer-with-signed-engagement-letter-on-file"
 
 revenue_impact:
   amount_inr: 15000
@@ -29,12 +29,20 @@ est_hours: 4
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Refund policy reviewed by Indian lawyer (₹15k engagement)"
+  - "5 edge cases stress-tested: video-not-delivered, priest-no-show, NRI dispute, partial-puja, force-majeure"
+  - "Updated apps/web/app/refund-policy/page.tsx with lawyer-approved language"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/refund-policy/page.tsx
+    - docs/company/06-legal.md
+    - apps/api/src/routes/consultation.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action required to engage Indian lawyer.
+    Sub-agent can: draft 5 stress-test scenarios + current policy gaps doc.
+    Founder selects lawyer (LegalKart or local), sends docs + ₹15k engagement.
+    Sub-agent integrates lawyer feedback into apps/web/app/refund-policy/page.tsx after review returns.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
