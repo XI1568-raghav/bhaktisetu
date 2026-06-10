@@ -19,6 +19,12 @@
 - Phase 5 polish ✅ shebang strip from .mjs files (fixed vitest transform on Windows; scripts still work via node CLI)
 - Phase 6 ⏳ 14-day soak protocol (process, not code — docs/roadmap/README.md has full protocol)
 
+### Orchestrator currently PAUSED (commit 48c71a1)
+
+`docs/roadmap/_budget-snapshot.json` has `orchestratorPaused: true`. Cron fires every 6h but exits 0 immediately at pause check — no Anthropic call, no alerts, no GH minute burn.
+
+**To resume after secrets set**: `node scripts/agents/roadmap/orchestrator-pause.mjs false` + commit + push.
+
 ### Founder action items before Phase 6 soak
 
 1. Set GH Actions secrets (orchestrator-loop workflow won't fire useful results until set):
