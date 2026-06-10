@@ -17,8 +17,8 @@ kpi:
   current: 0
   target: 1
   unit: "count"
-  source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  source: "supabase"
+  query: 'SELECT CASE WHEN (SELECT COUNT(*) FROM "Priest" WHERE city=''Bengaluru'' AND aadhaar_verified=true) >= 5 AND (SELECT COUNT(*) FROM "Temple" WHERE city=''Bengaluru'' AND verified=true) >= 5 THEN 1 ELSE 0 END'
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,22 @@ est_hours: 16
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Supabase: ≥5 verified pandits in Bengaluru (Priest table, city='Bengaluru', aadhaar_verified=true)"
+  - "Supabase: ≥5 verified temples in Bengaluru (Temple table, city='Bengaluru', verified=true)"
+  - "≥3 paid bookings completed via Bengaluru pandits in last 30d"
+  - "/city/bengaluru page lists ≥5 temples + ≥10 puja offerings"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/05-sales.md
+    - docs/company/02-cmo.md
+    - apps/web/app/city/page.tsx
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. City-1 launch — Bengaluru first market (founder home base, lowest CAC).
+    Blocked on R-Q1-S-002 (30 pandit onboarding) — coordinate dependency.
+    Tactics: (1) WhatsApp outreach to ISKCON Bangalore + Banashankari Temple priests, (2) local Brahmin community FB groups, (3) Google Maps temple list scrape + cold call.
+    Track via Supabase Priest + Temple tables. Each verified entry must have aadhaar_verified=true (business rule #4).
+    Founder action: KYC video calls + Aadhaar verification (manual).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

@@ -18,7 +18,7 @@ kpi:
   target: 30
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: 'SELECT COUNT(*) FROM "Priest" WHERE aadhaar_verified=true AND city=''Bengaluru'''
 
 revenue_impact:
   amount_inr: 90000
@@ -29,12 +29,21 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Supabase: SELECT COUNT(*) ≥ 30 verified Bengaluru pandits (aadhaar_verified=true, city='Bengaluru')"
+  - "≥ 20 of those completed ≥ 1 paid puja in last 30d"
+  - "Churn (no puja in 45d) < 25%"
+  - "Avg pandit rating ≥ 4.5/5 from devotee reviews"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/02-cmo.md
+    - docs/company/05-sales.md
+    - apps/api/src/routes/priests-public.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales + CMO sub-agent. Bengaluru pandit onboarding sprint — blocks R-Q1-G-001 city launch.
+    Read Sales §1 Tactic A pandit-network drip. Generate 5 WhatsApp outreach drafts targeting ISKCON Bangalore + Banashankari + Malleshwaram temple pandits.
+    Each onboarded pandit needs: Aadhaar upload + 2-min KYC video call + first paid test puja within 14d.
+    Verify via SQL above. Founder action: KYC video calls (5-10/week).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

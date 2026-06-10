@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual KPI _manual-kpis.yml field gsc_verified (1 when both GSC + Bing Webmaster show darshya.online as verified AND sitemap.xml submitted with > 0 URLs indexed)"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,23 @@ est_hours: 2
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Google Search Console: darshya.online verified via DNS TXT or HTML meta tag (apps/web/app/layout.tsx)"
+  - "Bing Webmaster Tools: same verification"
+  - "https://darshya.online/sitemap.xml submitted to both — ≥ 500 URLs detected"
+  - "GSC Coverage report shows ≥ 50 URLs indexed within 14d of submission"
+  - "Existing scripts/agents/gsc-submitter.mjs pings on every run (Google sitemap ping + Bing IndexNow)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/02-cmo.md
+    - apps/web/app/layout.tsx
+    - apps/web/app/sitemap.ts
+    - scripts/agents/gsc-submitter.mjs
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CMO sub-agent. P0 SEO — sitemap exists at apps/web/app/sitemap.ts (~500 URLs across pujas/temples/wisdom/cities/festivals) but never submitted to GSC/Bing.
+    Founder action: (1) create GSC + Bing Webmaster accounts, (2) verify domain via DNS TXT (preferred) or HTML meta tag (already in layout.tsx if GSC_VERIFICATION env set), (3) submit https://darshya.online/sitemap.xml.
+    Agent action: ensure scripts/agents/gsc-submitter.mjs runs daily (already wired). Confirm INDEXNOW_KEY served at darshya.online/<key>.txt.
+    Cannot agent-assign GSC account creation — founder login + 2FA required.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

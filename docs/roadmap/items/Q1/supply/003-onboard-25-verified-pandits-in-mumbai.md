@@ -18,7 +18,7 @@ kpi:
   target: 25
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: 'SELECT COUNT(*) FROM "Priest" WHERE aadhaar_verified=true AND city=''Mumbai'''
 
 revenue_impact:
   amount_inr: 75000
@@ -29,12 +29,22 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Supabase: SELECT COUNT(*) ≥ 25 verified Mumbai pandits (aadhaar_verified=true, city='Mumbai')"
+  - "≥ 15 of those completed ≥ 1 paid puja in last 30d"
+  - "Churn (no puja in 45d) < 25%"
+  - "≥ 5 NRI gift-puja conversions delivered via Mumbai pandits"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/02-cmo.md
+    - docs/company/05-sales.md
+    - apps/api/src/routes/priests-public.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. Mumbai pandit onboarding sprint — blocks R-Q1-G-003 city launch.
+    Targets: Siddhivinayak corridor, ISKCON Juhu, Babulnath, Mahalakshmi temple pandits + Gujarati Brahmin sabha network.
+    Higher commission willingness (Gujarati network) — start commission negotiation at 30% (vs 25% Bengaluru baseline).
+    Generate 5 outreach drafts (Marathi + Gujarati + English). Verify via SQL above.
+    Founder action: 3-day Mumbai recce + KYC video calls.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

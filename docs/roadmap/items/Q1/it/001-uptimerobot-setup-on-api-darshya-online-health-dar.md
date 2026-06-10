@@ -18,7 +18,7 @@ kpi:
   target: 2
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual KPI _manual-kpis.yml field uptime_monitors_active (count of active UptimeRobot monitors with SMS alert configured)"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,24 @@ est_hours: 2
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "UptimeRobot HTTPS monitor on https://api.darshya.online/health (5min interval, expect 200)"
+  - "UptimeRobot HTTPS monitor on https://darshya.online (5min interval, expect 200)"
+  - "SMS + email alert contacts configured for founder phone (downtime > 5min triggers alert)"
+  - "Public status page URL captured in docs/operational-context.md"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/09-it.md
+    - docs/operational-context.md
+    - scripts/agents/uptime-pinger.mjs
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    IT sub-agent. P0 ops — no external uptime monitoring; Render/CF dashboards only show in-platform.
+    Founder action: create free UptimeRobot account (50 monitors free tier). Add 2 HTTPS monitors:
+    1. https://api.darshya.online/health — 5min, expect 200, alert if 3 consecutive failures
+    2. https://darshya.online — 5min, expect 200, same alert rule
+    Configure SMS contact (free tier: 1 SMS alert/month — supplement with email + Telegram webhook).
+    Note: existing scripts/agents/uptime-pinger.mjs runs in GH Actions but useless if GH itself down. External monitor mandatory.
+    Cannot agent-assign account creation — founder login + SMS setup required.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
