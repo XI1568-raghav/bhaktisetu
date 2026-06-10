@@ -49,13 +49,15 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
   // Without timeout, one slow sub-agent kills entire cycle on GH 15min cap.
   const SUBAGENT_TIMEOUT_MS = 4 * 60 * 1000;
   try {
+    // Render bg-worker has no GH 15min ceiling — bump back to 6000 tokens, 8min per sub-agent.
+    const PER_SUBAGENT_TIMEOUT_MS = 8 * 60 * 1000;
     response = await Promise.race([
       opusFn({
         system: SUBAGENT_SYSTEM(role),
         messages: [{ role: 'user', content: userMsg }],
-        maxTokens: 4000,
+        maxTokens: 6000,
       }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`sub-agent ${role} timeout after ${SUBAGENT_TIMEOUT_MS}ms`)), SUBAGENT_TIMEOUT_MS)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`sub-agent ${role} timeout after ${PER_SUBAGENT_TIMEOUT_MS}ms`)), PER_SUBAGENT_TIMEOUT_MS)),
     ]);
   } catch (e) {
     return { queueFiles: [], errors: [e.message], usage: null };

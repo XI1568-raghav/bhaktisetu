@@ -1,4 +1,4 @@
-name: Roadmap Orchestrator
+name: Roadmap Orchestrator (Trigger Render BG)
 
 on:
   schedule:
@@ -11,56 +11,81 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: roadmap-orchestrator
   cancel-in-progress: false
 
+# Option 2 hybrid (cron-trigger model):
+# - GH Actions = cheap trigger (~10sec, ~5 GH-min/month at 4x/day)
+# - Render Background Worker = actually runs orchestrator (unlimited time)
+# - Render endpoint spawns detached child via scripts/agents/run-orchestrator-bg.mjs
+# - Child runs orchestrator, commits + pushes back via GH_ORCHESTRATOR_PAT
+#
+# Required Render env (NOT here):
+#   GH_ORCHESTRATOR_PAT, ORCHESTRATOR_TRIGGER_SECRET,
+#   ANTHROPIC_API_KEY_BLACKBOX_PROXY -> ANTHROPIC_API_KEY,
+#   ANTHROPIC_BASE_URL, SUPABASE_DIRECT_URL, DATABASE_URL_READONLY,
+#   POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID,
+#   RENDER_API_KEY, CF_ANALYTICS_TOKEN
+#
+# Required GH repo secrets:
+#   ORCHESTRATOR_TRIGGER_SECRET (same value as Render)
+#   RENDER_API_URL (e.g. https://api.darshya.online)
+
 jobs:
-  orchestrate:
+  trigger:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 50
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup pnpm
-        run: corepack enable && corepack prepare pnpm@10.33.0 --activate
-
-      - name: Install deps (skip web/api)
-        run: pnpm install --frozen-lockfile --filter=!@poojly/web --filter=!@poojly/api --prefer-offline
-
-      - name: Run orchestrator
+      - name: POST orchestrator trigger to Render
         env:
+          RENDER_API_URL: ${{ secrets.RENDER_API_URL }}
+          TRIGGER_SECRET: ${{ secrets.ORCHESTRATOR_TRIGGER_SECRET }}
           DRY_RUN: ${{ github.event.inputs.dry_run || vars.ROADMAP_DRY_RUN || 'true' }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
-          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-          ANTHROPIC_MODEL: claude-opus-4-7
-          DATABASE_URL_READONLY: ${{ secrets.DATABASE_URL_READONLY }}
-          SUPABASE_DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
-          POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
-          POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/agents/roadmap-orchestrator.mjs
-
-      - name: Commit + push
-        if: success() || failure()
         run: |
-          git config user.name "roadmap-orchestrator[bot]"
-          git config user.email "actions@users.noreply.github.com"
-          git add docs/roadmap/
-          if git diff --cached --quiet; then
-            echo "no changes"
-          else
-            git commit -m "roadmap: orchestrator cycle $(date -u +%Y%m%dT%H%M) [skip ci]"
-            git pull --rebase
-            git push
+          set -e
+          if [ -z "$RENDER_API_URL" ]; then
+            echo "::error::RENDER_API_URL not set in repo secrets"
+            exit 1
           fi
+          if [ -z "$TRIGGER_SECRET" ]; then
+            echo "::error::ORCHESTRATOR_TRIGGER_SECRET not set in repo secrets"
+            exit 1
+          fi
+
+          URL="${RENDER_API_URL%/}/api/v1/admin/roadmap/orchestrator-trigger"
+          DRY_BOOL=$([ "$DRY_RUN" = "true" ] && echo true || echo false)
+          echo "POST $URL  (dryRun=$DRY_BOOL)"
+
+          HTTP_CODE=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+            -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Orchestrator-Secret: $TRIGGER_SECRET" \
+            -d "{\"dryRun\": $DRY_BOOL}")
+
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/resp.json || true
+          echo ""
+
+          if [ "$HTTP_CODE" != "202" ]; then
+            echo "::error::Render trigger failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+          CYCLE_ID=$(grep -oE '"cycleId":"[^"]+"' /tmp/resp.json | head -1 | cut -d'"' -f4)
+          echo "✅ Cycle accepted: $CYCLE_ID"
+          echo "cycle_id=$CYCLE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Poll status (30sec sanity check)
+        if: success()
+        env:
+          RENDER_API_URL: ${{ secrets.RENDER_API_URL }}
+        run: |
+          sleep 30
+          URL="${RENDER_API_URL%/}/api/v1/admin/roadmap/orchestrator-status"
+          curl -s "$URL" | head -c 2000 || true
+          echo ""
+          echo "✅ Trigger phase done. Orchestrator runs unbounded on Render bg."
+          echo "Results push back via PAT when cycle completes."

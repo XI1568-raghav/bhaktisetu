@@ -36,14 +36,48 @@ function readQueue() {
   }).filter(Boolean);
 }
 
+const LOCK_PATH = 'docs/roadmap/_lock.json';
+const LOCK_MAX_AGE_MS = 90 * 60 * 1000;  // 90min — bigger than any expected cycle
+
+function checkLock() {
+  if (!existsSync(LOCK_PATH)) return null;
+  try {
+    const lock = JSON.parse(readFileSync(LOCK_PATH, 'utf8'));
+    const age = Date.now() - new Date(lock.acquiredAt).getTime();
+    if (age > LOCK_MAX_AGE_MS) {
+      console.warn(`[orchestrator] stale lock (age ${Math.round(age/60000)}min) — overriding`);
+      return null;
+    }
+    return lock;
+  } catch { return null; }
+}
+
+function acquireLock(cycleId) {
+  writeFileSync(LOCK_PATH, JSON.stringify({ cycleId, acquiredAt: new Date().toISOString(), pid: process.pid }, null, 2));
+}
+
+function releaseLock() {
+  if (existsSync(LOCK_PATH)) {
+    try { writeFileSync(LOCK_PATH, JSON.stringify({ released: true, releasedAt: new Date().toISOString() }, null, 2)); } catch {}
+  }
+}
+
 async function main() {
   const cycleTs = new Date().toISOString();
   const cycleId = `C-${cycleTs.replace(/[^0-9T]/g, '').slice(0, 13)}`;
   console.log(`[orchestrator] cycle ${cycleId} start (DRY_RUN=${DRY_RUN})`);
 
+  // 0. LOCK CHECK (prevent concurrent runs from overlapping cron + manual triggers)
+  const existing = checkLock();
+  if (existing && !existing.released) {
+    console.log(`[orchestrator] another cycle in flight: ${existing.cycleId} acquired ${existing.acquiredAt}. Exiting clean.`);
+    process.exit(0);
+  }
+  acquireLock(cycleId);
+
   // 1. PAUSE CHECK
   const budget = existsSync(BUDGET_PATH) ? JSON.parse(readFileSync(BUDGET_PATH, 'utf8')) : {};
-  if (budget.orchestratorPaused) { console.log('[orchestrator] paused — exiting'); process.exit(0); }
+  if (budget.orchestratorPaused) { console.log('[orchestrator] paused — exiting'); releaseLock(); process.exit(0); }
 
   // 2. INGEST
   const index = buildIndex();
@@ -94,19 +128,20 @@ async function main() {
   // 6. T-005 KILL
   if (firedTripwires.find(t => t.id === 'T-005')) {
     writeAlert(`tripwire-T-005-${cycleId}.md`, 'Anthropic proxy blocked. Halting workflow per user directive.');
+    releaseLock();
     process.exit(2);
   }
 
-  // 7. DECISION AGENT (5min wall budget per call to leave room for sub-agents)
+  // 7. DECISION AGENT (10min wall budget — Render bg-worker, no GH ceiling)
   let decisionResponse;
-  const DECISION_TIMEOUT_MS = 5 * 60 * 1000;
+  const DECISION_TIMEOUT_MS = 10 * 60 * 1000;
   try {
     decisionResponse = await Promise.race([
       callOpus47({
         system: DECISION_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
         tools: DECISION_TOOLS,
-        maxTokens: 4000,
+        maxTokens: 8000,
       }),
       new Promise((_, reject) => setTimeout(() => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)), DECISION_TIMEOUT_MS)),
     ]);
@@ -116,9 +151,11 @@ async function main() {
       // Persist error so future cycles see lastAnthropicError
       budget.lastAnthropicError = e.message;
       writeFileSync(BUDGET_PATH, JSON.stringify(budget, null, 2));
+      releaseLock();
       process.exit(2);
     }
     writeAlert(`decision-error-${cycleId}.md`, e.message);
+    releaseLock();
     process.exit(1);
   }
 
@@ -131,10 +168,10 @@ async function main() {
 
   console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
 
-  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 3 — Opus 4.7 via proxy is slow)
+  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 5 — Render bg-worker no GH ceiling)
   const allQueueFiles = [];
-  for (let i = 0; i < spawnPlan.length; i += 3) {
-    const chunk = spawnPlan.slice(i, i + 3);
+  for (let i = 0; i < spawnPlan.length; i += 5) {
+    const chunk = spawnPlan.slice(i, i + 5);
     const results = await Promise.allSettled(chunk.map(p => runSubagent({ ...p, items, cycleId })));
     for (const r of results) {
       if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);
@@ -165,10 +202,12 @@ async function main() {
   writeFileSync(BUDGET_PATH, JSON.stringify(budget, null, 2));
 
   console.log(`[orchestrator] cycle ${cycleId} done. ${allQueueFiles.length} queue files written.`);
+  releaseLock();
 }
 
 main().catch(e => {
   console.error(e);
   writeAlert(`uncaught-${Date.now()}.md`, e.stack || String(e));
+  releaseLock();
   process.exit(1);
 });
