@@ -67,6 +67,7 @@ import { outreachTrackingRoutes } from './routes/outreach-tracking.js';
 import { adminLeadsRoutes } from './routes/admin-leads.js';
 import { adminAgentsRoutes, publicAgentFeedRoutes } from './routes/admin-agents.js';
 import adminRoadmapRoutes from './routes/admin-roadmap.js';
+import adminSubscriptionsRoutes from './routes/admin-subscriptions.js';
 import { adminTemplesRoutes } from './routes/admin-temples.js';
 import { adminBookingsRoutes } from './routes/admin-bookings.js';
 import { adminLeadConversionRoutes } from './routes/admin-lead-conversion.js';
@@ -290,6 +291,7 @@ async function bootstrap() {
   await server.register(adminContentQueueRoutes, { prefix: '/api/v1/admin/content-queue' });
   await server.register(adminDonationsExportRoutes, { prefix: '/api/v1/admin/donations' });
   await server.register(adminRoadmapRoutes, { prefix: '/api/v1' });
+  await server.register(adminSubscriptionsRoutes, { prefix: '/api/v1' });
   await server.register(orgsRoutes, { prefix: '/api/v1/orgs' });
   await server.register(marketplaceV2Routes, { prefix: '/api/v2/marketplace' });
   await server.register(marketplaceAdminRoutes, { prefix: '/api/v1/admin/marketplace' });

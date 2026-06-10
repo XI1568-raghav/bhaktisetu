@@ -1,0 +1,13 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-IT-004,Q1,it,it,1,P0,Resend domain DNS verify — DKIM+SPF+DMARC for darshya.online,resend_domain_verified,1,count,manual,0,2,,,critical;resend;dns;email;p0,
+R-Q1-IT-005,Q1,it,it,1,P0,Rotate leaked Resend API key + update Render env,resend_key_rotated,1,count,manual,0,1,R-Q1-IT-004,,security;rotation;p0;u12,U12
+R-Q1-CS-005,Q1,cs,cs,1,P0,Re-send 230 EMAILED templates after DNS verify (zero replies because spam),temple_reply_rate_pct,5,pct,manual,0,4,R-Q1-IT-004;R-Q1-IT-005,,outreach;temple;rerun;p0,
+R-Q1-M-012,Q1,marketing,cmo,1,P0,Drive 100 signups via 5 distribution channels (Reddit/Twitter/WA/Telegram/IG),signups_total,100,count,supabase,0,12,,,gtm;signups;week-1;p0,
+R-Q1-P-008,Q1,product,cpo,1,P0,Waitlist signup CTA above-fold home page + email confirm flow,waitlist_signups,200,count,supabase,0,6,,,growth;waitlist;funnel;p0,
+R-Q1-E-017,Q1,engineering,cto,1,P0,Marketplace subscriptions schema + Razorpay subscription wiring,marketplace_subs_table_shipped,1,count,gh_repo,0,8,R-Q1-F-003,,monetization;subs;p0,
+R-Q1-S-012,Q1,supply,sales,1,P0,Actually call 10 EMAILED ISKCON Bengaluru temples (skip non-replying email — phone outreach),temple_calls_made,10,count,manual,50000,4,R-Q1-IT-004,,supply;phone-outreach;p0,
+R-Q1-M-013,Q1,marketing,cmo,1,P0,Founder daily-build-in-public Twitter thread — 14 posts shipped,founder_tweets_posted,14,count,manual,0,4,,,founder;twitter;public;p0,
+R-Q1-P-009,Q1,product,cpo,1,P0,Add 'Join waitlist' modal w/ phone + WA opt-in to every public puja page,waitlist_modal_active,1,count,gh_repo,0,4,R-Q1-P-008,,growth;modal;wa-optin;p0,
+R-Q1-CS-006,Q1,cs,cs,1,P0,WA blast 21 founder-network contacts asking 5 referrals each (warm intros),wa_warm_intros_sent,21,count,manual,0,3,,,warm-intro;wa;p0,U7
+R-Q1-G-008,Q1,geo,sales,1,P0,Pick ONE city + go 100% deep (Bengaluru chosen) — kill spread,city_focus_locked,1,count,manual,0,2,,,strategy;focus;p0,
+R-Q1-F-005,Q1,finance,cfo,1,P0,Razorpay sandbox real transaction END-TO-END test (₹1 charge + refund),razorpay_e2e_tested,1,count,manual,0,3,R-Q1-E-002,,payments;test;p0,
