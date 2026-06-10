@@ -318,11 +318,84 @@ If founder wants a specific item not the oldest:
 
 ---
 
-## Smoke test protocol
+## Smoke test protocol (end-to-end loop verification)
 
-Placeholder. Full content added in Task 4.5.
+Run after any change to orchestrator / scrapers / queue helpers / finalize to verify the full loop end-to-end. Takes ~2 min.
 
-Smoke = end-to-end test: seed backlog → run engine → verify emission → verify pickup → verify done. Run on every Phase boundary.
+### Full e2e test
+
+```bash
+cd E:/NewClaude/bhaktisetu
+
+# 1. Create fake queue file
+mkdir -p docs/roadmap/queue
+cat > docs/roadmap/queue/$(date -u +%Y-%m-%dT%H)-smoke-cto-R-Q1-E-001-smoke.md <<'EOF'
+---
+queueId: Q-smoke-$(date -u +%s)
+itemId: R-Q1-E-001
+role: cto
+emittedAt: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+consumedAt: null
+consumedBy: null
+consumedInSessionId: null
+priority: P1
+estTokens: 5000
+estMinutes: 30
+estCfBuilds: 0
+estGhMinutes: 0
+blocksDeploy: false
+verifyContract:
+  successCriteria: ["smoke"]
+  curlChecks: []
+  sqlChecks: []
+  testCommand: null
+finalizationActions:
+  - move_self_to_done
+---
+# Smoke body
+EOF
+
+# 2. Consume oldest
+node scripts/agents/roadmap/queue-pick.mjs next
+
+# 3. Fake commit w/ Closes trailer
+QID=$(grep '^queueId:' docs/roadmap/queue/*smoke*.md | head -1 | awk '{print $2}')
+git add docs/roadmap/queue/*smoke*.md
+git commit --allow-empty -m "test: smoke
+
+Closes: $QID
+
+[skip ci]"
+
+# 4. Finalize
+node scripts/agents/roadmap/finalize.mjs
+
+# 5. Verify
+ls docs/roadmap/done/$(date -u +%Y-%m)/ | grep smoke
+
+# 6. Cleanup
+git reset --hard HEAD~1
+rm -f docs/roadmap/done/$(date -u +%Y-%m)/*smoke*.md
+git checkout docs/roadmap/_budget-snapshot.json
+```
+
+Expected:
+- Step 2: queue-pick echoes body + Closes reminder
+- Step 4: `[finalize] found 1 Closes: trailer(s)` + moved msg
+- Step 5: file present in `done/`
+
+### Per-component spot tests
+
+| Component | Quick test |
+|---|---|
+| Queue list | `node scripts/agents/roadmap/queue-list.mjs` |
+| Queue pick by role | `node scripts/agents/roadmap/queue-pick.mjs next-cmo` |
+| Item kill | `node scripts/agents/roadmap/item-kill.mjs R-Q1-E-999 'test' ; git checkout docs/roadmap/items/` (test on non-existent ID, expect "not found") |
+| Pause | `node scripts/agents/roadmap/orchestrator-pause.mjs true; node scripts/agents/roadmap/orchestrator-pause.mjs false; git checkout docs/roadmap/_budget-snapshot.json` |
+| Validator | `node scripts/agents/roadmap/_validate-items.mjs` (expect "Validated 286 items, 0 errors, 849 warnings") |
+| Index builder | `node scripts/agents/roadmap/_index-build.mjs` (expect "Wrote _index.json with 286 items") |
+| Vitest | `pnpm vitest run scripts/agents/roadmap/` (expect 71+/71+ pass) |
+| Orchestrator dry-run | `DRY_RUN=true ANTHROPIC_API_KEY=fake ANTHROPIC_BASE_URL=https://fake.invalid ANTHROPIC_MODEL=claude-opus-4-7 node scripts/agents/roadmap-orchestrator.mjs` (reaches Decision Agent call, exits 1 + writes alert) |
 
 ---
 
