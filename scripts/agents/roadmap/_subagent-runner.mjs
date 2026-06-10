@@ -19,7 +19,20 @@ Your job:
      - Estimate token + minute cost
      - Tag founder-action required steps explicitly
   4. Output format: ONE markdown document per item, separated by line "---END-QUEUE-FILE---"
-  5. Each document starts with YAML frontmatter (queueId, itemId, role, emittedAt, etc per queue schema)
+  5. Each document starts with YAML frontmatter. REQUIRED fields:
+     - queueId (Q-<cycleId>-<itemId>)
+     - itemId
+     - role
+     - emittedAt (ISO timestamp)
+     - cycle (cycle ID passed in your context)
+     - priority (P0/P1/P2/P3 from item)
+     - estTokens (1000-50000)
+     - estMinutes (15-360)
+     - consumedAt: null
+     - consumedBy: null
+     - consumedInSessionId: null
+     Plus item-specific fields as relevant (featureFlag, prFlag, founderActionRequired, scopeNote, etc).
+     The consumed* fields MUST be present even though null — queue-pop.ps1 replaces them when founder consumes.
 
 Tone: terse caveman per Bhaktisetu doctrine. Code blocks normal. Security warnings normal.
 Never invent file paths.`;
