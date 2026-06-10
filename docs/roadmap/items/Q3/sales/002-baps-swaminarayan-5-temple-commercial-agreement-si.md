@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "docs/roadmap/_manual-kpis.yml key=baps_agreement_signed (founder updates after BAPS Akshardham central signs commercial agreement covering 5+ federated temples + 20-40% platform split per CTO rule; target 1)"
 
 revenue_impact:
   amount_inr: 400000
@@ -29,12 +29,24 @@ est_hours: 24
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "BAPS Akshardham commercial MSA countersigned covering 5 BAPS temples (Delhi + Gandhinagar + Toronto + London-Neasden + Houston)"
+  - "Revenue split 20-40% platform commission per CTO platform-commission rule (PROJECT_CONTEXT business rule #3)"
+  - "Each BAPS temple live with min 3 puja SKUs + Pandit roster (depends on R-Q3-S-010 central pipeline)"
+  - "First 30 days post-go-live ≥ ₹2L GMV across 5 BAPS temples (validates commercial terms)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - scripts/agents/cold-temple-outreach.mjs
+    - apps/api/src/routes/admin-leads.ts
+    - apps/api/src/routes/temple-portal.ts
+    - docs/company/05-sales.md
+    - docs/ceo-roadmap-2026-05-27.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P0 BAPS Swaminarayan 5-temple commercial agreement — biggest Q3 anchor enterprise win.
+    Pre-req R-Q3-S-010 BAPS central pipeline must surface temple-by-temple commitment letters first (track via admin-leads source='baps_central_pipeline').
+    Draft commercial MSA template w/ 20-40% commission split per business rule #3 + 80G receipt clause + video-proof SLA (per business rule #1).
+    Reference R-Q2-SA-001 ISKCON groundwork (5-temple anchor LOI prior quarter) — re-use LOI/MSA structure proven there.
+    Sales drafts redlines + founder owns countersign meeting w/ BAPS Akshardham central admin (Sadhu Brahmaviharidas or designate).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
