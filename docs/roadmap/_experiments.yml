@@ -1,0 +1,45 @@
+# A/B experiments registry. Founder maintains. ARE reads results into Decision Agent context.
+# Each experiment ties to a roadmap item (so Decision Agent can update item priority based on winner).
+version: 1
+experiments:
+  - id: EXP-001
+    name: hero_copy_v2
+    item_id: R-Q1-E-009
+    description: "Hero headline A/B: 'Live darshan from 200+ temples' vs 'India's #1 verified puja platform'"
+    posthog_insight_id: "posthog-insight-TBD-create-via-ui"
+    metric: signup_conversion_pct
+    variants: [control, v2]
+    target_uplift_pct: 10
+    min_sample_per_variant: 500
+    started_at: null
+    decided_at: null
+    winner: null
+    status: planned    # planned | running | decided | killed
+
+  - id: EXP-002
+    name: cta_color_test
+    item_id: R-Q1-E-009
+    description: "Primary CTA color: saffron-600 (control) vs indigo-600 (v2)"
+    posthog_insight_id: "posthog-insight-TBD-create-via-ui"
+    metric: book_clicked_event
+    variants: [control, v2]
+    target_uplift_pct: 8
+    min_sample_per_variant: 300
+    started_at: null
+    decided_at: null
+    winner: null
+    status: planned
+
+  - id: EXP-003
+    name: nri_lane_above_fold
+    item_id: R-Q1-E-009
+    description: "NRI lane prominence: below fold (control) vs above fold (v2) — measures USD conversion"
+    posthog_insight_id: "posthog-insight-TBD-create-via-ui"
+    metric: nri_signup_conversion_pct
+    variants: [control, v2]
+    target_uplift_pct: 15
+    min_sample_per_variant: 200
+    started_at: null
+    decided_at: null
+    winner: null
+    status: planned

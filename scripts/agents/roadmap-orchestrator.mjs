@@ -66,13 +66,23 @@ async function main() {
     console.warn(`[orchestrator] fleet summary skipped: ${e.message}`);
   }
 
+  // 3c. EXPERIMENT TRACKER
+  let experiments = { results: [], experimentCount: 0 };
+  try {
+    const { trackExperiments } = await import('./roadmap/_experiment-tracker.mjs');
+    experiments = await trackExperiments();
+    console.log(`[orchestrator] experiments: ${experiments.experimentCount} tracked (${experiments.decided || 0} decided)`);
+  } catch (e) {
+    console.warn(`[orchestrator] experiments skipped: ${e.message}`);
+  }
+
   // 4. SIGNAL CONTEXT (initial — tripwires re-merged in step 5)
   const externalErr = budget.lastAnthropicError || null;
   const signalContext = buildSignalContext({
     items, kpis, queue,
     tripwiresFired: [],
     budgets: budget,
-    external: { lastAnthropicError: externalErr },
+    external: { lastAnthropicError: externalErr, experiments },
     sectorSummaries,
   });
 
