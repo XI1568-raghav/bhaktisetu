@@ -1,1 +1,12 @@
-{"month":"2026-06","ghMinutes":{"used":0,"cap":2000},"cfBuilds":{"used":0,"cap":500},"orchestratorPaused":false}
+{
+  "month": "2026-06",
+  "ghMinutes": {
+    "used": 0,
+    "cap": 2000
+  },
+  "cfBuilds": {
+    "used": 0,
+    "cap": 500
+  },
+  "orchestratorPaused": true
+}
