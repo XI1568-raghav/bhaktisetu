@@ -109,6 +109,8 @@ export function buildSignalContext({
       depth: queue.length,
       oldestAgeHours: queueOldestAgeHours,
       byRole: countBy(queue, 'role'),
+      itemIds: queue.map((q) => q.itemId).filter(Boolean),
+      queueIds: queue.map((q) => q.queueId).filter(Boolean),
     },
     verticals: external?.verticals || {},
     sectorDocs: sectorSummaries || {},

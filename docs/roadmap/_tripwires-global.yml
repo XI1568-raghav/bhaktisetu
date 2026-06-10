@@ -74,3 +74,12 @@ tripwires:
     action: defer_to_founder
     deferMessage: "Queue oldest item > 72h unconsumed. Triage."
     weight: 1.0
+
+  - id: T-011
+    name: Booking SLA breach surge
+    condition: "ctx.kpis?.booking_sla_breaches_24h?.current >= 3"
+    action: spawn_subagent
+    spawnRole: cs
+    spawnBrief: "≥3 puja bookings ≥24h overdue without video proof. Customer-trust erosion imminent. P0 escalation: review booking-quality-monitor latest output, draft per-customer refund offer + apology, ensure CS macros include 'puja overdue + no video proof' template, escalate root cause (priest no-show? video proof workflow broken?) to CTO via item creation."
+    weight: 2.5
+    note: "Proposed by Decision Agent cycle C-20260610T1611. Auto-fires on KPI breach."
