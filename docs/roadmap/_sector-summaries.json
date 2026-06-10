@@ -1,1 +1,362 @@
-{"compiledAt":null,"summaries":{}}
+{
+  "compiledAt": "2026-06-10T11:35:53.378Z",
+  "agentCount": 28,
+  "summaries": {
+    "content-draft": {
+      "agent": "content-draft",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-content-draft.md",
+      "excerpt": "# Content Drafts — 2026-06-08 (Mon)\r\n\r\n> Daily knowledge pipeline. 3 drafts/day: deity-of-day, Veda angle, Sanatan theme. Plus a Sanskrit shloka card.\r\n\r\n## Today's deity (Shiva)\r\n\r\n**Title suggestion**: \"Lord Shiva — significance, practices for Monday, and free chants\"\r\n\r\n**Outline**:\r\n1. Why devotees worship Lord Shiva on Monday (scriptural source)\r\n2. Daily 5-min practice (mantra + visualization)\r\n3. Free downloadable: Rudra Suktam, Lingashtakam, Mahamrityunjaya\r\n4. Live darshan link — temples on Darshya broadcasting today\r\n5. CTA: book a custom puja with a verified pandit (₹999 starting)\r\n\r\n**Target keyword cluster**: `lord shiva worship`, `Monday puja`, `rudra suktam meaning`\r\n\r\n**Recommended slug**: `/sanatan/shiva-monday-guide`\r\n\r\n---\r\n\r\n## Veda angle\r\n\r\n**Title suggestion**: \"Samaveda chant traditions — beginner-friendly walkthrough\"\r\n\r\n**Outline**:\r\n1. What it is (one paragraph, no Sanskrit jargon until defined)\r\n2. Historical context (date range, regions, surviving recensions)\r\n3. Three core ideas (with one shloka each)\r\n4. Modern relevance — one practice or insight to take today\r\n5. Reading order if user wants to go deeper\r\n6. CTA: enroll in Darshya's free Sanskrit foundations (10 lessons)\r\n\r\n**Target keyword cluster**: `samaveda chant traditions`, `learn ved online`, `vedic knowledge for beginners`\r\n\r\n**Recommended slug**: `/ved/samaveda-chant-traditions`\r\n\r\n---\r\n\r\n## Sanatan theme\r\n\r\n**Title suggestion**: \"Ashramas of life — civilizational perspective\"\r\n\r\n**Outli\n...[truncated]"
+    },
+    "content-publisher": {
+      "agent": "content-publisher",
+      "sector": "cmo",
+      "date": "2026-05-27",
+      "file": "2026-05-27-content-publisher.md",
+      "excerpt": "# Content-publisher — 2026-05-27\r\n\r\n**Target keyword:** difference between aarti and bhajan (informational)\r\n**Draft:** `docs/agent-reports/blog-drafts/2026-05-27-difference-between-aarti-and-bhajan.md` (created)\r\n**Title:** Difference Between Aarti And Bhajan\r\n\r\n## Founder review checklist\r\n\r\n- [ ] Replace TODO blocks with actual content (significance, samagri, mantras)\r\n- [ ] Verify product CTAs link to real, live pages\r\n- [ ] Add 1-2 images (samagri photo, deity illustration)\r\n- [ ] Set `status: published` in front-matter when ready\r\n- [ ] Move to `apps/web/content/blog/` or wherever the blog reads from\r\n\r\nNext 14 days will rotate through the remaining keywords in the catalog.\r\n"
+    },
+    "founder-tweet-draft": {
+      "agent": "founder-tweet-draft",
+      "sector": "cmo",
+      "date": "2026-05-27",
+      "file": "2026-05-27-founder-tweet-draft.md",
+      "excerpt": "# Founder tweet drafts — 2026-05-27\r\n\r\nContext: Jagannath Rath Yatra in 50d · 98 URLs live\r\n\r\nCopy any one to X. Personalize, don't auto-post — the algorithm rewards authenticity.\r\n\r\n## Draft 1 — 212 chars ✓\r\n\r\n```\r\n50 days to Jagannath Rath Yatra.\r\n\r\nBuilding the puja booking flow nobody is talking about: video proof + verified pandits + transparent commission. 98+ pages live now at darshya.online — solo founder, $0 ad spend.\r\n```\r\n\r\n## Draft 2 — 280 chars ✓\r\n\r\n```\r\nIndian diaspora problem nobody is solving:\r\n\r\nyour parents back home want a Satyanarayan puja done for Jagannath Rath Yatra but you don't trust the random WhatsApp pandit forwarded by relatives.\r\n\r\nFix: verified pandits, video proof, fixed price in USD. Building it at darshya.online.\r\n```\r\n\r\n## Draft 3 — 264 chars ✓\r\n\r\n```\r\nHot take: religion tech in India is undercooked.\r\n\r\n- Sri Mandir, AppsForBharat raised $10M+\r\n- Still no live darshan QoS standard\r\n- Still no transparent commission to the temple\r\n- Still no diaspora UX\r\n\r\nWe're shipping all three at darshya.online. Solo + bootstrapped.\r\n```\r\n\r\n## Draft 4 — 190 chars ✓\r\n\r\n```\r\nToday's panchang (2026-05-27) is live at darshya.online/panchang — tithi, nakshatra, rahu kaal, auspicious muhurat windows. Calculated from Drik methodology, no app required.\r\n\r\nFree. Forever.\r\n```\r\n\r\n## Draft 5 — 249 chars ✓\r\n\r\n```\r\nShloka of the day from Bhagavad Gita is live at darshya.online/shlokas.\r\n\r\n8 hand-picked shlokas with Sanskrit + transliteration + meaning + shareable OG c\n...[truncated]"
+    },
+    "growth-metrics": {
+      "agent": "growth-metrics",
+      "sector": "cfo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-growth-metrics.md",
+      "excerpt": "# Growth Metrics — 2026-06-08\r\n\r\n> Daily snapshot. Public-endpoint inventories + API health + tripwire reminders. Authenticated metrics (MAU, MRR, retention) require admin-token route and are stubbed below.\r\n\r\n## Supply inventory (live counts from prod public endpoints)\r\n\r\n| Surface | Count | Note |\r\n|---|---|---|\r\n| Temples (public) | 20 | ok |\r\n| Priests (public) | 3 | ok |\r\n| Astrologers (public) | 15 | ok |\r\n| Gurukuls (public) | 3 | ok |\r\n| Store products (public) | 24 | ok |\r\n| Yatra packages (public) | 0 | unknown-shape |\r\n| Puja types (public) | 10 | ok |\r\n| Content (public) | 20 | ok |\r\n\r\n## API health\r\n\r\n- Status: ✓ 200\r\n- Body: `{\"status\":\"ok\",\"timestamp\":\"2026-06-08T08:54:14.421Z\"}`\r\n\r\n## North-star metrics (need authenticated /admin/metrics — wire this next)\r\n\r\n| Metric | Target Week 8 | Target Week 12 | Current |\r\n|---|---|---|---|\r\n| MAU | 5,000 | 25,000 | (TBD — admin metrics route) |\r\n| MRR | ₹4L | ₹20L | (TBD) |\r\n| NRI ARPU mix | 30% | 35% | (TBD) |\r\n| Avg bookings/MAU | 0.2 | 0.4 | (TBD) |\r\n| D7 retention | 30% | 35% | (TBD) |\r\n| D30 retention | 20% | 25% | (TBD) |\r\n\r\n## Tripwires (review weekly)\r\n\r\n- **NRI Day-30 retention** — limit: gte 25%. Source: analytics.\r\n- **Blended NRI CAC** — limit: lte 40$. Source: analytics.\r\n- **NRI annual:per-puja ratio** — limit: gte 1:3. Source: analytics.\r\n\r\nTwo tripwire breaches in same week → reduce to NRI-only SKU. See `docs/roadmap-archive.md`.\r\n\r\n## Free analytics stack to wire\r\n\r\n- **PostHog cloud free tier**: 1M eve\n...[truncated]"
+    },
+    "investor-pipeline": {
+      "agent": "investor-pipeline",
+      "sector": "cfo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-investor-pipeline.md",
+      "excerpt": "# Investor Pipeline — 2026-06-08\r\n\r\n> Curated angel + seed VC targets for pre-revenue → seed raise. Personalized intro drafts per persona. Weekly refresh.\r\n\r\n## Stage gate (current → ready)\r\n\r\n- [ ] **Pre-revenue baseline** (today): demo accounts, 0 paying users, ship-ready product\r\n- [ ] **Friends/family** ($50K-$150K): once 100 real signups + 5 bookings\r\n- [ ] **Pre-seed** ($250K-$500K): once 5K MAU, $5K MRR, 4-week retention curve flat at 25%+\r\n- [ ] **Seed** ($1.5M-$3M): once $25K MRR, NRI mix > 30%, anchor temple chain LOI\r\n\r\n## Angels — first batch (Tier 1)\r\n\r\n| Name | Firm | Stage | Why fit | Warm intro path |\r\n|---|---|---|---|---|\r\n| Kunal Shah | CRED / angel | pre-seed/seed | Consumer India, retention, payments | CRED engineers, ex-Freecharge |\r\n| Naval Ravikant | AngelList | seed | Long-term, philosophical, India culture | Twitter DM with thoughtful 1-liner |\r\n| Nithin Kamath | Rainmatter | seed/series A | Indian context, social impact + commerce | Zerodha tech team |\r\n| Sanjeev Bikhchandani | Info Edge | seed/A | Marketplaces, India, content | Naukri, 99acres alumni |\r\n| Anand Chandrasekaran | angel | pre-seed | Consumer mobile, US-India | Ex-Snap/Bharti |\r\n\r\n## Seed VCs (10)\r\n\r\n| Fund | Stage | Cheque | Thesis | Portfolio signal |\r\n|---|---|---|---|---|\r\n| Blume Ventures | seed | $500K–$2M | India consumer + SaaS | Dunzo, Purplle, IndiQube |\r\n| Stellaris Venture Partners | seed/A | $1M–$5M | India-first consumer + AI | Vogo, Sigmoid |\r\n| Kalaari Capital | seed/A \n...[truncated]"
+    },
+    "lead-gen": {
+      "agent": "lead-gen",
+      "sector": "sales",
+      "date": "2026-06-08",
+      "file": "2026-06-08-lead-gen.md",
+      "excerpt": "# Lead-Gen — 2026-06-08\r\n\r\n> Daily snapshot of onboarded supply per category vs targets. Surfaces gaps to drive outbound priority.\r\n\r\n## Supply scoreboard\r\n\r\n| Category | Onboarded | T1 target | Gap to T1 | T2 target | Gap to T2 | Source |\r\n|---|---|---|---|---|---|---|\r\n| Temples | 0 | 50 | 50 | 200 | 200 | HTTP 401 |\r\n| Pandits | 3 | 100 | 97 | 500 | 497 | priests[] |\r\n| Astrologers | 15 | 30 | 15 | 100 | 85 | astrologers[] |\r\n| Gurukuls | 3 | 20 | 17 | 80 | 77 | gurukuls[] |\r\n| Gaushalas | 0 | 30 | 30 | 100 | 100 | no-public-endpoint |\r\n| Wellness instructors | 0 | 40 | 40 | 150 | 150 | no-public-endpoint |\r\n| **Total** | **21** | **270** | **249** | — | — | — |\r\n\r\n## Today's outbound priority\r\n\r\n1. **Pandits** — need 97 more to hit T1. Run `apps/api/scripts/leads/scrape-pandits.ts` over the next 5 priority cities.\r\n2. **Temples** — need 50 more to hit T1. Run `apps/api/scripts/leads/scrape-temples.ts` over the next 5 priority cities.\r\n3. **Wellness instructors** — need 40 more to hit T1. Run `apps/api/scripts/leads/scrape-wellness.ts` over the next 5 priority cities.\r\n\r\n## Priority cities (top 25)\r\n\r\n1. Varanasi  ·  2. Haridwar  ·  3. Rishikesh  ·  4. Mathura  ·  5. Vrindavan  ·  6. Tirupati  ·  7. Madurai  ·  8. Ujjain  ·  9. Nashik  ·  10. Prayagraj  ·  11. Ayodhya  ·  12. Pune  ·  13. Bengaluru  ·  14. Chennai  ·  15. Mumbai  ·  16. Delhi  ·  17. Kolkata  ·  18. Hyderabad  ·  19. Ahmedabad  ·  20. Jaipur  ·  21. Pushkar  ·  22. Dwarka  ·  23. Rameswaram  ·  24. Kanchip\n...[truncated]"
+    },
+    "onboarding-drip": {
+      "agent": "onboarding-drip",
+      "sector": "hr",
+      "date": "2026-06-08",
+      "file": "2026-06-08-onboarding-drip.md",
+      "excerpt": "# Onboarding Drip — 2026-06-08\r\n\r\n> 7-touch drip sequence per role. Stored here as the source of truth. `apps/api/src/jobs/outreach-cron.ts` reads this and sends via Resend when `RESEND_API_KEY` is set.\r\n\r\n## Sequences\r\n\r\n## devotee (7 touches)\r\n\r\n### Day 0 — Welcome to Darshya — your sacred dashboard is ready\r\n\r\n```\r\nNamaste {name},\r\n\r\nYour Darshya account is live. Three things to try this week:\r\n\r\n1. Watch a live darshan: darshya.online/temples (10+ temples streaming now)\r\n2. Book your first puja with a verified pandit (₹999 starting): darshya.online/pujas\r\n3. Start a 5-min daily practice: darshya.online/sanskrit\r\n\r\nReply to this email if you have a special intention — we'll help find the right pandit.\r\n```\r\n\r\n### Day 2 — A 5-min morning routine devotees swear by\r\n\r\n```\r\nMost devotees fall off after 3 days. Don't.\r\n\r\nThe simplest morning practice that builds the habit:\r\n\r\n1. 1 min — light a diya, sit straight\r\n2. 2 min — chant Om Namah Shivaya (or your ishta mantra)\r\n3. 2 min — silence\r\n\r\nThat's it. We'll send you a 7-day shloka pack tomorrow.\r\n```\r\n\r\n### Day 4 — Free: 7 essential shlokas every Hindu should know\r\n\r\n```\r\nSaved for you (no signup): darshya.online/sanskrit/shlokas-7\r\n\r\nIncludes Sanskrit + transliteration + meaning + audio.\r\n```\r\n\r\n### Day 7 — A real puja at Kashi, Tirupati or Vrindavan — booked from your phone\r\n\r\n```\r\nSome of our most-booked pujas this week:\r\n\r\n- Maha Mrityunjaya at Kashi (₹2,100) — 22 booked\r\n- Sri Suktam at Tirupati (₹1,800) — 18 booked\r\n- G\n...[truncated]"
+    },
+    "pr-outreach": {
+      "agent": "pr-outreach",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-pr-outreach.md",
+      "excerpt": "# PR Outreach — 2026-06-08\r\n\r\n> Weekly press list + tested pitch angles. 3 active hooks. Pitch one outlet at a time, never bulk.\r\n\r\n## Outlets (10, ranked by fit)\r\n\r\n| Outlet | Beat | Writer | Best angle |\r\n|---|---|---|---|\r\n| YourStory | Indian startups | Sindhu Kashyaap (consumer) | pre-revenue traction stories |\r\n| Inc42 | Indian startups | Apoorva Mittal (D2C/consumer) | cultural-tech category creation |\r\n| ET Tech | startup deals + product launches | Beena Parmar | NRI-focused India tech |\r\n| TechCrunch India | global tech reach | Manish Singh | India devotional + cultural commerce |\r\n| The Ken | paid analysis pieces | Pratap Vikram Singh | Sri Mandir vs Darshya — category dynamics |\r\n| Moneycontrol Tech | startup business stories | consumer beat desk | NRI premium tier economics |\r\n| Hindu Business Line | business + cultural angles | tech beat | gurukul digitization |\r\n| Live Mint Lounge | lifestyle + culture | lifestyle desk | how Gen-Z reconnects with Sanatan |\r\n| Swarajya Magazine | dharmic perspective | tech + culture desk | Sanskrit + Veda revival as product |\r\n| OpIndia | dharmic + civic | tech desk | tech serving Hindu civilizational continuity |\r\n\r\n## Active pitch angles\r\n\r\n### 1. The NRI economics no one's talking about\r\n\r\n**Hook**: NRI devotees pay 9-10x domestic for the same puja. Annual plan at $399 has 80% margin. Sri Mandir hasn't built USD billing — this is a real gap.\r\n\r\n**Required proof** (need these numbers before pitching):\r\n- NRI ARPU split\r\n- Annua\n...[truncated]"
+    },
+    "seo-audit": {
+      "agent": "seo-audit",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-seo-audit.md",
+      "excerpt": "# SEO Audit — 2026-06-08\r\n\r\n> Daily agent. Scans 18 core pages for title/meta/og + sitemap + robots + orphan detection.\r\n\r\n## Summary\r\n\r\n- **Pages clean**: 16/18\r\n- **Pages with issues**: 2\r\n- **Sitemap**: OK (1401 URLs)\r\n- **robots.txt**: OK + sitemap directive\r\n- **Orphan core pages** (not linked from any other core page): /ved\r\n\r\n## Keyword targets (track in GSC)\r\n\r\n- `online puja booking`\r\n- `live darshan temple`\r\n- `sanskrit lessons free`\r\n- `sanatan dharma knowledge`\r\n- `gurukul admission online`\r\n- `NRI puja booking`\r\n- `kundli online free`\r\n- `panchang today`\r\n- `gaushala donation 80G`\r\n\r\n## Per-page audit\r\n\r\n| Path | HTTP | Title len | Desc len | Internal links | Issues |\r\n|---|---|---|---|---|---|\r\n| `/` | 200 | 42 | 213 | 113 | OK |\r\n| `/pujas` | 200 | 54 | 220 | 115 | OK |\r\n| `/temples` | 200 | 33 | 159 | 103 | OK |\r\n| `/gurukuls` | 200 | 61 | 163 | 103 | OK |\r\n| `/become-gurukul` | 200 | 42 | 250 | 104 | OK |\r\n| `/sanskrit` | 200 | 44 | 170 | 143 | OK |\r\n| `/ved` | 200 | 41 | 166 | 150 | OK |\r\n| `/sanatan` | 200 | 49 | 165 | 136 | OK |\r\n| `/learn-sanskrit` | 200 | 51 | 136 | 106 | OK |\r\n| `/about` | 200 | 65 | 158 | 103 | OK |\r\n| `/contact` | 200 | 69 | 200 | 103 | OK |\r\n| `/pricing` | 200 | 68 | 220 | 105 | OK |\r\n| `/astrology` | 200 | 90 | 957 | 124 | TITLE_TOO_LONG |\r\n| `/astrology/horoscope` | 200 | 38 | 143 | 103 | OK |\r\n| `/astrology/kundli` | 200 | 38 | 143 | 104 | OK |\r\n| `/panchang` | 200 | 18 | 133 | 100 | TITLE_TOO_SHORT |\r\n| `/yatra` | 200 | 38 | 143 \n...[truncated]"
+    },
+    "social-queue": {
+      "agent": "social-queue",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-social-queue.md",
+      "excerpt": "# Social Queue — 2026-06-08 (7 days, 21 posts)\r\n\r\n> Daily agent. Generates 7 days × 3 slots = 21 posts. Paste into Buffer (free 10-post plan) or Hootsuite trial. Twitter + LinkedIn + Instagram caption.\r\n\r\n## Posting cadence\r\n\r\n- **Twitter**: all 21 (cheap real estate)\r\n- **LinkedIn**: type=NRI / gurukul / founder (12/week — keeps professional)\r\n- **Instagram**: type=shloka / temple / gaushala (9/week — visual-heavy)\r\n\r\n## Schedule\r\n\r\n### 1. 2026-06-08 · 9:00 IST · shloka\r\n\r\n```\r\n🕉️ Shloka of the day\r\n\r\nसत्यमेव जयते\r\n\r\nTruth alone triumphs.\r\n\r\n— Mundaka Upanishad 3.1.6\r\n\r\n#sanatandharma #sanskrit #wisdom\r\n```\r\n\r\n### 2. 2026-06-08 · 13:00 IST · practice\r\n\r\n```\r\n5-minute morning practice for Monday:\r\n\r\n1. Light a diya\r\n2. Chant Om Hanumate Namah (108x)\r\n3. Offer fresh water\r\n4. 2 min of silence\r\n\r\nThat's it. Try for 7 days.\r\n\r\n#sanatandharma #dailypractice\r\n```\r\n\r\n### 3. 2026-06-08 · 19:00 IST · temple\r\n\r\n```\r\n🛕 Did you know?\r\n\r\nBrihadeeswara temple in Tanjore was built in 1010 CE. Its 216-ft vimana casts no shadow at noon.\r\n\r\nLive darshan available on Darshya: darshya.online/temples\r\n\r\n#templesofindia #livedarshan\r\n```\r\n\r\n### 4. 2026-06-09 · 9:00 IST · NRI\r\n\r\n```\r\nFor NRIs missing home:\r\n\r\nBook a Ganga aarti puja in Varanasi from anywhere in the world. Verified pandit. Video proof. 80G receipt.\r\n\r\nStarting $49.\r\n\r\ndarshya.online/pujas\r\n\r\n#NRI #devotional #puja\r\n```\r\n\r\n### 5. 2026-06-09 · 13:00 IST · gurukul\r\n\r\n```\r\n📚 Free Sanskrit & Vedic learning\r\n\r\n10-lesson foundation cou\n...[truncated]"
+    },
+    "broken-link": {
+      "agent": "broken-link",
+      "sector": "cto",
+      "date": "2026-06-10",
+      "file": "2026-06-10-broken-link.md",
+      "excerpt": "# Broken-link audit — 2026-06-10\r\n\r\nChecked **200** internal links from 10 seed pages.\r\n\r\n- OK (<3000ms): **154**\r\n- Slow (>=3000ms): **1**\r\n- Broken (4xx/5xx/timeout): **45**\r\n\r\n## Broken\r\n\r\n| URL | Status | Time | Error |\r\n|---|---|---|---|\r\n| https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1920px-Kashi_Vishwanath.jpg | 429 | 85ms |  |\r\n| https://twitter.com/darshya_app | 403 | 109ms |  |\r\n| https://www.instagram.com/darshya.online | 429 | 219ms |  |\r\n| https://darshya.online/cdn-cgi/l/email-protection | 404 | 59ms |  |\r\n| https://darshya.online/darshan/rameshwaram | 404 | 87ms |  |\r\n| https://darshya.online/darshan/govind-dev-ji-jaipur | 404 | 117ms |  |\r\n| https://darshya.online/darshan/iskcon-bangalore | 404 | 152ms |  |\r\n| https://darshya.online/darshan/baidyanath-dham | 404 | 87ms |  |\r\n| https://darshya.online/darshan/dwarkadhish | 404 | 89ms |  |\r\n| https://darshya.online/content/om-jai-jagdish-hare-aarti | 404 | 72ms |  |\r\n| https://darshya.online/content/aarti-kunj-bihari-ki | 404 | 91ms |  |\r\n| https://darshya.online/content/jai-ganesh-deva-aarti | 404 | 100ms |  |\r\n| https://darshya.online/content/om-jai-shiv-omkara-aarti | 404 | 82ms |  |\r\n| https://darshya.online/content/om-jai-lakshmi-mata-aarti | 404 | 109ms |  |\r\n| https://darshya.online/content/shiv-chalisa | 404 | 76ms |  |\r\n| https://darshya.online/content/ganesh-chalisa | 404 | 90ms |  |\r\n| https://darshya.online/content/durga-chalisa | 404 | 88ms |  |\r\n| https://darshya.on\n...[truncated]"
+    },
+    "competitor-watch": {
+      "agent": "competitor-watch",
+      "sector": "cpo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-competitor-watch.md",
+      "excerpt": "# Competitor-watch — 2026-06-08\r\n\r\n4 feeds scanned. **0 new item(s)** since last run.\r\n\r\n_No new items. Competitors are quiet (or feeds did not change)._\r\n\r\n## Feed errors\r\n\r\n- Sri Mandir Blog: HTTP 404\r\n- AppsForBharat Medium: HTTP 404\r\n- AstroSage Blog: HTTP 404\r\n- Utsav Blog: HTTP 404\r\n"
+    },
+    "gsc-submitter": {
+      "agent": "gsc-submitter",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-gsc-submitter.md",
+      "excerpt": "# GSC submitter — 2026-06-08\r\n\r\nSitemap: https://darshya.online/sitemap.xml\r\n- Status: **200**\r\n- URLs in sitemap: **1401**\r\n\r\n## Pings\r\n\r\n| Engine | HTTP | Response |\r\n|---|---|---|\r\n| google | 404 | <HTML>\r\n<HEAD>\r\n<TITLE>Sitemaps ping is deprecated. See https://developers.google.com/search/blog/2023/06/sitemaps-lastmod-ping.</TITLE>\r\n</HEAD>\r\n<BODY BGCOLOR=\"#F |\r\n| bing-indexnow | 200 | - |\r\n\r\n> IndexNow key self-issued (committed to repo + served at `https://darshya.online/b9d4f2e7c6a31085f8e5d2a7c9b1e4f6.txt`). No owner action needed.\r\n"
+    },
+    "health-smoke": {
+      "agent": "health-smoke",
+      "sector": "it",
+      "date": "2026-06-10",
+      "file": "2026-06-10-health-smoke-03h.md",
+      "excerpt": "# Health Smoke — 2026-06-10 03:33:08\r\n\r\n> Runs every 6h via GH Actions. Hits public + per-role endpoints on prod.\r\n\r\n## Result\r\n\r\n- **Pass**: 32\r\n- **Fail**: 9\r\n- **Exit**: 1\r\n- **API**: https://api.darshya.online\r\n- **Web**: https://darshya.online\r\n\r\n## Failing endpoints (9)\r\n\r\n```\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] API   401  gurukul-mut: list empty  -- \r\n```\r\n\r\n## Tail\r\n\r\n```\r\n  [PASS] GET   200  /gurukuls\r\n  [PASS] GET   200  /become-gurukul\r\n  [PASS] GET   200  /gurukul-portal\r\n  [PASS] GET   200  /sanskrit\r\n  [PASS] GET   200  /ved\r\n  [PASS] GET   200  /sanatan\r\n  [PASS] GET   200  /learn-sanskrit\r\n  [PASS] GET   200  /about\r\n  [PASS] GET   200  /contact\r\n  [PASS] GET   200  /pricing\r\n\r\n=== devotee ===\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n\r\n=== priest ===\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n\r\n=== store ===\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n\r\n=== astrologer ===\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n\r\n=== wellness ===\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n\r\n=== gaushala ===\r\n  [FAIL] LOGIN 0    \n...[truncated]"
+    },
+    "rss-to-thread": {
+      "agent": "rss-to-thread",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-rss-to-thread.md",
+      "excerpt": "# RSS-to-thread — 2026-06-08\r\n\r\nSource reports: **11** today.\r\n\r\n## X thread (copy/paste)\r\n\r\n**1/7**\r\n```\r\n🧵 Build-in-public — 2026-06-08\r\n\r\nWhat the Darshya agent fleet shipped today (zero humans pressed any button):\r\n```\r\n\r\n**2/7**\r\n```\r\n🕵️ Competitor Watch — 4 items tracked\r\n```\r\n\r\n**3/7**\r\n```\r\n✍️ Content Draft — 5 items tracked\r\n```\r\n\r\n**4/7**\r\n```\r\n🤖 Growth Metrics — 10 items tracked\r\n```\r\n\r\n**5/7**\r\n```\r\n🤖 Gsc Submitter — 2 items tracked\r\n```\r\n\r\n**6/7**\r\n```\r\n🤖 Health Smoke 03h — 5 items tracked\r\n```\r\n\r\n**7/7**\r\n```\r\n🛠️ All artifacts public at darshya.online/updates\r\n\r\nFollow for daily drops. /9\r\n```\r\n\r\n## LinkedIn post (copy/paste)\r\n\r\n```\r\nBuild-in-public log — 2026-06-08\r\n\r\nThe Darshya agent fleet is nine cron-triggered scripts. Today's drops:\r\n\r\n• Competitor Watch — 4 items tracked\r\n• Content Draft — 5 items tracked\r\n• Growth Metrics — 10 items tracked\r\n• Gsc Submitter — 2 items tracked\r\n• Health Smoke 03h — 5 items tracked\r\n• Investor Pipeline — 23 items tracked\r\n\r\nEvery artifact lives in our public repo, served at darshya.online/updates.\r\n\r\nZero marketing varnish, just what the bots actually did.\r\n```\r\n\r\n## Sources used\r\n\r\n- Competitor Watch (2026-06-08-competitor-watch.md)\r\n- Content Draft (2026-06-08-content-draft.md)\r\n- Growth Metrics (2026-06-08-growth-metrics.md)\r\n- Gsc Submitter (2026-06-08-gsc-submitter.md)\r\n- Health Smoke 03h (2026-06-08-health-smoke-03h.md)\r\n- Investor Pipeline (2026-06-08-investor-pipeline.md)\r\n- Lead Gen (2026-06-08-lead-gen.md)\r\n\n...[truncated]"
+    },
+    "booking-quality-monitor": {
+      "agent": "booking-quality-monitor",
+      "sector": "cs",
+      "date": "2026-06-10",
+      "file": "2026-06-10-booking-quality-monitor.md",
+      "excerpt": "# booking-quality-monitor — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/sla-overdue-bookings` for puja bookings past their scheduled date by ≥24h with no `videoProofUrl`.\r\n\r\n## Result\r\n\r\n- **5** breach(es)\r\n- Cutoff: `2026-06-09T07:53:51.463Z`\r\n- Failed to file issue: Resource not accessible by integration\r\n\r\n## Top breaches\r\n\r\n| Booking | Scheduled | Status | ₹ | Priest |\r\n|---|---|---|---|---|\r\n| `BS-20260427-K3HSD` | 2026-05-04 | priest_assigned | 501 | cf18e924 |\r\n| `BS-20260427-43U88` | 2026-05-04 | priest_assigned | 501 | 821edbe5 |\r\n| `BS-20260427-H5FSK` | 2026-05-04 | priest_assigned | 501 | 821edbe5 |\r\n| `BS-20260427-I3O05` | 2026-05-04 | priest_assigned | 501 | 821edbe5 |\r\n| `BS-20260427-03BS5` | 2026-05-04 | priest_assigned | 501 | 821edbe5 |\r\n"
+    },
+    "cold-temple-outreach": {
+      "agent": "cold-temple-outreach",
+      "sector": "sales",
+      "date": "2026-06-10",
+      "file": "2026-06-10-cold-temple-outreach.md",
+      "excerpt": "# cold-temple-outreach — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/cold-temples` for NEW TEMPLE leads (lastContactedAt=null, capped 25/run), sent personalized partnership outreach via Resend, then marked each as EMAILED to prevent re-contact.\r\n\r\n## Summary\r\n\r\n- Eligible: **0**\r\n- Sent: **0**\r\n- Skipped (no email): **0**\r\n- Marked contacted: **0**\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log\r\n\r\n_no eligible leads_\r\n\r\n---\r\n_Lead status flipped NEW → EMAILED via `/mark-contacted`. Re-runs are idempotent — same lead won't be re-contacted._\r\n"
+    },
+    "daily-devotional-broadcast": {
+      "agent": "daily-devotional-broadcast",
+      "sector": "cmo",
+      "date": "2026-06-10",
+      "file": "2026-06-10-daily-devotional-broadcast.md",
+      "excerpt": "# Daily devotional broadcast — 2026-06-10\r\n\r\n**Budhvar (Wednesday)** · Vaar devata: **Ganesha**\r\n\r\n## Today's mantra (108 repetitions recommended)\r\n\r\n> ॐ गं गणपतये नमः\r\n>\r\n> _Om Gan Ganapataye Namah_\r\n\r\n## Today's shloka — BG 7.7\r\n\r\n> मत्तः परतरं नान्यत्किञ्चिदस्ति धनञ्जय।\r\n>\r\n> _There is nothing higher than Me, O Arjuna._\r\n\r\n## Today's panchang\r\n\r\n- Tithi: Krishna Dashami\r\n- Nakshatra: Revati\r\n- Yoga: Saubhagya\r\n- Sunrise: 05:22 · Sunset: 19:16\r\n- Rahu kaal: 12:19 - 14:03\r\n\r\n\r\n## Send summary\r\n\r\n- Opted-in recipients: **0**\r\n- Sent: **0**\r\n- Failed: **0**\r\n- Skipped (no phone / wa-unconfigured): **0**\r\n\r\n_⚠ WHATSAPP_ACCESS_TOKEN not set — message above is draft only._\r\n_⚠ WHATSAPP_PHONE_NUMBER_ID not set._\r\n\r\n\r\n---\r\n\r\n_Resend cap protect: WA-only. Email channel intentionally not used to preserve 100/day limit for transactional._\r\n"
+    },
+    "dormant-reactivation": {
+      "agent": "dormant-reactivation",
+      "sector": "cmo",
+      "date": "2026-06-10",
+      "file": "2026-06-10-dormant-reactivation.md",
+      "excerpt": "# dormant-reactivation — 2026-06-10\r\n\r\nWednesday weekly. Polled `/api/v1/admin/ops/dormant-users?days=30` and emailed each a nakshatra-personalised rebook hook.\r\n\r\n## Summary\r\n\r\n- Eligible: **1**\r\n- Sent: **0**\r\n- Skipped (deduped 90d / no email): **1**\r\n- Cutoff: `2026-05-11T07:53:55.255Z` (30d)\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log\r\n\r\n_no eligible users_\r\n\r\n---\r\n_State file: `_dormant-reactivation-state.json` (per user_id, 90d dedup window)._\r\n"
+    },
+    "funnel-drop-analyzer": {
+      "agent": "funnel-drop-analyzer",
+      "sector": "cpo",
+      "date": "2026-06-10",
+      "file": "2026-06-10-funnel-drop-analyzer.md",
+      "excerpt": "# funnel-drop-analyzer — 2026-06-10\r\n\r\nCompared yesterday (2026-06-10) vs 6-day median baseline.\r\nDrop threshold for P0: **70%**.\r\n\r\n## Findings\r\n\r\n| Stage | Yesterday | Baseline | Δ% | Status |\r\n|---|---:|---:|---:|---|\r\n| `landing` | 0 | 0 | — | ⚪ no-baseline |\r\n| `signup` | 0 | 0 | — | ⚪ no-baseline |\r\n| `kyc` | 0 | 0 | — | ⚪ no-baseline |\r\n| `booking` | 0 | 0 | — | ⚪ no-baseline |\r\n| `payment_success` | 0 | 0 | — | ⚪ no-baseline |\r\n\r\n## GH issues filed this run\r\n\r\n_none — all stages within threshold or already filed_\r\n\r\n\r\n"
+    },
+    "investor-weekly-digest-v2": {
+      "agent": "investor-weekly-digest-v2",
+      "sector": "cfo",
+      "date": "2026-06-10",
+      "file": "2026-06-10-investor-weekly-digest-v2.md",
+      "excerpt": "# investor-weekly-digest-v2 — 2026-06-10\r\n\r\n**Skipped:** weekly agent, today is not Sunday (UTC). Use FORCE=1 to override.\r\n"
+    },
+    "onboarding-nudge": {
+      "agent": "onboarding-nudge",
+      "sector": "hr",
+      "date": "2026-06-10",
+      "file": "2026-06-10-onboarding-nudge.md",
+      "excerpt": "# onboarding-nudge — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/kyc-abandoned` and nudged stalled provider self-onboard leads at 24h / 72h / 7d windows.\r\n\r\n## Summary\r\n\r\n| Window | Eligible | Sent | Skipped (deduped or no email) |\r\n|---|---|---|---|\r\n| 24h | 0 | 0 | 0 |\r\n| 72h | 0 | 0 | 0 |\r\n| 7d | 0 | 0 | 0 |\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log (capped)\r\n\r\n_no eligible leads_\r\n\r\n---\r\n_State file: `_onboarding-nudge-state.json` (per leadId+window dedup)._\r\n"
+    },
+    "referral-nudge": {
+      "agent": "referral-nudge",
+      "sector": "cmo",
+      "date": "2026-06-10",
+      "file": "2026-06-10-referral-nudge.md",
+      "excerpt": "# referral-nudge — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/recent-first-bookings` for users whose first booking landed 7-8 days ago, and emailed each a referral prompt with deep link to `/refer`.\r\n\r\n## Summary\r\n\r\n- Eligible: **0**\r\n- Sent: **0**\r\n- Skipped (deduped / no email): **0**\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log\r\n\r\n_no eligible users_\r\n\r\n---\r\n_State file: `_referral-nudge-state.json` (per user_id dedup)._\r\n"
+    },
+    "social-content-multiplexer": {
+      "agent": "social-content-multiplexer",
+      "sector": "cmo",
+      "date": "2026-06-10",
+      "file": "2026-06-10-social-content-multiplexer.md",
+      "excerpt": "# Social content multiplexer — 2026-06-10\r\n\r\nContext: Jagannath Rath Yatra in 36d · 1401 URLs live · 91 fleet reports past 7d\r\n\r\nOne content pack, three channels. Copy any; personalize before posting — algorithms reward variation.\r\n\r\n> _Supersedes founder-tweet-draft + rss-to-thread + content-publisher dedup work._\r\n\r\n## X (Twitter) — 5 drafts\r\n\r\n### X draft 1 — 232 chars ✓\r\n\r\n```\r\n36d to Jagannath Rath Yatra.\r\n\r\nDarshya now indexes 1401+ devotional pages — every major puja, every sacred city, every chalisa. Solo founder, $0 ads.\r\n\r\nIf you've been waiting for India's first transparent puja platform: darshya.online\r\n```\r\n\r\n### X draft 2 — 232 chars ✓\r\n\r\n```\r\nDiaspora problem nobody solves:\r\n\r\nyour parents want a Satyanarayan puja for Jagannath Rath Yatra. You don't trust the random WhatsApp pandit forwarded by relatives.\r\n\r\nFix: verified pandits, video proof, USD-fixed price. darshya.online\r\n```\r\n\r\n### X draft 3 — 226 chars ✓\r\n\r\n```\r\nReligion-tech hot take:\r\n\r\n- Sri Mandir + AppsForBharat raised $10M+\r\n- Still no live darshan QoS standard\r\n- Still no transparent temple commission\r\n- Still no diaspora UX\r\n\r\nWe ship all three at darshya.online. Solo + bootstrapped.\r\n```\r\n\r\n### X draft 4 — 165 chars ✓\r\n\r\n```\r\nToday's panchang (2026-06-10) live: tithi, nakshatra, rahu kaal, auspicious muhurat windows.\r\n\r\nDrik methodology, no app required, no paywall.\r\n\r\ndarshya.online/panchang\r\n```\r\n\r\n### X draft 5 — 190 chars ✓\r\n\r\n```\r\nShloka of the day from Bhagavad Gita is live.\r\n\r\nJagannath Ra\n...[truncated]"
+    },
+    "support-intent-triage": {
+      "agent": "support-intent-triage",
+      "sector": "cs",
+      "date": "2026-06-10",
+      "file": "2026-06-10-support-intent-triage.md",
+      "excerpt": "# support-intent-triage — 2026-06-10\r\n\r\nReads inbound tickets from `docs/agent-reports/_inbound-tickets.jsonl` (append-only JSONL: `{id,text,from,channel,receivedAt}`) and classifies by intent.\r\n\r\n## Summary\r\n\r\n- Total tickets in inbox: **0**\r\n- New since last run: **0**\r\n- P0 (refund / abuse): **0**\r\n- GH issue filed: _no P0 this run_\r\n\r\n## Bucket counts\r\n\r\n- **refund**: 0\r\n- **abuse**: 0\r\n- **booking-status**: 0\r\n- **payment**: 0\r\n- **technical**: 0\r\n- **general**: 0\r\n\r\n_No inbound tickets yet. Wire WhatsApp / Resend webhook → append to `_inbound-tickets.jsonl` to activate triage._\r\n\r\n## Recent P1 / P2 (founder batch-respond)\r\n\r\n_none_\r\n"
+    },
+    "keyword-rank-tracker": {
+      "agent": "keyword-rank-tracker",
+      "sector": "cmo",
+      "date": "2026-06-08",
+      "file": "2026-06-08-keyword-rank-tracker.md",
+      "excerpt": "# Keyword rank tracker — 2026-06-08\r\n\r\n> Source: DuckDuckGo HTML SERP. Target: `darshya.online`. 25 keywords tracked.\r\n\r\n**Summary:** 0 in top 10 · 0 in top 30 · 25 unranked.\r\n\r\n## Unranked (target for new content)\r\n\r\n- online puja booking with video proof\r\n- rudrabhishek booking online\r\n- satyanarayan puja booking\r\n- gau seva donation online\r\n- gaushala donation 80g\r\n- temple priest booking india\r\n- hanuman chalisa with meaning\r\n- shiva mantra om namah shivaya\r\n- krishna janmashtami 2026\r\n- maha shivratri puja online\r\n- navaratri puja booking\r\n- kashi vishwanath puja booking\r\n- tirupati venkateswara puja\r\n- jagannath puri darshan\r\n- kedarnath yatra package\r\n- char dham yatra booking\r\n- vaishno devi yatra package\r\n- online astrology consultation india\r\n- kundli matching online free\r\n- panchang today tithi\r\n- devotional super app india\r\n- sri mandir alternative\r\n- puja for nri abroad\r\n- pandit booking in usa\r\n- video proof puja booking\r\n"
+    },
+    "temple-link-validator": {
+      "agent": "temple-link-validator",
+      "sector": "cs",
+      "date": "2026-06-08",
+      "file": "2026-06-08-temple-link-validator.md",
+      "excerpt": "# Temple link validator — 2026-06-08\r\n\r\nProbed **31** official URLs across **11** temples.\r\n\r\n- OK (2xx): **16**\r\n- Redirects (3xx): **7**\r\n- Broken (4xx/5xx/timeout): **8**\r\n\r\n## P1 — Broken (devotee sees dead link)\r\n\r\n| Temple | Field | URL | Status | Time | Error |\r\n|---|---|---|---|---|---|\r\n| Shri Kashi Vishwanath Temple | officialBookingUrl | https://shrikashivishwanath.org/Home/SugamDarshan | 404 | 186ms |  |\r\n| Shri Kashi Vishwanath Temple | officialDarshanBookingUrl | https://shrikashivishwanath.org/Home/SugamDarshan | 404 | 102ms |  |\r\n| Baidyanath Jyotirlinga (Baba Dham) | officialBookingUrl | https://babadham.org/online-puja | 404 | 713ms |  |\r\n| Tirumala Tirupati Venkateswara Temple | officialWebsite | https://tirupatibalaji.ap.gov.in | TIMEOUT | 10002ms | This operation was aborted |\r\n| Shri Mata Vaishno Devi Shrine | officialBookingUrl | https://www.maavaishnodevi.org/yatra-registration.aspx | 404 | 1038ms |  |\r\n| Shri Mata Vaishno Devi Shrine | officialDarshanBookingUrl | https://www.maavaishnodevi.org/yatra-registration.aspx | 404 | 266ms |  |\r\n| Shree Jagannath Temple, Puri | officialWebsite | https://shreejagannatha.in | TIMEOUT | 10000ms | This operation was aborted |\r\n| Shree Jagannath Temple, Puri | officialDarshanBookingUrl | https://www.siddhivinayak.org/online_booking.php | 404 | 845ms |  |\r\n\r\n**Action**: open `apps/web/lib/temple-details.ts`, find slug `kashi-vishwanath`, replace dead URL with current value from temple's primary domain. Re-run agent \n...[truncated]"
+    },
+    "weekly-digest": {
+      "agent": "weekly-digest",
+      "sector": "founder",
+      "date": "2026-06-07",
+      "file": "2026-06-07-weekly-digest.md",
+      "excerpt": "# Darshya — weekly digest 2026-06-01 → 2026-06-07\r\n\r\n> Internal founder dashboard. Generated automatically from agent fleet artifacts.\r\n\r\n## TL;DR\r\n\r\n- ✓ All systems healthy across 30 agent types (93 runs this week).\r\n- SEO: 0 keywords ranked (→ 0 WoW), 0 in top 10.\r\n\r\n## Health snapshot\r\n\r\n| Check | Status | Source |\r\n|---|---|---|\r\n| Uptime | _no recent report_ | — |\r\n| Internal links | ✓ OK | `2026-06-07-broken-link.md` |\r\n| JSON-LD schema | _no recent report_ | — |\r\n\r\n## SEO snapshot\r\n\r\n- Keywords ranked: **0** (was 0, Δ 0)\r\n- In top 10: **0**\r\n\r\n## Fleet activity (7 days)\r\n\r\n| Agent | Runs |\r\n|---|---|\r\n| broken-link | 7 |\r\n| booking-quality-monitor | 6 |\r\n| cold-temple-outreach | 6 |\r\n| daily-devotional-broadcast | 6 |\r\n| dormant-reactivation | 6 |\r\n| funnel-drop-analyzer | 6 |\r\n| health-smoke-03h | 6 |\r\n| investor-weekly-digest-v2 | 6 |\r\n| onboarding-nudge | 6 |\r\n| referral-nudge | 6 |\r\n| social-content-multiplexer | 6 |\r\n| support-intent-triage | 6 |\r\n| health-smoke-16h | 2 |\r\n| health-smoke-14h | 2 |\r\n| competitor-watch | 1 |\r\n| content-draft | 1 |\r\n| growth-metrics | 1 |\r\n| gsc-submitter | 1 |\r\n| health-smoke-17h | 1 |\r\n| investor-pipeline | 1 |\r\n| keyword-rank-tracker | 1 |\r\n| lead-gen | 1 |\r\n| onboarding-drip | 1 |\r\n| pr-outreach | 1 |\r\n| rss-to-thread | 1 |\r\n| seo-audit | 1 |\r\n| social-queue | 1 |\r\n| temple-link-validator | 1 |\r\n| health-smoke-02h | 1 |\r\n| health-smoke-13h | 1 |\r\n\r\n---\r\n_Generated: 2026-06-07 · Darshya internal · Review weekly._"
+    }
+  },
+  "bySector": {
+    "cmo": [
+      {
+        "agent": "content-draft",
+        "date": "2026-06-08",
+        "excerpt": "# Content Drafts — 2026-06-08 (Mon)\r\n\r\n> Daily knowledge pipeline. 3 drafts/day: deity-of-day, Veda angle, Sanatan theme. Plus a Sanskrit shloka card.\r\n\r\n## Today's deity (Shiva)\r\n\r\n**Title suggestion**: \"Lord Shiva — significance, practices for Monday, and free chants\"\r\n\r\n**Outline**:\r\n1. Why devotees worship Lord Shiva on Monday (scriptural source)\r\n2. Daily 5-min practice (mantra + visualization)\r\n3. Free downloadable: Rudra Suktam, Lingashtakam, Mahamrityunjaya\r\n4. Live darshan link — temple"
+      },
+      {
+        "agent": "content-publisher",
+        "date": "2026-05-27",
+        "excerpt": "# Content-publisher — 2026-05-27\r\n\r\n**Target keyword:** difference between aarti and bhajan (informational)\r\n**Draft:** `docs/agent-reports/blog-drafts/2026-05-27-difference-between-aarti-and-bhajan.md` (created)\r\n**Title:** Difference Between Aarti And Bhajan\r\n\r\n## Founder review checklist\r\n\r\n- [ ] Replace TODO blocks with actual content (significance, samagri, mantras)\r\n- [ ] Verify product CTAs link to real, live pages\r\n- [ ] Add 1-2 images (samagri photo, deity illustration)\r\n- [ ] Set `stat"
+      },
+      {
+        "agent": "founder-tweet-draft",
+        "date": "2026-05-27",
+        "excerpt": "# Founder tweet drafts — 2026-05-27\r\n\r\nContext: Jagannath Rath Yatra in 50d · 98 URLs live\r\n\r\nCopy any one to X. Personalize, don't auto-post — the algorithm rewards authenticity.\r\n\r\n## Draft 1 — 212 chars ✓\r\n\r\n```\r\n50 days to Jagannath Rath Yatra.\r\n\r\nBuilding the puja booking flow nobody is talking about: video proof + verified pandits + transparent commission. 98+ pages live now at darshya.online — solo founder, $0 ad spend.\r\n```\r\n\r\n## Draft 2 — 280 chars ✓\r\n\r\n```\r\nIndian diaspora problem nobo"
+      },
+      {
+        "agent": "pr-outreach",
+        "date": "2026-06-08",
+        "excerpt": "# PR Outreach — 2026-06-08\r\n\r\n> Weekly press list + tested pitch angles. 3 active hooks. Pitch one outlet at a time, never bulk.\r\n\r\n## Outlets (10, ranked by fit)\r\n\r\n| Outlet | Beat | Writer | Best angle |\r\n|---|---|---|---|\r\n| YourStory | Indian startups | Sindhu Kashyaap (consumer) | pre-revenue traction stories |\r\n| Inc42 | Indian startups | Apoorva Mittal (D2C/consumer) | cultural-tech category creation |\r\n| ET Tech | startup deals + product launches | Beena Parmar | NRI-focused India tech |"
+      },
+      {
+        "agent": "seo-audit",
+        "date": "2026-06-08",
+        "excerpt": "# SEO Audit — 2026-06-08\r\n\r\n> Daily agent. Scans 18 core pages for title/meta/og + sitemap + robots + orphan detection.\r\n\r\n## Summary\r\n\r\n- **Pages clean**: 16/18\r\n- **Pages with issues**: 2\r\n- **Sitemap**: OK (1401 URLs)\r\n- **robots.txt**: OK + sitemap directive\r\n- **Orphan core pages** (not linked from any other core page): /ved\r\n\r\n## Keyword targets (track in GSC)\r\n\r\n- `online puja booking`\r\n- `live darshan temple`\r\n- `sanskrit lessons free`\r\n- `sanatan dharma knowledge`\r\n- `gurukul admission "
+      },
+      {
+        "agent": "social-queue",
+        "date": "2026-06-08",
+        "excerpt": "# Social Queue — 2026-06-08 (7 days, 21 posts)\r\n\r\n> Daily agent. Generates 7 days × 3 slots = 21 posts. Paste into Buffer (free 10-post plan) or Hootsuite trial. Twitter + LinkedIn + Instagram caption.\r\n\r\n## Posting cadence\r\n\r\n- **Twitter**: all 21 (cheap real estate)\r\n- **LinkedIn**: type=NRI / gurukul / founder (12/week — keeps professional)\r\n- **Instagram**: type=shloka / temple / gaushala (9/week — visual-heavy)\r\n\r\n## Schedule\r\n\r\n### 1. 2026-06-08 · 9:00 IST · shloka\r\n\r\n```\r\n🕉️ Shloka of th"
+      },
+      {
+        "agent": "gsc-submitter",
+        "date": "2026-06-08",
+        "excerpt": "# GSC submitter — 2026-06-08\r\n\r\nSitemap: https://darshya.online/sitemap.xml\r\n- Status: **200**\r\n- URLs in sitemap: **1401**\r\n\r\n## Pings\r\n\r\n| Engine | HTTP | Response |\r\n|---|---|---|\r\n| google | 404 | <HTML>\r\n<HEAD>\r\n<TITLE>Sitemaps ping is deprecated. See https://developers.google.com/search/blog/2023/06/sitemaps-lastmod-ping.</TITLE>\r\n</HEAD>\r\n<BODY BGCOLOR=\"#F |\r\n| bing-indexnow | 200 | - |\r\n\r\n> IndexNow key self-issued (committed to repo + served at `https://darshya.online/b9d4f2e7c6a31085f8"
+      },
+      {
+        "agent": "rss-to-thread",
+        "date": "2026-06-08",
+        "excerpt": "# RSS-to-thread — 2026-06-08\r\n\r\nSource reports: **11** today.\r\n\r\n## X thread (copy/paste)\r\n\r\n**1/7**\r\n```\r\n🧵 Build-in-public — 2026-06-08\r\n\r\nWhat the Darshya agent fleet shipped today (zero humans pressed any button):\r\n```\r\n\r\n**2/7**\r\n```\r\n🕵️ Competitor Watch — 4 items tracked\r\n```\r\n\r\n**3/7**\r\n```\r\n✍️ Content Draft — 5 items tracked\r\n```\r\n\r\n**4/7**\r\n```\r\n🤖 Growth Metrics — 10 items tracked\r\n```\r\n\r\n**5/7**\r\n```\r\n🤖 Gsc Submitter — 2 items tracked\r\n```\r\n\r\n**6/7**\r\n```\r\n🤖 Health Smoke 03h — 5 i"
+      },
+      {
+        "agent": "daily-devotional-broadcast",
+        "date": "2026-06-10",
+        "excerpt": "# Daily devotional broadcast — 2026-06-10\r\n\r\n**Budhvar (Wednesday)** · Vaar devata: **Ganesha**\r\n\r\n## Today's mantra (108 repetitions recommended)\r\n\r\n> ॐ गं गणपतये नमः\r\n>\r\n> _Om Gan Ganapataye Namah_\r\n\r\n## Today's shloka — BG 7.7\r\n\r\n> मत्तः परतरं नान्यत्किञ्चिदस्ति धनञ्जय।\r\n>\r\n> _There is nothing higher than Me, O Arjuna._\r\n\r\n## Today's panchang\r\n\r\n- Tithi: Krishna Dashami\r\n- Nakshatra: Revati\r\n- Yoga: Saubhagya\r\n- Sunrise: 05:22 · Sunset: 19:16\r\n- Rahu kaal: 12:19 - 14:03\r\n\r\n\r\n## Send summary\r\n"
+      },
+      {
+        "agent": "dormant-reactivation",
+        "date": "2026-06-10",
+        "excerpt": "# dormant-reactivation — 2026-06-10\r\n\r\nWednesday weekly. Polled `/api/v1/admin/ops/dormant-users?days=30` and emailed each a nakshatra-personalised rebook hook.\r\n\r\n## Summary\r\n\r\n- Eligible: **1**\r\n- Sent: **0**\r\n- Skipped (deduped 90d / no email): **1**\r\n- Cutoff: `2026-05-11T07:53:55.255Z` (30d)\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log\r\n\r\n_no eligible users_\r\n\r\n---\r\n_State file: `_dormant-reactivation-state.json` (per user_id, 90d dedup window)._\r\n"
+      },
+      {
+        "agent": "referral-nudge",
+        "date": "2026-06-10",
+        "excerpt": "# referral-nudge — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/recent-first-bookings` for users whose first booking landed 7-8 days ago, and emailed each a referral prompt with deep link to `/refer`.\r\n\r\n## Summary\r\n\r\n- Eligible: **0**\r\n- Sent: **0**\r\n- Skipped (deduped / no email): **0**\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log\r\n\r\n_no eligible users_\r\n\r\n---\r\n_State file: `_referral-nudge-state.json` (per user_id dedup)._\r\n"
+      },
+      {
+        "agent": "social-content-multiplexer",
+        "date": "2026-06-10",
+        "excerpt": "# Social content multiplexer — 2026-06-10\r\n\r\nContext: Jagannath Rath Yatra in 36d · 1401 URLs live · 91 fleet reports past 7d\r\n\r\nOne content pack, three channels. Copy any; personalize before posting — algorithms reward variation.\r\n\r\n> _Supersedes founder-tweet-draft + rss-to-thread + content-publisher dedup work._\r\n\r\n## X (Twitter) — 5 drafts\r\n\r\n### X draft 1 — 232 chars ✓\r\n\r\n```\r\n36d to Jagannath Rath Yatra.\r\n\r\nDarshya now indexes 1401+ devotional pages — every major puja, every sacred city, e"
+      },
+      {
+        "agent": "keyword-rank-tracker",
+        "date": "2026-06-08",
+        "excerpt": "# Keyword rank tracker — 2026-06-08\r\n\r\n> Source: DuckDuckGo HTML SERP. Target: `darshya.online`. 25 keywords tracked.\r\n\r\n**Summary:** 0 in top 10 · 0 in top 30 · 25 unranked.\r\n\r\n## Unranked (target for new content)\r\n\r\n- online puja booking with video proof\r\n- rudrabhishek booking online\r\n- satyanarayan puja booking\r\n- gau seva donation online\r\n- gaushala donation 80g\r\n- temple priest booking india\r\n- hanuman chalisa with meaning\r\n- shiva mantra om namah shivaya\r\n- krishna janmashtami 2026\r\n- mah"
+      }
+    ],
+    "cfo": [
+      {
+        "agent": "growth-metrics",
+        "date": "2026-06-08",
+        "excerpt": "# Growth Metrics — 2026-06-08\r\n\r\n> Daily snapshot. Public-endpoint inventories + API health + tripwire reminders. Authenticated metrics (MAU, MRR, retention) require admin-token route and are stubbed below.\r\n\r\n## Supply inventory (live counts from prod public endpoints)\r\n\r\n| Surface | Count | Note |\r\n|---|---|---|\r\n| Temples (public) | 20 | ok |\r\n| Priests (public) | 3 | ok |\r\n| Astrologers (public) | 15 | ok |\r\n| Gurukuls (public) | 3 | ok |\r\n| Store products (public) | 24 | ok |\r\n| Yatra packa"
+      },
+      {
+        "agent": "investor-pipeline",
+        "date": "2026-06-08",
+        "excerpt": "# Investor Pipeline — 2026-06-08\r\n\r\n> Curated angel + seed VC targets for pre-revenue → seed raise. Personalized intro drafts per persona. Weekly refresh.\r\n\r\n## Stage gate (current → ready)\r\n\r\n- [ ] **Pre-revenue baseline** (today): demo accounts, 0 paying users, ship-ready product\r\n- [ ] **Friends/family** ($50K-$150K): once 100 real signups + 5 bookings\r\n- [ ] **Pre-seed** ($250K-$500K): once 5K MAU, $5K MRR, 4-week retention curve flat at 25%+\r\n- [ ] **Seed** ($1.5M-$3M): once $25K MRR, NRI m"
+      },
+      {
+        "agent": "investor-weekly-digest-v2",
+        "date": "2026-06-10",
+        "excerpt": "# investor-weekly-digest-v2 — 2026-06-10\r\n\r\n**Skipped:** weekly agent, today is not Sunday (UTC). Use FORCE=1 to override.\r\n"
+      }
+    ],
+    "sales": [
+      {
+        "agent": "lead-gen",
+        "date": "2026-06-08",
+        "excerpt": "# Lead-Gen — 2026-06-08\r\n\r\n> Daily snapshot of onboarded supply per category vs targets. Surfaces gaps to drive outbound priority.\r\n\r\n## Supply scoreboard\r\n\r\n| Category | Onboarded | T1 target | Gap to T1 | T2 target | Gap to T2 | Source |\r\n|---|---|---|---|---|---|---|\r\n| Temples | 0 | 50 | 50 | 200 | 200 | HTTP 401 |\r\n| Pandits | 3 | 100 | 97 | 500 | 497 | priests[] |\r\n| Astrologers | 15 | 30 | 15 | 100 | 85 | astrologers[] |\r\n| Gurukuls | 3 | 20 | 17 | 80 | 77 | gurukuls[] |\r\n| Gaushalas | 0 "
+      },
+      {
+        "agent": "cold-temple-outreach",
+        "date": "2026-06-10",
+        "excerpt": "# cold-temple-outreach — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/cold-temples` for NEW TEMPLE leads (lastContactedAt=null, capped 25/run), sent personalized partnership outreach via Resend, then marked each as EMAILED to prevent re-contact.\r\n\r\n## Summary\r\n\r\n- Eligible: **0**\r\n- Sent: **0**\r\n- Skipped (no email): **0**\r\n- Marked contacted: **0**\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log\r\n\r\n_no eligible leads_\r\n\r\n---\r\n_Lead status flipped NEW → EMAILED via `/mark-cont"
+      }
+    ],
+    "hr": [
+      {
+        "agent": "onboarding-drip",
+        "date": "2026-06-08",
+        "excerpt": "# Onboarding Drip — 2026-06-08\r\n\r\n> 7-touch drip sequence per role. Stored here as the source of truth. `apps/api/src/jobs/outreach-cron.ts` reads this and sends via Resend when `RESEND_API_KEY` is set.\r\n\r\n## Sequences\r\n\r\n## devotee (7 touches)\r\n\r\n### Day 0 — Welcome to Darshya — your sacred dashboard is ready\r\n\r\n```\r\nNamaste {name},\r\n\r\nYour Darshya account is live. Three things to try this week:\r\n\r\n1. Watch a live darshan: darshya.online/temples (10+ temples streaming now)\r\n2. Book your first p"
+      },
+      {
+        "agent": "onboarding-nudge",
+        "date": "2026-06-10",
+        "excerpt": "# onboarding-nudge — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/kyc-abandoned` and nudged stalled provider self-onboard leads at 24h / 72h / 7d windows.\r\n\r\n## Summary\r\n\r\n| Window | Eligible | Sent | Skipped (deduped or no email) |\r\n|---|---|---|---|\r\n| 24h | 0 | 0 | 0 |\r\n| 72h | 0 | 0 | 0 |\r\n| 7d | 0 | 0 | 0 |\r\n\r\n_⚠ RESEND_API_KEY not set — no emails actually sent._\r\n\r\n## Send log (capped)\r\n\r\n_no eligible leads_\r\n\r\n---\r\n_State file: `_onboarding-nudge-state.json` (per leadId+window dedup)._\r\n"
+      }
+    ],
+    "cto": [
+      {
+        "agent": "broken-link",
+        "date": "2026-06-10",
+        "excerpt": "# Broken-link audit — 2026-06-10\r\n\r\nChecked **200** internal links from 10 seed pages.\r\n\r\n- OK (<3000ms): **154**\r\n- Slow (>=3000ms): **1**\r\n- Broken (4xx/5xx/timeout): **45**\r\n\r\n## Broken\r\n\r\n| URL | Status | Time | Error |\r\n|---|---|---|---|\r\n| https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/1920px-Kashi_Vishwanath.jpg | 429 | 85ms |  |\r\n| https://twitter.com/darshya_app | 403 | 109ms |  |\r\n| https://www.instagram.com/darshya.online | 429 | 219ms |  |\r\n| https://d"
+      }
+    ],
+    "cpo": [
+      {
+        "agent": "competitor-watch",
+        "date": "2026-06-08",
+        "excerpt": "# Competitor-watch — 2026-06-08\r\n\r\n4 feeds scanned. **0 new item(s)** since last run.\r\n\r\n_No new items. Competitors are quiet (or feeds did not change)._\r\n\r\n## Feed errors\r\n\r\n- Sri Mandir Blog: HTTP 404\r\n- AppsForBharat Medium: HTTP 404\r\n- AstroSage Blog: HTTP 404\r\n- Utsav Blog: HTTP 404\r\n"
+      },
+      {
+        "agent": "funnel-drop-analyzer",
+        "date": "2026-06-10",
+        "excerpt": "# funnel-drop-analyzer — 2026-06-10\r\n\r\nCompared yesterday (2026-06-10) vs 6-day median baseline.\r\nDrop threshold for P0: **70%**.\r\n\r\n## Findings\r\n\r\n| Stage | Yesterday | Baseline | Δ% | Status |\r\n|---|---:|---:|---:|---|\r\n| `landing` | 0 | 0 | — | ⚪ no-baseline |\r\n| `signup` | 0 | 0 | — | ⚪ no-baseline |\r\n| `kyc` | 0 | 0 | — | ⚪ no-baseline |\r\n| `booking` | 0 | 0 | — | ⚪ no-baseline |\r\n| `payment_success` | 0 | 0 | — | ⚪ no-baseline |\r\n\r\n## GH issues filed this run\r\n\r\n_none — all stages within t"
+      }
+    ],
+    "it": [
+      {
+        "agent": "health-smoke",
+        "date": "2026-06-10",
+        "excerpt": "# Health Smoke — 2026-06-10 03:33:08\r\n\r\n> Runs every 6h via GH Actions. Hits public + per-role endpoints on prod.\r\n\r\n## Result\r\n\r\n- **Pass**: 32\r\n- **Fail**: 9\r\n- **Exit**: 1\r\n- **API**: https://api.darshya.online\r\n- **Web**: https://darshya.online\r\n\r\n## Failing endpoints (9)\r\n\r\n```\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  [FAIL] LOGIN 0    /api/v1/auth/login  -- no token\r\n  ["
+      }
+    ],
+    "cs": [
+      {
+        "agent": "booking-quality-monitor",
+        "date": "2026-06-10",
+        "excerpt": "# booking-quality-monitor — 2026-06-10\r\n\r\nPolled `/api/v1/admin/ops/sla-overdue-bookings` for puja bookings past their scheduled date by ≥24h with no `videoProofUrl`.\r\n\r\n## Result\r\n\r\n- **5** breach(es)\r\n- Cutoff: `2026-06-09T07:53:51.463Z`\r\n- Failed to file issue: Resource not accessible by integration\r\n\r\n## Top breaches\r\n\r\n| Booking | Scheduled | Status | ₹ | Priest |\r\n|---|---|---|---|---|\r\n| `BS-20260427-K3HSD` | 2026-05-04 | priest_assigned | 501 | cf18e924 |\r\n| `BS-20260427-43U88` | 2026-05"
+      },
+      {
+        "agent": "support-intent-triage",
+        "date": "2026-06-10",
+        "excerpt": "# support-intent-triage — 2026-06-10\r\n\r\nReads inbound tickets from `docs/agent-reports/_inbound-tickets.jsonl` (append-only JSONL: `{id,text,from,channel,receivedAt}`) and classifies by intent.\r\n\r\n## Summary\r\n\r\n- Total tickets in inbox: **0**\r\n- New since last run: **0**\r\n- P0 (refund / abuse): **0**\r\n- GH issue filed: _no P0 this run_\r\n\r\n## Bucket counts\r\n\r\n- **refund**: 0\r\n- **abuse**: 0\r\n- **booking-status**: 0\r\n- **payment**: 0\r\n- **technical**: 0\r\n- **general**: 0\r\n\r\n_No inbound tickets yet"
+      },
+      {
+        "agent": "temple-link-validator",
+        "date": "2026-06-08",
+        "excerpt": "# Temple link validator — 2026-06-08\r\n\r\nProbed **31** official URLs across **11** temples.\r\n\r\n- OK (2xx): **16**\r\n- Redirects (3xx): **7**\r\n- Broken (4xx/5xx/timeout): **8**\r\n\r\n## P1 — Broken (devotee sees dead link)\r\n\r\n| Temple | Field | URL | Status | Time | Error |\r\n|---|---|---|---|---|---|\r\n| Shri Kashi Vishwanath Temple | officialBookingUrl | https://shrikashivishwanath.org/Home/SugamDarshan | 404 | 186ms |  |\r\n| Shri Kashi Vishwanath Temple | officialDarshanBookingUrl | https://shrikashiv"
+      }
+    ],
+    "founder": [
+      {
+        "agent": "weekly-digest",
+        "date": "2026-06-07",
+        "excerpt": "# Darshya — weekly digest 2026-06-01 → 2026-06-07\r\n\r\n> Internal founder dashboard. Generated automatically from agent fleet artifacts.\r\n\r\n## TL;DR\r\n\r\n- ✓ All systems healthy across 30 agent types (93 runs this week).\r\n- SEO: 0 keywords ranked (→ 0 WoW), 0 in top 10.\r\n\r\n## Health snapshot\r\n\r\n| Check | Status | Source |\r\n|---|---|---|\r\n| Uptime | _no recent report_ | — |\r\n| Internal links | ✓ OK | `2026-06-07-broken-link.md` |\r\n| JSON-LD schema | _no recent report_ | — |\r\n\r\n## SEO snapshot\r\n\r\n- Ke"
+      }
+    ]
+  }
+}
