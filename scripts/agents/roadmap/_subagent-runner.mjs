@@ -45,12 +45,18 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
 
   const errors = [];
   let response;
+  // Hard per-sub-agent timeout (4 min). Opus 4.7 via Blackbox proxy can stall.
+  // Without timeout, one slow sub-agent kills entire cycle on GH 15min cap.
+  const SUBAGENT_TIMEOUT_MS = 4 * 60 * 1000;
   try {
-    response = await opusFn({
-      system: SUBAGENT_SYSTEM(role),
-      messages: [{ role: 'user', content: userMsg }],
-      maxTokens: 6000,
-    });
+    response = await Promise.race([
+      opusFn({
+        system: SUBAGENT_SYSTEM(role),
+        messages: [{ role: 'user', content: userMsg }],
+        maxTokens: 4000,
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`sub-agent ${role} timeout after ${SUBAGENT_TIMEOUT_MS}ms`)), SUBAGENT_TIMEOUT_MS)),
+    ]);
   } catch (e) {
     return { queueFiles: [], errors: [e.message], usage: null };
   }

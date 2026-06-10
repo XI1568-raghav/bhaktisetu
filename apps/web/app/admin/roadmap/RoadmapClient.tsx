@@ -19,10 +19,12 @@ interface QueueEntry {
   filename: string;
   queueId: string;
   itemId: string;
+  itemTitle?: string;
   role: string;
   priority: string;
   emittedAt: string;
   estMinutes: number;
+  source?: string;
 }
 
 interface DecisionEntry {
@@ -31,8 +33,11 @@ interface DecisionEntry {
 }
 
 interface KpiEntry {
-  value: number;
+  value?: number | string | null;
   fetchedAt: string;
+  stale?: boolean;
+  error?: string;
+  metric?: string;
 }
 
 interface TripwireEntry {
@@ -118,6 +123,21 @@ export default function RoadmapClient() {
 
   const kpiEntries = Object.entries(data.kpis?.entries || {});
 
+  // Build itemId → title lookup for queue + KPI panels
+  const itemById: Record<string, RoadmapItem> = {};
+  for (const it of items) itemById[it.id] = it;
+  const metricToItem: Record<string, RoadmapItem> = {};
+  for (const it of items) {
+    if (it.kpi?.metric) metricToItem[it.kpi.metric] = it;
+  }
+
+  const formatKpiValue = (v: KpiEntry): { display: string; status: 'live' | 'stale' | 'error' } => {
+    if (v.error) return { display: `err: ${v.error.slice(0, 30)}`, status: 'error' };
+    if (v.stale && (v.value === undefined || v.value === null)) return { display: 'stale (awaiting scrape)', status: 'stale' };
+    if (v.value === undefined || v.value === null) return { display: '—', status: 'stale' };
+    return { display: String(v.value), status: 'live' };
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
@@ -157,21 +177,49 @@ export default function RoadmapClient() {
             No KPIs cached yet. Run orchestrator first cycle to populate.
           </p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {kpiEntries.slice(0, 12).map(([key, v]) => (
-              <div
-                key={key}
-                className="border border-surface-200 rounded-lg p-3 bg-surface-50"
-              >
-                <div className="font-mono text-[10px] text-surface-500 truncate" title={key}>
-                  {key}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {kpiEntries.slice(0, 18).map(([key, v]) => {
+              const fmt = formatKpiValue(v);
+              const metric = v.metric || key.split(':').slice(1).join(':');
+              const item = metricToItem[metric];
+              const target = item?.kpi?.target;
+              const unit = item?.kpi?.unit;
+              const bg =
+                fmt.status === 'live'
+                  ? 'bg-emerald-50 border-emerald-200'
+                  : fmt.status === 'error'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-surface-50 border-surface-200';
+              return (
+                <div key={key} className={`border rounded-lg p-3 ${bg}`}>
+                  <div className="font-mono text-[10px] text-surface-500 truncate" title={key}>
+                    {key}
+                  </div>
+                  {item && (
+                    <div className="text-xs text-surface-700 mt-0.5 truncate" title={item.title}>
+                      {item.id}: {item.title}
+                    </div>
+                  )}
+                  <div className="font-bold text-lg text-surface-900 mt-1">
+                    {fmt.display}
+                    {target && fmt.status === 'live' ? (
+                      <span className="text-xs font-normal text-surface-500 ml-1">
+                        / {target} {unit || ''}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="text-[10px] text-surface-400 mt-1">
+                    {v.fetchedAt ? new Date(v.fetchedAt).toLocaleTimeString() : ''}
+                    {fmt.status === 'stale' && (
+                      <span className="ml-2 text-amber-700">⚠ stale</span>
+                    )}
+                    {fmt.status === 'error' && (
+                      <span className="ml-2 text-red-700">⚠ error</span>
+                    )}
+                  </div>
                 </div>
-                <div className="font-bold text-lg text-surface-900 mt-1">{String(v.value)}</div>
-                <div className="text-[10px] text-surface-400 mt-1">
-                  {v.fetchedAt ? new Date(v.fetchedAt).toLocaleTimeString() : ''}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -191,26 +239,37 @@ export default function RoadmapClient() {
               <thead>
                 <tr className="border-b border-surface-200 text-left text-xs text-surface-500">
                   <th className="py-2 pr-3 font-medium">queueId</th>
-                  <th className="py-2 pr-3 font-medium">item</th>
+                  <th className="py-2 pr-3 font-medium">itemId</th>
+                  <th className="py-2 pr-3 font-medium">Title</th>
                   <th className="py-2 pr-3 font-medium">role</th>
                   <th className="py-2 pr-3 font-medium">P</th>
                   <th className="py-2 pr-3 font-medium">min</th>
+                  <th className="py-2 pr-3 font-medium">src</th>
                   <th className="py-2 pr-3 font-medium">emittedAt</th>
                 </tr>
               </thead>
               <tbody>
-                {data.queue.slice(0, 20).map((q) => (
-                  <tr key={q.queueId} className="border-b border-surface-100">
-                    <td className="py-2 pr-3 font-mono text-xs text-surface-600">{q.queueId}</td>
-                    <td className="py-2 pr-3 text-surface-800">{q.itemId}</td>
-                    <td className="py-2 pr-3 text-surface-600">{q.role}</td>
-                    <td className="py-2 pr-3 text-surface-600">{q.priority}</td>
-                    <td className="py-2 pr-3 text-surface-600">{q.estMinutes}</td>
-                    <td className="py-2 pr-3 text-xs text-surface-400">
-                      {q.emittedAt ? new Date(q.emittedAt).toLocaleString() : ''}
-                    </td>
-                  </tr>
-                ))}
+                {data.queue.slice(0, 30).map((q) => {
+                  const item = itemById[q.itemId];
+                  const title = q.itemTitle || item?.title || '(item not in index)';
+                  const srcBadge = q.source === 'dryrun'
+                    ? <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800">dryrun</span>
+                    : <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800">live</span>;
+                  return (
+                    <tr key={q.queueId + q.filename} className="border-b border-surface-100">
+                      <td className="py-2 pr-3 font-mono text-xs text-surface-600">{q.queueId}</td>
+                      <td className="py-2 pr-3 font-mono text-xs text-surface-700">{q.itemId}</td>
+                      <td className="py-2 pr-3 text-surface-800" title={title}>{title}</td>
+                      <td className="py-2 pr-3 text-surface-600">{q.role}</td>
+                      <td className="py-2 pr-3 text-surface-600">{q.priority}</td>
+                      <td className="py-2 pr-3 text-surface-600">{q.estMinutes}</td>
+                      <td className="py-2 pr-3">{srcBadge}</td>
+                      <td className="py-2 pr-3 text-xs text-surface-400">
+                        {q.emittedAt ? new Date(q.emittedAt).toLocaleString() : ''}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

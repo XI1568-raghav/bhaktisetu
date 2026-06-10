@@ -97,15 +97,19 @@ async function main() {
     process.exit(2);
   }
 
-  // 7. DECISION AGENT
+  // 7. DECISION AGENT (5min wall budget per call to leave room for sub-agents)
   let decisionResponse;
+  const DECISION_TIMEOUT_MS = 5 * 60 * 1000;
   try {
-    decisionResponse = await callOpus47({
-      system: DECISION_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
-      tools: DECISION_TOOLS,
-      maxTokens: 8000,
-    });
+    decisionResponse = await Promise.race([
+      callOpus47({
+        system: DECISION_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
+        tools: DECISION_TOOLS,
+        maxTokens: 4000,
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)), DECISION_TIMEOUT_MS)),
+    ]);
   } catch (e) {
     if (e instanceof ModelRejectedError) {
       writeAlert(`model-rejected-${cycleId}.md`, `Decision Agent rejected: ${e.message}\nHalting per user directive.`);
@@ -127,10 +131,10 @@ async function main() {
 
   console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
 
-  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 5)
+  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 3 — Opus 4.7 via proxy is slow)
   const allQueueFiles = [];
-  for (let i = 0; i < spawnPlan.length; i += 5) {
-    const chunk = spawnPlan.slice(i, i + 5);
+  for (let i = 0; i < spawnPlan.length; i += 3) {
+    const chunk = spawnPlan.slice(i, i + 3);
     const results = await Promise.allSettled(chunk.map(p => runSubagent({ ...p, items, cycleId })));
     for (const r of results) {
       if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);
