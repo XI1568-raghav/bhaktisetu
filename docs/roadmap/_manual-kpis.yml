@@ -8,3 +8,8 @@ values:
   iskcon_loi_status: prospect          # prospect|introd|meeting|term_sheet|signed
   product_hunt_launched: false
   nri_d30_retention: null              # measured starting M3
+  uptime_monitors_active: 0            # founder bumps to 4 after docs/it/uptime-setup-checklist.md Step 6
+# Stale-flag notes:
+#   uptime_monitors_active: clear stale=false once founder ships 4 UptimeRobot monitors
+#     (target 4: api-health, www-root, www-pujas, api-health-keyword)
+#     trigger: completion of docs/it/uptime-setup-checklist.md Steps 1-6

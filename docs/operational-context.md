@@ -214,6 +214,21 @@ Phase 1-5 of `docs/mobile-plan.md` substantially shipped (verified 2026-05-13). 
 
 ---
 
+## 13b. Monitoring + paging (UptimeRobot)
+
+| Item | Value |
+|---|---|
+| Provider | UptimeRobot (free tier, 50 monitors, 5min interval) |
+| Account owner | Founder |
+| Monitors | 4 (api-health, www-root, www-pujas, api-health-keyword) |
+| Public status page | `<PASTE_AFTER_SETUP>` (founder fills after Step 5 of checklist) |
+| Escalation | Email always; SMS after 3 failures (15min down) |
+| Runbook | [docs/it/uptime-monitors.md](./it/uptime-monitors.md) |
+| Setup checklist | [docs/it/uptime-setup-checklist.md](./it/uptime-setup-checklist.md) |
+| KPI tracked | `uptime_monitors_active` in `docs/roadmap/_manual-kpis.yml` (target 4) |
+
+---
+
 ## 14. Test state (verified 2026-05-21)
 
 | Surface | Tests |
