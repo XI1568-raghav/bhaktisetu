@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-fb-ads-manager-shows-1-active-campaign-budget-50-USD-with-3-creatives-and-2-audience-sets-US-NRI-and-UK-NRI"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,21 @@ est_hours: 6
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "FB Ads Manager campaign live with $50 budget"
+  - "3 creatives shipped: gift-puja-NRI, live-darshan-NRI, 80G-receipt-NRI"
+  - "2 audience segments: US Hindu diaspora 25-45, UK Hindu diaspora 25-45"
+  - "UTM params tracked to PostHog conversion funnel"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/nri/page.tsx
+    - apps/web/app/gift/page.tsx
+    - docs/company/03-marketing.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Draft 3 ad creatives: (1) gift-puja NRI son-to-parent, (2) live darshan IST timezone NRI angle, (3) 80G tax-receipt NRI.
+    Specs: 1080x1080 + 1080x1920 reels. Sub-agent provides copy + asset spec.
+    Founder uploads to FB Ads Manager, sets $50 budget over 7 days.
+    UTM tag fb_nri_q1_gift / fb_nri_q1_darshan / fb_nri_q1_80g. Track in PostHog conversion funnel.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "gh-1-if-apps-api-src-routes-referrals-ts-exists-and-referral-credit-100-inr-applied-on-claim-after-first-paid-booking-and-refer-page-tsx-live"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,21 @@ est_hours: 12
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "/refer page live (already shipped per HANDOFF 2026-05-27)"
+  - "Credit applied: ₹100 to both referrer + referee on first paid booking"
+  - "ReferralClaimStatus enum + referral_codes + referral_claims tables in prisma"
+  - "30-day cookie capture + auto-claim on auth"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/referrals.ts
+    - apps/web/app/refer/page.tsx
+    - apps/web/components/ReferralCapture.tsx
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Already shipped per HANDOFF 2026-05-27. Sub-agent verifies:
+    GET /api/v1/referrals/mine returns 200 for authed user.
+    Credit applies on first paid booking trigger (apps/api/src/routes/booking webhook).
+    Sub-agent adds vitest case for credit-applied-once-per-referee guard.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-docs-agent-reports-sringeri-outreach-md-has-status-equals-intro-call-completed-or-LOI-signed-with-date-stamp"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 3
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "1 intro call with Sringeri Math administration completed by Mar 31"
+  - "Outreach attempts logged in docs/agent-reports/sringeri-outreach.md"
+  - "Path to LOI documented (decision-maker name + next step)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - docs/ceo-roadmap-2026-05-27.md
+    - docs/agent-reports/
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action required for relationship.
+    Sub-agent prepares warm intro asks: scrape LinkedIn for Sringeri Math admin contacts.
+    Drafts 3-paragraph outreach email mentioning shared vision + 80G + video-proof differentiator.
+    Founder sends email + does follow-up calls. Sub-agent logs each touch to docs/agent-reports/sringeri-outreach.md.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

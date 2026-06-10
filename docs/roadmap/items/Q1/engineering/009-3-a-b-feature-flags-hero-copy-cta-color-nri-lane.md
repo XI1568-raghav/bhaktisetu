@@ -18,7 +18,7 @@ kpi:
   target: 3
   unit: count
   source: posthog
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "posthog-insight-TBD-create-via-ui-count-active-feature-flags-named-hero-copy-v2-cta-color-test-nri-lane-above-fold-with-min-100-exposures-each"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,21 @@ est_hours: 5
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "3 PostHog feature flags created: hero_copy_v2, cta_color_test, nri_lane_above_fold"
+  - "Each flag wired into apps/web/app/page.tsx with default + variant code path"
+  - "Min 100 exposures per variant captured before declaring winner"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/page.tsx
+    - apps/web/lib/posthog.ts
+    - docs/company/02-product.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Founder owns U8 PostHog key paste. Sub-agent drafts 3 flag specs.
+    hero_copy_v2 = test current Sanskrit-anchored hero vs benefit-led copy.
+    cta_color_test = saffron-600 vs indigo-600 primary CTA.
+    nri_lane_above_fold = NRI gift-puja card above vs below first scroll.
+    Wire useFeatureFlag hook in apps/web/app/page.tsx. Track exposure + conversion event.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

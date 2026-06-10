@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "gh-1-if-apps-web-app-shloka-card-page-tsx-exists-and-route-returns-200-on-darshya-online-shloka-card-with-og-preview-and-share-buttons"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 8
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "/shloka-card page live (already shipped per HANDOFF 2026-05-27)"
+  - "PostHog events fire on copy/download/share with utm_source=shloka-card"
+  - "Min 100 shares logged in 30 days post-launch"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/shloka-card/page.tsx
+    - apps/web/app/og/default/route.tsx
+    - apps/web/lib/posthog.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Already shipped per HANDOFF 2026-05-27 (commits referenced /shloka-card live).
+    Sub-agent verifies route 200 on darshya.online/shloka-card.
+    Adds 3 more preset shlokas (Gita 18.66, Hanuman Chalisa Doha, Maha Mrityunjaya).
+    Wires PostHog event capture on share button click. Monitors weekly share count for viral signal.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

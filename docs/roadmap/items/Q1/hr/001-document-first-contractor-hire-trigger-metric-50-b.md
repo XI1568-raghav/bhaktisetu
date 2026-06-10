@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-docs-company-08-talent-md-has-section-titled-first-hire-trigger-with-3-quant-metrics-50-bookings-per-week-or-2h-daily-support-or-15h-weekly-moderation"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 2
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "docs/company/08-talent.md has First Hire Trigger section with 3 quant metrics"
+  - "Trigger thresholds: 50+ bookings/wk OR 2h+ daily support OR 15h+ weekly moderation"
+  - "Documented role spec (CS contractor) + budget cap (₹25k/mo) + onboarding doc link"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/08-talent.md
+    - docs/ceo-roadmap-2026-05-27.md
+    - docs/agent-reports/
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Read docs/company/08-talent.md. Append First Hire Trigger section.
+    Cite 3 trigger metrics from CEO doc: 50+ bookings/wk OR 2h+ founder daily on support OR 15h+ weekly moderation.
+    Draft contractor role spec: part-time CS, 20h/wk, ₹25k/mo cap.
+    Sub-agent emits weekly alert when any trigger condition crossed (check via daily-cron).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: count
   source: manual
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-priests-public-route-accepts-specialization-and-deity-query-params-with-prisma-has-and-some-filter-applied-server-side"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,22 @@ est_hours: 3
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "GET /api/v1/priests accepts specialization + deity query params"
+  - "Prisma where clause uses has: on specialization string[] and some: on offerings.deity relation"
+  - "apps/web/lib/pandit-api.ts client typed with query params"
+  - "Filter response cached 5min via fastify route hook"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/priests-public.ts
+    - apps/web/lib/pandit-api.ts
+    - prisma/schema.prisma
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Read apps/api/src/routes/priests-public.ts. Current returns all active priests unfiltered.
+    Add zod query schema: specialization optional string + deity optional string.
+    Build prisma where dynamically: specialization has: + offerings some: deity equals.
+    Update apps/web/lib/pandit-api.ts client signature.
+    Add vitest case for each filter combo.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

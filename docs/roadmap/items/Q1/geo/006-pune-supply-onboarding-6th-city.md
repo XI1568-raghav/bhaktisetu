@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "supabase-select-1-if-count-priest-where-city-equals-Pune-and-aadhaar-verified-true-and-active-true-gte-3-else-0"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,19 @@ est_hours: 10
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "3 verified pandits onboarded in Pune by Mar 31 2026"
+  - "1 Pune temple partner signed"
+  - "5+ pujas listed at Pune temples in pujas table with city=Pune"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - apps/web/app/city/page.tsx
+    - apps/api/src/routes/priests-public.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Draft Pune priest outreach list. Top 20 from Kasba Ganpati + Dagdusheth Halwai + Chinchwad temple area.
+    Cold-call script ready. Founder makes calls; sub-agent logs results to docs/agent-reports/pune-outreach.md.
+    On signup: add city=Pune to Priest row + aadhaar gate. Update apps/web/app/city/pune marketing page.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

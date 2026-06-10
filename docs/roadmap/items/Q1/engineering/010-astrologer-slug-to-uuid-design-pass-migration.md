@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: count
   source: manual
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-1-if-astrologer-table-has-uuid-pk-with-slug-as-unique-index-and-all-existing-rows-migrated-else-0"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,22 @@ est_hours: 8
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Prisma migration adds uuid PK to Astrologer table with slug as unique index"
+  - "All existing astrologer rows backfilled with uuid"
+  - "FK references in AstrologerConsultation + AstrologerAvailability updated to uuid"
+  - "apps/web/app/astrology/[id]/page.tsx + apps/api/src/routes/astrology.ts handle both slug + uuid lookup"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - prisma/schema.prisma
+    - apps/api/src/routes/astrology.ts
+    - apps/web/app/astrology/[id]/page.tsx
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Read prisma/schema.prisma. Find Astrologer model. Currently uses slug as PK.
+    Draft migration adding uuid column default gen_random_uuid + backfill all rows.
+    Update FK refs in AstrologerConsultation + AstrologerAvailability.
+    Wire getAstrologerByIdOrSlug helper in apps/api/src/routes/astrology.ts.
+    Founder reviews migration before applying to prod via prisma db execute.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

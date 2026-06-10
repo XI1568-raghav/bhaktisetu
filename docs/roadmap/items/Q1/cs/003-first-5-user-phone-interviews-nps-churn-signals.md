@@ -18,7 +18,7 @@ kpi:
   target: 5
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-count-completed-30min-phone-interviews-logged-in-docs-agent-reports-user-interviews-md-with-nps-and-churn-signal-fields"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,20 @@ est_hours: 5
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5 users completed 30-min phone interviews by month 3"
+  - "NPS score captured for each (0-10 scale)"
+  - "Top 3 churn signals + top 3 wow moments aggregated in docs/agent-reports/user-interviews.md"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/07-cs.md
+    - apps/web/lib/posthog.ts
+    - docs/agent-reports/
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Pull 5 paid users from past 30 days. Filter active + churned mix.
+    Draft phone interview script. Cover NPS + first puja experience + churn signal.
+    Founder runs calls. Sub-agent writes recap markdown per call to docs/agent-reports/user-interviews.md.
+    Aggregate NPS + top 3 churn signals + top 3 wow moments at end of batch.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
