@@ -46,6 +46,13 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-11: 4 deliverables shipped per R-Q1-L-002 prompt:
+    - docs/legal/refund-policy-gap-analysis.md (12 stress-tested scenarios, 5 HIGH gaps)
+    - docs/legal/refund-policy-v2-english.md (17-clause draft, all 12 scenarios covered)
+    - docs/legal/refund-policy-v2-hindi.md (Hindi mirror, CPA 2019 regional-language compliance)
+    - docs/legal/refund-policy-v2-lawyer-brief.md (1-page handoff for Bengaluru counsel)
+  Status: drafts ready for lawyer review. NO prod code changes — apps/web/app/refunds/page.tsx (v1) unchanged until lawyer redlines applied.
+  FOUNDER-BLOCKER: (1) find Bengaluru consumer-law counsel via LinkedIn / VakilSearch (~₹3-10K consult fee), (2) email refund-policy-v2-lawyer-brief.md + 3 supporting files, (3) apply redlines to apps/web/app/refunds/page.tsx via separate PR after counsel signoff.
 
 tags: ["legal","refunds","p2"]
 created_at: 2026-06-09T21:50:21.017Z

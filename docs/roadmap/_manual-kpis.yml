@@ -9,7 +9,10 @@ values:
   product_hunt_launched: false
   nri_d30_retention: null              # measured starting M3
   uptime_monitors_active: 0            # founder bumps to 4 after docs/it/uptime-setup-checklist.md Step 6
+  cron_auth_token_set: 0               # founder bumps to 1 after docs/it/secrets-checklist.md R-Q1-IT-002 Step 5
 # Stale-flag notes:
 #   uptime_monitors_active: clear stale=false once founder ships 4 UptimeRobot monitors
 #     (target 4: api-health, www-root, www-pujas, api-health-keyword)
 #     trigger: completion of docs/it/uptime-setup-checklist.md Steps 1-6
+#   cron_auth_token_set: 1 when CRON_AUTH_TOKEN paste complete in GH + Render
+#     trigger: gh workflow run daily-cron.yml returns green tick
