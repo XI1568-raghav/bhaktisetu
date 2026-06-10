@@ -18,7 +18,7 @@ kpi:
   target: 25
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM \"Priest\" p JOIN \"User\" u ON p.user_id=u.id WHERE p.verified=true AND p.aadhaar_verified=true AND (u.city ILIKE '%delhi%' OR u.city ILIKE '%new delhi%')"
 
 revenue_impact:
   amount_inr: 75000
@@ -29,12 +29,24 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "25 pandits onboarded in Delhi NCR — north India expansion"
+  - "Each verified=true AND aadhaar_verified=true (Priest table — business rule #4 gate)"
+  - "Each onboarded via /priest-onboarding flow w/ KYC + bank account for payouts"
+  - "Hindi + Sanskrit proficiency required (north India market)"
+  - "Cross-link: 5+ pandits active in /priest/bookings dashboard (Sprint 1 P0 wired)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/priests-public.ts
+    - apps/web/app/priest-onboarding/page.tsx
+    - apps/web/app/priest/page.tsx
+    - docs/company/05-sales.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P0 Delhi pandit onboarding — north India NCR expansion.
+    Run pandit-acquisition agent for Delhi geo (cold outreach to Hindi-speaking pandits).
+    Verify each onboarded via /priest-onboarding flow w/ KYC (Aadhaar gate per business rule #4).
+    Track pipeline in docs/agent-reports/YYYY-MM-DD-pandit-pipeline-delhi.md.
+    Coordinate w/ R-Q2-G-003 (Delhi geo soft launch) — pandits required for city activation.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
