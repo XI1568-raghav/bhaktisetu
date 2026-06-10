@@ -18,7 +18,7 @@ kpi:
   target: 50
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM \"Priest\" p JOIN \"User\" u ON p.user_id=u.id WHERE p.verified=true AND p.aadhaar_verified=true AND u.city ILIKE '%mumbai%'"
 
 revenue_impact:
   amount_inr: 75000
@@ -29,12 +29,24 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "50 pandits cumulative in Mumbai (Q1 25 from R-Q1-S-003 + Q2 +25)"
+  - "Each verified=true AND aadhaar_verified=true (Priest table — business rule #4 gate)"
+  - "Each onboarded via /priest-onboarding flow w/ KYC + bank account for payouts"
+  - "Marathi + Hindi proficiency required (Maharashtra market)"
+  - "Cross-link: 10+ pandits active in /priest/bookings dashboard (Sprint 1 P0 wired)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/priests-public.ts
+    - apps/web/app/priest-onboarding/page.tsx
+    - apps/web/app/priest/page.tsx
+    - docs/company/05-sales.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P0 Mumbai pandit onboarding scale — cumulative 50 target.
+    Depends on R-Q1-S-003 (Q1 25 Mumbai pandits base).
+    Run pandit-acquisition agent for Mumbai geo (cold outreach to Marathi/Hindi pandits).
+    Verify each onboarded via /priest-onboarding flow w/ KYC (Aadhaar gate per business rule #4).
+    Coordinate w/ R-Q2-G-002 (Mumbai 80% scale milestone) — pandits required for 2K MAU activation.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

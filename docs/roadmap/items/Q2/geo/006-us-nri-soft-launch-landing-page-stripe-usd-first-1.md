@@ -18,7 +18,7 @@ kpi:
   target: 100
   unit: "users"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(DISTINCT user_id) FROM \"Booking\" WHERE currency='USD' AND status='completed' AND created_at >= '2026-04-01'"
 
 revenue_impact:
   amount_inr: 300000
@@ -29,12 +29,25 @@ est_hours: 24
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Stripe USD KYC live (gate U2 unblocked — founder action)"
+  - "/nri landing page live w/ Stripe Elements USD checkout flow (apps/web/app/nri/page.tsx)"
+  - "First 100 paid USD users completed via Stripe (SQL count distinct user_id where currency=USD)"
+  - "9-10x INR pricing applied per business rule #2 (verified via apps/api/src/lib/pricing.ts)"
+  - "EmailCapture source='nri-landing' converts ≥5% to paid (PostHog funnel)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/nri/page.tsx
+    - apps/api/src/routes/payments.ts
+    - apps/web/components/StripeClientSecretCheckout.tsx
+    - docs/activation-gates.md
+    - docs/company/05-sales.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P1 NRI revenue lever — gated on U2 Stripe USD KYC (founder action).
+    Verify /nri page live + Stripe Elements wired (HANDOFF 2026-05-27 shipped clientSecret-only fallback).
+    Confirm 9-10x INR pricing applied via apps/api/src/lib/pricing.ts per business rule #2.
+    Run NRI Google Ads $200/mo across US/UK/CA/AU per R-Q2-M-006.
+    Cannot agent-assign Stripe KYC — founder business docs required.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

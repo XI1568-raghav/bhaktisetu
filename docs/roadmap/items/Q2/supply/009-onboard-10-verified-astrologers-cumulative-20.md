@@ -18,7 +18,7 @@ kpi:
   target: 20
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM \"UserRoleAssignment\" WHERE role='astrologer' AND verified=true AND created_at >= '2026-04-01'"
 
 revenue_impact:
   amount_inr: 80000
@@ -29,12 +29,24 @@ est_hours: 20
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "20 verified astrologers cumulative (Q1 10 from R-Q1-S-007 + Q2 +10)"
+  - "Each onboarded via admin-leads PATCH /leads/:id/status flow (P18 HANDOFF 2026-05-27)"
+  - "Verified flag requires KYC + sample horoscope review by admin"
+  - "Cross-link: at least 5 astrologers active in AstrologerConsultation table (POST /consultation/book)"
+  - "Astrologer profile pages live at /astrology/[id]/view + /astrology/[id]/book"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/api/src/routes/admin-leads.ts
+    - apps/web/app/admin/leads/page.tsx
+    - apps/api/src/routes/consultation.ts
+    - docs/company/05-sales.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Sales sub-agent. P1 astrologer onboarding — depends on R-Q1-S-007 (Q1 10 astrologers).
+    Use admin-leads PATCH /leads/:id/status workflow (P18 shipped) — Approve+welcome / Reject+note flow.
+    KYC checklist: govt ID + sample horoscope + 3 references + bank account (for payouts post Aadhaar gate).
+    Track pipeline in docs/agent-reports/YYYY-MM-DD-astrologer-pipeline.md.
+    Coordinate w/ consultation lifecycle: each onboarded astrologer must light up in /astrology/[id]/view + AstrologerConsultation flow.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

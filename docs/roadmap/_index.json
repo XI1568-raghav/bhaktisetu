@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T11:32:39.137Z",
+  "generatedAt": "2026-06-10T14:27:07.618Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -3913,7 +3913,7 @@
         "target": 500,
         "unit": "count",
         "source": "posthog",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "posthog-insight-TBD-create-via-ui (event=ai_pandit_response_emitted, unique distinct_id daily, target ≥500/day)"
       },
       "revenue_impact": {
         "amount_inr": 200000,
@@ -3923,10 +3923,20 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Groq LLM proxy live at /api/v1/ask-pandit w/ rate-limit (5/min/IP) per Sprint 1 P0",
+        "Sanskrit/Hindi knowledge base ingested: 6 Scripture (vedas/upanishads/gita/puranas/ramayana/mahabharata) + aartis + chalisas + chants",
+        "PostHog event ai_pandit_response_emitted fires per response (daily ≥500 target)",
+        "Response latency p95 < 3s (Groq inference + KB retrieval)",
+        "Blocks R-Q2-P-001 (AI Pandit ₹199/mo subscription launch)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/ask-pandit.ts",
+          "apps/web/app/ask-pandit/page.tsx",
+          "apps/web/lib/vedas.ts",
+          "apps/web/lib/upanishads.ts",
+          "docs/company/01-cto.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -4792,7 +4802,7 @@
         "target": 500000,
         "unit": "inr",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT SUM(amount_inr) / 100 AS mrr_inr FROM \"Booking\" WHERE status='completed' AND created_at >= date_trunc('month', NOW()) UNION ALL SELECT SUM(amount_inr) / 100 FROM \"Donation\" WHERE created_at >= date_trunc('month', NOW())"
       },
       "revenue_impact": {
         "amount_inr": 500000,
@@ -4802,10 +4812,19 @@
       "est_hours": 8,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Weekly cadence MRR snapshot stored in docs/agent-reports/YYYY-MM-DD-mrr-snapshot.md",
+        "Breakdown by lane: pujas / donations / yatra / consultations / store / wellness — each lane ≥1 row",
+        "Sum of lanes equals SQL aggregate of Booking.status='completed' + Donation rows month-to-date",
+        "₹5L MRR milestone alert fires when mrr_inr ≥ 500000 (PostHog cohort + Resend email to founder)",
+        "Investor-weekly-digest-v2 agent consumes snapshot for weekly investor update"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/03-cfo.md",
+          "apps/api/src/routes/admin-metrics.ts",
+          "scripts/agents/weekly-investor-update.mjs",
+          "prisma/schema.prisma"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -4892,7 +4911,7 @@
         "target": 2000,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT u.id) FROM \"User\" u JOIN \"UserSession\" s ON s.user_id=u.id WHERE u.city ILIKE '%bengaluru%' OR u.city ILIKE '%bangalore%' AND s.created_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 200000,
@@ -4902,10 +4921,19 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "55 verified pandits onboarded in Bengaluru (cumulative from R-Q1-S-002 30 + Q2 25)",
+        "10 verified temples onboarded in Bengaluru (cumulative from Q1 5 + Q2 5)",
+        "2000 Bengaluru MAU (SQL count distinct UserSession in 30d where User.city=Bengaluru)",
+        "Bengaluru-specific landing /city/bengaluru live w/ temples + pujas + pandits real data",
+        "Sales pipeline: 5+ leads/week from /city/bengaluru PostHog cohort"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "apps/web/app/city/[slug]/page.tsx",
+          "apps/web/lib/cities.ts",
+          "scripts/agents/cold-temple-outreach.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -4942,7 +4970,7 @@
         "target": 2000,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT u.id) FROM \"User\" u JOIN \"UserSession\" s ON s.user_id=u.id WHERE u.city ILIKE '%mumbai%' AND s.created_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 200000,
@@ -4952,10 +4980,19 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "50 verified pandits onboarded in Mumbai (cumulative from R-Q1-S-003 25 + R-Q2-S-002 25)",
+        "10 verified temples onboarded in Mumbai (cumulative from Q1 5 + Q2 5)",
+        "2000 Mumbai MAU (SQL count distinct UserSession in 30d where User.city=Mumbai)",
+        "Mumbai-specific landing /city/mumbai live w/ temples + pujas + pandits real data",
+        "Sales pipeline: 5+ leads/week from /city/mumbai PostHog cohort"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "apps/web/app/city/[slug]/page.tsx",
+          "apps/web/lib/cities.ts",
+          "scripts/agents/cold-temple-outreach.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -4993,7 +5030,7 @@
         "target": 1000,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT u.id) FROM \"User\" u JOIN \"UserSession\" s ON s.user_id=u.id WHERE (u.city ILIKE '%delhi%' OR u.city ILIKE '%new delhi%') AND s.created_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 100000,
@@ -5003,10 +5040,19 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 verified pandits onboarded in Delhi (depends on R-Q2-S-003)",
+        "5 verified temples onboarded in Delhi (Akshardham + Birla Mandir + 3 others, depends on R-Q2-S-006)",
+        "1000 Delhi MAU (SQL count distinct UserSession 30d where User.city=Delhi)",
+        "Delhi-specific landing /city/delhi live w/ temples + pujas + pandits real data",
+        "Sales pipeline: 3+ leads/week from /city/delhi PostHog cohort"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "apps/web/app/city/[slug]/page.tsx",
+          "apps/web/lib/cities.ts",
+          "scripts/agents/cold-temple-outreach.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -5044,7 +5090,7 @@
         "target": 1000,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT u.id) FROM \"User\" u JOIN \"UserSession\" s ON s.user_id=u.id WHERE u.city ILIKE '%pune%' AND s.created_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 100000,
@@ -5054,10 +5100,19 @@
       "est_hours": 36,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 verified pandits onboarded in Pune (depends on R-Q2-S-004)",
+        "5 verified temples onboarded in Pune (Dagdusheth Halwai Ganpati + Chaturshringi + 3 others)",
+        "1000 Pune MAU (SQL count distinct UserSession 30d where User.city=Pune)",
+        "Pune-specific landing /city/pune live w/ temples + pujas + pandits real data",
+        "Sales pipeline: 3+ leads/week from /city/pune PostHog cohort"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "apps/web/app/city/[slug]/page.tsx",
+          "apps/web/lib/cities.ts",
+          "scripts/agents/cold-temple-outreach.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -5095,7 +5150,7 @@
         "target": 800,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT u.id) FROM \"User\" u JOIN \"UserSession\" s ON s.user_id=u.id WHERE u.city ILIKE '%hyderabad%' AND s.created_at >= NOW() - INTERVAL '30 days'"
       },
       "revenue_impact": {
         "amount_inr": 80000,
@@ -5105,10 +5160,19 @@
       "est_hours": 36,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 verified pandits onboarded in Hyderabad (depends on R-Q2-S-005)",
+        "5 verified temples onboarded in Hyderabad (Birla Mandir + Chilkur Balaji + 3 others, depends on R-Q2-S-008)",
+        "800 Hyderabad MAU (SQL count distinct UserSession 30d where User.city=Hyderabad)",
+        "Hyderabad-specific landing /city/hyderabad live w/ temples + pujas + pandits real data",
+        "Sales pipeline: 2+ leads/week from /city/hyderabad PostHog cohort"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "apps/web/app/city/[slug]/page.tsx",
+          "apps/web/lib/cities.ts",
+          "scripts/agents/cold-temple-outreach.mjs"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -5144,7 +5208,7 @@
         "target": 100,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT user_id) FROM \"Booking\" WHERE currency='USD' AND status='completed' AND created_at >= '2026-04-01'"
       },
       "revenue_impact": {
         "amount_inr": 300000,
@@ -5154,10 +5218,20 @@
       "est_hours": 24,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Stripe USD KYC live (gate U2 unblocked — founder action)",
+        "/nri landing page live w/ Stripe Elements USD checkout flow (apps/web/app/nri/page.tsx)",
+        "First 100 paid USD users completed via Stripe (SQL count distinct user_id where currency=USD)",
+        "9-10x INR pricing applied per business rule #2 (verified via apps/api/src/lib/pricing.ts)",
+        "EmailCapture source='nri-landing' converts ≥5% to paid (PostHog funnel)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/nri/page.tsx",
+          "apps/api/src/routes/payments.ts",
+          "apps/web/components/StripeClientSecretCheckout.tsx",
+          "docs/activation-gates.md",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -6439,7 +6513,7 @@
         "target": 50,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"YatraInquiry\" WHERE status='paid' AND created_at >= '2026-04-01'"
       },
       "revenue_impact": {
         "amount_inr": 250000,
@@ -6449,10 +6523,19 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5 yatra packages live in /yatra (Char Dham + Vaishno Devi + Tirupati + Kashi + Shirdi minimum)",
+        "Real Razorpay checkout wired (apps/api/src/routes/yatra-inquiry.ts) replacing setTimeout mock (P17 HANDOFF 2026-05-27)",
+        "Reference IDs follow YTR-YYYYMMDD-XXXXX format",
+        "≥10 yatra inquiries converted to paid bookings in Q2 (SQL count YatraInquiry status=paid)",
+        "Per-package landing pages at /yatra/[slug]/book/page.tsx work end-to-end"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/yatra-inquiry.ts",
+          "apps/web/app/yatra/[slug]/book/page.tsx",
+          "apps/web/lib/pilgrimage-circuits.ts",
+          "docs/company/04-cpo.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -6643,7 +6726,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual KPI _manual-kpis.yml field iskcon_loi_signed (1 when LOI countersigned by ISKCON central HQ + 5 temple onboarding pipeline confirmed in writing)"
       },
       "revenue_impact": {
         "amount_inr": 150000,
@@ -6653,10 +6736,19 @@
       "est_hours": 24,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "ISKCON central HQ (Mayapur or Mumbai chowpatty) outreach email + 2 follow-ups sent",
+        "First meeting scheduled w/ ISKCON central temple administration",
+        "LOI drafted (Darshya legal template) + counter-reviewed by ISKCON legal",
+        "LOI countersigned — 5-temple pilot pipeline named (city + temple-in-charge contact)",
+        "Pilot temples added to Darshya temple catalog w/ verified flag (Sprint 3 P1 gate)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/company/05-sales.md",
+          "docs/company/08-legal.md",
+          "scripts/agents/cold-temple-outreach.mjs",
+          "apps/web/lib/temples.ts"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -6941,7 +7033,7 @@
         "target": 50,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" p JOIN \"User\" u ON p.user_id=u.id WHERE p.verified=true AND p.aadhaar_verified=true AND u.city ILIKE '%mumbai%'"
       },
       "revenue_impact": {
         "amount_inr": 75000,
@@ -6951,10 +7043,19 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "50 pandits cumulative in Mumbai (Q1 25 from R-Q1-S-003 + Q2 +25)",
+        "Each verified=true AND aadhaar_verified=true (Priest table — business rule #4 gate)",
+        "Each onboarded via /priest-onboarding flow w/ KYC + bank account for payouts",
+        "Marathi + Hindi proficiency required (Maharashtra market)",
+        "Cross-link: 10+ pandits active in /priest/bookings dashboard (Sprint 1 P0 wired)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/priests-public.ts",
+          "apps/web/app/priest-onboarding/page.tsx",
+          "apps/web/app/priest/page.tsx",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -6990,7 +7091,7 @@
         "target": 25,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" p JOIN \"User\" u ON p.user_id=u.id WHERE p.verified=true AND p.aadhaar_verified=true AND (u.city ILIKE '%delhi%' OR u.city ILIKE '%new delhi%')"
       },
       "revenue_impact": {
         "amount_inr": 75000,
@@ -7000,10 +7101,19 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 pandits onboarded in Delhi NCR — north India expansion",
+        "Each verified=true AND aadhaar_verified=true (Priest table — business rule #4 gate)",
+        "Each onboarded via /priest-onboarding flow w/ KYC + bank account for payouts",
+        "Hindi + Sanskrit proficiency required (north India market)",
+        "Cross-link: 5+ pandits active in /priest/bookings dashboard (Sprint 1 P0 wired)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/priests-public.ts",
+          "apps/web/app/priest-onboarding/page.tsx",
+          "apps/web/app/priest/page.tsx",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -7039,7 +7149,7 @@
         "target": 25,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" p JOIN \"User\" u ON p.user_id=u.id WHERE p.verified=true AND p.aadhaar_verified=true AND u.city ILIKE '%pune%'"
       },
       "revenue_impact": {
         "amount_inr": 75000,
@@ -7049,10 +7159,19 @@
       "est_hours": 36,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 pandits onboarded in Pune — new city expansion",
+        "Each verified=true AND aadhaar_verified=true (Priest table — business rule #4 gate)",
+        "Each onboarded via /priest-onboarding flow w/ KYC + bank account for payouts",
+        "Marathi language proficiency required (Maharashtra market localization)",
+        "Cross-link: 5+ pandits active in /priest/bookings dashboard (Sprint 1 P0 wired)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/priests-public.ts",
+          "apps/web/app/priest-onboarding/page.tsx",
+          "apps/web/app/priest/page.tsx",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -7088,7 +7207,7 @@
         "target": 25,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" p JOIN \"User\" u ON p.user_id=u.id WHERE p.verified=true AND p.aadhaar_verified=true AND u.city ILIKE '%hyderabad%'"
       },
       "revenue_impact": {
         "amount_inr": 75000,
@@ -7098,10 +7217,19 @@
       "est_hours": 36,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 pandits onboarded in Hyderabad — south India expansion",
+        "Each verified=true AND aadhaar_verified=true (Priest table — business rule #4 gate)",
+        "Each onboarded via /priest-onboarding flow w/ KYC + bank account for payouts",
+        "Telugu language proficiency required (south India market localization)",
+        "Cross-link: 5+ pandits active in /priest/bookings dashboard (Sprint 1 P0 wired)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/priests-public.ts",
+          "apps/web/app/priest-onboarding/page.tsx",
+          "apps/web/app/priest/page.tsx",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -7286,7 +7414,7 @@
         "target": 20,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"UserRoleAssignment\" WHERE role='astrologer' AND verified=true AND created_at >= '2026-04-01'"
       },
       "revenue_impact": {
         "amount_inr": 80000,
@@ -7296,10 +7424,19 @@
       "est_hours": 20,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "20 verified astrologers cumulative (Q1 10 from R-Q1-S-007 + Q2 +10)",
+        "Each onboarded via admin-leads PATCH /leads/:id/status flow (P18 HANDOFF 2026-05-27)",
+        "Verified flag requires KYC + sample horoscope review by admin",
+        "Cross-link: at least 5 astrologers active in AstrologerConsultation table (POST /consultation/book)",
+        "Astrologer profile pages live at /astrology/[id]/view + /astrology/[id]/book"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/admin-leads.ts",
+          "apps/web/app/admin/leads/page.tsx",
+          "apps/api/src/routes/consultation.ts",
+          "docs/company/05-sales.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
