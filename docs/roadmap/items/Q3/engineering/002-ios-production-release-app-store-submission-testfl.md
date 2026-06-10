@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "docs/roadmap/_manual-kpis.yml key=ios_app_store_live (founder updates when Darshya iOS app is approved + listed in App Store India region; target 1)"
 
 revenue_impact:
   amount_inr: 200000
@@ -29,12 +29,18 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Cannot agent-assign — founder action U3 (Apple Developer $99/yr enrollment + EAS build + App Store submission) required before iOS prod release"
+  - "iOS app listed in App Store India region w/ Darshya branding + screenshots (5 langs en/hi/ta/te/bn)"
+  - "TestFlight 500 internal/external testers onboarded before public submission"
+  - "App Review approval in < 2 attempts (avoid prior rejection patterns: missing privacy nutrition labels, religious-content policy compliance)"
 
 agent_brief:
   context_files: []
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action U3 (Apple Developer Program $99/yr enrollment) required before iOS prod release.
+    Engineering sub-agent CAN assist post-enrollment: prepare EAS build config (apps/mobile/eas.json), App Store Connect metadata (5 lang screenshots + privacy nutrition labels), TestFlight invite flow.
+    Reference: docs/mobile-plan.md, apps/mobile/eas.json, apps/mobile/app.json — Expo 50 build path already proven on Phase 1-5 mobile parity.
+    Blocks R-Q3-M-005 app store launch campaign (cannot ASO + paid installs without live listing).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

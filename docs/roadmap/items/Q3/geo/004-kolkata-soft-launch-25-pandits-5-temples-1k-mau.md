@@ -18,7 +18,7 @@ kpi:
   target: 1000
   unit: "users"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(DISTINCT user_id) FROM user_sessions s JOIN users u ON s.user_id = u.id WHERE u.location_city = 'Kolkata' AND s.last_active_at >= NOW() - INTERVAL '30 days'; target 1000"
 
 revenue_impact:
   amount_inr: 100000
@@ -29,12 +29,24 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Kolkata MAU ≥ 1000 by end-Q3 (30-day rolling, sessions table city='Kolkata')"
+  - "Pre-req R-Q3-S-002 25 Kolkata pandits onboarded + R-Q3-S-009 5 Kolkata temples verified live"
+  - "5-temple coverage spans Kalighat + Dakshineswar Kali + Belur Math + Birla Mandir + Pareshnath Jain (Burrabazar) — Shakta-heavy bias matches Bengal devotional culture"
+  - "Bengali-language UI surface (i18n /bn) shipped — apps/web/app/bn/page.tsx already exists; needs Kolkata-local CTAs + Durga Puja seasonal feature (Q3 overlaps Durga Puja Sep-Oct)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/bn/page.tsx
+    - apps/web/lib/i18n/bn.json
+    - scripts/agents/cold-temple-outreach.mjs
+    - apps/api/src/routes/admin-leads.ts
+    - docs/company/07-geo.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Geo sub-agent. P0 Kolkata soft launch — 1K MAU + 25 pandits + 5 temples by end-Q3.
+    Pre-req R-Q3-S-002 (25 Kolkata pandits) + R-Q3-S-009 (5 verified Kolkata temples) MUST ship first.
+    Anchor temples Shakta-bias: Kalighat (Shakti Peeth) + Dakshineswar Kali (Ramakrishna anchor) + Belur Math (Vivekananda math) + Birla Mandir + Pareshnath Jain (Burrabazar).
+    Bengali UX gate: apps/web/app/bn/page.tsx already shipped; needs Kolkata-specific CTAs + Durga Puja seasonal hub (Sep-Oct overlap is highest-traffic Bengali devotional window of year).
+    Marketing: Bengali influencer collabs (Sourav Das, Anupam Roy, Bengali Bhakti YouTubers) + Durga Puja pandal-sponsorship co-marketing (low-cost barter for branding visibility).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

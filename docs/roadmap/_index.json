@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T15:07:05.566Z",
+  "generatedAt": "2026-06-10T15:13:42.622Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -7776,7 +7776,7 @@
         "target": 300,
         "unit": "count",
         "source": "posthog",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "posthog-insight-TBD-create-via-ui (events: voice_pandit_session_started filtered last 24h; founder creates Insight in PostHog UI then pastes ID here; target 300 sessions/day by Sep 30)"
       },
       "revenue_impact": {
         "amount_inr": 400000,
@@ -7786,10 +7786,19 @@
       "est_hours": 48,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Voice round-trip latency p95 < 3s (mic-stop → audio-play) on Render free + Groq Llama 3.3 + ElevenLabs Turbo v2.5",
+        "300+ daily sessions sustained over 7-day window (PostHog event voice_pandit_session_started)",
+        "User satisfaction (5-star post-session rating) ≥ 4.2/5 median across 100+ rated sessions",
+        "0 PII leaks — Whisper transcripts redacted of phone/email before Groq prompt (test corpus 50 utterances)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/ask-pandit.ts",
+          "apps/web/app/ask-pandit/page.tsx",
+          "apps/web/components/LiveChatWidget.tsx",
+          "docs/operational-context.md",
+          "docs/company/02-engineering.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -7828,7 +7837,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "docs/roadmap/_manual-kpis.yml key=ios_app_store_live (founder updates when Darshya iOS app is approved + listed in App Store India region; target 1)"
       },
       "revenue_impact": {
         "amount_inr": 200000,
@@ -7838,7 +7847,10 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Cannot agent-assign — founder action U3 (Apple Developer $99/yr enrollment + EAS build + App Store submission) required before iOS prod release",
+        "iOS app listed in App Store India region w/ Darshya branding + screenshots (5 langs en/hi/ta/te/bn)",
+        "TestFlight 500 internal/external testers onboarded before public submission",
+        "App Review approval in < 2 attempts (avoid prior rejection patterns: missing privacy nutrition labels, religious-content policy compliance)"
       ],
       "agent_brief": {
         "context_files": []
@@ -7879,7 +7891,7 @@
         "target": 1000,
         "unit": "count",
         "source": "gplay",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "Google Play Console API installsAll(packageName='online.darshya.app') daily roll-up India region; target 1000 by Aug 31"
       },
       "revenue_impact": {
         "amount_inr": 150000,
@@ -7889,7 +7901,10 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Cannot agent-assign — founder action U4 (Google Play Console $25 one-time + EAS build + Play Store submission) required before Android prod release",
+        "Android app live in Play Store India region w/ Darshya branding + 5-lang store listing (en/hi/ta/te/bn)",
+        "1000 organic + paid installs in 30 days post-listing (Play Console installsAll metric)",
+        "Internal testing track shipped first (50-100 testers), closed testing 200, then prod open"
       ],
       "agent_brief": {
         "context_files": []
@@ -8853,7 +8868,7 @@
         "target": 1200,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT user_id) FROM user_sessions s JOIN users u ON s.user_id = u.id WHERE u.location_city = 'Chennai' AND s.last_active_at >= NOW() - INTERVAL '30 days'; target 1200"
       },
       "revenue_impact": {
         "amount_inr": 120000,
@@ -8863,10 +8878,19 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Chennai MAU ≥ 1200 by end-Q3 (30-day rolling, sessions table city='Chennai')",
+        "Pre-req R-Q3-S-001 25 Chennai pandits onboarded + R-Q3-S-009 5 Chennai temples verified live",
+        "5-temple coverage spans Kapaleeshwarar (Mylapore) + Parthasarathy (Triplicane) + Vadapalani Murugan + Marundeeshwarar (Thiruvanmiyur) + 1 ISKCON Chennai",
+        "Tamil-language UI surface (i18n /ta) shipped — apps/web/app/ta/page.tsx already exists; needs Chennai-local CTAs + temples + pandit roster"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/ta/page.tsx",
+          "apps/web/lib/i18n/ta.json",
+          "scripts/agents/cold-temple-outreach.mjs",
+          "apps/api/src/routes/admin-leads.ts",
+          "docs/company/07-geo.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -8905,7 +8929,7 @@
         "target": 1000,
         "unit": "users",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT user_id) FROM user_sessions s JOIN users u ON s.user_id = u.id WHERE u.location_city = 'Kolkata' AND s.last_active_at >= NOW() - INTERVAL '30 days'; target 1000"
       },
       "revenue_impact": {
         "amount_inr": 100000,
@@ -8915,10 +8939,19 @@
       "est_hours": 32,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Kolkata MAU ≥ 1000 by end-Q3 (30-day rolling, sessions table city='Kolkata')",
+        "Pre-req R-Q3-S-002 25 Kolkata pandits onboarded + R-Q3-S-009 5 Kolkata temples verified live",
+        "5-temple coverage spans Kalighat + Dakshineswar Kali + Belur Math + Birla Mandir + Pareshnath Jain (Burrabazar) — Shakta-heavy bias matches Bengal devotional culture",
+        "Bengali-language UI surface (i18n /bn) shipped — apps/web/app/bn/page.tsx already exists; needs Kolkata-local CTAs + Durga Puja seasonal feature (Q3 overlaps Durga Puja Sep-Oct)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/bn/page.tsx",
+          "apps/web/lib/i18n/bn.json",
+          "scripts/agents/cold-temple-outreach.mjs",
+          "apps/api/src/routes/admin-leads.ts",
+          "docs/company/07-geo.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -9613,7 +9646,7 @@
         "target": 15000,
         "unit": "count",
         "source": "gplay",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "Google Play Console API getInstalls(packageName='online.darshya.app') + App Store Connect getUnits for India region; combined daily roll-up to docs/roadmap/_manual-kpis.yml key=total_app_installs; target 15000 by Sep 30"
       },
       "revenue_impact": {
         "amount_inr": 200000,
@@ -9623,10 +9656,19 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "15000 combined iOS + Android installs in 30 days post-launch (validated via Play Console + App Store Connect)",
+        "ASO keyword ranking top 10 for 5 seed terms (devotional, puja booking, live darshan, hindu astrology, devotee app) in India region",
+        "5 influencer collabs shipped (Sadhguru/Gaur Gopal/Anaspure/Vipul Goyal/Devotional YouTuber tier) w/ ≥ 100K reach each",
+        "Paid install CAC ≤ ₹40 blended (Meta + Google UAC) — tripwire fold to NRI-only SKU if breached per ROADMAP.md"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/web/app/launch/page.tsx",
+          "scripts/agents/founder-tweet-draft.mjs",
+          "scripts/agents/social-content-multiplexer.mjs",
+          "docs/company/03-marketing.md",
+          "docs/launch-state.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -10183,7 +10225,7 @@
         "target": 15,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(DISTINCT t.id) FROM temples t JOIN temple_b2b_features f ON f.temple_id = t.id WHERE f.donations_saas_enabled = true AND t.verified = true (Supabase via SUPABASE_DIRECT_URL; target 15 by Sep 30)"
       },
       "revenue_impact": {
         "amount_inr": 300000,
@@ -10193,10 +10235,19 @@
       "est_hours": 20,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "15 verified temples live on B2B Donations SaaS by Sep 30 (temple_b2b_features.donations_saas_enabled = true)",
+        "Spec covers: temple-admin dashboard /temple-portal/donations + donor CRM + Razorpay Route split-payouts (platform 20-40% per business rule #3) + 80G receipt auto-issue (per business rule #7 — donee 80G regn + PAN required)",
+        "Pre-req R-Q3-E-007 API readiness + R-Q3-E-010 multi-tenant temple admin shipped",
+        "5 paid pilot temples (₹2K-5K/mo SaaS subscription) signed before broad GA"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/temple-portal.ts",
+          "apps/web/app/temple-portal/page.tsx",
+          "apps/api/src/routes/donations.ts",
+          "prisma/schema.prisma",
+          "docs/company/04-product.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -10442,7 +10493,7 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "docs/roadmap/_manual-kpis.yml key=baps_agreement_signed (founder updates after BAPS Akshardham central signs commercial agreement covering 5+ federated temples + 20-40% platform split per CTO rule; target 1)"
       },
       "revenue_impact": {
         "amount_inr": 400000,
@@ -10452,10 +10503,19 @@
       "est_hours": 24,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "BAPS Akshardham commercial MSA countersigned covering 5 BAPS temples (Delhi + Gandhinagar + Toronto + London-Neasden + Houston)",
+        "Revenue split 20-40% platform commission per CTO platform-commission rule (PROJECT_CONTEXT business rule #3)",
+        "Each BAPS temple live with min 3 puja SKUs + Pandit roster (depends on R-Q3-S-010 central pipeline)",
+        "First 30 days post-go-live ≥ ₹2L GMV across 5 BAPS temples (validates commercial terms)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "scripts/agents/cold-temple-outreach.mjs",
+          "apps/api/src/routes/admin-leads.ts",
+          "apps/api/src/routes/temple-portal.ts",
+          "docs/company/05-sales.md",
+          "docs/ceo-roadmap-2026-05-27.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -10905,7 +10965,7 @@
         "target": 15,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM priests p JOIN users u ON p.user_id = u.id WHERE p.aadhaar_verified = true AND p.kyc_status = 'approved' AND u.location_country = 'UK' AND u.location_city IN ('London','Birmingham','Leicester'); target 15"
       },
       "revenue_impact": {
         "amount_inr": 180000,
@@ -10915,10 +10975,19 @@
       "est_hours": 48,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "15 UK-based pandits onboarded across London (10) + Birmingham (3) + Leicester (2) by end-Q3",
+        "Each pandit aadhaar_verified=true (or UK equivalent KYC) + 3+ puja SKUs live + GBP pricing (NRI 9-10× domestic per business rule #2)",
+        "Pre-req R-Q2-G-006 UK NRI launch landing page + Stripe GBP rail live (U2 unblock)",
+        "Onboarding cycle time p50 ≤ 14 days (KYC + onboarding email drip + first paid booking)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/admin-leads.ts",
+          "scripts/agents/cold-temple-outreach.mjs",
+          "apps/web/app/become-pandit/page.tsx",
+          "apps/api/src/routes/priests.ts",
+          "docs/company/06-supply.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
@@ -10956,7 +11025,7 @@
         "target": 10,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM priests p JOIN users u ON p.user_id = u.id WHERE p.kyc_status = 'approved' AND u.location_country = 'CA' AND u.location_city IN ('Toronto','Vancouver','Brampton'); target 10"
       },
       "revenue_impact": {
         "amount_inr": 150000,
@@ -10966,10 +11035,19 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "10 Canada-based pandits onboarded across Toronto (5) + Vancouver (3) + Brampton (2) by Aug 31",
+        "Each pandit Canada-equivalent KYC approved + 3+ puja SKUs live + CAD pricing (NRI 9-10× domestic per business rule #2)",
+        "Pre-req R-Q2-G-007 Canada NRI launch landing page + Stripe CAD rail live (U2 unblock)",
+        "Brampton sub-target ≥ 2 (highest Punjabi/Sikh+Hindu density per Statistics Canada census)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "apps/api/src/routes/admin-leads.ts",
+          "scripts/agents/cold-temple-outreach.mjs",
+          "apps/web/app/become-pandit/page.tsx",
+          "apps/api/src/routes/priests.ts",
+          "docs/company/06-supply.md"
+        ]
       },
       "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [

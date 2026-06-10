@@ -18,7 +18,7 @@ kpi:
   target: 1000
   unit: "count"
   source: "gplay"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "Google Play Console API installsAll(packageName='online.darshya.app') daily roll-up India region; target 1000 by Aug 31"
 
 revenue_impact:
   amount_inr: 150000
@@ -29,12 +29,18 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Cannot agent-assign — founder action U4 (Google Play Console $25 one-time + EAS build + Play Store submission) required before Android prod release"
+  - "Android app live in Play Store India region w/ Darshya branding + 5-lang store listing (en/hi/ta/te/bn)"
+  - "1000 organic + paid installs in 30 days post-listing (Play Console installsAll metric)"
+  - "Internal testing track shipped first (50-100 testers), closed testing 200, then prod open"
 
 agent_brief:
   context_files: []
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action U4 (Google Play Console $25 one-time enrollment) required before Android prod release.
+    Engineering sub-agent CAN assist post-enrollment: prepare EAS Android build config (apps/mobile/eas.json android profile), Play Console store listing metadata (5 lang screenshots + content rating + data safety form), internal/closed/open testing track ramp.
+    Reference: docs/mobile-plan.md, apps/mobile/eas.json, apps/mobile/app.json — Expo 50 Android build path proven.
+    Blocks R-Q3-M-005 app store launch campaign (cannot run paid UAC without prod listing).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
