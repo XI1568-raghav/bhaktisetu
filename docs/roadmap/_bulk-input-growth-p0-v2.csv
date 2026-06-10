@@ -1,0 +1,6 @@
+id,quarter,category,owner_role,month_target,priority,title,kpi_metric,kpi_target,kpi_unit,kpi_source,revenue_inr,est_hours,depends_on,blocks,tags,founder_blocker
+R-Q1-S-013,Q1,supply,sales,1,P0,Real Google Maps scrape — verified emails+phones for 100 NEW BLR temple leads,leads_new_verified_emails,100,count,supabase,0,8,,,scrape;verified;leads;p0,
+R-Q1-S-014,Q1,supply,sales,1,P0,Manual founder warm-network reachout — 50 personal contacts asking for referrals,wa_warm_referrals_sent,50,count,manual,200000,4,,,warm-network;founder;p0,
+R-Q1-CS-007,Q1,cs,cs,1,P0,Bulk-reset 200 stale EMAILED leads → contactCount=0 if 0 reply+30d+role=TEMPLE,stale_leads_reset,200,count,supabase,0,2,,,sql-reset;outreach;p0,
+R-Q1-M-014,Q1,marketing,cmo,1,P0,Personalized outreach v2 — per-temple custom email body (not boilerplate),email_v2_personalized_sent,50,count,manual,0,12,R-Q1-CS-007,,personalization;outreach;p0,
+R-Q1-CS-008,Q1,cs,cs,1,P0,Bump MAX_CONTACT_COUNT to 5 + add 14d follow-up template (was hitting cap),max_contact_count_bumped,5,count,gh_repo,0,1,,,outreach;config;p0,

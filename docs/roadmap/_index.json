@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T20:12:36.174Z",
+  "generatedAt": "2026-06-10T20:39:16.943Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -306,6 +306,102 @@
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/cs/006-wa-blast-21-founder-network-contacts-asking-5-refe.md"
+    },
+    {
+      "id": "R-Q1-CS-007",
+      "title": "Bulk-reset 200 stale EMAILED leads → contactCount=0 if 0 reply+30d+role=TEMPLE",
+      "category": "cs",
+      "owner_role": "cs",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "stale_leads_reset",
+        "current": 0,
+        "target": 200,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 2,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "sql-reset",
+        "outreach",
+        "p0"
+      ],
+      "created_at": "2026-06-10T20:35:05.804Z",
+      "updated_at": "2026-06-10T20:35:05.804Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/cs/007-bulk-reset-200-stale-emailed-leads-contactcount-0-.md"
+    },
+    {
+      "id": "R-Q1-CS-008",
+      "title": "Bump MAX_CONTACT_COUNT to 5 + add 14d follow-up template (was hitting cap)",
+      "category": "cs",
+      "owner_role": "cs",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "max_contact_count_bumped",
+        "current": 0,
+        "target": 5,
+        "unit": "count",
+        "source": "gh_repo",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 1,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "outreach",
+        "config",
+        "p0"
+      ],
+      "created_at": "2026-06-10T20:35:05.804Z",
+      "updated_at": "2026-06-10T20:35:05.804Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/cs/008-bump-max-contact-count-to-5-add-14d-follow-up-temp.md"
     },
     {
       "id": "R-Q1-E-001",
@@ -3074,6 +3170,56 @@
       "_file": "docs/roadmap/items/Q1/marketing/013-founder-daily-build-in-public-twitter-thread-14-po.md"
     },
     {
+      "id": "R-Q1-M-014",
+      "title": "Personalized outreach v2 — per-temple custom email body (not boilerplate)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-CS-007"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "email_v2_personalized_sent",
+        "current": 0,
+        "target": 50,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "personalization",
+        "outreach",
+        "p0"
+      ],
+      "created_at": "2026-06-10T20:35:05.804Z",
+      "updated_at": "2026-06-10T20:35:05.804Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/014-personalized-outreach-v2-per-temple-custom-email-b.md"
+    },
+    {
       "id": "R-Q1-P-001",
       "title": "Kill silent mock fallback in pujas/[slug]/book/page.tsx:549 (CPO #1)",
       "category": "product",
@@ -4417,6 +4563,103 @@
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/supply/012-actually-call-10-emailed-iskcon-bengaluru-temples-.md"
+    },
+    {
+      "id": "R-Q1-S-013",
+      "title": "Real Google Maps scrape — verified emails+phones for 100 NEW BLR temple leads",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "leads_new_verified_emails",
+        "current": 0,
+        "target": 100,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 8,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "scrape",
+        "verified",
+        "leads",
+        "p0"
+      ],
+      "created_at": "2026-06-10T20:35:05.804Z",
+      "updated_at": "2026-06-10T20:35:05.804Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/013-real-google-maps-scrape-verified-emails-phones-for.md"
+    },
+    {
+      "id": "R-Q1-S-014",
+      "title": "Manual founder warm-network reachout — 50 personal contacts asking for referrals",
+      "category": "supply",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P0",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "wa_warm_referrals_sent",
+        "current": 0,
+        "target": 50,
+        "unit": "count",
+        "source": "manual",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 200000,
+        "confidence": "medium",
+        "basis": "Imported from year-1 plan; refine on first cycle review."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Populate during first sub-agent emission cycle"
+      ],
+      "agent_brief": {
+        "context_files": []
+      },
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "tags": [
+        "warm-network",
+        "founder",
+        "p0"
+      ],
+      "created_at": "2026-06-10T20:35:05.804Z",
+      "updated_at": "2026-06-10T20:35:05.804Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/supply/014-manual-founder-warm-network-reachout-50-personal-c.md"
     },
     {
       "id": "R-Q2-CS-001",

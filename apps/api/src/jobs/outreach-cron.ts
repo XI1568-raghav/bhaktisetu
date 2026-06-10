@@ -48,7 +48,7 @@ async function generatePersonalizedOpener(lead: Lead): Promise<string> {
 
 const FIRST_TOUCH_BATCH = 50;
 const FOLLOWUP_BATCH = 50;
-const MAX_CONTACT_COUNT = 3;
+const MAX_CONTACT_COUNT = 5;
 
 // Resend free tier limits:
 // - 2 requests/sec → throttle to 600ms between sends (1.67/sec, headroom)
