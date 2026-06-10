@@ -11,6 +11,36 @@ function countBy(arr, key) {
   }, {});
 }
 
+// Normalize raw budget snapshot into shape tripwires expect.
+// Raw: { ghMinutes: { used, cap }, cfBuilds: { used, cap }, ... }
+// Out: { ghMinutesMonth: { used, cap, pct }, cfBuildsMonth: { ... }, renderHoursMonth: { ... } }
+function normalizeBudget(rawBudget) {
+  if (!rawBudget) return {};
+  const norm = { ...rawBudget };
+  if (rawBudget.ghMinutes) {
+    norm.ghMinutesMonth = {
+      ...rawBudget.ghMinutes,
+      pct: rawBudget.ghMinutes.cap ? (rawBudget.ghMinutes.used / rawBudget.ghMinutes.cap) * 100 : 0,
+    };
+  }
+  if (rawBudget.cfBuilds) {
+    norm.cfBuildsMonth = {
+      ...rawBudget.cfBuilds,
+      pct: rawBudget.cfBuilds.cap ? (rawBudget.cfBuilds.used / rawBudget.cfBuilds.cap) * 100 : 0,
+    };
+  }
+  if (rawBudget.renderHours) {
+    norm.renderHoursMonth = {
+      ...rawBudget.renderHours,
+      pct: rawBudget.renderHours.cap ? (rawBudget.renderHours.used / rawBudget.renderHours.cap) * 100 : 0,
+    };
+  } else if (!norm.renderHoursMonth) {
+    // Default — Render free tier 750 hrs/mo, no tracking yet
+    norm.renderHoursMonth = { used: 0, cap: 750, pct: 0 };
+  }
+  return norm;
+}
+
 export function buildSignalContext({
   items,
   kpis,
@@ -63,7 +93,7 @@ export function buildSignalContext({
       dayOfMonth: nowDate.getUTCDate(),
       dayOfWeek: nowDate.getUTCDay(),
     },
-    budget: budgets,
+    budget: normalizeBudget(budgets),
     kpis: kpisKeyed,
     items: {
       totalCount: items.length,
