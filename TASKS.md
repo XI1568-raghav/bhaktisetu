@@ -6,18 +6,86 @@
 
 > Spec: `docs/superpowers/specs/2026-06-10-bhaktisetu-autonomous-roadmap-engine-design.md`
 > Plan: `docs/superpowers/plans/2026-06-10-bhaktisetu-autonomous-roadmap-engine-plan.md`
-> Started: 2026-06-10. Status: **Phases 0-5 ALL SHIPPED. Only Phase 6 (14d soak) remains.**
+> Started: 2026-06-10. Status: **Phases 0-5 + autonomous extensions A-J ALL SHIPPED. Only Phase 6 (14d soak) remains.**
 
-### Phase progress (24/24 code tasks shipped = 100%, PUSHED to origin)
+### Phase progress (24/24 ARE code tasks + 10 autonomous extension tasks = 34/34 shipped, PUSHED to origin)
+
+#### Original ARE plan (24 tasks)
 
 - Phase 0 ✅ scaffold + README + 10 tripwires + 5 seeds + 3 samples + validator + index-builder + _lib.mjs (8 commits)
 - Phase 1 ✅ 286 items (Q1 73 / Q2 75 / Q3 70 / Q4 68) + _bulk-create hardened RFC-4180 + TBD warnings (7 commits)
 - Phase 2 ✅ Anthropic client + 6 KPI scrapers + cache + tripwire sandbox eval (10 commits, 46 vitest tests)
 - Phase 3 ✅ orchestrator + Decision Agent + sub-agent runner + cron yml + 7d dry-run gate (11 commits, 71 vitest tests)
 - Phase 4 ✅ queue-pop PS1 + UserPromptSubmit hook docs + finalize workflow + 5 slash commands + e2e smoke (6 commits)
-- Phase 5 ✅ API endpoint /admin/roadmap + Next.js dashboard 6 panels (2 commits, 1 CF burn) — API VERIFIED LIVE 401 at api.darshya.online/api/v1/admin/roadmap
-- Phase 5 polish ✅ shebang strip from .mjs files (fixed vitest transform on Windows; scripts still work via node CLI)
-- Phase 6 ⏳ 14-day soak protocol (process, not code — docs/roadmap/README.md has full protocol)
+- Phase 5 ✅ API endpoint /admin/roadmap + Next.js dashboard 6 panels — VERIFIED LIVE
+- Phase 6 ⏳ 14-day soak protocol (process, not code — docs/roadmap/README.md)
+
+#### Autonomous extensions (founder directive "do best 3hrs", no code review gates)
+
+- Phase A ✅ Populate 55 high-impact TBD items (Q1 P0/P1 13 + Q2 15 + Q3 partial+10 + Q4 10) — warnings 849→686
+- Phase B ✅ Push all ARE commits + verify CF deploy state
+- Phase C ✅ Sub-project 2: 10 CXO advisory agents (cto/cfo/cmo/cpo/sales/talent/cs/legal/it/hr) — weekly cron, deterministic, $0 LLM cost
+- Phase D ✅ Preflight check script — single GO/NO-GO for founder before unpausing
+- Phase E ✅ Agent fleet summary scraper — 28 daily agents × 9 sectors → Decision Agent context
+- Phase F ✅ Wire 10 weekly CXO advisory excerpts into signal-context cxoAdvisory field
+- Phase G ✅ Sub-project 4: 7 supply onboarding drip agents (pundit/temple/astrologer/gaushala/gurukul/wellness/store) — daily cron, deterministic templates, founder reviews + sends
+- Phase H ✅ Populate 20 more Q1 P2 items — warnings 686→626
+- Phase I ✅ Sub-project 5: A/B experiment tracker + 3 seed experiments + orchestrator wiring
+- Phase J ✅ Final HANDOFF + push (this commit)
+
+### TBD warnings reduction
+
+- Start: 849 (3 placeholders × 283 bulk-imported items)
+- After 75+ items populated across Q1/Q2/Q3/Q4: **626**
+- Reduction: 26% (223 placeholders cleared)
+- Founder/Decision Agent can populate remaining 626 in soak as cycles emit prompts
+
+### New artifacts (Phases C-I) — beyond original ARE spec
+
+```
+scripts/agents/roadmap/cxo/
+  _cxo-lib.mjs            shared loaders
+  cto.mjs cfo.mjs cmo.mjs cpo.mjs sales.mjs talent.mjs cs.mjs legal.mjs it.mjs hr.mjs
+  run-all.mjs
+
+scripts/agents/roadmap/
+  _agent-fleet-summary.mjs    NEW — 28 agents → 9 sectors + 10 CXO advisory excerpts
+  _experiment-tracker.mjs     NEW — A/B tracker (Sub-project 5 foundation)
+  preflight.mjs               NEW — GO/NO-GO before founder unpauses
+
+scripts/agents/onboarding-v2/
+  _onboard-lib.mjs templates.mjs
+  pundit.mjs temple.mjs astrologer.mjs gaushala.mjs gurukul.mjs wellness.mjs store.mjs
+  run-all.mjs
+
+.github/workflows/
+  cxo-advisory.yml         NEW — Monday 08:07 UTC weekly
+  onboarding-fleet-v2.yml  NEW — daily 09:23 UTC
+
+docs/roadmap/
+  _experiments.yml         NEW — 3 seed A/B experiments
+  _experiments-state.json  NEW — tracker output
+  advisory/2026-W24/       NEW — 10 CXO advisory MDs + index
+  setup/supabase-readonly-role.sql  NEW — read-only role DDL founder runs once
+```
+
+### Free-tier impact
+
+| Resource | New monthly cost | Cap | Headroom |
+|---|---|---|---|
+| GH Actions: cxo-advisory (Monday weekly) | 5 min × 4 = 20 min | 2000 | 1980 free |
+| GH Actions: onboarding-fleet-v2 (daily) | 5 min × 30 = 150 min | 2000 | 1830 free |
+| Combined w/ existing 846/mo baseline + 600 roadmap-loop = ~1616/mo | within 1900 cap user set |
+| CF Pages builds | 0 (all extensions [skip ci]) | 500 | 500 free |
+| Anthropic tokens | 0 added (all extensions deterministic) | n/a | unchanged |
+
+### Pre-commit hook ACTIVE
+
+`.githooks/pre-commit` (commit 8fcbfe3) gates docs/roadmap/items/* changes via validator. Auto-stages `_index.json`. Don't bypass.
+
+### Founder session-pickup hook INSTALLED
+
+`C:\Users\DELL\.claude\settings.json` has UserPromptSubmit hook firing on bare `/goal` → `queue-pop.ps1`.
 
 ### Orchestrator currently PAUSED (commit 48c71a1)
 
