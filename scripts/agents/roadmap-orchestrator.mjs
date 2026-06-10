@@ -56,6 +56,16 @@ async function main() {
   const kpis = await scrapeAllKpis(items.filter(i => i.kpi?.source));
   console.log(`[orchestrator] scraped ${kpis.length} KPIs (${kpis.filter(k => k.stale).length} stale)`);
 
+  // 3b. REFRESH FLEET AGENT SUMMARIES (24 daily agents → sector-grouped excerpts)
+  let sectorSummaries = {};
+  try {
+    const { summarizeFleet } = await import('./roadmap/_agent-fleet-summary.mjs');
+    sectorSummaries = summarizeFleet();
+    console.log(`[orchestrator] fleet summary: ${sectorSummaries.agentCount} agents across ${Object.keys(sectorSummaries.bySector || {}).length} sectors`);
+  } catch (e) {
+    console.warn(`[orchestrator] fleet summary skipped: ${e.message}`);
+  }
+
   // 4. SIGNAL CONTEXT (initial — tripwires re-merged in step 5)
   const externalErr = budget.lastAnthropicError || null;
   const signalContext = buildSignalContext({
@@ -63,6 +73,7 @@ async function main() {
     tripwiresFired: [],
     budgets: budget,
     external: { lastAnthropicError: externalErr },
+    sectorSummaries,
   });
 
   // 5. TRIPWIRES
