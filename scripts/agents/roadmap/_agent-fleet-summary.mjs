@@ -67,6 +67,27 @@ function findLatestPerAgent() {
   return latest;
 }
 
+// Read latest weekly CXO advisory for each of 10 roles (cto/cfo/cmo/cpo/sales/talent/cs/legal/it/hr).
+function findLatestAdvisory() {
+  const advRoot = 'docs/roadmap/advisory';
+  if (!existsSync(advRoot)) return {};
+  const weeks = readdirSync(advRoot)
+    .filter(w => /^\d{4}-W\d{2}$/.test(w))
+    .sort()
+    .reverse();
+  if (weeks.length === 0) return {};
+  const latestWeek = weeks[0];
+  const dir = join(advRoot, latestWeek);
+  const out = {};
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.md') || f === 'index.md') continue;
+    const role = f.replace('.md', '');
+    const content = readFileSync(join(dir, f), 'utf8');
+    out[role] = { week: latestWeek, file: f, excerpt: content.slice(0, MAX_EXCERPT) };
+  }
+  return out;
+}
+
 export function summarizeFleet() {
   const latest = findLatestPerAgent();
   const summaries = {};
@@ -82,11 +103,14 @@ export function summarizeFleet() {
     byector[sector].push({ agent, date: info.date, excerpt: excerpt.slice(0, 500) });
   }
 
+  const advisory = findLatestAdvisory();
+
   return {
     compiledAt: new Date().toISOString(),
     agentCount: Object.keys(summaries).length,
     summaries,
     bySector: byector,
+    cxoAdvisory: advisory,
   };
 }
 
