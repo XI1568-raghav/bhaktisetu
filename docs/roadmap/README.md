@@ -208,11 +208,78 @@ Queue depth >50 → tripwire `queue-depth-gt-50` fires → emissions pause until
 
 ---
 
-## Soak protocol (Phase 6)
+## Soak protocol (Phase 3 dry-run → live)
 
-Placeholder. Full content added in Task 3.6.
+After Phase 3 workflow ships (commit `0e12520`), orchestrator runs every 6h in DRY_RUN mode by default. 7 days minimum before flipping live.
 
-Soak = N-day burn-in before promoting engine config changes to prod. Run new emission rules in shadow mode, compare against current, only promote if delta within bounds.
+### Day 1-7 — dry-run review
+
+Each cycle:
+- Cron fires `17 */6 * * *` UTC = 4 runs/day
+- Writes to `docs/roadmap/_dryrun/queue/` + `docs/roadmap/_dryrun/decisions/` (NOT live `queue/` or `decisions/`)
+- Decision Agent reasoning logged per cycle in `_dryrun/decisions/C-YYYYMMDDTHHMM.md`
+- Founder reviews daily, ~5 min
+
+Daily founder protocol:
+1. `git pull` (orchestrator pushes its own commits via `roadmap-orchestrator[bot]`)
+2. `ls -tr docs/roadmap/_dryrun/queue/ | tail -8` — last ~2 days of queue files
+3. Read 1-2 random files end-to-end
+4. Verify:
+   - Decision Agent reasoning matches signal context (KPI deltas + tripwire fires)
+   - Sub-agent prompts paste-ready (cite real files, include verify commands, follow TDD doctrine)
+   - No hallucinated file paths
+   - founder-blocked items NOT scheduled for agent
+   - Free-tier budget not violated in spawn plan
+5. Spot-check 5 KPI values in `_kpi-cache.json` vs independent SQL/PostHog (per-day rotation)
+6. Tune `_decision-prompt.mjs` system prompt iteratively if reasoning weak
+7. If tripwire false-positive → adjust `_tripwires-global.yml` condition
+
+### Day 7 gate check
+
+After 7 clean cycles (no hallucinations, no false tripwires, no token-budget overruns, KPIs within ±5% of independent check), set:
+
+```bash
+gh variable set ROADMAP_DRY_RUN --body false
+```
+
+### Day 8 — first live cycle
+
+- Watch first cycle closely (workflow run page)
+- Verify queue files land in `docs/roadmap/queue/` (not `_dryrun/queue/`)
+- Founder consumes oldest via `/goal` (session-pickup hook from Phase 4)
+- If anything looks wrong: `node scripts/agents/roadmap/orchestrator-pause.mjs true` (Phase 4 slash command alias `/roadmap-pause`)
+
+### Day 8-14 — live observation
+
+- Daily 5-min `/admin/roadmap` glance (Phase 5 dashboard)
+- Override or kill stale items via slash commands as needed
+- Track: queue drain rate (target ≥70% within 7d), verify-pass rate (target ≥85%), tripwire false-pos rate (<10%)
+
+### Day 14 — retro
+
+Write `docs/roadmap/_retros/2026-06-W24.md` (or current ISO week) covering:
+- Total queue files emitted vs consumed
+- Verify-pass rate
+- Tripwire fires + accuracy
+- Founder time saved (vs hand-writing prompts)
+- Adjustments needed before scaling sub-projects 2-5
+
+### Killswitch reference
+
+Manual halt anytime:
+- `touch docs/roadmap/_alerts/PAUSE_ALL` — orchestrator skips next cycle if file present
+- OR set repo variable `ROADMAP_DRY_RUN=true` — returns to dry-run mode
+- OR disable workflow via `gh workflow disable roadmap-loop.yml`
+- OR `node scripts/agents/roadmap/orchestrator-pause.mjs true` (Phase 4)
+
+### Blackbox proxy 403 protocol
+
+If T-005 fires (proxy rejects Opus 4.7):
+1. Workflow halts, writes `_alerts/tripwire-T-005-*.md`
+2. Founder decides:
+   - Upgrade Vercel AI Gateway paid tier (preferred — keeps Opus 4.7)
+   - OR explicitly approve fallback model (manual code change to `_anthropic-client.mjs`)
+3. Reset `lastAnthropicError` in `_budget-snapshot.json` to resume
 
 ---
 
