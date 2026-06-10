@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+# Enable: git config core.hooksPath .githooks (already set per repo)
+#
+# Runs roadmap validator + index regen if docs/roadmap/items/ touched.
+# Blocks commit if validator finds errors. Auto-stages regenerated _index.json.
+
+set -e
+
+# Only run if staged files include docs/roadmap/items/
+if ! git diff --cached --name-only | grep -qE '^docs/roadmap/items/'; then
+  exit 0
+fi
+
+echo "[pre-commit] roadmap/items/ changed — running validator + index rebuild..."
+
+# 1. Validate items (exits 1 on errors)
+if ! node scripts/agents/roadmap/_validate-items.mjs; then
+  echo ""
+  echo "[pre-commit] VALIDATOR FAILED — fix errors above before committing."
+  echo "[pre-commit] To bypass: git commit --no-verify (NOT recommended)"
+  exit 1
+fi
+
+# 2. Rebuild _index.json
+node scripts/agents/roadmap/_index-build.mjs
+
+# 3. Auto-stage regenerated index if changed
+if ! git diff --quiet docs/roadmap/_index.json; then
+  git add docs/roadmap/_index.json
+  echo "[pre-commit] _index.json regenerated + staged."
+fi
+
+echo "[pre-commit] roadmap validation passed."
+exit 0
