@@ -38,12 +38,24 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-11: spec shipped per R-Q4-P-001 prompt (Q-C-20260610T1623-R-Q4-P-001).
+    Files:
+      - docs/product/specs/antim-sanskar-v1.md (455 LOC, 13 H2 sections, 5 ASCII wireframes, 15+ checklist items)
+      - scripts/lint-product-specs.mjs (TDD spec-lint w/ forbidden-word + structural checks)
+      - package.json: pnpm lint:specs script added
+    Verify: pnpm lint:specs → OK. wc -l → 455. grep ## → 13.
+    Unblocks: R-Q4-E-001 engineering build.
+    FOUNDER-BLOCKER (10 open questions, top 4):
+      (1) pricing tier amounts ₹5100/11000/21000 confirm,
+      (2) name senior pandit reviewer for grief-copy sign-off,
+      (3) confirm 5% bad-debt tolerance,
+      (4) cremation-ground partnership scope decision.
 
 tags: ["product","antim-sanskar","dignity","ux"]
 created_at: 2026-06-09T22:09:25.940Z
-updated_at: 2026-06-09T22:09:25.940Z
-shipped_at: null
-verified_at: null
+updated_at: 2026-06-11T03:50:00.000Z
+shipped_at: 2026-06-11T03:50:00.000Z
+verified_at: 2026-06-11T03:50:00.000Z
 killed_at: null
 killed_reason: null
 ---
