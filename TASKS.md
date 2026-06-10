@@ -8,15 +8,35 @@
 > Plan: `docs/superpowers/plans/2026-06-10-bhaktisetu-autonomous-roadmap-engine-plan.md`
 > Started: 2026-06-10. Status: **Phases 0-5 ALL SHIPPED. Only Phase 6 (14d soak) remains.**
 
-### Phase progress (24/24 code tasks shipped = 100%)
+### Phase progress (24/24 code tasks shipped = 100%, PUSHED to origin)
 
 - Phase 0 ✅ scaffold + README + 10 tripwires + 5 seeds + 3 samples + validator + index-builder + _lib.mjs (8 commits)
 - Phase 1 ✅ 286 items (Q1 73 / Q2 75 / Q3 70 / Q4 68) + _bulk-create hardened RFC-4180 + TBD warnings (7 commits)
 - Phase 2 ✅ Anthropic client + 6 KPI scrapers + cache + tripwire sandbox eval (10 commits, 46 vitest tests)
 - Phase 3 ✅ orchestrator + Decision Agent + sub-agent runner + cron yml + 7d dry-run gate (11 commits, 71 vitest tests)
 - Phase 4 ✅ queue-pop PS1 + UserPromptSubmit hook docs + finalize workflow + 5 slash commands + e2e smoke (6 commits)
-- Phase 5 ✅ API endpoint /admin/roadmap + Next.js dashboard 6 panels (2 commits — first apps/web push, 1 CF burn)
+- Phase 5 ✅ API endpoint /admin/roadmap + Next.js dashboard 6 panels (2 commits, 1 CF burn) — API VERIFIED LIVE 401 at api.darshya.online/api/v1/admin/roadmap
+- Phase 5 polish ✅ shebang strip from .mjs files (fixed vitest transform on Windows; scripts still work via node CLI)
 - Phase 6 ⏳ 14-day soak protocol (process, not code — docs/roadmap/README.md has full protocol)
+
+### Founder action items before Phase 6 soak
+
+1. Set GH Actions secrets (orchestrator-loop workflow won't fire useful results until set):
+   - `ANTHROPIC_API_KEY_BLACKBOX_PROXY` — Blackbox proxy key from existing CLAUDE_CODE env
+   - `ANTHROPIC_BASE_URL` — Blackbox proxy base URL
+   - `SUPABASE_DIRECT_URL` (or new `DATABASE_URL_READONLY` w/ read-only role)
+   - `POSTHOG_PERSONAL_API_KEY` + `POSTHOG_PROJECT_ID`
+   - `RENDER_API_KEY`
+   - `CF_ANALYTICS_TOKEN`
+2. Manually trigger first dry-run: `gh workflow run roadmap-loop.yml -f dry_run=true`
+3. Inspect `docs/roadmap/_dryrun/queue/` after first cycle. Review reasoning quality.
+4. Daily review for 7 days per soak protocol in docs/roadmap/README.md
+5. After 7d clean: `gh variable set ROADMAP_DRY_RUN --body false` → engine goes live
+6. Day 8-14 live observation, then retro
+
+### Hook setup (founder workstation, one-time)
+
+Per docs/roadmap/README.md "Session pickup setup" — add to `C:\Users\DELL\.claude\settings.json` so `/goal` auto-injects queue prompts.
 
 ### Commits since plan (18 total, ALL `[skip ci]` = 0 CF burn)
 
