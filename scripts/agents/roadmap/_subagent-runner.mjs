@@ -37,7 +37,6 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
       system: SUBAGENT_SYSTEM(role),
       messages: [{ role: 'user', content: userMsg }],
       maxTokens: 8000,
-      temperature: 0.3,
     });
   } catch (e) {
     return { queueFiles: [], errors: [e.message], usage: null };
