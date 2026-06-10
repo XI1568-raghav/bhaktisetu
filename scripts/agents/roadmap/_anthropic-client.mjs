@@ -27,7 +27,7 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature = 0.3
   // Read env at call-time (not module-load) so tests + runtime overrides both work.
   const model = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';
   if (!/opus-4[\.-]7/.test(model)) {
-    throw new Error(`Refusing to call non-Opus-4.7 model: ${model}. Set ANTHROPIC_MODEL=claude-opus-4-7.`);
+    throw new ModelRejectedError(`Refusing to call non-Opus-4.7 model: ${model}. Set ANTHROPIC_MODEL=claude-opus-4-7.`, null);
   }
 
   let lastErr;
