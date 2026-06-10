@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "grep -nE 'mockData|fallback.*mock|silent.*fallback' apps/web/app/pujas/book/page.tsx | wc -l (target: 0)"
 
 revenue_impact:
   amount_inr: 0
@@ -29,12 +29,21 @@ est_hours: 8
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "apps/web/app/pujas/book/page.tsx line ~549 silent mock fallback REMOVED — API failure throws/shows error UI instead"
+  - "grep mockData|fallback.*mock returns 0 hits in pujas/book/page.tsx"
+  - "When API returns 5xx, user sees explicit error banner (not silently rendered mock data)"
+  - "PostHog event book_api_error fires on failure path"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/pujas/book/page.tsx
+    - apps/web/lib/api-client.ts
+    - docs/company/04-cpo.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CPO sub-agent. P0 product truthfulness — silent mock fallback in pujas/book/page.tsx ~line 549 means user sees fake data when API down, books a puja that never reaches backend.
+    Read apps/web/app/pujas/book/page.tsx around line 549. Find the try/catch where API failure falls back to local mockData.
+    Replace silent fallback with: (a) setError state, (b) render amber alert banner "Booking temporarily unavailable, please retry", (c) disable Book Now button, (d) posthog.capture('book_api_error').
+    Verify no other silent mock paths exist (grep for setBookings.*mock or fallback.*data).
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
