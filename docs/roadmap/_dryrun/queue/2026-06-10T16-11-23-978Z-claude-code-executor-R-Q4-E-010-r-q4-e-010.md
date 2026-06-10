@@ -1,4 +1,4 @@
----
+﻿---
 queueId: Q-C-20260610T1611-R-Q4-E-010
 itemId: R-Q4-E-010
 role: claude-code-executor
@@ -11,6 +11,9 @@ featureFlag: wedding_planner_v1
 prFlag: separate-pr
 founderActionRequired: false
 scopeNote: ship draft+vendor schema + wizard MVP this cycle; polish deferred if >40h
+consumedAt: 2026-06-10T18:37:46Z
+consumedBy: claude-code
+consumedInSessionId: unknown-session
 ---
 
 # /goal Wedding planner v1 (R-Q4-E-010)
