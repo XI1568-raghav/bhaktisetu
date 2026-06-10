@@ -132,16 +132,17 @@ async function main() {
     process.exit(2);
   }
 
-  // 7. DECISION AGENT (10min wall budget — Render bg-worker, no GH ceiling)
+  // 7. DECISION AGENT (15min wall budget — Render bg-worker, no GH ceiling).
+  // Opus uncapped per user directive: 32k output tokens for deep reasoning across all signals.
   let decisionResponse;
-  const DECISION_TIMEOUT_MS = 10 * 60 * 1000;
+  const DECISION_TIMEOUT_MS = 15 * 60 * 1000;
   try {
     decisionResponse = await Promise.race([
       callOpus47({
         system: DECISION_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
         tools: DECISION_TOOLS,
-        maxTokens: 8000,
+        maxTokens: 32000,
       }),
       new Promise((_, reject) => setTimeout(() => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)), DECISION_TIMEOUT_MS)),
     ]);
@@ -168,10 +169,12 @@ async function main() {
 
   console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
 
-  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 5 — Render bg-worker no GH ceiling)
+  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 4 — Render free-tier 512MB memory safety).
+  // Each sub-agent up to 16k output tokens × 12min wall = ~2GB peak if all 5 parallel.
+  // 4 concurrent caps peak at ~1.6GB w/ OS overhead = safe on 512MB instance + swap.
   const allQueueFiles = [];
-  for (let i = 0; i < spawnPlan.length; i += 5) {
-    const chunk = spawnPlan.slice(i, i + 5);
+  for (let i = 0; i < spawnPlan.length; i += 4) {
+    const chunk = spawnPlan.slice(i, i + 4);
     const results = await Promise.allSettled(chunk.map(p => runSubagent({ ...p, items, cycleId })));
     for (const r of results) {
       if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);

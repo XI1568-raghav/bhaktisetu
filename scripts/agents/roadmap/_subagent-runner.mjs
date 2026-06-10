@@ -45,17 +45,16 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
 
   const errors = [];
   let response;
-  // Hard per-sub-agent timeout (4 min). Opus 4.7 via Blackbox proxy can stall.
-  // Without timeout, one slow sub-agent kills entire cycle on GH 15min cap.
-  const SUBAGENT_TIMEOUT_MS = 4 * 60 * 1000;
+  // Render bg-worker uncapped. Opus 4.7 token budget uncapped per user directive.
+  // 16k output tokens per sub-agent (handles 1-3 items × deep prompts).
+  // 12min wall-clock per sub-agent (Opus streaming can be slow but produces richer output).
+  const PER_SUBAGENT_TIMEOUT_MS = 12 * 60 * 1000;
   try {
-    // Render bg-worker has no GH 15min ceiling — bump back to 6000 tokens, 8min per sub-agent.
-    const PER_SUBAGENT_TIMEOUT_MS = 8 * 60 * 1000;
     response = await Promise.race([
       opusFn({
         system: SUBAGENT_SYSTEM(role),
         messages: [{ role: 'user', content: userMsg }],
-        maxTokens: 6000,
+        maxTokens: 16000,
       }),
       new Promise((_, reject) => setTimeout(() => reject(new Error(`sub-agent ${role} timeout after ${PER_SUBAGENT_TIMEOUT_MS}ms`)), PER_SUBAGENT_TIMEOUT_MS)),
     ]);

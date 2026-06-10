@@ -2,7 +2,11 @@ name: Roadmap Orchestrator (Trigger Render BG)
 
 on:
   schedule:
-    - cron: '17 */6 * * *'   # 00:17, 06:17, 12:17, 18:17 UTC (off-peak vs other agents)
+    # Every 4hr = 6 cycles/day = 180/mo trigger jobs × 5min = 900 GH-min/mo.
+    # Baseline other workflows ~846/mo. Total ~1746/mo = 87% of 2000 free tier. Safe.
+    # Render side: each cycle spawns child inside always-on API (no extra instance-hours).
+    # Anthropic tokens uncapped per user directive.
+    - cron: '17 */4 * * *'   # 00:17, 04:17, 08:17, 12:17, 16:17, 20:17 UTC
   workflow_dispatch:
     inputs:
       dry_run:
