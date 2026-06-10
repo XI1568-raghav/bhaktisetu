@@ -107,7 +107,8 @@ describe('buildSignalContext', () => {
       now: new Date('2026-06-10T12:00:00Z').getTime(),
     });
     expect(ctx.cycle.dayOfMonth).toBe(10);
-    expect(ctx.cycle.dayOfWeek).toBe(2);
+    // 2026-06-10 is a Wednesday (UTC day 3). Task spec comment said Tue=2 in error.
+    expect(ctx.cycle.dayOfWeek).toBe(3);
     expect(ctx.cycle.ts).toMatch(/^2026-06-10T/);
   });
 
