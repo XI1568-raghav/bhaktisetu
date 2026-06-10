@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import crypto from 'node:crypto';
+import { requireCronBearer } from '../middlewares/cron-auth.js';
 
 /**
  * Daily cron endpoint, invoked by GitHub Actions because Render's free
@@ -9,26 +9,14 @@ import crypto from 'node:crypto';
  *   POST /api/v1/cron/daily      → runs every job
  *   POST /api/v1/cron/run/:job   → runs a single named job (for ad-hoc)
  *
- * Auth: a fixed shared secret in CRON_AUTH_TOKEN. Compared in constant
- * time. If unset, every request is rejected (fail-closed) — do not
- * default to a dev value here.
+ * Auth: requireCronBearer middleware. Fail-loud if CRON_AUTH_TOKEN unset
+ * (returns 401 + 'cron_auth_misconfigured' body code so log search picks
+ * up server-side misconfig vs client bad-token). See R-Q1-IT-002 +
+ * apps/api/src/middlewares/cron-auth.ts.
  *
  * Jobs are intentionally idempotent so re-runs after a failed GH Action
  * don't double-send notifications.
  */
-
-const cronToken = process.env.CRON_AUTH_TOKEN ?? '';
-
-function authorised(headerValue: string | undefined): boolean {
-  if (!cronToken || !headerValue) return false;
-  const expected = `Bearer ${cronToken}`;
-  if (headerValue.length !== expected.length) return false;
-  try {
-    return crypto.timingSafeEqual(Buffer.from(headerValue), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
 
 interface JobResult {
   job: string;
@@ -83,10 +71,7 @@ const JOBS: Record<string, () => Promise<unknown>> = {
 // ── Routes ──────────────────────────────────────────────────────────
 
 export async function cronRoutes(server: FastifyInstance) {
-  server.post('/daily', async (request, reply) => {
-    if (!authorised(request.headers.authorization)) {
-      return reply.code(401).send({ error: 'Unauthorized' });
-    }
+  server.post('/daily', { preHandler: requireCronBearer }, async (_request, reply) => {
     const results: JobResult[] = [];
     for (const [name, fn] of Object.entries(JOBS)) {
       results.push(await runJob(name, fn));
@@ -95,10 +80,7 @@ export async function cronRoutes(server: FastifyInstance) {
     return reply.code(ok ? 200 : 500).send({ ok, results });
   });
 
-  server.post<{ Params: { job: string } }>('/run/:job', async (request, reply) => {
-    if (!authorised(request.headers.authorization)) {
-      return reply.code(401).send({ error: 'Unauthorized' });
-    }
+  server.post<{ Params: { job: string } }>('/run/:job', { preHandler: requireCronBearer }, async (request, reply) => {
     const fn = JOBS[request.params.job];
     if (!fn) {
       return reply.code(404).send({ error: `Unknown job: ${request.params.job}`, available: Object.keys(JOBS) });
@@ -110,7 +92,7 @@ export async function cronRoutes(server: FastifyInstance) {
   server.get('/health', async (_request, reply) => {
     return reply.send({
       ok: true,
-      tokenConfigured: !!cronToken,
+      tokenConfigured: !!(process.env.CRON_AUTH_TOKEN ?? ''),
       jobs: Object.keys(JOBS),
     });
   });
