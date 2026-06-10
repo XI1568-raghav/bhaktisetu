@@ -18,7 +18,7 @@ kpi:
   target: 5000000
   unit: "inr"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-corporate-diwali-revenue-inr-sum-of-signed-contract-values-Oct-Nov-2026"
 
 revenue_impact:
   amount_inr: 5000000
@@ -29,12 +29,20 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5 corporate Diwali contracts signed by Nov 5 2026 totaling >= 50L INR"
+  - "Each contract has signed PO + 50% advance via Razorpay invoice"
+  - "Booking dates locked in admin/leads with status=CONVERTED + dealValue>=1000000"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - docs/ceo-roadmap-2026-05-27.md
+    - apps/web/app/admin/leads/page.tsx
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action required.
+    Sales requires founder relationship-driven outreach + contract negotiation + PO signing.
+    Sub-agent can prep collateral (one-pager + ROI calculator + case-study deck) + draft cold emails
+    + populate Lead rows via /admin/leads API. Founder owns calls + meetings + closing.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

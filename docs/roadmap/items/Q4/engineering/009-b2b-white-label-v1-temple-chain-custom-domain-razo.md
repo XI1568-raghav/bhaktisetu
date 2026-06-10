@@ -18,7 +18,7 @@ kpi:
   target: 3
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM temples WHERE whitelabel_status = 'live' AND custom_domain IS NOT NULL"
 
 revenue_impact:
   amount_inr: 600000
@@ -29,12 +29,22 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "3 white-label temple sites live with custom domain + branding + Razorpay sub-merchant by Nov 30 2026"
+  - "Tenant resolution middleware lit up: temple-x.example.com -> temple_id = X"
+  - "Per-tenant branding tokens (logo, colors, fonts) loaded from temples.branding_json column"
+  - "Race-condition test: 2 tenants on same backend cannot read each other's bookings"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/middleware.ts
+    - apps/api/src/routes/temple-portal.ts
+    - prisma/schema.prisma
+    - docs/company/01-cto.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CTO sub-agent. Multi-tenant white-label v1. Extend middleware.ts to resolve req.hostname -> tenant_id.
+    Add temples.custom_domain unique varchar(255) + branding_json jsonb + whitelabel_status enum migration.
+    Razorpay sub-merchant onboarding flow via /admin/whitelabel-kyc. All API routes must filter by tenant_id
+    from middleware context. Verify per success_criteria; orchestrator queries supabase per kpi.query above.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

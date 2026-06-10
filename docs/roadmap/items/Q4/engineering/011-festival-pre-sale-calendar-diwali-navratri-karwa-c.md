@@ -17,8 +17,8 @@ kpi:
   current: 0
   target: 5000
   unit: "count"
-  source: "razorpay"
-  query: "TBD-populate-before-orchestrator-go-live"
+  source: "supabase"
+  query: "SELECT COUNT(*) FROM bookings WHERE festival_slug IS NOT NULL AND scheduled_at - booked_at >= INTERVAL '30 days' AND booked_at >= '2026-09-01' AND booked_at < '2026-12-01'"
 
 revenue_impact:
   amount_inr: 1500000
@@ -29,12 +29,22 @@ est_hours: 28
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Festival calendar UI live at apps/web/app/festivals/[slug] with 60-day-ahead booking enabled for 8 major festivals"
+  - "Bookings table gains festival_slug column + migration shipped via prisma db execute on prod"
+  - "5000+ pre-bookings recorded across Diwali/Navratri/Karwa-Chauth by Nov 30 2026"
+  - "Festival-aware Razorpay invoice template tested with capacity caps per temple per festival"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - apps/web/app/festivals/page.tsx
+    - apps/web/lib/festivals.ts
+    - apps/api/src/routes/pujas.ts
+    - prisma/schema.prisma
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    CTO sub-agent. Extend lib/festivals.ts 30 entries with bookable_window_days field.
+    Add Prisma migration: festival_slug varchar(64) nullable on Booking + index on festival_slug+scheduled_at.
+    Wire /festivals/[slug]/book page that lists eligible pujas + capacity counter per temple.
+    Verify per success_criteria; orchestrator KPI scraper queries supabase per kpi.query above.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
