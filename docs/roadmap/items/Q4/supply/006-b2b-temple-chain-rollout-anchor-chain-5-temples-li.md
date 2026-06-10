@@ -17,8 +17,8 @@ kpi:
   current: 0
   target: 5
   unit: "count"
-  source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  source: "supabase"
+  query: "SELECT COUNT(*) FROM temples WHERE chain_id IS NOT NULL AND whitelabel_status = 'live' AND went_live_at >= '2026-10-01'"
 
 revenue_impact:
   amount_inr: 800000
@@ -29,12 +29,22 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "5 anchor chain temples live with custom branding deployed by Nov 30 2026"
+  - "Each temple has dedicated subdomain (temple-slug.darshya.online) + verified ssl + custom logo"
+  - "Razorpay sub-merchant account per temple for direct payouts (no platform escrow delay)"
+  - "Onboarding playbook documented in docs/runbooks/b2b-temple-onboarding.md"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - apps/web/middleware.ts
+    - apps/api/src/routes/temple-portal.ts
+    - prisma/schema.prisma
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action required for temple-by-temple onboarding calls.
+    Sub-agent can: build /admin/b2b-onboarding wizard + automate subdomain provisioning via CF API
+    + ship Razorpay sub-merchant KYC flow + write onboarding runbook. Founder owns: per-temple intro
+    calls (via anchor chain regional heads from R-Q4-SA-001) + KYC document collection + go-live sign-off.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.

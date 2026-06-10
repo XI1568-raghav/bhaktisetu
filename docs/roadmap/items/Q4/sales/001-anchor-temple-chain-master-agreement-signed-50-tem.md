@@ -18,7 +18,7 @@ kpi:
   target: 50
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual-kpi-count-temples-listed-in-signed-master-agreement-with-anchor-chain"
 
 revenue_impact:
   amount_inr: 2500000
@@ -29,12 +29,20 @@ est_hours: 40
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Master agreement signed with anchor chain (ISKCON or similar) by Oct 31 2026"
+  - "Agreement schedule lists >= 50 temples with revenue-share % per temple"
+  - "Schema migration adds chain_id FK on Temple table + 5 anchor temples seeded"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/company/04-sales.md
+    - prisma/schema.prisma
+    - apps/api/src/routes/admin-leads.ts
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Cannot agent-assign — founder action U6 (legal MSA signing + anchor relationship) required.
+    Sub-agent can: draft 20-page MSA template (revenue share + IP + SLA + termination) + temple-list
+    schedule annex + extend prisma Temple schema with chain_id FK. Founder owns negotiation + signing
+    + temple-by-temple introduction calls via anchor chain's regional heads.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
