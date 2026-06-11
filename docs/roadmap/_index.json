@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-11T10:31:31.303Z",
+  "generatedAt": "2026-06-11T20:32:55.760Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -402,6 +402,64 @@
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/cs/008-bump-max-contact-count-to-5-add-14d-follow-up-temp.md"
+    },
+    {
+      "id": "R-Q1-CS-009",
+      "title": "Founder-inbox auto-reply agent — acknowledge + group by intent + 24h SLA escalate",
+      "category": "cs",
+      "owner_role": "cs",
+      "quarter": "Q1",
+      "month_target": 2,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "founder_inbox_auto_ack_pct",
+        "current": 0,
+        "target": 95,
+        "unit": "percent",
+        "source": "manual",
+        "query": "manual:track 1 week of founder@darshya.online incoming. count(autoreply_sent)/count(total)"
+      },
+      "revenue_impact": {
+        "amount_inr": 0,
+        "confidence": "medium",
+        "basis": "Indirect retention — devotee writes to founder, no reply within 24h damages trust. Auto-ack + AI-triage frees founder bandwidth, prevents leakage."
+      },
+      "est_hours": 12,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "Every inbound to founder@darshya.online + grievance@ gets auto-ack within 2min ('We received your message. A human responds within 24h.')",
+        "Auto-ack classifies into 1 of 6 intents: refund / puja-issue / press / partnership / spam / other",
+        "Class 'spam' silently dropped (no human queue)",
+        "Classes 'refund' + 'puja-issue' assigned WhatsApp ping to founder phone (if SLA breach risk)",
+        "Classes 'press' + 'partnership' added to weekly digest",
+        "≥95% auto-ack rate measured over 7-day window"
+      ],
+      "agent_brief": {
+        "context_files": [
+          "apps/api/src/routes/support.ts",
+          "apps/api/src/lib/resend.ts",
+          "docs/company/07-cs.md"
+        ]
+      },
+      "handoff_notes": "2026-06-12: created per founder direct ask 2026-06-10 — \"founder-inbox auto-reply via agents\".\nAwaits Resend inbound webhook setup OR Gmail-side forwarding rule (founder action).\n",
+      "tags": [
+        "cs",
+        "automation",
+        "p1",
+        "founder-inbox"
+      ],
+      "created_at": "2026-06-12T02:00:00.000Z",
+      "updated_at": "2026-06-12T02:00:00.000Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/cs/009-founder-inbox-auto-reply-agent-acknowledge-grou.md"
     },
     {
       "id": "R-Q1-E-001",
@@ -3072,6 +3130,67 @@
       "_file": "docs/roadmap/items/Q1/marketing/011-nri-targeted-facebook-ads-50-budget-3-creatives-2-.md"
     },
     {
+      "id": "R-Q1-M-015",
+      "title": "Referral cash program — ₹100 credit per converting referral (LOW priority per founder)",
+      "category": "marketing",
+      "owner_role": "cmo",
+      "quarter": "Q1",
+      "month_target": 3,
+      "priority": "P2",
+      "status": "planned",
+      "agent_assignable": true,
+      "founder_blocker": null,
+      "depends_on": [
+        "R-Q1-E-003"
+      ],
+      "blocks": [],
+      "kpi": {
+        "metric": "referral_paid_conversions_per_month",
+        "current": 0,
+        "target": 50,
+        "unit": "count",
+        "source": "supabase",
+        "query": "TBD-populate-before-orchestrator-go-live"
+      },
+      "revenue_impact": {
+        "amount_inr": 25000,
+        "confidence": "low",
+        "basis": "50 paid referrals × avg ₹500 puja = ₹25k/mo gross. Net: ₹25k − 50 × ₹100 credit = ₹20k/mo. Founder flagged this as LOW priority — track but don't optimize."
+      },
+      "est_hours": 16,
+      "est_cost_inr": 5000,
+      "success_criteria": [
+        "Existing referral-code flow (a99e9a3 referrals route) extended with cash-credit issuance",
+        "Referrer gets ₹100 platform credit (12-month validity, non-transferable, redeemable on puja booking ≥₹500) when referee completes first paid booking",
+        "Credit visible on /profile + auto-applies on next checkout",
+        "Hard cap: 1 referral credit per IP per day (anti-farming) + 10 lifetime referrals per account (anti-Ponzi)",
+        "Monthly cash-out impact dashboard line item in /admin/metrics",
+        "Refund-policy v2 Clause 3.5 already covers Platform Credit terms — no separate legal text needed"
+      ],
+      "agent_brief": {
+        "context_files": [
+          "apps/api/src/routes/referrals.ts",
+          "apps/web/app/refer/page.tsx",
+          "docs/legal/refund-policy-v2-FINAL.md"
+        ]
+      },
+      "handoff_notes": "2026-06-12: created per founder ask 2026-06-10 — \"referral $$ program as LOW priority roadmap item\".\nFounder explicit: deprioritize. Ships AFTER Q1 P0/P1 work clears.\n",
+      "tags": [
+        "marketing",
+        "referral",
+        "credits",
+        "p2",
+        "low-priority"
+      ],
+      "created_at": "2026-06-12T02:00:00.000Z",
+      "updated_at": "2026-06-12T02:00:00.000Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/marketing/011-referral-cash-program-rs-100-credit-per-conver.md"
+    },
+    {
       "id": "R-Q1-M-012",
       "title": "Drive 100 signups via 5 distribution channels (Reddit/Twitter/WA/Telegram/IG)",
       "category": "marketing",
@@ -3936,6 +4055,64 @@
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/sales/005-first-investor-email-batch-5-angels-friends-family.md"
+    },
+    {
+      "id": "R-Q1-SA-006",
+      "title": "Personal-network WhatsApp tracker — founder masthead-list (NO cold-call automation per founder)",
+      "category": "sales",
+      "owner_role": "sales",
+      "quarter": "Q1",
+      "month_target": 1,
+      "priority": "P1",
+      "status": "planned",
+      "agent_assignable": false,
+      "founder_blocker": true,
+      "depends_on": [],
+      "blocks": [],
+      "kpi": {
+        "metric": "warm_outreach_replies_per_week",
+        "current": 0,
+        "target": 10,
+        "unit": "count",
+        "source": "manual",
+        "query": "manual:docs/sales/_warm-network-tracker.md (founder updates weekly)"
+      },
+      "revenue_impact": {
+        "amount_inr": 100000,
+        "confidence": "high",
+        "basis": "Founder's personal Hindu network = highest-converting demand source. 21 warm contacts × 30% reply × 50% convert × ₹3k avg first order = ~₹100k. Recurring potential 3-5x via repeat puja."
+      },
+      "est_hours": 4,
+      "est_cost_inr": 0,
+      "success_criteria": [
+        "docs/sales/_warm-network-tracker.md created with 21+ contact rows (Name | Relationship | City | Phone | Last contacted | Outcome | Notes)",
+        "Tracker is MANUAL — founder owns sending, NO automation, NO mass-blast",
+        "Per founder explicit ask 2026-06-10: 'no manual phone calls, personal-network WA will be handled by user manually'",
+        "Agent-side limited to: tracker doc + weekly reminder ping to founder + reply-tagged status update template",
+        "WhatsApp outreach copy templates drafted (3 variants: catch-up + soft-puja-mention + direct-ask)",
+        "Weekly review cadence shipped: every Sunday 8pm IST founder runs through tracker, marks status, drafts next-week sends"
+      ],
+      "agent_brief": {
+        "context_files": [
+          "docs/sales/_warm-network-tracker.md",
+          "docs/company/05-sales.md"
+        ]
+      },
+      "handoff_notes": "2026-06-12: created per founder direct ask 2026-06-10 verbatim:\n\"personal-network WA will be handled by user manually\" + \"NO manual phone calls\".\nAgent assignment: false. Founder-blocker: true. Agent-side scope strictly limited.\n",
+      "tags": [
+        "sales",
+        "founder-network",
+        "warm-outreach",
+        "p1",
+        "no-automation"
+      ],
+      "created_at": "2026-06-12T02:00:00.000Z",
+      "updated_at": "2026-06-12T02:00:00.000Z",
+      "shipped_at": null,
+      "verified_at": null,
+      "killed_at": null,
+      "killed_reason": null,
+      "_file": "docs/roadmap/items/Q1/sales/006-personal-network-whatsapp-tracker-founder-mas.md"
     },
     {
       "id": "R-Q1-S-001",
