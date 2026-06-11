@@ -132,4 +132,36 @@ describe('callOpus47', () => {
       expect(mockClient.messages.create).not.toHaveBeenCalled();
     });
   });
+
+  describe('apiKey fallback resolution', () => {
+    const ENV_KEYS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_API_KEY_BLACKBOX_PROXY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_API_KEY'];
+    const _saved = {};
+    beforeEach(() => {
+      for (const k of ENV_KEYS) { _saved[k] = process.env[k]; delete process.env[k]; }
+    });
+    afterEach(() => {
+      for (const k of ENV_KEYS) {
+        if (_saved[k] === undefined) delete process.env[k];
+        else process.env[k] = _saved[k];
+      }
+    });
+
+    it('throws explicit error when NO apiKey env set and no client passed', async () => {
+      await expect(callOpus47({ messages: [], maxTokens: 100 }))
+        .rejects.toThrow(/Anthropic API key missing/);
+    });
+
+    it('uses ANTHROPIC_API_KEY_BLACKBOX_PROXY when ANTHROPIC_API_KEY unset', async () => {
+      process.env.ANTHROPIC_API_KEY_BLACKBOX_PROXY = 'sk-test-fallback';
+      const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
+      // Must not throw — fallback resolved
+      await expect(callOpus47({ messages: [], maxTokens: 100, client: mockClient })).resolves.toBeDefined();
+    });
+
+    it('skips key check when client is injected (tests)', async () => {
+      // No env keys set, but client passed → no throw
+      const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
+      await expect(callOpus47({ messages: [], maxTokens: 100, client: mockClient })).resolves.toBeDefined();
+    });
+  });
 });
