@@ -97,21 +97,24 @@ async function collectStream(stream) {
 
 export async function callOpus47({ messages, maxTokens = 8000, temperature, tools, system, client, retryDelayMs, stream }) {
   // NOTE: temperature deprecated on Opus 4.7. Default undefined (omitted). Set explicitly only for testing.
-  // API key resolution: prefer ANTHROPIC_API_KEY but fall back to commonly-used
-  // alternate names observed on this project's Render + GH Actions envs.
-  // Streaming path requires explicit apiKey (newer SDK re-validates at iteration).
-  const apiKey =
+  // API key resolution: SDK auto-reads ANTHROPIC_API_KEY internally.
+  // Streaming path requires apiKey at iteration time — pass through explicitly
+  // if found via any common alternate name. Don't pre-throw if missing; let SDK
+  // raise its own (more diagnostic) error, AND ensure SDK can read ANTHROPIC_API_KEY
+  // by side-mirroring from alternate names.
+  // Common alternate names observed: ANTHROPIC_API_KEY_BLACKBOX_PROXY (this project,
+  // Render env), ANTHROPIC_AUTH_TOKEN (some SDK examples), CLAUDE_API_KEY.
+  const resolvedKey =
     process.env.ANTHROPIC_API_KEY ||
     process.env.ANTHROPIC_API_KEY_BLACKBOX_PROXY ||
     process.env.ANTHROPIC_AUTH_TOKEN ||
     process.env.CLAUDE_API_KEY;
-  if (!apiKey && !client) {
-    throw new Error(
-      'Anthropic API key missing: set ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_BLACKBOX_PROXY / ANTHROPIC_AUTH_TOKEN / CLAUDE_API_KEY).',
-    );
+  // Side-mirror so SDK's internal env read also resolves. Idempotent.
+  if (resolvedKey && !process.env.ANTHROPIC_API_KEY) {
+    process.env.ANTHROPIC_API_KEY = resolvedKey;
   }
   const c = client || new Anthropic({
-    apiKey,
+    apiKey: resolvedKey,
     baseURL: process.env.ANTHROPIC_BASE_URL,
   });
   const delays = retryDelayMs !== undefined ? [retryDelayMs, retryDelayMs, retryDelayMs] : RETRY_DELAYS;
