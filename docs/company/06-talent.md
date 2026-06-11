@@ -47,8 +47,10 @@ The moderation panel itself is product work I build once and stays solo: a Retoo
 
 ## 5. First hire — when and who
 
+**First Hire Trigger doc**: [`docs/hr/first-hire-trigger.md`](../hr/first-hire-trigger.md) — full queries, fallbacks, review cadence, source-of-numbers ledger.
+
 **Trigger metrics (any one fires):**
-- 50 paying bookings/week sustained 3 weeks, OR
+- 50 paying bookings/week sustained 2 consecutive weeks, OR
 - support inbox first-response time > 2 hours for 5 consecutive days, OR
 - founder is doing >15 hrs/wk on moderation.
 
