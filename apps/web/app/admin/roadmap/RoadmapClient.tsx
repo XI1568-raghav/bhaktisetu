@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import OrchestratorProgress from './OrchestratorProgress';
 
 interface RoadmapItem {
   id: string;
@@ -146,6 +147,9 @@ export default function RoadmapClient() {
           Autonomous Roadmap Engine — 60s auto-refresh. Reads git-tracked .md/.json/.yaml artifacts.
         </p>
       </div>
+
+      {/* Panel 0: Live orchestrator progress (new — R-#93) */}
+      <OrchestratorProgress />
 
       {/* Panel 1: Burn-down */}
       <section className="bg-white rounded-xl border border-surface-200 p-5">
