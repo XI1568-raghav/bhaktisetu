@@ -13,6 +13,20 @@ const TTL_BY_SOURCE = {
   cf_analytics: 24 * 3600 * 1000,
 };
 
+// Per-scraper hard wall (90s). Prevents 49min silent hangs (cycle 11 RCA).
+// If a scraper TLS/socket hangs, race rejects → Promise.allSettled marks it
+// failed → orchestrator continues with cached/empty rows for that source.
+const SCRAPER_TIMEOUT_MS = 90 * 1000;
+
+function withTimeout(label, p) {
+  return Promise.race([
+    p,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`scrape-${label}-timeout-${SCRAPER_TIMEOUT_MS}ms`)), SCRAPER_TIMEOUT_MS)
+    ),
+  ]);
+}
+
 export async function scrapeAllKpis(items, opts = {}) {
   const {
     now = Date.now(),
@@ -61,14 +75,26 @@ export async function scrapeAllKpis(items, opts = {}) {
     if (grouped[source]) grouped[source].push(it);
   }
 
+  const t0 = Date.now();
+  console.log(`[kpi] scrape start: supabase=${grouped.supabase.length} posthog=${grouped.posthog.length} render=${grouped.render_logs.length} cf=${grouped.cf_analytics.length} gh=${grouped.gh_repo.length} manual=${grouped.manual.length}`);
   const settled = await Promise.allSettled([
-    grouped.supabase.length ? scrapeSupabaseFn(grouped.supabase) : Promise.resolve([]),
-    grouped.posthog.length ? scrapePosthogFn(grouped.posthog) : Promise.resolve([]),
-    grouped.render_logs.length ? scrapeRenderFn(grouped.render_logs) : Promise.resolve([]),
-    grouped.cf_analytics.length ? scrapeCfFn(grouped.cf_analytics) : Promise.resolve([]),
-    grouped.gh_repo.length ? scrapeGhFn(grouped.gh_repo) : Promise.resolve([]),
-    grouped.manual.length ? scrapeManualFn(grouped.manual) : Promise.resolve([]),
+    grouped.supabase.length ? withTimeout('supabase', scrapeSupabaseFn(grouped.supabase)) : Promise.resolve([]),
+    grouped.posthog.length ? withTimeout('posthog', scrapePosthogFn(grouped.posthog)) : Promise.resolve([]),
+    grouped.render_logs.length ? withTimeout('render', scrapeRenderFn(grouped.render_logs)) : Promise.resolve([]),
+    grouped.cf_analytics.length ? withTimeout('cf', scrapeCfFn(grouped.cf_analytics)) : Promise.resolve([]),
+    grouped.gh_repo.length ? withTimeout('gh', scrapeGhFn(grouped.gh_repo)) : Promise.resolve([]),
+    grouped.manual.length ? withTimeout('manual', scrapeManualFn(grouped.manual)) : Promise.resolve([]),
   ]);
+  const labels = ['supabase', 'posthog', 'render', 'cf', 'gh', 'manual'];
+  for (let i = 0; i < settled.length; i++) {
+    const r = settled[i];
+    if (r.status === 'rejected') {
+      console.warn(`[kpi] ${labels[i]} failed: ${r.reason?.message || r.reason}`);
+    } else {
+      console.log(`[kpi] ${labels[i]} ok: ${Array.isArray(r.value) ? r.value.length : 0} rows`);
+    }
+  }
+  console.log(`[kpi] scrape done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 
   const live = settled.flatMap((r) => (r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : []));
 

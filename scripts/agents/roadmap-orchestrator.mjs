@@ -125,11 +125,20 @@ async function main() {
   const queue = readQueue();
   console.log(`[orchestrator] ingested ${items.length} items, ${queue.length} queue, ${tripwires.length} tripwires`);
 
-  // 3. SCRAPE KPIS
-  const kpis = await scrapeAllKpis(items.filter(i => i.kpi?.source));
+  // 3. SCRAPE KPIS — hard-bounded by per-scraper 90s + outer wall 5min.
+  console.log(`[orchestrator] phase=kpi start`);
+  const KPI_PHASE_WALL_MS = 5 * 60 * 1000;
+  const kpis = await Promise.race([
+    scrapeAllKpis(items.filter(i => i.kpi?.source)),
+    new Promise((resolve) => setTimeout(() => {
+      console.warn(`[orchestrator] KPI phase wall hit (${KPI_PHASE_WALL_MS}ms) — proceeding with empty KPIs`);
+      resolve([]);
+    }, KPI_PHASE_WALL_MS)),
+  ]);
   console.log(`[orchestrator] scraped ${kpis.length} KPIs (${kpis.filter(k => k.stale).length} stale)`);
 
   // 3b. REFRESH FLEET AGENT SUMMARIES (24 daily agents → sector-grouped excerpts)
+  console.log(`[orchestrator] phase=fleet start`);
   let sectorSummaries = {};
   try {
     const { summarizeFleet } = await import('./roadmap/_agent-fleet-summary.mjs');
@@ -139,11 +148,18 @@ async function main() {
     console.warn(`[orchestrator] fleet summary skipped: ${e.message}`);
   }
 
-  // 3c. EXPERIMENT TRACKER
+  // 3c. EXPERIMENT TRACKER — wall-bound to 60s (PostHog query can stall)
+  console.log(`[orchestrator] phase=experiments start`);
   let experiments = { results: [], experimentCount: 0 };
   try {
     const { trackExperiments } = await import('./roadmap/_experiment-tracker.mjs');
-    experiments = await trackExperiments();
+    experiments = await Promise.race([
+      trackExperiments(),
+      new Promise((resolve) => setTimeout(() => {
+        console.warn(`[orchestrator] experiment tracker wall hit (60s) — proceeding with empty`);
+        resolve({ results: [], experimentCount: 0 });
+      }, 60 * 1000)),
+    ]);
     console.log(`[orchestrator] experiments: ${experiments.experimentCount} tracked (${experiments.decided || 0} decided)`);
   } catch (e) {
     console.warn(`[orchestrator] experiments skipped: ${e.message}`);
@@ -171,6 +187,7 @@ async function main() {
     process.exit(2);
   }
 
+  console.log(`[orchestrator] phase=decision start`);
   // 7. DECISION AGENT — w/ RESUMABLE STATE.
   // Check if a prior cycle saved a fresh spawn plan (Render killed it before
   // sub-agents finished). If yes, reuse it — saves an entire Opus call.
@@ -236,6 +253,7 @@ async function main() {
 
   console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
 
+  console.log(`[orchestrator] phase=subagents start (n=${spawnPlan.length})`);
   // 9. SPAWN SUB-AGENTS (parallel, max concurrency 2 — GH runner has ample memory but
   // Anthropic streaming queue can stall if too many concurrent. 2 concurrent = stable.
   // 4 sub-agents × ~6min each, 2 at a time = ~12min total fan-out.
