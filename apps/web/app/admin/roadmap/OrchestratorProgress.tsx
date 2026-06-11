@@ -29,19 +29,19 @@ interface PhaseState {
 
 // Phase keywords to scan in log tail (order = pipeline order)
 const PHASE_PATTERNS: { key: string; label: string; regex: RegExp }[] = [
-  { key: 'spawn', label: 'BG wrapper spawned', regex: /Orchestrator BG wrapper start|wrapper start|spawned at/i },
-  { key: 'gitsync', label: 'Git sync to origin/main', regex: /git fetch origin main|reset --hard origin\/main/i },
-  { key: 'orchstart', label: 'Orchestrator start', regex: /orchestrator start|cycle C-[\d-T]+\s+start/i },
+  { key: 'spawn', label: 'GH Actions job start', regex: /Running orchestrator|wrapper start|spawned at|orchestrator start/i },
+  { key: 'gitsync', label: 'Checkout main (actions/checkout@v4)', regex: /actions\/checkout|fetch-depth|origin\/main/i },
+  { key: 'orchstart', label: 'Orchestrator boot', regex: /orchestrator start|cycle C-[\d-T]+\s+start|\[orchestrator\] boot/i },
   { key: 'ingest', label: 'Ingest 303 items + tripwires', regex: /ingested \d+ items/i },
   { key: 'kpi', label: 'Scrape KPIs (Supabase + PostHog + CF)', regex: /scraped \d+ KPIs/i },
   { key: 'fleet', label: 'Fleet agent summaries', regex: /fleet summary:|fleet summary skipped/i },
   { key: 'experiments', label: 'A/B experiment tracker', regex: /experiments: \d+ tracked|experiments skipped/i },
   { key: 'tripwires', label: 'Evaluate tripwires', regex: /fired tripwires:/i },
-  { key: 'decision', label: 'Decision Agent (Opus 4.7 / 32k / 15min)', regex: /\[orchestrator\] decision: spawn \d+, defer \d+, kill \d+/i },
-  { key: 'subagents', label: 'Sub-agents fan-out (Opus / 16k each / 4 concurrent)', regex: /sub-agent runner.*emitted|queueFiles\.push|RoundTrip|\[sub-agent\]/i },
+  { key: 'decision', label: 'Decision Agent (Opus 4.7 / 16k / 10min, streaming)', regex: /\[orchestrator\] decision: spawn \d+, defer \d+, kill \d+/i },
+  { key: 'subagents', label: 'Sub-agents fan-out (Opus 4.7 / 12k / 4 max, 2 concurrent)', regex: /sub-agent runner.*emitted|queueFiles\.push|RoundTrip|\[sub-agent\]/i },
   { key: 'write', label: 'Write queue files + decision note', regex: /cycle .+ done\. \d+ queue files written/i },
-  { key: 'commit', label: 'Git commit + push via PAT', regex: /PUSH OK|PUSH RETRY OK/i },
-  { key: 'done', label: 'Cycle complete', regex: /Wrapper done \(exit=0\)/i },
+  { key: 'commit', label: 'Git commit + push to main (orchestrator-bot[bot])', regex: /PUSH OK|PUSH RETRY OK|push origin HEAD:main/i },
+  { key: 'done', label: 'Cycle complete', regex: /Wrapper done \(exit=0\)|cycle .+ done/i },
 ];
 
 const ERROR_PATTERNS = [
@@ -51,7 +51,8 @@ const ERROR_PATTERNS = [
   { key: 'decision-error', label: 'Decision Agent error (see _alerts/decision-error-*.md)', regex: /decision-error|Streaming is strongly recommended|Decision Agent timeout/i },
   { key: 'push-fail', label: 'Git push failed', regex: /PUSH FAILED|PUSH RETRY FAILED/i },
   { key: 'uncaught', label: 'Uncaught exception', regex: /UNCAUGHT:|uncaught-/i },
-  { key: 'oom', label: 'Out-of-memory (Render 512MB)', regex: /Killed|OOM|out of memory/i },
+  { key: 'oom', label: 'Out-of-memory (GH runner 7GB exhausted)', regex: /Killed|OOM|out of memory|JavaScript heap out of memory/i },
+  { key: 'gh-timeout', label: 'GH timeout (50min ceiling hit)', regex: /The job running on runner .+ has exceeded the maximum execution time|timeout-minutes: 50/i },
 ];
 
 function buildPhases(logTail: string | null): { phases: PhaseState[]; errorLabel: string | null; percent: number } {
@@ -165,7 +166,7 @@ export default function OrchestratorProgress() {
     summary = { label: `Status endpoint unreachable: ${err}`, classes: 'bg-red-50 border-red-300 text-red-800' };
   } else if (data?.status === 'no-logs' || cycleCount === 0) {
     summary = {
-      label: 'Idle — no cycles yet (waiting on first GH cron OR founder paste of GH_ORCHESTRATOR_PAT + ORCHESTRATOR_TRIGGER_SECRET in Render)',
+      label: 'Idle — waiting on next GH cron run (every 8hr at :17 UTC). Manual trigger: gh workflow run roadmap-loop.yml',
       classes: 'bg-surface-50 border-surface-300 text-surface-700',
     };
   } else if (errorLabel) {
@@ -185,7 +186,7 @@ export default function OrchestratorProgress() {
         <div>
           <h2 className="text-sm font-semibold text-surface-700">Autonomous Orchestrator — Live Progress</h2>
           <p className="text-xs text-surface-500 mt-0.5">
-            Every 4hr via GH cron · Render bg-worker · 4 sub-agents concurrent · 10s UI refresh
+            Every 8hr via GH Actions runner · Opus 4.7 Decision Agent · 4 sub-agents max (2 concurrent) · pushes to main as orchestrator-bot · 10s UI refresh
           </p>
         </div>
         <div className="text-xs text-surface-400 shrink-0">
@@ -261,18 +262,12 @@ export default function OrchestratorProgress() {
         </details>
       )}
 
-      {/* Setup hint when idle */}
+      {/* Idle hint — architecture now GH-runner native, no setup beyond secrets */}
       {(data?.status === 'no-logs' || cycleCount === 0) && !err && (
         <div className="mt-4 text-xs text-surface-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="font-semibold text-amber-900 mb-1">Setup required (≈7 min):</p>
-          <ol className="list-decimal pl-4 space-y-0.5 text-amber-800">
-            <li>Generate <code className="font-mono bg-amber-100 px-1 rounded">openssl rand -hex 32</code> + <code className="font-mono bg-amber-100 px-1 rounded">openssl rand -hex 24</code></li>
-            <li>Generate GH PAT (Contents R/W on bhaktisetu, 1yr)</li>
-            <li>Paste to Render API service env: <code>GH_ORCHESTRATOR_PAT</code>, <code>ORCHESTRATOR_TRIGGER_SECRET</code>, <code>CRON_AUTH_TOKEN</code></li>
-            <li>Paste to GH repo secrets: <code>ORCHESTRATOR_TRIGGER_SECRET</code> (same value), <code>RENDER_API_URL</code></li>
-            <li>Smoke: <code className="font-mono">curl -X POST .../orchestrator-trigger -H "X-Orchestrator-Secret: $SECRET" -d '{`{"dryRun":true}`}'</code> → expect HTTP 202</li>
-          </ol>
-          <p className="mt-2">Full doc: <code>docs/roadmap/OPTION-2-SETUP.md</code></p>
+          <p className="font-semibold text-amber-900 mb-1">Orchestrator runs inside GH Actions runner (Option 2-GH).</p>
+          <p className="text-amber-800">Cron: <code className="font-mono bg-amber-100 px-1 rounded">17 */8 * * *</code> (3 cycles/day @ 00:17 / 08:17 / 16:17 UTC). Each cycle: ingest 303 items → KPI scrape → tripwires → Opus 4.7 Decision Agent → up to 4 sub-agents fan-out → write queue → commit + push to main as orchestrator-bot[bot] (with <code>[skip ci]</code>).</p>
+          <p className="mt-2 text-amber-800">Manual trigger: <code className="font-mono bg-amber-100 px-1 rounded">gh workflow run roadmap-loop.yml -f dry_run=true</code>. Full audit trail in <a href="https://github.com" className="underline">Actions tab</a> + git log <code>orchestrator-bot[bot]</code>.</p>
         </div>
       )}
     </section>

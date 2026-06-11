@@ -225,15 +225,23 @@ async function main() {
     console.log(`[orchestrator] decision saved to resume state (Render-kill survival).`);
   }
 
+  // HARD CAP: trim spawn plan to 4 sub-agents max regardless of Decision Agent output.
+  // Each sub-agent ~6min wall-clock streaming Opus 4.7. 4 × concurrency-2 = 12min for fan-out.
+  // Plus ~10min Decision + ~3min setup + ~2min commit/push = ~27min total cycle = fits GH 50min ceiling.
+  const HARD_SPAWN_CAP = 4;
+  if (spawnPlan.length > HARD_SPAWN_CAP) {
+    console.log(`[orchestrator] trimming spawn plan ${spawnPlan.length} → ${HARD_SPAWN_CAP} (GH free tier budget)`);
+    spawnPlan.splice(HARD_SPAWN_CAP);
+  }
+
   console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
 
-  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 3 — Render free-tier 512MB memory).
-  // Lowered 4→3 after cycle 8 observed killed by Render mid-cycle (suspected OOM).
-  // Each sub-agent ~12k output tokens streaming = ~80MB working set + SDK + node = ~150MB each.
-  // 3 concurrent = ~450MB peak, safer headroom on 512MB instance.
+  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 2 — GH runner has ample memory but
+  // Anthropic streaming queue can stall if too many concurrent. 2 concurrent = stable.
+  // 4 sub-agents × ~6min each, 2 at a time = ~12min total fan-out.
   const allQueueFiles = [];
-  for (let i = 0; i < spawnPlan.length; i += 3) {
-    const chunk = spawnPlan.slice(i, i + 3);
+  for (let i = 0; i < spawnPlan.length; i += 2) {
+    const chunk = spawnPlan.slice(i, i + 2);
     const results = await Promise.allSettled(chunk.map(p => runSubagent({ ...p, items, cycleId })));
     for (const r of results) {
       if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);
