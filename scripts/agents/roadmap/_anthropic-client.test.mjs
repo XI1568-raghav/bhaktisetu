@@ -146,20 +146,23 @@ describe('callOpus47', () => {
       }
     });
 
-    it('throws explicit error when NO apiKey env set and no client passed', async () => {
-      await expect(callOpus47({ messages: [], maxTokens: 100 }))
-        .rejects.toThrow(/Anthropic API key missing/);
-    });
-
-    it('uses ANTHROPIC_API_KEY_BLACKBOX_PROXY when ANTHROPIC_API_KEY unset', async () => {
+    it('side-mirrors ANTHROPIC_API_KEY_BLACKBOX_PROXY → ANTHROPIC_API_KEY when latter unset', async () => {
       process.env.ANTHROPIC_API_KEY_BLACKBOX_PROXY = 'sk-test-fallback';
       const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
-      // Must not throw — fallback resolved
-      await expect(callOpus47({ messages: [], maxTokens: 100, client: mockClient })).resolves.toBeDefined();
+      await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
+      expect(process.env.ANTHROPIC_API_KEY).toBe('sk-test-fallback');
     });
 
-    it('skips key check when client is injected (tests)', async () => {
-      // No env keys set, but client passed → no throw
+    it('does NOT overwrite existing ANTHROPIC_API_KEY', async () => {
+      process.env.ANTHROPIC_API_KEY = 'sk-primary';
+      process.env.ANTHROPIC_API_KEY_BLACKBOX_PROXY = 'sk-secondary';
+      const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
+      await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
+      expect(process.env.ANTHROPIC_API_KEY).toBe('sk-primary');
+    });
+
+    it('passes through to SDK without throwing when no env set + no client (SDK will error)', async () => {
+      // Don't pre-throw — let SDK raise its own diagnostic error
       const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
       await expect(callOpus47({ messages: [], maxTokens: 100, client: mockClient })).resolves.toBeDefined();
     });
