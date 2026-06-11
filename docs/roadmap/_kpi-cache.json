@@ -1,5 +1,5 @@
 {
-  "lastFullRefresh": "2026-06-11T20:16:51.188Z",
+  "lastFullRefresh": "2026-06-11T20:35:02.655Z",
   "entries": {
     "supabase:donations_persisted": {
       "metric": "donations_persisted",
@@ -1644,6 +1644,24 @@
       "stale": true,
       "error": "no manual value",
       "fetchedAt": "2026-06-11T20:16:51.188Z"
+    },
+    "supabase:referral_paid_conversions_per_month": {
+      "metric": "referral_paid_conversions_per_month",
+      "stale": true,
+      "error": "kpi.query unpopulated (sentinel)",
+      "fetchedAt": "2026-06-11T20:35:02.655Z"
+    },
+    "manual:founder_inbox_auto_ack_pct": {
+      "metric": "founder_inbox_auto_ack_pct",
+      "stale": true,
+      "error": "no manual value",
+      "fetchedAt": "2026-06-11T20:35:02.655Z"
+    },
+    "manual:warm_outreach_replies_per_week": {
+      "metric": "warm_outreach_replies_per_week",
+      "stale": true,
+      "error": "no manual value",
+      "fetchedAt": "2026-06-11T20:35:02.655Z"
     }
   }
 }
