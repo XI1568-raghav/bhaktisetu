@@ -121,9 +121,15 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
 
   // User directive: NEVER silent-swap model. Always Opus 4.7.
   // Read env at call-time (not module-load) so tests + runtime overrides both work.
-  const model = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';
+  // Default updated 2026-06-12 to Blackbox proxy convention. Direct Anthropic
+  // accepts 'claude-opus-4-7'; Blackbox needs 'blackboxai/anthropic/claude-opus-4.7'.
+  // ANTHROPIC_MODEL env wins if set explicitly (Render + GH can override per environment).
+  const baseUrl = (process.env.ANTHROPIC_BASE_URL || '').toLowerCase();
+  const isBlackbox = /blackbox/.test(baseUrl);
+  const model = process.env.ANTHROPIC_MODEL ||
+    (isBlackbox ? 'blackboxai/anthropic/claude-opus-4.7' : 'claude-opus-4-7');
   if (!/opus-4[\.-]7/.test(model)) {
-    throw new ModelRejectedError(`Refusing to call non-Opus-4.7 model: ${model}. Set ANTHROPIC_MODEL=claude-opus-4-7.`, null);
+    throw new ModelRejectedError(`Refusing to call non-Opus-4.7 model: ${model}. Set ANTHROPIC_MODEL to an Opus 4.7 variant.`, null);
   }
 
   // Auto-stream above SDK threshold OR explicit caller request.
