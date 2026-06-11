@@ -41,7 +41,7 @@ Decision principles (in order):
   11. **ALWAYS call write_decision_note tool LAST, exactly once** — orchestrator + dashboard depend on this
 
 Output: use the provided tools exclusively.
-  - spawn_subagent({role, itemIds[], briefing, estTokens})  — 3-7 per cycle (filter against queue.itemIds first)
+  - spawn_subagent({role, itemIds[], briefing, estTokens})  — 2-4 per cycle MAX (GH free tier budget cap; filter against queue.itemIds first). Each sub-agent should bundle 1-2 items.
   - defer_to_founder({itemId, reason, suggestedAction})     — 0-3 per cycle
   - kill_item({itemId, reason, replacementItemId})          — 0-2 per cycle
   - write_decision_note({reasoning, marketSignals, kpiDeltas, nextCycleHypothesis})  — MANDATORY 1 per cycle, ALWAYS LAST
