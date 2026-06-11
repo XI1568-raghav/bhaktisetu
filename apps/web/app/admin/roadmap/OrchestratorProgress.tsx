@@ -37,17 +37,18 @@ const PHASE_PATTERNS: { key: string; label: string; regex: RegExp }[] = [
   { key: 'fleet', label: 'Fleet agent summaries', regex: /fleet summary:|fleet summary skipped/i },
   { key: 'experiments', label: 'A/B experiment tracker', regex: /experiments: \d+ tracked|experiments skipped/i },
   { key: 'tripwires', label: 'Evaluate tripwires', regex: /fired tripwires:/i },
-  { key: 'decision', label: 'Decision Agent (Opus 4.7 / 32k / 15min)', regex: /decision: spawn \d+, defer \d+, kill \d+/i },
-  { key: 'subagents', label: 'Sub-agents fan-out (Opus / 16k each / 4 concurrent)', regex: /allQueueFiles|sub-agent .* timeout|queueFiles\.push|RoundTrip/i },
+  { key: 'decision', label: 'Decision Agent (Opus 4.7 / 32k / 15min)', regex: /\[orchestrator\] decision: spawn \d+, defer \d+, kill \d+/i },
+  { key: 'subagents', label: 'Sub-agents fan-out (Opus / 16k each / 4 concurrent)', regex: /sub-agent runner.*emitted|queueFiles\.push|RoundTrip|\[sub-agent\]/i },
   { key: 'write', label: 'Write queue files + decision note', regex: /cycle .+ done\. \d+ queue files written/i },
-  { key: 'commit', label: 'Git commit + push via PAT', regex: /git commit -m|PUSH OK|PUSH RETRY OK/i },
-  { key: 'done', label: 'Cycle complete', regex: /Wrapper done \(exit=0\)|Wrapper done \(exit=null\)/i },
+  { key: 'commit', label: 'Git commit + push via PAT', regex: /PUSH OK|PUSH RETRY OK/i },
+  { key: 'done', label: 'Cycle complete', regex: /Wrapper done \(exit=0\)/i },
 ];
 
 const ERROR_PATTERNS = [
   { key: 'misconfig', label: 'CRON_AUTH_TOKEN env unset (fail-loud)', regex: /cron_auth_misconfigured|GH_ORCHESTRATOR_PAT not set/i },
   { key: 'lock', label: 'Another cycle in flight (lock held)', regex: /another cycle in flight/i },
   { key: 'model-rejected', label: 'Opus 4.7 rejected by Blackbox proxy (halted)', regex: /ModelRejectedError|model-rejected/i },
+  { key: 'decision-error', label: 'Decision Agent error (see _alerts/decision-error-*.md)', regex: /decision-error|Streaming is strongly recommended|Decision Agent timeout/i },
   { key: 'push-fail', label: 'Git push failed', regex: /PUSH FAILED|PUSH RETRY FAILED/i },
   { key: 'uncaught', label: 'Uncaught exception', regex: /UNCAUGHT:|uncaught-/i },
   { key: 'oom', label: 'Out-of-memory (Render 512MB)', regex: /Killed|OOM|out of memory/i },
