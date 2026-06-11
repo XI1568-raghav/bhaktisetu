@@ -37,7 +37,10 @@ function readQueue() {
 }
 
 const LOCK_PATH = 'docs/roadmap/_lock.json';
-const LOCK_MAX_AGE_MS = 90 * 60 * 1000;  // 90min — bigger than any expected cycle
+// Lock TTL 15min — if Render killed a cycle silently, next trigger reclaims fast.
+// Was 90min; cycle 8 (2026-06-12) showed Render kills happen unpredictably mid-run.
+const LOCK_MAX_AGE_MS = 15 * 60 * 1000;
+const RESUME_STATE_PATH = 'docs/roadmap/_cycle-resume.json';
 
 function checkLock() {
   if (!existsSync(LOCK_PATH)) return null;
@@ -60,6 +63,42 @@ function releaseLock() {
   if (existsSync(LOCK_PATH)) {
     try { writeFileSync(LOCK_PATH, JSON.stringify({ released: true, releasedAt: new Date().toISOString() }, null, 2)); } catch {}
   }
+}
+
+// Resumable Decision plan: persist after Decision Agent completes so a
+// Render mid-cycle kill doesn't waste the Opus call. Next cycle picks up
+// the saved spawn plan if still fresh (< 25min) instead of re-running Decision.
+function readResumeState() {
+  if (!existsSync(RESUME_STATE_PATH)) return null;
+  try {
+    const s = JSON.parse(readFileSync(RESUME_STATE_PATH, 'utf8'));
+    const age = Date.now() - new Date(s.savedAt).getTime();
+    if (age > 25 * 60 * 1000) return null;  // too old, ignore
+    if (s.consumed) return null;
+    return s;
+  } catch { return null; }
+}
+
+function saveResumeState(cycleId, spawnPlan, deferrals, kills, decisionNote, firedTripwires) {
+  try {
+    writeFileSync(RESUME_STATE_PATH, JSON.stringify({
+      cycleId, spawnPlan, deferrals, kills, decisionNote, firedTripwires,
+      savedAt: new Date().toISOString(),
+      consumed: false,
+    }, null, 2));
+  } catch (e) {
+    console.warn(`[orchestrator] could not save resume state: ${e.message}`);
+  }
+}
+
+function markResumeConsumed() {
+  if (!existsSync(RESUME_STATE_PATH)) return;
+  try {
+    const s = JSON.parse(readFileSync(RESUME_STATE_PATH, 'utf8'));
+    s.consumed = true;
+    s.consumedAt = new Date().toISOString();
+    writeFileSync(RESUME_STATE_PATH, JSON.stringify(s, null, 2));
+  } catch {}
 }
 
 async function main() {
@@ -132,49 +171,69 @@ async function main() {
     process.exit(2);
   }
 
-  // 7. DECISION AGENT (15min wall budget — Render bg-worker, no GH ceiling).
-  // Opus uncapped per user directive: 32k output tokens for deep reasoning across all signals.
-  let decisionResponse;
-  const DECISION_TIMEOUT_MS = 15 * 60 * 1000;
-  try {
-    decisionResponse = await Promise.race([
-      callOpus47({
-        system: DECISION_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
-        tools: DECISION_TOOLS,
-        maxTokens: 32000,
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)), DECISION_TIMEOUT_MS)),
-    ]);
-  } catch (e) {
-    if (e instanceof ModelRejectedError) {
-      writeAlert(`model-rejected-${cycleId}.md`, `Decision Agent rejected: ${e.message}\nHalting per user directive.`);
-      // Persist error so future cycles see lastAnthropicError
-      budget.lastAnthropicError = e.message;
-      writeFileSync(BUDGET_PATH, JSON.stringify(budget, null, 2));
+  // 7. DECISION AGENT — w/ RESUMABLE STATE.
+  // Check if a prior cycle saved a fresh spawn plan (Render killed it before
+  // sub-agents finished). If yes, reuse it — saves an entire Opus call.
+  let spawnPlan, deferrals, kills, decisionNote;
+  const resume = readResumeState();
+  if (resume) {
+    console.log(`[orchestrator] RESUMING from prior cycle ${resume.cycleId} (saved ${resume.savedAt}). Skipping Decision Agent.`);
+    spawnPlan = resume.spawnPlan;
+    deferrals = resume.deferrals;
+    kills = resume.kills;
+    decisionNote = resume.decisionNote;
+    // Use the resumed firedTripwires for the decision note context.
+    if (resume.firedTripwires) firedTripwires.push(...resume.firedTripwires.filter(t => !firedTripwires.find(f => f.id === t.id)));
+  } else {
+    // Fresh Decision Agent call.
+    // 16k tokens streaming, 10min wall budget. Smaller = survives Render restart.
+    let decisionResponse;
+    const DECISION_TIMEOUT_MS = 10 * 60 * 1000;
+    try {
+      decisionResponse = await Promise.race([
+        callOpus47({
+          system: DECISION_SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: buildDecisionUserMessage(signalContext) }],
+          tools: DECISION_TOOLS,
+          maxTokens: 16000,
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)), DECISION_TIMEOUT_MS)),
+      ]);
+    } catch (e) {
+      if (e instanceof ModelRejectedError) {
+        writeAlert(`model-rejected-${cycleId}.md`, `Decision Agent rejected: ${e.message}\nHalting per user directive.`);
+        budget.lastAnthropicError = e.message;
+        writeFileSync(BUDGET_PATH, JSON.stringify(budget, null, 2));
+        releaseLock();
+        process.exit(2);
+      }
+      writeAlert(`decision-error-${cycleId}.md`, e.message);
       releaseLock();
-      process.exit(2);
+      process.exit(1);
     }
-    writeAlert(`decision-error-${cycleId}.md`, e.message);
-    releaseLock();
-    process.exit(1);
-  }
 
-  // 8. PARSE TOOL CALLS
-  const toolCalls = decisionResponse.content.filter(c => c.type === 'tool_use');
-  const spawnPlan = toolCalls.filter(t => t.name === 'spawn_subagent').map(t => t.input);
-  const deferrals = toolCalls.filter(t => t.name === 'defer_to_founder').map(t => t.input);
-  const kills = toolCalls.filter(t => t.name === 'kill_item').map(t => t.input);
-  const decisionNote = toolCalls.find(t => t.name === 'write_decision_note')?.input;
+    // 8. PARSE TOOL CALLS
+    const toolCalls = decisionResponse.content.filter(c => c.type === 'tool_use');
+    spawnPlan = toolCalls.filter(t => t.name === 'spawn_subagent').map(t => t.input);
+    deferrals = toolCalls.filter(t => t.name === 'defer_to_founder').map(t => t.input);
+    kills = toolCalls.filter(t => t.name === 'kill_item').map(t => t.input);
+    decisionNote = toolCalls.find(t => t.name === 'write_decision_note')?.input;
+
+    // CHECKPOINT: save spawn plan to disk BEFORE sub-agents fire.
+    // If Render kills us mid-fan-out, next cycle resumes from this plan.
+    saveResumeState(cycleId, spawnPlan, deferrals, kills, decisionNote, firedTripwires);
+    console.log(`[orchestrator] decision saved to resume state (Render-kill survival).`);
+  }
 
   console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
 
-  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 4 — Render free-tier 512MB memory safety).
-  // Each sub-agent up to 16k output tokens × 12min wall = ~2GB peak if all 5 parallel.
-  // 4 concurrent caps peak at ~1.6GB w/ OS overhead = safe on 512MB instance + swap.
+  // 9. SPAWN SUB-AGENTS (parallel, max concurrency 3 — Render free-tier 512MB memory).
+  // Lowered 4→3 after cycle 8 observed killed by Render mid-cycle (suspected OOM).
+  // Each sub-agent ~12k output tokens streaming = ~80MB working set + SDK + node = ~150MB each.
+  // 3 concurrent = ~450MB peak, safer headroom on 512MB instance.
   const allQueueFiles = [];
-  for (let i = 0; i < spawnPlan.length; i += 4) {
-    const chunk = spawnPlan.slice(i, i + 4);
+  for (let i = 0; i < spawnPlan.length; i += 3) {
+    const chunk = spawnPlan.slice(i, i + 3);
     const results = await Promise.allSettled(chunk.map(p => runSubagent({ ...p, items, cycleId })));
     for (const r of results) {
       if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);
@@ -205,6 +264,8 @@ async function main() {
   writeFileSync(BUDGET_PATH, JSON.stringify(budget, null, 2));
 
   console.log(`[orchestrator] cycle ${cycleId} done. ${allQueueFiles.length} queue files written.`);
+  // Resume state consumed — won't be picked up by next cycle.
+  markResumeConsumed();
   releaseLock();
 }
 

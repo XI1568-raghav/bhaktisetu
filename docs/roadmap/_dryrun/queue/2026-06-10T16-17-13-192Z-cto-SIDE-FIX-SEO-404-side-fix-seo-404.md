@@ -1,4 +1,4 @@
----
+﻿---
 queueId: Q-20260610T1617-SIDEFIX-SEO-404
 itemId: SIDE-FIX-SEO-404
 cycle: C-20260610T1617
@@ -10,6 +10,9 @@ estTokens: 18000
 estMinutes: 120
 founderActionRequired: false
 title: 'fix(seo): backfill missing /darshan + /content slugs from 404 audit'
+consumedAt: 2026-06-10T20:56:03Z
+consumedBy: claude-code
+consumedInSessionId: unknown-session
 ---
 
 # SIDE-FIX: Backfill 24 broken /darshan/* + /content/* slugs

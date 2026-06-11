@@ -119,6 +119,37 @@ Then check `/admin/roadmap` dashboard — new queue files should appear under `_
 | Cycle starts but no push appears on main | Tail `/orchestrator-status` — likely `PUSH FAILED` because PAT missing/wrong scope |
 | Cycle stuck "in flight" >2hr | Lock file stale. Delete `docs/roadmap/_lock.json` manually + push |
 
+## CRITICAL — Render free-tier survival (2026-06-12 update)
+
+Cycle 8 was killed mid-execution by Render free-tier container restart. **Render free tier WILL kill bg-spawned children unpredictably** for: deploys (every git push to api files), env-var changes, periodic free-tier rebalances, OOM events.
+
+### Mitigations applied in code (already shipped, no founder action)
+
+1. Decision Agent maxTokens 32k → 16k (faster completion = smaller restart-kill window)
+2. Sub-agent maxTokens 16k → 12k (same reason)
+3. Sub-agent wall-clock 12min → 8min
+4. Concurrency 4 → 3 (lower 512MB Render memory peak)
+5. Lock TTL 90min → 15min (faster retry after silent kill)
+6. Resume state file (`docs/roadmap/_cycle-resume.json`) — best-effort: if orchestrator completes Decision but Render kills before sub-agents, next cycle skips Decision (saves Opus call)
+
+Net: cycle wall-clock ~20min → ~8min. Restart window ~2.5× less likely to overlap.
+
+### Mitigations founder can apply in Render dashboard
+
+**Disable Render auto-deploy on push** (recommended):
+
+1. Render dashboard → API service → Settings → **Build & Deploy**
+2. Find **Auto-Deploy** → toggle **OFF** (Yes → No)
+3. Now Render only deploys when YOU click "Manual Deploy" in dashboard
+
+This prevents every `[skip ci]` commit from triggering Render redeploy. Currently orchestrator-bot commits push to main 4-8 times/day, each one would have triggered Render redeploy — killing any in-flight cycle.
+
+**Trade-off**: code fixes to apps/api won't auto-deploy. You manually click "Deploy latest" in Render after any apps/api push.
+
+### If cycles still fail after both mitigations
+
+Last resort: pay $7/mo for Render Background Worker — actual persistent process, no restart-kills. Document in `docs/free-tier-budgets.md` if/when crossed.
+
 ## Cost accounting
 
 | Resource | Cost per cycle | Cycles/mo | Monthly |
