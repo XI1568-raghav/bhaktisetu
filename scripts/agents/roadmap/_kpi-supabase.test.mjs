@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSelectOnly, scrapeSupabase } from './_kpi-supabase.mjs';
+import { isSelectOnly, scrapeSupabase, classifyQuery, stripSqlComments } from './_kpi-supabase.mjs';
 
 describe('isSelectOnly', () => {
   it('accepts SELECT', () => expect(isSelectOnly('SELECT COUNT(*) FROM foo')).toBe(true));
@@ -34,5 +34,48 @@ describe('scrapeSupabase', () => {
     const res = await scrapeSupabase(items, { pool: fakePool });
     expect(res[0]).toMatchObject({ metric: 'pandit_count', value: 42, stale: false });
     expect(res[0].fetchedAt).toBeDefined();
+  });
+});
+
+describe('stripSqlComments', () => {
+  it('strips line comments', () => expect(stripSqlComments('SELECT 1 -- DROP TABLE x')).not.toMatch(/DROP/));
+  it('strips block comments', () => expect(stripSqlComments('SELECT 1 /* CREATE INDEX */ FROM x')).not.toMatch(/CREATE/));
+  it('preserves real SQL', () => expect(stripSqlComments('SELECT count(*) FROM users')).toContain('SELECT'));
+});
+
+describe('classifyQuery', () => {
+  it('classifies real SELECT as sql', () => expect(classifyQuery('SELECT 1').kind).toBe('sql'));
+  it('classifies TBD as unpopulated', () => {
+    const c = classifyQuery('TBD-populate-before-orchestrator-go-live');
+    expect(c.kind).toBe('unpopulated');
+    expect(c.error).toMatch(/unpopulated/);
+  });
+  it('classifies TODO as unpopulated', () => expect(classifyQuery('TODO: write query').kind).toBe('unpopulated'));
+  it('classifies MANUAL as unpopulated', () => expect(classifyQuery('MANUAL: count WA threads').kind).toBe('unpopulated'));
+  it('classifies empty as unpopulated', () => expect(classifyQuery('').kind).toBe('unpopulated'));
+  it('classifies null as unpopulated', () => expect(classifyQuery(null).kind).toBe('unpopulated'));
+  it('classifies manual:docs/... as manual_ref', () => {
+    const c = classifyQuery('manual:docs/marketing/csr-match.md#partners-signed');
+    expect(c.kind).toBe('manual_ref');
+  });
+  it('classifies DML as rejected', () => expect(classifyQuery('DELETE FROM x').kind).toBe('rejected'));
+  it('classifies SELECT w/ comment containing DROP as sql (comments stripped)', () => {
+    expect(classifyQuery('SELECT 1 -- DROP TABLE x').kind).toBe('sql');
+  });
+});
+
+describe('scrapeSupabase — TBD + manual handling', () => {
+  it('emits unpopulated error for TBD query (NOT security-tone "rejected")', async () => {
+    const fakePool = { query: () => { throw new Error('should not be called'); } };
+    const items = [{ kpi: { source: 'supabase', metric: 'foo', query: 'TBD-populate-before-orchestrator-go-live' } }];
+    const res = await scrapeSupabase(items, { pool: fakePool });
+    expect(res[0]).toMatchObject({ metric: 'foo', stale: true, error: expect.stringMatching(/unpopulated/) });
+    expect(res[0].error).not.toMatch(/SELECT-only/);
+  });
+  it('emits manual_ref error for manual:docs ref', async () => {
+    const fakePool = { query: () => { throw new Error('should not be called'); } };
+    const items = [{ kpi: { source: 'supabase', metric: 'bar', query: 'manual:docs/foo.md' } }];
+    const res = await scrapeSupabase(items, { pool: fakePool });
+    expect(res[0].error).toMatch(/manual KPI/);
   });
 });
