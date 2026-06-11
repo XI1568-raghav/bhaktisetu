@@ -47,9 +47,33 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 1: Sync to latest origin/main (defensive — drop any local drift)
+  // Step 1: Sync to latest origin/main (defensive — drop any local drift).
+  // Render rebuilds wipe .git/config remotes — re-set authenticated origin
+  // FIRST so fetch (not just push) works. Idempotent: always overrides.
+  // Observed 2026-06-11 cycle C-20260611T2025 failed at fetch step with
+  // "origin does not appear to be a git repository" after Render redeploy.
   run('git config user.name "' + GIT_USER + '"');
   run('git config user.email "' + GIT_EMAIL + '"');
+  // Set authenticated origin (PAT redacted from log output, see redactPushUrl in catch).
+  const authedOrigin = `https://x-access-token:${PAT}@github.com/${REPO}.git`;
+  // Use spawnSync directly to keep PAT out of the log line printed by run().
+  const setRemoteResult = spawnSync('git', ['remote', 'set-url', 'origin', authedOrigin], {
+    cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (setRemoteResult.status !== 0) {
+    // If remote 'origin' doesn't exist, add it
+    log('$ git remote set-url origin <redacted> (failed, trying add)');
+    const addResult = spawnSync('git', ['remote', 'add', 'origin', authedOrigin], {
+      cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (addResult.status !== 0) {
+      log('FATAL: could not set or add git origin remote (set status=' + setRemoteResult.status + ', add status=' + addResult.status + ')');
+      process.exit(1);
+    }
+    log('$ git remote add origin <redacted> OK');
+  } else {
+    log('$ git remote set-url origin <redacted> OK');
+  }
   run('git fetch origin main');
   run('git reset --hard origin/main');
 
