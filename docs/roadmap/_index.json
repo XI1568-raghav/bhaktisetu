@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T22:17:25.797Z",
+  "generatedAt": "2026-06-11T10:31:31.303Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -2020,7 +2020,7 @@
           "docs/agent-reports/"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-11: shipped per Q-C-20260610T1623-R-Q1-H-001.\n  Files: docs/hr/first-hire-trigger.md (T1/T2/T3 OR-logic, real Prisma queries verified against\n  apps/api/prisma/schema.prisma — PujaBooking line 415 + SupportTicket line 1247).\n  Cross-linked from docs/company/06-talent.md §5.\n  No moderation audit table in schema — T3 marked BLOCKED w/ manual fallback to docs/hr/_first-hire-tracking.md.\n  Recommended new roadmap item: ModerationAction audit table.\n",
       "tags": [
         "hr",
         "hiring",
@@ -2028,9 +2028,9 @@
         "p2"
       ],
       "created_at": "2026-06-09T21:50:30.082Z",
-      "updated_at": "2026-06-09T21:50:30.082Z",
-      "shipped_at": null,
-      "verified_at": null,
+      "updated_at": "2026-06-11T04:10:00.000Z",
+      "shipped_at": "2026-06-11T04:10:00.000Z",
+      "verified_at": "2026-06-11T04:10:00.000Z",
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/hr/001-document-first-contractor-hire-trigger-metric-50-b.md"
@@ -2069,16 +2069,16 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-11: shipped per Q-C-20260610T1623-R-Q1-H-002.\n  Files: docs/hr/jds/{cs-lead,content-ops,nri-growth-marketer,README}.md\n  All 3 JDs structured per spec: Responsibilities + 30/60/90 metrics + Compensation + Application.\n  Comp bands: CS ₹25k (06-talent.md §5 line 58), content ₹20k, NRI $500/mo.\n  All 3 JDs cite docs/company/06-talent.md line refs (hour math + role rationale).\n  README ordering: CS Lead → Content Ops → NRI Growth (sequenced by founder bandwidth need).\n  FOUNDER-BLOCKER (6 items in README): confirm comp/runway, confirm application inbox,\n  fill $TODO CAC targets in NRI JD, approve $200/mo ad authority, write onboarding-cs.md doc,\n  decide posting channels.\n",
       "tags": [
         "hr",
         "jd",
         "p3"
       ],
       "created_at": "2026-06-09T21:50:30.082Z",
-      "updated_at": "2026-06-09T21:50:30.082Z",
-      "shipped_at": null,
-      "verified_at": null,
+      "updated_at": "2026-06-11T04:10:00.000Z",
+      "shipped_at": "2026-06-11T04:10:00.000Z",
+      "verified_at": "2026-06-11T04:10:00.000Z",
       "killed_at": null,
       "killed_reason": null,
       "_file": "docs/roadmap/items/Q1/hr/002-draft-3-contractor-jds-cs-lead-content-ops-nri-gro.md"
