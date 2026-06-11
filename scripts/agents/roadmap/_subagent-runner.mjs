@@ -45,16 +45,17 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
 
   const errors = [];
   let response;
-  // Render bg-worker uncapped. Opus 4.7 token budget uncapped per user directive.
-  // 16k output tokens per sub-agent (handles 1-3 items × deep prompts).
-  // 12min wall-clock per sub-agent (Opus streaming can be slow but produces richer output).
-  const PER_SUBAGENT_TIMEOUT_MS = 12 * 60 * 1000;
+  // Sub-agent budget trimmed 16k→12k tokens, 12min→8min wall (2026-06-12) for
+  // Render free-tier survival. Cycle 8 observed killed mid-stream by Render
+  // container restart. Smaller budget = faster completion = better chance of
+  // surviving the next restart-event.
+  const PER_SUBAGENT_TIMEOUT_MS = 8 * 60 * 1000;
   try {
     response = await Promise.race([
       opusFn({
         system: SUBAGENT_SYSTEM(role),
         messages: [{ role: 'user', content: userMsg }],
-        maxTokens: 16000,
+        maxTokens: 12000,
       }),
       new Promise((_, reject) => setTimeout(() => reject(new Error(`sub-agent ${role} timeout after ${PER_SUBAGENT_TIMEOUT_MS}ms`)), PER_SUBAGENT_TIMEOUT_MS)),
     ]);
