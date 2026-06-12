@@ -1,129 +1,90 @@
 'use client';
 
-// OrchestratorProgress — live progress bar for autonomous roadmap orchestrator.
-// Fetches GET /api/v1/admin/roadmap/orchestrator-status every 10s.
-// Parses log tail to detect current phase, percent complete, halted/error state.
-// Phases: lock → ingest → kpi → tripwires → decision → subagents → write → commit/push → done
+// OrchestratorProgress — live status of Autonomous Roadmap Engine.
+// Reads from /api/orchestrator-status (Next.js edge route → GitHub Actions REST API).
+// Replaces dead Render-disk endpoint (orchestrator now runs on GH runners).
+//
+// Data shape from GET /api/orchestrator-status:
+//   { runs: [{id, status, conclusion, wallSeconds, htmlUrl, ...}], commits: [...], queueCount }
+//
+// Status semantics:
+//   - status='in_progress'              → cycle running, show pulse
+//   - status='completed' conclusion='success' → green ✓
+//   - status='completed' conclusion='cancelled' → red ✗ (timeout/manual cancel)
+//   - status='completed' conclusion='failure'   → red ✗
 
 import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '../../../lib/api-config';
 
-interface CycleSummary {
-  cycleId: string;
-  size: number;
-  mtime: string;
-}
-
-interface OrchestratorStatus {
+interface NormalizedRun {
+  id: number;
   status: string;
-  cycles: CycleSummary[];
-  latestLogTail: string | null;
+  conclusion: string | null;
+  createdAt: string;
+  updatedAt: string;
+  htmlUrl: string;
+  title: string;
+  wallSeconds: number;
 }
 
-interface PhaseState {
-  key: string;
-  label: string;
-  status: 'pending' | 'running' | 'done' | 'error' | 'skipped';
-  detail?: string;
+interface NormalizedCommit {
+  sha: string;
+  shortSha: string;
+  message: string;
+  date: string;
+  htmlUrl: string;
 }
 
-// Phase keywords to scan in log tail (order = pipeline order)
-const PHASE_PATTERNS: { key: string; label: string; regex: RegExp }[] = [
-  { key: 'spawn', label: 'GH Actions job start', regex: /Running orchestrator|wrapper start|spawned at|orchestrator start/i },
-  { key: 'gitsync', label: 'Checkout main (actions/checkout@v4)', regex: /actions\/checkout|fetch-depth|origin\/main/i },
-  { key: 'orchstart', label: 'Orchestrator boot', regex: /orchestrator start|cycle C-[\d-T]+\s+start|\[orchestrator\] boot/i },
-  { key: 'ingest', label: 'Ingest 303 items + tripwires', regex: /ingested \d+ items/i },
-  { key: 'kpi', label: 'Scrape KPIs (Supabase + PostHog + CF)', regex: /scraped \d+ KPIs/i },
-  { key: 'fleet', label: 'Fleet agent summaries', regex: /fleet summary:|fleet summary skipped/i },
-  { key: 'experiments', label: 'A/B experiment tracker', regex: /experiments: \d+ tracked|experiments skipped/i },
-  { key: 'tripwires', label: 'Evaluate tripwires', regex: /fired tripwires:/i },
-  { key: 'decision', label: 'Decision Agent (Opus 4.7 / 16k / 10min, streaming)', regex: /\[orchestrator\] decision: spawn \d+, defer \d+, kill \d+/i },
-  { key: 'subagents', label: 'Sub-agents fan-out (Opus 4.7 / 12k / 4 max, 2 concurrent)', regex: /sub-agent runner.*emitted|queueFiles\.push|RoundTrip|\[sub-agent\]/i },
-  { key: 'write', label: 'Write queue files + decision note', regex: /cycle .+ done\. \d+ queue files written/i },
-  { key: 'commit', label: 'Git commit + push to main (orchestrator-bot[bot])', regex: /PUSH OK|PUSH RETRY OK|push origin HEAD:main/i },
-  { key: 'done', label: 'Cycle complete', regex: /Wrapper done \(exit=0\)|cycle .+ done/i },
-];
-
-const ERROR_PATTERNS = [
-  { key: 'misconfig', label: 'CRON_AUTH_TOKEN env unset (fail-loud)', regex: /cron_auth_misconfigured|GH_ORCHESTRATOR_PAT not set/i },
-  { key: 'lock', label: 'Another cycle in flight (lock held)', regex: /another cycle in flight/i },
-  { key: 'model-rejected', label: 'Opus 4.7 rejected by Blackbox proxy (halted)', regex: /ModelRejectedError|model-rejected/i },
-  { key: 'decision-error', label: 'Decision Agent error (see _alerts/decision-error-*.md)', regex: /decision-error|Streaming is strongly recommended|Decision Agent timeout/i },
-  { key: 'push-fail', label: 'Git push failed', regex: /PUSH FAILED|PUSH RETRY FAILED/i },
-  { key: 'uncaught', label: 'Uncaught exception', regex: /UNCAUGHT:|uncaught-/i },
-  { key: 'oom', label: 'Out-of-memory (GH runner 7GB exhausted)', regex: /Killed|OOM|out of memory|JavaScript heap out of memory/i },
-  { key: 'gh-timeout', label: 'GH timeout (50min ceiling hit)', regex: /The job running on runner .+ has exceeded the maximum execution time|timeout-minutes: 50/i },
-];
-
-function buildPhases(logTail: string | null): { phases: PhaseState[]; errorLabel: string | null; percent: number } {
-  const phases: PhaseState[] = PHASE_PATTERNS.map((p) => ({ key: p.key, label: p.label, status: 'pending' }));
-  let errorLabel: string | null = null;
-
-  if (!logTail) {
-    return { phases, errorLabel, percent: 0 };
-  }
-
-  // Detect errors first — they short-circuit the pipeline.
-  for (const e of ERROR_PATTERNS) {
-    if (e.regex.test(logTail)) {
-      errorLabel = e.label;
-      break;
-    }
-  }
-
-  // Mark phases done in order. A phase is "done" if its regex matches in log.
-  // The last matched phase is "running" UNTIL the next one matches OR cycle ends.
-  let lastMatchedIdx = -1;
-  for (let i = 0; i < PHASE_PATTERNS.length; i++) {
-    if (PHASE_PATTERNS[i].regex.test(logTail)) {
-      lastMatchedIdx = i;
-    }
-  }
-
-  for (let i = 0; i < phases.length; i++) {
-    if (i < lastMatchedIdx) {
-      phases[i].status = 'done';
-    } else if (i === lastMatchedIdx) {
-      // If last phase ('done') matches, mark all as done.
-      // Otherwise current phase is still running.
-      phases[i].status = lastMatchedIdx === phases.length - 1 ? 'done' : 'running';
-    }
-  }
-
-  // If error detected, mark current running phase as error.
-  if (errorLabel) {
-    for (let i = phases.length - 1; i >= 0; i--) {
-      if (phases[i].status === 'running' || phases[i].status === 'pending') {
-        phases[i].status = 'error';
-        phases[i].detail = errorLabel;
-        break;
-      }
-    }
-  }
-
-  const doneCount = phases.filter((p) => p.status === 'done').length;
-  const percent = Math.round((doneCount / phases.length) * 100);
-
-  return { phases, errorLabel, percent };
+interface StatusOK {
+  ok: true;
+  runs: NormalizedRun[];
+  commits: NormalizedCommit[];
+  queueCount: number;
+  fetchedAt: string;
+  rateLimit: { remaining: number | null; reset: number | null };
 }
 
-function statusBadge(status: PhaseState['status']): { icon: string; classes: string } {
-  switch (status) {
-    case 'done':
-      return { icon: '✓', classes: 'bg-emerald-100 text-emerald-700 border-emerald-300' };
-    case 'running':
-      return { icon: '⏳', classes: 'bg-saffron-100 text-saffron-800 border-saffron-300 animate-pulse' };
-    case 'error':
-      return { icon: '✗', classes: 'bg-red-100 text-red-700 border-red-300' };
-    case 'skipped':
-      return { icon: '⊘', classes: 'bg-surface-100 text-surface-500 border-surface-300' };
-    default:
-      return { icon: '○', classes: 'bg-surface-50 text-surface-400 border-surface-200' };
+interface StatusErr {
+  ok: false;
+  error: string;
+}
+
+type Status = StatusOK | StatusErr;
+
+function fmtWall(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m${s.toString().padStart(2, '0')}s`;
+}
+
+function fmtRelative(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function runBadge(run: NormalizedRun): { icon: string; label: string; classes: string } {
+  if (run.status === 'in_progress' || run.status === 'queued') {
+    return { icon: '⏳', label: 'Running', classes: 'bg-saffron-100 text-saffron-800 border-saffron-300 animate-pulse' };
   }
+  if (run.conclusion === 'success') {
+    return { icon: '✓', label: 'Success', classes: 'bg-emerald-100 text-emerald-700 border-emerald-300' };
+  }
+  if (run.conclusion === 'cancelled') {
+    return { icon: '⊘', label: 'Cancelled', classes: 'bg-amber-100 text-amber-700 border-amber-300' };
+  }
+  if (run.conclusion === 'failure' || run.conclusion === 'timed_out') {
+    return { icon: '✗', label: run.conclusion === 'timed_out' ? 'Timed out' : 'Failed', classes: 'bg-red-100 text-red-700 border-red-300' };
+  }
+  return { icon: '○', label: run.status, classes: 'bg-surface-50 text-surface-500 border-surface-300' };
 }
 
 export default function OrchestratorProgress() {
-  const [data, setData] = useState<OrchestratorStatus | null>(null);
+  const [data, setData] = useState<Status | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
 
@@ -132,14 +93,12 @@ export default function OrchestratorProgress() {
 
     async function fetchStatus() {
       try {
-        const r = await fetch(`${API_BASE_URL}/admin/roadmap/orchestrator-status`, {
-          cache: 'no-store',
-        });
+        const r = await fetch('/api/orchestrator-status', { cache: 'no-store' });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const j = (await r.json()) as OrchestratorStatus;
+        const j = (await r.json()) as Status;
         if (!cancelled) {
           setData(j);
-          setErr(null);
+          setErr(j.ok ? null : j.error);
           setLastFetch(new Date());
         }
       } catch (e) {
@@ -148,49 +107,66 @@ export default function OrchestratorProgress() {
     }
 
     fetchStatus();
-    const i = setInterval(fetchStatus, 10000); // 10s refresh
+    const i = setInterval(fetchStatus, 30000); // 30s refresh (matches edge cache TTL)
     return () => {
       cancelled = true;
       clearInterval(i);
     };
   }, []);
 
-  const { phases, errorLabel, percent } = buildPhases(data?.latestLogTail || null);
-
-  const cycleCount = data?.cycles?.length ?? 0;
-  const latestCycle = data?.cycles?.[0];
+  const ok = data && data.ok;
+  const runs = ok ? data.runs : [];
+  const commits = ok ? data.commits : [];
+  const queueCount = ok ? data.queueCount : 0;
+  const latestRun = runs[0];
+  const lastSuccessRun = runs.find((r) => r.conclusion === 'success');
 
   // Top-level summary state
   let summary: { label: string; classes: string };
   if (err) {
     summary = { label: `Status endpoint unreachable: ${err}`, classes: 'bg-red-50 border-red-300 text-red-800' };
-  } else if (data?.status === 'no-logs' || cycleCount === 0) {
+  } else if (!latestRun) {
     summary = {
-      label: 'Idle — waiting on next GH cron run (every 8hr at :17 UTC). Manual trigger: gh workflow run roadmap-loop.yml',
+      label: 'No workflow runs yet — waiting on first GH cron (every 8hr at :17 UTC).',
       classes: 'bg-surface-50 border-surface-300 text-surface-700',
     };
-  } else if (errorLabel) {
-    summary = { label: `HALTED — ${errorLabel}`, classes: 'bg-red-50 border-red-300 text-red-800' };
-  } else if (percent === 100) {
-    summary = { label: 'Last cycle: DONE ✓', classes: 'bg-emerald-50 border-emerald-300 text-emerald-800' };
-  } else {
+  } else if (latestRun.status === 'in_progress') {
     summary = {
-      label: `Running — ${percent}% (${phases.find((p) => p.status === 'running')?.label || 'in progress'})`,
+      label: `Cycle running — ${fmtWall(Math.floor((Date.now() - new Date(latestRun.createdAt).getTime()) / 1000))} elapsed (typical green cycle ~5-6min)`,
       classes: 'bg-saffron-50 border-saffron-300 text-saffron-900',
     };
+  } else if (latestRun.conclusion === 'success') {
+    summary = {
+      label: `Last cycle: GREEN ✓ — ${fmtWall(latestRun.wallSeconds)} wall, ${fmtRelative(latestRun.updatedAt)}`,
+      classes: 'bg-emerald-50 border-emerald-300 text-emerald-800',
+    };
+  } else {
+    const lastOK = lastSuccessRun ? ` (last green: ${fmtRelative(lastSuccessRun.updatedAt)})` : '';
+    summary = {
+      label: `Last cycle: ${latestRun.conclusion?.toUpperCase() || 'UNKNOWN'} — ${fmtWall(latestRun.wallSeconds)} wall${lastOK}`,
+      classes: 'bg-red-50 border-red-300 text-red-800',
+    };
   }
+
+  // Health score: % green over last 10 runs
+  const completed = runs.filter((r) => r.status === 'completed');
+  const green = completed.filter((r) => r.conclusion === 'success').length;
+  const greenPct = completed.length ? Math.round((green / completed.length) * 100) : 0;
 
   return (
     <section className="bg-white rounded-xl border border-surface-200 p-5">
       <div className="flex items-start justify-between mb-4 gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-surface-700">Autonomous Orchestrator — Live Progress</h2>
+          <h2 className="text-sm font-semibold text-surface-700">Autonomous Orchestrator — Live Status</h2>
           <p className="text-xs text-surface-500 mt-0.5">
-            Every 8hr via GH Actions runner · Opus 4.7 Decision Agent · 4 sub-agents max (2 concurrent) · pushes to main as orchestrator-bot · 10s UI refresh
+            GitHub Actions runner · Opus 4.7 Decision Agent · 4 sub-agents max (2 concurrent) · pushes to main as orchestrator-bot · 30s refresh
           </p>
         </div>
-        <div className="text-xs text-surface-400 shrink-0">
+        <div className="text-xs text-surface-400 shrink-0 text-right">
           {lastFetch ? `synced ${lastFetch.toLocaleTimeString()}` : 'connecting…'}
+          {ok && data.rateLimit.remaining !== null && (
+            <div className="text-[10px] mt-0.5">GH rate: {data.rateLimit.remaining} left</div>
+          )}
         </div>
       </div>
 
@@ -199,77 +175,118 @@ export default function OrchestratorProgress() {
         {summary.label}
       </div>
 
-      {/* Progress bar */}
-      <div className="mb-4">
-        <div className="flex justify-between text-xs text-surface-500 mb-1">
-          <span>Cycle progress</span>
-          <span className="font-mono">{percent}%</span>
+      {/* Health stats row */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="bg-surface-50 rounded-lg border border-surface-200 p-3">
+          <div className="text-[10px] uppercase tracking-wide text-surface-500">Green rate (last {completed.length})</div>
+          <div className={`text-xl font-mono font-bold ${greenPct >= 80 ? 'text-emerald-700' : greenPct >= 50 ? 'text-saffron-700' : 'text-red-700'}`}>{greenPct}%</div>
+          <div className="text-[10px] text-surface-500">{green}/{completed.length} cycles</div>
         </div>
-        <div className="w-full bg-surface-100 rounded-full h-3 overflow-hidden">
-          <div
-            className={`h-3 transition-all duration-500 ${
-              errorLabel ? 'bg-red-500' : percent === 100 ? 'bg-emerald-500' : 'bg-saffron-500'
-            }`}
-            style={{ width: `${percent}%` }}
-          />
+        <div className="bg-surface-50 rounded-lg border border-surface-200 p-3">
+          <div className="text-[10px] uppercase tracking-wide text-surface-500">Queue depth (dryrun)</div>
+          <div className="text-xl font-mono font-bold text-surface-800">{queueCount}</div>
+          <div className="text-[10px] text-surface-500">unconsumed items</div>
+        </div>
+        <div className="bg-surface-50 rounded-lg border border-surface-200 p-3">
+          <div className="text-[10px] uppercase tracking-wide text-surface-500">Last green wall</div>
+          <div className="text-xl font-mono font-bold text-surface-800">
+            {lastSuccessRun ? fmtWall(lastSuccessRun.wallSeconds) : '—'}
+          </div>
+          <div className="text-[10px] text-surface-500">target &lt; 10min</div>
         </div>
       </div>
 
-      {/* Phase ladder */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-        {phases.map((p) => {
-          const b = statusBadge(p.status);
-          return (
-            <div
-              key={p.key}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs ${b.classes}`}
-              title={p.detail}
-            >
-              <span className="font-mono font-bold">{b.icon}</span>
-              <span className="flex-1 truncate">{p.label}</span>
-              {p.detail && <span className="text-[10px] opacity-75 truncate ml-1">{p.detail}</span>}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Cycle history (last 10) */}
-      {cycleCount > 0 && (
-        <details className="mb-4">
+      {/* Recent runs (last 10) */}
+      {runs.length > 0 && (
+        <details open className="mb-4">
           <summary className="cursor-pointer text-sm font-semibold text-surface-700 hover:text-saffron-700">
-            Recent cycles ({cycleCount})
+            Recent workflow runs ({runs.length})
           </summary>
           <div className="mt-2 space-y-1">
-            {data!.cycles.slice(0, 10).map((c) => (
-              <div key={c.cycleId} className="flex items-center justify-between text-xs text-surface-600 font-mono py-1 border-b border-surface-100">
-                <span>{c.cycleId}</span>
-                <span className="text-surface-400">{c.size}B · {new Date(c.mtime).toLocaleString()}</span>
-              </div>
+            {runs.map((r) => {
+              const b = runBadge(r);
+              return (
+                <a
+                  key={r.id}
+                  href={r.htmlUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs hover:opacity-80 transition-opacity ${b.classes}`}
+                >
+                  <span className="font-mono font-bold w-4">{b.icon}</span>
+                  <span className="w-20 font-mono shrink-0">{b.label}</span>
+                  <span className="flex-1 truncate">{r.title}</span>
+                  <span className="font-mono text-[10px] opacity-75 shrink-0">{fmtWall(r.wallSeconds)}</span>
+                  <span className="font-mono text-[10px] opacity-50 shrink-0 w-16 text-right">{fmtRelative(r.updatedAt)}</span>
+                </a>
+              );
+            })}
+          </div>
+        </details>
+      )}
+
+      {/* Recent orchestrator-bot commits */}
+      {commits.length > 0 && (
+        <details className="mb-4">
+          <summary className="cursor-pointer text-sm font-semibold text-surface-700 hover:text-saffron-700">
+            Recent orchestrator commits ({commits.length})
+          </summary>
+          <div className="mt-2 space-y-1">
+            {commits.map((c) => (
+              <a
+                key={c.sha}
+                href={c.htmlUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-1.5 rounded text-xs text-surface-700 hover:bg-surface-50 border border-surface-100"
+              >
+                <span className="font-mono text-surface-500 shrink-0">{c.shortSha}</span>
+                <span className="flex-1 truncate">{c.message}</span>
+                <span className="font-mono text-[10px] text-surface-400 shrink-0">{fmtRelative(c.date)}</span>
+              </a>
             ))}
           </div>
         </details>
       )}
 
-      {/* Log tail (collapsed) */}
-      {data?.latestLogTail && (
-        <details>
-          <summary className="cursor-pointer text-sm font-semibold text-surface-700 hover:text-saffron-700">
-            Live log tail ({latestCycle?.cycleId || 'latest'})
-          </summary>
-          <pre className="mt-2 text-[11px] text-surface-700 bg-surface-50 border border-surface-200 rounded p-3 overflow-auto max-h-72 font-mono whitespace-pre-wrap leading-relaxed">
-            {data.latestLogTail}
-          </pre>
-        </details>
-      )}
-
-      {/* Idle hint — architecture now GH-runner native, no setup beyond secrets */}
-      {(data?.status === 'no-logs' || cycleCount === 0) && !err && (
+      {/* Idle hint — no runs yet */}
+      {ok && !latestRun && (
         <div className="mt-4 text-xs text-surface-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="font-semibold text-amber-900 mb-1">Orchestrator runs inside GH Actions runner (Option 2-GH).</p>
-          <p className="text-amber-800">Cron: <code className="font-mono bg-amber-100 px-1 rounded">17 */8 * * *</code> (3 cycles/day @ 00:17 / 08:17 / 16:17 UTC). Each cycle: ingest 303 items → KPI scrape → tripwires → Opus 4.7 Decision Agent → up to 4 sub-agents fan-out → write queue → commit + push to main as orchestrator-bot[bot] (with <code>[skip ci]</code>).</p>
-          <p className="mt-2 text-amber-800">Manual trigger: <code className="font-mono bg-amber-100 px-1 rounded">gh workflow run roadmap-loop.yml -f dry_run=true</code>. Full audit trail in <a href="https://github.com" className="underline">Actions tab</a> + git log <code>orchestrator-bot[bot]</code>.</p>
+          <p className="font-semibold text-amber-900 mb-1">Orchestrator runs inside GitHub Actions runner (Option 2-GH).</p>
+          <p className="text-amber-800">
+            Cron: <code className="font-mono bg-amber-100 px-1 rounded">17 */8 * * *</code> (3 cycles/day @ 00:17 / 08:17 / 16:17 UTC).
+            Each cycle: ingest 306 items → KPI scrape → tripwires → Opus 4.7 Decision Agent → up to 4 sub-agents fan-out → write queue → commit + push to main as orchestrator-bot[bot] (with <code>[skip ci]</code>).
+          </p>
+          <p className="mt-2 text-amber-800">
+            Manual trigger: <code className="font-mono bg-amber-100 px-1 rounded">gh workflow run roadmap-loop.yml -f dry_run=true</code>
+          </p>
         </div>
       )}
+
+      {/* Source links */}
+      <div className="mt-4 pt-3 border-t border-surface-100 flex items-center justify-between text-[11px] text-surface-500">
+        <span>
+          Source:{' '}
+          <a
+            href="https://github.com/XI1568-raghav/bhaktisetu/actions/workflows/roadmap-loop.yml"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-saffron-700"
+          >
+            GH Actions
+          </a>
+          {' · '}
+          <a
+            href="https://github.com/XI1568-raghav/bhaktisetu/commits/main?author=orchestrator-bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-saffron-700"
+          >
+            commits
+          </a>
+        </span>
+        <span>via GitHub REST API (cached 30s)</span>
+      </div>
     </section>
   );
 }
