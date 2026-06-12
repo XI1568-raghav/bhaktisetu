@@ -6,7 +6,7 @@ owner_role: it
 quarter: Q1
 month_target: 1
 priority: P0
-status: planned
+status: shipped
 agent_assignable: true
 founder_blocker: 'U12'
 depends_on: ["R-Q1-IT-004"]
