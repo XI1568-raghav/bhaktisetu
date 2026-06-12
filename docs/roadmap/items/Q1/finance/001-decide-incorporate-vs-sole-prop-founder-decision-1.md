@@ -6,7 +6,7 @@ owner_role: cfo
 quarter: Q1
 month_target: 1
 priority: P0
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -47,10 +47,20 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: Decision doc shipped. docs/finance/incorporate-vs-sole-prop-decision-2026-06-12.md
+    - Decision matrix: Section 8 Foundation (current) vs Sole-Prop vs LLP vs Pvt Ltd
+    - Recommend KEEP Foundation (already has 80G + CSR-1 + donor trust + customer-facing copy throughout repo)
+    - Conversion trigger: when commercial revenue (L4 + L5) exceeds 20% of total MRR for 2 consecutive months → scope Bhaktisetu Tech Pvt Ltd subsidiary w/ Foundation as 51%+ shareholder
+    - Concrete math: current L4+L5 = ₹1.3L of ₹5L MRR target = 26% (ALREADY OVER 20% incidental threshold at Q2 target run-rate)
+    - Compliance calendar (quarterly GST + annual ITR-7 + annual board AGM + 80G/CSR-1 renewals + Form 10BD donor reporting)
+    - Annual CA + audit cost estimate ₹50K-80K
+    - 6 open Qs for founder (registration #s SoT, board composition, FCRA, founder stipend, asset ownership, bank account)
+  FOUNDER ACTION: sign decision text + create docs/legal/foundation-registration-numbers.md (founder-only) + set quarterly L4+L5 commercial revenue tracking + decide on FCRA application for NRI USD strategy.
+  Closes (partial): R-Q1-F-001. Status stays in_progress until founder signs decision + creates registration-numbers doc + answers 6 open Qs.
 
 tags: ["founder-decision","incorp","p0"]
 created_at: 2026-06-09T21:50:13.304Z
-updated_at: 2026-06-09T21:50:13.304Z
+updated_at: 2026-06-12T09:30:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
