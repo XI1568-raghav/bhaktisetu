@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q1
 month_target: 3
 priority: P2
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -46,10 +46,19 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: Translations shipped. 3 files:
+    - docs/cs/macros-v1-hi.md (Hindi, Devanagari + roman transliteration per sentence)
+    - docs/cs/macros-v1-ta.md (Tamil, Tamil + roman)
+    - docs/cs/macros-v1-te.md (Telugu, Telugu + roman)
+  Coverage: top 5 macros from English source (#1 SLA-breach, #2 priest no-show, #3 video delay, #4 payment failed, #6 refund processed). Same trigger/tone/reply/SLA structure. Tokens (`{name}`, `{amountInr}`, `{scheduledDate}`, `{puja_name}`, `{BS-id}`, `{priestId}`) preserved verbatim.
+  FOUNDER ACTION REQUIRED before customer send: native-fluent speaker review per language. Each file has reviewer checklist (script accuracy, honorific consistency, idiom check). Suggest: HI → founder direct, TA → ask Mrs. Iyer persona / Tamil community contact, TE → ask Hyderabad ex-coworker / Telugu community contact.
+  Translation-tool independence verified: hand-translated, no MT used (Google Translate produces stilted formal-only register that reads sarcastic in apology context).
+  Out of scope (this cycle): Marathi, Gujarati, Punjabi, Bengali, Malayalam, Kannada — future R-Q1-CS-001c ticket.
+  Closes (partial): Q-C-20260612T0503-R-Q1-CS-004. Status stays in_progress until 3 native reviews complete + support agent UI lang-picker wired.
 
 tags: ["cs","i18n","p2"]
 created_at: 2026-06-09T21:50:37.964Z
-updated_at: 2026-06-09T21:50:37.964Z
+updated_at: 2026-06-12T07:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null

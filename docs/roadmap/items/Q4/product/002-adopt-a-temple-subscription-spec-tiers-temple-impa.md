@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q4
 month_target: 11
 priority: P0
-status: planned
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -38,11 +38,24 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: SHIPPED. docs/specs/adopt-a-temple-v1.md authored end-to-end:
+    - Goal + Non-goals (recurring only, not gift/group v1)
+    - 4 Personas (Bengaluru IT / Mumbai biz / Acme CSR / NRI San Jose)
+    - 4 pricing tiers (Bronze ₹500 / Silver ₹2K / Gold ₹5K / Corporate ₹25K+) w/ 15% platform fee transparency
+    - User journey (subscribe → monthly debit → impact PDF → annual 80G receipt)
+    - 3 SQL data model tables (temple_subscription + temple_subscription_charge + temple_impact_report) w/ enums + indexes
+    - 10 API endpoints + 1 Razorpay subscription webhook handler (subscription.charged/cancelled/payment_failed)
+    - 7 UI wireframes (temple-page CTA / tier picker / subscriber dashboard / impact PDF layout / admin disburse / cancel-flow / annual receipt)
+    - Test plan: 18 cases for engineering (11 API integration + 3 service + 1 PDF + 3 frontend)
+    - MVP v1/v2 cut-line (Razorpay+Stripe in v1; auto-disbursement + corporate tier in v2)
+    - 10 Open Questions for founder review (disbursement cadence, gateway routing, 80G timing, cancel taxonomy, pause max, proration, video SLA, retry policy, supporters opt-in default, refund window)
+  Unblocks R-Q4-E-012 engineering pickup. Status stays planned on E-012 until founder answers the 10 open Qs.
+  Closes: Q-C-20260612T0001-R-Q4-P-002.
 
 tags: ["product","adopt-temple","subscription","recurring"]
 created_at: 2026-06-09T22:09:25.940Z
-updated_at: 2026-06-09T22:09:25.940Z
-shipped_at: null
+updated_at: 2026-06-12T06:30:00.000Z
+shipped_at: 2026-06-12T06:30:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null

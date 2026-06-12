@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T09:36:50.229Z",
+  "generatedAt": "2026-06-12T10:35:56.137Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -161,7 +161,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -193,14 +193,14 @@
           "apps/api/src/routes/support.ts"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Translations shipped. 3 files:\n  - docs/cs/macros-v1-hi.md (Hindi, Devanagari + roman transliteration per sentence)\n  - docs/cs/macros-v1-ta.md (Tamil, Tamil + roman)\n  - docs/cs/macros-v1-te.md (Telugu, Telugu + roman)\nCoverage: top 5 macros from English source (#1 SLA-breach, #2 priest no-show, #3 video delay, #4 payment failed, #6 refund processed). Same trigger/tone/reply/SLA structure. Tokens (`{name}`, `{amountInr}`, `{scheduledDate}`, `{puja_name}`, `{BS-id}`, `{priestId}`) preserved verbatim.\nFOUNDER ACTION REQUIRED before customer send: native-fluent speaker review per language. Each file has reviewer checklist (script accuracy, honorific consistency, idiom check). Suggest: HI → founder direct, TA → ask Mrs. Iyer persona / Tamil community contact, TE → ask Hyderabad ex-coworker / Telugu community contact.\nTranslation-tool independence verified: hand-translated, no MT used (Google Translate produces stilted formal-only register that reads sarcastic in apology context).\nOut of scope (this cycle): Marathi, Gujarati, Punjabi, Bengali, Malayalam, Kannada — future R-Q1-CS-001c ticket.\nCloses (partial): Q-C-20260612T0503-R-Q1-CS-004. Status stays in_progress until 3 native reviews complete + support agent UI lang-picker wired.\n",
       "tags": [
         "cs",
         "i18n",
         "p2"
       ],
       "created_at": "2026-06-09T21:50:37.964Z",
-      "updated_at": "2026-06-09T21:50:37.964Z",
+      "updated_at": "2026-06-12T07:00:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
@@ -4798,7 +4798,7 @@
       "quarter": "Q1",
       "month_target": 1,
       "priority": "P0",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -4819,12 +4819,18 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "50 contacts identified + segmented by relationship × ask_type (data/sales/warm-network-contacts-seed.csv)",
+        "4 WA script variants ready (temple/pandit/gaushala/donor), each w/ 3 sub-variants for relationship depth",
+        "Live tracker CSV w/ explicit schema (data/sales/warm-network-tracker.csv)",
+        "Founder sends 50 messages over 5-day window (manual WA/email/LinkedIn — NOT bulk tool)",
+        "Reply rate logged for every contact (positive/negative/silent)",
+        "≥3 qualified supply leads from 50 asks (target = ₹2L pipeline value)",
+        "Handoff note updated w/ aggregate reply rate + conversion + lessons learned"
       ],
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n2026-06-12: Agent prep complete. 6 deliverables shipped:\n  - data/sales/warm-network-tracker.csv (live tracker, 11 cols)\n  - data/sales/warm-network-contacts-seed.csv (50-row template w/ pre-segmented relationship × ask_type)\n  - scripts/sales/warm-network/wa-script-{temple,pandit,gaushala,donor}.md (4 scripts × 3 variants each = 12 ready-to-send templates + post-reply follow-ups)\n  - docs/agent-reports/2026-06-12-warm-network-reachout-prep.md (full execution playbook + segmentation logic + 5-day send schedule + expected outcomes math + risk mitigations)\nSuccess criteria populated (replaced placeholder w/ 7 concrete bars).\nFOUNDER ACTION REQUIRED: ≤6h total over 5 days — fill 50 contact_name values, send messages per scripts, log replies in tracker.\nExpected outcome: 3-4 qualified supply leads → ₹1-3L pipeline value.\nCloses (partial): Q-C-20260612T0001-R-Q1-S-014. Status stays in_progress until founder reports back w/ reply-rate + conversion numbers.\n",
       "tags": [
         "warm-network",
         "founder",
@@ -14874,7 +14880,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-11: spec shipped per R-Q4-P-001 prompt (Q-C-20260610T1623-R-Q4-P-001).\n  Files:\n    - docs/product/specs/antim-sanskar-v1.md (455 LOC, 13 H2 sections, 5 ASCII wireframes, 15+ checklist items)\n    - scripts/lint-product-specs.mjs (TDD spec-lint w/ forbidden-word + structural checks)\n    - package.json: pnpm lint:specs script added\n  Verify: pnpm lint:specs → OK. wc -l → 455. grep ## → 13.\n  Unblocks: R-Q4-E-001 engineering build.\n  FOUNDER-BLOCKER (10 open questions, top 4):\n    (1) pricing tier amounts ₹5100/11000/21000 confirm,\n    (2) name senior pandit reviewer for grief-copy sign-off,\n    (3) confirm 5% bad-debt tolerance,\n    (4) cremation-ground partnership scope decision.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-11: spec shipped per R-Q4-P-001 prompt (Q-C-20260610T1623-R-Q4-P-001).\n  Files:\n    - docs/product/specs/antim-sanskar-v1.md (455 LOC, 13 H2 sections, 5 ASCII wireframes, 15+ checklist items)\n    - scripts/lint-product-specs.mjs (TDD spec-lint w/ forbidden-word + structural checks)\n    - package.json: pnpm lint:specs script added\n  Verify: pnpm lint:specs → OK. wc -l → 455. grep ## → 13.\n  Unblocks: R-Q4-E-001 engineering build.\n  FOUNDER-BLOCKER (10 open questions, top 4):\n    (1) pricing tier amounts ₹5100/11000/21000 confirm,\n    (2) name senior pandit reviewer for grief-copy sign-off,\n    (3) confirm 5% bad-debt tolerance,\n    (4) cremation-ground partnership scope decision.\n2026-06-12: verify pass complete. Spec exists, 455 LOC, 13 H2s, lint GREEN. Re-emission triggered because 10 founder Qs still un-answered. Surfaced ALL 10 questions w/ recommended defaults + ≤30min decision path at docs/agent-reports/2026-06-12-antim-sanskar-founder-questions.md. Founder action: rubber-stamp 5 defaults + decide 2 + kick 3 parallel tracks. After decisions logged, status flips to verified + R-Q4-E-009 engineering unblocked. Closes Q-C-20260612T0503-R-Q4-P-001 (verify pass).\n",
       "tags": [
         "product",
         "antim-sanskar",
@@ -14897,7 +14903,7 @@
       "quarter": "Q4",
       "month_target": 11,
       "priority": "P0",
-      "status": "planned",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -14925,7 +14931,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: SHIPPED. docs/specs/adopt-a-temple-v1.md authored end-to-end:\n  - Goal + Non-goals (recurring only, not gift/group v1)\n  - 4 Personas (Bengaluru IT / Mumbai biz / Acme CSR / NRI San Jose)\n  - 4 pricing tiers (Bronze ₹500 / Silver ₹2K / Gold ₹5K / Corporate ₹25K+) w/ 15% platform fee transparency\n  - User journey (subscribe → monthly debit → impact PDF → annual 80G receipt)\n  - 3 SQL data model tables (temple_subscription + temple_subscription_charge + temple_impact_report) w/ enums + indexes\n  - 10 API endpoints + 1 Razorpay subscription webhook handler (subscription.charged/cancelled/payment_failed)\n  - 7 UI wireframes (temple-page CTA / tier picker / subscriber dashboard / impact PDF layout / admin disburse / cancel-flow / annual receipt)\n  - Test plan: 18 cases for engineering (11 API integration + 3 service + 1 PDF + 3 frontend)\n  - MVP v1/v2 cut-line (Razorpay+Stripe in v1; auto-disbursement + corporate tier in v2)\n  - 10 Open Questions for founder review (disbursement cadence, gateway routing, 80G timing, cancel taxonomy, pause max, proration, video SLA, retry policy, supporters opt-in default, refund window)\nUnblocks R-Q4-E-012 engineering pickup. Status stays planned on E-012 until founder answers the 10 open Qs.\nCloses: Q-C-20260612T0001-R-Q4-P-002.\n",
       "tags": [
         "product",
         "adopt-temple",
@@ -14933,8 +14939,8 @@
         "recurring"
       ],
       "created_at": "2026-06-09T22:09:25.940Z",
-      "updated_at": "2026-06-09T22:09:25.940Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-12T06:30:00.000Z",
+      "shipped_at": "2026-06-12T06:30:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
