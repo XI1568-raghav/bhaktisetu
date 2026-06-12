@@ -56,6 +56,14 @@ handoff_notes: |
   Migration NOT yet applied to production DB — run `pnpm --filter @poojly/api exec prisma migrate dev --name add_user_credit_ledger` in next deploy window.
   Closes (partial): Q-C-20260611T2307-R-Q2-M-011 Tier-1. Status stays in_progress until Tier-2 ships.
 
+  2026-06-12 (Tier-2 partial): API tests + checkout hook shipped.
+    - apps/api/src/routes/referrals.test.ts: 8/8 cases green covering GET /me unauth 401, GET /me happy path w/ derived code + stats, POST /claim self-referral 400, POST /claim unknown code 404, POST /claim signed_up 201, POST /claim duplicate idempotent 200, POST /reward happy path w/ wallet credit, POST /reward already-rewarded idempotent.
+    - apps/api/src/services/payment.service.ts: added tryRewardReferralForBooking() helper, wired into verifyPayment side-effects on `shouldConfirm` block. Fire-and-forget — referral failure swallowed (hard rule: cannot block booking confirmation). Re-runs on webhook retry safely via wallet idempotency key.
+    - All 39 related tests still green (wallet 10 + referrals 8 + payment 21).
+    - Total session test count for this item: 18 new (wallet 10 + referrals 8).
+  Tier-2 STILL deferred to task #107: apps/web/middleware.ts ref-cookie capture, 3 web component tests (need happy-dom setup), NEXT_PUBLIC_FEATURE_REFERRAL nav-link flag. Middleware blocked on edge-runtime ~250-route sweep planning.
+  Closes (further partial): Q-C-20260611T2307-R-Q2-M-011 Tier-2 API + checkout. Status stays in_progress until middleware + web tests ship.
+
 tags: ["growth","referral","viral"]
 created_at: 2026-06-09T21:55:19.892Z
 updated_at: 2026-06-09T21:55:19.892Z
