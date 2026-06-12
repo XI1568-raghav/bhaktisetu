@@ -50,17 +50,27 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
   // container restart. Smaller budget = faster completion = better chance of
   // surviving the next restart-event.
   const PER_SUBAGENT_TIMEOUT_MS = 8 * 60 * 1000;
+  let timeoutHandle;
   try {
+    const timer = new Promise((_, reject) => {
+      timeoutHandle = setTimeout(
+        () => reject(new Error(`sub-agent ${role} timeout after ${PER_SUBAGENT_TIMEOUT_MS}ms`)),
+        PER_SUBAGENT_TIMEOUT_MS,
+      );
+      if (timeoutHandle.unref) timeoutHandle.unref();
+    });
     response = await Promise.race([
       opusFn({
         system: SUBAGENT_SYSTEM(role),
         messages: [{ role: 'user', content: userMsg }],
         maxTokens: 12000,
       }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`sub-agent ${role} timeout after ${PER_SUBAGENT_TIMEOUT_MS}ms`)), PER_SUBAGENT_TIMEOUT_MS)),
+      timer,
     ]);
   } catch (e) {
     return { queueFiles: [], errors: [e.message], usage: null };
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
   }
 
   const text = response.content.find((c) => c.type === 'text')?.text || '';
