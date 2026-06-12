@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q1
 month_target: 1
 priority: P0
-status: planned
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
