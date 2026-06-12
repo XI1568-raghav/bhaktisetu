@@ -19,12 +19,17 @@ const TTL_BY_SOURCE = {
 const SCRAPER_TIMEOUT_MS = 90 * 1000;
 
 function withTimeout(label, p) {
-  return Promise.race([
-    p,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`scrape-${label}-timeout-${SCRAPER_TIMEOUT_MS}ms`)), SCRAPER_TIMEOUT_MS)
-    ),
-  ]);
+  let handle;
+  const timer = new Promise((_, reject) => {
+    handle = setTimeout(
+      () => reject(new Error(`scrape-${label}-timeout-${SCRAPER_TIMEOUT_MS}ms`)),
+      SCRAPER_TIMEOUT_MS
+    );
+    if (handle.unref) handle.unref(); // don't keep event loop alive past p resolution
+  });
+  return Promise.race([p, timer]).finally(() => {
+    if (handle) clearTimeout(handle);
+  });
 }
 
 export async function scrapeAllKpis(items, opts = {}) {

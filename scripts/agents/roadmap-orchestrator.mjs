@@ -21,6 +21,25 @@ const ALERTS_DIR = 'docs/roadmap/_alerts';
 const BUDGET_PATH = 'docs/roadmap/_budget-snapshot.json';
 const TRIPWIRES_PATH = 'docs/roadmap/_tripwires-global.yml';
 
+// raceWithWall — wraps a promise w/ a unref'd setTimeout that resolves to
+// `fallback` after `wallMs`. Critical: handle is .unref()'d + cleared on
+// settle so it cannot keep event loop alive after the cycle finishes.
+// Cycle 12 RCA: bare Promise.race+setTimeout left dangling handles → node
+// sat idle 45min after orchestrator finished, hit GH 50min ceiling.
+function raceWithWall(p, wallMs, fallback, warnMsg) {
+  let handle;
+  const timer = new Promise((resolve) => {
+    handle = setTimeout(() => {
+      if (warnMsg) console.warn(`[orchestrator] ${warnMsg}`);
+      resolve(fallback);
+    }, wallMs);
+    if (handle.unref) handle.unref();
+  });
+  return Promise.race([p, timer]).finally(() => {
+    if (handle) clearTimeout(handle);
+  });
+}
+
 function writeAlert(filename, body) {
   mkdirSync(ALERTS_DIR, { recursive: true });
   writeFileSync(join(ALERTS_DIR, filename), `# Alert\n\n${body}\n\nTs: ${new Date().toISOString()}\n`);
@@ -128,13 +147,12 @@ async function main() {
   // 3. SCRAPE KPIS — hard-bounded by per-scraper 90s + outer wall 5min.
   console.log(`[orchestrator] phase=kpi start`);
   const KPI_PHASE_WALL_MS = 5 * 60 * 1000;
-  const kpis = await Promise.race([
+  const kpis = await raceWithWall(
     scrapeAllKpis(items.filter(i => i.kpi?.source)),
-    new Promise((resolve) => setTimeout(() => {
-      console.warn(`[orchestrator] KPI phase wall hit (${KPI_PHASE_WALL_MS}ms) — proceeding with empty KPIs`);
-      resolve([]);
-    }, KPI_PHASE_WALL_MS)),
-  ]);
+    KPI_PHASE_WALL_MS,
+    [],
+    `KPI phase wall hit (${KPI_PHASE_WALL_MS}ms) — proceeding with empty KPIs`,
+  );
   console.log(`[orchestrator] scraped ${kpis.length} KPIs (${kpis.filter(k => k.stale).length} stale)`);
 
   // 3b. REFRESH FLEET AGENT SUMMARIES (24 daily agents → sector-grouped excerpts)
@@ -153,13 +171,12 @@ async function main() {
   let experiments = { results: [], experimentCount: 0 };
   try {
     const { trackExperiments } = await import('./roadmap/_experiment-tracker.mjs');
-    experiments = await Promise.race([
+    experiments = await raceWithWall(
       trackExperiments(),
-      new Promise((resolve) => setTimeout(() => {
-        console.warn(`[orchestrator] experiment tracker wall hit (60s) — proceeding with empty`);
-        resolve({ results: [], experimentCount: 0 });
-      }, 60 * 1000)),
-    ]);
+      60 * 1000,
+      { results: [], experimentCount: 0 },
+      `experiment tracker wall hit (60s) — proceeding with empty`,
+    );
     console.log(`[orchestrator] experiments: ${experiments.experimentCount} tracked (${experiments.decided || 0} decided)`);
   } catch (e) {
     console.warn(`[orchestrator] experiments skipped: ${e.message}`);
@@ -206,7 +223,15 @@ async function main() {
     // 16k tokens streaming, 10min wall budget. Smaller = survives Render restart.
     let decisionResponse;
     const DECISION_TIMEOUT_MS = 10 * 60 * 1000;
+    let decisionTimer;
     try {
+      const timer = new Promise((_, reject) => {
+        decisionTimer = setTimeout(
+          () => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)),
+          DECISION_TIMEOUT_MS,
+        );
+        if (decisionTimer.unref) decisionTimer.unref();
+      });
       decisionResponse = await Promise.race([
         callOpus47({
           system: DECISION_SYSTEM_PROMPT,
@@ -214,8 +239,8 @@ async function main() {
           tools: DECISION_TOOLS,
           maxTokens: 16000,
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`Decision Agent timeout after ${DECISION_TIMEOUT_MS}ms`)), DECISION_TIMEOUT_MS)),
-      ]);
+        timer,
+      ]).finally(() => { if (decisionTimer) clearTimeout(decisionTimer); });
     } catch (e) {
       if (e instanceof ModelRejectedError) {
         writeAlert(`model-rejected-${cycleId}.md`, `Decision Agent rejected: ${e.message}\nHalting per user directive.`);
@@ -295,9 +320,17 @@ async function main() {
   releaseLock();
 }
 
-main().catch(e => {
-  console.error(e);
-  writeAlert(`uncaught-${Date.now()}.md`, e.stack || String(e));
-  releaseLock();
-  process.exit(1);
-});
+main()
+  .then(() => {
+    // Explicit exit — race-vs-timeout patterns leave dangling timer handles
+    // that prevent natural event-loop drain. Cycle 12 RCA: orchestrator
+    // finished at 23:11:44 but node sat idle until 50min ceiling at 23:56.
+    console.log('[orchestrator] exit 0');
+    process.exit(0);
+  })
+  .catch(e => {
+    console.error(e);
+    writeAlert(`uncaught-${Date.now()}.md`, e.stack || String(e));
+    releaseLock();
+    process.exit(1);
+  });
