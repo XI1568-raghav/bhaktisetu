@@ -40,8 +40,41 @@ interface QueueEntry {
   download_url: string | null;
 }
 
+interface PlannedItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  owner_role: string;
+  est_hours: number | null;
+}
+
+interface QueueItem {
+  name: string;
+  role: string;
+  itemId: string;
+  cycleTs: string; // parsed from filename prefix
+}
+
+interface FiredTripwire {
+  id: string;
+  shortTitle: string;
+}
+
 type OrchestratorStatusResponse =
-  | { ok: true; runs: NormalizedRun[]; commits: NormalizedCommit[]; queueCount: number; fetchedAt: string; rateLimit: { remaining: number | null; reset: number | null } }
+  | {
+      ok: true;
+      runs: NormalizedRun[];
+      commits: NormalizedCommit[];
+      queueCount: number;
+      queueItems: QueueItem[];
+      plannedTop: PlannedItem[];
+      tripwiresFired: FiredTripwire[];
+      tripwiresCount: number;
+      nextCronAt: string;
+      fetchedAt: string;
+      rateLimit: { remaining: number | null; reset: number | null };
+    }
   | { ok: false; error: string };
 
 interface NormalizedRun {
@@ -97,14 +130,94 @@ async function fetchCommits(): Promise<Commit[]> {
   return all.filter((c) => c.commit.author?.name?.includes('orchestrator-bot')).slice(0, 10);
 }
 
-async function fetchQueueCount(): Promise<number> {
+async function fetchQueueDir(): Promise<{ count: number; items: QueueItem[] }> {
   const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/docs/roadmap/_dryrun/queue`;
   const res = await fetch(url, { headers: gh(), next: { revalidate: 30 } });
-  if (res.status === 404) return 0; // dir may not exist yet
+  if (res.status === 404) return { count: 0, items: [] };
   if (!res.ok) throw new Error(`gh contents ${res.status}`);
   const entries = (await res.json()) as QueueEntry[] | { message: string };
-  if (!Array.isArray(entries)) return 0;
-  return entries.filter((e) => e.name.endsWith('.md')).length;
+  if (!Array.isArray(entries)) return { count: 0, items: [] };
+  const mds = entries.filter((e) => e.name.endsWith('.md'));
+  // Filename pattern: 2026-06-12T00-01-49-218Z-{role}-{itemId}-{slug}.md
+  const items: QueueItem[] = mds.slice(0, 20).map((e) => {
+    const m = e.name.match(/^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)-([a-z]+)-(R-Q\d+-[A-Z]+-\d+)-/);
+    return {
+      name: e.name,
+      cycleTs: m ? m[1].replace(/-/g, ':').replace(/^(\d{4}):(\d{2}):(\d{2}):(\d{2}):(\d{2}):(\d{2}):(\d{3})Z$/, '$1-$2-$3T$4:$5:$6.$7Z') : '',
+      role: m ? m[2] : '',
+      itemId: m ? m[3] : '',
+    };
+  });
+  return { count: mds.length, items };
+}
+
+async function fetchPlanned(): Promise<PlannedItem[]> {
+  // _index.json maintained by pre-commit hook on every roadmap item change.
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/docs/roadmap/_index.json`;
+  const res = await fetch(url, { headers: gh(), next: { revalidate: 60 } });
+  if (!res.ok) return [];
+  const file = (await res.json()) as { content?: string; encoding?: string; download_url?: string };
+  let raw: string;
+  if (file.content && file.encoding === 'base64') {
+    raw = atob(file.content.replace(/\n/g, ''));
+  } else if (file.download_url) {
+    const dl = await fetch(file.download_url, { next: { revalidate: 60 } });
+    if (!dl.ok) return [];
+    raw = await dl.text();
+  } else {
+    return [];
+  }
+  const index = JSON.parse(raw) as { items?: Array<{ id: string; title: string; priority: string; quarter: string; status: string; owner_role: string; agent_assignable?: boolean; founder_blocker?: string | null; est_hours?: number | null }> };
+  const items = index.items || [];
+  // Planned + agent_assignable + not founder_blocked, ranked P0 > P1 > P2, then quarter ASC.
+  const priorityRank: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+  const quarterRank = (q: string): number => Number(q.replace('Q', '')) || 99;
+  const planned = items
+    .filter((i) => i.status === 'planned' && i.agent_assignable !== false && !i.founder_blocker)
+    .sort((a, b) => {
+      const p = (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
+      if (p !== 0) return p;
+      return quarterRank(a.quarter) - quarterRank(b.quarter);
+    })
+    .slice(0, 5);
+  return planned.map((i) => ({
+    id: i.id,
+    title: i.title.length > 80 ? i.title.slice(0, 77) + '…' : i.title,
+    priority: i.priority,
+    quarter: i.quarter,
+    owner_role: i.owner_role,
+    est_hours: i.est_hours ?? null,
+  }));
+}
+
+async function fetchTripwires(): Promise<{ count: number; fired: FiredTripwire[] }> {
+  // _tripwires-global.yml count + check last decision note for fired ones.
+  // Cheap: fetch the YAML once, parse trip line markers, no full YAML parser needed.
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/docs/roadmap/_tripwires-global.yml`;
+  const res = await fetch(url, { headers: gh(), next: { revalidate: 300 } });
+  if (!res.ok) return { count: 0, fired: [] };
+  const file = (await res.json()) as { content?: string; encoding?: string };
+  if (!file.content || file.encoding !== 'base64') return { count: 0, fired: [] };
+  const raw = atob(file.content.replace(/\n/g, ''));
+  const idLines = raw.match(/^\s*-\s*id:\s*['"]?(T-\d+)/gm) || [];
+  return { count: idLines.length, fired: [] }; // 'fired' empty until decision-note scrape added
+}
+
+// Next cron fire time from cron expr `17 */8 * * *` (minute=17, hour every 8h).
+function nextCronAt(now: Date): string {
+  const fireHours = [0, 8, 16];
+  for (let dayOffset = 0; dayOffset < 2; dayOffset++) {
+    for (const h of fireHours) {
+      const candidate = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + dayOffset,
+        h, 17, 0, 0,
+      ));
+      if (candidate.getTime() > now.getTime()) return candidate.toISOString();
+    }
+  }
+  return new Date(now.getTime() + 8 * 3600 * 1000).toISOString(); // fallback
 }
 
 function normalizeRun(r: WorkflowRun): NormalizedRun {
@@ -135,18 +248,31 @@ function normalizeCommit(c: Commit): NormalizedCommit {
 
 export async function GET(): Promise<Response> {
   try {
-    // Parallel fan-out — all 3 calls independent.
-    const [runsResult, commits, queueCount] = await Promise.all([
+    // Parallel fan-out — 5 calls independent. allSettled so one failure doesn't kill all.
+    const [runsR, commitsR, queueR, plannedR, tripwiresR] = await Promise.allSettled([
       fetchRuns(),
       fetchCommits(),
-      fetchQueueCount(),
+      fetchQueueDir(),
+      fetchPlanned(),
+      fetchTripwires(),
     ]);
+
+    const runsResult = runsR.status === 'fulfilled' ? runsR.value : { runs: [], remaining: null, reset: null };
+    const commits = commitsR.status === 'fulfilled' ? commitsR.value : [];
+    const queue = queueR.status === 'fulfilled' ? queueR.value : { count: 0, items: [] };
+    const planned = plannedR.status === 'fulfilled' ? plannedR.value : [];
+    const tripwires = tripwiresR.status === 'fulfilled' ? tripwiresR.value : { count: 0, fired: [] };
 
     const payload: OrchestratorStatusResponse = {
       ok: true,
       runs: runsResult.runs.map(normalizeRun),
       commits: commits.map(normalizeCommit),
-      queueCount,
+      queueCount: queue.count,
+      queueItems: queue.items,
+      plannedTop: planned,
+      tripwiresFired: tripwires.fired,
+      tripwiresCount: tripwires.count,
+      nextCronAt: nextCronAt(new Date()),
       fetchedAt: new Date().toISOString(),
       rateLimit: { remaining: runsResult.remaining, reset: runsResult.reset },
     };

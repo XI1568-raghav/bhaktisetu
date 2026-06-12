@@ -34,11 +34,37 @@ interface NormalizedCommit {
   htmlUrl: string;
 }
 
+interface PlannedItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  owner_role: string;
+  est_hours: number | null;
+}
+
+interface QueueItem {
+  name: string;
+  role: string;
+  itemId: string;
+  cycleTs: string;
+}
+
+interface FiredTripwire {
+  id: string;
+  shortTitle: string;
+}
+
 interface StatusOK {
   ok: true;
   runs: NormalizedRun[];
   commits: NormalizedCommit[];
   queueCount: number;
+  queueItems: QueueItem[];
+  plannedTop: PlannedItem[];
+  tripwiresFired: FiredTripwire[];
+  tripwiresCount: number;
+  nextCronAt: string;
   fetchedAt: string;
   rateLimit: { remaining: number | null; reset: number | null };
 }
@@ -118,8 +144,54 @@ export default function OrchestratorProgress() {
   const runs = ok ? data.runs : [];
   const commits = ok ? data.commits : [];
   const queueCount = ok ? data.queueCount : 0;
+  const queueItems = ok ? data.queueItems : [];
+  const plannedTop = ok ? data.plannedTop : [];
+  const tripwiresCount = ok ? data.tripwiresCount : 0;
+  const nextCronAt = ok ? data.nextCronAt : null;
   const latestRun = runs[0];
   const lastSuccessRun = runs.find((r) => r.conclusion === 'success');
+
+  // PAST 24h: filter runs in last 24h, categorize outcome
+  const now = Date.now();
+  const past24 = runs.filter((r) => now - new Date(r.updatedAt).getTime() < 24 * 3600 * 1000);
+  const past24Green = past24.filter((r) => r.conclusion === 'success').length;
+  const past24Cancelled = past24.filter((r) => r.conclusion === 'cancelled').length;
+  const past24Failed = past24.filter((r) => r.conclusion === 'failure' || r.conclusion === 'timed_out').length;
+  const past24Running = past24.filter((r) => r.status === 'in_progress').length;
+
+  // FUTURE: countdown to nextCronAt
+  let nextCronCountdown: string = '—';
+  if (nextCronAt) {
+    const diff = new Date(nextCronAt).getTime() - now;
+    if (diff > 0) {
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      nextCronCountdown = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    } else {
+      nextCronCountdown = 'imminent';
+    }
+  }
+
+  // STEP-BY-STEP: phase tracker for live-running cycle (best-effort, no log access).
+  // Without per-step log scraping, infer from elapsed time vs typical phase wall times.
+  // Typical green cycle phases (from cycle 13 log):
+  //   00:00 boot · 00:47 ingest · 00:47 kpi (1.5min) · 02:17 fleet · 02:17 experiments
+  //   02:17 decision (1min) · 03:21 subagents (2.5min) · 05:43 done · 05:47 commit+push
+  const livePhases: Array<{ key: string; label: string; etaSec: number }> = [
+    { key: 'boot', label: 'GH runner + pnpm install', etaSec: 50 },
+    { key: 'ingest', label: 'Ingest 306 items + tripwires', etaSec: 52 },
+    { key: 'kpi', label: 'KPI scrape (Supabase/PostHog/CF/GH)', etaSec: 145 },
+    { key: 'fleet', label: 'Fleet agent summaries (28 agents)', etaSec: 147 },
+    { key: 'experiments', label: 'Experiment tracker', etaSec: 147 },
+    { key: 'decision', label: 'Decision Agent (Opus 4.7 / 16k / streaming)', etaSec: 210 },
+    { key: 'subagents', label: 'Sub-agents fan-out (4 × Opus / 12k / 2 concurrent)', etaSec: 355 },
+    { key: 'write', label: 'Write queue files + decision note', etaSec: 358 },
+    { key: 'commit', label: 'Git commit + push to main (orchestrator-bot)', etaSec: 362 },
+  ];
+  let liveElapsedSec = 0;
+  if (latestRun && latestRun.status === 'in_progress') {
+    liveElapsedSec = Math.floor((now - new Date(latestRun.createdAt).getTime()) / 1000);
+  }
 
   // Top-level summary state
   let summary: { label: string; classes: string };
@@ -194,6 +266,144 @@ export default function OrchestratorProgress() {
           </div>
           <div className="text-[10px] text-surface-500">target &lt; 10min</div>
         </div>
+      </div>
+
+      {/* STEP-BY-STEP PHASE TRACKER — visible only when cycle running */}
+      {latestRun && latestRun.status === 'in_progress' && (
+        <div className="mb-4 bg-saffron-50/40 border border-saffron-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-saffron-900 uppercase tracking-wide">Cycle in progress — step-by-step</h3>
+            <span className="text-[10px] font-mono text-saffron-700">{fmtWall(liveElapsedSec)} elapsed</span>
+          </div>
+          <div className="space-y-1">
+            {livePhases.map((p, idx) => {
+              const prevEta = idx === 0 ? 0 : livePhases[idx - 1].etaSec;
+              const done = liveElapsedSec >= p.etaSec;
+              const running = !done && liveElapsedSec >= prevEta;
+              return (
+                <div
+                  key={p.key}
+                  className={`flex items-center gap-2 px-2 py-1 rounded text-xs ${
+                    done
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : running
+                      ? 'bg-saffron-100 text-saffron-900 border border-saffron-300 animate-pulse'
+                      : 'bg-white text-surface-500 border border-surface-200'
+                  }`}
+                >
+                  <span className="font-mono font-bold w-4">{done ? '✓' : running ? '⏳' : '○'}</span>
+                  <span className="flex-1 truncate">{p.label}</span>
+                  <span className="font-mono text-[10px] opacity-75 shrink-0">~{p.etaSec}s</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[10px] text-saffron-700/80">ETAs based on cycle 13 baseline (5min47s green). Live log unavailable inside GH runner — phase inferred from elapsed time.</p>
+        </div>
+      )}
+
+      {/* 4-PANEL TIMELINE: PAST 24h / PRESENT / FUTURE / PIPELINE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        {/* PAST 24h */}
+        <div className="bg-surface-50/60 border border-surface-200 rounded-lg p-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-surface-600 mb-2">Past 24h — outcomes</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {past24.length === 0 ? (
+              <span className="text-xs text-surface-400">No runs in last 24h.</span>
+            ) : (
+              past24.map((r) => {
+                const b = runBadge(r);
+                return (
+                  <a
+                    key={r.id}
+                    href={r.htmlUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] font-mono ${b.classes}`}
+                    title={`${r.title} — ${b.label} (${fmtWall(r.wallSeconds)})`}
+                  >
+                    <span>{b.icon}</span>
+                    <span>{fmtWall(r.wallSeconds)}</span>
+                  </a>
+                );
+              })
+            )}
+          </div>
+          <div className="mt-2 text-[10px] text-surface-500 grid grid-cols-4 gap-1">
+            <span className="text-emerald-700">✓ {past24Green} green</span>
+            <span className="text-amber-700">⊘ {past24Cancelled} cancelled</span>
+            <span className="text-red-700">✗ {past24Failed} failed</span>
+            <span className="text-saffron-700">⏳ {past24Running} running</span>
+          </div>
+        </div>
+
+        {/* FUTURE — next cron + countdown */}
+        <div className="bg-blue-50/40 border border-blue-200 rounded-lg p-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 mb-2">Future — next scheduled cycle</h3>
+          {nextCronAt ? (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-mono font-bold text-blue-900">{nextCronCountdown}</span>
+                <span className="text-[10px] text-blue-700">until next cron</span>
+              </div>
+              <div className="mt-1 text-[10px] text-blue-700 font-mono">
+                {new Date(nextCronAt).toLocaleString(undefined, { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'short' })} UTC
+              </div>
+              <div className="mt-2 text-[10px] text-blue-700/80">
+                Schedule: <code className="font-mono bg-blue-100 px-1 rounded">17 */8 * * *</code> · 3 cycles/day @ 00:17 / 08:17 / 16:17 UTC
+              </div>
+            </>
+          ) : (
+            <span className="text-xs text-blue-700">—</span>
+          )}
+        </div>
+
+        {/* PIPELINE — top planned items next cycle will likely pick */}
+        <div className="bg-emerald-50/40 border border-emerald-200 rounded-lg p-3 md:col-span-2">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">Pipeline — top planned items (next cycle candidates)</h3>
+            <span className="text-[10px] text-emerald-700">{plannedTop.length} of {tripwiresCount} tripwires armed</span>
+          </div>
+          {plannedTop.length === 0 ? (
+            <span className="text-xs text-emerald-700">No planned items above founder-blocker filter.</span>
+          ) : (
+            <div className="space-y-1">
+              {plannedTop.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-emerald-100 text-xs">
+                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-[10px] px-1 rounded ${p.priority === 'P0' ? 'bg-red-100 text-red-700' : p.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{p.priority}</span>
+                  <span className="font-mono text-[10px] text-surface-500 shrink-0 w-16 truncate">{p.id}</span>
+                  <span className="flex-1 truncate text-surface-700">{p.title}</span>
+                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.owner_role}</span>
+                  {p.est_hours !== null && (
+                    <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.est_hours}h</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* QUEUE — unconsumed items (what was emitted but not yet handled) */}
+        {queueItems.length > 0 && (
+          <div className="bg-amber-50/40 border border-amber-200 rounded-lg p-3 md:col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">Queue — unconsumed sub-agent emissions</h3>
+              <span className="text-[10px] text-amber-700">{queueCount} total · showing top {Math.min(10, queueItems.length)}</span>
+            </div>
+            <div className="space-y-1">
+              {queueItems.slice(0, 10).map((q) => (
+                <div key={q.name} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-amber-100 text-xs">
+                  <span className="font-mono text-[10px] text-amber-600 shrink-0 w-12 text-center bg-amber-100 rounded px-1">{q.role || '?'}</span>
+                  <span className="font-mono text-[10px] text-surface-700 shrink-0 w-24 truncate">{q.itemId || '—'}</span>
+                  <span className="flex-1 truncate text-surface-500 font-mono text-[10px]">{q.name}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-amber-700/80">
+              Each queue item is a sub-agent prompt waiting for human consumption (via session UserPromptSubmit hook routes it into Claude Code session).
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Recent runs (last 10) */}
