@@ -6,7 +6,7 @@ owner_role: sales
 quarter: Q1
 month_target: 1
 priority: P0
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -29,7 +29,13 @@ est_hours: 4
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "50 contacts identified + segmented by relationship × ask_type (data/sales/warm-network-contacts-seed.csv)"
+  - "4 WA script variants ready (temple/pandit/gaushala/donor), each w/ 3 sub-variants for relationship depth"
+  - "Live tracker CSV w/ explicit schema (data/sales/warm-network-tracker.csv)"
+  - "Founder sends 50 messages over 5-day window (manual WA/email/LinkedIn — NOT bulk tool)"
+  - "Reply rate logged for every contact (positive/negative/silent)"
+  - "≥3 qualified supply leads from 50 asks (target = ₹2L pipeline value)"
+  - "Handoff note updated w/ aggregate reply rate + conversion + lessons learned"
 
 agent_brief:
   context_files: []
@@ -38,6 +44,15 @@ agent_brief:
 
 handoff_notes: |
   2026-06-10: bulk-imported from year-1 content sprint.
+  2026-06-12: Agent prep complete. 6 deliverables shipped:
+    - data/sales/warm-network-tracker.csv (live tracker, 11 cols)
+    - data/sales/warm-network-contacts-seed.csv (50-row template w/ pre-segmented relationship × ask_type)
+    - scripts/sales/warm-network/wa-script-{temple,pandit,gaushala,donor}.md (4 scripts × 3 variants each = 12 ready-to-send templates + post-reply follow-ups)
+    - docs/agent-reports/2026-06-12-warm-network-reachout-prep.md (full execution playbook + segmentation logic + 5-day send schedule + expected outcomes math + risk mitigations)
+  Success criteria populated (replaced placeholder w/ 7 concrete bars).
+  FOUNDER ACTION REQUIRED: ≤6h total over 5 days — fill 50 contact_name values, send messages per scripts, log replies in tracker.
+  Expected outcome: 3-4 qualified supply leads → ₹1-3L pipeline value.
+  Closes (partial): Q-C-20260612T0001-R-Q1-S-014. Status stays in_progress until founder reports back w/ reply-rate + conversion numbers.
 
 tags: ["warm-network","founder","p0"]
 created_at: 2026-06-10T20:35:05.804Z
