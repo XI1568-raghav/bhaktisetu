@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q1
 month_target: 3
 priority: P2
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -46,6 +46,12 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: Groundwork shipped (R-Q1-CS-003 partial). 3 artifacts:
+    - apps/api/scripts/ops/sla-breach-outreach.ts — re-runnable script, reads /admin/ops/sla-overdue-bookings, emits CSV w/ daysOverdue + repeatBreachCount + suggestedAction. 15/15 unit tests green covering csvField escaping, day math, priest flag, sort determinism, idempotency, empty-input.
+    - docs/agent-reports/2026-06-12-sla-breach-action.md — 5 per-booking WhatsApp+Email drafts (EN+HI for Booking 1, template for 2-5), GH issue body for priest 821edbe5 investigation, founder runbook section D.
+    - docs/agent-reports/user-interviews.md — interview log skeleton, 30-min script, NPS schema, churn/wow signal aggregation placeholders. Recruitment plan: invite SLA-breach devotees first (highest-intent post-resolution).
+  Founder action pending: run script w/ real ADMIN_OPS_TOKEN, fill devotee contact placeholders from admin panel, send 5 WhatsApp+email outreach manually, open GH priest-quality issue, block priest 821edbe5 payouts. After resolution → kick off 5 phone interviews per skeleton.
+  Closes (partial): Q-C-20260611T2307-R-Q1-CS-003. Status stays in_progress until 5 interviews complete + churn/wow signals aggregated.
 
 tags: ["cs","interview","nps","p2"]
 created_at: 2026-06-09T21:50:37.964Z
