@@ -197,6 +197,16 @@ async function main() {
   signalContext.firedTripwires = firedTripwires;
   console.log(`[orchestrator] fired tripwires: ${firedTripwires.map(t => t.id).join(', ') || 'none'}`);
 
+  // Log signal-context trim outcome (Fix D)
+  if (signalContext._trim?.applied) {
+    const origKB = (signalContext._trim.originalBytes / 1024).toFixed(1);
+    const trimmedKB = (signalContext._trim.trimmedBytes / 1024).toFixed(1);
+    console.log(`[orchestrator] signal-context trimmed ${origKB}KB → ${trimmedKB}KB. drops: ${signalContext._trim.drops.join(', ')}`);
+  } else {
+    const sizeKB = (JSON.stringify(signalContext).length / 1024).toFixed(1);
+    console.log(`[orchestrator] signal-context ${sizeKB}KB (under trim threshold)`);
+  }
+
   // 6. T-005 KILL
   if (firedTripwires.find(t => t.id === 'T-005')) {
     writeAlert(`tripwire-T-005-${cycleId}.md`, 'Anthropic proxy blocked. Halting workflow per user directive.');
