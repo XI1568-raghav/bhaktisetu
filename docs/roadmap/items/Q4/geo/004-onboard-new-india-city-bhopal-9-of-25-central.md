@@ -6,7 +6,7 @@ owner_role: sales
 quarter: Q4
 month_target: 10
 priority: P0
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q4-S-001"]
