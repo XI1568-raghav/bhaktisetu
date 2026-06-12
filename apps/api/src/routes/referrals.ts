@@ -51,6 +51,14 @@ const claimSchema = z.object({
   code: z.string().min(4).max(16).regex(/^[A-Z0-9]+$/i, 'invalid_code'),
 });
 
+const rewardSchema = z.object({
+  claimId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+});
+
+// Default referral reward: ₹100 = 10000 paise. Override via REFERRAL_REWARD_PAISE env.
+const DEFAULT_REWARD_PAISE = 10000;
+
 export async function referralsRoutes(server: FastifyInstance) {
   // GET /me — return (or lazily create) the current user's referral code.
   server.get('/me', { preHandler: [authenticateUser] }, async (req, reply) => {
@@ -175,6 +183,91 @@ export async function referralsRoutes(server: FastifyInstance) {
         },
       });
       return reply.code(201).send({ status: created.status, claimed: true });
+    } catch (err) {
+      if (isTableMissing(err)) {
+        return reply.code(503).send({ error: 'referral_tables_not_migrated' });
+      }
+      throw err;
+    }
+  });
+
+  // POST /reward — system-internal call to flip qualifying claim → rewarded.
+  // Triggered by checkout webhook when referee completes their first paid booking.
+  // Idempotent via wallet ledger idempotencyKey = `referral-reward-${claimId}`.
+  // Auth: requires authenticated user who must be either the referee (self-trigger
+  // post-booking) or admin role. Plain user can only reward their own referee link.
+  server.post('/reward', { preHandler: [authenticateUser] }, async (req, reply) => {
+    const parsed = rewardSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
+    }
+    const { claimId, bookingId } = parsed.data;
+    const caller = (req as unknown as { currentUser: { id: string } }).currentUser;
+
+    try {
+      const claim = await (prisma as unknown as {
+        referralClaim: {
+          findUnique: (args: unknown) => Promise<{
+            id: string;
+            status: string;
+            referrerId: string;
+            refereeId: string | null;
+            rewardLedgerId: string | null;
+          } | null>;
+        };
+      }).referralClaim.findUnique({ where: { id: claimId } });
+
+      if (!claim) return reply.code(404).send({ error: 'claim_not_found' });
+      if (claim.refereeId !== caller.id) {
+        return reply.code(403).send({ error: 'not_your_claim' });
+      }
+      if (claim.status === 'rewarded') {
+        // Already rewarded — return existing ledger ref (idempotent surface).
+        return reply.send({ status: 'rewarded', alreadyRewarded: true, ledgerId: claim.rewardLedgerId });
+      }
+      if (claim.status === 'void') {
+        return reply.code(409).send({ error: 'claim_voided' });
+      }
+
+      // Credit referrer wallet first; only flip claim status on success.
+      const { WalletService } = await import('../services/wallet.service.js');
+      const wallet = new WalletService(prisma);
+      const rewardPaise = Number(process.env.REFERRAL_REWARD_PAISE) || DEFAULT_REWARD_PAISE;
+      const idempotencyKey = `referral-reward-${claimId}`;
+
+      const creditResult = await wallet.creditUser({
+        userId: claim.referrerId,
+        deltaPaise: rewardPaise,
+        reason: 'referral_reward',
+        idempotencyKey,
+        refType: 'referral_claim',
+        refId: claimId,
+        notes: `Reward for referee booking ${bookingId}`,
+      });
+
+      await (prisma as unknown as {
+        referralClaim: {
+          update: (args: unknown) => Promise<unknown>;
+        };
+      }).referralClaim.update({
+        where: { id: claimId },
+        data: {
+          status: 'rewarded',
+          rewardAmount: rewardPaise / 100,
+          rewardCurrency: 'INR',
+          rewardedAt: new Date(),
+          rewardLedgerId: creditResult.ledgerEntryId,
+          bookingId,
+        },
+      });
+
+      return reply.send({
+        status: 'rewarded',
+        ledgerId: creditResult.ledgerEntryId,
+        rewardPaise,
+        newBalancePaise: creditResult.newBalancePaise,
+        reused: creditResult.reused,
+      });
     } catch (err) {
       if (isTableMissing(err)) {
         return reply.code(503).send({ error: 'referral_tables_not_migrated' });
