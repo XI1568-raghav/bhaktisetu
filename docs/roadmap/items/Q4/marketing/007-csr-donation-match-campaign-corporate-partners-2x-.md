@@ -53,6 +53,7 @@ handoff_notes: |
   Green: 5/8 success criteria. Blocked-on-founder: 3 (warm intros, 80G+CSR-1 attestation, revenue assumptions review).
   Tests: pnpm --filter @poojly/web exec vitest run __tests__/csr-match.test.tsx → 5/5 passed.
   Hard rules honored: zero email fabrication ([VERIFY] markers on all), no deploy (dev-server only), tests RED → GREEN sequence committed.
+  2026-06-12: Phase-1 outreach kit shipped (`docs/marketing/csr-match-campaign-v1.md`). 10 Foundation-arm targets (TCS/Infy/Wipro/HDFC/Reliance/Tata/Bharti/Mahindra/Adani/Birla Foundation arms — complements Phase-0 deck's 10 operating-co CSR-head targets), pitch email template 143 words w/ 4 personalization tokens, tracking sheet schema (Google Sheets, 10 cols), founder-action checklist (7 items). Cumulative ~12h of 32h budget consumed (6h prior artifacts + 6h this cycle). Remaining 20h: founder outreach execution + MoU template + first-signed-partner integration. Status stays `in_progress`. FOUNDER-BLOCKERS unchanged (warm intros, 80G/CSR-1 attestation, revenue assumptions review). Closes: Q-C-20260612T0001-R-Q4-M-007.
 
 tags: ["csr","donation","match","corporate"]
 created_at: 2026-06-09T22:09:25.579Z
