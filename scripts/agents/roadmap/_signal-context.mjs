@@ -87,7 +87,7 @@ export function buildSignalContext({
     ? Math.max(...queue.map((q) => (now - new Date(q.emittedAt).getTime()) / 3600000))
     : 0;
 
-  return {
+  const fullContext = {
     cycle: {
       ts: nowDate.toISOString(),
       dayOfMonth: nowDate.getUTCDate(),
@@ -117,5 +117,87 @@ export function buildSignalContext({
     founderState: founderState || {},
     external: external || {},
     firedTripwires: tripwiresFired,
+  };
+
+  // Fix D: trim when serialized JSON exceeds threshold.
+  // Token cost approximation: 1 token ~= 4 chars JSON. Threshold 100KB JSON
+  // = ~25k tokens = comfortably under Decision Agent 16k output + 200k input.
+  // Drops in priority order:
+  //   1. sectorDocs.bySector excerpts (largest contributor, 28 agents × ~2KB)
+  //   2. external.experiments.results detail (keep counts only)
+  //   3. external.lastAnthropicError truncated to 500 chars
+  return trimSignalContext(fullContext);
+}
+
+const TRIM_THRESHOLD_BYTES = 100 * 1024;
+const TRIM_HARD_CEILING_BYTES = 180 * 1024;
+
+export function trimSignalContext(ctx) {
+  let size = JSON.stringify(ctx).length;
+  if (size <= TRIM_THRESHOLD_BYTES) return { ...ctx, _trim: { applied: false, originalBytes: size } };
+
+  const trimmed = { ...ctx };
+  const trimsApplied = [];
+
+  // Pass 1: drop sectorDocs.bySector excerpts (keep summary counts)
+  if (trimmed.sectorDocs?.bySector) {
+    const sectorKeys = Object.keys(trimmed.sectorDocs.bySector);
+    trimmed.sectorDocs = {
+      agentCount: trimmed.sectorDocs.agentCount,
+      bySector: sectorKeys.reduce((acc, k) => {
+        const v = trimmed.sectorDocs.bySector[k];
+        acc[k] = { agentCount: v.agentCount || 0, _excerptDropped: true };
+        return acc;
+      }, {}),
+      _excerptsDropped: true,
+    };
+    trimsApplied.push('sectorDocs.excerpts');
+  }
+
+  size = JSON.stringify(trimmed).length;
+  if (size <= TRIM_THRESHOLD_BYTES) {
+    return { ...trimmed, _trim: { applied: true, originalBytes: JSON.stringify(ctx).length, trimmedBytes: size, drops: trimsApplied } };
+  }
+
+  // Pass 2: drop external.experiments.results detail, keep counts
+  if (trimmed.external?.experiments?.results) {
+    trimmed.external = {
+      ...trimmed.external,
+      experiments: {
+        experimentCount: trimmed.external.experiments.experimentCount,
+        decided: trimmed.external.experiments.decided,
+        _resultsDropped: true,
+      },
+    };
+    trimsApplied.push('external.experiments.results');
+  }
+
+  // Pass 3: truncate lastAnthropicError to 500 chars
+  if (trimmed.external?.lastAnthropicError && typeof trimmed.external.lastAnthropicError === 'string') {
+    trimmed.external = {
+      ...trimmed.external,
+      lastAnthropicError: trimmed.external.lastAnthropicError.slice(0, 500),
+    };
+    trimsApplied.push('external.lastAnthropicError');
+  }
+
+  size = JSON.stringify(trimmed).length;
+
+  // Pass 4 (emergency): drop verticals + founderState if still over hard ceiling
+  if (size > TRIM_HARD_CEILING_BYTES) {
+    delete trimmed.verticals;
+    delete trimmed.founderState;
+    trimsApplied.push('verticals+founderState');
+    size = JSON.stringify(trimmed).length;
+  }
+
+  return {
+    ...trimmed,
+    _trim: {
+      applied: true,
+      originalBytes: JSON.stringify(ctx).length,
+      trimmedBytes: size,
+      drops: trimsApplied,
+    },
   };
 }
