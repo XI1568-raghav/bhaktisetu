@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T10:35:56.137Z",
+  "generatedAt": "2026-06-12T13:15:02.570Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -8665,7 +8665,7 @@
       "quarter": "Q2",
       "month_target": 6,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -8693,7 +8693,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Outreach kit shipped. 4 docs:\n  - docs/sales/iskcon-org-map-2026-06.md (GBC + 5 zonal secs + TP autonomy + decision matrix + 3 central + 5 TP entry points + risk §8 covering Bangalore Bureau dispute + factions)\n  - docs/sales/iskcon-loi-template-v1.md (~2-page LOI, non-binding, 60-day MoU path, customisation notes per recipient type)\n  - docs/sales/iskcon-outreach-kit-v1.md (cold email Bureau + TP variants, WA warm-intro + Bureau-permitted variants, 4-touch follow-up sequence, founder action checklist, pre-LOI conversation script)\n  - data/sales/iskcon-outreach-tracker.csv (11-col tracker header)\nZERO sends from agent. Every [VERIFY-FOUNDER] marker requires founder verification via iskcon.org Leadership page before contact (board composition shifts annually).\nRecommended path: PILOT (TP-led, lower ceiling, faster) for v1. CENTRAL deal in v2 once pilot proves model.\nFOUNDER ACTION: ≤4h for verification + personalisation + 1 email per day × 5 days. Don't blast all 35 GBC.\nCloses (partial): Q-C-20260612T0503-R-Q2-S-011. Status stays in_progress until 3+ replies logged in tracker.\n",
       "tags": [
         "supply",
         "partnership",
@@ -12167,7 +12167,7 @@
       "quarter": "Q3",
       "month_target": 8,
       "priority": "P0",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -12204,7 +12204,7 @@
           "docs/company/06-supply.md"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Research + outreach kit shipped (cycle slice). docs/sales/canada-pandit-prospects-2026-06.md w/ 30 prospects:\n  - 12 GTA (BAPS, ISKCON, Hindu Heritage Centre, Vishnu Mandir, etc + federation umbrella via Hindu Federation Canada)\n  - 6 Vancouver / Lower Mainland (Vishwa Hindu, Lakshmi Narayan, BAPS Surrey, Sanatan Dharm BC, ISKCON, Sai)\n  - 4 Calgary/Edmonton (Hindu Societies + BAPS + Maha Lakshmi)\n  - 4 Ottawa/Montréal (Hindu Temple Ottawa-Carleton, Vishva Shakti Durga, Hindu Mission Canada, Thiru Murugan Tamil Saiva)\n  - 4 independent pandits via LinkedIn / federation referrals\nCold-outreach email template (190 words) + 4 sampradaya-specific customisations (BAPS / Tamil Saiva / ISKCON / Federation) + WA follow-up script + 10-day pace plan (3/day × 30).\nZERO sends from agent. Every `[VERIFY]` marker requires founder validation via temple website / LinkedIn before send.\nRisk notes: BAPS 30-day cycle, CRA partnership ambiguity (transparent: pilot is commercial pandit-listing not tax-deductible v1), federation orgs are highest leverage (3-6 month cycle).\nSCRAPER DEFERRED to next cycle (leads schema gate per spec — `apps/api/scripts/leads/` schema must be confirmed before scrape-canada-pandits.ts can be authored).\nFOUNDER ACTION: ≤6h spread over 14 days for verification + personalisation + send + reply triage.\nCloses (partial): Q-C-20260612T0001-R-Q3-S-007 (research+kit slice). Status stays in_progress until 30 sends + 5 qualified replies + 1+ pandit onboarded.\n",
       "tags": [
         "supply",
         "pandit",
@@ -12212,7 +12212,7 @@
         "nri"
       ],
       "created_at": "2026-06-09T22:02:56.063Z",
-      "updated_at": "2026-06-09T22:02:56.063Z",
+      "updated_at": "2026-06-12T08:00:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
@@ -15109,7 +15109,7 @@
       "quarter": "Q4",
       "month_target": 11,
       "priority": "P1",
-      "status": "planned",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -15137,7 +15137,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: SHIPPED. docs/specs/b2b-whitelabel-v1.md authored end-to-end:\n  - Goal + 5 non-goals (SDK+iframe not raw API, no custom puja types v1)\n  - 5 target B2B segments (matchmaking, NRI community, astrology, devotional content, fintech)\n  - 3 personas + 2 user journeys (devotee-side + partner-side)\n  - 2 SQL data model tables (b2b_tenant + b2b_booking_attribution — multi-tenancy via attribution table NOT direct booking column)\n  - 8 API endpoints under /api/v1/b2b/*\n  - SDK npm package shape (@bhaktisetu/embed) + iframe widget contract w/ postMessage events\n  - Webhook contract (booking.paid → partner, HMAC-SHA256 signature, 3 retries over 24h)\n  - 3 revenue tiers (Starter 10% / Growth 15% / Strategic 20%) w/ min monthly volume + revenue commitments\n  - Test plan: 13 cases (8 integration + 3 widget + 2 CSP/iframe security)\n  - Cut-line v1 (Q1 2027) vs v2 (Q3 2027)\n  - 10 Open Questions (sandbox vs prod keys, CSP ownership, refund handling, brand accessibility, devotee data ownership, termination handling, intl tax, partner-vs-temple share source, webhook escalation, SEO impact)\nEngineering ticket R-Q4-E-013 to be filed next cycle for build.\nCloses: Q-C-20260610T1623-R-Q4-P-006.\n",
       "tags": [
         "product",
         "whitelabel",
@@ -15145,8 +15145,8 @@
         "multi-tenant"
       ],
       "created_at": "2026-06-09T22:09:25.940Z",
-      "updated_at": "2026-06-09T22:09:25.940Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-12T07:45:00.000Z",
+      "shipped_at": "2026-06-12T07:45:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
@@ -15160,7 +15160,7 @@
       "quarter": "Q4",
       "month_target": 12,
       "priority": "P2",
-      "status": "planned",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -15188,7 +15188,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: SHIPPED. docs/product/specs/festival-presale-calendar-v1.md authored end-to-end:\n  - Mission + 5 non-goals (no scarcity-deception, no merchandise v1, no multi-day group)\n  - 4 personas (mobile devotee, family planner, NRI sankalp, first-time festival)\n  - User journey (calendar → festival page → slot picker → confirm → waitlist → reminders)\n  - 7 UI wireframes (calendar grid / detail / bundle / waitlist / confirm / WA reminder / admin dashboard)\n  - 2 SQL data model tables (festival + festival_temple_slot) w/ enum constraints\n  - 8 API endpoints under /api/v1/festivals/*\n  - Copy guidelines: real-data only, NO fake scarcity (\"18/40 left\" allowed, \"Only 5 left!\" forbidden)\n  - Cut-line v1 (Q3 2026 pre-Janmashtami) vs v2 (Q1 2027 pre-Holi)\n  - 8 Open Questions (capacity caps, refund window, bundle proration, waitlist priority, WA U7 gate, copy i18n, tz display, email teaser opt-in)\nUnblocks R-Q4-E-011 engineering build (₹15L MRR via 60-day advance window).\nCloses: Q-C-20260612T0001-R-Q4-P-007.\n",
       "tags": [
         "product",
         "festival",
@@ -15196,8 +15196,8 @@
         "calendar"
       ],
       "created_at": "2026-06-09T22:09:25.940Z",
-      "updated_at": "2026-06-09T22:09:25.940Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-12T07:30:00.000Z",
+      "shipped_at": "2026-06-12T07:30:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
