@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q4
 month_target: 11
 priority: P1
-status: planned
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -38,11 +38,25 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: SHIPPED. docs/specs/b2b-whitelabel-v1.md authored end-to-end:
+    - Goal + 5 non-goals (SDK+iframe not raw API, no custom puja types v1)
+    - 5 target B2B segments (matchmaking, NRI community, astrology, devotional content, fintech)
+    - 3 personas + 2 user journeys (devotee-side + partner-side)
+    - 2 SQL data model tables (b2b_tenant + b2b_booking_attribution — multi-tenancy via attribution table NOT direct booking column)
+    - 8 API endpoints under /api/v1/b2b/*
+    - SDK npm package shape (@bhaktisetu/embed) + iframe widget contract w/ postMessage events
+    - Webhook contract (booking.paid → partner, HMAC-SHA256 signature, 3 retries over 24h)
+    - 3 revenue tiers (Starter 10% / Growth 15% / Strategic 20%) w/ min monthly volume + revenue commitments
+    - Test plan: 13 cases (8 integration + 3 widget + 2 CSP/iframe security)
+    - Cut-line v1 (Q1 2027) vs v2 (Q3 2027)
+    - 10 Open Questions (sandbox vs prod keys, CSP ownership, refund handling, brand accessibility, devotee data ownership, termination handling, intl tax, partner-vs-temple share source, webhook escalation, SEO impact)
+  Engineering ticket R-Q4-E-013 to be filed next cycle for build.
+  Closes: Q-C-20260610T1623-R-Q4-P-006.
 
 tags: ["product","whitelabel","b2b","multi-tenant"]
 created_at: 2026-06-09T22:09:25.940Z
-updated_at: 2026-06-09T22:09:25.940Z
-shipped_at: null
+updated_at: 2026-06-12T07:45:00.000Z
+shipped_at: 2026-06-12T07:45:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null

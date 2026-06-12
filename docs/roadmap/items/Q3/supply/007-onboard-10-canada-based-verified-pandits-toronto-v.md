@@ -6,7 +6,7 @@ owner_role: sales
 quarter: Q3
 month_target: 8
 priority: P0
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -50,10 +50,22 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: Research + outreach kit shipped (cycle slice). docs/sales/canada-pandit-prospects-2026-06.md w/ 30 prospects:
+    - 12 GTA (BAPS, ISKCON, Hindu Heritage Centre, Vishnu Mandir, etc + federation umbrella via Hindu Federation Canada)
+    - 6 Vancouver / Lower Mainland (Vishwa Hindu, Lakshmi Narayan, BAPS Surrey, Sanatan Dharm BC, ISKCON, Sai)
+    - 4 Calgary/Edmonton (Hindu Societies + BAPS + Maha Lakshmi)
+    - 4 Ottawa/Montréal (Hindu Temple Ottawa-Carleton, Vishva Shakti Durga, Hindu Mission Canada, Thiru Murugan Tamil Saiva)
+    - 4 independent pandits via LinkedIn / federation referrals
+  Cold-outreach email template (190 words) + 4 sampradaya-specific customisations (BAPS / Tamil Saiva / ISKCON / Federation) + WA follow-up script + 10-day pace plan (3/day × 30).
+  ZERO sends from agent. Every `[VERIFY]` marker requires founder validation via temple website / LinkedIn before send.
+  Risk notes: BAPS 30-day cycle, CRA partnership ambiguity (transparent: pilot is commercial pandit-listing not tax-deductible v1), federation orgs are highest leverage (3-6 month cycle).
+  SCRAPER DEFERRED to next cycle (leads schema gate per spec — `apps/api/scripts/leads/` schema must be confirmed before scrape-canada-pandits.ts can be authored).
+  FOUNDER ACTION: ≤6h spread over 14 days for verification + personalisation + send + reply triage.
+  Closes (partial): Q-C-20260612T0001-R-Q3-S-007 (research+kit slice). Status stays in_progress until 30 sends + 5 qualified replies + 1+ pandit onboarded.
 
 tags: ["supply","pandit","canada","nri"]
 created_at: 2026-06-09T22:02:56.063Z
-updated_at: 2026-06-09T22:02:56.063Z
+updated_at: 2026-06-12T08:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
