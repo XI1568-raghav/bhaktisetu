@@ -96,34 +96,19 @@ const route: FastifyPluginAsync = async (app) => {
     };
   });
 
-  // GET: latest status (reads from log file by cycleId OR latest)
-  app.get('/admin/roadmap/orchestrator-status', async (req, reply) => {
-    const q = (req.query as { cycleId?: string } | null) || {};
-    const logDir = '/tmp/orchestrator-logs';
-    if (!existsSync(logDir)) {
-      reply.header('cache-control', 'no-cache');
-      return { status: 'no-logs', cycles: [] };
-    }
-    const { readdirSync, readFileSync, statSync } = await import('node:fs');
-    const files = readdirSync(logDir).filter((f) => f.endsWith('.log')).sort().reverse();
-    const recent = files.slice(0, 10).map((f) => {
-      const fp = join(logDir, f);
-      const st = statSync(fp);
-      return {
-        cycleId: f.replace('.log', ''),
-        size: st.size,
-        mtime: st.mtime.toISOString(),
-      };
-    });
-    let log: string | null = null;
-    if (q.cycleId) {
-      const fp = join(logDir, `${q.cycleId}.log`);
-      if (existsSync(fp)) log = readFileSync(fp, 'utf8').slice(-4000); // tail 4KB
-    } else if (files[0]) {
-      log = readFileSync(join(logDir, files[0]), 'utf8').slice(-4000);
-    }
+  // GET: DEPRECATED 2026-06-12. Orchestrator no longer runs on Render — moved
+  // to GH Actions runner (Option 2-GH). /tmp/orchestrator-logs is permanently
+  // empty on this instance. New live-status source: web app edge route
+  // /api/orchestrator-status reads GitHub Actions REST API directly.
+  app.get('/admin/roadmap/orchestrator-status', async (_req, reply) => {
+    reply.status(410);
     reply.header('cache-control', 'no-cache');
-    return { status: 'ok', cycles: recent, latestLogTail: log };
+    return {
+      error: 'gone',
+      message: 'Endpoint deprecated — orchestrator moved to GH Actions runner. Use /api/orchestrator-status on the web app (reads GitHub Actions REST API).',
+      newSource: '/api/orchestrator-status',
+      deprecatedAt: '2026-06-12',
+    };
   });
 };
 
