@@ -49,6 +49,23 @@ interface PlannedItem {
   est_hours: number | null;
 }
 
+interface ShippedItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  owner_role: string;
+  shipped_at: string | null;
+}
+
+interface InProgressItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  owner_role: string;
+}
+
 interface QueueItem {
   name: string;
   role: string;
@@ -69,6 +86,8 @@ type OrchestratorStatusResponse =
       queueCount: number;
       queueItems: QueueItem[];
       plannedTop: PlannedItem[];
+      shippedRecent: ShippedItem[];
+      inProgress: InProgressItem[];
       tripwiresFired: FiredTripwire[];
       tripwiresCount: number;
       nextCronAt: string;
@@ -151,7 +170,21 @@ async function fetchQueueDir(): Promise<{ count: number; items: QueueItem[] }> {
   return { count: mds.length, items };
 }
 
-async function fetchPlanned(): Promise<PlannedItem[]> {
+interface IndexItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  status: string;
+  owner_role: string;
+  agent_assignable?: boolean;
+  founder_blocker?: string | null;
+  est_hours?: number | null;
+  shipped_at?: string | null;
+  updated_at?: string | null;
+}
+
+async function fetchIndex(): Promise<IndexItem[]> {
   // _index.json maintained by pre-commit hook on every roadmap item change.
   const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/docs/roadmap/_index.json`;
   const res = await fetch(url, { headers: gh(), next: { revalidate: 60 } });
@@ -167,27 +200,69 @@ async function fetchPlanned(): Promise<PlannedItem[]> {
   } else {
     return [];
   }
-  const index = JSON.parse(raw) as { items?: Array<{ id: string; title: string; priority: string; quarter: string; status: string; owner_role: string; agent_assignable?: boolean; founder_blocker?: string | null; est_hours?: number | null }> };
-  const items = index.items || [];
-  // Planned + agent_assignable + not founder_blocked, ranked P0 > P1 > P2, then quarter ASC.
+  const index = JSON.parse(raw) as { items?: IndexItem[] };
+  return index.items || [];
+}
+
+function rankPlanned(items: IndexItem[]): PlannedItem[] {
   const priorityRank: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
   const quarterRank = (q: string): number => Number(q.replace('Q', '')) || 99;
-  const planned = items
+  return items
     .filter((i) => i.status === 'planned' && i.agent_assignable !== false && !i.founder_blocker)
     .sort((a, b) => {
       const p = (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
       if (p !== 0) return p;
       return quarterRank(a.quarter) - quarterRank(b.quarter);
     })
-    .slice(0, 5);
-  return planned.map((i) => ({
+    .slice(0, 5)
+    .map((i) => ({
+      id: i.id,
+      title: i.title.length > 80 ? i.title.slice(0, 77) + '…' : i.title,
+      priority: i.priority,
+      quarter: i.quarter,
+      owner_role: i.owner_role,
+      est_hours: i.est_hours ?? null,
+    }));
+}
+
+function selectShippedRecent(items: IndexItem[]): ShippedItem[] {
+  // Items flipped to shipped in last 14d (or w/ shipped_at in last 14d).
+  // Sort newest first. Cap 10.
+  const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
+  const shipped = items
+    .filter((i) => i.status === 'shipped')
+    .filter((i) => {
+      const ts = i.shipped_at || i.updated_at;
+      if (!ts) return false;
+      return new Date(ts).getTime() >= cutoff;
+    })
+    .sort((a, b) => {
+      const ta = new Date(a.shipped_at || a.updated_at || 0).getTime();
+      const tb = new Date(b.shipped_at || b.updated_at || 0).getTime();
+      return tb - ta;
+    })
+    .slice(0, 10);
+  return shipped.map((i) => ({
     id: i.id,
     title: i.title.length > 80 ? i.title.slice(0, 77) + '…' : i.title,
     priority: i.priority,
     quarter: i.quarter,
     owner_role: i.owner_role,
-    est_hours: i.est_hours ?? null,
+    shipped_at: i.shipped_at ?? i.updated_at ?? null,
   }));
+}
+
+function selectInProgress(items: IndexItem[]): InProgressItem[] {
+  return items
+    .filter((i) => i.status === 'in_progress')
+    .slice(0, 10)
+    .map((i) => ({
+      id: i.id,
+      title: i.title.length > 80 ? i.title.slice(0, 77) + '…' : i.title,
+      priority: i.priority,
+      quarter: i.quarter,
+      owner_role: i.owner_role,
+    }));
 }
 
 async function fetchTripwires(): Promise<{ count: number; fired: FiredTripwire[] }> {
@@ -249,18 +324,21 @@ function normalizeCommit(c: Commit): NormalizedCommit {
 export async function GET(): Promise<Response> {
   try {
     // Parallel fan-out — 5 calls independent. allSettled so one failure doesn't kill all.
-    const [runsR, commitsR, queueR, plannedR, tripwiresR] = await Promise.allSettled([
+    const [runsR, commitsR, queueR, indexR, tripwiresR] = await Promise.allSettled([
       fetchRuns(),
       fetchCommits(),
       fetchQueueDir(),
-      fetchPlanned(),
+      fetchIndex(),
       fetchTripwires(),
     ]);
 
     const runsResult = runsR.status === 'fulfilled' ? runsR.value : { runs: [], remaining: null, reset: null };
     const commits = commitsR.status === 'fulfilled' ? commitsR.value : [];
     const queue = queueR.status === 'fulfilled' ? queueR.value : { count: 0, items: [] };
-    const planned = plannedR.status === 'fulfilled' ? plannedR.value : [];
+    const indexItems = indexR.status === 'fulfilled' ? indexR.value : [];
+    const planned = rankPlanned(indexItems);
+    const shippedRecent = selectShippedRecent(indexItems);
+    const inProgress = selectInProgress(indexItems);
     const tripwires = tripwiresR.status === 'fulfilled' ? tripwiresR.value : { count: 0, fired: [] };
 
     const payload: OrchestratorStatusResponse = {
@@ -270,6 +348,8 @@ export async function GET(): Promise<Response> {
       queueCount: queue.count,
       queueItems: queue.items,
       plannedTop: planned,
+      shippedRecent,
+      inProgress,
       tripwiresFired: tripwires.fired,
       tripwiresCount: tripwires.count,
       nextCronAt: nextCronAt(new Date()),

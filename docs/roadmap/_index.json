@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T06:14:29.522Z",
+  "generatedAt": "2026-06-12T09:36:50.229Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -9,18 +9,18 @@
       "quarter": "Q1",
       "month_target": 1,
       "priority": "P1",
-      "status": "planned",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
       "blocks": [],
       "kpi": {
         "metric": "cs_macros_documented",
-        "current": 0,
+        "current": 10,
         "target": 10,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual:docs/cs/macros-v1.md (count `## Macro ` headers)"
       },
       "revenue_impact": {
         "amount_inr": 0,
@@ -35,15 +35,15 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: SHIPPED. docs/cs/macros-v1.md w/ 10 P0 macros (SLA-breach apology / priest no-show / video-delay / payment-failed / date-confusion / refund-confirmation / reschedule / NRI-USD / festival-waitlist / founder-escalation). Each macro: trigger + tone note + reply text + follow-up SLA. Doctrine source cited (docs/company/07-cs.md). Live BS-20260427-K3HSD example used in Macro 1. Hindi + 5 regional translations deferred to R-Q1-CS-001b ticket.\nFounder action before go-live: fill +91-XXXXX-XXXXX placeholder in Macro 10, confirm bhaktisetu@upi handle in Macro 4. Closes: Q-C-20260611T2307-R-Q1-CS-001.\n",
       "tags": [
         "cs",
         "macros",
         "p1"
       ],
       "created_at": "2026-06-09T21:50:37.964Z",
-      "updated_at": "2026-06-09T21:50:37.964Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-12T05:30:00.000Z",
+      "shipped_at": "2026-06-12T05:30:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
@@ -106,7 +106,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -138,7 +138,7 @@
           "docs/agent-reports/"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Groundwork shipped (R-Q1-CS-003 partial). 3 artifacts:\n  - apps/api/scripts/ops/sla-breach-outreach.ts — re-runnable script, reads /admin/ops/sla-overdue-bookings, emits CSV w/ daysOverdue + repeatBreachCount + suggestedAction. 15/15 unit tests green covering csvField escaping, day math, priest flag, sort determinism, idempotency, empty-input.\n  - docs/agent-reports/2026-06-12-sla-breach-action.md — 5 per-booking WhatsApp+Email drafts (EN+HI for Booking 1, template for 2-5), GH issue body for priest 821edbe5 investigation, founder runbook section D.\n  - docs/agent-reports/user-interviews.md — interview log skeleton, 30-min script, NPS schema, churn/wow signal aggregation placeholders. Recruitment plan: invite SLA-breach devotees first (highest-intent post-resolution).\nFounder action pending: run script w/ real ADMIN_OPS_TOKEN, fill devotee contact placeholders from admin panel, send 5 WhatsApp+email outreach manually, open GH priest-quality issue, block priest 821edbe5 payouts. After resolution → kick off 5 phone interviews per skeleton.\nCloses (partial): Q-C-20260611T2307-R-Q1-CS-003. Status stays in_progress until 5 interviews complete + churn/wow signals aggregated.\n",
       "tags": [
         "cs",
         "interview",
@@ -14948,7 +14948,7 @@
       "quarter": "Q4",
       "month_target": 10,
       "priority": "P0",
-      "status": "planned",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -14976,7 +14976,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: SHIPPED. docs/product/specs/wedding-planner-v1.md authored end-to-end (~700 LOC):\n  - Mission + Non-goals (wedding-only, no court paperwork, no destination)\n  - User Journey (5-step linear flow: muhurat → venue → pandit → vendors → dashboard)\n  - 4 Personas (bride, bride's father, groom, groom's mother — covers parent-led + couple-led + multilingual)\n  - Data Model Deltas: 3 SQL tables (wedding_event, wedding_vendor_booking, muhurat_request) w/ enums + indexes\n  - API Surface: 12 endpoints across /api/v1/weddings + 1 public /api/v1/muhurat/preview (lead-capture teaser)\n  - 12 UI Screens (ASCII wireframes)\n  - Revenue Model: 3 tiers (Lite ₹15K / Standard ₹50K-₹3L / Premium ₹2L-₹25L) at 8-12% take-rate; Y1 ₹2L projection\n  - MVP Cut-line table (v1 ship Q4 2026 vs v2 ship Q2 2027)\n  - Competitor Diff vs WedMeGood / ShaadiSaga / BookMyPandit (muhurat-as-anchor = our moat)\n  - 8 Open Questions for founder review (concurrency lock, refund policy, vendor SLA, KYC discrepancy, interfaith handling, sankalp i18n, postponement, scale)\nscripts/lint-product-specs.mjs extended w/ wedding-planner-specific rules (8 H2s required, ≥8 endpoints, ≥12 wireframes, 3 named tables, all 3 revenue tiers + 8-12% take-rate, ≥2 of 3 named competitors, v1+v2 in cut-line table). Lint GREEN.\nCloses: Q-C-20260612T0503-R-Q4-P-003. Unblocks R-Q4-E-010 engineering build.\n",
       "tags": [
         "product",
         "wedding",
@@ -14984,8 +14984,8 @@
         "e2e"
       ],
       "created_at": "2026-06-09T22:09:25.940Z",
-      "updated_at": "2026-06-09T22:09:25.940Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-12T06:00:00.000Z",
+      "shipped_at": "2026-06-12T06:00:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,

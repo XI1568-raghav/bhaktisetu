@@ -55,6 +55,23 @@ interface FiredTripwire {
   shortTitle: string;
 }
 
+interface ShippedItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  owner_role: string;
+  shipped_at: string | null;
+}
+
+interface InProgressItem {
+  id: string;
+  title: string;
+  priority: string;
+  quarter: string;
+  owner_role: string;
+}
+
 interface StatusOK {
   ok: true;
   runs: NormalizedRun[];
@@ -62,6 +79,8 @@ interface StatusOK {
   queueCount: number;
   queueItems: QueueItem[];
   plannedTop: PlannedItem[];
+  shippedRecent: ShippedItem[];
+  inProgress: InProgressItem[];
   tripwiresFired: FiredTripwire[];
   tripwiresCount: number;
   nextCronAt: string;
@@ -146,6 +165,8 @@ export default function OrchestratorProgress() {
   const queueCount = ok ? data.queueCount : 0;
   const queueItems = ok ? data.queueItems : [];
   const plannedTop = ok ? data.plannedTop : [];
+  const shippedRecent = ok ? data.shippedRecent : [];
+  const inProgress = ok ? data.inProgress : [];
   const tripwiresCount = ok ? data.tripwiresCount : 0;
   const nextCronAt = ok ? data.nextCronAt : null;
   const latestRun = runs[0];
@@ -382,6 +403,52 @@ export default function OrchestratorProgress() {
             </div>
           )}
         </div>
+
+        {/* SHIPPED RECENT — what actually closed in last 14d (proof of throughput) */}
+        {shippedRecent.length > 0 && (
+          <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-3 md:col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">Shipped — last 14 days ({shippedRecent.length})</h3>
+              <span className="text-[10px] text-emerald-700">closed by orchestrator + claude-code session</span>
+            </div>
+            <div className="space-y-1">
+              {shippedRecent.map((s) => (
+                <div key={s.id} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-emerald-100 text-xs">
+                  <span className="font-mono font-bold shrink-0 w-4 text-emerald-700">✓</span>
+                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-[10px] px-1 rounded ${s.priority === 'P0' ? 'bg-red-100 text-red-700' : s.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{s.priority}</span>
+                  <span className="font-mono text-[10px] text-surface-500 shrink-0 w-16 truncate">{s.id}</span>
+                  <span className="flex-1 truncate text-surface-700">{s.title}</span>
+                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{s.owner_role}</span>
+                  {s.shipped_at && (
+                    <span className="font-mono text-[10px] text-surface-400 shrink-0 w-16 text-right">{fmtRelative(s.shipped_at)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* IN-PROGRESS — items started but not closed (visibility into WIP) */}
+        {inProgress.length > 0 && (
+          <div className="bg-saffron-50/60 border border-saffron-200 rounded-lg p-3 md:col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-saffron-800">In progress ({inProgress.length})</h3>
+              <span className="text-[10px] text-saffron-700">started, awaiting completion or founder-action</span>
+            </div>
+            <div className="space-y-1">
+              {inProgress.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-saffron-100 text-xs">
+                  <span className="font-mono font-bold shrink-0 w-4 text-saffron-700">⏳</span>
+                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-[10px] px-1 rounded ${p.priority === 'P0' ? 'bg-red-100 text-red-700' : p.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{p.priority}</span>
+                  <span className="font-mono text-[10px] text-surface-500 shrink-0 w-16 truncate">{p.id}</span>
+                  <span className="flex-1 truncate text-surface-700">{p.title}</span>
+                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.owner_role}</span>
+                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.quarter}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* QUEUE — unconsumed items (what was emitted but not yet handled) */}
         {queueItems.length > 0 && (
