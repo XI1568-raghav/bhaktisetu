@@ -50,6 +50,79 @@ async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
 }
 
 /**
+ * R-Q2-M-011 Tier-2 referral reward hook.
+ *
+ * Called from verifyPayment side-effects when a PujaBooking flips to
+ * `confirmed`. If the booking's user (the referee) has a `signed_up` or
+ * `qualifying` ReferralClaim, credit the referrer's wallet +₹100 and flip
+ * the claim to `rewarded`. Idempotent via wallet's (userId, idempotencyKey)
+ * unique constraint — webhook retries are safe.
+ *
+ * MUST swallow all errors — referral plumbing failure cannot block
+ * booking confirmation (hard rule per spec).
+ *
+ * Reward fires only on the referee's FIRST confirmed booking. Subsequent
+ * confirmed bookings by the same user re-find the same claim row, see
+ * status='rewarded', and short-circuit (no double credit).
+ */
+async function tryRewardReferralForBooking(refereeUserId: string, bookingId: string): Promise<void> {
+  try {
+    const claim = await (prisma as unknown as {
+      referralClaim: {
+        findFirst: (args: unknown) => Promise<{
+          id: string;
+          status: string;
+          referrerId: string;
+        } | null>;
+      };
+    }).referralClaim.findFirst({
+      where: {
+        refereeId: refereeUserId,
+        status: { in: ['signed_up', 'qualifying'] },
+      },
+      orderBy: { createdAt: 'asc' }, // oldest first — earliest referral wins
+    });
+    if (!claim) return; // no eligible referral; common path
+
+    const { WalletService } = await import('./wallet.service.js');
+    const wallet = new WalletService(prisma);
+    const rewardPaise = Number(process.env.REFERRAL_REWARD_PAISE) || 10000;
+    const idempotencyKey = `referral-reward-${claim.id}`;
+
+    const creditResult = await wallet.creditUser({
+      userId: claim.referrerId,
+      deltaPaise: rewardPaise,
+      reason: 'referral_reward',
+      idempotencyKey,
+      refType: 'referral_claim',
+      refId: claim.id,
+      notes: `Auto-reward on referee booking ${bookingId}`,
+    });
+
+    await (prisma as unknown as {
+      referralClaim: { update: (args: unknown) => Promise<unknown> };
+    }).referralClaim.update({
+      where: { id: claim.id },
+      data: {
+        status: 'rewarded',
+        rewardAmount: rewardPaise / 100,
+        rewardCurrency: 'INR',
+        rewardedAt: new Date(),
+        rewardLedgerId: creditResult.ledgerEntryId,
+        bookingId,
+      },
+    });
+
+    console.log(
+      `[payment.service] referral rewarded: claim=${claim.id} referrer=${claim.referrerId} ledger=${creditResult.ledgerEntryId} reused=${creditResult.reused}`,
+    );
+  } catch (err) {
+    // Swallow — referral failure MUST NOT fail booking confirmation.
+    console.warn('[payment.service] tryRewardReferralForBooking failed:', err);
+  }
+}
+
+/**
  * Best-effort store-order invoice (mirrors sendPujaBookingInvoice). Called
  * after Razorpay capture flips the order to CONFIRMED. Any failure is
  * swallowed so payment confirmation never blocks on email/PDF errors.
@@ -342,7 +415,7 @@ export class PaymentService {
       where: { gatewayOrderId: razorpayOrderId },
       include: {
         booking: {
-          select: { id: true, bookingNumber: true, status: true },
+          select: { id: true, bookingNumber: true, status: true, userId: true },
         },
       },
     });
@@ -375,12 +448,15 @@ export class PaymentService {
       }
     });
 
-    // Side-effects (commission ledger, invoice email) run after the
-    // transaction commits so a downstream failure cannot rollback the
-    // captured payment.
+    // Side-effects (commission ledger, invoice email, referral reward) run
+    // after the transaction commits so a downstream failure cannot rollback
+    // the captured payment.
     if (shouldConfirm) {
       await writePujaCommissionOnConfirm(payment.booking.id);
       void sendPujaBookingInvoice(payment.booking.id);
+      // Fire-and-forget — referral reward MUST NOT fail booking confirmation
+      // per spec hard rule. R-Q2-M-011 Tier-2 wiring.
+      void tryRewardReferralForBooking(payment.booking.userId, payment.booking.id);
     }
 
     return {

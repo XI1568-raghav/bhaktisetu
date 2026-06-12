@@ -216,6 +216,7 @@ export const prismaMock = {
   },
   referralCode: {
     findUnique: vi.fn(),
+    upsert: vi.fn(),
     create: vi.fn(),
   },
   referralClaim: {
@@ -224,6 +225,7 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    count: vi.fn(),
   },
   $queryRaw: vi.fn(),
   $transaction: vi.fn((fn: any) => fn(prismaMock)),
