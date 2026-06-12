@@ -6,7 +6,7 @@ owner_role: cto
 quarter: Q1
 month_target: 1
 priority: P0
-status: planned
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -50,12 +50,21 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: VERIFY-ONLY pass complete. ALREADY SHIPPED in earlier work.
+    Evidence:
+      - apps/api/prisma/schema.prisma line ~1163: `model Donation` exists w/ all required cols (id, userId, gaushalaId, templeId, amountInr Decimal(10,2), razorpayOrderId, razorpayPaymentId, receiptNumber, status DonationStatus enum, createdAt, paidAt)
+      - apps/api/src/routes/donations.ts uses prisma raw queries (`prisma.$queryRaw`) against `donations` table — no in-memory Map remains
+      - donations.ts 10 prisma calls counted
+      - Polymorphic donee enforced (exactly one of gaushalaId/templeId non-null per row, app-layer)
+      - 80G receipt generation reads from Donation row via lib/pdf-receipt.ts (NOT Map)
+    Render restart preserves donations (Postgres-backed via Supabase). In-memory Map persistence problem RESOLVED.
+    Status flipped to shipped + verified.
 
 tags: ["data","p0","donations"]
 created_at: 2026-06-09T21:28:52.338Z
-updated_at: 2026-06-09T21:28:52.338Z
-shipped_at: null
-verified_at: null
+updated_at: 2026-06-12T10:30:00.000Z
+shipped_at: 2026-06-12T10:30:00.000Z
+verified_at: 2026-06-12T10:30:00.000Z
 killed_at: null
 killed_reason: null
 ---
