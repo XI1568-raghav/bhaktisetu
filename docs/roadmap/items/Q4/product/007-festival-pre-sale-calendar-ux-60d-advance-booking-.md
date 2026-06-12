@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q4
 month_target: 12
 priority: P2
-status: planned
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -38,11 +38,23 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-12: SHIPPED. docs/product/specs/festival-presale-calendar-v1.md authored end-to-end:
+    - Mission + 5 non-goals (no scarcity-deception, no merchandise v1, no multi-day group)
+    - 4 personas (mobile devotee, family planner, NRI sankalp, first-time festival)
+    - User journey (calendar → festival page → slot picker → confirm → waitlist → reminders)
+    - 7 UI wireframes (calendar grid / detail / bundle / waitlist / confirm / WA reminder / admin dashboard)
+    - 2 SQL data model tables (festival + festival_temple_slot) w/ enum constraints
+    - 8 API endpoints under /api/v1/festivals/*
+    - Copy guidelines: real-data only, NO fake scarcity ("18/40 left" allowed, "Only 5 left!" forbidden)
+    - Cut-line v1 (Q3 2026 pre-Janmashtami) vs v2 (Q1 2027 pre-Holi)
+    - 8 Open Questions (capacity caps, refund window, bundle proration, waitlist priority, WA U7 gate, copy i18n, tz display, email teaser opt-in)
+  Unblocks R-Q4-E-011 engineering build (₹15L MRR via 60-day advance window).
+  Closes: Q-C-20260612T0001-R-Q4-P-007.
 
 tags: ["product","festival","pre-sale","calendar"]
 created_at: 2026-06-09T22:09:25.940Z
-updated_at: 2026-06-09T22:09:25.940Z
-shipped_at: null
+updated_at: 2026-06-12T07:30:00.000Z
+shipped_at: 2026-06-12T07:30:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
