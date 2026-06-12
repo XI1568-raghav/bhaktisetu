@@ -213,6 +213,10 @@ model User {
   referralsMade        ReferralClaim[]      @relation("ReferralReferrer")
   referralsClaimed     ReferralClaim[]      @relation("ReferralReferee")
 
+  // Wallet (added 2026-06-12 for R-Q2-M-011 referral reward sink)
+  credit               UserCredit?
+  creditLedgerEntries  CreditLedgerEntry[]
+
   @@map("users")
 }
 
@@ -1730,6 +1734,10 @@ model ReferralClaim {
   status        ReferralClaimStatus @default(pending)
   rewardAmount  Decimal?            @map("reward_amount") @db.Decimal(10, 2)
   rewardCurrency String?            @map("reward_currency")
+  // Audit trail link to wallet ledger entry created when status flips to rewarded.
+  // Null until reward applied; null also if reward is a non-wallet primitive (coupon, etc).
+  // Added 2026-06-12 for R-Q2-M-011 reward integration.
+  rewardLedgerId String?            @map("reward_ledger_id") @db.Uuid
   createdAt     DateTime            @default(now()) @map("created_at")
   updatedAt     DateTime            @updatedAt @map("updated_at")
   rewardedAt    DateTime?           @map("rewarded_at")
@@ -1741,4 +1749,59 @@ model ReferralClaim {
   @@index([referrerId, status])
   @@index([refereeId])
   @@map("referral_claims")
+}
+
+// ─── Wallet ─────────────────────────────────────────────────────────────────
+// Added 2026-06-12 for R-Q2-M-011 referral reward sink. Foundation for
+// future credit-based primitives (refunds-to-credit, promo grants, etc.).
+//
+// Storage convention: balance in PAISE (smallest INR unit) so we never
+// touch Decimal/floats. ₹100 = 10000 paise. Sum(ledger.delta_paise) MUST
+// equal UserCredit.balance_paise for any user (verifiable invariant).
+
+model UserCredit {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  balancePaise  Int      @default(0) @map("balance_paise")
+  currency      String   @default("INR")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledger  CreditLedgerEntry[]
+
+  @@map("user_credits")
+}
+
+enum CreditLedgerReason {
+  referral_reward    // Inviter rewarded when referee qualifies
+  refund_to_credit   // Refund issued as wallet credit (future)
+  promo_grant        // Manual grant by admin (future)
+  redemption_debit   // User redeemed credit at checkout (future)
+  adjustment         // Manual correction by admin
+}
+
+model CreditLedgerEntry {
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @map("user_id") @db.Uuid
+  creditId        String              @map("credit_id") @db.Uuid
+  // Positive = credit (income); negative = debit (spend).
+  deltaPaise      Int                 @map("delta_paise")
+  reason          CreditLedgerReason
+  // Idempotency key — same key + same userId twice = second call returns
+  // existing entry (no double-credit). Required for at-least-once webhooks.
+  idempotencyKey  String              @map("idempotency_key")
+  // Optional referential context — what triggered the entry.
+  refType         String?             @map("ref_type")
+  refId           String?             @map("ref_id")
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credit   UserCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([reason])
+  @@map("credit_ledger_entries")
 }
