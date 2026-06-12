@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T13:15:02.570Z",
+  "generatedAt": "2026-06-12T13:32:11.087Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -4354,7 +4354,7 @@
       "quarter": "Q1",
       "month_target": 2,
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -4380,7 +4380,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Research + outreach kit shipped. docs/sales/bengaluru-temple-prospects-2026-06.md w/ 30 BLR prospects:\n  - Tier A: 10 ancient/historic (Bull Temple, Gavi Gangadhareshwara, Banashankari Devi, Begur Ranganatha, Kote Venkataramana, Bhoga Nandeeshwara, etc — Foundation/heritage angle)\n  - Tier B: 10 modern/institutional (ISKCON BLR w/ Bureau-dispute caveat, Art of Living, Chinmaya, Belur Math, Sringeri/Ahobila/Pejawar mutt chapters)\n  - Tier C: 10 neighborhood (HSR/Marathahalli/Koramangala/Indiranagar/JP Nagar — fastest decision cycle)\nTier-specific outreach: email (Tier A+B) + WA (Tier C). 180-word email template + Hindi WA template. Cluster by sampradaya (Smarta/Vaishnava/Madhva/Tamil Saiva/Gaudiya).\nZERO sends from agent. Every [VERIFY-FOUNDER] marker requires founder validation via official temple site + Karnataka Endowment Dept registry.\nRISK: Bangalore-ISKCON 25-year Bureau dispute — treat as SEPARATE pilot from central ISKCON. Karnataka Endowment Dept temples may need additional state clearance.\nY1 conservative math: 10 onboarded × 3 bookings/mo × ₹501 × 20-40% platform share = ₹30K-60K MRR.\nFOUNDER ACTION: ≤6h spread over 14 days for verification + personalisation + 3/day × 10-day send + reply triage.\nCloses (partial): Q-C-20260612T1153-R-Q1-S-005. Status stays in_progress until 10+ onboarded.\n",
       "tags": [
         "supply",
         "temple",
@@ -4388,7 +4388,7 @@
         "p1"
       ],
       "created_at": "2026-06-09T21:47:01.131Z",
-      "updated_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-12T08:30:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
@@ -4452,7 +4452,7 @@
       "quarter": "Q1",
       "month_target": 1,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -4484,14 +4484,14 @@
           "prisma/schema.prisma"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Research + outreach kit shipped. docs/sales/astrologer-prospects-2026-06.md w/ 30 prospects:\n  - Tier A: 15 Vedic Parashari (AstroSage/Clickastro/GaneshaSpeaks panels + LinkedIn + YouTube creators)\n  - Tier B: 8 KP (Krishnamurti Paddhati) — Chennai/Bangalore/Hyderabad/Madurai\n  - Tier C: 4 Lal Kitab + Naadi (Punjab/Vaitheeswaran Koil/Hoshiarpur)\n  - Tier D: 3 independent established (Instagram 10K+, self-managed website, NRI-focused)\nTarget onboarding mix: 7 Vedic + 2 KP + 1 Lal Kitab = 10 spanning 80% of demand.\n190-word cold email template + 4 recipient-type customisations (marketplace / YouTube creator / Tier-D independent / KP-Lal-Naadi paradigm).\nCross-sell economics modelled: 10 astrologers × 5 puja recommendations/mo × 40% conversion × ₹1K avg × 20-40% platform share = ₹4K-8K MRR cross-sell + ₹3.6K-5.4K MRR direct consultation = ₹7-13K MRR potential.\nRisk notes: marketplace cannibalisation framing, quality control via 2-trial-consultation onboarding, NRI time-zone commitment, sastra-refund-policy explicitly documented.\nFOUNDER ACTION: ≤6h spread over 14 days for verification + personalisation + 3/day × 10-day send + trial-consultation scheduling.\nCloses (partial): Q-C-20260612T1153-R-Q1-S-007. Status stays in_progress until 10 onboarded + 30 first-month consultations completed.\n",
       "tags": [
         "supply",
         "astrology",
         "p2"
       ],
       "created_at": "2026-06-09T21:47:01.131Z",
-      "updated_at": "2026-06-09T21:47:01.131Z",
+      "updated_at": "2026-06-12T08:45:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
@@ -5939,7 +5939,7 @@
       "quarter": "Q2",
       "month_target": 5,
       "priority": "P1",
-      "status": "planned",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -5974,15 +5974,15 @@
           "prisma/schema.prisma"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: SHIPPED. docs/finance/mrr-tracking-cadence-v1.md authored end-to-end:\n  - 5 revenue lanes mapped (L1 Puja bookings ₹1.5L / L2 Adopt-temple ₹1.2L / L3 CSR ₹1L / L4 B2B SaaS ₹80K / L5 Affiliate ₹50K = ₹5L Q2 target)\n  - Q4 trajectory: ₹12.5L MRR (= ₹1.5Cr ARR)\n  - Weekly Friday review template w/ explicit table (lane × WoW Δ × variance × owner notes)\n  - Per-lane SQL queries for live KPI compute (puja_bookings, temple_subscription, b2b_booking_attribution)\n  - 5-level escalation thresholds (Y1/Y2/R1/R2/CRITICAL) w/ specific trigger conditions + actions\n  - 4 new tripwires to add in next cycle (mrr_l1_pujas_behind_2w, mrr_l2_subs_below_30pct_w10, mrr_aggregate_red_3w, mrr_aggregate_critical_4w)\n  - Cash runway implication: hit ₹5L MRR Q2-end + <₹2L/mo costs = break-even start of Q3\n  - Quarterly review template at docs/finance/quarterly-reviews/QX-YYYY.md\n  - Founder action checklist: mkdir + Friday 4 PM IST recurring calendar + first snapshot 2026-06-14\nFOUNDER ACTION: first snapshot landing 2026-06-14 + ongoing weekly cadence (~15min/Friday).\nCloses: Q-C-20260612T1153-R-Q2-F-003.\n",
       "tags": [
         "finance",
         "mrr",
         "milestone"
       ],
       "created_at": "2026-06-09T21:56:41.463Z",
-      "updated_at": "2026-06-09T21:56:41.463Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-12T09:00:00.000Z",
+      "shipped_at": "2026-06-12T09:00:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
@@ -11265,7 +11265,7 @@
       "quarter": "Q3",
       "month_target": 9,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -11291,7 +11291,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: AUDIT slice shipped. docs/seo/seo-audit-2026-06-12.md (research-only, no code):\n  - Title tag analysis structure (per-page fixes pending GSC export)\n  - 10 city+puja landing pages proposed (Satyanarayan-Mumbai, Griha-Pravesh-Bangalore, Mundan-Delhi, Upanayanam-Chennai, Durga-Saptashati-Kolkata, Vinayaka-Chavithi-Hyderabad, Karwa-Chauth-Jaipur, Lakshmi-Puja-Pune, Shraddha-Gaya, Rudrabhishek-Haridwar) w/ per-page content structure spec\n  - Hreflang implementation pattern (en-IN/hi-IN/en-US/en-GB/en-AU/en-CA + x-default)\n  - IndexNow integration pattern (Bing+Yandex+Naver instant index)\n  - Quick wins enumerated (robots.txt, sitemap priorities, alt text, structured data, Core Web Vitals)\n  - 7 engineering tickets to file next cycle (R-Q3-E-XXX through DDD)\nEDGE-RUNTIME ALERT: 10 city+puja landing pages BLOCKED on edge-runtime ~250-route sweep planning. Must ship `docs/engineering/edge-runtime-sweep-plan.md` before any new /puja/[slug] route created.\nFOUNDER ACTION: GSC Pages+Coverage export + INDEXNOW_KEY generation + top-3 priority landing page approval (recommend seasonal Q3-Q4: Karwa Chauth + Durga Saptashati + Vinayaka Chavithi).\nCloses (partial): Q-C-20260612T0001-R-Q3-M-014. Status stays in_progress until 5+ engineering tickets ship.\n",
       "tags": [
         "seo",
         "content",
@@ -11299,7 +11299,7 @@
         "organic"
       ],
       "created_at": "2026-06-09T22:02:53.908Z",
-      "updated_at": "2026-06-09T22:02:53.908Z",
+      "updated_at": "2026-06-12T09:15:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
