@@ -202,6 +202,29 @@ export const prismaMock = {
     update: vi.fn(),
     count: vi.fn(),
   },
+  userCredit: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    upsert: vi.fn(),
+  },
+  creditLedgerEntry: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    aggregate: vi.fn(),
+  },
+  referralCode: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
+  referralClaim: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
   $queryRaw: vi.fn(),
   $transaction: vi.fn((fn: any) => fn(prismaMock)),
 };
