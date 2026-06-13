@@ -7,7 +7,7 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology, Horoscope & Kundli — 17 Free Tools + Live Pandits | Darshya',
+ title: 'Vedic Astrology — Kundli, Dosha & Daily Horoscope | Darshya',
  description:
  'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour, Kaal Sarp Dosh detector (12 Kalsarpa Yoga types), Shubh Muhurat finder for marriage / griha pravesh / vehicle / business / 8 more life events, Vastu Shastra 8-direction room placement scorer, Lal Kitab Farman Finder mapping 12 life problems to 9 grahas with 108 house-by-house household remedies, Pitra Dosha symptom-checker with 5 dosh types + 18 ancestral-karma remedies (Pind Daan / Narayan Nagbali / Pitru Paksha tarpan), Pancha Pakshi Shastra Tamil Siddhar 5-bird astrology (Vulture / Owl / Crow / Cock / Peacock) with per-Pakshi mantra + remedy + lucky days + compatibility. Plus verified pandits for consults.',
 };

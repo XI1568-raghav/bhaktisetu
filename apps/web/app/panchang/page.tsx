@@ -24,7 +24,7 @@ import {
 } from '../../lib/api';
 
 export const metadata: Metadata = {
- title: 'Panchang',
+ title: 'Panchang Today — Tithi, Nakshatra, Rahu Kaal | Darshya',
  description:
  'Daily Hindu Panchang with tithi, nakshatra, yoga, karana, sunrise/sunset times, auspicious muhurat, rahu kaal, and festival calendar.',
 };
