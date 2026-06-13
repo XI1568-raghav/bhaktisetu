@@ -91,6 +91,7 @@ import { gurukulPortalRoutes } from './routes/gurukul-portal.js';
 import { adminGurukulsRoutes } from './routes/admin-gurukuls.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
 import { referralsRoutes } from './routes/referrals.js';
+import { b2bRoutes } from './routes/b2b.js';
 import { giftPujaRoutes } from './routes/gift-puja.js';
 import { yatraInquiryRoutes } from './routes/yatra-inquiry.js';
 import { recordLatency, snapshotStats, startMetricsReporter } from './lib/route-metrics.js';
@@ -330,6 +331,7 @@ async function bootstrap() {
   await server.register(adminAgentsRoutes, { prefix: '/api/v1/admin/agents' });
   await server.register(publicAgentFeedRoutes, { prefix: '/api/v1/public/agents' });
   await server.register(referralsRoutes, { prefix: '/api/v1/referrals' });
+  await server.register(b2bRoutes, { prefix: '/api/v1/b2b' });
   await server.register(giftPujaRoutes, { prefix: '/api/v1/gift-puja' });
   await server.register(yatraInquiryRoutes, { prefix: '/api/v1/yatra-inquiry' });
 
