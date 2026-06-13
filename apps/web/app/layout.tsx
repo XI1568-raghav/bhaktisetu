@@ -101,7 +101,14 @@ export const metadata: Metadata = {
  apple: "/favicon.svg",
  },
  manifest: "/manifest.json",
- alternates: { canonical: "https://darshya.online" },
+ alternates: {
+   canonical: "https://darshya.online",
+   languages: {
+     "en-IN": "https://darshya.online",
+     "en-US": "https://darshya.online",
+     "x-default": "https://darshya.online",
+   },
+ },
  openGraph: {
  type: "website",
  locale: "en_IN",
