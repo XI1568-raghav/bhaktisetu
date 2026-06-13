@@ -252,13 +252,80 @@
 - [ ] Train any future CS hire on doctrine: emotion first, ticket second
 - [ ] File Hindi + 5 regional translations as R-Q1-CS-001b ticket (separate cycle)
 
+## Macro 11 — `puja_sla_breach` (parameterized bilingual EN+HI)
+
+- **ID**: `puja_sla_breach`
+- **Trigger**: PujaBooking still `priest_assigned`, >7 days past `{{scheduledDate}}`, `videoProofUrl IS NULL`. Auto-detected via `apps/api/scripts/ops/sla-breach-outreach.ts` → CSV at `docs/agent-reports/sla-breach-<date>.csv`.
+- **Tokens**: `{{devoteeName}}`, `{{bookingCode}}`, `{{pujaName}}`, `{{scheduledDate}}`, `{{amountInr}}`, `{{founderName}}`
+- **Distinct from Macro 1**: Macro 1 is the broader hand-written reply text; Macro 11 is the strict parameterized template emitted by the SLA-breach script + bilingual founder action doc (matches drafts in `docs/agent-reports/2026-06-14-sla-breach-action.md`).
+
+### WhatsApp — English
+
+> Namaste {{devoteeName}} ji, Bhaktisetu founder here. Your {{pujaName}} booking ({{bookingCode}}) for {{scheduledDate}} was not completed and we owe you an apology. Two options:
+> (a) Reschedule within 7 days with verified video proof, OR
+> (b) Full refund of ₹{{amountInr}} + ₹100 credit for the inconvenience.
+> Reply A or B. — {{founderName}}
+
+### WhatsApp — Hindi
+
+> नमस्ते {{devoteeName}} जी, मैं Bhaktisetu का संस्थापक हूँ। आपकी {{pujaName}} बुकिंग ({{bookingCode}}, {{scheduledDate}}) पूरी नहीं हो सकी, इसके लिए क्षमा करें। दो विकल्प:
+> (a) 7 दिन में पुनर्निर्धारण + वीडियो प्रमाण, या
+> (b) पूरा रिफंड ₹{{amountInr}} + ₹100 क्रेडिट।
+> A या B लिखकर भेजें। — {{founderName}}
+
+### Email subject
+
+> Apology + resolution for booking {{bookingCode}}
+
+### Email body — English
+
+> Dear {{devoteeName}},
+>
+> I am writing as the founder of Bhaktisetu. Your {{pujaName}} booking ({{bookingCode}}) scheduled for {{scheduledDate}} was not completed, and I take full responsibility for the failure of our pandit-verification and video-proof process. There is no excuse — your trust was misplaced and I am sorry.
+>
+> Two resolutions are available, and you choose:
+>
+> 1. **Reschedule within 7 days** — a verified pandit (different from the original assignee) will conduct the puja with mandatory video proof delivered to you within 24 hours of completion.
+> 2. **Full refund of ₹{{amountInr}}** — credited to your original payment method within 5-7 business days, plus a ₹100 inconvenience credit on your Bhaktisetu wallet.
+>
+> Please reply A or B. If I do not hear back within 48 hours, I will default to option B (full refund) to ensure you are not waiting any longer.
+>
+> Yours in seva,
+> {{founderName}}
+> Founder, Bhaktisetu
+> support@bhaktisetu.com
+
+### Email body — Hindi
+
+> {{devoteeName}} जी,
+>
+> मैं Bhaktisetu का संस्थापक हूँ। आपकी {{pujaName}} बुकिंग ({{bookingCode}}, {{scheduledDate}}) पूरी नहीं हो सकी। हमारी पंडित-सत्यापन एवं वीडियो-प्रमाण प्रक्रिया विफल रही — इसकी पूरी जिम्मेदारी मेरी है। कोई बहाना नहीं — आपने भरोसा किया और हम विफल रहे। क्षमा करें।
+>
+> दो विकल्प, आप चुनें:
+>
+> 1. **7 दिन में पुनर्निर्धारण** — एक सत्यापित पंडित (पहले वाले से अलग) पूजा करेंगे और 24 घंटे में वीडियो प्रमाण आपको भेजा जाएगा।
+> 2. **पूरा रिफंड ₹{{amountInr}}** — मूल पेमेंट मेथड पर 5-7 कार्य दिवसों में, साथ ही ₹100 असुविधा क्रेडिट Bhaktisetu वॉलेट में।
+>
+> कृपया A या B लिखकर भेजें। 48 घंटे में उत्तर न मिलने पर हम विकल्प B (पूरा रिफंड) डिफ़ॉल्ट करेंगे ताकि आपको और इंतज़ार न करना पड़े।
+>
+> सेवा में,
+> {{founderName}}
+> संस्थापक, Bhaktisetu
+> support@bhaktisetu.com
+
+- **Follow-up SLA**: founder action within 24h of detection. Auto-default to refund at 48h silence. Log row to `docs/agent-reports/sla-breach-<date>.csv` with `suggestedAction`, `repeatBreachCount`, and `resolution` (A/B/auto-refund).
+- **Repeat-breach escalation**: If same `priestId` shows `repeatBreachCount >= 2` in the script output → ALSO open a GH issue per the priest investigation template in `docs/agent-reports/2026-06-14-sla-breach-action.md` (Section B). Pause priest payouts in admin panel immediately, do not wait for the issue triage.
+
+---
+
 ## Out of scope (this version)
 
-- Hindi + Tamil + Telugu + Bengali + Marathi + Gujarati translations
-- Macro 11+ (B2B temple manager escalations — separate doc TBD)
+- Tamil + Telugu + Bengali + Marathi + Gujarati translations (Hindi covered by Macro 11)
+- Macro 12+ (B2B temple manager escalations — separate doc TBD)
 - Automated dispatch via support tool (manual paste only, this version)
 - WhatsApp template approvals (Meta-side, needs U7 gate per `docs/activation-gates.md`)
 
 ## Closes
 
-Q-C-20260611T2307-R-Q1-CS-001
+Q-C-20260611T2307-R-Q1-CS-001 (macros 1-10)
+Q-C-20260612T0503-R-Q1-CS-003 (macro 11 `puja_sla_breach`)
