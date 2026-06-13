@@ -6,7 +6,8 @@ owner_role: cto
 quarter: Q2
 month_target: 5
 priority: P2
-status: in_progress
+status: shipped
+shipped_at: 2026-06-13
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -29,7 +30,11 @@ est_hours: 16
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Slow query log active, configurable threshold via SLOW_QUERY_MS env (default 100)"
+  - "N+1 detector logs warning when same SQL template fires >5 times within a single request"
+  - "Tests pass: pnpm --filter @poojly/api test src/db/"
+  - "Founder-action audit: ≥10 N+1 occurrences fixed + documented in docs/perf/n-plus-one-fixes-Q2.md"
+  - "No regression: pnpm --filter @poojly/api test all green"
 
 agent_brief:
   context_files: []
@@ -42,7 +47,6 @@ handoff_notes: |
 tags: ["perf","db","query"]
 created_at: 2026-06-09T21:55:16.790Z
 updated_at: 2026-06-09T21:55:16.790Z
-shipped_at: null
 verified_at: null
 killed_at: null
 killed_reason: null
