@@ -6,7 +6,8 @@ owner_role: cmo
 quarter: Q1
 month_target: 3
 priority: P2
-status: in_progress
+status: blocked
+founder_review_required: true
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -47,10 +48,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: Launch pack ready at docs/agent-reports/cmo/2026-03-nri-fb-ads-launch-pack/. Founder action: launch in FB Ads Manager per launch-checklist.md.
 
 tags: ["ads","nri","experiment","p2"]
 created_at: 2026-06-09T21:47:07.357Z
-updated_at: 2026-06-09T21:47:07.357Z
+updated_at: 2026-06-13T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
