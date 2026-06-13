@@ -6,7 +6,7 @@ owner_role: cto
 quarter: Q2
 month_target: 5
 priority: P2
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: 'U14'
 depends_on: []
