@@ -1,9 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { __testing } from '../sla-breach-outreach.js';
+import {
+  CSV_HEADER,
+  filterBreaches,
+  groupByPriest,
+  toCsv,
+  type BookingRow,
+} from '../sla-breach-outreach.js';
 
-const { csvField, transformToCsvRows, renderCsv, summarize, CSV_HEADER } = __testing;
+const NOW = new Date('2026-06-14T00:00:00.000Z');
 
-const SAMPLE_BOOKINGS = [
+const FIXTURE: BookingRow[] = [
+  // 1. priest_assigned, >7d overdue, no video → INCLUDED (priest 821edbe5)
   {
     id: 'uuid-1',
     bookingNumber: 'BS-20260427-K3HSD',
@@ -13,7 +20,9 @@ const SAMPLE_BOOKINGS = [
     scheduledTimeSlot: '06:00',
     status: 'priest_assigned',
     priceAmount: '501',
+    videoProofUrl: null,
   },
+  // 2. priest_assigned, >7d overdue, no video → INCLUDED (priest 821edbe5)
   {
     id: 'uuid-2',
     bookingNumber: 'BS-20260427-43U88',
@@ -23,141 +32,158 @@ const SAMPLE_BOOKINGS = [
     scheduledTimeSlot: '06:00',
     status: 'priest_assigned',
     priceAmount: '501',
+    videoProofUrl: null,
   },
+  // 3. priest_assigned, >7d overdue, no video → INCLUDED (different priest)
   {
     id: 'uuid-3',
     bookingNumber: 'BS-20260427-03BS5',
+    templeId: 'temple-1',
+    priestId: 'other-priest',
+    scheduledDate: '2026-05-04T06:00:00.000Z',
+    scheduledTimeSlot: '06:00',
+    status: 'priest_assigned',
+    priceAmount: '1001',
+    videoProofUrl: null,
+  },
+  // 4. EXCLUDED: status = confirmed (not priest_assigned)
+  {
+    id: 'uuid-4',
+    bookingNumber: 'BS-20260427-EXCL1',
+    templeId: 'temple-1',
+    priestId: '821edbe5',
+    scheduledDate: '2026-05-04T06:00:00.000Z',
+    scheduledTimeSlot: '06:00',
+    status: 'confirmed',
+    priceAmount: '501',
+    videoProofUrl: null,
+  },
+  // 5. EXCLUDED: scheduledDate is now-3d (not >7d overdue)
+  {
+    id: 'uuid-5',
+    bookingNumber: 'BS-20260611-EXCL2',
+    templeId: 'temple-1',
+    priestId: '821edbe5',
+    scheduledDate: '2026-06-11T06:00:00.000Z',
+    scheduledTimeSlot: '06:00',
+    status: 'priest_assigned',
+    priceAmount: '501',
+    videoProofUrl: null,
+  },
+  // 6. EXCLUDED: videoProofUrl IS NOT null (proof exists)
+  {
+    id: 'uuid-6',
+    bookingNumber: 'BS-20260427-EXCL3',
     templeId: 'temple-1',
     priestId: '821edbe5',
     scheduledDate: '2026-05-04T06:00:00.000Z',
     scheduledTimeSlot: '06:00',
     status: 'priest_assigned',
     priceAmount: '501',
-  },
-  {
-    id: 'uuid-4',
-    bookingNumber: 'BS-20260530-NEWER',
-    templeId: 'temple-2',
-    priestId: 'other-priest',
-    scheduledDate: '2026-06-05T10:00:00.000Z',
-    scheduledTimeSlot: '10:00',
-    status: 'priest_assigned',
-    priceAmount: '1001',
+    videoProofUrl: 'https://video.example.com/proof.mp4',
   },
 ];
 
-const NOW = new Date('2026-06-12T05:00:00.000Z');
-
-describe('csvField', () => {
-  it('returns plain values unquoted when safe', () => {
-    expect(csvField('plain')).toBe('plain');
-    expect(csvField(501)).toBe('501');
-  });
-
-  it('quotes + escapes embedded double-quotes per RFC 4180', () => {
-    expect(csvField('say "hi"')).toBe('"say ""hi"""');
-  });
-
-  it('quotes when commas / newlines / CRs present', () => {
-    expect(csvField('a,b')).toBe('"a,b"');
-    expect(csvField('line1\nline2')).toBe('"line1\nline2"');
-  });
-
-  it('renders null/undefined as empty fields', () => {
-    expect(csvField(null)).toBe('');
-    expect(csvField(undefined)).toBe('');
-  });
-});
-
-describe('transformToCsvRows', () => {
-  it('computes daysOverdue from scheduledDate vs now', () => {
-    const rows = transformToCsvRows(SAMPLE_BOOKINGS, NOW);
-    // 2026-05-04 06:00Z → 2026-06-12 05:00Z = 38 full days (just shy of 39)
-    expect(rows.find((r) => r.bookingCode === 'BS-20260427-K3HSD')?.daysOverdue).toBe(38);
-  });
-
-  it('flags priest 821edbe5 w/ repeatBreachCount=3 (3 sibs in fixture)', () => {
-    const rows = transformToCsvRows(SAMPLE_BOOKINGS, NOW);
-    const k3 = rows.find((r) => r.bookingCode === 'BS-20260427-K3HSD');
-    expect(k3?.repeatBreachCount).toBe(3);
-    expect(k3?.suggestedAction).toContain('PRIEST-FLAG');
-  });
-
-  it('newer single-priest booking gets non-PRIEST-FLAG suggestedAction', () => {
-    const rows = transformToCsvRows(SAMPLE_BOOKINGS, NOW);
-    const newer = rows.find((r) => r.bookingCode === 'BS-20260530-NEWER');
-    expect(newer?.repeatBreachCount).toBe(1);
-    expect(newer?.suggestedAction).not.toContain('PRIEST-FLAG');
-  });
-
-  it('sort: priestId ASC, then bookingCode ASC (deterministic)', () => {
-    const rows = transformToCsvRows(SAMPLE_BOOKINGS, NOW);
-    const codes = rows.map((r) => r.bookingCode);
-    // priest 821edbe5 (3) comes before 'other-priest' alphabetically
+describe('filterBreaches', () => {
+  it('keeps only priest_assigned + >7d overdue + no videoProofUrl bookings', () => {
+    const out = filterBreaches(FIXTURE, NOW);
+    const codes = out.map((b) => b.bookingNumber).sort();
     expect(codes).toEqual([
       'BS-20260427-03BS5',
       'BS-20260427-43U88',
       'BS-20260427-K3HSD',
-      'BS-20260530-NEWER',
     ]);
   });
 
-  it('empty input → empty rows array', () => {
-    expect(transformToCsvRows([], NOW)).toEqual([]);
+  it('excludes wrong status, recent scheduledDate, present videoProofUrl', () => {
+    const out = filterBreaches(FIXTURE, NOW);
+    const excludedCodes = ['BS-20260427-EXCL1', 'BS-20260611-EXCL2', 'BS-20260427-EXCL3'];
+    for (const code of excludedCodes) {
+      expect(out.find((b) => b.bookingNumber === code)).toBeUndefined();
+    }
   });
 
-  it('booking w/ null priestId: repeatBreachCount=0, no PRIEST-FLAG', () => {
-    const rows = transformToCsvRows(
-      [
-        {
-          id: 'x',
-          bookingNumber: 'BS-NULL-PRIEST',
-          templeId: 't',
-          priestId: null,
-          scheduledDate: '2026-05-04T00:00:00.000Z',
-          scheduledTimeSlot: '06:00',
-          status: 'confirmed',
-          priceAmount: '101',
-        },
-      ],
-      NOW,
-    );
-    expect(rows[0].priestId).toBe('');
-    expect(rows[0].repeatBreachCount).toBe(0);
+  it('empty input → empty output, no crash', () => {
+    expect(filterBreaches([], NOW)).toEqual([]);
   });
 });
 
-describe('renderCsv', () => {
-  it('starts with header line + ends with newline', () => {
-    const out = renderCsv(transformToCsvRows(SAMPLE_BOOKINGS, NOW));
-    expect(out.split('\n')[0]).toBe(CSV_HEADER);
-    expect(out.endsWith('\n')).toBe(true);
+describe('groupByPriest', () => {
+  it('groups bookings by priestId, flags repeatBreachCount >= 2', () => {
+    const filtered = filterBreaches(FIXTURE, NOW);
+    const groups = groupByPriest(filtered);
+    expect(groups.get('821edbe5')?.length).toBe(2);
+    expect(groups.get('other-priest')?.length).toBe(1);
+    // assertion: priest 821edbe5 hits >=2 → repeat-breach class
+    const flagged = Array.from(groups.entries())
+      .filter(([key, arr]) => key !== '' && arr.length >= 2)
+      .map(([key]) => key);
+    expect(flagged).toEqual(['821edbe5']);
   });
 
-  it('idempotent: same input → byte-identical output', () => {
-    const a = renderCsv(transformToCsvRows(SAMPLE_BOOKINGS, NOW));
-    const b = renderCsv(transformToCsvRows(SAMPLE_BOOKINGS, NOW));
+  it('null priestId is keyed as empty string', () => {
+    const out = groupByPriest([
+      {
+        id: 'np',
+        bookingNumber: 'BS-NULLP',
+        templeId: 't',
+        priestId: null,
+        scheduledDate: '2026-05-04T00:00:00.000Z',
+        scheduledTimeSlot: '06:00',
+        status: 'priest_assigned',
+        priceAmount: '101',
+        videoProofUrl: null,
+      },
+    ]);
+    expect(out.get('')?.length).toBe(1);
+  });
+});
+
+describe('toCsv', () => {
+  it('parses JSON shape → CSV rows w/ correct header + columns', () => {
+    const filtered = filterBreaches(FIXTURE, NOW);
+    const csv = toCsv(filtered, NOW);
+    const lines = csv.split('\n');
+    expect(lines[0]).toBe(CSV_HEADER);
+    // 3 filtered + header + trailing empty (from final \n)
+    expect(lines.length).toBe(3 + 1 + 1);
+    // header has exactly 12 columns
+    expect(CSV_HEADER.split(',').length).toBe(12);
+    // each data line has 12 columns
+    for (const dataLine of lines.slice(1, 4)) {
+      expect(dataLine.split(',').length).toBe(12);
+    }
+  });
+
+  it('repeatBreachCount column reflects priest grouping; suggestedAction PRIEST-FLAG for >=2', () => {
+    const filtered = filterBreaches(FIXTURE, NOW);
+    const csv = toCsv(filtered, NOW);
+    // Find K3HSD row (priest 821edbe5, has 2 siblings filtered → repeatBreachCount=2)
+    const k3 = csv.split('\n').find((l) => l.startsWith('BS-20260427-K3HSD'))!;
+    const cols = k3.split(',');
+    // column indexes: 0=bookingCode 1-5=devotee/puja 6=daysOverdue 7=amount 8=priestId 9=priestName 10=repeatBreachCount 11=suggestedAction
+    expect(cols[10]).toBe('2');
+    expect(cols[11]).toContain('PRIEST-FLAG');
+    // Find 03BS5 row (priest other-priest, only 1 → repeatBreachCount=1, no PRIEST-FLAG)
+    const bs5 = csv.split('\n').find((l) => l.startsWith('BS-20260427-03BS5'))!;
+    const bs5Cols = bs5.split(',');
+    expect(bs5Cols[10]).toBe('1');
+    expect(bs5Cols[11]).not.toContain('PRIEST-FLAG');
+  });
+
+  it('idempotent: same input twice → byte-identical CSV', () => {
+    const filtered = filterBreaches(FIXTURE, NOW);
+    const a = toCsv(filtered, NOW);
+    const b = toCsv(filtered, NOW);
     expect(a).toBe(b);
+    // also: shuffled input → identical output (sort by bookingCode ASC)
+    const shuffled = [...filtered].reverse();
+    const c = toCsv(shuffled, NOW);
+    expect(c).toBe(a);
   });
 
-  it('empty input → header-only CSV (no crash)', () => {
-    const out = renderCsv(transformToCsvRows([], NOW));
+  it('empty input → header-only CSV with trailing newline (no crash)', () => {
+    const out = toCsv([], NOW);
     expect(out).toBe(CSV_HEADER + '\n');
-  });
-});
-
-describe('summarize', () => {
-  it('sums atRiskInr + flags repeat-breach priests', () => {
-    const s = summarize(transformToCsvRows(SAMPLE_BOOKINGS, NOW));
-    expect(s.count).toBe(4);
-    expect(s.totalAtRiskInr).toBe(501 + 501 + 501 + 1001);
-    expect(s.priestsFlagged).toEqual(['821edbe5']);
-  });
-
-  it('empty input → zero stats, no priests flagged', () => {
-    const s = summarize([]);
-    expect(s.count).toBe(0);
-    expect(s.totalAtRiskInr).toBe(0);
-    expect(s.priestsFlagged).toEqual([]);
   });
 });
