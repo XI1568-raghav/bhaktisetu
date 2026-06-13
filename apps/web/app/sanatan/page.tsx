@@ -18,6 +18,9 @@ export default function SanatanPage() {
       />
       <div className="max-w-5xl mx-auto px-4 pb-12">
         <VedicTimeline />
+        <p className="mt-8 text-base text-surface-700">
+          Sanatan Dharm rests on the <a href="/ved" className="text-indigo-700 underline hover:text-indigo-900">Vedic scriptures</a> — the oldest layer of sruti literature that grounds every later philosophical school, ritual, and lived tradition described above. Explore the Vedas to trace dharma to its source.
+        </p>
       </div>
     </>
   );
