@@ -6,9 +6,9 @@ owner_role: sales
 quarter: Q1
 month_target: 2
 priority: P2
-status: in_progress
+status: blocked
 agent_assignable: true
-founder_blocker: null
+founder_blocker: "Founder must dial T1 gaushala prospects per outreach kit in docs/agent-reports/sales/R-Q1-S-008-*. Agent artifacts shipped."
 depends_on: []
 blocks: []
 
@@ -38,10 +38,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: agent prepared target list + outreach kit. Founder must dial T1 prospects. See docs/agent-reports/sales/R-Q1-S-008-*.
 
 tags: ["supply","gaushala","adopt-a-cow","p2"]
 created_at: 2026-06-09T21:47:01.131Z
-updated_at: 2026-06-09T21:47:01.131Z
+updated_at: 2026-06-13T05:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
