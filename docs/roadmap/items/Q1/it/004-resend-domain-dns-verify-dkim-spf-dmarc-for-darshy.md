@@ -38,6 +38,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-10: bulk-imported from year-1 content sprint.
+  2026-06-13: Engineering-hand handoff doc shipped (docs/it/R-Q1-IT-004-handoff.md). Item now founder-action-required (DNS + Resend dashboard access). Runbook + handoff together = full execution path for founder 45-min window.
   2026-06-12: Runbook shipped. docs/ops/resend-dns-verify-runbook.md (10-step, ~45min):
     - SPF merge (don't add 2nd record), DKIM (resend._domainkey), MX bounce subdomain, SPF for bounce sub, DMARC (p=none v1 → escalate p=quarantine/p=reject over 90 days)
     - Resend dashboard verify + Gmail "Show original" SPF/DKIM/DMARC PASS check
@@ -53,7 +54,7 @@ handoff_notes: |
 
 tags: ["critical","resend","dns","email","p0"]
 created_at: 2026-06-10T20:11:37.313Z
-updated_at: 2026-06-12T11:00:00.000Z
+updated_at: 2026-06-13T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
