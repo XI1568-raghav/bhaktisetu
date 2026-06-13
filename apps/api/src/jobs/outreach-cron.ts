@@ -96,6 +96,7 @@ export interface OutreachTickResult {
   firstTouch: { attempted: number; ok: number; failed: number };
   followup3day: { attempted: number; ok: number; failed: number };
   followup7day: { attempted: number; ok: number; failed: number };
+  followup14day: { attempted: number; ok: number; failed: number };
   durationMs: number;
 }
 
@@ -177,7 +178,7 @@ async function sendFirstTouch(lead: Lead): Promise<{ ok: boolean; error?: string
   return { ok: emailResult.ok || !!emailResult.skipped };
 }
 
-async function sendFollowup(lead: Lead, days: 3 | 7): Promise<{ ok: boolean; error?: string }> {
+async function sendFollowup(lead: Lead, days: 3 | 7 | 14): Promise<{ ok: boolean; error?: string }> {
   const templateKey = followupTemplateKey(lead.role, days);
   if (await alreadySent(lead.id, templateKey)) {
     return { ok: true };
@@ -213,6 +214,7 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
     firstTouch: { attempted: 0, ok: 0, failed: 0 },
     followup3day: { attempted: 0, ok: 0, failed: 0 },
     followup7day: { attempted: 0, ok: 0, failed: 0 },
+    followup14day: { attempted: 0, ok: 0, failed: 0 },
     durationMs: 0,
   };
 
@@ -224,7 +226,7 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
     result.durationMs = Date.now() - t0;
     return result;
   }
-  const remaining = () => Math.max(0, RESEND_DAILY_CAP - sentToday - result.firstTouch.ok - result.followup3day.ok - result.followup7day.ok);
+  const remaining = () => Math.max(0, RESEND_DAILY_CAP - sentToday - result.firstTouch.ok - result.followup3day.ok - result.followup7day.ok - result.followup14day.ok);
 
   async function throttledSend<T>(fn: () => Promise<T>, ok: () => void): Promise<T> {
     const out = await fn();
@@ -256,6 +258,7 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
   // ── 2. 3-day follow-up ─────────────────────────────────────────────
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
   const followup3Leads = await prisma.lead.findMany({
     where: {
@@ -275,10 +278,11 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
   }
 
   // ── 3. 7-day follow-up ─────────────────────────────────────────────
+  // Bounded so the 14-day touch can fire as a distinct stage on the same lead.
   const followup7Leads = await prisma.lead.findMany({
     where: {
       status: 'EMAILED',
-      lastContactedAt: { lt: sevenDaysAgo },
+      lastContactedAt: { lt: sevenDaysAgo, gt: fourteenDaysAgo },
       contactCount: { lt: MAX_CONTACT_COUNT },
       email: { not: null },
     },
@@ -290,6 +294,27 @@ export async function runOutreachTick(): Promise<OutreachTickResult> {
     result.followup7day.attempted++;
     const r = await throttledSend(() => sendFollowup(lead, 7), () => result.followup7day.ok++);
     if (!r.ok) result.followup7day.failed++;
+  }
+
+  // ── 4. 14-day follow-up (R-Q1-CS-008) ─────────────────────────────
+  // Final gentle nudge between 7d and final touch — keeps lead warm before
+  // hitting MAX_CONTACT_COUNT=5 cap. Devotees/providers were going cold at
+  // the 3-touch ceiling, so we add this as touch #4 in the sequence.
+  const followup14Leads = await prisma.lead.findMany({
+    where: {
+      status: 'EMAILED',
+      lastContactedAt: { lt: fourteenDaysAgo },
+      contactCount: { lt: MAX_CONTACT_COUNT },
+      email: { not: null },
+    },
+    take: Math.min(FOLLOWUP_BATCH, remaining()),
+    orderBy: { lastContactedAt: 'asc' },
+  });
+  for (const lead of followup14Leads) {
+    if (remaining() <= 0) break;
+    result.followup14day.attempted++;
+    const r = await throttledSend(() => sendFollowup(lead, 14), () => result.followup14day.ok++);
+    if (!r.ok) result.followup14day.failed++;
   }
 
   result.durationMs = Date.now() - t0;
