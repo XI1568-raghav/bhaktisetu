@@ -85,9 +85,9 @@ circle back in Q1. Otherwise happy to share a 1-pager via email.
 
 | Category | Darshya commission | Vendor net | Notes |
 |---|---|---|---|
-| Photographer | 12% on first booking, 8% thereafter | 88-92% | Vendor invoices client direct; we pay vendor T+7 of event date |
-| Caterer | 8% flat | 92% | Per-plate gross; min commitment 200 pax/event |
-| Decorator | 10% flat | 90% | Includes platform listing, lead-routing, escrow |
+| Photographer | 12-15% on first booking, 8-10% thereafter (indicative — founder approves final) | 85-92% | Vendor invoices client direct; we pay vendor T+7 of event date |
+| Caterer | 8-10% flat (indicative — founder approves final) | 90-92% | Per-plate gross; min commitment 200 pax/event |
+| Decorator | 10-12% flat (indicative — founder approves final) | 88-90% | Includes platform listing, lead-routing, escrow |
 
 - Founder discretion: waive first-event commission for early-bird signups (first 10 per category)
 - Platform fee: ₹0 onboarding; commission only on confirmed bookings
