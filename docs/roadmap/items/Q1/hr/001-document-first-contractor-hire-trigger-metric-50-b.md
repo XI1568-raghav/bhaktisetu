@@ -6,7 +6,7 @@ owner_role: talent
 quarter: Q1
 month_target: 2
 priority: P2
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: []
