@@ -1,5 +1,17 @@
 # Wellness Instructor Onboarding — R-Q1-S-010
 
+> **⚠️ VERIFICATION REQUIRED BEFORE OUTREACH**
+>
+> All 15 instructor names in `target-list.csv` are prefixed `[VERIFY-FOUNDER]`. The `credentials_claimed` column entries (KPJAYI Authorized, RIMYI Junior Intermediate, BAMS, Sivananda TTC, etc.) are **agent-discovered from public Instagram handles, websites, and directory snippets — NOT independently verified.**
+>
+> Founder MUST verify each instructor's credentials via official registry before any outreach:
+> - **KPJAYI Authorized Mysore** → check `kpjayi.org` authorized teacher list
+> - **RIMYI Iyengar certifications** → check `bksiyengar.com` certified teacher directory
+> - **BAMS Ayurveda** → check state BAMS practitioner registry (e.g. Kerala/Tamil Nadu/Karnataka Ayurveda Medical Council)
+> - **Sivananda TTC / Bihar School / Kaivalyadhama / S-VYASA** → confirm via institution alumni directories
+>
+> Drop or correct any row that fails registry verification. Remove the `[VERIFY-FOUNDER]` prefix only after each name is registry-confirmed.
+
 Q1 sales artifact bundle for onboarding 5 verified wellness instructors (yoga + Ayurveda) by month-3.
 
 ## Goal
