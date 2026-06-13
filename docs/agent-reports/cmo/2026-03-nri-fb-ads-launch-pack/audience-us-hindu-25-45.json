@@ -1,0 +1,39 @@
+{
+  "id": "us-hindu-25-45",
+  "name": "US Hindu Diaspora 25-45",
+  "geo": {
+    "countries": ["US"],
+    "metros_preferred": [
+      "New York-Newark", "San Francisco-Oakland-San Jose", "Dallas-Fort Worth",
+      "Chicago", "Houston", "Atlanta", "Seattle-Tacoma", "Boston-Manchester",
+      "Washington DC", "Los Angeles"
+    ]
+  },
+  "age_min": 25,
+  "age_max": 45,
+  "genders": ["all"],
+  "locales": ["English (US)", "Hindi", "Tamil", "Telugu", "Bengali", "Marathi", "Gujarati"],
+  "interests": [
+    "Hinduism",
+    "Bhagavad Gita",
+    "Indian diaspora",
+    "Diwali",
+    "Hindu temple",
+    "Bharatanatyam",
+    "Indian culture",
+    "Sanatana Dharma",
+    "Tirupati",
+    "ISKCON"
+  ],
+  "behaviors": [
+    "Frequent international travelers (India)",
+    "Engaged Shoppers"
+  ],
+  "exclusions": {
+    "interests": ["Atheism", "Anti-religion"]
+  },
+  "budget_usd": 25,
+  "flight_days": 7,
+  "optimization": "Conversions / Purchase",
+  "placements": ["Facebook Feed", "Instagram Feed", "Instagram Reels", "Stories"]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "uk-hindu-25-45",
+  "name": "UK Hindu Diaspora 25-45",
+  "geo": {
+    "countries": ["GB"],
+    "regions_preferred": [
+      "Greater London", "Leicester", "Birmingham", "Manchester",
+      "Slough", "Harrow", "Brent", "Wembley", "Hounslow"
+    ]
+  },
+  "age_min": 25,
+  "age_max": 45,
+  "genders": ["all"],
+  "locales": ["English (UK)", "Hindi", "Gujarati", "Punjabi", "Tamil"],
+  "interests": [
+    "Hinduism",
+    "Bhagavad Gita",
+    "Indian diaspora",
+    "Diwali",
+    "Hindu temple",
+    "Indian culture",
+    "Sanatana Dharma",
+    "Neasden Temple",
+    "BAPS Shri Swaminarayan Mandir",
+    "ISKCON"
+  ],
+  "behaviors": [
+    "Frequent international travelers (India)",
+    "Engaged Shoppers"
+  ],
+  "exclusions": {
+    "interests": ["Atheism", "Anti-religion"]
+  },
+  "budget_usd": 25,
+  "flight_days": 7,
+  "optimization": "Conversions / Purchase",
+  "placements": ["Facebook Feed", "Instagram Feed", "Instagram Reels", "Stories"]
+}
