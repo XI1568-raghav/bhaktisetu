@@ -7,6 +7,7 @@ quarter: Q1
 month_target: 1
 priority: P0
 status: shipped
+shipped_at: "2026-06-13T20:35:00Z"
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -14,7 +15,7 @@ blocks: []
 
 kpi:
   metric: "uptime_monitors_active"
-  current: 0
+  current: 4
   target: 2
   unit: "count"
   source: "manual"
@@ -53,8 +54,7 @@ handoff_notes: |
 
 tags: ["observability","uptime","p0"]
 created_at: 2026-06-09T21:50:47.096Z
-updated_at: 2026-06-09T21:50:47.096Z
-shipped_at: null
+updated_at: 2026-06-13T20:35:00Z
 verified_at: null
 killed_at: null
 killed_reason: null
