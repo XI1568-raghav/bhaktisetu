@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T07:21:29.093Z",
+  "generatedAt": "2026-06-13T15:40:57.525Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -2046,7 +2046,7 @@
       "quarter": "Q1",
       "month_target": 2,
       "priority": "P2",
-      "status": "in_progress",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
