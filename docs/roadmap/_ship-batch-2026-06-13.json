@@ -1,0 +1,414 @@
+[
+  {
+    "id": "R-Q1-CS-007",
+    "file": "2026-06-13T10-38-54-622Z-cs-R-Q1-CS-007-r-q1-cs-007.md",
+    "source": "queue",
+    "category": "cs",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T10-38-54-622Z-cs-R-Q1-CS-007-r-q1-cs-007.md",
+    "estHours": 2,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q1\\cs\\007-bulk-reset-200-stale-emailed-leads-contactcount-0-.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-S-001",
+    "file": "2026-06-13T10-38-54-622Z-sales-R-Q1-S-001-r-q1-s-001.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T10-38-54-622Z-sales-R-Q1-S-001-r-q1-s-001.md",
+    "estHours": 4,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q1\\sales\\001-dm-5-iskcon-bengaluru-priests-tactic-a-whatsapp-te.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q4-M-007",
+    "file": "2026-06-11T23-07-04-681Z-cmo-R-Q4-M-007-r-q4-m-007.md",
+    "source": "queue",
+    "category": "cmo",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-11T23-07-04-681Z-cmo-R-Q4-M-007-r-q4-m-007.md",
+    "estHours": 32,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q4\\marketing\\007-csr-donation-match-campaign-corporate-partners-2x-.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q3-E-007",
+    "file": "2026-06-10T16-17-13-192Z-cto-R-Q3-E-007-r-q3-e-007.md",
+    "source": "queue",
+    "category": "cto",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-10T16-17-13-192Z-cto-R-Q3-E-007-r-q3-e-007.md",
+    "estHours": 48,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q3\\engineering\\007-b2b-temple-saas-api-v1-rest-endpoints-api-keys-rat.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "META-KPI-COLLECTOR-FIXES-",
+    "file": "2026-06-12T18-20-36-951Z-it-agent-META-KPI-COLLECTOR-FIXES-meta-kpi-collector-fixes.md",
+    "source": "queue",
+    "category": "it-agent",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T18-20-36-951Z-it-agent-META-KPI-COLLECTOR-FIXES-meta-kpi-collector-fixes.md",
+    "estHours": 999,
+    "priority": "P0"
+  },
+  {
+    "id": "R-Q1-L-002",
+    "file": "2026-06-10T16-17-13-192Z-legal-R-Q1-L-002-r-q1-l-002.md",
+    "source": "queue",
+    "category": "legal",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-10T16-17-13-192Z-legal-R-Q1-L-002-r-q1-l-002.md",
+    "estHours": 4,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q1\\legal\\002-refund-policy-stress-test-real-lawyer-review.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-H-001",
+    "file": "2026-06-10T16-23-19-025Z-talent-R-Q1-H-001-r-q1-h-001.md",
+    "source": "queue",
+    "category": "talent",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-10T16-23-19-025Z-talent-R-Q1-H-001-r-q1-h-001.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q1-CS-005",
+    "file": "2026-06-13T10-38-54-622Z-cs-R-Q1-CS-005-r-q1-cs-005.md",
+    "source": "queue",
+    "category": "cs",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T10-38-54-622Z-cs-R-Q1-CS-005-r-q1-cs-005.md",
+    "estHours": 4,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q1\\cs\\005-re-send-230-emailed-templates-after-dns-verify-zer.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-S-002",
+    "file": "2026-06-13T10-38-54-622Z-sales-R-Q1-S-002-r-q1-s-002.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T10-38-54-622Z-sales-R-Q1-S-002-r-q1-s-002.md",
+    "estHours": 4,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q1\\sales\\002-baps-intro-via-hindu-american-foundation-diaspora-.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-M-011",
+    "file": "2026-06-13T04-51-41-293Z-cmo-R-Q1-M-011-r-q1-m-011.md",
+    "source": "queue",
+    "category": "cmo",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-cmo-R-Q1-M-011-r-q1-m-011.md",
+    "estHours": 6,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q1\\marketing\\011-nri-targeted-facebook-ads-50-budget-3-creatives-2-.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "SIDE-FIX-SEO-404-",
+    "file": "2026-06-10T16-17-13-192Z-cto-SIDE-FIX-SEO-404-side-fix-seo-404.md",
+    "source": "queue",
+    "category": "cto",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-10T16-17-13-192Z-cto-SIDE-FIX-SEO-404-side-fix-seo-404.md",
+    "estHours": 999,
+    "priority": "P0"
+  },
+  {
+    "id": "R-Q1-H-002",
+    "file": "2026-06-10T16-23-19-025Z-talent-R-Q1-H-002-r-q1-h-002.md",
+    "source": "queue",
+    "category": "talent",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-10T16-23-19-025Z-talent-R-Q1-H-002-r-q1-h-002.md",
+    "estHours": 999,
+    "priority": "P3"
+  },
+  {
+    "id": "R-Q1-CS-003",
+    "file": "2026-06-12T05-03-31-530Z-cs-R-Q1-CS-003-r-q1-cs-003.md",
+    "source": "queue",
+    "category": "cs",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T05-03-31-530Z-cs-R-Q1-CS-003-r-q1-cs-003.md",
+    "estHours": 5,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q1\\cs\\003-first-5-user-phone-interviews-nps-churn-signals.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q4-S-005",
+    "file": "2026-06-12T05-03-31-530Z-sales-R-Q4-S-005-r-q4-s-005.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T05-03-31-530Z-sales-R-Q4-S-005-r-q4-s-005.md",
+    "estHours": 28,
+    "priority": "P0",
+    "itemPath": "docs\\roadmap\\items\\Q4\\sales\\005-b2b-series-a-pipeline-15-enterprise-leads-qualifie.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q2-M-012",
+    "file": "2026-06-13T04-51-41-293Z-cmo-R-Q2-M-012-r-q2-m-012.md",
+    "source": "queue",
+    "category": "cmo",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-cmo-R-Q2-M-012-r-q2-m-012.md",
+    "estHours": 12,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q2\\marketing\\012-founder-twitter-100-followers-via-3-build-in-publi.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q2-E-013",
+    "file": "2026-06-13T04-51-41-293Z-cto-R-Q2-E-013-r-q2-e-013.md",
+    "source": "queue",
+    "category": "cto",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-cto-R-Q2-E-013-r-q2-e-013.md",
+    "estHours": 6,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q2\\engineering\\013-api-rate-limiting-per-user-per-ip-fastify-rate-lim.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-CS-004",
+    "file": "2026-06-11T23-07-04-681Z-cs-R-Q1-CS-004-r-q1-cs-004.md",
+    "source": "queue",
+    "category": "cs",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-11T23-07-04-681Z-cs-R-Q1-CS-004-r-q1-cs-004.md",
+    "estHours": 3,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q1\\cs\\004-multilingual-macros-hindi-tamil-telugu-translation.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-S-014",
+    "file": "2026-06-12T00-01-49-218Z-sales-R-Q1-S-014-r-q1-s-014.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T00-01-49-218Z-sales-R-Q1-S-014-r-q1-s-014.md",
+    "estHours": 999,
+    "priority": "P0"
+  },
+  {
+    "id": "R-Q1-M-009",
+    "file": "2026-06-13T04-51-41-293Z-cmo-R-Q1-M-009-r-q1-m-009.md",
+    "source": "queue",
+    "category": "cmo",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-cmo-R-Q1-M-009-r-q1-m-009.md",
+    "estHours": 16,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q1\\marketing\\009-daily-deity-of-day-cluster-articles-7-weekly.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q2-IT-003",
+    "file": "2026-06-13T04-51-41-293Z-cto-R-Q2-IT-003-r-q2-it-003.md",
+    "source": "queue",
+    "category": "cto",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-cto-R-Q2-IT-003-r-q2-it-003.md",
+    "estHours": 6,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q2\\it\\003-supabase-backup-automation-daily-pg-dump-to-s3-30d.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q3-S-007",
+    "file": "2026-06-12T00-01-49-218Z-sales-R-Q3-S-007-r-q3-s-007.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T00-01-49-218Z-sales-R-Q3-S-007-r-q3-s-007.md",
+    "estHours": 999,
+    "priority": "P0"
+  },
+  {
+    "id": "R-Q3-M-014",
+    "file": "2026-06-10T16-17-13-192Z-cmo-R-Q3-M-014-r-q3-m-014.md",
+    "source": "queue",
+    "category": "cmo",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-10T16-17-13-192Z-cmo-R-Q3-M-014-r-q3-m-014.md",
+    "estHours": 40,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q3\\marketing\\014-seo-push-100-city-puja-landing-pages-hindi-content.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q2-E-011",
+    "file": "2026-06-13T04-51-41-293Z-cto-R-Q2-E-011-r-q2-e-011.md",
+    "source": "queue",
+    "category": "cto",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-cto-R-Q2-E-011-r-q2-e-011.md",
+    "estHours": 16,
+    "priority": "P2",
+    "itemPath": "docs\\roadmap\\items\\Q2\\engineering\\011-database-query-analyzer-slow-query-log-10-worst-n-.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-S-004",
+    "file": "2026-06-12T18-20-36-951Z-sales-R-Q1-S-004-r-q1-s-004.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T18-20-36-951Z-sales-R-Q1-S-004-r-q1-s-004.md",
+    "estHours": 3,
+    "priority": "P1",
+    "itemPath": "docs\\roadmap\\items\\Q1\\sales\\004-reach-hindu-american-foundation-sewa-international.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q1-S-005",
+    "file": "2026-06-12T11-53-52-567Z-sales-R-Q1-S-005-r-q1-s-005.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T11-53-52-567Z-sales-R-Q1-S-005-r-q1-s-005.md",
+    "estHours": 4,
+    "priority": "P1",
+    "itemPath": "docs\\roadmap\\items\\Q1\\sales\\005-first-investor-email-batch-5-angels-friends-family.md",
+    "sourceStatus": "in_progress"
+  },
+  {
+    "id": "R-Q4-S-007",
+    "file": "2026-06-12T18-20-36-951Z-sales-R-Q4-S-007-r-q4-s-007.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T18-20-36-951Z-sales-R-Q4-S-007-r-q4-s-007.md",
+    "estHours": 999,
+    "priority": "P1"
+  },
+  {
+    "id": "R-Q2-S-011",
+    "file": "2026-06-12T05-03-31-530Z-sales-R-Q2-S-011-r-q2-s-011.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T05-03-31-530Z-sales-R-Q2-S-011-r-q2-s-011.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q1-S-007",
+    "file": "2026-06-12T11-53-52-567Z-sales-R-Q1-S-007-r-q1-s-007.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T11-53-52-567Z-sales-R-Q1-S-007-r-q1-s-007.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q1-S-010",
+    "file": "2026-06-12T18-20-36-951Z-sales-R-Q1-S-010-r-q1-s-010.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T18-20-36-951Z-sales-R-Q1-S-010-r-q1-s-010.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q4-S-009",
+    "file": "2026-06-12T18-20-36-951Z-sales-R-Q4-S-009-r-q4-s-009.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-12T18-20-36-951Z-sales-R-Q4-S-009-r-q4-s-009.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q1-S-008",
+    "file": "2026-06-13T04-51-41-293Z-sales-R-Q1-S-008-r-q1-s-008.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-sales-R-Q1-S-008-r-q1-s-008.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q1-S-009",
+    "file": "2026-06-13T04-51-41-293Z-sales-R-Q1-S-009-r-q1-s-009.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-sales-R-Q1-S-009-r-q1-s-009.md",
+    "estHours": 999,
+    "priority": "P2"
+  },
+  {
+    "id": "R-Q1-S-011",
+    "file": "2026-06-13T04-51-41-293Z-sales-R-Q1-S-011-r-q1-s-011.md",
+    "source": "queue",
+    "category": "sales",
+    "queueFile": "docs\\roadmap\\_dryrun\\queue\\2026-06-13T04-51-41-293Z-sales-R-Q1-S-011-r-q1-s-011.md",
+    "estHours": 999,
+    "priority": "P3"
+  },
+  {
+    "id": "R-Q1-CS-008",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q1/cs/008-bump-max-contact-count-to-5-add-14d-follow-up-temp.md",
+    "category": "cs",
+    "priority": "P0",
+    "estHours": 1,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  },
+  {
+    "id": "R-Q1-F-001",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q1/finance/001-decide-incorporate-vs-sole-prop-founder-decision-1.md",
+    "category": "finance",
+    "priority": "P0",
+    "estHours": 1,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  },
+  {
+    "id": "R-Q1-IT-004",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q1/it/004-resend-domain-dns-verify-dkim-spf-dmarc-for-darshy.md",
+    "category": "it",
+    "priority": "P0",
+    "estHours": 2,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  },
+  {
+    "id": "R-Q1-M-002",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q1/marketing/002-gsc-bing-webmaster-verification-sitemap-xml-submit.md",
+    "category": "marketing",
+    "priority": "P0",
+    "estHours": 2,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  },
+  {
+    "id": "R-Q1-S-012",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q1/supply/012-actually-call-10-emailed-iskcon-bengaluru-temples-.md",
+    "category": "supply",
+    "priority": "P0",
+    "estHours": 4,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  },
+  {
+    "id": "R-Q1-G-001",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q1/geo/001-open-bengaluru-market-5-pandits-5-temples-first-ci.md",
+    "category": "geo",
+    "priority": "P0",
+    "estHours": 16,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  },
+  {
+    "id": "R-Q2-L-001",
+    "file": null,
+    "queueFile": null,
+    "itemPath": "docs/roadmap/items/Q2/legal/001-dpdp-act-2023-compliance-audit-privacy-policy-cons.md",
+    "category": "legal",
+    "priority": "P0",
+    "estHours": 16,
+    "sourceStatus": "in_progress",
+    "source": "items"
+  }
+]

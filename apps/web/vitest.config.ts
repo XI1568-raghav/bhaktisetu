@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./vitest.setup.ts'],
-    include: ['__tests__/**/*.test.{ts,tsx}'],
+    include: ['__tests__/**/*.test.{ts,tsx}', 'app/**/__tests__/**/*.test.{ts,tsx}'],
     css: false,
   },
   resolve: {

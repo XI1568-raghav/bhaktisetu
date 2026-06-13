@@ -258,3 +258,13 @@ After clear, in order:
 7. Memory `reference_prisma_db_execute_prod_migrations` autoloads — covers prod migration pattern
 
 **Good-to-go signal**: HEAD `a5e9542`, 476/476 API green, 4 prod migrations applied, no pending engineering claimable without user-paste/KYC.
+
+---
+
+## Public Status Page
+
+- URL: https://darshya.online/status (SSR, revalidates every 60s)
+- Source: UptimeRobot free-tier public JSON (`NEXT_PUBLIC_UPTIME_STATUS_URL`)
+- Monitors: api-health, web-root, api-temples, web-panchang (4 HTTPS, 5-min interval)
+- Runbook: docs/it/uptime-setup.md
+- Alert channel: SMS + email to founder phone (UptimeRobot free tier)
