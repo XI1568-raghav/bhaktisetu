@@ -10,6 +10,10 @@ values:
   nri_d30_retention: null              # measured starting M3
   uptime_monitors_active: 4            # founder bumps to 4 after docs/it/uptime-setup-checklist.md Step 6
   cron_auth_token_set: 0               # founder bumps to 1 after docs/it/secrets-checklist.md R-Q1-IT-002 Step 5
+  wedding_vendors_verified: 0          # R-Q4-S-009 target 65 (30 photog + 20 cater + 15 decor)
+  wedding_vendors_photog_verified: 0   # target 30
+  wedding_vendors_cater_verified: 0    # target 20
+  wedding_vendors_decor_verified: 0    # target 15
 # Stale-flag notes:
 #   uptime_monitors_active: clear stale=false once founder ships 4 UptimeRobot monitors
 #     (target 4: api-health, www-root, www-pujas, api-health-keyword)
