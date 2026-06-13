@@ -6,7 +6,7 @@ owner_role: talent
 quarter: Q4
 month_target: 10
 priority: P0
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: 'U7'
 depends_on: ["R-Q3-H-001"]
