@@ -50,6 +50,14 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: Prospecting infra + outreach kit + tests shipped (cycle slice).
+    - apps/api/scripts/leads/_canada-cities.ts — Canada city tier (Toronto/Vancouver/Brampton/Mississauga/Surrey)
+    - apps/api/scripts/leads/canada-pandit-prospector.mjs — runner, honors robots.txt + 2s rate limit, --dry mode
+    - data/leads/canada-pandits-2026-06.csv — 52 leads (Toronto 21 + Vancouver 11 + Brampton 9 + Mississauga 6 + Surrey 5); 10 queued for batch-1 send
+    - scripts/sales/canada-pandit/ — EN + HI (Devanagari + Romanized) + WA + day-5 follow-up + CASL footers + KYC checklist + README
+    - docs/agent-reports/2026-06-12-canada-pandit-outreach.md — methodology + KPI query
+    - 4 vitest files green (canada-cities + prospector + templates + csv-output)
+    - Tests: pnpm test -- canada (root vitest config extended)
   2026-06-12: Research + outreach kit shipped (cycle slice). docs/sales/canada-pandit-prospects-2026-06.md w/ 30 prospects:
     - 12 GTA (BAPS, ISKCON, Hindu Heritage Centre, Vishnu Mandir, etc + federation umbrella via Hindu Federation Canada)
     - 6 Vancouver / Lower Mainland (Vishwa Hindu, Lakshmi Narayan, BAPS Surrey, Sanatan Dharm BC, ISKCON, Sai)
@@ -65,7 +73,7 @@ handoff_notes: |
 
 tags: ["supply","pandit","canada","nri"]
 created_at: 2026-06-09T22:02:56.063Z
-updated_at: 2026-06-12T08:00:00.000Z
+updated_at: 2026-06-13T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
