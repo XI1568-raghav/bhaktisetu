@@ -38,19 +38,25 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
-  2026-06-12: Outreach kit shipped. 4 docs:
-    - docs/sales/iskcon-org-map-2026-06.md (GBC + 5 zonal secs + TP autonomy + decision matrix + 3 central + 5 TP entry points + risk §8 covering Bangalore Bureau dispute + factions)
-    - docs/sales/iskcon-loi-template-v1.md (~2-page LOI, non-binding, 60-day MoU path, customisation notes per recipient type)
-    - docs/sales/iskcon-outreach-kit-v1.md (cold email Bureau + TP variants, WA warm-intro + Bureau-permitted variants, 4-touch follow-up sequence, founder action checklist, pre-LOI conversation script)
-    - data/sales/iskcon-outreach-tracker.csv (11-col tracker header)
-  ZERO sends from agent. Every [VERIFY-FOUNDER] marker requires founder verification via iskcon.org Leadership page before contact (board composition shifts annually).
+  2026-06-12: Outreach kit v1 shipped (iskcon-org-map-2026-06.md / iskcon-loi-template-v1.md / iskcon-outreach-kit-v1.md / data/sales/iskcon-outreach-tracker.csv).
+  2026-06-13: Spec-compliant artifact set shipped per queue R-Q2-S-011 (Q-C-20260612T0503):
+    - docs/sales/iskcon-org-map-2026-06.md (kept — already spec-compliant)
+    - docs/sales/iskcon-loi-template-2026-06.md (NEW — focused 1-page LOI per spec, all 11 clauses, DRAFT + legal review required)
+    - docs/sales/iskcon-temple-outreach-2026-06.md (NEW — 5 temple drafts ≤200 words each, Bangalore/Juhu/EOK/Chennai/Vrindavan, Vaishnava greeting, temple-specific facts)
+    - docs/sales/iskcon-warm-intro-angels-2026-06.md (NEW — gap-report variant: 0 confirmed + 5 lead networks to verify with founder action checklist)
+  ZERO sends from agent. Every [NAME-TBD]/[VERIFY-FOUNDER] marker requires founder verification before contact.
   Recommended path: PILOT (TP-led, lower ceiling, faster) for v1. CENTRAL deal in v2 once pilot proves model.
-  FOUNDER ACTION: ≤4h for verification + personalisation + 1 email per day × 5 days. Don't blast all 35 GBC.
+  FOUNDER ACTIONS (post-merge):
+    1. Decide central GBC deal path vs distributed 5-temple path (org map informs)
+    2. Send LOI to legal counsel before any signature send
+    3. Validate 3 warm-intro angel candidates from Lead A + Lead B (~4h)
+    4. Approve/edit 5 temple outreach drafts before send
+    5. Confirm Bengaluru jurisdiction in LOI
   Closes (partial): Q-C-20260612T0503-R-Q2-S-011. Status stays in_progress until 3+ replies logged in tracker.
 
 tags: ["supply","partnership","iskcon","b2b"]
 created_at: 2026-06-09T21:55:22.029Z
-updated_at: 2026-06-09T21:55:22.029Z
+updated_at: 2026-06-13T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
