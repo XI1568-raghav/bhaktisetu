@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q1
 month_target: 3
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -14,7 +14,7 @@ blocks: []
 
 kpi:
   metric: "multilingual_macros_shipped"
-  current: 0
+  current: 5
   target: 5
   unit: "count"
   source: "manual"
@@ -59,7 +59,7 @@ handoff_notes: |
 tags: ["cs","i18n","p2"]
 created_at: 2026-06-09T21:50:37.964Z
 updated_at: 2026-06-12T07:00:00.000Z
-shipped_at: null
+shipped_at: 2026-06-13T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
