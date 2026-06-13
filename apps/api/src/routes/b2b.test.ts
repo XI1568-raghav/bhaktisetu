@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { __testing } from './b2b.js';
 
 const { sha256, maskEmail, maskPhone, resolveApiKey, checkRate, listQuerySchema, sinceQuerySchema, RATE_BUCKETS } = __testing;
@@ -80,7 +80,7 @@ describe('B2B resolveApiKey (DEV path)', () => {
     expect(r!.rpmLimit).toBe(60);
   });
 
-  afterAll: () => { if (ORIG === undefined) delete process.env.B2B_DEV_KEY; else process.env.B2B_DEV_KEY = ORIG; };
+  afterAll(() => { if (ORIG === undefined) delete process.env.B2B_DEV_KEY; else process.env.B2B_DEV_KEY = ORIG; });
 });
 
 describe('B2B listQuerySchema', () => {
