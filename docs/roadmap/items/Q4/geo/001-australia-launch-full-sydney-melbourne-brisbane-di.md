@@ -6,7 +6,7 @@ owner_role: cmo
 quarter: Q4
 month_target: 10
 priority: P0
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: 'U3'
 depends_on: ["R-Q3-G-002","R-Q4-S-004","R-Q4-M-012"]
