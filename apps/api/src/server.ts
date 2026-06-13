@@ -146,11 +146,45 @@ async function bootstrap() {
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
-  // Global rate limit. Per-prefix overrides applied via onRoute hook below.
-  // Per-user partition when authenticated; IP fallback for anon traffic.
+  // R-Q2-E-013 — API rate limiting per-user + per-IP.
+  //
+  // The per-prefix override hook MUST be registered BEFORE @fastify/rate-limit
+  // so its own onRoute hook (which reads `routeOptions.config.rateLimit` at
+  // route-registration time, see node_modules/@fastify/rate-limit/index.js
+  // line 143) sees the merged config and applies the tightened policy.
+  // Previously the override hook was added after the plugin and was a no-op.
+  server.addHook('onRoute', (routeOpts) => {
+    const url = routeOpts.url ?? '';
+    const existing = (routeOpts.config as { rateLimit?: unknown } | undefined)?.rateLimit;
+    if (existing) return;
+    const authMax = Number(process.env.RATE_LIMIT_AUTH_MAX) || 10;
+    let policy: { max: number; timeWindow: string } | null = null;
+    if (url.startsWith('/auth/') || url.startsWith('/auth')) policy = { max: authMax, timeWindow: '1 minute' };
+    // P0 — cap ALL /ai/* (was only /ai/chat). Groq/Anthropic spend exposure.
+    // Covers /ai/chat, /ai/summarize, /ai/recommend, and any future /ai/* added.
+    else if (url.startsWith('/ai/')) policy = { max: 20, timeWindow: '1 minute' };
+    // Astrology AI endpoint shares the LLM bill — cap separately.
+    else if (url.startsWith('/astrology/ask') || url === '/astrology/ask') policy = { max: 20, timeWindow: '1 minute' };
+    else if (url.startsWith('/bookings/create-order') || url.startsWith('/bookings/verify-payment')) policy = { max: 30, timeWindow: '1 minute' };
+    else if (url.startsWith('/donations/create-order')) policy = { max: 10, timeWindow: '1 minute' };
+    else if (url.startsWith('/admin/')) policy = { max: 60, timeWindow: '1 minute' };
+    else if (url.startsWith('/affiliate/')) policy = { max: 60, timeWindow: '1 minute' };
+    if (policy) {
+      routeOpts.config = { ...(routeOpts.config ?? {}), rateLimit: policy };
+    }
+  });
+
+  // Global rate limit. Per-user partition when authenticated; IP fallback for
+  // anon traffic. Env-configurable via RATE_LIMIT_MAX / RATE_LIMIT_WINDOW.
+  // Liveness probes are exempted via allowList — they must always succeed so
+  // load balancers don't mark the node as down under burst traffic.
+  const globalMax = Number(process.env.RATE_LIMIT_MAX) || 100;
+  const globalWindow = process.env.RATE_LIMIT_WINDOW || '1 minute';
+  const SKIP_RATE_LIMIT_PATHS = new Set(['/health', '/ready', '/metrics']);
   await server.register(rateLimit, {
-    max: 100,
-    timeWindow: '1 minute',
+    max: globalMax,
+    timeWindow: globalWindow,
+    allowList: (req) => SKIP_RATE_LIMIT_PATHS.has(req.url.split('?')[0] ?? ''),
     keyGenerator: (req) => {
       const uid = (req as unknown as { currentUser?: { id?: string } }).currentUser?.id;
       return uid ? `u:${uid}` : `ip:${req.ip}`;
@@ -177,31 +211,9 @@ async function bootstrap() {
   // Register auth decorators (must be before routes)
   await registerAuthDecorators(server);
 
-  // Per-prefix rate-limit policy (TD6). Routes can override via
-  // `{ config: { rateLimit: ... } }` — this hook only fills defaults.
-  // Limits documented in docs/rate-limits.md.
-  server.addHook('onRoute', (routeOpts) => {
-    const url = routeOpts.url ?? '';
-    const existing = (routeOpts.config as { rateLimit?: unknown } | undefined)?.rateLimit;
-    if (existing) return;
-    let policy: { max: number; timeWindow: string } | null = null;
-    if (url.startsWith('/auth/') || url.startsWith('/auth')) policy = { max: 10, timeWindow: '1 minute' };
-    // P0 — cap ALL /ai/* (was only /ai/chat). Groq/Anthropic spend exposure.
-    // Covers /ai/chat, /ai/summarize, /ai/recommend, and any future /ai/* added.
-    else if (url.startsWith('/ai/')) policy = { max: 20, timeWindow: '1 minute' };
-    // Astrology AI endpoint shares the LLM bill — cap separately.
-    else if (url.startsWith('/astrology/ask') || url === '/astrology/ask') policy = { max: 20, timeWindow: '1 minute' };
-    else if (url.startsWith('/bookings/create-order') || url.startsWith('/bookings/verify-payment')) policy = { max: 30, timeWindow: '1 minute' };
-    else if (url.startsWith('/donations/create-order')) policy = { max: 10, timeWindow: '1 minute' };
-    else if (url.startsWith('/admin/')) policy = { max: 60, timeWindow: '1 minute' };
-    else if (url.startsWith('/affiliate/')) policy = { max: 60, timeWindow: '1 minute' };
-    if (policy) {
-      routeOpts.config = { ...(routeOpts.config ?? {}), rateLimit: policy };
-    }
-  });
-
-  // Health check
+  // Health + readiness probes (excluded from rate-limit allowList above).
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+  server.get('/ready', async () => ({ ready: true, timestamp: new Date().toISOString() }));
 
   // ── Per-route latency instrumentation ─────────────────────────────
   // Lightweight in-memory p50/p95/p99 tracker. Reporter logs top-20 by p95

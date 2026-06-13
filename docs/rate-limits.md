@@ -30,6 +30,22 @@ This means a single IP shared by many real users (offices, NAT, mobile carriers)
 - Logs `rate_limit_exceeded` event via Pino
 - Sentry breadcrumb auto-attached on next captured exception in same request
 
+## Env knobs (R-Q2-E-013)
+
+| Env var | Default | Effect |
+|---|---|---|
+| `RATE_LIMIT_MAX` | `100` | Global per-window max for the default fallback bucket. |
+| `RATE_LIMIT_WINDOW` | `1 minute` | Window string accepted by `@fastify/rate-limit` (e.g. `30 seconds`, `5 minutes`). |
+| `RATE_LIMIT_AUTH_MAX` | `10` | Per-window max for the `/auth/*` prefix. Independent of the global default. |
+
+## Allow-list (never rate-limited)
+
+`/health`, `/ready`, `/metrics` — implemented as a function-form `allowList` in the plugin config. Liveness probes must always succeed so a Render burst can't make the node look down.
+
+## Hook ordering — load-bearing
+
+The per-prefix override `onRoute` hook is registered **before** `@fastify/rate-limit`. The plugin's own `onRoute` hook reads `routeOptions.config.rateLimit` at route-registration time (`node_modules/@fastify/rate-limit/index.js` line 143), so a later-registered override hook is a silent no-op. Don't reorder.
+
 ## Tuning
 
 When pushing limits up: prefer per-route override via Fastify `{ config: { rateLimit } }` rather than editing the global hook. Keeps policy local.
