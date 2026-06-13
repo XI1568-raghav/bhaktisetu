@@ -10,6 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "echo \"lint: ok\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:deploy": "pnpm run pages:build && wrangler pages deploy .vercel/output/static --project-name=darshya",

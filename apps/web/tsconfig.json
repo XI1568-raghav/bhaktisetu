@@ -24,6 +24,7 @@
   "exclude": [
     "node_modules",
     "__tests__/**",
+    "**/__tests__/**",
     "vitest.config.ts",
     "vitest.setup.ts"
   ]
