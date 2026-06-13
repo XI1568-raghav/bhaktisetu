@@ -42,7 +42,7 @@ handoff_notes: |
 tags: ["legal","dpdp","compliance","privacy"]
 created_at: 2026-06-09T21:56:42.385Z
 updated_at: 2026-06-09T21:56:42.385Z
-shipped_at: null
+shipped_at: 2026-06-14
 verified_at: null
 killed_at: null
 killed_reason: null
