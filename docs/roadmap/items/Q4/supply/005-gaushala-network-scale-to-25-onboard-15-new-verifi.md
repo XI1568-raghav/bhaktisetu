@@ -49,10 +49,17 @@ handoff_notes: |
   Economics: 10 gaushalas × 50-100 donors × ₹500/mo × 15% platform fee = ₹37.5K-75K MRR direct + cross-sell potential to existing temple-adopters.
   FOUNDER ACTION: ≤8h spread over 14 days for verification + first-wave send + Vrindavan/Mathura in-person visit if 0 reply by day 14.
   Closes (partial): Q-C-20260612T0501-R-Q4-S-005. Status stays in_progress until 15 onboarded + first month donations cleared.
+  2026-06-13: Cycle Q-C-20260612T0503-R-Q4-S-005 — 4 companion artifacts added:
+    - docs/sales/gaushala-prospects-2026-06.csv (CSV companion, 25 rows w/ tier+80g_status+verify markers)
+    - docs/sales/gaushala-outreach-templates-2026-06.md (3 variants: Heritage HI / Modern EN / Hybrid HI-EN, each ≤180 words, 8% platform fee explicitly disclosed)
+    - docs/sales/gaushala-anchor-candidates-2026-06.md (top 5 anchors w/ risk flags + intro paths + expected outcomes — Pathmeda / Sri Krishna Delhi / Vrindavan ISKCON / Sringeri Surabhi / Anandvan)
+    - docs/sales/R-Q4-S-005-handoff.md (cycle-handoff doc — deviations from queue spec documented honestly)
+  Scraper rewrite DEFERRED — existing scrape-gaushalas.ts retained (file as R-Q4-S-005b to extend w/ 8thpillar+RKM+govt-80G sources surgically).
+  Per-scraper tests DEFERRED — sibling scrapers (priests/astrologers/temples/wellness) have no tests either; address as broader pattern in R-Q4-S-005c.
 
 tags: ["supply","gaushala","scale","seva"]
 created_at: 2026-06-09T22:09:26.554Z
-updated_at: 2026-06-12T10:15:00.000Z
+updated_at: 2026-06-13T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
