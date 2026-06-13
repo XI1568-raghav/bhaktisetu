@@ -38,6 +38,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: scaffolding shipped (R-Q4-S-007 ship-loop). Playbook docs/sales/playbooks/antim-pandit-onboarding.md. Tracker docs/sales/trackers/antim-pandits-pipeline.md. 60-prospect CSV seeds/antim-pandits-prospects.csv. Schema migration + seed loader stubbed (supabase/migrations/, scripts/sales/seed-antim-pandits.ts). Handoff doc docs/sales/R-Q4-S-007-handoff.md. Founder must: (1) apply schema migration; (2) bootstrap signal-context kpi-collectors registry OR inline query into _kpi-supabase.mjs; (3) run outreach.
 
 tags: ["supply","antim-sanskar","specialist","ghat"]
 created_at: 2026-06-09T22:09:26.554Z
