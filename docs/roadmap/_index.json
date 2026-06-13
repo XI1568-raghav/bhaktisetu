@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T12:57:34.535Z",
+  "generatedAt": "2026-06-14T13:00:02.688Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -9127,7 +9127,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-14: stub handoff doc shipped at docs/engineering/R-Q3-E-004-handoff.md.\nFounder action required to flesh out success_criteria + prompt_skeleton before\nnext agent cycle picks up. See handoff doc for 3-surface scope proposal +\nschema + free-tier impact estimate.\n",
       "tags": [
         "push",
         "fcm",
