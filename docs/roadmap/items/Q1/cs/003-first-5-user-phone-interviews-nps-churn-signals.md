@@ -50,8 +50,9 @@ handoff_notes: |
     - apps/api/scripts/ops/sla-breach-outreach.ts — re-runnable script, reads /admin/ops/sla-overdue-bookings, emits CSV w/ daysOverdue + repeatBreachCount + suggestedAction. 15/15 unit tests green covering csvField escaping, day math, priest flag, sort determinism, idempotency, empty-input.
     - docs/agent-reports/2026-06-12-sla-breach-action.md — 5 per-booking WhatsApp+Email drafts (EN+HI for Booking 1, template for 2-5), GH issue body for priest 821edbe5 investigation, founder runbook section D.
     - docs/agent-reports/user-interviews.md — interview log skeleton, 30-min script, NPS schema, churn/wow signal aggregation placeholders. Recruitment plan: invite SLA-breach devotees first (highest-intent post-resolution).
-  Founder action pending: run script w/ real ADMIN_OPS_TOKEN, fill devotee contact placeholders from admin panel, send 5 WhatsApp+email outreach manually, open GH priest-quality issue, block priest 821edbe5 payouts. After resolution → kick off 5 phone interviews per skeleton.
-  Closes (partial): Q-C-20260611T2307-R-Q1-CS-003. Status stays in_progress until 5 interviews complete + churn/wow signals aggregated.
+  2026-06-13: Macro #11 `puja_sla_breach` appended to docs/cs/macros-v1.md — parameterized EN+HI WhatsApp + email subject + email body, follow-up SLA (24h founder action, auto-default refund at 48h silence), repeat-breach priest escalation note. Closes Q-C-20260612T0503-R-Q1-CS-003 (cycle-added P0 criterion: CS macro #11 added EN+HI parameterized).
+  Founder action pending: run script w/ real ADMIN_OPS_TOKEN, fill devotee contact placeholders from admin panel, send 5 WhatsApp+email outreach manually (paste Macro 11 + tokens), open GH priest-quality issue, block priest 821edbe5 payouts. After resolution → kick off 5 phone interviews per skeleton.
+  Closes (partial): Q-C-20260611T2307-R-Q1-CS-003, Q-C-20260612T0503-R-Q1-CS-003. Status stays in_progress until 5 interviews complete + churn/wow signals aggregated.
 
 tags: ["cs","interview","nps","p2"]
 created_at: 2026-06-09T21:50:37.964Z
