@@ -6,7 +6,7 @@ owner_role: sales
 quarter: Q1
 month_target: 2
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -38,11 +38,12 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: dossier shipped by sub-agent cycle 1 (target list ≥10, outreach templates EN+HI+WA+call, qualification rubric, follow-up cadence D0/D3/D7/D14/D30, acceptance) at docs/agent-reports/sales/R-Q1-S-009-*.{csv,md}. Ready for founder review of top-3 priority targets.
 
 tags: ["supply","gurukul","p2"]
 created_at: 2026-06-09T21:47:01.131Z
-updated_at: 2026-06-09T21:47:01.131Z
-shipped_at: null
+updated_at: 2026-06-13T00:00:00.000Z
+shipped_at: 2026-06-13T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
