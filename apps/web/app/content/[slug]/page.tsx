@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 
-export const dynamicParams = false;
+// SIDE-FIX-SEO-404 (2026-06-13): flipped dynamicParams=false → true so unknown
+// content slugs (om-jai-jagdish-hare-aarti, ganesh-chalisa, etc) render the
+// graceful fallback panel via ISR instead of returning 404. Closes long-tail
+// SEO 404s eating crawl budget. Founder backfills authoritative content into
+// the API/DB; unknown slugs serve a "coming soon" loading state until then.
+export const dynamicParams = true;
 export const revalidate = 3600;
 
 export function generateStaticParams() {
@@ -8,6 +13,10 @@ export function generateStaticParams() {
     'hanuman-chalisa', 'shiv-tandav-stotram', 'gayatri-mantra', 'mahamrityunjaya-mantra',
     'aditya-hridayam', 'durga-saptashati', 'vishnu-sahasranama', 'lalita-sahasranama',
     'shri-suktam', 'rudri-path', 'sundara-kanda', 'bhaja-govindam',
+    // SIDE-FIX-SEO-404 — common long-tail slugs that were 404-ing
+    'om-jai-jagdish-hare-aarti', 'aarti-kunj-bihari-ki', 'jai-ganesh-deva-aarti',
+    'shiv-chalisa', 'ganesh-chalisa', 'durga-chalisa', 'krishna-chalisa',
+    'lakshmi-chalisa', 'saraswati-chalisa',
   ].map((slug) => ({ slug }));
 }
 
