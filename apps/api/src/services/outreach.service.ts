@@ -127,18 +127,23 @@ const SUBJECTS: Record<string, string> = {
   temple_first_touch: 'Darshya — आपके मंदिर के लिए digital booking platform',
   temple_followup_3day: 'Re: आपके मंदिर के लिए Darshya partnership',
   temple_followup_7day: 'Last reminder — Darshya 100-temple early-mover slot',
+  temple_followup_14day: 'Gentle nudge — आपकी मंदिर पूछताछ अभी भी खुली है',
   priest_first_touch: 'Darshya — पंडित जी के लिए online पूजा platform',
   priest_followup_3day: 'Re: Darshya priest partnership',
   priest_followup_7day: 'Last reminder — Darshya priest slot',
+  priest_followup_14day: 'Gentle nudge — आपकी पंडित partnership पूछताछ खुली है',
   astrologer_first_touch: 'Darshya — verified astrologers के लिए online platform',
   astrologer_followup_3day: 'Re: Darshya astrologer partnership',
   astrologer_followup_7day: 'Last reminder — Darshya astrologer slot',
+  astrologer_followup_14day: 'Gentle nudge — आपकी astrologer partnership पूछताछ खुली है',
   wellness_first_touch: 'Darshya — invite for wellness instructors (yoga / pranayama / meditation)',
   wellness_followup_3day: 'Re: Darshya wellness instructor partnership',
   wellness_followup_7day: 'Last reminder — Darshya wellness slot',
+  wellness_followup_14day: 'Gentle nudge — आपकी wellness instructor पूछताछ खुली है',
   gaushala_first_touch: 'Darshya — आपकी गौशाला के लिए 80G donation platform',
   gaushala_followup_3day: 'Re: Darshya gaushala partnership',
   gaushala_followup_7day: 'Last reminder — Darshya gaushala slot',
+  gaushala_followup_14day: 'Gentle nudge — आपकी गौशाला partnership पूछताछ खुली है',
 };
 
 // ─── Public API ─────────────────────────────────────────────────────────
@@ -339,7 +344,7 @@ export function firstTouchTemplateKey(role: Lead['role']): string {
   }
 }
 
-export function followupTemplateKey(role: Lead['role'], days: 3 | 7): string {
+export function followupTemplateKey(role: Lead['role'], days: 3 | 7 | 14): string {
   const base = firstTouchTemplateKey(role).replace('_first_touch', '');
   return `${base}_followup_${days}day`;
 }

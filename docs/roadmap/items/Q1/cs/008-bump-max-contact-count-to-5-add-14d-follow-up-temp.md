@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q1
 month_target: 1
 priority: P0
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -14,11 +14,11 @@ blocks: []
 
 kpi:
   metric: "max_contact_count_bumped"
-  current: 0
+  current: 5
   target: 5
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "grep -rn \"MAX_CONTACT_COUNT\\s*=\\s*5\" apps/api/src/ | wc -l"
 
 revenue_impact:
   amount_inr: 0
@@ -42,7 +42,7 @@ handoff_notes: |
 tags: ["outreach","config","p0"]
 created_at: 2026-06-10T20:35:05.804Z
 updated_at: 2026-06-10T20:35:05.804Z
-shipped_at: null
+shipped_at: 2026-06-13T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
