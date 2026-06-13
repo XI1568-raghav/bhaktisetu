@@ -6,7 +6,7 @@ owner_role: cmo
 quarter: Q1
 month_target: 1
 priority: P1
-status: planned
+status: shipped
 agent_assignable: false
 founder_blocker: null
 depends_on: []

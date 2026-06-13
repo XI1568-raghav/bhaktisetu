@@ -6,7 +6,7 @@ owner_role: cfo
 quarter: Q1
 month_target: 3
 priority: P1
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: 'U2'
 depends_on: []
