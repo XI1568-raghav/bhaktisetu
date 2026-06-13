@@ -10,8 +10,21 @@ import path from 'node:path';
 const REPO = process.cwd();
 const QUEUE_DIR = path.join(REPO, 'docs/roadmap/_dryrun/queue');
 const ITEMS_DIR = path.join(REPO, 'docs/roadmap/items');
-const OUT = path.join(REPO, 'docs/roadmap/_ship-batch-2026-06-13.json');
-const EXCLUDE_IDS = new Set(['R-Q1-IT-001', 'R-Q4-P-007']); // in-flight / shipped
+const OUT = path.join(REPO, 'docs/roadmap/_ship-batch-2026-06-14.json');
+// Exclude all 42 already-shipped this session (round 1) + any items already merged on main per ship-log
+const EXCLUDE_IDS = new Set([
+  // pre-loop (2)
+  'R-Q1-IT-001', 'R-Q4-P-007',
+  // 40-loop (40)
+  'R-Q1-CS-007', 'R-Q1-S-001', 'R-Q4-M-007', 'R-Q3-E-007', 'META-KPI-COLLECTOR-FIXES',
+  'R-Q1-L-002', 'R-Q1-H-001', 'R-Q1-CS-005', 'R-Q1-S-002', 'R-Q1-M-011',
+  'SIDE-FIX-SEO-404', 'SIDE-FIX-SEO-404-', 'META-KPI-COLLECTOR-FIXES-', 'R-Q1-H-002', 'R-Q1-CS-003', 'R-Q4-S-005', 'R-Q2-M-012',
+  'R-Q2-E-013', 'R-Q1-CS-004', 'R-Q1-S-014', 'R-Q1-M-009', 'R-Q2-IT-003',
+  'R-Q3-S-007', 'R-Q3-M-014', 'R-Q2-E-011', 'R-Q1-S-004', 'R-Q1-S-005',
+  'R-Q4-S-007', 'R-Q2-S-011', 'R-Q1-S-007', 'R-Q1-S-010', 'R-Q4-S-009',
+  'R-Q1-S-008', 'R-Q1-S-009', 'R-Q1-S-011', 'R-Q1-CS-008', 'R-Q1-F-001',
+  'R-Q1-IT-004', 'R-Q1-M-002', 'R-Q1-S-012', 'R-Q1-G-001', 'R-Q2-L-001',
+]);
 const TARGET = 40;
 
 const ID_RE = /(R-Q[1-4]-[A-Z]+-\d+|SIDE-FIX-[A-Z0-9-]+|META-[A-Z-]+)/;
