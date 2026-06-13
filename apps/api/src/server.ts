@@ -94,6 +94,8 @@ import { referralsRoutes } from './routes/referrals.js';
 import { giftPujaRoutes } from './routes/gift-puja.js';
 import { yatraInquiryRoutes } from './routes/yatra-inquiry.js';
 import { recordLatency, snapshotStats, startMetricsReporter } from './lib/route-metrics.js';
+import { prisma } from './lib/prisma.js';
+import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
 
 const server = Fastify({
   logger: {
@@ -230,6 +232,14 @@ async function bootstrap() {
     recordLatency(`${request.method} ${route} → ${reply.statusCode}`, ms);
   });
   startMetricsReporter(server.log);
+
+  // ── R-Q2-E-011: DB query instrumentation ──────────────────────────
+  // Slow-query log: warn when any Prisma query > SLOW_QUERY_MS (default 100).
+  // N+1 detector: per-request ALS scope counts identical SQL templates; warns
+  // when any template fires > N_PLUS_ONE_THRESHOLD (default 5) inside a single
+  // request. Both noop when DB_QUERY_INSTRUMENTATION=off.
+  instrumentPrisma(prisma, server.log);
+  registerNPlusOneRequestScope(server, server.log);
 
   server.get(
     '/api/v1/admin/metrics/latency',
