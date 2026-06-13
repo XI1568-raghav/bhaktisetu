@@ -29,13 +29,13 @@ est_hours: 4
 est_cost_inr: 0
 
 success_criteria:
-  - "50 contacts identified + segmented by relationship × ask_type (data/sales/warm-network-contacts-seed.csv)"
-  - "4 WA script variants ready (temple/pandit/gaushala/donor), each w/ 3 sub-variants for relationship depth"
-  - "Live tracker CSV w/ explicit schema (data/sales/warm-network-tracker.csv)"
-  - "Founder sends 50 messages over 5-day window (manual WA/email/LinkedIn — NOT bulk tool)"
-  - "Reply rate logged for every contact (positive/negative/silent)"
-  - "≥3 qualified supply leads from 50 asks (target = ₹2L pipeline value)"
-  - "Handoff note updated w/ aggregate reply rate + conversion + lessons learned"
+  - "50 pre-segmented contact slots in data/sales/warm-network-contacts-seed.csv (15 temple / 15 pandit / 10 gaushala / 5 donor / 5 diaspora)"
+  - "12-column live tracker schema in data/sales/warm-network-tracker.csv (contact_name,relationship,channel,city,ask_type,script_variant,language,sent_at,replied_at,referral_received,supply_lead_id,notes)"
+  - "5 scripts shipped in scripts/sales/warm-network/ (wa-script-{temple,pandit,gaushala}.md + email-script-formal.md + followup-script-day7.md) with Hindi + English bodies < 350 chars each and {first_name} placeholder"
+  - "README.md founder runbook with 5-day send schedule + reply playbook + escalation rules"
+  - "Schema tests pass (scripts/sales/warm-network/__tests__/tracker-schema.test.mjs) — 10/10 green covering header schema, 50-row count, ask_type distribution, script char limits, required files present"
+  - "docs/agent-reports/2026-06-13-warm-network-reachout-ship.md documents deliverables + founder runbook"
+  - "Founder sends 50 messages over 5-day window (manual WA/email — NOT bulk tool); reply rate logged per contact (positive/negative/silent); ≥3 qualified supply leads (target ₹2L pipeline)"
 
 agent_brief:
   context_files: []
@@ -44,19 +44,24 @@ agent_brief:
 
 handoff_notes: |
   2026-06-10: bulk-imported from year-1 content sprint.
-  2026-06-12: Agent prep complete. 6 deliverables shipped:
-    - data/sales/warm-network-tracker.csv (live tracker, 11 cols)
-    - data/sales/warm-network-contacts-seed.csv (50-row template w/ pre-segmented relationship × ask_type)
-    - scripts/sales/warm-network/wa-script-{temple,pandit,gaushala,donor}.md (4 scripts × 3 variants each = 12 ready-to-send templates + post-reply follow-ups)
-    - docs/agent-reports/2026-06-12-warm-network-reachout-prep.md (full execution playbook + segmentation logic + 5-day send schedule + expected outcomes math + risk mitigations)
-  Success criteria populated (replaced placeholder w/ 7 concrete bars).
-  FOUNDER ACTION REQUIRED: ≤6h total over 5 days — fill 50 contact_name values, send messages per scripts, log replies in tracker.
-  Expected outcome: 3-4 qualified supply leads → ₹1-3L pipeline value.
-  Closes (partial): Q-C-20260612T0001-R-Q1-S-014. Status stays in_progress until founder reports back w/ reply-rate + conversion numbers.
+  2026-06-12: Agent prep cycle 1 (6 deliverables, 11-col tracker, 4 WA scripts).
+  2026-06-13: Re-shipped to current queue spec (Q-C-20260612T0001-R-Q1-S-014):
+    - data/sales/warm-network-tracker.csv (12-col schema, +language col)
+    - data/sales/warm-network-contacts-seed.csv (50 rows, pre-segmented 15/15/10/5/5 = temple/pandit/gaushala/donor/diaspora)
+    - scripts/sales/warm-network/wa-script-{temple,pandit,gaushala}.md (Hindi + English bodies < 350 chars, {first_name} placeholder)
+    - scripts/sales/warm-network/email-script-formal.md (older/formal contacts, full bilingual)
+    - scripts/sales/warm-network/followup-script-day7.md (single nudge, Hindi + English)
+    - scripts/sales/warm-network/README.md (5-day schedule, reply playbook, hard rules)
+    - scripts/sales/warm-network/__tests__/tracker-schema.test.mjs (10/10 green)
+    - docs/agent-reports/2026-06-13-warm-network-reachout-ship.md
+  TDD: RED → 1/10. GREEN → 10/10. Success criteria concretized (replaced cycle-1 list).
+  FOUNDER ACTION REQUIRED: ≤6h over 5 days — fill 50 contact_name values, send per scripts, log replies in tracker.
+  Expected: 3-4 qualified supply leads → ₹1-3L pipeline.
+  Status stays in_progress until founder reports reply-rate + conversion numbers.
 
 tags: ["warm-network","founder","p0"]
 created_at: 2026-06-10T20:35:05.804Z
-updated_at: 2026-06-10T20:35:05.804Z
+updated_at: 2026-06-13T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
