@@ -1,0 +1,72 @@
+name: db-backup
+
+# R-Q2-IT-003 — Daily Supabase Postgres pg_dump → object store (default
+# Supabase Storage, S3-compatible swap via env). 30-day retention.
+#
+# Schedule: 19:00 UTC (= 00:30 IST next day). Low-traffic window for India ops.
+#
+# Founder-action required before this workflow produces useful artifacts:
+#   1. Decide vendor (default Supabase Storage; R2/B2 alternative requires
+#      CFO sign-off — see PR description for R-Q2-IT-003).
+#   2. Create bucket `db-backups` in chosen vendor.
+#   3. Set GH Actions secrets:
+#        - SUPABASE_DB_URL              (use DIRECT_URL, NOT pooled — pg_dump
+#                                        needs a direct session)
+#        - SUPABASE_SERVICE_ROLE_KEY    (NEVER expose to client)
+#        - SUPABASE_URL                 (e.g. https://abc.supabase.co)
+#        - (optional) HEARTBEAT_URL     (healthchecks.io free tier)
+#
+# Until secrets land, both scripts no-op and exit 0 (skipped: missing-env).
+# Workflow stays green so it doesn't spam the founder with failure emails.
+#
+# Free-tier cost: 5 min × 30 runs/mo = 150 GH Actions minutes/mo.
+# Current baseline ~1616/mo (per TASKS.md). Headroom intact within 1900 cap.
+
+on:
+  schedule:
+    # Daily at 19:00 UTC = 00:30 IST next day (cron uses UTC).
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install postgresql-client (matches Supabase Postgres major)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      # We don't need the full workspace — backup scripts are pure node:* +
+      # native fetch. Skip pnpm install entirely to save ~2 min per run.
+
+      - name: Verify pg_dump available
+        run: pg_dump --version
+
+      - name: Run daily backup
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
+          HEARTBEAT_URL: ${{ secrets.HEARTBEAT_URL }}
+        run: node scripts/backup/supabase-backup.mjs
+
+      - name: Prune backups older than 30 days
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
+        run: node scripts/backup/prune-old-backups.mjs
