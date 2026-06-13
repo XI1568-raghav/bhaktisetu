@@ -6,7 +6,7 @@ owner_role: sales
 quarter: Q1
 month_target: 2
 priority: P0
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q1-S-001","R-Q1-S-004"]
@@ -52,7 +52,7 @@ handoff_notes: |
 tags: ["geo","varanasi","city-2","p0"]
 created_at: 2026-06-09T21:50:55.201Z
 updated_at: 2026-06-09T21:50:55.201Z
-shipped_at: null
+shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
