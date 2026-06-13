@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T13:09:40.678Z",
+  "generatedAt": "2026-06-14T13:11:32.837Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -6937,7 +6937,7 @@
         "target": 5,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "manual:enter rank from https://producthunt.com/products/bhaktisetu within 24h of launch"
       },
       "revenue_impact": {
         "amount_inr": 0,

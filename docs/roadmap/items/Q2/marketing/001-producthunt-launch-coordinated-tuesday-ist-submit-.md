@@ -18,7 +18,7 @@ kpi:
   target: 5
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "manual:enter rank from https://producthunt.com/products/bhaktisetu within 24h of launch"
 
 revenue_impact:
   amount_inr: 0
