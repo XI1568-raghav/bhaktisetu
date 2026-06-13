@@ -175,9 +175,9 @@ export const CITY_PUJAS: CityPuja[] = [
     deity: 'Lord Shiva (as Rudra)',
     templeName: 'Kashi Vishwanath Mandir',
     templeContext:
-      'Kashi Vishwanath is one of the 12 Jyotirlingas and the most sacred site in India for Shiva worship. A Rudrabhishek performed in Kashi is considered uniquely potent — Kashyam maranan muktih (release through death in Kashi) and Kashi-darshan are central to the Shaivite tradition.',
+      'Kashi Vishwanath is one of the 12 Jyotirlingas and the most sacred site in India for Shiva worship. A Rudrabhishek performed in Kashi is considered uniquely potent — Kashyam maranam muktih (release through death in Kashi, per Skanda Purana) and Kashi-darshan are central to the Shaivite tradition.',
     scripturalBasis:
-      'Rudra Suktam from the Krishna Yajurveda (Namakam-Chamakam, Sri Rudram). Eleven recitations constitute a full Ekadasini Rudri.',
+      'Sri Rudram (Namakam-Chamakam) from the Krishna Yajurveda, Taittiriya Samhita 4.5 + 4.7. An Ekadasini Rudri consists of 11 recitations of the Namakam, each followed by one of the 11 Chamakam anuvakas in sequence.',
     intent:
       'Performed for liberation from chronic ailments, removal of pitra dosha, fulfillment of mahadasha periods, and moksha.',
     durationMinutes: 120,
@@ -186,7 +186,7 @@ export const CITY_PUJAS: CityPuja[] = [
       'Bilva patra (108 minimum), white flowers',
       'Bhasma, vibhuti, chandan',
       'Black tila (sesame), akshat (unbroken rice)',
-      'Dhatura, bhang (where permitted), kapur, agarbatti',
+      'Dhatura (traditional offering, follow local laws), kapur, agarbatti',
     ],
     muhuratGuidance:
       'Best on Pradosh, Shivaratri, Sankranti, Somavati amavasya, or any Monday. Brahma muhurat (4:00–6:00 AM) at Kashi Vishwanath is most auspicious.',
@@ -269,7 +269,7 @@ export const CITY_PUJAS: CityPuja[] = [
     templeContext:
       'Har-ki-Pauri (literally "footstep of Hari/Vishnu") is the most sacred bathing ghat on the Ganga in Haridwar. The evening Ganga Aarti is performed at sunset daily and is one of India\'s most witnessed religious ceremonies.',
     scripturalBasis:
-      'Ganga Stotram by Adi Shankaracharya, Ganga Sahasranama. The Ganga Aarti tradition at Har-ki-Pauri dates to the early 20th century in its current form.',
+      'Ganga Stotram by Adi Shankaracharya, Ganga Sahasranama. The current-form Ganga Aarti at Har-ki-Pauri was instituted in 1916 by Pandit Madan Mohan Malaviya and has since been organised twice daily by Shri Ganga Sabha.',
     intent:
       'Performed for ancestral peace (pitra tarpan), self-purification, fulfillment of vows, and to honor the Ganga as mother.',
     durationMinutes: 45,
@@ -281,7 +281,7 @@ export const CITY_PUJAS: CityPuja[] = [
       'Tarpan vessels for ancestor offering',
     ],
     muhuratGuidance:
-      'Evening aarti slot timings vary seasonally — approximately 6:00 PM (winter) to 7:00 PM (summer). Sponsorship slot is confirmed 48 hours in advance based on the Brahma Kshetra Panch Puri Akhada Parishad calendar.',
+      'Evening aarti slot timings vary seasonally — approximately 6:00 PM (winter) to 7:00 PM (summer). Sponsorship slot is confirmed 48 hours in advance via Shri Ganga Sabha, the body that has governed the daily Mangala (sunrise) and Shringar (sunset) aartis at Har-ki-Pauri since 1916.',
     priceInr: 1100,
     priceUsd: 25,
     faqs: [
