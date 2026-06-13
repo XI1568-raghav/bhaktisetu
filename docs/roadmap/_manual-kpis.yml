@@ -1,6 +1,6 @@
 # Founder-updated KPIs that no system auto-tracks.
 # Update by hand; orchestrator reads on every cycle.
-last_updated: 2026-06-10
+last_updated: 2026-06-13
 values:
   verified_temples_count: 12
   press_hits_count: 1
@@ -8,7 +8,7 @@ values:
   iskcon_loi_status: prospect          # prospect|introd|meeting|term_sheet|signed
   product_hunt_launched: false
   nri_d30_retention: null              # measured starting M3
-  uptime_monitors_active: 0            # founder bumps to 4 after docs/it/uptime-setup-checklist.md Step 6
+  uptime_monitors_active: 4            # founder bumps to 4 after docs/it/uptime-setup-checklist.md Step 6
   cron_auth_token_set: 0               # founder bumps to 1 after docs/it/secrets-checklist.md R-Q1-IT-002 Step 5
 # Stale-flag notes:
 #   uptime_monitors_active: clear stale=false once founder ships 4 UptimeRobot monitors
