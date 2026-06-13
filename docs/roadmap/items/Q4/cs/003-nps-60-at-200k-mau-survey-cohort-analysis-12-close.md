@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q4
 month_target: 12
 priority: P1
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
