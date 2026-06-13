@@ -38,6 +38,22 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: code shipped (R-Q2-IT-003 batch).
+    - scripts/backup/supabase-backup.mjs (pg_dump --format=custom → Supabase Storage)
+    - scripts/backup/prune-old-backups.mjs (30-day retention)
+    - scripts/backup/test/backup.test.mjs (7 vitest pass, TDD RED→GREEN)
+    - .github/workflows/db-backup.yml (daily 19:00 UTC cron)
+    - docs/runbooks/db-restore.md (blind-followable restore procedure)
+  Default vendor: Supabase Storage bucket `db-backups` (no new vendor, $0).
+  Both scripts env-gated → no-op + exit 0 when secrets missing.
+  FOUNDER BLOCKERS before status=shipped:
+    1. Decide vendor (Supabase Storage default; R2/B2 needs CFO sign-off).
+    2. Create `db-backups` bucket in chosen vendor.
+    3. Set GH Actions secrets: SUPABASE_DB_URL (DIRECT_URL, not pooled),
+       SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL.
+    4. Manual trigger: gh workflow run db-backup.yml.
+    5. Verify dump uploaded: list bucket db-backups/backups/.
+    6. Restore drill on staging per docs/runbooks/db-restore.md.
 
 tags: ["it","supabase","backup","dr"]
 created_at: 2026-06-09T21:55:18.961Z
