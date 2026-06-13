@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T01:31:04.621Z",
+  "generatedAt": "2026-06-13T07:12:48.714Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -1267,7 +1267,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P3",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -2101,7 +2101,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P3",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -2506,7 +2506,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
@@ -2978,7 +2978,7 @@
       "quarter": "Q1",
       "month_target": 2,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -3081,7 +3081,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -3137,7 +3137,7 @@
       "quarter": "Q1",
       "month_target": 3,
       "priority": "P2",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
