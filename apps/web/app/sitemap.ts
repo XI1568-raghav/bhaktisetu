@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getTemples, getPujaTypes } from '../lib/api';
 import { SHLOKAS } from '../lib/shlokas';
 import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
+import { CITY_PUJA_SLUGS } from '../lib/city-pujas';
 
 const BASE_URL = 'https://darshya.online';
 // deploy-stamp 2026-06-05 #7 — CF rebuild trigger for 5f71b48 dead-href + /discover GROUPS 54->61 (HEAD was [skip ci])
@@ -786,6 +787,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  const cityPujaEntries = CITY_PUJA_SLUGS.map(({ city, puja }) => ({
+    url: `${BASE_URL}/puja/${city}/${puja}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.95,
+  }));
+
   const shlokaEntries = [
     { url: `${BASE_URL}/shlokas`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.8 },
     ...SHLOKAS.map((s) => ({
@@ -859,6 +867,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...langEntries,
     ...shlokaEntries,
     ...freePanditEntries,
+    ...cityPujaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
   ];
 }
