@@ -6,9 +6,10 @@ owner_role: sales
 quarter: Q4
 month_target: 11
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
+founder_action_required: true
 depends_on: []
 blocks: ["R-Q4-E-010"]
 
@@ -18,7 +19,7 @@ kpi:
   target: 65
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM wedding_vendors WHERE verification_status = 'verified';"
 
 revenue_impact:
   amount_inr: 80000
@@ -42,7 +43,7 @@ handoff_notes: |
 tags: ["supply","wedding","vendor","ecosystem"]
 created_at: 2026-06-09T22:09:26.554Z
 updated_at: 2026-06-09T22:09:26.554Z
-shipped_at: null
+shipped_at: 2026-06-13
 verified_at: null
 killed_at: null
 killed_reason: null
