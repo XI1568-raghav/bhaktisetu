@@ -1,60 +1,53 @@
 {
-  "cycleId": "C-20260613T0451",
+  "cycleId": "C-20260613T1038",
   "spawnPlan": [
-    {
-      "role": "cpo",
-      "itemIds": [
-        "T-008-BACKLOG-REFILL"
-      ],
-      "briefing": "TRIPWIRE T-008 FIRED: planned backlog dropped to 26 (<30 threshold). Generate 40-50 NEW roadmap items derived from docs/ceo-roadmap-2026-05-27.md focused on Q3/Q4 execution gaps. Distribution target: ~30% engineering (CTO), ~20% marketing (CMO), ~15% sales/supply, ~10% CS, ~10% product/UX, ~10% finance/legal/IT, ~5% geo. Each item must have: itemId (follow R-Q3-{CAT}-{NN} or R-Q4-{CAT}-{NN} pattern, skip used IDs in _index.json), title, priority (P0/P1/P2), owner_role, estimated_hours, depends_on[], verify_cmd (REAL shell commands, NO 'TBD-populate'), success_metric, status:planned. Append to docs/roadmap/_index.json. Bias toward items that can be agent-executed (avoid founder-blocker U* dependencies). Reference revenue-line items in CEO roadmap. Write file: docs/roadmap/backlog-refill-2026-06-13.json AND merge into _index.json. CRITICAL: no fabricated verify_cmd — every verify must be a runnable shell command.",
-      "estTokens": 18000
-    },
-    {
-      "role": "cto",
-      "itemIds": [
-        "R-Q2-E-011",
-        "R-Q2-E-013",
-        "R-Q2-IT-003"
-      ],
-      "briefing": "Three ready-to-ship engineering items. Execute end-to-end with PRs. R-Q2-E-011: ship the feature per its roadmap spec (check docs/roadmap/_index.json for exact verify_cmd + success criteria). R-Q2-E-013: same. R-Q2-IT-003: observability/infra task. For each: (1) read item spec from _index.json, (2) implement minimal correct change in apps/api or apps/web, (3) add/update tests if applicable, (4) run verify_cmd locally, (5) commit with conventional commit message referencing itemId, (6) update status to 'shipped' in _index.json with shipped_at timestamp + verify_evidence. Respect free-tier budgets. Do NOT introduce new external services without CFO sign-off. If any item has unmet dependency, mark blocked with reason and move on.",
-      "estTokens": 22000
-    },
     {
       "role": "cmo",
       "itemIds": [
-        "R-Q1-M-009",
-        "R-Q1-M-011",
-        "R-Q2-M-012"
+        "R-Q1-M-001",
+        "R-Q1-M-002"
       ],
-      "briefing": "Three ready-to-ship marketing items. Read each spec in docs/roadmap/_index.json. Execute: content drafted, scheduled or pushed where automatable (committed to docs/agent-reports/cmo/ as deliverable artifacts), or queued for founder approval where requiring brand voice (mark as 'ready-for-founder-review' if so, not 'shipped'). Focus on India+NRI mix per CEO-roadmap. For SEO content items: write actual markdown drafts to docs/agent-reports/blog-drafts/ with frontmatter (title, slug, target_keyword, meta_description, tags). For distribution items: prepare copy + scheduling plan, do NOT post to external platforms requiring founder credentials. Update _index.json status appropriately (shipped vs needs-founder-review). Verify each via verify_cmd before marking shipped.",
+      "briefing": "Ship programmatic SEO foundation: (1) R-Q1-M-001 pillar pages for top 5 spiritual intents (puja booking, muhurat, pandit-near-me, temple-darshan, daily-shloka) — each ≥1500 words, page schema, internal linking. (2) R-Q1-M-002 cluster article structure (5 supporting articles per pillar). Focus on India tier-2 + NRI dual intent. Use existing content from docs/agent-reports/blog-drafts if present. Output: MDX files in apps/web/content/ + sitemap update + GSC verification stub. KPI targets: pillar_pages_shipped=5, cluster_articles_shipped=25. Constraint: no LLM API calls (free tier), use static MDX.",
       "estTokens": 18000
     },
     {
       "role": "sales",
       "itemIds": [
-        "R-Q1-S-008",
-        "R-Q1-S-009",
-        "R-Q1-S-011"
+        "R-Q1-S-001",
+        "R-Q1-S-002"
       ],
-      "briefing": "Three ready-to-ship supply/sales items focused on temple/pandit/astrologer onboarding pipeline. Read specs in docs/roadmap/_index.json. Most sales items are agent-executable artifact creation (outreach templates, CRM seed lists, WA message scripts, partner playbooks) — NOT actual outbound calls requiring founder. Deliverables: write to docs/agent-reports/sales/ — (1) target lists (CSV with temple name, city, contact source URL, suggested approach), (2) outreach message templates (WA + email + call script in EN/HI), (3) qualification rubric, (4) follow-up cadence playbook. If item requires actual outbound contact, mark 'ready-for-founder-execution' with all artifacts prepared. Update _index.json status. Maintain Varanasi/Bengaluru/Mumbai current-city focus per geo sequencing rule — do not seed new cities until existing ≥80% target.",
+      "briefing": "Supply-side activation in Varanasi + Bengaluru (current focus cities). (1) R-Q1-S-001: temple outreach script v2 — Hindi + English, WhatsApp + phone variants, value prop (free listing + booking revenue share). Include 3 objection handlers. Save to docs/sales/playbooks/temple-outreach.md. (2) R-Q1-S-002: pandit onboarding kit — KYC checklist, contract template ref, profile setup walkthrough, payout schedule. Save to docs/sales/playbooks/pandit-onboarding.md. Constraint: founder executes calls; you produce battle-tested scripts only. Target: enable 20 temple calls/day + 5 pandit signups/week.",
+      "estTokens": 14000
+    },
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q1-CS-005",
+        "R-Q1-CS-007"
+      ],
+      "briefing": "Churn-reduction infra. (1) R-Q1-CS-005: multilingual CS macros — translate top 15 macros into Hindi, Tamil, Telugu, Marathi, Bengali (5 langs × 15 = 75 entries). Use docs/cs/macros-en.md as source if exists, else draft 15 high-frequency macros (booking confirm, refund, pandit-reschedule, payment-failed, muhurat-clarify, etc). Output: docs/cs/macros-multilingual.json. (2) R-Q1-CS-007: help center articles — top 10 booking/payment/profile FAQs as MDX in apps/web/app/help/. Include schema.org/FAQPage. KPI targets: multilingual_macros_count≥75, help_articles_published≥10.",
+      "estTokens": 15000
+    },
+    {
+      "role": "cto",
+      "itemIds": [
+        "R-Q1-E-001",
+        "R-Q1-E-003"
+      ],
+      "briefing": "Payment + API hardening (revenue-protective). (1) R-Q1-E-001: Razorpay webhook signature verification on raw body — fix any HMAC computed on parsed JSON. Add idempotency table (razorpay_event_id unique). Test with replay payload. Files: apps/api/src/routes/webhooks/razorpay.ts. (2) R-Q1-E-003: rate limiting — add @fastify/rate-limit on /api/v1/* with 100req/min/IP default, 10req/min on auth + payment endpoints. Use in-memory store (no Redis cost). KPI targets: webhook_idempotency_active=1, rate_limit_enforced=1, razorpay_verify_raw_enabled=1. Constraint: zero new infra dependencies, must run on Render free tier.",
       "estTokens": 16000
     }
   ],
   "deferrals": [],
   "kills": [],
-  "firedTripwires": [
-    {
-      "id": "T-008",
-      "name": "Roadmap drained",
-      "condition": "ctx.items.byStatus.planned < 30",
-      "action": "spawn_subagent",
-      "spawnRole": "cpo",
-      "spawnBrief": "Backlog < 30 planned. Generate 50 new items from CEO roadmap Q3/Q4.",
-      "weight": 1,
-      "firedAt": "2026-06-13T04:53:11.503Z"
-    }
-  ],
-  "savedAt": "2026-06-13T04:53:40.056Z",
+  "decisionNote": {
+    "reasoning": "Cycle strategy: queue is deep (38, oldest 35.6h) so I capped new spawns at 4 to let workers drain. Enforced mandated role coverage (CTO + CMO + Sales + CS) with 2 items per agent for batching efficiency. All KPIs are stale due to broken collectors — META-KPI-COLLECTOR-FIXES is already in queue from prior cycle, so I trust that fix to land before re-scoring. Avoided all 48 founder-blocked items and all 38 queue-resident items per principle #3. Picks rank by revenue/hour: (a) SEO pillars compound for months; (b) supply scripts unblock temple/pandit GMV; (c) multilingual CS reduces churn in tier-2 where English macros fail; (d) Razorpay raw-body verify + rate limit prevent revenue loss from replay attacks and abuse. All work fits free tier (static MDX, no LLM, no new infra). No tripwires fired, no kills needed, no founder defers added (48 already pending — adding more creates noise, not signal).",
+    "kpiDeltas": "All KPIs stale (collector 404s). Expected post-cycle deltas if items ship: pillar_pages_shipped 0→5, cluster_articles_shipped 0→25, multilingual_macros_count 0→75, help_articles_published 0→10, webhook_idempotency_active 0→1, rate_limit_enforced 0→1, razorpay_verify_raw_enabled 0→1. Sales scripts don't move KPIs directly — they enable founder's temple_calls_made + pandit signups next cycle.",
+    "marketSignals": "Queue aging (35.6h oldest) signals workers may be under-throughput — monitor next cycle, consider 2-item cap if queue grows past 45. KPI collector blackout means orchestrator is flying blind on conversion metrics; META-KPI-COLLECTOR-FIXES landing is critical unblock. 48 founder-blocked items represent founder bandwidth bottleneck — CFO/CEO should batch-process U1/U2/U3 unblocks in a single session.",
+    "nextCycleHypothesis": "If META-KPI-COLLECTOR-FIXES lands and queue drains to <25, next cycle should: (1) spawn 5-6 agents (free tier headroom), (2) re-evaluate based on real conversion data, (3) prioritize R-Q2-S-001..005 B2B pilot scoping if temple supply scripts produce signed LOIs, (4) start NRI lane (R-Q1-M-005 diaspora targeting) once India tier-2 macros prove churn reduction. If queue still deep, hold at 3-4 spawns and escalate worker capacity question to founder."
+  },
+  "firedTripwires": [],
+  "savedAt": "2026-06-13T10:41:02.432Z",
   "consumed": true,
-  "consumedAt": "2026-06-13T04:55:56.846Z"
+  "consumedAt": "2026-06-13T10:42:54.129Z"
 }
