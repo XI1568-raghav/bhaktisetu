@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T19:24:17.207Z",
+  "generatedAt": "2026-06-13T19:27:39.406Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -12204,7 +12204,7 @@
           "docs/company/06-supply.md"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-12: Research + outreach kit shipped (cycle slice). docs/sales/canada-pandit-prospects-2026-06.md w/ 30 prospects:\n  - 12 GTA (BAPS, ISKCON, Hindu Heritage Centre, Vishnu Mandir, etc + federation umbrella via Hindu Federation Canada)\n  - 6 Vancouver / Lower Mainland (Vishwa Hindu, Lakshmi Narayan, BAPS Surrey, Sanatan Dharm BC, ISKCON, Sai)\n  - 4 Calgary/Edmonton (Hindu Societies + BAPS + Maha Lakshmi)\n  - 4 Ottawa/Montréal (Hindu Temple Ottawa-Carleton, Vishva Shakti Durga, Hindu Mission Canada, Thiru Murugan Tamil Saiva)\n  - 4 independent pandits via LinkedIn / federation referrals\nCold-outreach email template (190 words) + 4 sampradaya-specific customisations (BAPS / Tamil Saiva / ISKCON / Federation) + WA follow-up script + 10-day pace plan (3/day × 30).\nZERO sends from agent. Every `[VERIFY]` marker requires founder validation via temple website / LinkedIn before send.\nRisk notes: BAPS 30-day cycle, CRA partnership ambiguity (transparent: pilot is commercial pandit-listing not tax-deductible v1), federation orgs are highest leverage (3-6 month cycle).\nSCRAPER DEFERRED to next cycle (leads schema gate per spec — `apps/api/scripts/leads/` schema must be confirmed before scrape-canada-pandits.ts can be authored).\nFOUNDER ACTION: ≤6h spread over 14 days for verification + personalisation + send + reply triage.\nCloses (partial): Q-C-20260612T0001-R-Q3-S-007 (research+kit slice). Status stays in_progress until 30 sends + 5 qualified replies + 1+ pandit onboarded.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-13: Prospecting infra + outreach kit + tests shipped (cycle slice).\n  - apps/api/scripts/leads/_canada-cities.ts — Canada city tier (Toronto/Vancouver/Brampton/Mississauga/Surrey)\n  - apps/api/scripts/leads/canada-pandit-prospector.mjs — runner, honors robots.txt + 2s rate limit, --dry mode\n  - data/leads/canada-pandits-2026-06.csv — 52 leads (Toronto 21 + Vancouver 11 + Brampton 9 + Mississauga 6 + Surrey 5); 10 queued for batch-1 send\n  - scripts/sales/canada-pandit/ — EN + HI (Devanagari + Romanized) + WA + day-5 follow-up + CASL footers + KYC checklist + README\n  - docs/agent-reports/2026-06-12-canada-pandit-outreach.md — methodology + KPI query\n  - 4 vitest files green (canada-cities + prospector + templates + csv-output)\n  - Tests: pnpm test -- canada (root vitest config extended)\n2026-06-12: Research + outreach kit shipped (cycle slice). docs/sales/canada-pandit-prospects-2026-06.md w/ 30 prospects:\n  - 12 GTA (BAPS, ISKCON, Hindu Heritage Centre, Vishnu Mandir, etc + federation umbrella via Hindu Federation Canada)\n  - 6 Vancouver / Lower Mainland (Vishwa Hindu, Lakshmi Narayan, BAPS Surrey, Sanatan Dharm BC, ISKCON, Sai)\n  - 4 Calgary/Edmonton (Hindu Societies + BAPS + Maha Lakshmi)\n  - 4 Ottawa/Montréal (Hindu Temple Ottawa-Carleton, Vishva Shakti Durga, Hindu Mission Canada, Thiru Murugan Tamil Saiva)\n  - 4 independent pandits via LinkedIn / federation referrals\nCold-outreach email template (190 words) + 4 sampradaya-specific customisations (BAPS / Tamil Saiva / ISKCON / Federation) + WA follow-up script + 10-day pace plan (3/day × 30).\nZERO sends from agent. Every `[VERIFY]` marker requires founder validation via temple website / LinkedIn before send.\nRisk notes: BAPS 30-day cycle, CRA partnership ambiguity (transparent: pilot is commercial pandit-listing not tax-deductible v1), federation orgs are highest leverage (3-6 month cycle).\nSCRAPER DEFERRED to next cycle (leads schema gate per spec — `apps/api/scripts/leads/` schema must be confirmed before scrape-canada-pandits.ts can be authored).\nFOUNDER ACTION: ≤6h spread over 14 days for verification + personalisation + send + reply triage.\nCloses (partial): Q-C-20260612T0001-R-Q3-S-007 (research+kit slice). Status stays in_progress until 30 sends + 5 qualified replies + 1+ pandit onboarded.\n",
       "tags": [
         "supply",
         "pandit",
@@ -12212,7 +12212,7 @@
         "nri"
       ],
       "created_at": "2026-06-09T22:02:56.063Z",
-      "updated_at": "2026-06-12T08:00:00.000Z",
+      "updated_at": "2026-06-13T00:00:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
