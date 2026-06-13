@@ -1,3 +1,4 @@
+// TODO(2026-06): v2 draft pending lawyer review — see docs/legal/refund-policy-v2-draft.md
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { COMPANY, postalContactLine } from "../../lib/company";
