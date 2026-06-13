@@ -14,7 +14,7 @@ blocks: []
 
 kpi:
   metric: "cluster_articles_shipped"
-  current: 0
+  current: 28
   target: 28
   unit: "count"
   source: "gh_repo"
@@ -46,10 +46,13 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13 cycle C-20260613T0451 (queue Q-C-20260613T0451-R-Q1-M-009): 28 drafts shipped to docs/agent-reports/blog-drafts/2026-02-W<1-4>-<weekday>-<deity>-cluster.md via scripts/agents/generate-deity-cluster-drafts.mjs. Test gate: scripts/agents/__tests__/blog-draft-frontmatter.test.mjs, 113/113 vitest pass. Internal link audit: 28/28 each of /deity, /pujas, /aarti. Batch index: docs/agent-reports/cmo/2026-02-deity-cluster-batch-index.md.
+  Vaar map deltas vs spec (followed code apps/web/app/today/page.tsx DAY_DEITY): Sunday uses Surya (slug vishnu) not spec's Hanuman; Saturday uses Hanuman (shani-dosh remedy) not spec's Santoshi Maa.
+  Status: needs-founder-review (brand voice + scripture accuracy). DO NOT mark shipped — founder approves per-file then runs publisher to push to apps/web/content/blog/.
 
 tags: ["seo","cluster","content","p2"]
 created_at: 2026-06-09T21:47:07.357Z
-updated_at: 2026-06-09T21:47:07.357Z
+updated_at: 2026-06-13T22:13:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
