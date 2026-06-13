@@ -1,58 +1,60 @@
 {
-  "cycleId": "C-20260612T1820",
+  "cycleId": "C-20260613T0451",
   "spawnPlan": [
+    {
+      "role": "cpo",
+      "itemIds": [
+        "T-008-BACKLOG-REFILL"
+      ],
+      "briefing": "TRIPWIRE T-008 FIRED: planned backlog dropped to 26 (<30 threshold). Generate 40-50 NEW roadmap items derived from docs/ceo-roadmap-2026-05-27.md focused on Q3/Q4 execution gaps. Distribution target: ~30% engineering (CTO), ~20% marketing (CMO), ~15% sales/supply, ~10% CS, ~10% product/UX, ~10% finance/legal/IT, ~5% geo. Each item must have: itemId (follow R-Q3-{CAT}-{NN} or R-Q4-{CAT}-{NN} pattern, skip used IDs in _index.json), title, priority (P0/P1/P2), owner_role, estimated_hours, depends_on[], verify_cmd (REAL shell commands, NO 'TBD-populate'), success_metric, status:planned. Append to docs/roadmap/_index.json. Bias toward items that can be agent-executed (avoid founder-blocker U* dependencies). Reference revenue-line items in CEO roadmap. Write file: docs/roadmap/backlog-refill-2026-06-13.json AND merge into _index.json. CRITICAL: no fabricated verify_cmd — every verify must be a runnable shell command.",
+      "estTokens": 18000
+    },
     {
       "role": "cto",
       "itemIds": [
-        "R-Q4-E-010",
-        "R-Q3-E-009"
+        "R-Q2-E-011",
+        "R-Q2-E-013",
+        "R-Q2-IT-003"
       ],
-      "briefing": "R-Q3-E-009 is already queued — DO NOT re-implement, but verify acceptance criteria align with R-Q4-E-010 dependencies before shipping E-010. Primary focus: R-Q4-E-010 (engineering ready-to-ship). Check the roadmap item spec, implement against acceptance criteria, ship via PR. Keep changes minimal, no scope creep. Validate against free-tier budgets (no new always-on services). If E-010 depends on E-009 and E-009 hasn't merged yet, document the dependency wait clearly in PR description and stop. Budget: 8k tokens for analysis + implementation.",
-      "estTokens": 12000
+      "briefing": "Three ready-to-ship engineering items. Execute end-to-end with PRs. R-Q2-E-011: ship the feature per its roadmap spec (check docs/roadmap/_index.json for exact verify_cmd + success criteria). R-Q2-E-013: same. R-Q2-IT-003: observability/infra task. For each: (1) read item spec from _index.json, (2) implement minimal correct change in apps/api or apps/web, (3) add/update tests if applicable, (4) run verify_cmd locally, (5) commit with conventional commit message referencing itemId, (6) update status to 'shipped' in _index.json with shipped_at timestamp + verify_evidence. Respect free-tier budgets. Do NOT introduce new external services without CFO sign-off. If any item has unmet dependency, mark blocked with reason and move on.",
+      "estTokens": 22000
+    },
+    {
+      "role": "cmo",
+      "itemIds": [
+        "R-Q1-M-009",
+        "R-Q1-M-011",
+        "R-Q2-M-012"
+      ],
+      "briefing": "Three ready-to-ship marketing items. Read each spec in docs/roadmap/_index.json. Execute: content drafted, scheduled or pushed where automatable (committed to docs/agent-reports/cmo/ as deliverable artifacts), or queued for founder approval where requiring brand voice (mark as 'ready-for-founder-review' if so, not 'shipped'). Focus on India+NRI mix per CEO-roadmap. For SEO content items: write actual markdown drafts to docs/agent-reports/blog-drafts/ with frontmatter (title, slug, target_keyword, meta_description, tags). For distribution items: prepare copy + scheduling plan, do NOT post to external platforms requiring founder credentials. Update _index.json status appropriately (shipped vs needs-founder-review). Verify each via verify_cmd before marking shipped.",
+      "estTokens": 18000
     },
     {
       "role": "sales",
       "itemIds": [
-        "R-Q1-S-004",
-        "R-Q1-S-010"
+        "R-Q1-S-008",
+        "R-Q1-S-009",
+        "R-Q1-S-011"
       ],
-      "briefing": "Two supply-side sales items ready to ship. Both are part of the temple/pandit supply pipeline buildout for Q1. Review each item's spec in docs/roadmap/, produce: (1) outreach scripts/templates if applicable, (2) CRM-trackable artifacts (csv/md lists of targets), (3) measurable acceptance criteria. NO founder action required — these are agent-shippable artifacts. Coordinate with the 6 sales items already in queue to avoid duplication (R-Q1-S-014, R-Q3-S-007, R-Q2-S-011, R-Q4-S-005, R-Q1-S-005, R-Q1-S-007). Deliver as commit-ready markdown/data files.",
-      "estTokens": 10000
-    },
-    {
-      "role": "legal",
-      "itemIds": [
-        "R-Q1-L-002"
-      ],
-      "briefing": "R-Q1-L-002 is ready to ship and is the ONLY legal item currently moving through pipeline (others founder-blocked). Likely DPDP / privacy / terms-related foundational work. Review spec, produce the legal artifact (policy doc, contract template, or DPDP procedure) as committable markdown. Flag any items requiring founder signature/notarization separately as a CHECKLIST.md — don't block on those. Keep scope tight to acceptance criteria.",
-      "estTokens": 8000
-    },
-    {
-      "role": "it",
-      "itemIds": [
-        "R-Q4-S-007",
-        "R-Q4-S-009"
-      ],
-      "briefing": "CRITICAL META-ISSUE: nearly ALL KPIs in signal-context are stale with errors like 'TBD-populate-before-orchestrator-go-live' or malformed shell commands (unescaped parens, missing files). The orchestrator is flying blind. While handling R-Q4-S-007 and R-Q4-S-009 (sales-supply items — produce committable artifacts per their specs), ALSO produce a side-deliverable: docs/observability/kpi-collector-fixes.md listing the top 10 broken KPI collector commands and proposing replacements (e.g., proper `grep -E '...' file | wc -l` syntax, removing 'TBD-populate' placeholders for the most revenue-relevant 5 metrics: pages_with_csp_nonce, posthog_web_active, mock_fallback_killed, cs_macros_count, b2b_api_endpoints_live). This unblocks future cycle decisioning. Stay within ~12k tokens total.",
-      "estTokens": 14000
+      "briefing": "Three ready-to-ship supply/sales items focused on temple/pandit/astrologer onboarding pipeline. Read specs in docs/roadmap/_index.json. Most sales items are agent-executable artifact creation (outreach templates, CRM seed lists, WA message scripts, partner playbooks) — NOT actual outbound calls requiring founder. Deliverables: write to docs/agent-reports/sales/ — (1) target lists (CSV with temple name, city, contact source URL, suggested approach), (2) outreach message templates (WA + email + call script in EN/HI), (3) qualification rubric, (4) follow-up cadence playbook. If item requires actual outbound contact, mark 'ready-for-founder-execution' with all artifacts prepared. Update _index.json status. Maintain Varanasi/Bengaluru/Mumbai current-city focus per geo sequencing rule — do not seed new cities until existing ≥80% target.",
+      "estTokens": 16000
     }
   ],
-  "deferrals": [
-    {
-      "itemId": "R-Q1-E-009",
-      "reason": "Blocked on U8 for 2 days. Three A/B experiments (EXP-001 hero_copy_v2, EXP-002 cta_color_test, EXP-003 nri_lane_above_fold) all depend on this item shipping. Blocker is the longest pole in the conversion-optimization tent — every cycle of delay defers signup-conversion lift and NRI funnel data.",
-      "suggestedAction": "Resolve U8 blocker (likely a design/copy approval or analytics-key provisioning). Allocate 30 min to either: (a) approve the proposed hero variants in PR comments, or (b) delegate U8 explicitly to cmo-agent with decision authority so it's no longer founder-gated."
-    }
-  ],
+  "deferrals": [],
   "kills": [],
-  "decisionNote": {
-    "reasoning": "Queue is already deep at 22 items with oldest at 19.3h — adding too many new spawns risks queue starvation and stale work. Constrained to 4 spawns this cycle to let queue drain. Coverage analysis: queue already has CMO(2), CS(3), CPO(5), Sales(6), CTO(3), IT(2), CFO(1). Gaps: Legal(0), and CTO is light relative to 64 CTO-owned items in backlog. Picked: CTO (R-Q4-E-010) to keep eng throughput, Sales pair (R-Q1-S-004/S-010 — oldest supply pipeline), Legal (R-Q1-L-002 — only legal moving), and IT-as-researcher hybrid bundle (R-Q4-S-007/S-009) WITH a critical side-deliverable to fix the broken KPI collectors. The KPI collector breakage is the single highest-leverage meta-problem: every metric in signal-context is 'stale' due to malformed shell commands and 'TBD-populate' placeholders, meaning orchestrator decisions are flying blind. Fixing even 5 collectors restores feedback loops. CMO/CS coverage minimum satisfied by queued items. Deferred R-Q1-E-009 to founder because it blocks 3 active experiments — highest revenue-impact deferral. Did not kill anything — backlog is healthy, no items strategically obsolete this cycle.",
-    "kpiDeltas": "Cannot compute — all 150+ KPIs stale due to broken collectors (errors: CF_ANALYTICS_TOKEN missing, HTTP 404 from metrics API, malformed shell commands with unescaped parens, 'TBD-populate-before-orchestrator-go-live' placeholders, 'no manual value'). Only uptime_monitors_active=0 and cron_auth_token_set=0 are fresh — both indicating critical infra gaps. The KPI fix deliverable in this cycle's IT spawn should restore ≥5 metrics by next cycle.",
-    "marketSignals": "No fired tripwires this cycle. Backlog grew 283→306 items (+23) since spec — healthy planning velocity. Founder-blocked count at 47 is concerning (15% of roadmap) — many blockers aged 2 days suggesting U1-U8 codes need a triage session. Budget pristine (0%/0%) — month-start, can sustain aggressive spawning later in month. Queue age 19.3h is approaching the 24h freshness threshold; if next cycle still shows depth >20, throttle further to 2-3 spawns.",
-    "nextCycleHypothesis": "If KPI collectors get fixed this cycle, next cycle (T+6h) should show fresh values for at least posthog_web_active, mock_fallback_killed, cs_macros_count — enabling first true data-driven prioritization. Queue should drain to ~15-18 as today's spawns + queue process. Recommend next cycle prioritize: (1) any item where fresh KPI shows red, (2) batch-resolve 3-5 founder blockers via consolidated founder-action memo, (3) maintain Sales+CTO velocity. If queue still >20, spawn only 2-3 high-leverage items."
-  },
-  "firedTripwires": [],
-  "savedAt": "2026-06-12T18:22:51.017Z",
+  "firedTripwires": [
+    {
+      "id": "T-008",
+      "name": "Roadmap drained",
+      "condition": "ctx.items.byStatus.planned < 30",
+      "action": "spawn_subagent",
+      "spawnRole": "cpo",
+      "spawnBrief": "Backlog < 30 planned. Generate 50 new items from CEO roadmap Q3/Q4.",
+      "weight": 1,
+      "firedAt": "2026-06-13T04:53:11.503Z"
+    }
+  ],
+  "savedAt": "2026-06-13T04:53:40.056Z",
   "consumed": true,
-  "consumedAt": "2026-06-12T18:24:51.554Z"
+  "consumedAt": "2026-06-13T04:55:56.846Z"
 }
