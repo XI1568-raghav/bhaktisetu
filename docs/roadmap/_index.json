@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T01:24:38.157Z",
+  "generatedAt": "2026-06-13T01:26:03.902Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -13134,7 +13134,7 @@
       "quarter": "Q4",
       "month_target": 12,
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
@@ -13770,7 +13770,7 @@
       "quarter": "Q4",
       "month_target": 11,
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
@@ -13821,7 +13821,7 @@
       "quarter": "Q4",
       "month_target": 12,
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
@@ -14603,7 +14603,7 @@
       "quarter": "Q4",
       "month_target": 10,
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
@@ -14653,7 +14653,7 @@
       "quarter": "Q4",
       "month_target": 11,
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
