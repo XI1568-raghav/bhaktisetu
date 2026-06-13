@@ -9,6 +9,7 @@ export default defineConfig({
       'packages/shared/src/**/*.test.ts',
       'scripts/**/*.test.mjs',
       'scripts/**/*.test.ts',
+      'tests/**/*.test.ts',
     ],
     coverage: {
       provider: 'v8',
