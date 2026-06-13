@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q3
 month_target: 7
 priority: P1
-status: planned
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q3-E-009"]
