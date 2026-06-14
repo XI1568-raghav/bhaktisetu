@@ -38,6 +38,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: framework + memo template + data-pull checklist shipped at docs/finance/R-Q3-F-002-handoff.md. Founder action required to populate live numbers (depends_on R-Q3-F-001 forecast must lock first).
 
 tags: ["unit-econ","ltv","cac","board-memo"]
 created_at: 2026-06-09T22:02:48.580Z
