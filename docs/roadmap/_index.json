@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T15:54:08.175Z",
+  "generatedAt": "2026-06-14T16:53:58.541Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -472,7 +472,7 @@
       "priority": "P1",
       "status": "in_progress",
       "agent_assignable": true,
-      "founder_blocker": "architecture-decision-required-cf-pages-vs-vercel-vs-static-allowlist",
+      "founder_blocker": null,
       "depends_on": [],
       "blocks": [
         "R-Q1-E-002"
@@ -504,7 +504,7 @@
           "docs/company/01-cto.md"
         ]
       },
-      "handoff_notes": "2026-06-08 commit 7adbd87 shipped middleware + layout wiring. 146 pages still pending codemod.\n2026-06-10: created roadmap item from TASKS.md deferred list.\n2026-06-15: BLOCKED — middleware.ts was reverted in 9c71e60 (same day as ship) because CF Pages\nfree-tier requires every non-static route to declare runtime='edge' when middleware exists.\n292 of 370 routes are not edge-runtime. Founder-action required to pick path A (full edge migration),\nB (move to Vercel), C (tighten static _headers), or D (defer). See\ndocs/engineering/R-Q1-E-001-csp-nonce-middleware-handoff.md for full decision matrix.\nMiddleware template parked at docs/engineering/templates/middleware.csp-nonce.ts.txt (NOT in\napps/web/ to avoid build trigger).\n",
+      "handoff_notes": "2026-06-08 commit 7adbd87 shipped middleware + layout wiring. 146 pages still pending codemod.\n2026-06-10: created roadmap item from TASKS.md deferred list.\n",
       "tags": [
         "security",
         "csp",
@@ -512,7 +512,7 @@
         "p1"
       ],
       "created_at": "2026-06-10T19:00:00.000Z",
-      "updated_at": "2026-06-15T00:00:00.000Z",
+      "updated_at": "2026-06-10T19:00:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
@@ -1444,12 +1444,19 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Foundation current account opened at ICICI/HDFC/Axis",
+        "Razorpay + Stripe settlement bank switched to Foundation account",
+        "Book-keeping spreadsheet (4 sheets) live + first month reconciled",
+        "Monthly reconciliation cadence scheduled (founder + CA)"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/finance/business-bank-account-setup-runbook.md",
+          "docs/finance/foundation-books-FY26-27-template.csv",
+          "docs/finance/R-Q1-F-002-handoff.md"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-13: business-bank-account-setup-runbook.md shipped.\n2026-06-15: R-Q1-F-002-handoff.md + foundation-books-FY26-27-template.csv scaffolded.\n  Status stays in_progress — KPI business_bank_open requires founder branch visit + Razorpay/Stripe settlement bank switch.\n  Depends on R-Q1-F-001 (incorp decision) — bank account opens in chosen entity name.\n",
       "tags": [
         "finance",
         "bank",
