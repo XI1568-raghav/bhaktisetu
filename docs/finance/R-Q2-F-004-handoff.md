@@ -15,8 +15,8 @@ Three submissions on the calendar = a 1-in-3 conversion target (industry hit rat
 
 | # | Program | Geo | Cheque | Equity | Cycle cadence | Why fit |
 |---|---|---|---|---|---|---|
-| 1 | **Antler India** | Bengaluru | ₹50L SAFE | 9.1% | Twice/year (Mar + Sep cohort) | Solo-founder friendly; INR-native; deep India consumer thesis. Devotional vertical pre-validated (Sri Mandir alum). |
-| 2 | **Surge by Peak XV (Sequoia)** | Bengaluru / Singapore | $1M-$2M | 8-15% | Twice/year (rolling apps) | USD cheque + global investor network. NRI cross-border story resonates. Brand halo for Series A. |
+| 1 | **Antler India** | Bengaluru | ₹50L SAFE | 9.1% | Twice/year (Mar + Sep cohort) | Solo-founder friendly; INR-native; deep India consumer thesis. Devotional vertical [CITATION-NEEDED]. |
+| 2 | **Surge by Peak XV (Sequoia)** | Bengaluru / Singapore | $1M-$2M | 7-10% (publicly disclosed range; verify current cohort terms during process) | Twice/year (rolling apps) | USD cheque + global investor network. NRI cross-border story resonates. Brand halo for Series A. |
 | 3 | **Y Combinator** (stretch) OR **Techstars India** (safety) | SF / Bengaluru | $500K (YC) / $20K + $100K SAFE (TS) | 7% (YC) / 6% (TS) | Quarterly (YC) / Annual (TS) | YC = top brand globally; TS = mentor density. Pick one based on founder bandwidth — YC interview gauntlet is 6-8 weeks of prep. |
 
 Optional 4th if bandwidth allows: **Sequoia Spark** (gender-focused, N/A if solo male) / **Lightspeed Extreme Entrepreneurs** / **AngelList India**.
