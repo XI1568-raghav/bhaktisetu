@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q1
 month_target: 3
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -51,7 +51,7 @@ handoff_notes: |
 tags: ["product","referral","growth","p2"]
 created_at: 2026-06-09T21:51:06.038Z
 updated_at: 2026-06-09T21:51:06.038Z
-shipped_at: null
+shipped_at: 2026-06-15
 verified_at: null
 killed_at: null
 killed_reason: null

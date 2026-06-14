@@ -239,4 +239,71 @@ describe('POST /api/v1/referrals/reward', () => {
     expect(prismaMock.userCredit.upsert).not.toHaveBeenCalled();
     await app.close();
   });
+
+  // R-Q1-P-006 — credit-applied-once-per-referee guard.
+  //
+  // Two concurrent /reward calls for the SAME claim (e.g. user double-clicks
+  // the confirmation page or webhook retries) must produce exactly ONE wallet
+  // credit. The first call flips status='rewarded' + writes ledger entry;
+  // the second call sees status='rewarded' on findUnique and short-circuits
+  // to the alreadyRewarded branch — userCredit.upsert is NEVER called twice.
+  it('credit-applied-once-per-referee: second /reward call for same claim is no-op (no double credit)', async () => {
+    const CLAIM_ID = '00000000-0000-0000-0000-000000000010';
+    const BOOKING_ID = '00000000-0000-0000-0000-000000000011';
+
+    // First call: claim status is qualifying → wallet credited, status flips.
+    prismaMock.referralClaim.findUnique.mockResolvedValueOnce({
+      id: CLAIM_ID,
+      status: 'qualifying',
+      referrerId: DEMO_PANDIT.id,
+      refereeId: DEMO_DEVOTEE.id,
+      rewardLedgerId: null,
+    });
+    prismaMock.creditLedgerEntry.findUnique.mockResolvedValueOnce(null);
+    prismaMock.userCredit.upsert.mockResolvedValueOnce({
+      id: 'credit-pandit-2',
+      userId: DEMO_PANDIT.id,
+      balancePaise: 10000,
+    });
+    prismaMock.creditLedgerEntry.create.mockResolvedValueOnce({ id: 'ledger-first-call' });
+    prismaMock.referralClaim.update.mockResolvedValueOnce({ id: CLAIM_ID });
+
+    const app = await buildApp();
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals/reward',
+      headers: { authorization: 'Bearer demo-devotee', 'content-type': 'application/json' },
+      payload: JSON.stringify({ claimId: CLAIM_ID, bookingId: BOOKING_ID }),
+    });
+    expect(first.statusCode).toBe(200);
+    expect(first.json()).toMatchObject({ status: 'rewarded', reused: false });
+    expect(prismaMock.userCredit.upsert).toHaveBeenCalledTimes(1);
+
+    // Second call: claim is now status='rewarded' → short-circuit.
+    prismaMock.referralClaim.findUnique.mockResolvedValueOnce({
+      id: CLAIM_ID,
+      status: 'rewarded',
+      referrerId: DEMO_PANDIT.id,
+      refereeId: DEMO_DEVOTEE.id,
+      rewardLedgerId: 'ledger-first-call',
+    });
+
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals/reward',
+      headers: { authorization: 'Bearer demo-devotee', 'content-type': 'application/json' },
+      payload: JSON.stringify({ claimId: CLAIM_ID, bookingId: BOOKING_ID }),
+    });
+    expect(second.statusCode).toBe(200);
+    expect(second.json()).toMatchObject({
+      status: 'rewarded',
+      alreadyRewarded: true,
+      ledgerId: 'ledger-first-call',
+    });
+    // Guard assertion: wallet upsert was NOT called a second time.
+    expect(prismaMock.userCredit.upsert).toHaveBeenCalledTimes(1);
+    // And the claim was NOT updated again (no second status flip).
+    expect(prismaMock.referralClaim.update).toHaveBeenCalledTimes(1);
+    await app.close();
+  });
 });
