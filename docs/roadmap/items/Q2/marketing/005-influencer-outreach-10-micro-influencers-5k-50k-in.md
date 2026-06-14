@@ -32,12 +32,27 @@ success_criteria:
   - "Populate during first sub-agent emission cycle"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/agent-reports/cmo/2026-06-influencer-outreach/README.md
+    - docs/agent-reports/cmo/2026-06-influencer-outreach/candidates.md
+    - docs/agent-reports/cmo/2026-06-influencer-outreach/outreach-copy.md
+    - docs/agent-reports/cmo/2026-06-influencer-outreach/partnership-tiers.md
+    - docs/agent-reports/cmo/2026-06-influencer-outreach/tracker-schema.csv
+    - docs/agent-reports/cmo/2026-06-influencer-outreach/disclosure-compliance.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Outreach prep artifacts shipped 2026-06-15 (branch cmo/R-Q2-M-005-batch-2026-06-15).
+    Founder closes the loop by vetting 15 candidate slots, approving tiers (≤ ₹50K cycle cap),
+    sending DMs from personal handle, and updating the tracker spreadsheet. Status flips to
+    `shipped` only when 10 partnerships are signed (creator confirmed offer + tier accepted).
+    Re-emit on next cycle if any partnership stalls past 14 days from first DM.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: agent shipped outreach kit (6 artifacts in docs/agent-reports/cmo/2026-06-influencer-outreach/).
+    Scope shipped: 15 candidate slots with [VERIFY-FOUNDER] tokens (agent does not fabricate person names),
+    3 outreach copy variants + 5-day follow-ups, barter/paid-flat/rev-share tier matrix,
+    16-column tracker CSV header, ASCI India + FTC US disclosure compliance guide.
+    Founder action required for KPI (10 partnerships) — agent ships scaffold + handoff, founder closes loop.
 
 tags: ["influencer","outreach","social"]
 created_at: 2026-06-09T21:55:19.892Z
