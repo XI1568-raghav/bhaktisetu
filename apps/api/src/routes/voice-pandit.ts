@@ -64,7 +64,8 @@ export function redactPII(text: string): string {
     // Email addresses
     .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[redacted-email]')
     // International + Indian phone numbers (handles spaces, dashes, parens)
-    .replace(/(?:\+?\d[\s\-()]?){7,15}/g, (m) => {
+    // Word-boundaries per triage 2026-06-15 — avoid eating ISO dates like 2026-06-15.
+    .replace(/\b(?:\+?\d[\s\-()]?){7,15}\b/g, (m) => {
       const digits = m.replace(/\D/g, '');
       return digits.length >= 7 ? '[redacted-phone]' : m;
     })
@@ -174,18 +175,65 @@ async function elevenlabsTTS(text: string, language: 'en' | 'hi'): Promise<Buffe
 
 // ─── Route ────────────────────────────────────────────────────────────────
 
+// Per-triage 2026-06-15: hard daily cap layered on hourly cap. Worst case 10/hr * 24 = 240/day
+// = ~$7/day per abusive key. 50/day cap bounds that to ~$1.50/day per key + matches typical
+// devotee usage pattern (max 1 voice session of ~5-10 turns per day).
+const DAILY_TURN_CAP = 50;
+const dailyCounters = new Map<string, { count: number; resetAt: number }>();
+
+function dailyKey(req: { user?: { id?: string } | null; ip?: string }): string {
+  // Prefer userId so NAT/shared-IP users do not collide. Fall back to ip.
+  return req.user?.id || req.ip || 'unknown';
+}
+
+function checkDailyCap(req: { user?: { id?: string } | null; ip?: string }): { ok: boolean; remaining: number; resetAt: number } {
+  const key = dailyKey(req);
+  const now = Date.now();
+  const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+  const entry = dailyCounters.get(key);
+  if (!entry || entry.resetAt <= now) {
+    const fresh = { count: 1, resetAt: now + TWENTY_FOUR_HOURS_MS };
+    dailyCounters.set(key, fresh);
+    return { ok: true, remaining: DAILY_TURN_CAP - 1, resetAt: fresh.resetAt };
+  }
+  if (entry.count >= DAILY_TURN_CAP) {
+    return { ok: false, remaining: 0, resetAt: entry.resetAt };
+  }
+  entry.count += 1;
+  return { ok: true, remaining: DAILY_TURN_CAP - entry.count, resetAt: entry.resetAt };
+}
+
 export async function voicePanditRoutes(server: FastifyInstance) {
-  // 10 turns / IP / hour. Voice is the most expensive path on the platform
-  // (STT + LLM + TTS = ~3 paid calls per turn). Per-prefix global override
-  // hook in server.ts also caps /ai/* — this is the per-route refinement.
+  // 10 turns / IP / hour (existing) + 50 turns / userId-or-ip / day (per triage 2026-06-15).
+  // Voice is the most expensive path on the platform (STT + LLM + TTS = ~3 paid calls per turn).
+  // Per-prefix global override hook in server.ts also caps /ai/* — this is the per-route refinement.
   server.post(
     '/turn',
     {
       config: {
-        rateLimit: { max: 10, timeWindow: '1 hour' },
+        // Key by userId-or-ip per triage 2026-06-15 — NAT/shared-IP users would otherwise
+        // share quota and a single abusive user behind CG-NAT could block legit traffic.
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 hour',
+          keyGenerator: (req: any) => req.user?.id || req.ip || 'unknown',
+        },
       },
     },
     async (request, reply) => {
+      // Hard daily cap layered on top of hourly cap — bounds worst-case cost per key.
+      const cap = checkDailyCap(request as any);
+      if (!cap.ok) {
+        reply.header('x-voice-pandit-daily-cap', String(DAILY_TURN_CAP));
+        reply.header('x-voice-pandit-daily-reset', new Date(cap.resetAt).toISOString());
+        return reply.status(429).send({
+          error: 'daily voice cap exceeded',
+          message: `Voice limit reached (${DAILY_TURN_CAP}/day). Try chat or come back tomorrow.`,
+          dailyCap: DAILY_TURN_CAP,
+          resetAt: new Date(cap.resetAt).toISOString(),
+        });
+      }
+      reply.header('x-voice-pandit-daily-remaining', String(cap.remaining));
       const t0 = Date.now();
       const parsed = turnBodySchema.safeParse(request.body ?? {});
       if (!parsed.success) {
