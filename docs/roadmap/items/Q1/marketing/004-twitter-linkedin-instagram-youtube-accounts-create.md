@@ -29,17 +29,27 @@ est_hours: 3
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Twitter @bhaktisetu live with bio + pinned tweet"
+  - "LinkedIn /company/bhaktisetu live with bio + pinned post"
+  - "Instagram @bhaktisetu live (business account) with bio + pinned carousel"
+  - "YouTube @bhaktisetu live with channel trailer pinned"
+  - "All 4 accounts cross-linked to bhaktisetu.com/about"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - "docs/marketing/R-Q1-M-004-handoff.md"
+    - "docs/marketing/social-accounts-setup-runbook.md"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Founder-only execution. Agent role: ship spec + bio + pinned post templates.
+    See docs/marketing/R-Q1-M-004-handoff.md for 4-platform paste-ready strings.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: agent shipped paste-ready handoff with bio + pinned post templates
+  for all 4 platforms. KPI stays 0/4 until founder claims handles + confirms live.
+  Status remains in_progress (founder-action required, agent cannot execute).
 
-tags: ["social","week-1","p1"]
+tags: ["social","week-1","p1","founder-action-required"]
 created_at: 2026-06-09T21:47:07.357Z
 updated_at: 2026-06-09T21:47:07.357Z
 shipped_at: null
