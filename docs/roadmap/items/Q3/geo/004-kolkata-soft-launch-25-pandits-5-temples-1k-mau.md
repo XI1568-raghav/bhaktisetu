@@ -50,6 +50,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: shipped engineering scaffold + handoff doc at docs/geo/R-Q3-G-004-kolkata-soft-launch.md.
+    Covers Shakta-bias anchor temple set (Kalighat / Dakshineswar / Belur Math / Birla Mandir / Pareshnath Jain),
+    Durga Puja seasonal hub scope (deferred to mid-Aug post supply >=50%), Bengali influencer + pandal sponsorship
+    playbook, KPI scrape SQL, founder action items. Status stays in_progress — founder must onboard 25 pandits
+    + 5 temples + drive 1K MAU. Pre-reqs R-Q3-S-002 + R-Q3-S-009 still BLOCKING.
 
 tags: ["geo","kolkata","east","new-city"]
 created_at: 2026-06-09T22:02:50.119Z
