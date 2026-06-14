@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q4
 month_target: 12
 priority: P1
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q3-P-004"]
@@ -38,11 +38,12 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: shipped — spec authored at docs/product/gurukul-payment-escrow-spec.md (covers 3-way trust model parent/guru/Bhaktisetu, per-lesson escrow flow, 48hr dispute window, weekly Razorpay batch payout to guru bank, dispute UI + admin review). 4 engineering sub-tickets enumerated (R-Q4-P-005a-d). Sibling R-Q4-E-013 picks up backend implementation.
 
 tags: ["product","gurukul","escrow","trust"]
 created_at: 2026-06-09T22:09:25.940Z
-updated_at: 2026-06-09T22:09:25.940Z
-shipped_at: null
+updated_at: 2026-06-14T00:00:00.000Z
+shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
