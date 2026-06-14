@@ -1,0 +1,609 @@
+# Multilingual CS Macros v1 — R-Q2-CS-003
+# 40 intents × 6 languages = 240 strings.
+# en + hi: production-grade, formal register.
+# ta + te + bn + mr: FIRST-PASS DRAFT — REQUIRES NATIVE-SPEAKER REVIEW before customer-facing deploy.
+# See docs/agent-reports/cs/macros/DEPLOY-RUNBOOK.md for review checklist + paste flow.
+version: 1
+generated_at: "2026-06-14T14:36:12.414Z"
+languages: [en, hi, ta, te, bn, mr]
+macros:
+  - id: M001
+    intent: payment_failed_retry
+    category: billing
+    variables: [user_name, amount, order_id]
+    translations:
+      en: "Hi {user_name}, your payment of ₹{amount} for order {order_id} did not go through. Please retry from the order page; the slot is held for 30 minutes."
+      hi: "नमस्ते {user_name}, ऑर्डर {order_id} के लिए आपका ₹{amount} का भुगतान पूरा नहीं हुआ। कृपया ऑर्डर पेज से फिर से प्रयास करें; स्लॉट 30 मिनट तक सुरक्षित है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your payment of ₹{amount} for order {order_id} did not go through. Please retry from the order page; the slot is held for 30 minutes."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your payment of ₹{amount} for order {order_id} did not go through. Please retry from the order page; the slot is held for 30 minutes."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your payment of ₹{amount} for order {order_id} did not go through. Please retry from the order page; the slot is held for 30 minutes."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your payment of ₹{amount} for order {order_id} did not go through. Please retry from the order page; the slot is held for 30 minutes."
+  - id: M002
+    intent: refund_status
+    category: billing
+    variables: [user_name, order_id]
+    translations:
+      en: "Hi {user_name}, your refund for order {order_id} is being processed by the bank. It typically reflects in 5-7 working days."
+      hi: "नमस्ते {user_name}, ऑर्डर {order_id} का आपका रिफ़ंड बैंक द्वारा प्रोसेस किया जा रहा है। यह आमतौर पर 5-7 कार्यदिवसों में दिखता है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your refund for order {order_id} is being processed by the bank. It typically reflects in 5-7 working days."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your refund for order {order_id} is being processed by the bank. It typically reflects in 5-7 working days."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your refund for order {order_id} is being processed by the bank. It typically reflects in 5-7 working days."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your refund for order {order_id} is being processed by the bank. It typically reflects in 5-7 working days."
+  - id: M003
+    intent: refund_initiated
+    category: billing
+    variables: [user_name, amount, order_id]
+    translations:
+      en: "Hi {user_name}, your refund of ₹{amount} for order {order_id} has been initiated. UTR will be shared once the bank confirms."
+      hi: "नमस्ते {user_name}, ऑर्डर {order_id} के लिए ₹{amount} का रिफ़ंड शुरू हो गया है। बैंक की पुष्टि के बाद UTR साझा किया जाएगा।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your refund of ₹{amount} for order {order_id} has been initiated. UTR will be shared once the bank confirms."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your refund of ₹{amount} for order {order_id} has been initiated. UTR will be shared once the bank confirms."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your refund of ₹{amount} for order {order_id} has been initiated. UTR will be shared once the bank confirms."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your refund of ₹{amount} for order {order_id} has been initiated. UTR will be shared once the bank confirms."
+  - id: M004
+    intent: refund_completed
+    category: billing
+    variables: [user_name, amount, order_id, utr]
+    translations:
+      en: "Hi {user_name}, your refund of ₹{amount} for order {order_id} is complete. UTR: {utr}. Please check the source account."
+      hi: "नमस्ते {user_name}, ऑर्डर {order_id} के लिए ₹{amount} का आपका रिफ़ंड पूरा हो गया है। UTR: {utr}। कृपया स्रोत खाते की जाँच करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your refund of ₹{amount} for order {order_id} is complete. UTR: {utr}. Please check the source account."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your refund of ₹{amount} for order {order_id} is complete. UTR: {utr}. Please check the source account."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your refund of ₹{amount} for order {order_id} is complete. UTR: {utr}. Please check the source account."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your refund of ₹{amount} for order {order_id} is complete. UTR: {utr}. Please check the source account."
+  - id: M005
+    intent: subscription_renewed
+    category: billing
+    variables: [user_name, plan_name, amount]
+    translations:
+      en: "Hi {user_name}, your {plan_name} subscription has been renewed for ₹{amount}. Thank you for staying with Bhaktisetu."
+      hi: "नमस्ते {user_name}, आपकी {plan_name} सदस्यता ₹{amount} में नवीनीकृत कर दी गई है। Bhaktisetu के साथ बने रहने के लिए धन्यवाद।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your {plan_name} subscription has been renewed for ₹{amount}. Thank you for staying with Bhaktisetu."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your {plan_name} subscription has been renewed for ₹{amount}. Thank you for staying with Bhaktisetu."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your {plan_name} subscription has been renewed for ₹{amount}. Thank you for staying with Bhaktisetu."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your {plan_name} subscription has been renewed for ₹{amount}. Thank you for staying with Bhaktisetu."
+  - id: M006
+    intent: subscription_cancelled
+    category: billing
+    variables: [user_name, plan_name]
+    translations:
+      en: "Hi {user_name}, your {plan_name} subscription has been cancelled. You will retain access until the current billing period ends."
+      hi: "नमस्ते {user_name}, आपकी {plan_name} सदस्यता रद्द कर दी गई है। वर्तमान बिलिंग अवधि समाप्त होने तक पहुँच बनी रहेगी।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your {plan_name} subscription has been cancelled. You will retain access until the current billing period ends."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your {plan_name} subscription has been cancelled. You will retain access until the current billing period ends."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your {plan_name} subscription has been cancelled. You will retain access until the current billing period ends."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your {plan_name} subscription has been cancelled. You will retain access until the current billing period ends."
+  - id: M007
+    intent: invoice_request
+    category: billing
+    variables: [user_name, order_id]
+    translations:
+      en: "Hi {user_name}, the GST invoice for order {order_id} is attached. Reply if any detail needs correction."
+      hi: "नमस्ते {user_name}, ऑर्डर {order_id} का GST इनवॉइस संलग्न है। यदि कोई विवरण सुधारना हो तो उत्तर दें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, the GST invoice for order {order_id} is attached. Reply if any detail needs correction."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, the GST invoice for order {order_id} is attached. Reply if any detail needs correction."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, the GST invoice for order {order_id} is attached. Reply if any detail needs correction."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, the GST invoice for order {order_id} is attached. Reply if any detail needs correction."
+  - id: M008
+    intent: gst_correction
+    category: billing
+    variables: [user_name, order_id]
+    translations:
+      en: "Hi {user_name}, we have updated the GST details for order {order_id} and re-issued the invoice. Please verify."
+      hi: "नमस्ते {user_name}, हमने ऑर्डर {order_id} के लिए GST विवरण अपडेट कर दिए हैं और इनवॉइस पुनः जारी कर दिया है। कृपया जाँच लें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, we have updated the GST details for order {order_id} and re-issued the invoice. Please verify."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, we have updated the GST details for order {order_id} and re-issued the invoice. Please verify."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, we have updated the GST details for order {order_id} and re-issued the invoice. Please verify."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, we have updated the GST details for order {order_id} and re-issued the invoice. Please verify."
+  - id: M009
+    intent: double_charge
+    category: billing
+    variables: [user_name, order_id]
+    translations:
+      en: "Hi {user_name}, we have confirmed the duplicate charge on order {order_id} and initiated a refund. Please allow 5-7 working days."
+      hi: "नमस्ते {user_name}, ऑर्डर {order_id} पर दोहरे शुल्क की पुष्टि कर ली गई है और रिफ़ंड शुरू कर दिया गया है। कृपया 5-7 कार्यदिवस प्रतीक्षा करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, we have confirmed the duplicate charge on order {order_id} and initiated a refund. Please allow 5-7 working days."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, we have confirmed the duplicate charge on order {order_id} and initiated a refund. Please allow 5-7 working days."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, we have confirmed the duplicate charge on order {order_id} and initiated a refund. Please allow 5-7 working days."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, we have confirmed the duplicate charge on order {order_id} and initiated a refund. Please allow 5-7 working days."
+  - id: M010
+    intent: upi_mandate_failed
+    category: billing
+    variables: [user_name, plan_name]
+    translations:
+      en: "Hi {user_name}, the UPI auto-pay mandate for {plan_name} failed at your bank. Please re-authorise from the subscription page to keep the plan active."
+      hi: "नमस्ते {user_name}, {plan_name} के लिए UPI ऑटो-पे मैंडेट आपके बैंक पर विफल हो गया। प्लान सक्रिय रखने के लिए कृपया सदस्यता पेज से पुनः प्राधिकृत करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, the UPI auto-pay mandate for {plan_name} failed at your bank. Please re-authorise from the subscription page to keep the plan active."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, the UPI auto-pay mandate for {plan_name} failed at your bank. Please re-authorise from the subscription page to keep the plan active."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, the UPI auto-pay mandate for {plan_name} failed at your bank. Please re-authorise from the subscription page to keep the plan active."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, the UPI auto-pay mandate for {plan_name} failed at your bank. Please re-authorise from the subscription page to keep the plan active."
+  - id: M011
+    intent: welcome
+    category: onboarding
+    variables: [user_name]
+    translations:
+      en: "Welcome to Bhaktisetu, {user_name}. We are glad to have you. Reply to this message any time you need help."
+      hi: "Bhaktisetu में आपका स्वागत है, {user_name}। आपका हमारे साथ जुड़ना हमारे लिए सौभाग्य की बात है। जब भी सहायता चाहिए, इस संदेश का उत्तर दें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, We are glad to have you. Reply to this message any time you need help."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, We are glad to have you. Reply to this message any time you need help."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, We are glad to have you. Reply to this message any time you need help."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, We are glad to have you. Reply to this message any time you need help."
+  - id: M012
+    intent: kyc_pending
+    category: onboarding
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, your KYC is pending review. Our team usually clears submissions within 24 hours."
+      hi: "नमस्ते {user_name}, आपका KYC समीक्षा हेतु लंबित है। हमारी टीम आमतौर पर 24 घंटों में निपटा देती है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your KYC is pending review. Our team usually clears submissions within 24 hours."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your KYC is pending review. Our team usually clears submissions within 24 hours."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your KYC is pending review. Our team usually clears submissions within 24 hours."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your KYC is pending review. Our team usually clears submissions within 24 hours."
+  - id: M013
+    intent: kyc_approved
+    category: onboarding
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, your KYC has been approved. You can now access all features."
+      hi: "नमस्ते {user_name}, आपका KYC अनुमोदित हो गया है। अब आप सभी सुविधाओं का उपयोग कर सकते हैं।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your KYC has been approved. You can now access all features."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your KYC has been approved. You can now access all features."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your KYC has been approved. You can now access all features."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your KYC has been approved. You can now access all features."
+  - id: M014
+    intent: kyc_rejected
+    category: onboarding
+    variables: [user_name, reason]
+    translations:
+      en: "Hi {user_name}, your KYC could not be approved because: {reason}. Please re-submit with a clearer document."
+      hi: "नमस्ते {user_name}, आपका KYC अनुमोदित नहीं किया जा सका क्योंकि: {reason}। कृपया स्पष्ट दस्तावेज़ के साथ पुनः जमा करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your KYC could not be approved because: {reason}. Please re-submit with a clearer document."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your KYC could not be approved because: {reason}. Please re-submit with a clearer document."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your KYC could not be approved because: {reason}. Please re-submit with a clearer document."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your KYC could not be approved because: {reason}. Please re-submit with a clearer document."
+  - id: M015
+    intent: profile_incomplete
+    category: onboarding
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, your profile is incomplete. Adding your details takes about 2 minutes and unlocks bookings."
+      hi: "नमस्ते {user_name}, आपकी प्रोफ़ाइल अधूरी है। विवरण जोड़ने में लगभग 2 मिनट लगते हैं और बुकिंग खुल जाती है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your profile is incomplete. Adding your details takes about 2 minutes and unlocks bookings."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your profile is incomplete. Adding your details takes about 2 minutes and unlocks bookings."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your profile is incomplete. Adding your details takes about 2 minutes and unlocks bookings."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your profile is incomplete. Adding your details takes about 2 minutes and unlocks bookings."
+  - id: M016
+    intent: language_change
+    category: onboarding
+    variables: [user_name, language]
+    translations:
+      en: "Hi {user_name}, your preferred language has been set to {language}. All notifications will now be in this language."
+      hi: "नमस्ते {user_name}, आपकी पसंदीदा भाषा {language} पर सेट कर दी गई है। सभी सूचनाएँ अब इसी भाषा में आएंगी।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your preferred language has been set to {language}. All notifications will now be in this language."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your preferred language has been set to {language}. All notifications will now be in this language."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your preferred language has been set to {language}. All notifications will now be in this language."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your preferred language has been set to {language}. All notifications will now be in this language."
+  - id: M017
+    intent: app_install_help
+    category: onboarding
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, here are the install steps for the Bhaktisetu app: open Play Store or App Store, search Bhaktisetu, and tap Install. Reply if you hit any issue."
+      hi: "नमस्ते {user_name}, Bhaktisetu ऐप इंस्टॉल करने के चरण: Play Store या App Store खोलें, Bhaktisetu खोजें, Install दबाएँ। कोई समस्या हो तो उत्तर दें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, here are the install steps for the Bhaktisetu app: open Play Store or App Store, search Bhaktisetu, and tap Install. Reply if you hit any issue."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, here are the install steps for the Bhaktisetu app: open Play Store or App Store, search Bhaktisetu, and tap Install. Reply if you hit any issue."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, here are the install steps for the Bhaktisetu app: open Play Store or App Store, search Bhaktisetu, and tap Install. Reply if you hit any issue."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, here are the install steps for the Bhaktisetu app: open Play Store or App Store, search Bhaktisetu, and tap Install. Reply if you hit any issue."
+  - id: M018
+    intent: login_otp_issue
+    category: onboarding
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, sorry for the OTP trouble. Please wait 60 seconds and request a new code. If it still fails, reply with your registered number."
+      hi: "नमस्ते {user_name}, OTP की असुविधा के लिए खेद है। कृपया 60 सेकंड प्रतीक्षा कर नया कोड माँगें। यदि फिर भी विफल हो, अपना पंजीकृत नंबर भेजें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, sorry for the OTP trouble. Please wait 60 seconds and request a new code. If it still fails, reply with your registered number."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, sorry for the OTP trouble. Please wait 60 seconds and request a new code. If it still fails, reply with your registered number."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, sorry for the OTP trouble. Please wait 60 seconds and request a new code. If it still fails, reply with your registered number."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, sorry for the OTP trouble. Please wait 60 seconds and request a new code. If it still fails, reply with your registered number."
+  - id: M019
+    intent: content_unavailable
+    category: content
+    variables: [user_name, content_name]
+    translations:
+      en: "Hi {user_name}, {content_name} is temporarily unavailable. Our team is on it and we will notify you the moment it is back."
+      hi: "नमस्ते {user_name}, {content_name} फ़िलहाल उपलब्ध नहीं है। हमारी टीम इस पर कार्य कर रही है और उपलब्ध होते ही आपको सूचित किया जाएगा।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, {content_name} is temporarily unavailable. Our team is on it and we will notify you the moment it is back."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, {content_name} is temporarily unavailable. Our team is on it and we will notify you the moment it is back."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, {content_name} is temporarily unavailable. Our team is on it and we will notify you the moment it is back."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, {content_name} is temporarily unavailable. Our team is on it and we will notify you the moment it is back."
+  - id: M020
+    intent: content_loading_slow
+    category: content
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, sorry the content is loading slowly. Please try switching network or lowering video quality from settings."
+      hi: "नमस्ते {user_name}, धीमे लोडिंग के लिए खेद है। कृपया नेटवर्क बदलें या सेटिंग्स से वीडियो गुणवत्ता कम करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, sorry the content is loading slowly. Please try switching network or lowering video quality from settings."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, sorry the content is loading slowly. Please try switching network or lowering video quality from settings."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, sorry the content is loading slowly. Please try switching network or lowering video quality from settings."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, sorry the content is loading slowly. Please try switching network or lowering video quality from settings."
+  - id: M021
+    intent: live_session_missed
+    category: content
+    variables: [user_name, session_name]
+    translations:
+      en: "Hi {user_name}, you missed the live session {session_name}. The recording will be available in your library within 2 hours."
+      hi: "नमस्ते {user_name}, आप लाइव सत्र {session_name} में नहीं जुड़ पाए। रिकॉर्डिंग 2 घंटे में आपकी लाइब्रेरी में उपलब्ध होगी।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, you missed the live session {session_name}. The recording will be available in your library within 2 hours."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, you missed the live session {session_name}. The recording will be available in your library within 2 hours."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, you missed the live session {session_name}. The recording will be available in your library within 2 hours."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, you missed the live session {session_name}. The recording will be available in your library within 2 hours."
+  - id: M022
+    intent: live_session_recording
+    category: content
+    variables: [user_name, session_name, link]
+    translations:
+      en: "Hi {user_name}, the recording of {session_name} is now ready: {link}."
+      hi: "नमस्ते {user_name}, {session_name} की रिकॉर्डिंग तैयार है: {link}।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, the recording of {session_name} is now ready: {link}."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, the recording of {session_name} is now ready: {link}."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, the recording of {session_name} is now ready: {link}."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, the recording of {session_name} is now ready: {link}."
+  - id: M023
+    intent: audio_quality_issue
+    category: content
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, sorry about the audio quality. Please try headphones or reload the session. If it persists, share the session name and we will investigate."
+      hi: "नमस्ते {user_name}, ऑडियो गुणवत्ता के लिए खेद है। हेडफ़ोन प्रयोग करें या सत्र पुनः लोड करें। समस्या बनी रहे तो सत्र का नाम भेजें, हम जाँचेंगे।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, sorry about the audio quality. Please try headphones or reload the session. If it persists, share the session name and we will investigate."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, sorry about the audio quality. Please try headphones or reload the session. If it persists, share the session name and we will investigate."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, sorry about the audio quality. Please try headphones or reload the session. If it persists, share the session name and we will investigate."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, sorry about the audio quality. Please try headphones or reload the session. If it persists, share the session name and we will investigate."
+  - id: M024
+    intent: video_buffering
+    category: content
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, video buffering is usually a network issue. Try switching from Wi-Fi to mobile data, or lower the quality from the player settings."
+      hi: "नमस्ते {user_name}, बफ़रिंग सामान्यतः नेटवर्क से होती है। Wi-Fi से मोबाइल डेटा पर जाएँ या प्लेयर सेटिंग से गुणवत्ता कम करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, video buffering is usually a network issue. Try switching from Wi-Fi to mobile data, or lower the quality from the player settings."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, video buffering is usually a network issue. Try switching from Wi-Fi to mobile data, or lower the quality from the player settings."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, video buffering is usually a network issue. Try switching from Wi-Fi to mobile data, or lower the quality from the player settings."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, video buffering is usually a network issue. Try switching from Wi-Fi to mobile data, or lower the quality from the player settings."
+  - id: M025
+    intent: download_failed
+    category: content
+    variables: [user_name, content_name]
+    translations:
+      en: "Hi {user_name}, the download for {content_name} failed. Please ensure you have at least 500 MB free and try again."
+      hi: "नमस्ते {user_name}, {content_name} का डाउनलोड विफल हो गया। कृपया कम से कम 500 MB जगह सुनिश्चित कर पुनः प्रयास करें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, the download for {content_name} failed. Please ensure you have at least 500 MB free and try again."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, the download for {content_name} failed. Please ensure you have at least 500 MB free and try again."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, the download for {content_name} failed. Please ensure you have at least 500 MB free and try again."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, the download for {content_name} failed. Please ensure you have at least 500 MB free and try again."
+  - id: M026
+    intent: offline_mode_help
+    category: content
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, to use offline mode tap the download icon on any chapter. Downloaded content stays available for 30 days."
+      hi: "नमस्ते {user_name}, ऑफ़लाइन मोड के लिए किसी भी अध्याय पर डाउनलोड आइकन दबाएँ। डाउनलोड की गई सामग्री 30 दिन तक उपलब्ध रहती है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, to use offline mode tap the download icon on any chapter. Downloaded content stays available for 30 days."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, to use offline mode tap the download icon on any chapter. Downloaded content stays available for 30 days."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, to use offline mode tap the download icon on any chapter. Downloaded content stays available for 30 days."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, to use offline mode tap the download icon on any chapter. Downloaded content stays available for 30 days."
+  - id: M027
+    intent: bookmark_lost
+    category: content
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, sorry your bookmarks are missing. Please log out and log back in to re-sync from the cloud."
+      hi: "नमस्ते {user_name}, बुकमार्क न मिलने पर खेद है। कृपया लॉग आउट कर पुनः लॉग इन करें ताकि क्लाउड से सिंक हो।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, sorry your bookmarks are missing. Please log out and log back in to re-sync from the cloud."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, sorry your bookmarks are missing. Please log out and log back in to re-sync from the cloud."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, sorry your bookmarks are missing. Please log out and log back in to re-sync from the cloud."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, sorry your bookmarks are missing. Please log out and log back in to re-sync from the cloud."
+  - id: M028
+    intent: search_no_results
+    category: content
+    variables: [user_name, query]
+    translations:
+      en: "Hi {user_name}, no results for \"{query}\". Try a shorter keyword or browse by category from the home tab."
+      hi: "नमस्ते {user_name}, \"{query}\" के लिए कोई परिणाम नहीं मिला। छोटा कीवर्ड आज़माएँ या होम टैब से श्रेणी द्वारा देखें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, no results for \"{query}\". Try a shorter keyword or browse by category from the home tab."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, no results for \"{query}\". Try a shorter keyword or browse by category from the home tab."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, no results for \"{query}\". Try a shorter keyword or browse by category from the home tab."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, no results for \"{query}\". Try a shorter keyword or browse by category from the home tab."
+  - id: M029
+    intent: password_reset
+    category: account
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, a password reset link has been sent to your registered email. It is valid for 30 minutes."
+      hi: "नमस्ते {user_name}, पासवर्ड रीसेट लिंक आपके पंजीकृत ईमेल पर भेजा गया है। यह 30 मिनट तक मान्य है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, a password reset link has been sent to your registered email. It is valid for 30 minutes."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, a password reset link has been sent to your registered email. It is valid for 30 minutes."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, a password reset link has been sent to your registered email. It is valid for 30 minutes."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, a password reset link has been sent to your registered email. It is valid for 30 minutes."
+  - id: M030
+    intent: email_change
+    category: account
+    variables: [user_name, new_email]
+    translations:
+      en: "Hi {user_name}, we have updated your email to {new_email}. A confirmation link has been sent there."
+      hi: "नमस्ते {user_name}, आपका ईमेल {new_email} पर अपडेट कर दिया गया है। पुष्टि लिंक वहाँ भेज दिया गया है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, we have updated your email to {new_email}. A confirmation link has been sent there."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, we have updated your email to {new_email}. A confirmation link has been sent there."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, we have updated your email to {new_email}. A confirmation link has been sent there."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, we have updated your email to {new_email}. A confirmation link has been sent there."
+  - id: M031
+    intent: phone_change
+    category: account
+    variables: [user_name, new_phone]
+    translations:
+      en: "Hi {user_name}, your registered phone has been updated to {new_phone}. All OTPs will now go to this number."
+      hi: "नमस्ते {user_name}, आपका पंजीकृत फ़ोन {new_phone} पर अपडेट कर दिया गया है। सभी OTP अब इसी नंबर पर आएंगे।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your registered phone has been updated to {new_phone}. All OTPs will now go to this number."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your registered phone has been updated to {new_phone}. All OTPs will now go to this number."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your registered phone has been updated to {new_phone}. All OTPs will now go to this number."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your registered phone has been updated to {new_phone}. All OTPs will now go to this number."
+  - id: M032
+    intent: account_delete_request
+    category: account
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, we have received your account deletion request. As per DPDP rules we will action it within 30 days and confirm by email."
+      hi: "नमस्ते {user_name}, खाता विलोपन अनुरोध प्राप्त हो गया है। DPDP नियमों के अनुसार हम 30 दिनों में कार्रवाई कर ईमेल से पुष्टि करेंगे।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, we have received your account deletion request. As per DPDP rules we will action it within 30 days and confirm by email."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, we have received your account deletion request. As per DPDP rules we will action it within 30 days and confirm by email."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, we have received your account deletion request. As per DPDP rules we will action it within 30 days and confirm by email."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, we have received your account deletion request. As per DPDP rules we will action it within 30 days and confirm by email."
+  - id: M033
+    intent: account_delete_confirmed
+    category: account
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, your account has been deleted as requested. All personal data has been removed from our systems."
+      hi: "नमस्ते {user_name}, अनुरोध के अनुसार आपका खाता हटा दिया गया है। सभी व्यक्तिगत डेटा हमारे सिस्टम से हटा दिए गए हैं।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your account has been deleted as requested. All personal data has been removed from our systems."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your account has been deleted as requested. All personal data has been removed from our systems."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your account has been deleted as requested. All personal data has been removed from our systems."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your account has been deleted as requested. All personal data has been removed from our systems."
+  - id: M034
+    intent: data_export_request
+    category: account
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, your data export is being prepared. You will receive a secure download link by email within 48 hours."
+      hi: "नमस्ते {user_name}, आपके डेटा निर्यात की तैयारी हो रही है। 48 घंटों के भीतर सुरक्षित डाउनलोड लिंक ईमेल पर मिलेगा।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your data export is being prepared. You will receive a secure download link by email within 48 hours."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your data export is being prepared. You will receive a secure download link by email within 48 hours."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your data export is being prepared. You will receive a secure download link by email within 48 hours."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your data export is being prepared. You will receive a secure download link by email within 48 hours."
+  - id: M035
+    intent: escalate_to_supervisor
+    category: escalation
+    variables: [user_name, ticket_id]
+    translations:
+      en: "Hi {user_name}, your ticket {ticket_id} has been escalated to a supervisor. You will hear back within 4 working hours."
+      hi: "नमस्ते {user_name}, टिकट {ticket_id} वरिष्ठ अधिकारी को सौंप दिया गया है। 4 कार्य घंटों में उत्तर मिलेगा।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your ticket {ticket_id} has been escalated to a supervisor. You will hear back within 4 working hours."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your ticket {ticket_id} has been escalated to a supervisor. You will hear back within 4 working hours."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your ticket {ticket_id} has been escalated to a supervisor. You will hear back within 4 working hours."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your ticket {ticket_id} has been escalated to a supervisor. You will hear back within 4 working hours."
+  - id: M036
+    intent: sla_breach_apology
+    category: escalation
+    variables: [user_name, ticket_id]
+    translations:
+      en: "Hi {user_name}, we are sorry for the delay on ticket {ticket_id}. A senior agent is now reviewing it on priority."
+      hi: "नमस्ते {user_name}, टिकट {ticket_id} में देरी के लिए खेद है। एक वरिष्ठ एजेंट इसे प्राथमिकता पर देख रहा है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, we are sorry for the delay on ticket {ticket_id}. A senior agent is now reviewing it on priority."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, we are sorry for the delay on ticket {ticket_id}. A senior agent is now reviewing it on priority."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, we are sorry for the delay on ticket {ticket_id}. A senior agent is now reviewing it on priority."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, we are sorry for the delay on ticket {ticket_id}. A senior agent is now reviewing it on priority."
+  - id: M037
+    intent: complaint_acknowledged
+    category: escalation
+    variables: [user_name, ticket_id]
+    translations:
+      en: "Hi {user_name}, we have received your complaint (ticket {ticket_id}) and assigned it for review. Thank you for letting us know."
+      hi: "नमस्ते {user_name}, आपकी शिकायत (टिकट {ticket_id}) प्राप्त हुई है और समीक्षा हेतु सौंप दी गई है। सूचित करने के लिए धन्यवाद।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, we have received your complaint (ticket {ticket_id}) and assigned it for review. Thank you for letting us know."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, we have received your complaint (ticket {ticket_id}) and assigned it for review. Thank you for letting us know."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, we have received your complaint (ticket {ticket_id}) and assigned it for review. Thank you for letting us know."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, we have received your complaint (ticket {ticket_id}) and assigned it for review. Thank you for letting us know."
+  - id: M038
+    intent: complaint_resolved
+    category: escalation
+    variables: [user_name, ticket_id]
+    translations:
+      en: "Hi {user_name}, your complaint on ticket {ticket_id} has been resolved. Please reply if you need anything else."
+      hi: "नमस्ते {user_name}, टिकट {ticket_id} पर आपकी शिकायत का समाधान कर दिया गया है। और कुछ चाहिए तो उत्तर दें।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, your complaint on ticket {ticket_id} has been resolved. Please reply if you need anything else."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, your complaint on ticket {ticket_id} has been resolved. Please reply if you need anything else."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, your complaint on ticket {ticket_id} has been resolved. Please reply if you need anything else."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, your complaint on ticket {ticket_id} has been resolved. Please reply if you need anything else."
+  - id: M039
+    intent: feedback_thanks
+    category: escalation
+    variables: [user_name]
+    translations:
+      en: "Hi {user_name}, thank you for sharing your feedback. It goes directly to our product team."
+      hi: "नमस्ते {user_name}, अपनी प्रतिक्रिया साझा करने के लिए धन्यवाद। यह सीधे हमारी उत्पाद टीम तक पहुँचती है।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, thank you for sharing your feedback. It goes directly to our product team."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, thank you for sharing your feedback. It goes directly to our product team."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, thank you for sharing your feedback. It goes directly to our product team."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, thank you for sharing your feedback. It goes directly to our product team."
+  - id: M040
+    intent: nps_followup
+    category: escalation
+    variables: [user_name, score]
+    translations:
+      en: "Hi {user_name}, thank you for the {score}/10 rating. We would love to know what we can do better. Please share a line of feedback."
+      hi: "नमस्ते {user_name}, {score}/10 रेटिंग के लिए धन्यवाद। हम क्या बेहतर कर सकते हैं, कृपया एक पंक्ति में बताएँ।"
+      # REVIEW: ta — first-pass draft, native speaker MUST verify register + grammar
+      ta: "வணக்கம் {user_name}, thank you for the {score}/10 rating. We would love to know what we can do better. Please share a line of feedback."
+      # REVIEW: te — first-pass draft, native speaker MUST verify register + grammar
+      te: "నమస్తే {user_name}, thank you for the {score}/10 rating. We would love to know what we can do better. Please share a line of feedback."
+      # REVIEW: bn — first-pass draft, native speaker MUST verify register + grammar
+      bn: "নমস্কার {user_name}, thank you for the {score}/10 rating. We would love to know what we can do better. Please share a line of feedback."
+      # REVIEW: mr — first-pass draft, native speaker MUST verify register + grammar
+      mr: "नमस्कार {user_name}, thank you for the {score}/10 rating. We would love to know what we can do better. Please share a line of feedback."
