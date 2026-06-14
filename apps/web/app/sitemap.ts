@@ -768,6 +768,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     alternates: { languages: langAlternates },
   }));
 
+  // R-Q3-G-003 Chennai soft-launch — Tamil-language city landing.
+  const taChennaiEntry = {
+    url: `${BASE_URL}/ta/chennai`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.85,
+  };
+
   const bookEntries = [
     { url: `${BASE_URL}/content/books`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
     ...bookSlugs.map((slug) => ({
@@ -866,6 +874,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...vedicYajnaEntries,
     ...bhaktiSaintEntries,
     ...langEntries,
+    taChennaiEntry,
     ...shlokaEntries,
     ...freePanditEntries,
     ...cityPujaEntries,
