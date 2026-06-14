@@ -18,6 +18,8 @@ Any lead missing one of these = `in_discussion`, not `qualified`.
 ## Pipeline kanban (founder updates weekly)
 
 > Replace `{{founder-confirms-name}}` and `{{founder-confirms-email}}` tokens only after founder verifies via LinkedIn/intro/cold reply. Do NOT fabricate names.
+>
+> **Per triage 2026-06-15**: Contact-person names REQUIRE `[VERIFY-FOUNDER]` prefix — agent does not fill from public sources without explicit founder verification. Account names (TCS, Infosys, ISKCON Bengaluru, etc.) are public org names and OK without prefix.
 
 ### Tier 1 — Corporate gifting (target 5 qualified)
 
