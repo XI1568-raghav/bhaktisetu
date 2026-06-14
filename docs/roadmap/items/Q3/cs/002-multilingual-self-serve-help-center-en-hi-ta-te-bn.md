@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q3
 month_target: 8
 priority: P0
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q3-E-005"]
@@ -42,7 +42,7 @@ handoff_notes: |
 tags: ["cs","self-serve","help","multilingual"]
 created_at: 2026-06-09T22:02:47.227Z
 updated_at: 2026-06-09T22:02:47.227Z
-shipped_at: null
+shipped_at: 2026-06-14T00:00:00Z
 verified_at: null
 killed_at: null
 killed_reason: null
