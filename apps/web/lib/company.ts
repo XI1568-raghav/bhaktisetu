@@ -28,8 +28,10 @@ export const COMPANY = {
   supportHours: 'Within 24 hours, Monday – Saturday',
 
   /**
-   * Set to true ONLY after Darshya is incorporated and you have the
-   * Certificate of Incorporation / GSTIN in hand. Until then, pages
+   * Set to true ONLY after the Section 8 Foundation is registered and you
+   * have the Certificate of Incorporation in hand. Per F-001 decision the
+   * platform operates as "Bhaktisetu Foundation" (Section 8 not-for-profit),
+   * NOT as a Private Limited company. Until the certificate lands, pages
    * render "Darshya is operated by an independent founder in India"
    * instead of claiming a corporate entity.
    */
@@ -37,9 +39,9 @@ export const COMPANY = {
 
   /** Filled when IS_INCORPORATED_VERIFIED becomes true. */
   legalEntity: null as null | {
-    /** "Darshya Technologies Private Limited" — exactly as on Certificate of Incorporation. */
+    /** "Bhaktisetu Foundation" — exactly as on the Section 8 Certificate of Incorporation. Never "Pvt. Ltd." per F-001. */
     name: string;
-    /** CIN issued by MCA, 21 chars. */
+    /** CIN issued by MCA, 21 chars (Section 8 prefix U85100…). */
     cin: string;
     /** GSTIN, 15 chars. Optional. */
     gstin?: string;
