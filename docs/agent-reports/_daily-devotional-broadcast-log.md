@@ -1,6 +1,8 @@
 # daily-devotional-broadcast log
 
 
+- 2026-06-14T08:02:33.851Z — dow=0 deity=Surya sent=0 failed=0 skipped=0
+
 - 2026-06-13T07:11:20.425Z — dow=6 deity=Shani sent=0 failed=0 skipped=0
 
 - 2026-06-12T08:09:26.919Z — dow=5 deity=Lakshmi sent=0 failed=0 skipped=0
