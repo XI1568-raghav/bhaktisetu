@@ -8,7 +8,7 @@ month_target: 1
 priority: P1
 status: in_progress
 agent_assignable: true
-founder_blocker: null
+founder_blocker: "architecture-decision-required-cf-pages-vs-vercel-vs-static-allowlist"
 depends_on: []
 blocks: [R-Q1-E-002]
 
@@ -46,10 +46,17 @@ agent_brief:
 handoff_notes: |
   2026-06-08 commit 7adbd87 shipped middleware + layout wiring. 146 pages still pending codemod.
   2026-06-10: created roadmap item from TASKS.md deferred list.
+  2026-06-15: BLOCKED — middleware.ts was reverted in 9c71e60 (same day as ship) because CF Pages
+  free-tier requires every non-static route to declare runtime='edge' when middleware exists.
+  292 of 370 routes are not edge-runtime. Founder-action required to pick path A (full edge migration),
+  B (move to Vercel), C (tighten static _headers), or D (defer). See
+  docs/engineering/R-Q1-E-001-csp-nonce-middleware-handoff.md for full decision matrix.
+  Middleware template parked at docs/engineering/templates/middleware.csp-nonce.ts.txt (NOT in
+  apps/web/ to avoid build trigger).
 
 tags: [security, csp, nonce, p1]
 created_at: 2026-06-10T19:00:00Z
-updated_at: 2026-06-10T19:00:00Z
+updated_at: 2026-06-15T00:00:00Z
 shipped_at: null
 verified_at: null
 killed_at: null
