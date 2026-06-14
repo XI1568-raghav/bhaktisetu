@@ -38,6 +38,17 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.darshya.online"
       }
+    },
+    "testflight": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false,
+        "autoIncrement": "buildNumber"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.darshya.online",
+        "EXPO_PUBLIC_ENVIRONMENT": "testflight"
+      }
     }
   },
   "submit": {
