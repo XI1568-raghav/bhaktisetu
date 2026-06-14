@@ -8,7 +8,7 @@ month_target: 1
 priority: P0
 status: in_progress
 agent_assignable: true
-founder_blocker: null
+founder_blocker: "GOOGLE_PLACES_API_KEY missing in Render env — see docs/supply/R-Q1-S-013-handoff.md"
 depends_on: []
 blocks: []
 
@@ -18,7 +18,7 @@ kpi:
   target: 100
   unit: "count"
   source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "SELECT COUNT(*) FROM leads WHERE role='TEMPLE' AND city='Bengaluru' AND (metadata->>'campaign')='R-Q1-S-013' AND ((email IS NOT NULL AND email NOT LIKE '%.temple.placeholder.in' AND (metadata->>'verified_email')::boolean=true) OR (metadata->>'verified_phone')::boolean=true);"
 
 revenue_impact:
   amount_inr: 0
@@ -29,15 +29,28 @@ est_hours: 8
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "100-row BLR temple seed shipped + idempotent upsert"
+  - "BLR-focused Google Places scraper shipped (env-or-noop on GOOGLE_PLACES_API_KEY)"
+  - "KPI SQL query exposed at apps/api/scripts/leads/blr-kpi.sql"
+  - "Founder-action-required handoff doc at docs/supply/R-Q1-S-013-handoff.md"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - "apps/api/scripts/leads/_temple-seed-blr.ts"
+    - "apps/api/scripts/leads/scrape-temples-blr.ts"
+    - "apps/api/scripts/leads/blr-kpi.sql"
+    - "docs/supply/R-Q1-S-013-handoff.md"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Re-run BLR temple scraper after GOOGLE_PLACES_API_KEY is set in Render env.
+    Verify KPI via apps/api/scripts/leads/blr-kpi.sql.
+    Surface verified-email gap in next supply lead-gen agent report.
 
 handoff_notes: |
   2026-06-10: bulk-imported from year-1 content sprint.
+  2026-06-14: env-or-noop code shipped (PR batch-2026-06-14). Static 100-row BLR seed
+              inserts on every run; verified email/phone enrichment unblocks the moment
+              founder sets GOOGLE_PLACES_API_KEY in Render env. See
+              docs/supply/R-Q1-S-013-handoff.md for the 4-step founder action.
 
 tags: ["scrape","verified","leads","p0"]
 created_at: 2026-06-10T20:35:05.804Z
