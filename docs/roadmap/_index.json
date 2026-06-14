@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T13:06:31.701Z",
+  "generatedAt": "2026-06-14T13:07:49.889Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -3200,7 +3200,7 @@
       "quarter": "Q1",
       "month_target": 1,
       "priority": "P0",
-      "status": "in_progress",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [],
@@ -3211,22 +3211,29 @@
         "target": 100,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT count(*) FROM users WHERE created_at >= '2026-01-01' AND created_at < '2026-04-01';"
       },
       "revenue_impact": {
         "amount_inr": 0,
         "confidence": "medium",
-        "basis": "Imported from year-1 plan; refine on first cycle review."
+        "basis": "Top-of-funnel signups, monetisation via downstream pujas/astrology; no direct revenue."
       },
       "est_hours": 12,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "5-channel playbook published at docs/marketing/100-signups-5-channels-playbook.md",
+        "Per-channel attribution captured in PostHog via ChannelAttribution component (utm_source + ref-prefix mapping)",
+        "Reddit/Twitter/WhatsApp/Telegram/Instagram channel-mix targets defined with weekly review cadence",
+        "Founder action checklist locked in playbook for execution"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/marketing/100-signups-5-channels-playbook.md",
+          "apps/web/components/ChannelAttribution.tsx",
+          "apps/web/components/ReferralCapture.tsx"
+        ]
       },
-      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n2026-06-14: playbook already existed (100-signups-5-channels-playbook.md, 193 lines).\n  Shipped the missing engineering half — ChannelAttribution component +\n  layout mount + 8 vitest cases. PostHog super property `signup_channel`\n  now fires on every first-touch URL with attribution params. Per-channel\n  funnel segmentation now possible without further code.\nExecution side (founder action checklist in playbook) remains the\nongoing org work to hit 100-signup KPI.\n",
       "tags": [
         "gtm",
         "signups",
@@ -3234,8 +3241,8 @@
         "p0"
       ],
       "created_at": "2026-06-10T20:11:37.313Z",
-      "updated_at": "2026-06-10T20:11:37.313Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-14T00:00:00.000Z",
+      "shipped_at": "2026-06-14T00:00:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
