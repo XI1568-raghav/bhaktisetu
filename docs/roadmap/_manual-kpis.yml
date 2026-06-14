@@ -1,6 +1,6 @@
 # Founder-updated KPIs that no system auto-tracks.
 # Update by hand; orchestrator reads on every cycle.
-last_updated: 2026-06-15
+last_updated: 2026-06-14
 values:
   verified_temples_count: 12
   press_hits_count: 1
@@ -14,10 +14,12 @@ values:
   wedding_vendors_photog_verified: 0   # target 30
   wedding_vendors_cater_verified: 0    # target 20
   wedding_vendors_decor_verified: 0    # target 15
-  verified_pandits_count_kolkata: 0    # R-Q3-S-002 target 25 (east expansion, Bengali-mother-tongue, Durga Puja Sep 21 anchor)
+  razorpay_live_active: 0              # R-Q1-F-003 target 1 — founder flips after Razorpay Section 8 KYC approval + live env paste
 # Stale-flag notes:
 #   uptime_monitors_active: clear stale=false once founder ships 4 UptimeRobot monitors
 #     (target 4: api-health, www-root, www-pujas, api-health-keyword)
 #     trigger: completion of docs/it/uptime-setup-checklist.md Steps 1-6
 #   cron_auth_token_set: 1 when CRON_AUTH_TOKEN paste complete in GH + Render
 #     trigger: gh workflow run daily-cron.yml returns green tick
+#   razorpay_live_active: 1 once Razorpay Section 8 KYC approved + live keys pasted in Render
+#     trigger: node apps/api/scripts/probe-razorpay-mode.mjs prints mode=live ok=true
