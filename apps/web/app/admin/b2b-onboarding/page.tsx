@@ -47,7 +47,7 @@ type StageKey = (typeof STAGES)[number]['key'];
 const SEED_CHAINS = [
  {
   chainName: 'ISKCON Bengaluru Region',
-  hqContact: 'admin@iskconblr.org',
+  hqContact: '<TBD-founder-collected>',
   temples: [
    { slug: 'iskcon-bengaluru-mahalakshmi', stage: 'prospect' as StageKey, manager: null },
    { slug: 'iskcon-bengaluru-rajajinagar', stage: 'prospect' as StageKey, manager: null },

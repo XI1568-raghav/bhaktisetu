@@ -41,7 +41,7 @@ For each chain prospect, founder must collect **before** kicking eng:
 ```sql
 -- Create chain_id if first temple in chain
 INSERT INTO temple_chains (id, name, hq_contact_email, commission_pct)
-VALUES (gen_random_uuid(), 'ISKCON Bengaluru Region', 'admin@iskconblr.org', 18.0)
+VALUES (gen_random_uuid(), 'ISKCON Bengaluru Region', '<TBD-founder-collected>', 18.0)
 RETURNING id;
 
 -- Attach temple to chain + mark whitelabel pending
