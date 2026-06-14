@@ -10,20 +10,30 @@ import path from 'node:path';
 const REPO = process.cwd();
 const QUEUE_DIR = path.join(REPO, 'docs/roadmap/_dryrun/queue');
 const ITEMS_DIR = path.join(REPO, 'docs/roadmap/items');
-const OUT = path.join(REPO, 'docs/roadmap/_ship-batch-2026-06-14.json');
-// Exclude all 42 already-shipped this session (round 1) + any items already merged on main per ship-log
+const OUT = path.join(REPO, 'docs/roadmap/_ship-batch-2026-06-15.json');
+// Round 3 exclude: all 80 prior shipped + 1 rejected (R-Q4-P-005 = #71)
 const EXCLUDE_IDS = new Set([
-  // pre-loop (2)
+  // R1 pre-loop (2)
   'R-Q1-IT-001', 'R-Q4-P-007',
-  // 40-loop (40)
+  // R1 loop (40)
   'R-Q1-CS-007', 'R-Q1-S-001', 'R-Q4-M-007', 'R-Q3-E-007', 'META-KPI-COLLECTOR-FIXES',
   'R-Q1-L-002', 'R-Q1-H-001', 'R-Q1-CS-005', 'R-Q1-S-002', 'R-Q1-M-011',
-  'SIDE-FIX-SEO-404', 'SIDE-FIX-SEO-404-', 'META-KPI-COLLECTOR-FIXES-', 'R-Q1-H-002', 'R-Q1-CS-003', 'R-Q4-S-005', 'R-Q2-M-012',
-  'R-Q2-E-013', 'R-Q1-CS-004', 'R-Q1-S-014', 'R-Q1-M-009', 'R-Q2-IT-003',
-  'R-Q3-S-007', 'R-Q3-M-014', 'R-Q2-E-011', 'R-Q1-S-004', 'R-Q1-S-005',
-  'R-Q4-S-007', 'R-Q2-S-011', 'R-Q1-S-007', 'R-Q1-S-010', 'R-Q4-S-009',
-  'R-Q1-S-008', 'R-Q1-S-009', 'R-Q1-S-011', 'R-Q1-CS-008', 'R-Q1-F-001',
-  'R-Q1-IT-004', 'R-Q1-M-002', 'R-Q1-S-012', 'R-Q1-G-001', 'R-Q2-L-001',
+  'SIDE-FIX-SEO-404', 'SIDE-FIX-SEO-404-', 'META-KPI-COLLECTOR-FIXES-', 'R-Q1-H-002', 'R-Q1-CS-003',
+  'R-Q4-S-005', 'R-Q2-M-012', 'R-Q2-E-013', 'R-Q1-CS-004', 'R-Q1-S-014',
+  'R-Q1-M-009', 'R-Q2-IT-003', 'R-Q3-S-007', 'R-Q3-M-014', 'R-Q2-E-011',
+  'R-Q1-S-004', 'R-Q1-S-005', 'R-Q4-S-007', 'R-Q2-S-011', 'R-Q1-S-007',
+  'R-Q1-S-010', 'R-Q4-S-009', 'R-Q1-S-008', 'R-Q1-S-009', 'R-Q1-S-011',
+  'R-Q1-CS-008', 'R-Q1-F-001', 'R-Q1-IT-004', 'R-Q1-M-002', 'R-Q1-S-012',
+  'R-Q1-G-001', 'R-Q2-L-001',
+  // R2 loop (40)
+  'R-Q1-S-003', 'R-Q2-M-001', 'R-Q1-CS-006', 'R-Q1-F-005', 'R-Q1-M-013',
+  'R-Q1-S-013', 'R-Q1-G-002', 'R-Q2-P-005', 'R-Q3-E-004', 'R-Q3-H-001',
+  'R-Q3-L-001', 'R-Q3-SA-002', 'R-Q4-IT-002', 'R-Q3-CS-001', 'R-Q2-F-001',
+  'R-Q1-M-012', 'R-Q2-S-001', 'R-Q1-G-003', 'R-Q1-P-002', 'R-Q4-E-006',
+  'R-Q3-L-002', 'R-Q4-SA-004', 'R-Q4-CS-001', 'R-Q3-F-002', 'R-Q1-M-014',
+  'R-Q2-S-002', 'R-Q2-G-001', 'R-Q3-E-006', 'R-Q4-L-001', 'R-Q4-SA-002',
+  'R-Q3-CS-002', 'R-Q4-F-003', 'R-Q4-M-004', 'R-Q4-S-006', 'R-Q2-G-002',
+  'R-Q2-P-003', 'R-Q4-E-004', 'R-Q1-L-001', 'R-Q1-SA-001', 'R-Q4-P-005',
 ]);
 const TARGET = 40;
 
