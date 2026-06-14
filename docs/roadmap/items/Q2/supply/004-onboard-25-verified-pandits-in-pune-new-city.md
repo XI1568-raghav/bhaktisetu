@@ -50,10 +50,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: structured handoff doc shipped at docs/supply/R-Q2-S-004-handoff.md — 6 target sub-segments (Pune Brahmin Mahasangh / top-5 temple pandits / Saraswati heritage / suburban Marathi / ISKCON Pune / antim sanskar), Marathi-mandatory language gate, 5-stage pipeline, cross-links to R-Q2-G-004 launch + R-Q2-S-007 temples + R-Q2-S-001 ISKCON. Status stays in_progress — KPI requires founder recruiting 25 humans, agent cannot do that. Platform-side: /priest-onboarding flow + Aadhaar gate + payout gate + Marathi UI strings + /priest/bookings dashboard all live and unblocked. Flip status:shipped + shipped_at once SQL returns 25.
 
-tags: ["supply","pandit","pune","new-city"]
+tags: ["supply","pandit","pune","new-city","founder-action-required"]
 created_at: 2026-06-09T21:55:22.029Z
-updated_at: 2026-06-09T21:55:22.029Z
+updated_at: 2026-06-15T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
