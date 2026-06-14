@@ -50,6 +50,18 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: Agent shipped scaffold + handoff. Status stays in_progress because KPI
+  (15K installs in 30 days) requires founder action: publish iOS+Android (R-Q3-E-002 +
+  R-Q3-E-003 founder-blockers U3+U4), run ₹2L/mo paid campaigns, send 5 influencer DMs,
+  send press release. See:
+    - docs/marketing/R-Q3-M-005-app-store-launch-handoff.md (master playbook + 5-lang
+      ASO listings + influencer shortlist + cold-DM scripts A/B/C + paid budget split)
+    - docs/marketing/R-Q3-M-005-postlaunch-retro-template.md (T+30 founder fills)
+    - docs/marketing/assets/store-screenshots-brief.md (Fiverr designer brief, ~₹4K)
+    - scripts/agents/cac-tripwire.mjs (env-or-noop weekly CAC monitor;
+      fires fold-to-NRI alert if blended > ₹40 for 2 consecutive weeks post launch+14d)
+  Founder flips status to shipped + adds shipped_at + verified_at after KPI hits
+  ≥ 12000 installs (80% of target) per retro template.
 
 tags: ["aso","mobile","launch","campaign"]
 created_at: 2026-06-09T22:02:53.908Z
