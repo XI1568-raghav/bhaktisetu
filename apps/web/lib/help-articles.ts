@@ -44,6 +44,8 @@ export interface HelpArticle {
  // Full markdown body (lazy: pulled when reader opens article).
  body: string;
  updatedAt: string;
+ // Native-speaker review attestation. null = pending review (non-en seed translations).
+ reviewed_by?: string | null;
 }
 
 // Seed articles — one per language, all covering the highest-volume support
@@ -107,6 +109,7 @@ Email support@darshya.online or chat with us on WhatsApp.`,
 
 support@darshya.online पर ईमेल करें या WhatsApp पर हमसे बात करें।`,
  updatedAt: "2026-06-14",
+ reviewed_by: null,
  },
  {
  slug: "how-to-book-a-puja",
@@ -129,6 +132,7 @@ support@darshya.online पर ईमेल करें या WhatsApp पर �
 
 support@darshya.online க்கு மின்னஞ்சல் அனுப்பவும் அல்லது WhatsApp இல் எங்களைத் தொடர்பு கொள்ளவும்.`,
  updatedAt: "2026-06-14",
+ reviewed_by: null,
  },
  {
  slug: "how-to-book-a-puja",
@@ -151,6 +155,7 @@ support@darshya.online க்கு மின்னஞ்சல் அனுப�
 
 support@darshya.online కి ఇమెయిల్ చేయండి లేదా WhatsApp లో మమ్మల్ని సంప్రదించండి.`,
  updatedAt: "2026-06-14",
+ reviewed_by: null,
  },
  {
  slug: "how-to-book-a-puja",
@@ -173,6 +178,7 @@ support@darshya.online కి ఇమెయిల్ చేయండి లేద
 
 support@darshya.online এ ইমেল করুন বা WhatsApp এ আমাদের সাথে চ্যাট করুন।`,
  updatedAt: "2026-06-14",
+ reviewed_by: null,
  },
  {
  slug: "how-to-book-a-puja",
@@ -195,6 +201,7 @@ support@darshya.online এ ইমেল করুন বা WhatsApp এ আম�
 
 support@darshya.online वर ईमेल करा किंवा WhatsApp वर आमच्याशी संपर्क साधा.`,
  updatedAt: "2026-06-14",
+ reviewed_by: null,
  },
 ];
 
