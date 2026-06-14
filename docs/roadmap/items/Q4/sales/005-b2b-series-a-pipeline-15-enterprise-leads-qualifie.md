@@ -17,27 +17,41 @@ kpi:
   current: 0
   target: 15
   unit: "count"
-  source: "supabase"
-  query: "TBD-populate-before-orchestrator-go-live"
+  source: "manual"
+  query: "grep -c '| qualified |' docs/sales/trackers/b2b-series-a-enterprise-pipeline.md"
 
 revenue_impact:
-  amount_inr: 0
+  amount_inr: 5000000
   confidence: medium
-  basis: "Imported from year-1 plan; refine on first cycle review."
+  basis: "Target ₹50L+ B2B pipeline by Q4-end per spec — 2 signed contracts × avg ₹25L setup."
 
 est_hours: 28
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Pipeline kanban tracker shipped with 5 tier categories"
+  - "Qualification 4-point rubric documented"
+  - "18+ named accounts seeded across 5 tiers"
+  - "Founder closes 15 qualified leads by Q4-end"
+  - "5 pilot agreements in discussion"
+  - "2 contracts signed"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - "docs/sales/b2b-series-a-pipeline-spec.md"
+    - "docs/sales/trackers/b2b-series-a-enterprise-pipeline.md"
+    - "docs/sales/R-Q4-SA-005-handoff.md"
+    - "docs/sales/strategic-partnerships-matrix-15.md"
+    - "docs/sales/cold-email-templates-10-use-cases.md"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Maintain pipeline tracker + cadence reminders. Agent cannot fabricate buyer names or qualify leads.
+    Founder owns: LinkedIn outreach, discovery calls, qualification rubric application, stage updates.
+    On stage change in tracker: surface weekly digest in agent-fleet-summary; do NOT auto-update KPI from outreach text alone.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: spec + tracker + handoff shipped (R-Q4-SA-005 batch). Founder owns 15-lead qualification.
+  Status stays in_progress until 15 qualified leads counted in tracker grep.
 
 tags: ["b2b","pipeline","enterprise","series-a"]
 created_at: 2026-06-09T22:09:26.259Z
