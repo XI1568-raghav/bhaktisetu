@@ -1,0 +1,7 @@
+# Build artifacts — regenerate via `node scripts/cs/render-macros.mjs`
+whatsapp/
+freshdesk/
+zoho/
+# Keep manifest.json + this file
+!manifest.json
+!.gitignore
