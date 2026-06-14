@@ -1,47 +1,47 @@
 {
-  "cycleId": "C-20260613T1746",
+  "cycleId": "C-20260614T0507",
   "spawnPlan": [
-    {
-      "role": "sales",
-      "itemIds": [
-        "R-Q1-S-003",
-        "R-Q1-S-006"
-      ],
-      "briefing": "Temple supply outreach in Varanasi + Bengaluru (priority cities). Queue is deep (42 items, 15 sales already queued) so be SURGICAL: produce ready-to-execute outreach packets — verified temple shortlist (15 per city with phone/email/priest contact), WhatsApp warm-intro scripts in Hindi/Kannada, follow-up cadence template (D0/D3/D7), reply tracking spreadsheet schema. Do NOT duplicate work in R-Q1-S-001/002/004/005/007/008/009/010/011/014 (all queued). Focus on the EXECUTION KIT founder uses for actual calls. Output: docs/agent-reports/sales/temple-outreach-kit-{city}-{date}.md per city. KPIs touched: temple_calls_made, verified_temples_count_varanasi, verified_temples_count_bengaluru, temple_reply_rate_pct.",
-      "estTokens": 12000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q1-CS-008",
-        "R-Q1-CS-009"
-      ],
-      "briefing": "CS macros + WhatsApp support automation. KPIs cs_macros_count, multilingual_macros_count, wa_bot_auto_resolve_pct all stale/empty. Ship: (1) 25 CS macros in EN+HI covering booking confirmation, refund request, priest no-show, payment failure, AR puja issues, NRI timezone, gaushala donation receipt, wedding muhurat re-check. Each macro: trigger keywords, EN body, HI body, escalation rule. Store as JSON in apps/api/src/cs/macros.json + render in /admin/cs/macros page. (2) Wire WA bot auto-reply skeleton (intent detection → macro lookup → reply or escalate). Use existing Fastify routes; do NOT add new infra. Skip items already queued: R-Q1-CS-001/003/004/005/007. KPI script fixes for cs_macros_count + multilingual_macros_count (real grep commands, not TBD).",
-      "estTokens": 14000
-    },
-    {
-      "role": "cmo",
-      "itemIds": [
-        "R-Q2-M-001",
-        "R-Q2-M-002"
-      ],
-      "briefing": "SEO pillar + cluster content (Q2 marketing). KPIs pillar_pages_shipped, cluster_articles_shipped, programmatic_pages_live all stale. Ship: (1) 2 pillar pages — \"Wedding Muhurat 2026 Complete Guide\" and \"Adopt-a-Temple India: Complete Guide\" — each 2500+ words, full schema.org Article markup, internal links, FAQ block. (2) 8 cluster articles supporting the pillars (4 per pillar). (3) Updated sitemap.xml + robots.txt entries. (4) FIX kpi script for pillar_pages_shipped + cluster_articles_shipped (replace TBD shell with real find command). Skip queued M items (R-Q1-M-009/011, R-Q2-M-011/012, R-Q4-M-007). All copy must be original, no fabricated stats, cite sources. Output goes to apps/web/app/guides/{slug}/page.tsx (MDX or TSX).",
-      "estTokens": 18000
-    },
     {
       "role": "cto",
       "itemIds": [
         "R-Q2-E-002",
-        "R-Q2-E-003"
+        "R-Q2-E-005"
       ],
-      "briefing": "Webhook idempotency + rate limiting hardening. KPIs webhook_idempotency_active, rate_limit_enforced both empty. Critical for payment reliability (Razorpay webhooks can retry → double-credit risk). Ship: (1) webhook_events table (event_id PK, source, payload_hash, processed_at) + middleware in apps/api/src/webhooks/* that checks/inserts before processing — return 200 idempotent on duplicate. (2) Fastify rate limiter @fastify/rate-limit on /api/* with per-route configs: /auth/* 5/min/IP, /book/* 20/min/user, /public/* 60/min/IP. Use in-memory store (free tier — no Redis). (3) Unit tests for both. (4) Fix the kpi-collector scripts for both metrics to grep real files. DO NOT touch items already queued (R-Q2-E-001, R-Q2-E-011/013, R-Q3-E-009, R-Q4-E-010/011, META-KPI-COLLECTOR-FIXES). Verify no conflict with R-Q1-IT-001/002 (queued, observability adjacent).",
-      "estTokens": 16000
+      "briefing": "Engineering hardening — items NOT in current queue. R-Q2-E-002: API performance optimization (target p95 < 500ms, fix obvious N+1 in routes used by booking/temple-list endpoints). R-Q2-E-005: webhook idempotency for Razorpay/Stripe callbacks (idempotency_key table + middleware to prevent double-charge on retry). Both are payment-path criticality. Produce: code diffs, migration files, and verification scripts. Stay within free-tier — no new services. Output to docs/agent-reports/cto/.",
+      "estTokens": 22000
+    },
+    {
+      "role": "cmo",
+      "itemIds": [
+        "R-Q2-M-003",
+        "R-Q2-M-004"
+      ],
+      "briefing": "Marketing distribution items NOT in queue. R-Q2-M-003: SEO pillar page draft (pick highest-volume keyword cluster — likely 'wedding muhurat 2026' or 'griha pravesh puja') with full content brief + first 2000-word draft including schema markup. R-Q2-M-004: Social content calendar for next 30 days (Instagram + Twitter + WhatsApp Status) — Diwali ramp begins, but also festival-of-the-week cadence. Deliverable: docs/agent-reports/cmo/R-Q2-M-003-pillar.md and R-Q2-M-004-calendar.md with copy ready to paste. No paid spend.",
+      "estTokens": 22000
+    },
+    {
+      "role": "sales",
+      "itemIds": [
+        "R-Q1-S-012",
+        "R-Q1-S-013"
+      ],
+      "briefing": "Sales supply-side items NOT already queued. R-Q1-S-012 and R-Q1-S-013 — pandit/astrologer recruitment expansion (verify exact scope from roadmap _index). Produce: ICP refinement based on current verified-temples zero baseline, outreach sequences (WA + email + call script) for next 50 prospects in Varanasi/Bengaluru/Mumbai (priority cities per CEO roadmap). Include CSV template founder can dial through. Artifacts in docs/agent-reports/sales/.",
+      "estTokens": 20000
+    },
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q2-CS-001",
+        "R-Q2-CS-002"
+      ],
+      "briefing": "CS items NOT in queue. R-Q2-CS-001 + R-Q2-CS-002 — likely WhatsApp bot auto-resolve playbook + multilingual macro expansion (Hindi/Tamil/Telugu/Marathi/Bengali — top 5 by user mix). Build: (1) Top-30 intent triage taxonomy with auto-resolve macros, (2) translation files JSON ready to drop into WA bot config, (3) escalation rules for tier-2 cities. Goal: get wa_bot_auto_resolve_pct above 60% baseline once metric collector is live. Output: docs/agent-reports/cs/.",
+      "estTokens": 18000
     }
   ],
   "deferrals": [],
   "kills": [],
   "firedTripwires": [],
-  "savedAt": "2026-06-13T17:48:02.480Z",
+  "savedAt": "2026-06-14T05:08:56.424Z",
   "consumed": true,
-  "consumedAt": "2026-06-13T17:50:04.868Z"
+  "consumedAt": "2026-06-14T05:10:52.817Z"
 }
