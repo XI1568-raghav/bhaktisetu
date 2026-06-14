@@ -52,7 +52,6 @@ handoff_notes: |
 tags: ["geo","mumbai","city-3","p0"]
 created_at: 2026-06-09T21:50:55.201Z
 updated_at: 2026-06-14T00:00:00.000Z
-shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
