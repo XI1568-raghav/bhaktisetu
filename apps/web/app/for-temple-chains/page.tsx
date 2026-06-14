@@ -115,7 +115,7 @@ export default function ForTempleChainsPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-surface-700">
             White-label donor CRM, 80G automation, puja bookings and live darshan — built on the same
-            infrastructure 50,000+ verified devotees already trust on darshya.online.
+            infrastructure thousands of devotees already trust on darshya.online.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link

@@ -6,7 +6,7 @@ owner_role: sales
 quarter: Q4
 month_target: 11
 priority: P0
-status: shipped
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q3-SA-002"]
@@ -51,7 +51,6 @@ handoff_notes: |
 tags: ["b2b","saas","pilot","commercial"]
 created_at: 2026-06-09T22:09:26.259Z
 updated_at: 2026-06-09T22:09:26.259Z
-shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
