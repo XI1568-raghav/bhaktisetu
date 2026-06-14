@@ -29,15 +29,27 @@ est_hours: 4
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "Foundation current account opened at ICICI/HDFC/Axis"
+  - "Razorpay + Stripe settlement bank switched to Foundation account"
+  - "Book-keeping spreadsheet (4 sheets) live + first month reconciled"
+  - "Monthly reconciliation cadence scheduled (founder + CA)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - "docs/finance/business-bank-account-setup-runbook.md"
+    - "docs/finance/foundation-books-FY26-27-template.csv"
+    - "docs/finance/R-Q1-F-002-handoff.md"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Agent portion complete (runbook + template + handoff shipped 2026-06-15).
+    Founder-action-required for bank account opening + settlement bank switch.
+    See R-Q1-F-002-handoff.md for 7-step founder sequence.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-13: business-bank-account-setup-runbook.md shipped.
+  2026-06-15: R-Q1-F-002-handoff.md + foundation-books-FY26-27-template.csv scaffolded.
+    Status stays in_progress — KPI business_bank_open requires founder branch visit + Razorpay/Stripe settlement bank switch.
+    Depends on R-Q1-F-001 (incorp decision) — bank account opens in chosen entity name.
 
 tags: ["finance","bank","p1"]
 created_at: 2026-06-09T21:50:13.304Z
