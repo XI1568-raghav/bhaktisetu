@@ -6,7 +6,7 @@ owner_role: cto
 quarter: Q4
 month_target: 12
 priority: P0
-status: shipped
+status: in_progress
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q4-E-003"]
@@ -42,7 +42,6 @@ handoff_notes: |
 tags: ["scale","load","k6","perf","mau"]
 created_at: 2026-06-09T22:09:23.580Z
 updated_at: 2026-06-09T22:09:23.580Z
-shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
