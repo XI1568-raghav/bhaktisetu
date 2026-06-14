@@ -32,6 +32,13 @@ const HeaderScrollShadow = dynamic(() => import('./HeaderScrollShadow'), {
  loading: () => null,
 });
 
+// R-Q3-L-002 (2026-06-14): GDPR / UK DPA cookie banner.
+// EU/UK consent CMP, reject-all parity per ICO. Re-prompts every 12 months.
+const CookieBanner = dynamic(() => import('./CookieBanner'), {
+ ssr: false,
+ loading: () => null,
+});
+
 // Phase D-5 (2026-06-05): WhatsAppButton dropped — duplicate chat FAB collision.
 // LiveChatWidget canonical (AI Asha + Claude API + escalate-to-ticket richer flow).
 // WhatsApp still reachable via Ask Pandit nav chip + /contact + /support/ticket/new.
@@ -43,6 +50,7 @@ export function DeferredClientWidgets() {
  <LiveChatWidget />
  <StickyAartiCta />
  <HeaderScrollShadow />
+ <CookieBanner />
  </>
  );
 }
