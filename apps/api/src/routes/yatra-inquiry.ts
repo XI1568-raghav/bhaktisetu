@@ -1,16 +1,31 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import Razorpay from 'razorpay';
 import { z } from 'zod';
+import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
+import { assertNotProductionDemo } from '../lib/payment-mode.js';
 
 /**
- * Yatra package inquiry intake. Affiliate program (U9) not approved yet —
- * collect inquiries via email so we can manually confirm pandit / hotel /
- * transport availability + send the final invoice in user's currency.
- *
- * When affiliate approves, swap this to a real booking + commission split.
+ * Yatra package commerce — inquiry intake (legacy) + real Razorpay checkout
+ * (R-Q2-P-003). The inquiry route stays for affiliate/handoff cases where
+ * pandit + hotel + transport availability needs manual confirmation; the new
+ * /create-order + /verify-payment endpoints wire a real Razorpay checkout
+ * for the 5 packaged tours we have hotel + pandit confirmations locked in
+ * for (Char Dham, Vaishno Devi, Tirupati, Kashi, Shirdi). Demo-mode keys
+ * mint synthetic order ids so dev + e2e stays green w/o real RZP creds.
  */
+
+assertNotProductionDemo('routes/yatra-inquiry');
+
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
+const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
+const razorpay = isDemoPayment
+  ? null
+  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
 
 const travelerSchema = z.object({
   name: z.string().max(120),
@@ -37,11 +52,88 @@ const inquirySchema = z.object({
   notes: z.string().max(2000).optional().default(''),
 });
 
+// New Razorpay checkout schema for the 5 packaged tours w/ locked availability.
+// Tighter shape — no free-form notes, no traveler dossier (collected separately
+// once payment lands).
+const createOrderSchema = z.object({
+  yatraSlug: z.string().min(1).max(80),
+  yatraTitle: z.string().max(160),
+  packageTier: z.enum(['economy', 'standard', 'premium']),
+  startDate: z.string().min(1).max(40),
+  travelersCount: z.number().int().min(1).max(50),
+  totalInr: z.number().int().min(500).max(2_000_000), // sanity bound; trust server price next iteration
+  buyer: z.object({
+    name: z.string().min(1).max(120),
+    email: z.string().email(),
+    phone: z.string().min(6).max(40),
+    country: z.string().max(80).optional().default('India'),
+  }),
+});
+
+const verifyPaymentSchema = z.object({
+  yatraBookingId: z.string().uuid(),
+  razorpay_order_id: z.string().min(1),
+  razorpay_payment_id: z.string().min(1),
+  razorpay_signature: z.string().min(1).optional(),
+});
+
 function refId(): string {
-  const bytes = crypto.randomBytes(4).toString('hex').toUpperCase();
+  const bytes = randomBytes(3).toString('hex').toUpperCase();
   const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   return `YTR-${ymd}-${bytes}`;
 }
+
+async function ensureYatraBookingsTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS yatra_bookings (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      reference TEXT UNIQUE NOT NULL,
+      yatra_slug TEXT NOT NULL,
+      yatra_title TEXT NOT NULL,
+      package_tier TEXT NOT NULL,
+      start_date TEXT NOT NULL,
+      travelers_count INT NOT NULL,
+      amount_inr NUMERIC(10,2) NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'INR',
+      buyer_name TEXT NOT NULL,
+      buyer_email TEXT NOT NULL,
+      buyer_phone TEXT,
+      buyer_country TEXT,
+      razorpay_order_id TEXT,
+      razorpay_payment_id TEXT,
+      status TEXT NOT NULL DEFAULT 'pending_payment',
+      created_at TIMESTAMPTZ DEFAULT now(),
+      paid_at TIMESTAMPTZ
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS yatra_bookings_status_idx ON yatra_bookings (status);`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS yatra_bookings_slug_idx ON yatra_bookings (yatra_slug);`,
+  );
+}
+
+type YatraBookingRow = {
+  id: string;
+  reference: string;
+  yatra_slug: string;
+  yatra_title: string;
+  package_tier: string;
+  start_date: string;
+  travelers_count: number;
+  amount_inr: string;
+  currency: string;
+  buyer_name: string;
+  buyer_email: string;
+  buyer_phone: string | null;
+  buyer_country: string | null;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string | null;
+  status: string;
+  created_at: Date;
+  paid_at: Date | null;
+};
 
 function esc(s: string | number): string {
   return String(s ?? '').replace(/[&<>"']/g, (c) => (
@@ -71,7 +163,10 @@ ${travelers ? `<h3 style="font-size:14px;margin:16px 0 4px">Travelers</h3><table
 </div></body></html>`;
 }
 
+export const __testing = { inquirySchema, createOrderSchema, verifyPaymentSchema, refId };
+
 export async function yatraInquiryRoutes(server: FastifyInstance) {
+  // ─── POST /                       Legacy inquiry intake (email + WA) ────
   server.post('/', async (request, reply) => {
     const parsed = inquirySchema.safeParse(request.body);
     if (!parsed.success) {
@@ -97,11 +192,6 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
 <p>— Darshya yatra desk</p>`,
     }).catch(() => null);
 
-    // WhatsApp handoff to ops + buyer (env-or-noop). Plan: Sprint 1 Sub-batch
-    // 5 — replace email-only flow with WA primary channel so ops responds
-    // within minutes, not hours. Templates 'yatra_inquiry_ops' (vars: ref,
-    // tier, pax, start) + 'yatra_inquiry_received' (vars: name, title, ref)
-    // must be pre-approved in WhatsApp Manager.
     let waDelivery: 'sent' | 'skipped' | 'failed' = 'skipped';
     if (whatsapp.enabled) {
       const opsTo = process.env.YATRA_OPS_WHATSAPP || '';
@@ -110,12 +200,7 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
           to: opsTo,
           template: 'yatra_inquiry_ops',
           languageCode: 'en',
-          variables: [
-            referenceId,
-            body.packageTier,
-            String(body.travelersCount),
-            body.startDate,
-          ],
+          variables: [referenceId, body.packageTier, String(body.travelersCount), body.startDate],
         }).catch(() => null);
       }
       if (body.buyer.phone) {
@@ -123,11 +208,7 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
           to: body.buyer.phone,
           template: 'yatra_inquiry_received',
           languageCode: 'en',
-          variables: [
-            body.buyer.name,
-            body.yatraTitle || body.yatraSlug,
-            referenceId,
-          ],
+          variables: [body.buyer.name, body.yatraTitle || body.yatraSlug, referenceId],
         }).catch(() => ({ ok: false }));
         waDelivery = r.ok ? 'sent' : 'failed';
       }
@@ -135,5 +216,142 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
 
     request.log.info({ referenceId, yatraSlug: body.yatraSlug, tier: body.packageTier, waDelivery }, '[yatra-inquiry]');
     return reply.status(200).send({ referenceId, ok: true, waDelivery });
+  });
+
+  // ─── POST /create-order       Real Razorpay checkout (R-Q2-P-003) ───────
+  // Replaces the prior setTimeout mock (HANDOFF 2026-05-27). Persists a
+  // pending_payment yatra_bookings row + returns a Razorpay order id + keyId
+  // so the web checkout component can open the gateway dialog. Demo-mode
+  // keys synthesize an order id so dev + smoke stays green w/o RZP creds.
+  server.post('/create-order', async (request, reply) => {
+    const parsed = createOrderSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
+    }
+    const body = parsed.data;
+    const reference = refId();
+    const amountInPaise = Math.round(body.totalInr * 100);
+
+    await ensureYatraBookingsTable();
+
+    let razorpayOrderId: string | null = null;
+    if (!isDemoPayment && razorpay) {
+      try {
+        const order = await razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: reference,
+          notes: {
+            yatraRef: reference,
+            yatraSlug: body.yatraSlug,
+            yatraTitle: body.yatraTitle,
+            packageTier: body.packageTier,
+            travelers: String(body.travelersCount),
+          },
+        });
+        razorpayOrderId = order.id;
+      } catch (err: any) {
+        server.log.error({ err }, 'razorpay.orders.create failed (yatra)');
+        return reply.code(502).send({ error: 'payment_gateway_unavailable' });
+      }
+    } else {
+      razorpayOrderId = `order_demo_${randomBytes(8).toString('hex')}`;
+    }
+
+    const rows = await prisma.$queryRawUnsafe<YatraBookingRow[]>(
+      `INSERT INTO yatra_bookings
+        (reference, yatra_slug, yatra_title, package_tier, start_date,
+         travelers_count, amount_inr, currency, buyer_name, buyer_email,
+         buyer_phone, buyer_country, razorpay_order_id, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'INR', $8, $9, $10, $11, $12, 'pending_payment')
+       RETURNING *;`,
+      reference,
+      body.yatraSlug,
+      body.yatraTitle,
+      body.packageTier,
+      body.startDate,
+      body.travelersCount,
+      body.totalInr,
+      body.buyer.name,
+      body.buyer.email,
+      body.buyer.phone,
+      body.buyer.country ?? 'India',
+      razorpayOrderId,
+    );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(500).send({ error: 'persist_failed' });
+    }
+
+    return reply.code(201).send({
+      yatraBookingId: row.id,
+      reference: row.reference,
+      amountInPaise,
+      currency: 'INR',
+      razorpayOrderId,
+      razorpayKeyId: isDemoPayment ? null : razorpayKeyId,
+      demo: isDemoPayment,
+    });
+  });
+
+  // ─── POST /verify-payment  Razorpay HMAC verify, flip status confirmed ──
+  server.post('/verify-payment', async (request, reply) => {
+    const parsed = verifyPaymentSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
+    }
+    const { yatraBookingId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = parsed.data;
+
+    await ensureYatraBookingsTable();
+    const rows = await prisma.$queryRawUnsafe<YatraBookingRow[]>(
+      `SELECT * FROM yatra_bookings WHERE id = $1::uuid LIMIT 1;`,
+      yatraBookingId,
+    );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(404).send({ error: 'booking_not_found' });
+    }
+    if (row.status === 'confirmed') {
+      return reply.send({ verified: true, reference: row.reference, alreadyConfirmed: true });
+    }
+
+    if (!isDemoPayment) {
+      if (!razorpay_signature) {
+        return reply.code(400).send({ error: 'missing_signature' });
+      }
+      if (razorpay_order_id !== row.razorpay_order_id) {
+        return reply.code(400).send({ error: 'order_id_mismatch' });
+      }
+      const expected = crypto
+        .createHmac('sha256', razorpayKeySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+      const a = Buffer.from(expected, 'utf8');
+      const b = Buffer.from(razorpay_signature, 'utf8');
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return reply.code(400).send({ error: 'invalid_signature' });
+      }
+    }
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE yatra_bookings
+         SET razorpay_payment_id = $1, status = 'confirmed', paid_at = now()
+       WHERE id = $2::uuid;`,
+      razorpay_payment_id,
+      yatraBookingId,
+    );
+
+    // Receipt to buyer (env-or-noop).
+    await sendEmail({
+      to: row.buyer_email,
+      subject: `Yatra booking confirmed — ${row.reference}`,
+      html: `<p>Namaste ${esc(row.buyer_name)},</p>
+<p>Your payment of ₹${esc(Number(row.amount_inr).toLocaleString('en-IN'))} for <strong>${esc(row.yatra_title)}</strong> (${esc(row.package_tier)}) is confirmed.</p>
+<p>Reference: <strong>${row.reference}</strong></p>
+<p>Our yatra desk will reach out within 24h with the day-by-day itinerary, hotel vouchers, pickup details and pandit contact.</p>
+<p>— Darshya yatra desk</p>`,
+    }).catch(() => null);
+
+    return reply.send({ verified: true, reference: row.reference, alreadyConfirmed: false });
   });
 }
