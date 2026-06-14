@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import AiChat from '../../components/AiChat';
+import VoicePanditButton from '../../components/VoicePanditButton';
 import {
  getAllConversations,
  deleteConversation,
@@ -346,6 +347,11 @@ export default function AskPanditPage() {
  </button>
  </div>
  </header>
+
+ {/* Voice Pandit Push-to-Talk (R-Q3-E-001) */}
+ <div className="px-4 pt-3">
+ <VoicePanditButton language={language} />
+ </div>
 
  {/* Chat Component */}
  <div className="flex-1 overflow-hidden">

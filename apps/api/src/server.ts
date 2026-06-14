@@ -95,6 +95,7 @@ import { b2bRoutes } from './routes/b2b.js';
 import { giftPujaRoutes } from './routes/gift-puja.js';
 import { yatraInquiryRoutes } from './routes/yatra-inquiry.js';
 import { dpdpRoutes } from './routes/dpdp.js';
+import { voicePanditRoutes } from './routes/voice-pandit.js';
 import { recordLatency, snapshotStats, startMetricsReporter } from './lib/route-metrics.js';
 import { prisma } from './lib/prisma.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
@@ -336,6 +337,8 @@ async function bootstrap() {
   await server.register(giftPujaRoutes, { prefix: '/api/v1/gift-puja' });
   await server.register(yatraInquiryRoutes, { prefix: '/api/v1/yatra-inquiry' });
   await server.register(dpdpRoutes, { prefix: '/api/v1/dpdp' });
+  // R-Q3-E-001 — Voice AI Pandit v1 (Whisper STT + Groq LLM + ElevenLabs TTS)
+  await server.register(voicePanditRoutes, { prefix: '/api/v1/voice-pandit' });
 
   // Start server
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;

@@ -20,7 +20,12 @@ Adding a new integration? Match this contract.
 | `RESEND_API_KEY` | `lib/email.ts` | `sendEmail` returns `{skipped:true}`; magic-link route returns `devLink` for manual testing |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | `routes/donations.ts` + booking | `isDemoPayment=true`; signature verification skipped, demo orderId returned |
 | `STORAGE_BUCKET` | `lib/r2.ts` (Supabase Storage adapter) | defaults to `darshya-media` if unset; bucket must exist in Supabase Storage |
-| `GROQ_API_KEY` | `services/ai.service.ts` | AI endpoints unavailable |
+| `GROQ_API_KEY` | `services/ai.service.ts` + `routes/voice-pandit.ts` (STT via Groq Whisper + LLM via Groq Llama) | AI endpoints unavailable; voice-pandit returns demo reply. **Note**: Whisper is hosted by Groq (NOT OpenAI) — `whisper-large-v3-turbo` runs on Groq's inference, single `GROQ_API_KEY` covers both STT and LLM. |
+| `ELEVENLABS_API_KEY` | `routes/voice-pandit.ts` (R-Q3-E-001 TTS) | voice-pandit returns transcript + reply text but empty audio (`demo:true`) |
+| `VOICE_PANDIT_STT_MODEL` | `routes/voice-pandit.ts` | defaults to `whisper-large-v3-turbo` (Groq-hosted Whisper, not OpenAI) |
+| `VOICE_PANDIT_LLM_MODEL` | `routes/voice-pandit.ts` | defaults to `llama-3.3-70b-versatile` |
+| `VOICE_PANDIT_TTS_MODEL` | `routes/voice-pandit.ts` | defaults to `eleven_turbo_v2_5` |
+| `VOICE_PANDIT_TTS_VOICE_EN` / `VOICE_PANDIT_TTS_VOICE_HI` | `routes/voice-pandit.ts` | ElevenLabs voice IDs; founder can swap without redeploy |
 | `SUPABASE_URL` | core auth | **required** — auth broken without it |
 | `SUPABASE_SERVICE_ROLE_KEY` | core auth | **required** |
 | `REDIS_URL` (or `UPSTASH_REDIS_URL`) | `lib/cache.ts` (panchang/temple/puja read-through cache) | no-op — every cache call falls through to DB. App keeps working, just hits DB harder. |
