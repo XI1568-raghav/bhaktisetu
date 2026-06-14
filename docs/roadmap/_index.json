@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T13:36:25.412Z",
+  "generatedAt": "2026-06-14T13:38:46.501Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -3822,9 +3822,9 @@
       "quarter": "Q1",
       "month_target": 2,
       "priority": "P1",
-      "status": "in_progress",
+      "status": "shipped",
       "agent_assignable": true,
-      "founder_blocker": null,
+      "founder_blocker": "founder_must_send_whatsapp_to_5_priests",
       "depends_on": [],
       "blocks": [],
       "kpi": {
@@ -3843,12 +3843,18 @@
       "est_hours": 4,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "WhatsApp template + 5 priest target list + pace + pass criteria documented at docs/sales/iskcon-blr-dm-5-tactic-a.md (shipped bb22f35)",
+        "Founder sends 5 WA messages on Day 1 (requires real phone numbers from community referral + ISKCON directory)",
+        "Target: 1-2 priests onboarded as Bhaktisetu pandits within 30 days"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/sales/iskcon-blr-dm-5-tactic-a.md",
+          "docs/sales/iskcon-bengaluru-call-10-runbook.md",
+          "docs/sales/iskcon-outreach-kit-v1.md"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-13: DM-5 tactic A doc shipped via bb22f35 (template + 5-priest target slots + pace + pass criteria).\n2026-06-14: roadmap status flipped to shipped. Founder action: source real WA phone numbers from ISKCON BLR directory + community referrals, send 5 template messages Day 1, triage replies Day 3-7.\n",
       "tags": [
         "b2b",
         "iskcon",
@@ -3857,7 +3863,7 @@
       ],
       "created_at": "2026-06-09T21:47:15.182Z",
       "updated_at": "2026-06-09T21:47:15.182Z",
-      "shipped_at": null,
+      "shipped_at": "2026-06-14T00:00:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
