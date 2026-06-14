@@ -42,14 +42,32 @@ handoff_notes: |
 tags: ["scale","load","k6","perf","mau"]
 created_at: 2026-06-09T22:09:23.580Z
 updated_at: 2026-06-09T22:09:23.580Z
-shipped_at: null
 verified_at: null
 killed_at: null
 killed_reason: null
 ---
 
 # Why this matters
-Imported placeholder. First orchestrator cycle emits sub-agent to populate full body.
+
+Q4 scale validation. 200K MAU + 100K concurrent peak (Diwali night) must hold p95 < 400ms with zero 5xx, otherwise revenue + brand trust both collapse at the annual peak event.
+
+# What shipped (2026-06-14, R-Q4-E-004-batch)
+
+- `scripts/load-test/diwali-spike.js` — k6 script Scenario B (100K concurrent ramp + sustained 60min peak)
+- `scripts/load-test/steady-200k.js` — k6 script Scenario A (50K concurrent steady-state)
+- `scripts/load-test/README.md` — run instructions, pre-flight, pass criteria, founder action items
+- Spec doc `docs/engineering/200k-load-test-plan.md` already authored 2026-06-13 (Scenario A/B/C, tools, bottleneck mitigation)
+
+# Founder action required (label: founder-action-required)
+
+- Provision k6 Cloud token OR 5 Lightsail nodes (~$25-300)
+- Approve staging env temp scale-up (Render plan + Supabase pooler conn raise) for test window
+- Schedule first Q4 dry-run end of Oct 2026 (Diwali = Nov 8 2026)
+- Run again Nov 1 as final validation
+- Apply bottleneck mitigation (Redis cache, Postgres index audit, CF Pages KV, CDN) BEFORE running test
 
 # Reference material
-- See agent_brief.context_files after cycle 1
+
+- `docs/engineering/200k-load-test-plan.md` — full plan
+- `docs/engineering/50k-load-test-plan.md` — Q3 predecessor (R-Q3-E-006)
+- k6 thresholds: p95 < 400ms, http_req_failed < 0.5%
