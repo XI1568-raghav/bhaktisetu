@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T15:40:04.849Z",
+  "generatedAt": "2026-06-14T16:02:48.391Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -2539,7 +2539,7 @@
           "apps/api/src/routes/admin-leads.ts"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-14: Q1 v1 template shipped to docs/legal/priest-contract-template.md.\n  Covers Aadhaar gate (Section 4), payout terms + gating (Section 2), video\n  proof mandatory (Section 3), 24h cancellation (Section 7), no-show penalty,\n  KYC, NDA, IP, dispute resolution Bengaluru, governing law India. Schedule A\n  commission grid 20-40% per business rule #3, NRI 40% per business rule #2.\n  Status stays in_progress pending counsel review bundled w/ R-Q1-L-002 lawyer\n  engagement — founder action required before flip to shipped.\n",
       "tags": [
         "legal",
         "contracts",
@@ -10889,7 +10889,7 @@
           "docs/launch-state.md"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15: Agent shipped scaffold + handoff. Status stays in_progress because KPI\n(15K installs in 30 days) requires founder action: publish iOS+Android (R-Q3-E-002 +\nR-Q3-E-003 founder-blockers U3+U4), run ₹2L/mo paid campaigns, send 5 influencer DMs,\nsend press release. See:\n  - docs/marketing/R-Q3-M-005-app-store-launch-handoff.md (master playbook + 5-lang\n    ASO listings + influencer shortlist + cold-DM scripts A/B/C + paid budget split)\n  - docs/marketing/R-Q3-M-005-postlaunch-retro-template.md (T+30 founder fills)\n  - docs/marketing/assets/store-screenshots-brief.md (Fiverr designer brief, ~₹4K)\n  - scripts/agents/cac-tripwire.mjs (env-or-noop weekly CAC monitor;\n    fires fold-to-NRI alert if blended > ₹40 for 2 consecutive weeks post launch+14d)\nFounder flips status to shipped + adds shipped_at + verified_at after KPI hits\n≥ 12000 installs (80% of target) per retro template.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
         "aso",
         "mobile",
