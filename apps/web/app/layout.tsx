@@ -40,6 +40,7 @@ import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { ReferralCapture } from "../components/ReferralCapture";
+import { ChannelAttribution } from "../components/ChannelAttribution";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
@@ -605,6 +606,7 @@ export default function RootLayout({
  <AdSenseScript />
  <NotificationPrompt />
  <ReferralCapture />
+ <ChannelAttribution />
  </CartProvider>
  </AuthProvider>
  </QueryProvider>
