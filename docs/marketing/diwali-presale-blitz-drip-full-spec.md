@@ -3,6 +3,13 @@
 > **Roadmap item**: R-Q4-M-008 (P0) · **Authored**: 2026-06-14 · **Status**: spec ready, founder action gated on ad accounts + Razorpay live keys
 > **Builds on**: `diwali-presale-blitz-spec.md` (capacity/pricing) + `diwali-2026-email-sequence.md` (4 emails)
 > **Closes**: R-Q4-M-008 sub-agent deliverables (8 WA + 6 emails + 3 landing variants + funnel instrumentation)
+>
+> 🚨 **BLOCKER (per triage 2026-06-15) — DO NOT TRIGGER SENDS WITHOUT FIXING ALL THREE**:
+> 1. **Scarcity copy** ("Mumbai 60% booked", "Bengaluru 5 slots left", etc.) MUST gate on live inventory pull from `inventory.service.getRemainingSlots(temple, festival)` at WA-send-time. Do NOT hardcode scarcity. Hardcoded scarcity = FTC + ASCI deceptive-practice + Meta WA Policy §4.3 fake-urgency violation.
+> 2. **WA templates** MUST submit as MARKETING category (not utility) — anything promotional is rejected by Meta if filed as utility.
+> 3. **Discount reconciliation** — msg2 says 15%, msg5 says 10%. Pick one figure and propagate across all 8 WA + 6 emails + 3 landing variants before any send.
+>
+> This PR merges the SPEC only. Sends remain gated on the three fixes above + Razorpay live keys.
 
 ## Scope
 
