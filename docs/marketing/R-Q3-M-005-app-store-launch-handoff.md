@@ -105,7 +105,7 @@ Asset spec drafted at `docs/marketing/assets/store-screenshots-brief.md` (founde
 | 1 | Gaur Gopal Das | A | 7M+ IG | Vaishnav, devotional discourse, India + NRI reach | ₹40-50K + product seed | Script A below |
 | 2 | Vipul Goyal | B | 1.5M IG | Comedy creator, Hindu cultural references resonate, broad reach | ₹20-30K | Script B below |
 | 3 | Atul Anaspure (Sanatan) | B | 800K YouTube | Sanatan dharma educator, organic devotional audience | ₹15-25K | Script B below |
-| 4 | Adi Shankaracharya (handle: @sanskritsadhna) | C | 200K IG | Sanskrit + slokas, high-engagement micro | ₹8-12K | Script C below |
+| 4 | [VERIFY-FOUNDER: replace with actual creator name] | C | 200K IG | Sanskrit + slokas, high-engagement micro | ₹8-12K | Script C below |
 | 5 | TBD devotional YouTuber 100K-500K (shortlist 10 below) | C | 100K-500K | Niche puja/aarti channels, low CPM, high intent | ₹5-10K each | Script C below |
 
 **Tier C shortlist (founder picks 1 of 10)**:
