@@ -38,6 +38,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: agent shipped per-angel personalization workbook + send-day
+  checklist + tracker. KPI is founder-action (founder must send 5 emails
+  from own inbox to named angels). Status remains in_progress until
+  founder ticks 5 send boxes in tracker. See docs/sales/R-Q1-SA-005-handoff.md
+  + docs/sales/trackers/R-Q1-SA-005-send-tracker.md.
 
 tags: ["fundraising","ff","investor","p1"]
 created_at: 2026-06-09T21:47:15.182Z
