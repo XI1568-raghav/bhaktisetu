@@ -6,7 +6,7 @@ owner_role: cto
 quarter: Q1
 month_target: 1
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -52,7 +52,7 @@ handoff_notes: |
 tags: ["api","filter","priests"]
 created_at: 2026-06-09T21:28:52.338Z
 updated_at: 2026-06-09T21:28:52.338Z
-shipped_at: null
+shipped_at: 2026-06-14T22:55:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null

@@ -1,5 +1,27 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+
+// R-Q1-E-013: zod query schema — optional specialization + deity strings,
+// trimmed + lowercased once at parse time so the Prisma where clause below
+// is exact-match deterministic. Empty string after trim is treated as
+// absent so `?specialization=&deity=ganesh` filters only on deity.
+export const publicPriestsQuerySchema = z.object({
+  specialization: z
+    .string()
+    .trim()
+    .max(64)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v.toLowerCase() : undefined)),
+  deity: z
+    .string()
+    .trim()
+    .max(64)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+});
+
+export const __testing = { publicPriestsQuerySchema };
 
 // Public, unauthenticated reads of verified+active priests and their
 // pandit-owned puja offerings. Mirror of priestRoutes' pandit-side CRUD
@@ -71,17 +93,29 @@ export async function priestsPublicRoutes(server: FastifyInstance) {
   // GET / — list verified active priests with active-offering counts.
   // Optional filters: ?specialization=marriage&deity=ganesh — applied
   // server-side so clients don't pull the full list and post-filter (E10).
+  // R-Q1-E-013: zod-validated query + 5-min Cache-Control on the response
+  // so CF edge + browser cache can absorb the directory-style traffic
+  // without hammering Prisma on every page load.
   server.get('/', async (request, reply) => {
-    const q = request.query as { specialization?: string; deity?: string };
-    const where: Record<string, unknown> = { isVerified: true, status: 'active' };
-    if (q.specialization && q.specialization.trim()) {
-      where.specializations = { has: q.specialization.trim().toLowerCase() };
+    const parsed = publicPriestsQuerySchema.safeParse(request.query ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'Invalid query parameters',
+        issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
+      });
     }
-    if (q.deity && q.deity.trim()) {
+    const q = parsed.data;
+    const where: Record<string, unknown> = { isVerified: true, status: 'active' };
+    if (q.specialization) {
+      where.specializations = { has: q.specialization };
+    }
+    if (q.deity) {
       where.offerings = {
-        some: { isActive: true, deity: { equals: q.deity.trim(), mode: 'insensitive' } },
+        some: { isActive: true, deity: { equals: q.deity, mode: 'insensitive' } },
       };
     }
+    // 5-minute public cache (matches getPublicPriests next.revalidate=300).
+    reply.header('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
     const priests = await prisma.priest.findMany({
       where,
       orderBy: { ratingAvg: 'desc' },
