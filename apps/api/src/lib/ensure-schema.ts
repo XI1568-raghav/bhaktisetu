@@ -503,6 +503,53 @@ const STATEMENTS: string[] = [
   END $$`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "astrologer_slug_map_user_id_idx"
     ON "astrologer_slug_map" ("user_id")`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // DPDP compliance — consent_log + dsar_requests
+  // Roadmap R-Q3-L-001 (2026-06-14). Routes: apps/api/src/routes/dpdp.ts
+  // ─────────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "consent_log" (
+    "id"          UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id"     UUID NOT NULL,
+    "purpose"     TEXT NOT NULL,
+    "action"      TEXT NOT NULL,
+    "source"      TEXT,
+    "ip_address"  TEXT,
+    "user_agent"  TEXT,
+    "created_at"  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT "consent_log_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "consent_log_user_purpose_idx"
+    ON "consent_log" ("user_id", "purpose", "created_at" DESC)`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'consent_log_user_id_fkey') THEN
+      ALTER TABLE "consent_log" ADD CONSTRAINT "consent_log_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
+
+  `CREATE TABLE IF NOT EXISTS "dsar_requests" (
+    "id"               UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id"          UUID NOT NULL,
+    "kind"             TEXT NOT NULL,
+    "status"           TEXT NOT NULL DEFAULT 'pending',
+    "note"             TEXT,
+    "sla_deadline"     TIMESTAMPTZ NOT NULL,
+    "resolved_at"      TIMESTAMPTZ,
+    "resolution_note"  TEXT,
+    "created_at"       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT "dsar_requests_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "dsar_requests_user_idx"
+    ON "dsar_requests" ("user_id", "created_at" DESC)`,
+  `CREATE INDEX IF NOT EXISTS "dsar_requests_sla_idx"
+    ON "dsar_requests" ("sla_deadline") WHERE "resolved_at" IS NULL`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dsar_requests_user_id_fkey') THEN
+      ALTER TABLE "dsar_requests" ADD CONSTRAINT "dsar_requests_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  END $$`,
 ];
 
 export async function ensureSchemaInvariants(
