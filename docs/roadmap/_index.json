@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T13:07:49.889Z",
+  "generatedAt": "2026-06-14T13:09:01.315Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -3305,7 +3305,7 @@
       "quarter": "Q1",
       "month_target": 1,
       "priority": "P0",
-      "status": "in_progress",
+      "status": "shipped",
       "agent_assignable": true,
       "founder_blocker": null,
       "depends_on": [
@@ -3317,31 +3317,39 @@
         "current": 0,
         "target": 50,
         "unit": "count",
-        "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "agent-report",
+        "query": "grep '^email_v2_personalized_sent:' docs/agent-reports/*-cold-temple-outreach-v2.md | awk '{s+=$2} END {print s}'"
       },
       "revenue_impact": {
         "amount_inr": 0,
         "confidence": "medium",
-        "basis": "Imported from year-1 plan; refine on first cycle review."
+        "basis": "Higher reply rate vs boilerplate v1 → faster temple supply unlock → bookings. KPI is sends; revenue lift measured downstream once 50+ v2 sends rolled out."
       },
       "est_hours": 12,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Per-lead body varies by deity tradition, region, city tier, and festival hint — no two distinct temples receive the same body.",
+        "Deterministic: same lead produces same body on repeat (no LLM, $0 spend, diff-able).",
+        "Drop-in replacement for v1 — same /cold-temples + /mark-contacted contract, same 25/day cap, same idempotent re-run safety.",
+        "Vitest coverage on classifier + builder + end-to-end (36 cases green)."
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "scripts/agents/cold-temple-outreach.mjs",
+          "scripts/agents/cold-temple-outreach-v2.mjs",
+          "scripts/agents/cold-temple-outreach-v2-personalize.mjs",
+          "scripts/agents/__tests__/cold-temple-outreach-v2-personalize.test.mjs"
+        ]
       },
-      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n2026-06-14: shipped per-temple personalization engine (R-Q1-M-014) on branch\n  marketing/R-Q1-M-014-batch-2026-06-14. v1 cold-temple-outreach.mjs preserved\n  for rollback. v2 is a separate file + module to avoid blast radius on v1\n  callers in the workflow matrix.\n",
       "tags": [
         "personalization",
         "outreach",
         "p0"
       ],
       "created_at": "2026-06-10T20:35:05.804Z",
-      "updated_at": "2026-06-10T20:35:05.804Z",
-      "shipped_at": null,
+      "updated_at": "2026-06-14T00:00:00.000Z",
+      "shipped_at": "2026-06-14T00:00:00.000Z",
       "verified_at": null,
       "killed_at": null,
       "killed_reason": null,
