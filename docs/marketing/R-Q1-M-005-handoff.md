@@ -2,6 +2,8 @@
 
 > **Status: founder-action-required.** Agent generates 21 posts/run; CSV importer + per-platform variants + posting tracker shipped. Buffer signup + bulk-import + posting + engagement remain founder-only.
 
+> **Brand-handle decision (per triage 2026-06-15)**: Agent standardized on `@bhaktisetu` for consistency with R-Q1-M-004 (#125), repo name, and GitHub org `XI1568-raghav/bhaktisetu`. CSV + scripts now use `@bhaktisetu` across all 21 posts. **Founder reverse this** if the production domain stays `darshya.online` and you prefer `@darshyaonline` as the public-facing handle.
+
 ## Why this matters
 
 Week-1 content presence is the cheapest activation lever Darshya has — Buffer free tier (1 user, 3 channels, 10 scheduled posts per channel) is sufficient to ship 21 posts × 7 days × 3 slots. Posts are pre-written by the `social-queue` agent (already in the daily fleet) and adapted per-platform by the new CSV exporter.
@@ -36,7 +38,7 @@ Or upgrade Buffer to Essentials ($6/mo) — defer until KPI shows engagement jus
 ## Founder action (one-time setup, ~20 min)
 
 1. **Buffer account** — sign up at buffer.com (free tier).
-2. **Connect 3 channels** — Twitter (`@darshyaonline` or founder personal), LinkedIn (Darshya company page), Instagram (`@darshya.online`). YouTube Shorts scheduling sits in YouTube Studio, not Buffer.
+2. **Connect 3 channels** — Twitter (`@bhaktisetu` or founder personal), LinkedIn (Darshya company page), Instagram (`@bhaktisetu`). YouTube Shorts scheduling sits in YouTube Studio, not Buffer.
 3. **Set posting timezone** — Asia/Kolkata (matches the `+05:30` ISO offsets in the CSV).
 4. **Bulk-upload** — Publish → Queue → "Add via CSV". Upload `docs/marketing/buffer-21-social-posts.csv`.
    - If Buffer rejects the schema, see "Buffer CSV schema variants" below — there are 2-3 column-name conventions across Buffer's lifetime; pick the one your account UI accepts.

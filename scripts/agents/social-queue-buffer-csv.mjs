@@ -89,7 +89,7 @@ function adaptForLinkedin(body, type) {
 // Instagram captions: keep body, add Reel-friendly CTA.
 function adaptForInstagram(body, type) {
   const cta = {
-    shloka: '\n\n📿 Save this for daily recitation. Follow @darshya.online for daily shlokas.',
+    shloka: '\n\n📿 Save this for daily recitation. Follow @bhaktisetu for daily shlokas.',
     temple: '\n\n🛕 Live darshan available on Darshya. Link in bio.',
     gaushala: '\n\n🐄 Adopt a gau-mata for ₹2,000/month. Link in bio.',
   }[type] ?? '';
