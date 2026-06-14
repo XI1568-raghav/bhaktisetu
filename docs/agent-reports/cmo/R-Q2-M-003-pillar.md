@@ -39,7 +39,7 @@
 | People also ask (5) | (1) Which months in 2026 have the most wedding muhurats? (2) What is the difference between vivah muhurat and shubh muhurat? (3) Are December 2026 weddings auspicious? (4) How do I check if a wedding date matches my kundli? (5) Why is Chaturmas (mid-July to mid-Nov 2026) blocked for weddings? |
 | Target word count | 2,000 words (1,900–2,200 acceptance band) |
 | Internal-link targets (5+, all routes verified to exist in `apps/web/app/`) | [`/weddings`](/weddings), [`/weddings/muhurat`](/weddings/muhurat), [`/muhurat`](/muhurat), [`/panchang`](/panchang), [`/astrology/kundli-milan`](/astrology/kundli-milan), [`/astrology/choghadiya`](/astrology/choghadiya), [`/astrology/manglik`](/astrology/manglik), [`/pujas`](/pujas) |
-| External citation needs | Shastric refs cited inline with verse + text name: **Muhurta Chintamani Ch. 6 v. 1–14 (Vivah Prakaranam)** for date-selection framework; **Brihat Samhita Ch. 103** (Varahamihira) for nakshatra-based marriage compatibility; **Dharmasindhu Vol. 3, Vivaha section** for Chaturmas prohibition; **Vasishtha Smriti Ch. 2** for guna-milan basis. No "vibe" claims permitted. |
+| External citation needs | Shastric refs cited inline with verse + text name: **Muhurta Chintamani Ch. 6 v. 1–14 (Vivah Prakaranam)** for date-selection framework; **Brihat Samhita Ch. 103** (Varahamihira) for nakshatra-based marriage compatibility; **Dharmasindhu Vol. 3, Vivaha section** for Chaturmas prohibition. Ashtakoot Guna Milan — established in classical Jyotisha (**Muhurta Chintamani Ch. 6** by Ram Daivajna, late 16th C, drawing on **Brihat Parashara Hora Shastra**). NOT from Vasishtha Smriti. <!-- TODO Founder: verify date count vs drikpanchang.com before publish. --> No "vibe" claims permitted. |
 | CTA placement | 3 CTAs: (1) After §3 "Auspicious Months 2026" table → "Get personalized muhurat for your kundli" → `/astrology/kundli-milan`; (2) After §5 "Compatibility & Nakshatra" → "Book a pandit for your chosen date" → `/weddings`; (3) Sticky right rail (desktop) + bottom fixed (mobile) → "Talk to a Vedic astrologer about your wedding date" → `/astrology` chat entry. |
 
 ---
@@ -390,7 +390,7 @@ Only with a city-adjustment. The published muhurat times are India-IST; for a US
 
 - [x] Word count of draft (§5 only): ~2,020 words (within 1,900–2,200 band, see verify command below)
 - [x] JSON-LD parses (Article + FAQPage + Event in a `@graph` array, all required fields present)
-- [x] Shastric citations cite verse + source name (Muhurta Chintamani Ch. 6 v. 1–14; Brihat Samhita Ch. 103 v. 8; Dharmasindhu Vol. 3 Vivaha; Vasishtha Smriti Ch. 2; Vedanga Jyotisha) — no vibe claims
+- [x] Shastric citations cite verse + source name (Muhurta Chintamani Ch. 6 v. 1–14; Brihat Samhita Ch. 103 v. 8; Dharmasindhu Vol. 3 Vivaha; Brihat Parashara Hora Shastra for Ashtakoot tradition; Vedanga Jyotisha) — no vibe claims. Per triage 2026-06-15: Ashtakoot Guna Milan re-cited to Muhurta Chintamani / Brihat Parashara tradition, NOT Vasishtha Smriti.
 - [x] Internal links ≥ 5, all routes verified to exist in `apps/web/app/`: `/weddings`, `/weddings/muhurat`, `/muhurat`, `/panchang`, `/astrology/kundli-milan`, `/astrology/choghadiya`, `/astrology/manglik`, `/pujas`
 - [x] Primary KW density: "wedding muhurat 2026" + "vivah muhurat 2026" appear in target band (founder to recount post-publish; agent-estimated 1.0–1.2%)
 - [x] No `lorem`, `TODO`, `TBD` in §5 draft
