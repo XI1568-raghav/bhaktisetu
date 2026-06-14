@@ -38,6 +38,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: city scaffold shipped (apps/web/lib/cities.ts + docs/geo/R-Q4-G-005-nagpur-launch.md). /city/nagpur SSG page auto-renders. KPI query still TBD — populate before orchestrator go-live. Status stays in_progress: success criteria 1-3 require founder action (5 pandit KYC + 5 temple MoU + 3 paid bookings). See handoff doc for sales tactics + dependencies.
 
 tags: ["geo","india","nagpur","tier2"]
 created_at: 2026-06-09T22:09:24.241Z
@@ -49,7 +50,14 @@ killed_reason: null
 ---
 
 # Why this matters
-Imported placeholder. First orchestrator cycle emits sub-agent to populate full body.
+
+Nagpur is the geographic centre of India (Zero Mile Marker) and the natural Vidarbha-region puja-demand catchment spanning Wardha, Amravati, Chandrapur, Gondia. 2.4M urban population with rising Tier-2 HNI Hindi-Marathi devotee base. Ganesh Utsav (Aug-Sep) is a city-wide economic event — natural demand spike for puja booking and live-darshan supply. Ramtek (40km) is a major Ramayana-trail pilgrimage anchor — cross-sells with Varanasi (R-Q1-G-002) and Ayodhya circuits.
+
+Onboarding city 10/25 hits the central-India quartile milestone in the 25-city expansion plan and unlocks Vidarbha as a regional cluster (4 satellite cities feed into Nagpur supply).
 
 # Reference material
-- See agent_brief.context_files after cycle 1
+
+- `docs/geo/R-Q4-G-005-nagpur-launch.md` — full handoff doc (success criteria, sales tactics, founder action items, KPI query draft).
+- `apps/web/lib/cities.ts` — Nagpur entry (city 26 in CITIES array; auto-renders /city/nagpur SSG).
+- `docs/geo/R-Q1-G-001-bengaluru-launch.md` — template precedent (city 1).
+- `docs/geo/R-Q1-G-003-mumbai-launch.md` — Maharashtra sister-city onboarding learnings.
