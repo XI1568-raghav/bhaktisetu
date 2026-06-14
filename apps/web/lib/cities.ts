@@ -488,6 +488,19 @@ export const CITIES: CityInfo[] = [
     popularPujas: ['ganesh-puja', 'satyanarayan-puja', 'durga-puja', 'navgraha-puja'],
     significance: 'Khajrana Ganesh built by Ahilyabai Holkar (1735) — Wednesday Ganesh visits draw 1L+ pilgrims. Indore is the recommended base for Ujjain Mahakaleshwar darshan (Bhasm Aarti requires 3-4am pickup from Indore).',
     pinPrefix: '452',
+    slug: 'bhopal',
+    name: 'Bhopal',
+    state: 'Madhya Pradesh',
+    hindi: 'भोपाल',
+    population: '2.4M',
+    description:
+      'Capital of Madhya Pradesh and gateway to central India\'s sacred geography. Home to Birla Mandir, Gufa Mandir (cave temple), and a short drive from Bhojpur Shiva temple — the largest single stone Shivling in India. Strong Marathi + Hindi devotional traditions.',
+    famousTemples: ['Birla Mandir (Lakshminarayan)', 'Gufa Mandir (Hanuman cave)', 'Bhojeshwar Mahadev (Bhojpur, 28km)', 'Khedapati Hanuman'],
+    popularDeities: ['shiva', 'hanuman', 'lakshmi'],
+    popularPujas: ['rudrabhishek', 'satyanarayan-puja', 'hanuman-chalisa-path', 'lakshmi-puja-diwali'],
+    nearbyYatra: ['ujjain', 'omkareshwar', 'maheshwar'],
+    significance: 'Central Indian hub for Madhya Pradesh devotional circuit. Bhojeshwar Shivling (~7.5ft) is the largest monolithic Shivling — unfinished 11th-century Paramara dynasty temple, attracts Mahashivratri yatra. Gateway to Ujjain Mahakaleshwar (190km) + Omkareshwar Jyotirlinga (270km).',
+    pinPrefix: '462',
   },
 ];
 
