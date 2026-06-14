@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T13:02:34.261Z",
+  "generatedAt": "2026-06-14T13:04:01.645Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -3274,7 +3274,7 @@
       "agent_brief": {
         "context_files": []
       },
-      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n2026-06-12: 14-post pack shipped. docs/marketing/build-in-public-twitter-pack-v1.md:\n  - Strategy: hook + concrete number + insight per post; no fluff; 1-2 hashtags max\n  - Topic rotation: solo-founder / devotional niche / free-tier discipline / autonomous orchestrator / supply struggle / NRI econ / open metrics / open ask / commitments\n  - All 14 tweets drafted, ≤ 280 chars verified\n  - Per-post review checklist (8 items)\n  - Scheduling cadence (10:30 AM IST weekdays, 11:00 AM IST weekends)\n  - Cross-post plan (LinkedIn + Instagram carousels)\n  - Metrics dashboard (benchmark: 1K impressions/tweet + 2% engagement + 3 DMs)\n  - Re-up plan post-day-14\nFOUNDER ACTION: review + edit each tweet (~10 min/post = 2.5 hr total) + schedule via Twitter native OR Hypefury + post + engage replies w/in 6h.\nCloses (partial): R-Q1-M-013. Status flips to shipped after 14/14 posts live + week-1 metrics logged.\n",
+      "handoff_notes": "2026-06-10: bulk-imported from year-1 content sprint.\n2026-06-12: 14-post pack shipped. docs/marketing/build-in-public-twitter-pack-v1.md:\n  - Strategy: hook + concrete number + insight per post; no fluff; 1-2 hashtags max\n  - Topic rotation: solo-founder / devotional niche / free-tier discipline / autonomous orchestrator / supply struggle / NRI econ / open metrics / open ask / commitments\n  - All 14 tweets drafted, ≤ 280 chars verified\n  - Per-post review checklist (8 items)\n  - Scheduling cadence (10:30 AM IST weekdays, 11:00 AM IST weekends)\n  - Cross-post plan (LinkedIn + Instagram carousels)\n  - Metrics dashboard (benchmark: 1K impressions/tweet + 2% engagement + 3 DMs)\n  - Re-up plan post-day-14\n2026-06-14: agent-side closeout for ship batch round 2. Added:\n  - docs/marketing/R-Q1-M-013-handoff.md (founder-action-required summary + DoD)\n  - docs/marketing/R-Q1-M-013-posting-tracker.md (per-tweet log w/ targets + week-1/week-2 aggregates)\nFOUNDER ACTION: review + edit each tweet (~10 min/post = 2.5 hr total) + schedule via Twitter native OR Hypefury + post + engage replies w/in 6h + fill tracker rows as posts go live.\nCloses (partial): R-Q1-M-013. Status flips to shipped after 14/14 posts live + week-1 metrics logged in tracker + KPI bumped in _manual-kpis.yml.\n",
       "tags": [
         "founder",
         "twitter",
