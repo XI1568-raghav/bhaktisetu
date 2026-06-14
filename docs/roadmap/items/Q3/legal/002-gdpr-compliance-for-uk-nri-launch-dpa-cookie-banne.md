@@ -6,7 +6,7 @@ owner_role: legal
 quarter: Q3
 month_target: 7
 priority: P0
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: 'U2'
 depends_on: ["R-Q3-G-001"]
@@ -42,14 +42,46 @@ handoff_notes: |
 tags: ["gdpr","uk","compliance","launch"]
 created_at: 2026-06-09T22:02:52.941Z
 updated_at: 2026-06-09T22:02:52.941Z
-shipped_at: null
+shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
 ---
 
 # Why this matters
-Imported placeholder. First orchestrator cycle emits sub-agent to populate full body.
+UK NRI launch (R-Q3-G-001) requires UK GDPR + DPA 2018 + PECR compliance before any UK
+resident data is processed. Material risk: ICO enforcement (up to 4% global turnover),
+loss of UK market access, processor contracts cannot be signed without DPA template.
+
+# What shipped (2026-06-14, R-Q3-L-002 batch)
+
+- `apps/web/components/CookieBanner.tsx` — ICO-grade banner: Essential always on, Analytics
+  (PostHog + Cloudflare), Marketing (Google Ads + Meta) opt-in. Reject-all sized = Accept-all.
+  Granular per-category toggle. 12-month re-prompt. localStorage `darshya_cookie_consent_v1`.
+  Mounted via `DeferredClientWidgets` (lazy, no SSR hit).
+- `apps/web/__tests__/CookieBanner.test.tsx` — 8 vitest cases (banner show/hide, reject-all,
+  accept-all, granular save, stale consent expiry, version mismatch, hasConsent helper).
+- `apps/web/app/legal/privacy-uk/page.tsx` — UK-specific privacy notice (UK GDPR rights,
+  Art 27 representative, ICO complaint route).
+- `apps/web/app/legal/cookies/page.tsx` — Cookie Policy with category table + ICO consent
+  language + re-prompt cadence.
+- `docs/legal/data-processing-agreement.md` — Standard processor DPA template (9 sections,
+  3 annexes, SCC/UK IDTA transfer language).
+- `docs/legal/records-of-processing-activities.md` — Article 30 ROPA with 7 processing
+  activities, lawful basis, retention, transfers, security per record.
+- `docs/legal/dpia-uk-launch.md` — DPIA covering 10 identified risks with inherent/residual
+  ratings + sign-off block.
+- Existing `docs/legal/gdpr-uk-compliance-spec.md` lawful basis matrix referenced.
 
 # Reference material
-- See agent_brief.context_files after cycle 1
+- `docs/legal/gdpr-uk-compliance-spec.md` (original spec)
+- `docs/legal/privacy-policy-v2-multi-geo.md`
+- `docs/legal/dpdp-user-rights-api-q2-spec.md`
+- UK ICO cookie guidance: https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guide-to-pecr/cookies-and-similar-technologies/
+
+# Founder action remaining
+
+- ICO registration (£40-£60/yr) at https://ico.org.uk/for-organisations/data-protection-fee/
+- Appoint UK Article 27 representative (~£500-£1500/yr or in-house at first UK hire)
+- External UK-qualified data protection counsel review of DPIA + UK privacy notice pre-go-live
+- Counter-sign DPAs with each processor (Stripe, Resend, Twilio, PostHog, Cloudflare, Render, Supabase)
