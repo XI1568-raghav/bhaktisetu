@@ -156,6 +156,16 @@ WEBHOOK_SECRET=$(grep RAZORPAY_WEBHOOK_SECRET apps/api/.env.local | cut -d'=' -f
 PAYLOAD='{"event":"payment.captured","payload":{"payment":{"entity":{"id":"pay_test_xxx","amount":100,"status":"captured","order_id":"order_xxx"}}}}'
 SIG=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')
 
+# Alternative — Node helper (cross-platform, no openssl required, matches server's timing-safe compare).
+# See R-Q1-F-005 batch 2026-06-14 for the script + smoke tests.
+#
+#   SIG=$(echo -n "$PAYLOAD" | RAZORPAY_WEBHOOK_SECRET="$WEBHOOK_SECRET" \
+#     node apps/api/scripts/verify/razorpay-webhook-sim.mjs sign --raw)
+#
+# To verify a signature you already have (e.g. one posted by Razorpay to a tunnel):
+#   echo -n "$PAYLOAD" | RAZORPAY_WEBHOOK_SECRET="$WEBHOOK_SECRET" \
+#     node apps/api/scripts/verify/razorpay-webhook-sim.mjs verify "$SIG"
+
 curl -X POST http://localhost:3001/api/v1/webhooks/razorpay \
   -H "Content-Type: application/json" \
   -H "X-Razorpay-Signature: $SIG" \
