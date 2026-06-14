@@ -47,18 +47,42 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: Engineering scaffold shipped — /city/mumbai page expanded (7 temples + 12 pujas + NRI anchor copy). Supply onboarding gated on founder 3-day Mumbai trip + KYC video calls + temple MoU. Full handoff: docs/geo/R-Q1-G-003-mumbai-launch.md
 
 tags: ["geo","mumbai","city-3","p0"]
 created_at: 2026-06-09T21:50:55.201Z
-updated_at: 2026-06-09T21:50:55.201Z
-shipped_at: null
+updated_at: 2026-06-14T00:00:00.000Z
+shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
 ---
 
-# Why this matters
-Imported placeholder. First orchestrator cycle emits sub-agent to populate full body.
+# Why Mumbai (city-3)
+
+Mumbai is the **highest LTV city** for the Darshya devotional super-app:
+
+- **Disposable income** — financial capital, 20M metro, highest per-capita spend on devotional services in India.
+- **NRI gift-puja anchor** — Gujarati + Marathi diaspora in US/UK/Canada are the single largest "send puja to relatives in India" lane. Mumbai is the canonical source city for this flow.
+- **Siddhivinayak halo** — globally recognized; drives organic SEO + word-of-mouth pull.
+- **ISKCON Juhu density** — Krishna-bhakt audience already mobilized; warm intro pathway via R-Q1-S-006.
+
+# What shipped (2026-06-14)
+
+- `apps/web/lib/cities.ts` — Mumbai entry expanded (4→7 temples, 3→12 pujas, 3→5 deities, NRI anchor copy)
+- `/city/mumbai` page auto-rerenders via SSG (revalidate=3600)
+- Handoff doc: `docs/geo/R-Q1-G-003-mumbai-launch.md`
 
 # Reference material
-- See agent_brief.context_files after cycle 1
+
+- `docs/geo/R-Q1-G-003-mumbai-launch.md` — full launch handoff
+- `docs/sales/mumbai-pandit-prospects-2026-06.md` — 25 pandit pipeline
+- `docs/sales/mumbai-pandit-q2-expansion.md` — Q2 supply expansion
+- `docs/sales/mumbai-temples-5-prospects.md` — 5 temple targets (Siddhivinayak + ISKCON Juhu + 3 others)
+- `docs/company/05-sales.md` — sales playbook
+- `apps/web/app/city/page.tsx` — city index
+- `apps/web/lib/cities.ts` — Mumbai entry
+
+# Founder blocker
+
+3-day Mumbai trip Q1 month 2 + 25 KYC video calls + 5 temple MoU. After both: KPI `city_active_mumbai` flips to 1.
