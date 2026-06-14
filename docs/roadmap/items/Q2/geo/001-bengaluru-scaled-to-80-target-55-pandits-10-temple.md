@@ -50,6 +50,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: Engineering scaffold shipped (docs/geo/R-Q2-G-001-bengaluru-scale.md). Page /city/bengaluru already rich (7 temples, 12 pujas). Scale milestone gated on sales execution: 25 new pandits (KYC + Aadhaar), 5 new temples (MoU), 2K MAU activation. PR labeled founder-action-required.
 
 tags: ["geo","bengaluru","scale"]
 created_at: 2026-06-09T21:55:18.035Z
@@ -61,7 +62,15 @@ killed_reason: null
 ---
 
 # Why this matters
-Imported placeholder. First orchestrator cycle emits sub-agent to populate full body.
+
+Bengaluru is the highest-ROI Indian metro for Darshya — largest NRI-origin remitter population, deep IT/Brahmin worker base, and ISKCON Bangalore Janmashtami draws 5 lakh devotees. Hitting 80% target (55 pandits + 10 temples + 2K MAU) proves the city-1 unit economics before replicating to Mumbai/Hyderabad/Delhi.
+
+R-Q1-G-001 established the base (5 pandits + 5 temples + /city/bengaluru live). Q2 scales the supply 6× and demand from zero to 2K MAU — gating live revenue from Bengaluru bookings.
 
 # Reference material
-- See agent_brief.context_files after cycle 1
+
+- Handoff: `docs/geo/R-Q2-G-001-bengaluru-scale.md` (sales playbook + KPI scrape + founder action items)
+- Page: `apps/web/lib/cities.ts` Bengaluru entry (7 temples, 12 pujas, 5 deities)
+- Q1 base: `docs/geo/R-Q1-G-001-bengaluru-launch.md`
+- Onboarding agent: `scripts/agents/cold-temple-outreach.mjs` (Bengaluru segment weekly)
+- Decision Agent KPI: `kpi.query` in this frontmatter (Supabase nightly scrape)
