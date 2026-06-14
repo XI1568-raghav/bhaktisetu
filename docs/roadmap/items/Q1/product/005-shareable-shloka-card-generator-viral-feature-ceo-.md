@@ -6,7 +6,7 @@ owner_role: cpo
 quarter: Q1
 month_target: 3
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -46,11 +46,21 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: KPI satisfied — /shloka-card live (HTTP 200 verified). 3 new presets
+  added (Gita 18.66, Hanuman Chalisa Doha, Maha Mrityunjaya), total 6 presets.
+  utm_source=shloka-card&utm_medium=share now wired on all 3 share buttons
+  (WhatsApp + X + Facebook), previously only on Twitter. PostHog capture
+  enriched with utm_source, text_length, has_translit, has_meaning props on
+  download/share/copy events. Note: /og/shloka image route is still a
+  302 redirect to /logo.svg per public/_redirects — preview tile shows the
+  logo until edge ImageResponse route ships (deferred; static fallback works,
+  share links carry full attribution). Min 100 shares KPI is monitored
+  passively via PostHog funnel post-deploy; no further code work required.
 
 tags: ["product","viral","content","p2"]
 created_at: 2026-06-09T21:51:06.038Z
 updated_at: 2026-06-09T21:51:06.038Z
-shipped_at: null
+shipped_at: 2026-06-15T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null

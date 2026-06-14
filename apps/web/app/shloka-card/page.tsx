@@ -33,6 +33,27 @@ const PRESETS = [
     meaning: 'Swift as mind, fast as wind, master of the senses, foremost among the wise.',
     source: 'Hanuman Stuti',
   },
+  {
+    label: 'Gita 18.66',
+    text: 'सर्वधर्मान्परित्यज्य\nमामेकं शरणं व्रज।\nअहं त्वा सर्वपापेभ्यो\nमोक्षयिष्यामि मा शुचः।',
+    translit: 'Sarva-dharmān parityajya\nmām ekaṁ śaraṇaṁ vraja.\nAhaṁ tvāṁ sarva-pāpebhyo\nmokṣayiṣyāmi mā śucaḥ.',
+    meaning: 'Abandon all forms of duty and surrender to Me alone. I will free you from every sin. Do not grieve.',
+    source: 'Bhagavad Gita 18.66',
+  },
+  {
+    label: 'Hanuman Chalisa Doha',
+    text: 'श्रीगुरु चरन सरोज रज\nनिज मनु मुकुरु सुधारि।\nबरनउँ रघुबर बिमल जसु\nजो दायकु फल चारि।',
+    translit: 'Shrī Guru Charana Saroja Raja\nNija Mana Mukuru Sudhāri.\nBaranauṁ Raghubara Bimala Jasu\nJo Dāyaku Phala Chāri.',
+    meaning: 'Cleansing the mirror of my mind with the dust of my Guru’s lotus feet, I sing the pure glory of Raghuvara, giver of the four fruits of life.',
+    source: 'Hanuman Chalisa, Opening Doha',
+  },
+  {
+    label: 'Maha Mrityunjaya',
+    text: 'ॐ त्र्यम्बकं यजामहे\nसुगन्धिं पुष्टिवर्धनम्।\nउर्वारुकमिव बन्धनान्\nमृत्योर्मुक्षीय मामृतात्।',
+    translit: 'Oṁ tryambakaṁ yajāmahe\nsugandhiṁ puṣṭi-vardhanam.\nUrvārukam iva bandhanān\nmṛtyor mukṣīya māmṛtāt.',
+    meaning: 'We worship the three-eyed Lord, fragrant and nourishing all. Like a ripe cucumber from its stem, free us from death — not from immortality.',
+    source: 'Rigveda 7.59.12 (Maha Mrityunjaya Mantra)',
+  },
 ];
 
 const DEFAULT_PRESET = PRESETS[0]!;
@@ -53,6 +74,12 @@ export default function ShlokaCardGenerator() {
     return u.toString();
   }, [text, translit, meaning, source]);
 
+  // Attribution-tagged variant for share buttons. utm_source=shloka-card
+  // lets us measure which shares drive return traffic (PostHog funnel).
+  const shareUrl = useMemo(() => {
+    return ogUrl + (ogUrl.includes('?') ? '&' : '?') + 'utm_source=shloka-card&utm_medium=share';
+  }, [ogUrl]);
+
   const shareText = useMemo(() => {
     const lines = [text.trim()];
     if (meaning) lines.push('', meaning);
@@ -62,7 +89,15 @@ export default function ShlokaCardGenerator() {
 
   function track(event: string) {
     import('../../lib/posthog')
-      .then((m) => m.capture(event, { source }))
+      .then((m) =>
+        m.capture(event, {
+          source,
+          utm_source: 'shloka-card',
+          text_length: text.length,
+          has_translit: Boolean(translit),
+          has_meaning: Boolean(meaning),
+        }),
+      )
       .catch(() => { /* ignore */ });
   }
 
@@ -82,9 +117,9 @@ export default function ShlokaCardGenerator() {
     } catch { /* ignore */ }
   }
 
-  const wa = `https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + ogUrl)}`;
-  const tw = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(ogUrl + '?utm_source=shloka-card')}`;
-  const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogUrl)}`;
+  const wa = `https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+  const tw = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+  const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
