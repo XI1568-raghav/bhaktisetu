@@ -117,3 +117,10 @@ If founder hires a Jaipur-based supply coordinator (recommended for Q3 scale):
 - R-Q3-S-004 (this item)
 - Enables R-Q3-S-005 (city × pandit matrix expansion if Jaipur succeeds)
 - Enables 25+ Jaipur live bookings Q3 (downstream R-Q3-G-XX geo expansion items)
+
+## Sampradaya specifics — Rajasthan / Marwari
+
+- Marwari/Pushkarna/Shrimali Brahmin sampradaya (distinct from generic North-Indian Smarta)
+- Customs cadence: Karwa Chauth + Teej + Gangaur peaks
+- Mehndipur Balaji shanti circuit for graha-shanti referrals (90km from Jaipur, well-known Hanuman temple)
+- Pricing skew: Marwari weddings + birthdays drive higher per-puja Rs vs other cities
