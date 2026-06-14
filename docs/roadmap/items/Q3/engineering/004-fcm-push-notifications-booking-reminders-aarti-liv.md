@@ -38,6 +38,10 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: stub handoff doc shipped at docs/engineering/R-Q3-E-004-handoff.md.
+  Founder action required to flesh out success_criteria + prompt_skeleton before
+  next agent cycle picks up. See handoff doc for 3-surface scope proposal +
+  schema + free-tier impact estimate.
 
 tags: ["push","fcm","notifications","engagement"]
 created_at: 2026-06-09T22:02:48.000Z
