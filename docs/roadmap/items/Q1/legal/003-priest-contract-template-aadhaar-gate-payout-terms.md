@@ -46,6 +46,13 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: Q1 v1 template shipped to docs/legal/priest-contract-template.md.
+    Covers Aadhaar gate (Section 4), payout terms + gating (Section 2), video
+    proof mandatory (Section 3), 24h cancellation (Section 7), no-show penalty,
+    KYC, NDA, IP, dispute resolution Bengaluru, governing law India. Schedule A
+    commission grid 20-40% per business rule #3, NRI 40% per business rule #2.
+    Status stays in_progress pending counsel review bundled w/ R-Q1-L-002 lawyer
+    engagement — founder action required before flip to shipped.
 
 tags: ["legal","contracts","priest","p2"]
 created_at: 2026-06-09T21:50:21.017Z
