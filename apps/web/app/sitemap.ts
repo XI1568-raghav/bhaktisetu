@@ -119,6 +119,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/privacy', priority: 0.5 },
     { path: '/terms', priority: 0.5 },
     { path: '/list-temple', priority: 0.5 },
+    { path: '/for-temple-chains', priority: 0.75 },
     { path: '/become-priest', priority: 0.5 },
     { path: '/become-astrologer', priority: 0.5 },
     { path: '/become-wellness', priority: 0.5 },

@@ -51,7 +51,6 @@ handoff_notes: |
 tags: ["b2b","saas","pilot","commercial"]
 created_at: 2026-06-09T22:09:26.259Z
 updated_at: 2026-06-09T22:09:26.259Z
-shipped_at: null
 verified_at: null
 killed_at: null
 killed_reason: null
