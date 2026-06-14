@@ -47,8 +47,11 @@ handoff_notes: |
     - Cross-post plan (LinkedIn + Instagram carousels)
     - Metrics dashboard (benchmark: 1K impressions/tweet + 2% engagement + 3 DMs)
     - Re-up plan post-day-14
-  FOUNDER ACTION: review + edit each tweet (~10 min/post = 2.5 hr total) + schedule via Twitter native OR Hypefury + post + engage replies w/in 6h.
-  Closes (partial): R-Q1-M-013. Status flips to shipped after 14/14 posts live + week-1 metrics logged.
+  2026-06-14: agent-side closeout for ship batch round 2. Added:
+    - docs/marketing/R-Q1-M-013-handoff.md (founder-action-required summary + DoD)
+    - docs/marketing/R-Q1-M-013-posting-tracker.md (per-tweet log w/ targets + week-1/week-2 aggregates)
+  FOUNDER ACTION: review + edit each tweet (~10 min/post = 2.5 hr total) + schedule via Twitter native OR Hypefury + post + engage replies w/in 6h + fill tracker rows as posts go live.
+  Closes (partial): R-Q1-M-013. Status flips to shipped after 14/14 posts live + week-1 metrics logged in tracker + KPI bumped in _manual-kpis.yml.
 
 tags: ["founder","twitter","public","p0"]
 created_at: 2026-06-10T20:11:37.313Z
