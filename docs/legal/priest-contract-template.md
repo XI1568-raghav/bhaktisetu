@@ -19,7 +19,7 @@
 | `{{EFFECTIVE_DATE}}` | Per-pandit signing date | filled at DocuSign |
 | `{{PANDIT_NAME}}` | Per-pandit | filled at DocuSign |
 | `{{PANDIT_PAN}}` | Per-pandit | filled at DocuSign |
-| `{{PANDIT_AADHAAR_LAST4}}` | Per-pandit (masked, last 4 only) | filled at DocuSign |
+| `{{PANDIT_AADHAAR_LAST4}}` | Per-pandit (masked, last 4 only) | filled at DocuSign <!-- LAST 4 DIGITS ONLY. NEVER paste full 12-digit Aadhaar here. --> |
 | `{{PANDIT_BANK_ACCOUNT}}` | Per-pandit | filled at DocuSign |
 | `{{PANDIT_ADDRESS}}` | Per-pandit | filled at DocuSign |
 | `{{PANDIT_PARENT_NAME}}` | Per-pandit | filled at DocuSign |
@@ -215,6 +215,13 @@ NOW THEREFORE, the parties agree as follows:
 6.2  This Section 6 does NOT restrict Pandit from serving devotees who
      independently contact Pandit through channels unrelated to the
      Platform.
+
+> **LAWYER REVIEW NEEDED** (per triage 2026-06-15): §6 non-solicit
+> 12-month window may be unenforceable under Indian Contract Act for
+> independent contractors — Indian courts often strike non-solicit
+> clauses >6 months on post-termination contractor agreements.
+> Counsel to reduce window to 6 months OR reframe as a confidentiality
+> + consultancy clause carved out from the post-term restraint.
 
 ═══════════════════════════════════════════════════════════════════
 7. CANCELLATION + NO-SHOW (BUSINESS RULE #5 — 24h WINDOW)
