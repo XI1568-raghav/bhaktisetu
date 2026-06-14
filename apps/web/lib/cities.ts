@@ -513,6 +513,20 @@ export const CITIES: CityInfo[] = [
     popularPujas: ['satyanarayan-puja', 'ganesh-puja', 'rudrabhishek'],
     significance: 'Ganesh Utsav (Aug-Sep) drives city-wide pandal economy. Marbat Festival (unique to Nagpur) processes effigies of evil to ward off misfortune. Vidarbha region gateway — major puja demand catchment for Wardha, Amravati, Chandrapur.',
     pinPrefix: '440',
+    slug: 'patna',
+    name: 'Patna',
+    state: 'Bihar',
+    hindi: 'पटना',
+    population: '2.5M',
+    description:
+      'Capital of Bihar (ancient Pataliputra) on the south bank of the Ganga. Sacred to Sikhs as birthplace of Guru Gobind Singh (Takht Sri Patna Sahib) and to Hindus for Mahavir Mandir, Patan Devi (Shakti Peetha) and Hanuman worship. Gateway city for the Gaya pitru-paksha circuit and the Vaishali-Rajgir Buddhist circuit.',
+    famousTemples: ['Mahavir Mandir', 'Bari Patan Devi (Shakti Peetha)', 'Choti Patan Devi', 'Hanuman Mandir Patna Junction', 'Takht Sri Patna Sahib (Sikh)', 'Agam Kuan + Sheetala Mata'],
+    popularDeities: ['hanuman', 'devi', 'shiva'],
+    popularPujas: ['sunderkand-path', 'satyanarayan-puja', 'navgraha-puja', 'pitra-paksha-shraddh', 'mundan'],
+    nearbyYatra: ['gaya', 'bodhgaya', 'rajgir-nalanda', 'vaishali'],
+    significance: 'Patan Devi = one of 51 Shakti Peethas (right thigh of Sati fell here per Devi Bhagavata). Mahavir Mandir = India\'s second-highest temple income after Tirupati (Naivedyam laddu prasad has GI tag). Gateway airport for the entire pitru-paksha pilgrim wave to Gaya (Sep-Oct).',
+    pinPrefix: '800',
+    isNriMagnet: true,
   },
 ];
 
