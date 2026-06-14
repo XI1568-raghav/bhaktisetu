@@ -46,6 +46,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: smoke-test script shipped (apps/api/scripts/smoke-fcm-push.mjs) + founder handoff doc (docs/engineering/R-Q1-E-011-handoff.md). Code path was already env-or-noop (apps/api/src/lib/fcm.ts). Status stays in_progress — KPI requires founder paste of FCM service-account creds in Render env (U5) + test push to founder device. After founder steps 1-4 in handoff doc pass, flip status: shipped + kpi.current: 1.
 
 tags: ["mobile","push","fcm"]
 created_at: 2026-06-09T21:28:52.338Z

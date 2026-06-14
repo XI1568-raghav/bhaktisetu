@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T15:33:32.973Z",
+  "generatedAt": "2026-06-14T16:28:13.964Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -1034,7 +1034,7 @@
           "docs/env-vars.md"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15: smoke-test script shipped (apps/api/scripts/smoke-fcm-push.mjs) + founder handoff doc (docs/engineering/R-Q1-E-011-handoff.md). Code path was already env-or-noop (apps/api/src/lib/fcm.ts). Status stays in_progress — KPI requires founder paste of FCM service-account creds in Render env (U5) + test push to founder device. After founder steps 1-4 in handoff doc pass, flip status: shipped + kpi.current: 1.\n",
       "tags": [
         "mobile",
         "push",
@@ -10164,7 +10164,7 @@
           "docs/company/07-geo.md"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15: shipped engineering scaffold + handoff doc at docs/geo/R-Q3-G-004-kolkata-soft-launch.md.\n  Covers Shakta-bias anchor temple set (Kalighat / Dakshineswar / Belur Math / Birla Mandir / Pareshnath Jain),\n  Durga Puja seasonal hub scope (deferred to mid-Aug post supply >=50%), Bengali influencer + pandal sponsorship\n  playbook, KPI scrape SQL, founder action items. Status stays in_progress — founder must onboard 25 pandits\n  + 5 temples + drive 1K MAU. Pre-reqs R-Q3-S-002 + R-Q3-S-009 still BLOCKING.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
       "tags": [
         "geo",
         "kolkata",
