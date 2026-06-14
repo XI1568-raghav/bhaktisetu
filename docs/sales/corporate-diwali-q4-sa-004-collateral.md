@@ -30,11 +30,11 @@ Sub-agent CAN prep:
 
 | Tier | Account | CSR head signal | Q3 pilot status | Q4 ask | Founder action window |
 |---|---|---|---|---|---|
-| 1 | TCS Foundation | Mary Mathew (CSR head) | Pilot meeting Q3 wk 8 | ₹1 Cr (2x emp match cap) | Aug wk 3 LOI → Sep wk 1 MoU |
-| 1 | Tata Trusts | Pradeep Bhargava (Exec Trustee) | Pilot meeting Q3 wk 10 | ₹1 Cr (anchor) | Aug wk 4 LOI → Sep wk 2 MoU |
-| 2 | Infosys Foundation | Sudha Murty advisor + Tan team | Q3 LOI received | ₹75L (employee match) | Sep wk 1 MoU |
-| 2 | Reliance Foundation | Isha Ambani CSR direction | Q3 LOI received | ₹75L (Ambani Hospital tie-in) | Sep wk 2 MoU |
-| 3 | Aditya Birla CSR | Rajashree Birla chair | Q3 pilot meeting wk 11 | ₹50L (floor commit) | Sep wk 3 LOI → Oct wk 1 MoU |
+| 1 | TCS Foundation | [VERIFY-FOUNDER: CSR head] | Pilot meeting Q3 wk 8 | ₹1 Cr (2x emp match cap) | Aug wk 3 LOI → Sep wk 1 MoU |
+| 1 | Tata Trusts | [VERIFY-FOUNDER: CSR head] | Pilot meeting Q3 wk 10 | ₹1 Cr (anchor) | Aug wk 4 LOI → Sep wk 2 MoU |
+| 2 | Infosys Foundation | [VERIFY-FOUNDER: CSR head] | Q3 LOI received | ₹75L (employee match) | Sep wk 1 MoU |
+| 2 | Reliance Foundation | [VERIFY-FOUNDER: CSR head] | Q3 LOI received | ₹75L (Ambani Hospital tie-in) | Sep wk 2 MoU |
+| 3 | Aditya Birla CSR | [VERIFY-FOUNDER: CSR head] | Q3 pilot meeting wk 11 | ₹50L (floor commit) | Sep wk 3 LOI → Oct wk 1 MoU |
 | Bench | Adani Foundation | Priti Adani trustee | Q3 cold-emailed, no reply | Re-pitch Oct wk 1 | If 1 of top-5 falls |
 | Bench | Mahindra Rise CSR | Anand Mahindra office | Q3 cold-emailed, no reply | Re-pitch Oct wk 2 | If 2 of top-5 falls |
 
@@ -114,8 +114,7 @@ Could we lock 20 min anytime in next 2 weeks? Calendly: [link]
 Subject: `{Peer Corp} just signed Diwali MoU — leaving you a slot before Sep 1`
 
 ```
-Quick note — {Tata Trusts or Infosys Foundation, whichever signed first} signed
-their Diwali 2026 MoU yesterday. ₹1 Cr commitment. Capacity for 4 more anchor
+Quick note — {IF_PEER_SIGNED: "<peer> signed last week"}. Capacity for 4 more anchor
 partners before our Sep 1 campaign launch.
 
 Want to chat this week so we can lock the {Corp Name} slot before it goes?
@@ -182,11 +181,11 @@ BOTTOM BAR:
 ## Case-study deck skeleton (founder fills with Q3 pilot quotes)
 
 Slide 1 — Cover: "Diwali 2026 corporate giving: 5 anchor partner case studies"
-Slide 2 — Tata Trusts: Q3 pilot quote + 12,000 emp engagement + ₹1.2 Cr in 60 days
-Slide 3 — Infosys Foundation: Q3 pilot quote + 8,000 emp engagement + ₹85L in 60 days
-Slide 4 — Reliance Foundation: Q3 pilot quote + Ambani Hospital tie-in
-Slide 5 — TCS Foundation: Q3 pilot quote + Mary Mathew quote re: 80G ops fit
-Slide 6 — Aditya Birla CSR: Q3 pilot quote + Rajashree Birla chair endorsement
+[PLACEHOLDER — requires real Q3 pilot data before use] Slide 2 — Tata Trusts: Q3 pilot quote + 12,000 emp engagement + ₹1.2 Cr in 60 days
+[PLACEHOLDER — requires real Q3 pilot data before use] Slide 3 — Infosys Foundation: Q3 pilot quote + 8,000 emp engagement + ₹85L in 60 days
+[PLACEHOLDER — requires real Q3 pilot data before use] Slide 4 — Reliance Foundation: Q3 pilot quote + Ambani Hospital tie-in
+[PLACEHOLDER — requires real Q3 pilot data before use] Slide 5 — TCS Foundation: Q3 pilot quote + [VERIFY-FOUNDER: CSR head] quote re: 80G ops fit
+[PLACEHOLDER — requires real Q3 pilot data before use] Slide 6 — Aditya Birla CSR: Q3 pilot quote + [VERIFY-FOUNDER: CSR head] endorsement
 Slide 7 — Aggregate impact: temples reached / priests paid / 80G receipts issued
 Slide 8 — Diwali 2026 ask: ₹5 Cr commitments across 5 anchors
 Slide 9 — Operational ownership: who does what (corp vs Bhaktisetu)
