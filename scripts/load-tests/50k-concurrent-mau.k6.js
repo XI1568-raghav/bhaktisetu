@@ -35,7 +35,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'https://api.darshya.online';
+const BASE_URL = __ENV.BASE_URL || 'https://api-staging.darshya.online';
 const PROFILE = __ENV.PROFILE || 'smoke';
 
 const errorRate = new Rate('errors');
