@@ -10,8 +10,8 @@ import path from 'node:path';
 const REPO = process.cwd();
 const QUEUE_DIR = path.join(REPO, 'docs/roadmap/_dryrun/queue');
 const ITEMS_DIR = path.join(REPO, 'docs/roadmap/items');
-const OUT = path.join(REPO, 'docs/roadmap/_ship-batch-2026-06-15.json');
-// Round 3 exclude: all 80 prior shipped + 1 rejected (R-Q4-P-005 = #71)
+const OUT = path.join(REPO, 'docs/roadmap/_ship-batch-2026-06-15-r4.json');
+// Round 4 exclude: all 120 prior shipped + 1 rejected (R-Q4-P-005 = #71)
 const EXCLUDE_IDS = new Set([
   // R1 pre-loop (2)
   'R-Q1-IT-001', 'R-Q4-P-007',
@@ -34,6 +34,15 @@ const EXCLUDE_IDS = new Set([
   'R-Q2-S-002', 'R-Q2-G-001', 'R-Q3-E-006', 'R-Q4-L-001', 'R-Q4-SA-002',
   'R-Q3-CS-002', 'R-Q4-F-003', 'R-Q4-M-004', 'R-Q4-S-006', 'R-Q2-G-002',
   'R-Q2-P-003', 'R-Q4-E-004', 'R-Q1-L-001', 'R-Q1-SA-001', 'R-Q4-P-005',
+  // R3 loop (40)
+  'R-Q2-M-005', 'R-Q2-CS-003', 'R-Q2-M-003', 'R-Q3-G-003', 'R-Q4-M-008',
+  'R-Q2-S-004', 'R-Q3-F-001', 'R-Q3-E-001', 'R-Q1-SA-002', 'R-Q2-L-002',
+  'R-Q1-P-005', 'R-Q3-G-004', 'R-Q3-M-005', 'R-Q3-S-001', 'R-Q1-F-003',
+  'R-Q1-E-001', 'R-Q1-SA-005', 'R-Q1-L-003', 'R-Q1-P-006', 'R-Q4-G-003',
+  'R-Q4-M-003', 'R-Q3-S-002', 'R-Q1-F-004', 'R-Q1-E-011', 'R-Q2-SA-002',
+  'R-Q1-P-007', 'R-Q4-G-004', 'R-Q4-M-005', 'R-Q3-S-003', 'R-Q1-F-002',
+  'R-Q1-E-014', 'R-Q4-SA-005', 'R-Q4-G-005', 'R-Q1-M-005', 'R-Q3-S-004',
+  'R-Q2-F-004', 'R-Q1-E-013', 'R-Q1-SA-003', 'R-Q4-G-006', 'R-Q1-M-004',
 ]);
 const TARGET = 40;
 
