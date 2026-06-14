@@ -6,7 +6,7 @@ owner_role: cs
 quarter: Q1
 month_target: 1
 priority: P0
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: 'U7'
 depends_on: []
@@ -38,11 +38,15 @@ agent_brief:
 
 handoff_notes: |
   2026-06-10: bulk-imported from year-1 content sprint.
+  2026-06-14: engineering hooks shipped (wa-warm-intro-helpers + tests). Blast itself
+  is manual founder-action per docs/cs/R-Q1-CS-006-handoff.md — labeled
+  founder-action-required on PR. KPI wa_warm_intros_sent flips to 21 once founder
+  completes the 21-message blast and commits the manual-kpis update.
 
-tags: ["warm-intro","wa","p0"]
+tags: ["warm-intro","wa","p0","founder-action-required"]
 created_at: 2026-06-10T20:11:37.313Z
-updated_at: 2026-06-10T20:11:37.313Z
-shipped_at: null
+updated_at: 2026-06-14T00:00:00.000Z
+shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
