@@ -193,6 +193,20 @@ async function main() {
   const parsed = parseMacroYaml(text);
   validateMacros(parsed);
 
+  // ASCII-leak guard per triage 2026-06-15: ta/te/bn/mr must not contain long Latin runs
+  // (indicates untranslated English copy slipped through human-review gate).
+  const NON_LATIN_LANGS = ['ta', 'te', 'bn', 'mr'];
+  const LATIN_RUN = /[A-Za-z]{20,}/;
+  for (const m of parsed.macros) {
+    for (const lang of NON_LATIN_LANGS) {
+      const t = m.translations?.[lang];
+      if (typeof t === 'string' && LATIN_RUN.test(t)) {
+        console.error(`ASCII leak detected — lang=${lang} macro=${m.id} intent=${m.intent} contains 20+ consecutive Latin chars (untranslated English suspected).`);
+        process.exit(1);
+      }
+    }
+  }
+
   // Wipe + recreate output dir
   if (existsSync(OUT)) {
     await rm(OUT, { recursive: true, force: true });
