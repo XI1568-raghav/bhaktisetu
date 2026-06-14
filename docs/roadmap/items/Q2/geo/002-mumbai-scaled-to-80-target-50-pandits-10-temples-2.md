@@ -50,6 +50,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: engineering scaffold shipped (round 2 batch). See docs/geo/R-Q2-G-002-mumbai-scale.md for sales playbook + KPI scrape SQL + founder action items. Page /city/mumbai already live (cities.ts L40 — Siddhivinayak/Mahalaxmi/ISKCON Juhu listed). Scale gated on sales execution: 25 new pandits + 5 new temples + MAU activation. founder-action-required label applied.
 
 tags: ["geo","mumbai","scale"]
 created_at: 2026-06-09T21:55:18.035Z
@@ -61,7 +62,19 @@ killed_reason: null
 ---
 
 # Why this matters
-Imported placeholder. First orchestrator cycle emits sub-agent to populate full body.
+
+Mumbai is the third city after Bengaluru (Q1-G-001) and Varanasi (Q1-G-002). It is the highest-LTV demand source in India — Gujarati and Marathi diaspora in US/UK/Gulf drive the NRI gift-puja anchor (USD payment lane R-Q2-G-006). Mumbai's Ganesh Chaturthi window (Aug-Sep) is the largest single-festival demand spike on the Hindu calendar. Failure to hit the 80% milestone here delays the NRI revenue rail by one quarter and breaks the depends_on chain for R-Q3-G-001 (national scale).
+
+The 80% target is structured as:
+- 50 verified pandits (Q1 25 + Q2 +25) — covers Greater Mumbai + Navi Mumbai + Thane
+- 10 verified temples (Q1 5 + Q2 +5) — Siddhivinayak / Mahalaxmi / Mumba Devi / ISKCON Juhu base + 6 mid-tier
+- 2000 MAU/30d — distinct UserSession on /city/mumbai cohort
 
 # Reference material
-- See agent_brief.context_files after cycle 1
+
+- `docs/geo/R-Q2-G-002-mumbai-scale.md` — sales playbook, KPI scrape SQL, founder action items, dependency map
+- `apps/web/lib/cities.ts` L40-54 — Mumbai entry (live, no code change needed)
+- `apps/web/app/city/[slug]/page.tsx` — landing page renderer (shared across all cities)
+- `scripts/agents/cold-temple-outreach.mjs` — weekly Mumbai segment WhatsApp drip
+- `docs/company/05-sales.md` — sales agent brief reference
+- Depends on R-Q1-G-002 base (5 pandits + 5 temples) — verify before scale work begins
