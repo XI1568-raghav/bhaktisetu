@@ -1,0 +1,21 @@
+handle,name,timezone,relationship,dm_template_id,dm_sent_at,response,vote_confirmed_at,notes,founder_action_required
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,PST,diaspora,diaspora-1,,,,founder_action_required: NRI builder network,true
+<TBD-founder-fills>,<TBD>,PST,diaspora,diaspora-1,,,,founder_action_required: NRI builder network,true
+<TBD-founder-fills>,<TBD>,PST,diaspora,diaspora-1,,,,founder_action_required: NRI builder network,true
+<TBD-founder-fills>,<TBD>,EST,diaspora,diaspora-1,,,,founder_action_required: NRI builder network,true
+<TBD-founder-fills>,<TBD>,EST,diaspora,diaspora-1,,,,founder_action_required: NRI builder network,true
+<TBD-founder-fills>,<TBD>,GMT,diaspora,diaspora-1,,,,founder_action_required: UK builder network,true
+<TBD-founder-fills>,<TBD>,IST,cold-aligned,cold-1,,,,founder_action_required: cold but values-aligned hunter,true
+<TBD-founder-fills>,<TBD>,IST,cold-aligned,cold-1,,,,founder_action_required: cold but values-aligned hunter,true
+<TBD-founder-fills>,<TBD>,IST,cold-aligned,cold-1,,,,founder_action_required: cold but values-aligned hunter,true
+<TBD-founder-fills>,<TBD>,IST,cold-aligned,cold-1,,,,founder_action_required: cold but values-aligned hunter,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,warm,warm-1,,,,founder_action_required: fill from network,true
+<TBD-founder-fills>,<TBD>,IST,anchor,warm-1,,,,founder_action_required: ANCHOR hunter who submits at 1:30pm IST sharp,true
