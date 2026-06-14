@@ -6,9 +6,19 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-postgres",
-        "${env:DATABASE_URL}"
+        "${env:SUPABASE_READONLY_URL}"
       ],
-      "comment": "Read/write access to Supabase Postgres prod DB. Only loads when DATABASE_URL is exported."
+      "comment": "Read-only access to Supabase Postgres prod DB via claude_readonly role. Loads only when SUPABASE_READONLY_URL is exported. Falls back unused if env missing — no boot crash. See docs/engineering/R-Q1-E-014-sentry-postgres-mcp-handoff.md."
+    },
+    "sentry": {
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server"],
+      "env": {
+        "SENTRY_AUTH_TOKEN": "${env:SENTRY_AUTH_TOKEN}",
+        "SENTRY_ORG": "${env:SENTRY_ORG}",
+        "SENTRY_PROJECT": "${env:SENTRY_PROJECT}"
+      },
+      "comment": "Sentry MCP — reads issues / events / replays from sentry.io. Read-only on the token scope set in account. Loads only when SENTRY_AUTH_TOKEN exported. See docs/engineering/R-Q1-E-014-sentry-postgres-mcp-handoff.md."
     }
   }
 }
