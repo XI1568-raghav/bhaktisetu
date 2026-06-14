@@ -50,6 +50,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-14: PARTIAL ship — structured handoff doc at docs/supply/R-Q2-S-002-handoff.md (5-stage onboarding pipeline, 5 sub-segment targeting, KPI SQL, founder action checklist). Execution is sales/recruitment — agent-uncodeable. Label founder-action-required.
 
 tags: ["supply","pandit","mumbai","scale"]
 created_at: 2026-06-09T21:55:22.029Z
