@@ -6,7 +6,7 @@ owner_role: legal
 quarter: Q1
 month_target: 2
 priority: P1
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: ["R-Q1-F-001"]
@@ -42,7 +42,7 @@ handoff_notes: |
 tags: ["legal","p1","compliance"]
 created_at: 2026-06-09T21:50:21.017Z
 updated_at: 2026-06-09T21:50:21.017Z
-shipped_at: null
+shipped_at: 2026-06-14T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
