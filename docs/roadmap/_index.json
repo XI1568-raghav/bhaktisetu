@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T18:24:53.678Z",
+  "generatedAt": "2026-06-15T11:11:57.863Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -12224,22 +12224,31 @@
         "target": 25,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" WHERE city='Lucknow' AND aadhaarVerified=true AND status='ACTIVE'"
       },
       "revenue_impact": {
         "amount_inr": 75000,
         "confidence": "medium",
-        "basis": "Imported from year-1 plan; refine on first cycle review."
+        "basis": "25 pandits x ~3 bookings/mo x ~₹1000 net commission/booking = ₹75k/mo run-rate at month 12."
       },
       "est_hours": 36,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "25 pandits live + verified in Supabase Priest table (city=Lucknow, aadhaarVerified=true, status=ACTIVE)",
+        "25+ Lucknow bookings completed during Q3 (downstream)",
+        "Average rating 4.5+/5",
+        "Repeat-customer rate 25%+",
+        "Coordinator hired OR founder visits scheduled",
+        "First 5 onboardings end-to-end run by founder before delegating"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/supply/R-Q3-S-005-lucknow-25-pandits-handoff.md",
+          "docs/supply/R-Q3-S-004-jaipur-25-pandits-handoff.md",
+          "docs/supply/hyderabad-pandit-onboarding-spec.md"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-14 R4: handoff doc shipped at docs/supply/R-Q3-S-005-lucknow-25-pandits-handoff.md.\n  Status stays in_progress — KPI gates on founder physical recruitment in Lucknow.\n  Engineering pre-reqs all shipped (R-Q1-S-002a/b/c + R-Q1-E).\n  Pricing tier-2 confirmed (25% commission). Sampradaya = Awadh Smarta + Vaishnava (Ramanandi).\n  Strategic adjacency: Ayodhya/Naimisharanya/Varanasi expansion. Recommend dual-mandate coordinator.\n",
       "tags": [
         "supply",
         "pandit",
