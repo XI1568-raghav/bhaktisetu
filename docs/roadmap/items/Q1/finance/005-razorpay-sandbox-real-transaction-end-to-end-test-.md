@@ -49,12 +49,24 @@ handoff_notes: |
     - Cleanup steps
     - Pass criteria + 7 failure modes w/ debugging tips
     - Test runs log table (founder fills first run)
+  2026-06-14 (batch round 2): Engineering helper added to reduce Step 6 friction.
+    - NEW apps/api/scripts/verify/razorpay-webhook-sim.mjs — Node sign/verify
+      helper. Cross-platform (no openssl dep, works on Windows), uses same
+      timing-safe HMAC compare as the server's handleWebhook
+      (apps/api/src/services/payment.service.ts). Modes: `sign` emits the
+      X-Razorpay-Signature header value; `verify` PASS/FAIL-checks a
+      signature against a payload.
+    - NEW apps/api/scripts/verify/razorpay-webhook-sim.test.mjs — 9-check
+      roundtrip smoke test (sign->verify, tamper detection, length mismatch,
+      missing-env exit code). Plain `node script.test.mjs`, no vitest dep.
+    - Runbook updated with the Node-helper alternative right next to the
+      openssl one-liner so founder can pick whichever fits their shell.
   FOUNDER ACTION: ~30 min focused run through 8 steps using test keys. After all 7 pass, schedule monthly re-run + log here. Pass criteria gates U1 live KYC submission.
   Closes (partial): R-Q1-F-005. Status flips to shipped after founder logs first successful run.
 
 tags: ["payments","test","p0"]
 created_at: 2026-06-10T20:11:37.313Z
-updated_at: 2026-06-12T09:45:00.000Z
+updated_at: 2026-06-14T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
