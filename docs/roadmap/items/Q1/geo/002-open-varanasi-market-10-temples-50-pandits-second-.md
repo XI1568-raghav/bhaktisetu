@@ -52,7 +52,6 @@ handoff_notes: |
 tags: ["geo","varanasi","city-2","p0"]
 created_at: 2026-06-09T21:50:55.201Z
 updated_at: 2026-06-09T21:50:55.201Z
-shipped_at: null
 verified_at: null
 killed_at: null
 killed_reason: null
