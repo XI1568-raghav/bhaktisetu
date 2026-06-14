@@ -1,0 +1,25 @@
+# Bhaktisetu Foundation books FY 2026-27 template
+# Import into Google Sheets: File > Import > Replace current sheet
+# Each section below maps to one sheet tab. Split into 4 separate sheets after import.
+
+# === SHEET 1: Cash flow ===
+Date,Description,Category,Inflow (INR),Outflow (INR),Balance (INR),Reference
+2026-04-01,Opening balance,opening,0,0,0,
+# Example rows (delete after import):
+# 2026-04-05,Razorpay settlement T+2,settlement,12500,0,12500,RZP-20260403-001
+# 2026-04-06,AWS hosting,infra,0,2400,10100,AWS-INV-202604
+
+# === SHEET 2: Revenue per lane ===
+Date,Lane,Booking/Sub ID,Gross (INR),Platform fee %,Platform fee (INR),Pandit/Temple share (INR),Razorpay/Stripe fee (INR),Net to Foundation (INR),Settlement date
+# Lanes: L1 puja / L2 darshan / L3 astrology / L4 commerce / L5 yatra / L6 NRI gift / L7 subscription
+# Example: 2026-04-05,L1 puja,BS-20260405-00001,2500,20,500,1800,75,425,2026-04-07
+
+# === SHEET 3: Expenses ===
+Date,Vendor,Category,Amount (INR),Invoice #,Status,Paid date,GST claimable?
+# Categories: infra / payroll / legal / accounting / marketing / pandit-payout / temple-payout / refund / misc
+# Example: 2026-04-06,AWS,infra,2400,AWS-INV-202604,paid,2026-04-06,Y
+
+# === SHEET 4: Donor list (Form 10BD) ===
+FY,Donation date,Donor name,PAN,Aadhaar (optional),Amount (INR),Mode,80G receipt #,Issued date
+# Form 10BD due 31-May for prior FY. Cumulative donations >=2K per donor must be reported.
+# Example: 2026-27,2026-04-15,Ramesh Sharma,ABCDE1234F,,5000,UPI,DR-20260415-0001,2026-04-15
