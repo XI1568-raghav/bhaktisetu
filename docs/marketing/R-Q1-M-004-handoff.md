@@ -63,7 +63,7 @@ Follow for daily build updates.
 ```
 I'm building Bhaktisetu — a verified-temple devotional platform connecting 1B+ Hindus across India + diaspora.
 
-The problem: NRIs in US/UK/CA send ~$3B/yr to Indian temples but have zero proof their puja actually happened. Existing apps (Sri Mandir, Utsav) have temple-discovery but no video proof + no 80G + no dispute resolution.
+The problem: NRIs in US/UK/CA send money to Indian temples [FOUNDER-VERIFY: source for any public $ figure] but have zero proof their puja actually happened. Existing apps (Sri Mandir, Utsav) have temple-discovery but no video proof + no 80G + no dispute resolution.
 
 What we ship:
 • Only verified temples (manual KYC, no aggregator marketplace)
@@ -72,7 +72,7 @@ What we ship:
 • Auto 80G receipts (tax-deductible donations)
 • 24h cancellation window, transparent dispute flow
 
-Built solo, $0 outside capital. Open about all numbers, mistakes, MRR.
+Built solo, $0 outside capital — VERIFY against any signed SAFE/convertible. Open about all numbers, mistakes, MRR.
 
 If you're an NRI Hindu, a temple priest, or a dharma-curious dev — would love to connect.
 
@@ -87,7 +87,7 @@ Slide 1 — Hook
 Saffron bg, ॐ glyph centered
 
 Slide 2 — Problem
-"NRIs send $3B/yr to Indian temples — zero proof their puja happened."
+"NRI-to-India temple sends — zero proof their puja happened." [FOUNDER-VERIFY: source for any public $ figure before adding to slide]
 
 Slide 3 — Solution
 "Verified temples. Video proof. 80G receipts. INR + USD."
@@ -134,3 +134,7 @@ Following for daily build-in-public 🪔"
 ## Founder dependency
 
 This item CANNOT be agent-shipped — handle claims + bio paste + photo upload require founder credentials on each platform. Agent ships the spec + handoff (this doc). Status stays `in_progress` until founder confirms all 4 live + KPI flips 0→4.
+
+## Cross-platform availability check (per triage 2026-06-15)
+
+Founder run `https://namechk.com/?q=bhaktisetu` before publishing handles to confirm `@bhaktisetu` is available across Twitter / Instagram / YouTube / LinkedIn / TikTok / GitHub. If any taken, fall back to `@bhaktisetu_app` or `@bhaktisetu.in` (consistent across all platforms, not mixed).
