@@ -29,15 +29,22 @@ est_hours: 32
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "/city/indore page lists ≥5 temples + ≥4 puja offerings (ENGINEERING)"
+  - "≥5 verified pandits in Indore (Priest table, city='Indore', aadhaar_verified=true) — FOUNDER KYC"
+  - "≥5 verified temples in Indore (Temple table, city='Indore', verified=true) — FOUNDER MoU"
+  - "25 pandits onboarded across Q4 (5x sub-batches) — FOUNDER recruit cadence"
+  - "3000 city_active_users_indore (PostHog) — 90d post-supply-ready"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - "docs/geo/R-Q4-G-003-indore-launch.md"
+    - "apps/web/lib/cities.ts"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Tactics for Indore (8/25 cities): Khajrana Ganesh Wednesday-loop (1L+ devotees/week), Annapurna temple, Ujjain pandit overflow (Bhasm Aarti pandits live in Indore), MP Brahmana Sabha mass WhatsApp, Google Maps temple scrape (22.6-22.8 lat x 75.7-76.0 lon), Annapurna prasad center discovery channel. Position Indore as overnight base for Ujjain Mahakaleshwar Bhasm Aarti packages.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R-Q4-G-003 batch): Engineering scaffold shipped — apps/web/lib/cities.ts entry added (6 temples / 3 deities / 4 pujas / Ahilyabai Holkar significance / Ujjain base callout). /city/indore now SSGs via citySlugs() auto-fan. Sales-tactics + founder-action handoff doc at docs/geo/R-Q4-G-003-indore-launch.md. Status stays in_progress — KPI #2-#5 require founder KYC + MoU + recruit cadence over Q4.
 
 tags: ["geo","india","indore","tier2"]
 created_at: 2026-06-09T22:09:24.241Z

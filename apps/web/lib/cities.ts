@@ -475,6 +475,20 @@ export const CITIES: CityInfo[] = [
     significance: 'Pitru Paksha Mela (Sep-Oct, 15 days) — sole event where Hindus perform pind-daan en masse. 5 lakh+ pilgrims annually.',
     pinPrefix: '823',
   },
+  {
+    slug: 'indore',
+    name: 'Indore',
+    state: 'Madhya Pradesh',
+    hindi: 'इंदौर',
+    population: '3.5M',
+    description:
+      'Commercial capital of Madhya Pradesh and gateway to Ujjain (55km). Khajrana Ganesh temple draws 1 lakh+ devotees on Wednesdays. Annapurna temple in Annapurna Nagar is one of only three Annapurna temples in India.',
+    famousTemples: ['Khajrana Ganesh', 'Annapurna Temple', 'Bijasan Mata', 'Bada Ganpati', 'Gomatgiri (Jain)', 'Kanch Mandir (Jain)'],
+    popularDeities: ['ganesha', 'devi', 'annapurna'],
+    popularPujas: ['ganesh-puja', 'satyanarayan-puja', 'durga-puja', 'navgraha-puja'],
+    significance: 'Khajrana Ganesh built by Ahilyabai Holkar (1735) — Wednesday Ganesh visits draw 1L+ pilgrims. Indore is the recommended base for Ujjain Mahakaleshwar darshan (Bhasm Aarti requires 3-4am pickup from Indore).',
+    pinPrefix: '452',
+  },
 ];
 
 export function getCity(slug: string): CityInfo | undefined {
