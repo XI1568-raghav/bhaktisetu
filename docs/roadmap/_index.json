@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T13:00:02.688Z",
+  "generatedAt": "2026-06-14T13:01:04.303Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -12829,7 +12829,7 @@
         "target": 150,
         "unit": "milliseconds",
         "source": "cloudflare",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "query EdgeP75TTFB($zone: String!, $since: Time!, $until: Time!) {\n  viewer {\n    zones(filter: { zoneTag: $zone }) {\n      httpRequestsAdaptiveGroups(\n        limit: 1\n        filter: { datetime_geq: $since, datetime_leq: $until }\n      ) {\n        quantiles { edgeTimeToFirstByteMsP75 }\n      }\n    }\n  }\n}\n"
       },
       "revenue_impact": {
         "amount_inr": 30000,
@@ -12839,12 +12839,21 @@
       "est_hours": 28,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Cloudflare API token + zone tag pasted into Render env (founder action #1+#2)",
+        "KV namespace darshya-edge-cache created and bound in wrangler.toml (founder action #3)",
+        "edge_p75_ttfb_ms scraped via _kpi-cf.mjs returns ≤ 150 ms over 24h window",
+        "Worker bundle stays under 3 MiB after Slice 3 dynamic-import refactor",
+        "Bench report at docs/engineering/R-Q4-E-006-bench.md captures pre/post p50/p75/p95 TTFB"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/engineering/R-Q4-E-006-handoff.md",
+          "scripts/agents/roadmap/_kpi-cf.mjs",
+          "docs/cf-worker-budget.md",
+          "scripts/preflight-cf-pages.sh"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-14: Spec thinness blocker closed via handoff doc. KPI query populated.\n  4 execution slices enumerated. Founder action items 1-3 (CF token + zone tag + KV namespace)\n  block Slice 1. PR returned PARTIAL with label founder-action-required.\n",
       "tags": [
         "edge",
         "cloudflare",
