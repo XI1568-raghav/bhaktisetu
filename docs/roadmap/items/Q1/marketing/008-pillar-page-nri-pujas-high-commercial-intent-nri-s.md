@@ -14,11 +14,11 @@ blocks: []
 
 kpi:
   metric: "pillar_pages_shipped"
-  current: 0
+  current: 1
   target: 2
   unit: "count"
   source: "gh_repo"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "ls apps/web/app/nri-pujas/page.tsx apps/web/app/<second-pillar>/page.tsx | wc -l"
 
 revenue_impact:
   amount_inr: 0
@@ -29,15 +29,26 @@ est_hours: 10
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "/nri-pujas pillar page shipped — hero + 6-step HowTo + 6 popular pujas + 6 temple cities + 10-FAQ + Gift CTA"
+  - "FAQPage + HowTo + BreadcrumbList JSON-LD on the page (rich snippet eligible)"
+  - "Sitemap entry priority 0.95"
+  - "Second pillar page TBD next cycle to flip status=shipped"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - "apps/web/app/nri/page.tsx"
+    - "apps/web/app/gift/page.tsx"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Build second pillar page covering a complementary high-commercial-intent NRI cluster
+    (e.g. /usa-india-puja-booking or /gift-puja-from-abroad). Mirror the /nri-pujas structure:
+    hero, trust-signal grid, HowTo, popular-puja grid, FAQ, final CTA. Reuse JSON-LD pattern.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 R-Q1-M-008 round-4: shipped /nri-pujas pillar page (1 of 2 target).
+    Status stays in_progress until second pillar lands. Status flip + shipped_at gated
+    on founder verification that page is live + indexed (KPI source=gh_repo only confirms
+    file exists, not that Google has indexed it).
 
 tags: ["seo","pillar","nri","content","p1"]
 created_at: 2026-06-09T21:47:07.357Z

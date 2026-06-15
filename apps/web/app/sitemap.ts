@@ -135,8 +135,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/donations', priority: 0.8 },
     { path: '/ask-pandit', priority: 0.8 },
     { path: '/nri', priority: 0.9 },
+<<<<<<< HEAD
     { path: '/uk', priority: 0.85 }, // R-Q3-G-001 UK launch landing
 
+=======
+    { path: '/nri-pujas', priority: 0.95 },
+>>>>>>> d7a30a74 (feat(marketing): /nri-pujas pillar page — high commercial intent NRI guide)
     { path: '/upgrade', priority: 0.7 },
     { path: '/waitlist', priority: 0.6 },
     // Support
