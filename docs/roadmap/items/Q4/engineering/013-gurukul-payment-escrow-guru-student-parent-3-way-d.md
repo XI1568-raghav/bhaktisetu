@@ -38,6 +38,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: full compliance + architecture handoff written at docs/engineering/R-Q4-E-013-gurukul-payment-escrow-handoff.md.
+    R2 PR #71 was rejected for proposing direct custody (unlicensed PA-PG under RBI 2020). Mandatory architecture
+    is Razorpay Routes (split-payouts at PSP level, Bhaktisetu never holds parent funds). 12-item founder/legal/CA
+    checklist must complete before engineering builds. Status stays in_progress until founder unblocks items 1-3
+    (Razorpay Routes upgrade + sub-merchant onboarding design).
 
 tags: ["gurukul","escrow","payment","education"]
 created_at: 2026-06-09T22:09:23.580Z
