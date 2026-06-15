@@ -38,6 +38,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): full onboarding scaffold + 3-city pipeline + coordinator playbook + KYC checklist + pricing + sampradaya specifics shipped at docs/supply/R-Q4-S-002-east-25-pandits-handoff.md. KPI requires founder physical recruitment + verification — status stays in_progress until Supabase Priest count where city IN (Patna,Bhubaneswar,Guwahati) AND aadhaarVerified=true reaches 25.
 
 tags: ["supply","pandit","east","tier2"]
 created_at: 2026-06-09T22:09:26.554Z
