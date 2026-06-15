@@ -1,5 +1,7 @@
 # YouTube Channel — Weekly Live Darshan + How-To-Puja Content
 
+> ⚠ **COPYRIGHT BLOCKER**: Per-temple WRITTEN consent rider REQUIRED before any darshan recording. TTD + ISKCON + Kashi temple administrations aggressively enforce. Signed release before Tuesday darshan record — NO exceptions.
+
 > **Roadmap item**: R-Q2-M-009 (P1) · **Authored**: 2026-06-13
 
 ## Goal
