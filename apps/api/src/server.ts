@@ -80,6 +80,7 @@ import {
 } from './routes/whatsapp-broadcast.js';
 import { adminContentQueueRoutes } from './routes/admin-content-queue.js';
 import { adminDonationsExportRoutes } from './routes/admin-donations-export.js';
+import { adminQueueRoutes } from './routes/admin-queue.js';
 import { orgsRoutes } from './routes/orgs.js';
 import { marketplaceV2Routes, marketplaceAdminRoutes } from './routes/marketplace-v2.js';
 import { csrMatchRoutes } from './routes/csr-match.js';
@@ -315,6 +316,7 @@ async function bootstrap() {
   await server.register(whatsappBroadcastRoutes, { prefix: '/api/v1/admin/whatsapp' });
   await server.register(whatsappWebhookRoutes, { prefix: '/api/v1/whatsapp' });
   await server.register(adminContentQueueRoutes, { prefix: '/api/v1/admin/content-queue' });
+  await server.register(adminQueueRoutes, { prefix: '/api/v1/admin/queue' });
   await server.register(adminDonationsExportRoutes, { prefix: '/api/v1/admin/donations' });
   await server.register(adminRoadmapRoutes, { prefix: '/api/v1' });
   await server.register(adminRoadmapOrchestratorRoutes, { prefix: '/api/v1' });
