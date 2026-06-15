@@ -38,10 +38,16 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (r4): launch scaffold + 12-week sequence + compliance checklist shipped at
+    docs/marketing/R-Q4-M-012-australia-launch-handoff.md. Status stays in_progress —
+    KPI (2000 AU signups) requires founder execution of WA group access, FB admin contacts,
+    influencer outreach, temple partnerships, Stripe AUD enablement. Engineering work
+    (/nri/au localized landing, AU TZ slot picker, PostHog dashboard) deferred to future
+    batches per founder budget approval.
 
 tags: ["nri","au","launch","diaspora"]
 created_at: 2026-06-09T22:09:25.579Z
-updated_at: 2026-06-09T22:09:25.579Z
+updated_at: 2026-06-15T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
