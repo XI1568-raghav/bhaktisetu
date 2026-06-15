@@ -1,0 +1,22 @@
+{
+  "as_of": "2026-06-14",
+  "source": "baseline (missing-env)",
+  "stale": true,
+  "blended": {
+    "domestic": {
+      "cac_inr": 20.83,
+      "ltv_inr": 480.21,
+      "payback_months": 1,
+      "monthly_acquired_target": 480,
+      "_method": "weighted_by_monthly_acquired_target"
+    },
+    "nri": {
+      "cac_usd": 1.65,
+      "ltv_usd": 46.31,
+      "payback_months": 1,
+      "monthly_acquired_target": 103,
+      "_method": "weighted_by_monthly_acquired_target"
+    }
+  },
+  "tripwire_breaches": []
+}
