@@ -22,14 +22,14 @@ Replace `{{podcast-slug}}` with the kebab-case podcast name from the table below
 
 | # | Podcast | Slug | Host email | Pitch template | Pitch sent | Status | Episode URL | Aired | 7d plays | Inbound DMs | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | Mostly Sane Podcast | mostly-sane | TBD | T1 | — | queued | — | — | — | — | — |
-| 2 | Spotify Founder's Inc | founders-inc | TBD | T1 | — | queued | — | — | — | — | — |
-| 3 | Pratha Podcast (Hindi) | pratha | TBD | T3 | — | queued | — | — | — | — | — |
-| 4 | Bharatpe Founder Notes | bharatpe-fn | TBD | T2 | — | queued | — | — | — | — | — |
-| 5 | The Founder's Journey | founders-journey | TBD | T4 | — | queued | — | — | — | — | — |
-| 6 | Sounds True Podcast | sounds-true | TBD | T5 | — | queued | — | — | — | — | — |
-| 7 | On Being | on-being | TBD | T5 | — | queued | — | — | — | — | — |
-| 8 | Daily Devotional Hindu Cast | daily-devotional | TBD | T5 | — | queued | — | — | — | — | — |
+| 1 | Mostly Sane Podcast | mostly-sane | TBD | T1 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
+| 2 | Spotify Founder's Inc | founders-inc | TBD | T1 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
+| 3 | Pratha Podcast (Hindi) | pratha | TBD | T3 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
+| 4 | Bharatpe Founder Notes | bharatpe-fn | TBD | T2 | — | queued | — | — | — | — | [CITATION-NEEDED] [VERIFY-FOUNDER show-still-active] — likely does not exist as named, confirm before pitching |
+| 5 | The Founder's Journey | founders-journey | TBD | T4 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
+| 6 | Sounds True Podcast | sounds-true | TBD | T5 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
+| 7 | On Being | on-being | TBD | T5 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
+| 8 | Daily Devotional Hindu Cast | daily-devotional | TBD | T5 | — | queued | — | — | — | — | [VERIFY-FOUNDER show-still-active] |
 
 ### Status legend
 
