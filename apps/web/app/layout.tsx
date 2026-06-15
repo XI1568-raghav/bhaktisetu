@@ -40,6 +40,7 @@ import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { ReferralCapture } from "../components/ReferralCapture";
+import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
 import { ChannelAttribution } from "../components/ChannelAttribution";
 import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
@@ -604,6 +605,7 @@ export default function RootLayout({
  <PostHogScript />
  <SentryProvider />
  <AdSenseScript />
+ <ServiceWorkerRegister />
  <NotificationPrompt />
  <ReferralCapture />
  <ChannelAttribution />
