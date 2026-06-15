@@ -72,7 +72,15 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-  productionBrowserSourceMaps: false,
+  // Sentry release tracking (R-Q2-E-015): emit production source maps so the
+  // Sentry Release workflow (.github/workflows/sentry-release.yml) can upload
+  // them via `@sentry/cli sourcemaps upload apps/web/.next`. Source maps are
+  // served alongside chunks but not referenced by `//# sourceMappingURL=`
+  // (Next 15 default behaviour); raw stack traces in CSP reports / Cloudflare
+  // logs become readable in the Sentry UI after upload. Bundle size impact
+  // on Cloudflare Pages workers is zero — maps are emitted as separate .map
+  // files, not bundled into JS chunks.
+  productionBrowserSourceMaps: true,
   reactStrictMode: true,
   webpack: (config) => {
     // Workspace packages (@poojly/api-client, @poojly/shared) use NodeNext-style
