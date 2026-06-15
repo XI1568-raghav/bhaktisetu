@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T11:11:57.863Z",
+  "generatedAt": "2026-06-15T11:13:22.969Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -5964,22 +5964,30 @@
         "target": 1,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "ls docs/agent-reports/unit-econ/ | grep -c unit-econ-refresh.json"
       },
       "revenue_impact": {
         "amount_inr": 0,
         "confidence": "medium",
-        "basis": "Imported from year-1 plan; refine on first cycle review."
+        "basis": "Indirect: enables intelligent Q4 paid-spend allocation; breach detection prevents wasted spend on unprofitable channels (NRI CAC > $40 tripwire)."
       },
       "est_hours": 12,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "Per-channel CAC/LTV/payback baseline JSON shipped",
+        "Refresh script env-or-noop pattern with tripwire engine",
+        "Founder handoff doc covers KPI promotion path",
+        "Snapshot writer dry-run produces valid blended JSON"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/finance/unit-econ-refresh-channel-spec.md",
+          "docs/finance/unit-econ-channel-data.json",
+          "docs/finance/R-Q2-F-002-handoff.md",
+          "scripts/finance/unit-econ-refresh.mjs"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15 (R4): shipped per-channel baseline JSON + refresh script (env-or-noop) + tripwire engine + founder handoff doc.\n  Status stays in_progress because KPI unit_econ_dashboard_live requires PostHog env populated + first non-stale snapshot.\n  Founder action: ~50 min wall (env paste + utm tagging + PostHog query block + first refresh).\n  See docs/finance/R-Q2-F-002-handoff.md for sequential action list.\n",
       "tags": [
         "finance",
         "unit-econ",
@@ -5987,7 +5995,7 @@
         "ltv"
       ],
       "created_at": "2026-06-09T21:56:41.463Z",
-      "updated_at": "2026-06-09T21:56:41.463Z",
+      "updated_at": "2026-06-15T00:00:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,

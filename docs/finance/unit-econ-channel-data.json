@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "as_of": "2026-06-15",
+  "note": "Q2 baseline estimates. Refresh per docs/finance/unit-econ-refresh-channel-spec.md. Values are targets/projections until PostHog cohort data populates.",
+  "currency": {
+    "domestic": "INR",
+    "nri": "USD"
+  },
+  "founder_opportunity_cost_inr_per_hour": 500,
+  "gross_margin_pct": {
+    "puja_booking": 25,
+    "live_darshan": 80,
+    "astrology_consult": 35,
+    "store": 18,
+    "yatra": 12,
+    "donation": 90,
+    "_basis": "Platform commission 20-40% per temple (PROJECT_CONTEXT business rule 3); store commission lower; donation has near-zero variable cost."
+  },
+  "channels": [
+    {
+      "id": "organic_seo",
+      "label": "Organic SEO (programmatic)",
+      "type": "organic",
+      "domestic": {
+        "cac_inr": 0,
+        "ltv_inr": 500,
+        "payback_months": 0,
+        "monthly_acquired_target": 200
+      },
+      "nri": {
+        "cac_usd": 0,
+        "ltv_usd": 50,
+        "payback_months": 0,
+        "monthly_acquired_target": 30
+      },
+      "attribution_source": "posthog:utm_source=google|bing|duckduckgo|referrer_empty",
+      "status": "target",
+      "confidence": "low"
+    },
+    {
+      "id": "twitter_bip",
+      "label": "Twitter build-in-public",
+      "type": "organic",
+      "domestic": {
+        "cac_inr": 0,
+        "ltv_inr": 400,
+        "payback_months": 0,
+        "monthly_acquired_target": 50
+      },
+      "nri": {
+        "cac_usd": 0,
+        "ltv_usd": 40,
+        "payback_months": 0,
+        "monthly_acquired_target": 10
+      },
+      "attribution_source": "posthog:utm_source=twitter|t.co",
+      "status": "target",
+      "confidence": "low"
+    },
+    {
+      "id": "reddit",
+      "label": "Reddit (r/india, r/bangalore, r/IndianHistory)",
+      "type": "organic",
+      "domestic": {
+        "cac_inr": 0,
+        "ltv_inr": 350,
+        "payback_months": 0,
+        "monthly_acquired_target": 30
+      },
+      "nri": {
+        "cac_usd": 0,
+        "ltv_usd": 30,
+        "payback_months": 0,
+        "monthly_acquired_target": 15
+      },
+      "attribution_source": "posthog:utm_source=reddit|old.reddit.com",
+      "status": "target",
+      "confidence": "low"
+    },
+    {
+      "id": "whatsapp_warm",
+      "label": "WhatsApp warm-network",
+      "type": "founder_time",
+      "domestic": {
+        "cac_inr": 50,
+        "ltv_inr": 600,
+        "payback_months": 1,
+        "monthly_acquired_target": 80
+      },
+      "nri": {
+        "cac_usd": 1,
+        "ltv_usd": 60,
+        "payback_months": 1,
+        "monthly_acquired_target": 20
+      },
+      "attribution_source": "posthog:utm_source=whatsapp + first_touch=share_link",
+      "status": "target",
+      "confidence": "medium"
+    },
+    {
+      "id": "referral_program",
+      "label": "Referral program (R-Q2-M-011)",
+      "type": "incentive",
+      "domestic": {
+        "cac_inr": 100,
+        "ltv_inr": 500,
+        "payback_months": 2,
+        "monthly_acquired_target": 60
+      },
+      "nri": {
+        "cac_usd": 10,
+        "ltv_usd": 50,
+        "payback_months": 2,
+        "monthly_acquired_target": 15
+      },
+      "attribution_source": "supabase:referral_claims.referrer_id + referral_codes.code",
+      "status": "target",
+      "confidence": "medium"
+    },
+    {
+      "id": "instagram",
+      "label": "Instagram (organic + reels)",
+      "type": "organic",
+      "domestic": {
+        "cac_inr": 0,
+        "ltv_inr": 400,
+        "payback_months": 0,
+        "monthly_acquired_target": 40
+      },
+      "nri": {
+        "cac_usd": 0,
+        "ltv_usd": 40,
+        "payback_months": 0,
+        "monthly_acquired_target": 8
+      },
+      "attribution_source": "posthog:utm_source=instagram|ig|l.instagram.com",
+      "status": "target",
+      "confidence": "low"
+    },
+    {
+      "id": "telegram",
+      "label": "Telegram (devotional channels)",
+      "type": "organic",
+      "domestic": {
+        "cac_inr": 0,
+        "ltv_inr": 300,
+        "payback_months": 0,
+        "monthly_acquired_target": 20
+      },
+      "nri": {
+        "cac_usd": 0,
+        "ltv_usd": 30,
+        "payback_months": 0,
+        "monthly_acquired_target": 5
+      },
+      "attribution_source": "posthog:utm_source=telegram|t.me",
+      "status": "target",
+      "confidence": "low"
+    }
+  ],
+  "blended": {
+    "domestic": {
+      "cac_inr": 36,
+      "ltv_inr": 450,
+      "payback_months": 1,
+      "monthly_acquired_target": 480,
+      "_method": "weighted_by_monthly_acquired_target"
+    },
+    "nri": {
+      "cac_usd": 2.7,
+      "ltv_usd": 43,
+      "payback_months": 1,
+      "monthly_acquired_target": 103,
+      "_method": "weighted_by_monthly_acquired_target"
+    }
+  },
+  "tripwires": {
+    "blended_nri_cac_usd_max": 40,
+    "blended_domestic_payback_months_max": 3,
+    "_basis": "ROADMAP.md tripwires: NRI CAC>$40 by week 8 OR domestic payback>3mo => investigate channel mix"
+  }
+}
