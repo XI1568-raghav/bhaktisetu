@@ -1,5 +1,7 @@
 # Australia NRI Launch Campaign — Sydney + Melbourne Diaspora
 
+> 🚨 **BLOCKED until R-Q4-G-001 / PR #146 AU pandit supply verified.** Cannot promise AU pandits for yatra packages or AU-TZ darshan if onboarding incomplete. Cross-ref `docs/supply/R-Q3-S-006-uk-pandits-handoff.md` + AU equivalent.
+
 > **Roadmap item**: R-Q4-M-012 (P1) · **Authored**: 2026-06-13 · **Sibling**: R-Q4-G-001 AU launch
 
 ## Goal
