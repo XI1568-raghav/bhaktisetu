@@ -38,6 +38,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: shipped scaffold — apps/mobile/lib/deep-link.ts parser hook + URL contract
+  doc at docs/engineering/R-Q2-E-014-mobile-push-deep-linking-handoff.md. Status stays
+  in_progress: founder action required (Apple Team ID + AASA + Android SHA-256 +
+  assetlinks.json + EAS rebuild + TestFlight push test) before push_deep_link_active
+  KPI can flip to 1.
 
 tags: ["mobile","deep-link","push"]
 created_at: 2026-06-09T21:55:16.790Z
