@@ -18,7 +18,7 @@ kpi:
   target: 1
   unit: "count"
   source: "manual"
-  query: "TBD-populate-before-orchestrator-go-live"
+  query: "Count tagged Sentry releases with web+api source maps uploaded. Verify via sentry.io → Releases → look for darshya@<sha> entries with artifacts > 0 for both darshya-web and darshya-api projects."
 
 revenue_impact:
   amount_inr: 0
@@ -29,15 +29,24 @@ est_hours: 4
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "apps/web/next.config.ts has productionBrowserSourceMaps: true"
+  - ".github/workflows/sentry-release.yml uploads both web .next maps + api dist maps"
+  - "NEXT_PUBLIC_SENTRY_RELEASE wired through web build and surfaced via apps/web/lib/release.ts"
+  - "Founder pastes SENTRY_AUTH_TOKEN GH secret and cuts one git tag v* push"
+  - "sentry.io shows release darshya@<sha> with artifacts on both darshya-web + darshya-api"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - ".github/workflows/sentry-release.yml"
+    - "apps/web/next.config.ts"
+    - "apps/api/src/lib/sentry.ts"
+    - "docs/engineering/R-Q2-E-015-sentry-sourcemaps-handoff.md"
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Scaffolded 2026-06-15 (R4). Code changes complete. Awaiting founder paste of SENTRY_AUTH_TOKEN GH secret + git tag v* push to flip KPI 0 → 1.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15: code scaffold shipped — productionBrowserSourceMaps enabled, release.ts helper + test added, founder handoff doc at docs/engineering/R-Q2-E-015-sentry-sourcemaps-handoff.md. Status stays in_progress until founder completes 2-step paste + tag (KPI requires live tagged release with uploaded artifacts).
 
 tags: ["observability","sentry"]
 created_at: 2026-06-09T21:55:16.790Z
