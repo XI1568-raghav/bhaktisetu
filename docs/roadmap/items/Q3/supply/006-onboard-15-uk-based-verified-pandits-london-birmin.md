@@ -50,6 +50,17 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (r4 batch): handoff doc + outreach scaffold shipped. See
+  docs/supply/R-Q3-S-006-uk-pandits-handoff.md for the full pipeline,
+  KYC requirements, GBP pricing, commission/tax considerations, and
+  founder action checklist. Outreach drafts via
+  scripts/agents/outreach-uk-pandits.mjs (deterministic, no auto-send,
+  founder reviews + sends manually). Item stays in_progress because KPI
+  (15 verified UK pandits) requires (a) U2 Stripe NRI KYC unblock,
+  (b) human KYC review per applicant, (c) institutional referral chain
+  via Hindu Council UK / ISKCON UK / BAPS Neasden / Leicester +
+  Birmingham mandirs. Flip to shipped only when supabase query in
+  kpi.query returns >=15.
 
 tags: ["supply","pandit","uk","nri"]
 created_at: 2026-06-09T22:02:56.063Z

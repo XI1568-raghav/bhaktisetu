@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T11:16:00.081Z",
+  "generatedAt": "2026-06-15T11:16:36.865Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -12327,7 +12327,7 @@
           "docs/company/06-supply.md"
         ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15 (r4 batch): handoff doc + outreach scaffold shipped. See\ndocs/supply/R-Q3-S-006-uk-pandits-handoff.md for the full pipeline,\nKYC requirements, GBP pricing, commission/tax considerations, and\nfounder action checklist. Outreach drafts via\nscripts/agents/outreach-uk-pandits.mjs (deterministic, no auto-send,\nfounder reviews + sends manually). Item stays in_progress because KPI\n(15 verified UK pandits) requires (a) U2 Stripe NRI KYC unblock,\n(b) human KYC review per applicant, (c) institutional referral chain\nvia Hindu Council UK / ISKCON UK / BAPS Neasden / Leicester +\nBirmingham mandirs. Flip to shipped only when supabase query in\nkpi.query returns >=15.\n",
       "tags": [
         "supply",
         "pandit",
