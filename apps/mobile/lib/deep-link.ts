@@ -64,26 +64,28 @@ export function parseDeepLink(rawUrl: string | null | undefined): DeepLinkRoute 
   if (segments.length === 0) return fallback;
 
   const [head, ...rest] = segments;
+  const MAX_SLUG_LEN = 256;
+  const decoded = decodeURIComponent(rest[0] ?? '').slice(0, MAX_SLUG_LEN);
 
   switch (head) {
     case 'puja':
-      if (rest[0]) return { pathname: '/(devotee)/puja-details', params: { slug: rest[0] } };
+      if (decoded) return { pathname: '/(devotee)/puja-details', params: { slug: decoded } };
       return fallback;
     case 'darshan':
-      if (rest[0]) return { pathname: '/(devotee)/darshan-player', params: { id: rest[0] } };
+      if (decoded) return { pathname: '/(devotee)/darshan-player', params: { id: decoded } };
       return fallback;
     case 'booking':
-      if (rest[0]) return { pathname: '/(devotee)/booking-detail', params: { bn: rest[0] } };
+      if (decoded) return { pathname: '/(devotee)/booking-detail', params: { bn: decoded } };
       return fallback;
     case 'consultation':
-      if (rest[0]) return { pathname: '/(devotee)/consultation', params: { id: rest[0] } };
+      if (decoded) return { pathname: '/(devotee)/consultation', params: { id: decoded } };
       return fallback;
     case 'chat':
     case 'inbox':
-      if (rest[0]) return { pathname: '/(devotee)/inbox', params: { thread: rest[0] } };
+      if (decoded) return { pathname: '/(devotee)/inbox', params: { thread: decoded } };
       return { pathname: '/(devotee)/inbox' };
     case 'order':
-      if (rest[0]) return { pathname: '/(devotee)/order-detail', params: { id: rest[0] } };
+      if (decoded) return { pathname: '/(devotee)/order-detail', params: { id: decoded } };
       return fallback;
     case 'today':
       return { pathname: '/(devotee)/today' };
