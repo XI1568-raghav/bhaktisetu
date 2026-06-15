@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T11:16:52.129Z",
+  "generatedAt": "2026-06-15T11:17:22.704Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -14943,22 +14943,33 @@
         "target": 38,
         "unit": "percent",
         "source": "posthog",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "cohort:kc_2026_cohort funnel:booked_kc->any_event_30d denominator:cohort_size"
       },
       "revenue_impact": {
         "amount_inr": 0,
         "confidence": "medium",
-        "basis": "Imported from year-1 plan; refine on first cycle review."
+        "basis": "D30 retention lift target 38% vs current Q3 baseline ~22%. Revenue lift is downstream of LTV, not directly modelled. Refine after first KC cycle."
       },
       "est_hours": 28,
-      "est_cost_inr": 0,
+      "est_cost_inr": 87500,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "All 35 templates (5 segments × 7 touchpoints) drafted in handoff doc",
+        "Per-cycle nudge schedule documented (T-7 to T+14)",
+        "Cohort SQL view spec written for Supabase",
+        "Free-tier budget impact assessed (WA + Resend + Supabase + GH Actions)",
+        "Founder action gates enumerated explicitly",
+        "D30 measurement script path identified",
+        "Native-language review budget surfaced for founder approval"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/marketing/R-Q4-M-011-handoff.md",
+          "docs/free-tier-budgets.md",
+          "docs/activation-gates.md",
+          "scripts/agents/onboarding-v2/_onboard-lib.mjs"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15 (R-Q4-M-011 batch r4): handoff scaffold shipped at\n  docs/marketing/R-Q4-M-011-handoff.md. Triple-cycle architecture +\n  5-segment matrix + 35-template plan + free-tier impact + founder\n  action items enumerated. Status STAYS in_progress per KPI gating\n  rule (D30 retention requires real cycle send + 30d wait).\n  Founder blockers: U7 WA Meta paste, native-translation budget,\n  WA upgrade vs cohort-reduction decision, 35-template copy approval,\n  supply-side temple partner confirmation, Supabase read-only role.\n",
       "tags": [
         "retention",
         "d30",
