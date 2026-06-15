@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   title: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia | Darshya',
   description:
     'Complete guide for NRIs to book authentic Hindu pujas at verified India temples. Dual currency USD/INR, video proof on WhatsApp, 80G receipt eligible donations, 24-hour cancellation. Trusted by Indian diaspora worldwide.',
+  robots: { index: false, follow: false },
   alternates: { canonical: 'https://darshya.online/nri-pujas' },
   openGraph: {
     title: 'NRI Pujas — Book from Anywhere in the World | Darshya',
