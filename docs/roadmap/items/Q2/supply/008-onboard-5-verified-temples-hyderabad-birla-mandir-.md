@@ -38,6 +38,10 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): scaffold + founder-action checklist expanded in docs/supply/hyderabad-temple-onboarding-spec.md.
+    5 verified institutional contacts (public domain only — Birla/Chilkur/Yadagirigutta/Karmanghat/Jagannath).
+    F1-F8 founder actions required. Status stays in_progress per KNOWN PITFALLS doctrine (KPI=founder MoU signing,
+    no auto-claim). Engineering tickets R-Q2-S-008a..e parked; will spawn on F1-F5 trustee approval signal.
 
 tags: ["supply","temple","hyderabad","south"]
 created_at: 2026-06-09T21:55:22.029Z
