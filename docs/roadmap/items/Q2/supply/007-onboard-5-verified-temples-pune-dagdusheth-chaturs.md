@@ -38,6 +38,13 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): Handoff doc shipped — docs/supply/R-Q2-S-007-pune-5-temples-handoff.md.
+    Public-domain institutional contacts (5 trusts) + Marathi-first WhatsApp +
+    email templates + KYC checklist + 10-week onboarding pipeline + Ganesh
+    Chaturthi Sep 2026 launch readiness + sub-ticket split (007a-e). Status
+    stays in_progress — founder must physically engage 5 temple admins, sign
+    MoUs, complete KYC, go-live. Flips to shipped only when verified_temples
+    Supabase row count for city='Pune' reaches 5 with real-paid bookings.
 
 tags: ["supply","temple","pune","new-city"]
 created_at: 2026-06-09T21:55:22.029Z
