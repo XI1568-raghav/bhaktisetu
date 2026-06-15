@@ -24,7 +24,7 @@ export interface YatraDestination {
   slug: string;
   name: string;
   state: string;
-  region: 'north' | 'south' | 'east' | 'west' | 'himalayas' | 'international';
+  region: 'north' | 'south' | 'east' | 'west' | 'central' | 'himalayas' | 'international';
   startingPriceInr: number;
   durationDays: number;
   heroImage: string;

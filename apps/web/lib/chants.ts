@@ -7,7 +7,7 @@ export interface Chant {
   slug: string;
   name: string;             // English/transliterated common name
   sanskritName: string;     // Devanagari title
-  category: 'protection' | 'wisdom' | 'wealth' | 'peace' | 'devotional' | 'invocation';
+  category: 'protection' | 'wisdom' | 'wealth' | 'peace' | 'devotional' | 'invocation' | 'shaiva' | 'shakta' | 'vaishnava';
   deity: string;
   source: string;           // Veda / Upanishad / Purana origin
   sanskrit: string;         // Full Devanagari text

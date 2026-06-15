@@ -503,6 +503,8 @@ export const CITIES: CityInfo[] = [
     popularPujas: ['ganesh-puja', 'satyanarayan-puja', 'durga-puja', 'navgraha-puja'],
     significance: 'Khajrana Ganesh built by Ahilyabai Holkar (1735) — Wednesday Ganesh visits draw 1L+ pilgrims. Indore is the recommended base for Ujjain Mahakaleshwar darshan (Bhasm Aarti requires 3-4am pickup from Indore).',
     pinPrefix: '452',
+  },
+  {
     slug: 'bhopal',
     name: 'Bhopal',
     state: 'Madhya Pradesh',
@@ -516,6 +518,8 @@ export const CITIES: CityInfo[] = [
     nearbyYatra: ['ujjain', 'omkareshwar', 'maheshwar'],
     significance: 'Central Indian hub for Madhya Pradesh devotional circuit. Bhojeshwar Shivling (~7.5ft) is the largest monolithic Shivling — unfinished 11th-century Paramara dynasty temple, attracts Mahashivratri yatra. Gateway to Ujjain Mahakaleshwar (190km) + Omkareshwar Jyotirlinga (270km).',
     pinPrefix: '462',
+  },
+  {
     slug: 'nagpur',
     name: 'Nagpur',
     state: 'Maharashtra',
@@ -528,6 +532,8 @@ export const CITIES: CityInfo[] = [
     popularPujas: ['satyanarayan-puja', 'ganesh-puja', 'rudrabhishek'],
     significance: 'Ganesh Utsav (Aug-Sep) drives city-wide pandal economy. Marbat Festival (unique to Nagpur) processes effigies of evil to ward off misfortune. Vidarbha region gateway — major puja demand catchment for Wardha, Amravati, Chandrapur.',
     pinPrefix: '440',
+  },
+  {
     slug: 'patna',
     name: 'Patna',
     state: 'Bihar',
