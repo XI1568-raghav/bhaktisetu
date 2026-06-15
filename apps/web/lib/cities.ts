@@ -319,10 +319,10 @@ export const CITIES: CityInfo[] = [
     population: '7M',
     description:
       'Cultural heart of Maharashtra. Five of eight Ashtavinayak Ganesh kshetras within 100 km. Famous Dagdusheth Halwai Ganpati draws crowds year-round.',
-    famousTemples: ['Dagdusheth Halwai Ganpati', 'Parvati', 'Chaturshringi', 'Shreemant Bhausaheb Rangari Ganpati'],
+    famousTemples: ['Dagdusheth Halwai Ganpati', 'Kasba Ganpati', 'Parvati', 'Chaturshringi', 'Chinchwad Morya Gosavi', 'Shreemant Bhausaheb Rangari Ganpati'],
     popularDeities: ['ganesha', 'shiva', 'devi'],
-    popularPujas: ['ganesh-puja', 'rudrabhishek', 'satyanarayan-puja'],
-    significance: 'Lokmanya Tilak revived public Ganesh Chaturthi here in 1893. Pune Ganpati visarjan procession is one of largest in world.',
+    popularPujas: ['ganesh-puja', 'rudrabhishek', 'satyanarayan-puja', 'navaratri-puja', 'shanti-puja'],
+    significance: 'Lokmanya Tilak revived public Ganesh Chaturthi here in 1893. Pune Ganpati visarjan procession is one of largest in world. Kasba Ganpati is Pune\'s grama-devata. Chinchwad Morya Gosavi samadhi is the origin of the "Mangalmurti Morya" chant. R-Q1-G-006: 6th city soft-launch via /mr/pune Marathi landing.',
     pinPrefix: '411',
   },
   {
