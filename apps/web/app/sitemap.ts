@@ -776,9 +776,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   };
 
-  // R-Q1-G-006 Pune supply onboarding — Marathi-language city landing.
-  const mrPuneEntry = {
-    url: `${BASE_URL}/mr/pune`,
+  // R-Q2-G-005 Hyderabad soft-launch — Telugu-language city landing.
+  const teHyderabadEntry = {
+    url: `${BASE_URL}/te/hyderabad`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.85,
@@ -883,7 +883,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bhaktiSaintEntries,
     ...langEntries,
     taChennaiEntry,
-    mrPuneEntry,
+    teHyderabadEntry,
     ...shlokaEntries,
     ...freePanditEntries,
     ...cityPujaEntries,

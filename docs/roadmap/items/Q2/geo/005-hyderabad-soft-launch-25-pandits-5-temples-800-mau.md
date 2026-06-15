@@ -50,6 +50,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (r4): Telugu /te/hyderabad landing + cities.ts anchor temples (Birla Mandir + Chilkur Balaji + Bhagyalakshmi + Jagannath Banjara Hills + ISKCON) + 25-pandit roster table (4 zones) + sitemap entry shipped. Engineering scaffold complete. Status stays in_progress — KPI flips on founder KYC of 25 pandits (R-Q2-S-005) + 5 temple MoUs (R-Q2-S-008) + 800 Hyderabad MAU activation. Handoff at docs/geo/R-Q2-G-005-hyderabad-soft-launch-handoff.md.
 
 tags: ["geo","hyderabad","south","new-city"]
 created_at: 2026-06-09T21:55:18.035Z
