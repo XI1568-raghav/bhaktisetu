@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T11:29:12.213Z",
+  "generatedAt": "2026-06-15T12:25:05.964Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -7388,30 +7388,42 @@
         "current": 0,
         "target": 1000,
         "unit": "count",
-        "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "source": "manual",
+        "query": "founder reports opt-in count from WA Cloud Business dashboard weekly"
       },
       "revenue_impact": {
         "amount_inr": 0,
         "confidence": "medium",
-        "basis": "Imported from year-1 plan; refine on first cycle review."
+        "basis": "Retention play, not direct revenue. Daily-return signal feeds puja booking funnel at 5% projected CTR."
       },
       "est_hours": 12,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "WA Cloud Business verified (R-Q1-M-010 closed) per [VERIFY-FOUNDER]",
+        "5 broadcast templates approved by Meta (shloka, panchang, deity, festival, opt-out)",
+        "/broadcast opt-in page live + linked from post-booking checkout flow",
+        "Daily cron 06:30 IST send active (GH Actions cron or apps/api scheduler)",
+        "1000 opt-in users (projection, measured by manual founder weekly check until KPI scraper wired)",
+        "<2% opt-out rate per send",
+        "DPDP Rule 7 consent withdrawal flow audited"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/marketing/whatsapp-daily-devotional-broadcast-spec.md",
+          "docs/marketing/R-Q2-M-008-handoff.md",
+          "docs/marketing/whatsapp-cloud-business-verify-spec.md"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15: populated success_criteria + agent_brief via R5 ship cycle. Handoff doc shipped at docs/marketing/R-Q2-M-008-handoff.md. Status stays in_progress — KPI requires founder action (Meta template approval + WA Cloud verify + first cohort send). Spec body remains as authored 2026-06-13.\n",
       "tags": [
         "wa",
         "broadcast",
-        "retention"
+        "retention",
+        "dpdp",
+        "opt-in"
       ],
       "created_at": "2026-06-09T21:55:19.892Z",
-      "updated_at": "2026-06-09T21:55:19.892Z",
+      "updated_at": "2026-06-15T00:00:00.000Z",
       "shipped_at": null,
       "verified_at": null,
       "killed_at": null,
