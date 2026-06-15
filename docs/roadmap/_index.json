@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T11:16:36.865Z",
+  "generatedAt": "2026-06-15T11:16:52.129Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -6497,7 +6497,7 @@
         "target": 10,
         "unit": "count",
         "source": "manual",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "founder-maintained tracking sheet — see docs/geo/R-Q2-G-007-whatsapp-diaspora-groups-handoff.md §Tracking"
       },
       "revenue_impact": {
         "amount_inr": 50000,
@@ -6510,9 +6510,12 @@
         "Populate during first sub-agent emission cycle"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/geo/R-Q2-G-007-whatsapp-diaspora-groups-handoff.md",
+          "docs/activation-gates.md"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15 (r4): Scaffolded full recruitment playbook + 15 candidate communities + outreach template + tracking schema + 5-criterion success def at docs/geo/R-Q2-G-007-whatsapp-diaspora-groups-handoff.md. Status remains in_progress — KPI requires founder offline activity (estimated 8-12 week calendar). Platform-side prerequisites already shipped (NRI USD tier, gift-puja flow, per-source UTM, /nri landing). WhatsApp Business API integration (gate U7) NOT in scope of this item — tracked separately.\n",
       "tags": [
         "geo",
         "nri",
