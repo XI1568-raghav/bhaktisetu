@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T11:15:12.988Z",
+  "generatedAt": "2026-06-15T11:16:00.081Z",
   "items": [
     {
       "id": "R-Q1-CS-001",
@@ -15897,7 +15897,7 @@
         "target": 10,
         "unit": "count",
         "source": "supabase",
-        "query": "TBD-populate-before-orchestrator-go-live"
+        "query": "SELECT COUNT(*) FROM \"Priest\" WHERE country='AU' AND identity_verified=true AND status='ACTIVE'"
       },
       "revenue_impact": {
         "amount_inr": 180000,
@@ -15907,12 +15907,21 @@
       "est_hours": 40,
       "est_cost_inr": 0,
       "success_criteria": [
-        "Populate during first sub-agent emission cycle"
+        "10 Priests in Supabase with country='AU' AND identity_verified=true AND status='ACTIVE'",
+        "Distribution: Sydney 4+, Melbourne 4+, Brisbane 2+ (no single-metro concentration)",
+        "First 10 AU bookings completed Q4 (downstream KPI, R-Q4-G-001 unblock)",
+        "Average rating 4.5+/5 within 60 days of activation",
+        "80%+ pandit retention at 60-day post-onboarding churn check",
+        "Engineering dependencies shipped: AU identity verification path + AU compliance fields on Priest model"
       ],
       "agent_brief": {
-        "context_files": []
+        "context_files": [
+          "docs/supply/R-Q4-S-004-au-pandits-handoff.md",
+          "docs/supply/R-Q3-S-004-jaipur-25-pandits-handoff.md",
+          "docs/supply/hyderabad-pandit-onboarding-spec.md"
+        ]
       },
-      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n",
+      "handoff_notes": "2026-06-09: bulk-imported from year-1 content sprint.\n2026-06-15 (R4 ship): scaffold + handoff doc + AU compliance checklist\n+ AUD pricing tier + engineering dependency list shipped via\nsupply/R-Q4-S-004-batch-2026-06-15-r4. Status remains in_progress per\nfounder-action rule. KPI populated with real Supabase query.\n",
       "tags": [
         "supply",
         "pandit",
