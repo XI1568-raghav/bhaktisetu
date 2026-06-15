@@ -135,7 +135,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/donations', priority: 0.8 },
     { path: '/ask-pandit', priority: 0.8 },
     { path: '/nri', priority: 0.9 },
-    { path: '/nri/ca', priority: 0.85 },
+    { path: '/uk', priority: 0.85 }, // R-Q3-G-001 UK launch landing
+
     { path: '/upgrade', priority: 0.7 },
     { path: '/waitlist', priority: 0.6 },
     // Support
@@ -777,14 +778,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   };
 
-  // R-Q2-G-005 Hyderabad soft-launch — Telugu-language city landing.
-  const teHyderabadEntry = {
-    url: `${BASE_URL}/te/hyderabad`,
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.85,
-  };
-
   const bookEntries = [
     { url: `${BASE_URL}/content/books`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
     ...bookSlugs.map((slug) => ({
@@ -884,7 +877,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bhaktiSaintEntries,
     ...langEntries,
     taChennaiEntry,
-    teHyderabadEntry,
     ...shlokaEntries,
     ...freePanditEntries,
     ...cityPujaEntries,

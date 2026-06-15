@@ -188,17 +188,23 @@ export function getCommissionRate(role: ProviderRole, planId: PlanId): number {
 }
 
 /**
- * Format price in INR with rupee symbol.
- * Pass `{ showCode: true }` for explicit "INR" / "USD" suffix to disambiguate
- * `$` (could be USD/CAD/AUD) and `₹` for NRI checkout flows.
+ * Format price in INR / USD / GBP with appropriate currency symbol.
+ * Pass `{ showCode: true }` for explicit "INR" / "USD" / "GBP" suffix to
+ * disambiguate `$` (could be USD/CAD/AUD) and `£` (GBP) for NRI checkout flows.
+ *
+ * R-Q3-G-001 (UK launch): GBP support added. NRI 9-10x domestic pricing rule
+ * applies — a ₹2,500 puja becomes ~£25 (10x at ~£1=₹100 reference). Caller
+ * is responsible for converting INR→GBP amount before passing in; this fn
+ * only formats. Use `gbpFromInr()` helper for the conversion.
  */
 export function formatPrice(
  amount: number,
- opts: { showCode?: boolean; currency?: "INR" | "USD" } = {},
+ opts: { showCode?: boolean; currency?: "INR" | "USD" | "GBP" } = {},
 ): string {
  const { showCode = false, currency = "INR" } = opts;
  if (amount === 0) return "Free";
- const locale = currency === "USD" ? "en-US" : "en-IN";
+ const locale =
+  currency === "USD" ? "en-US" : currency === "GBP" ? "en-GB" : "en-IN";
  const formatted = new Intl.NumberFormat(locale, {
  style: "currency",
  currency,
@@ -206,6 +212,21 @@ export function formatPrice(
  maximumFractionDigits: 0,
  }).format(amount);
  return showCode ? `${formatted} ${currency}` : formatted;
+}
+
+/**
+ * NRI 9-10x domestic pricing rule per R-Q3-G-001 + business rule.
+ * Reference FX rates as of 2026-06-15 (founder reviews quarterly):
+ * - 1 GBP ≈ ₹105 (£1 ≈ ₹105 spot)
+ * - We apply 10x multiplier first (₹2500 → ₹25000), then divide by ₹105
+ *   to land on £238 — a deliberately premium NRI tier.
+ * - Round to nearest £5 for clean checkout UX.
+ */
+export function gbpFromInr(inrAmount: number, multiplier = 10): number {
+ if (inrAmount <= 0) return 0;
+ const FX_INR_PER_GBP = 105;
+ const raw = (inrAmount * multiplier) / FX_INR_PER_GBP;
+ return Math.round(raw / 5) * 5;
 }
 
 /** Get the next upgrade plan, or null if already on Enterprise */
