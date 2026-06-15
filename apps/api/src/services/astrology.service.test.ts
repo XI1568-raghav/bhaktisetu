@@ -78,6 +78,35 @@ describe('AstrologyService.getAstrologerById', () => {
   });
 });
 
+// R-Q1-E-010 dual-lookup helper
+describe('AstrologyService.getAstrologerByIdOrSlug', () => {
+  it('resolves a known legacy slug', () => {
+    const detail = astrologyService.getAstrologerByIdOrSlug('astro_001');
+    expect(detail).not.toBeNull();
+    expect(detail!.id).toBe('astro_001');
+    expect(Array.isArray(detail!.reviews)).toBe(true);
+  });
+
+  it('returns null for an unknown slug without throwing', () => {
+    expect(astrologyService.getAstrologerByIdOrSlug('astro_xxx')).toBeNull();
+  });
+
+  it('returns null for a well-formed UUID until DB-backed lookup ships', () => {
+    // Reserved branch — keeps the route forward-compatible. Until the
+    // Astrologer table exists, a UUID resolves to null (404) rather than 500.
+    expect(
+      astrologyService.getAstrologerByIdOrSlug(
+        '11111111-1111-4111-8111-111111111111',
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null for empty / whitespace input', () => {
+    expect(astrologyService.getAstrologerByIdOrSlug('')).toBeNull();
+    expect(astrologyService.getAstrologerByIdOrSlug('   ')).toBeNull();
+  });
+});
+
 describe('AstrologyService.getSpecializations', () => {
   it('returns array of specialization metadata', () => {
     const list = astrologyService.getSpecializations();

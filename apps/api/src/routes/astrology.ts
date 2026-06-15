@@ -57,7 +57,9 @@ export async function astrologyRoutes(server: FastifyInstance) {
 
   server.get('/astrologers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const astrologer = astrologyService.getAstrologerById(id);
+    // R-Q1-E-010: accept either legacy slug ("astro_002") or future UUID.
+    // Dual-lookup keeps the route forward-compatible with DB-backed migration.
+    const astrologer = astrologyService.getAstrologerByIdOrSlug(id);
 
     if (!astrologer) {
       return reply.code(404).send({ error: 'Astrologer not found.' });
