@@ -50,10 +50,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (r4): engineering scaffold shipped. /city/pune enriched in apps/web/lib/cities.ts — 7 anchor temples (Dagdusheth + Chaturshringi + Parvati + Sarasbaug + Kasba Ganpati + Rangari Ganpati + Pataleshwar Cave), 8 popular pujas, Ashtavinayak + Shirdi nearby yatra cross-links, NRI magnet flag. Handoff doc at docs/geo/R-Q2-G-004-pune-soft-launch-handoff.md. Status stays in_progress — KPI requires founder action: R-Q2-S-004 (25 pandit KYC) + R-Q2-S-007 (5 temple MoUs) + Marathi diaspora marketing activation. Do NOT flip status=shipped without pune_mau≥1000 sustained 30d.
 
 tags: ["geo","pune","new-city"]
 created_at: 2026-06-09T21:55:18.035Z
-updated_at: 2026-06-09T21:55:18.035Z
+updated_at: 2026-06-15T00:00:00.000Z
 shipped_at: null
 verified_at: null
 killed_at: null
