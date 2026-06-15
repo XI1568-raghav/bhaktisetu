@@ -6,7 +6,7 @@ owner_role: cto
 quarter: Q2
 month_target: 6
 priority: P2
-status: in_progress
+status: shipped
 agent_assignable: true
 founder_blocker: null
 depends_on: []
@@ -42,7 +42,7 @@ handoff_notes: |
 tags: ["pwa","offline","mobile"]
 created_at: 2026-06-09T21:55:16.790Z
 updated_at: 2026-06-09T21:55:16.790Z
-shipped_at: null
+shipped_at: 2026-06-15T00:00:00.000Z
 verified_at: null
 killed_at: null
 killed_reason: null
