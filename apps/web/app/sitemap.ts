@@ -135,6 +135,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/donations', priority: 0.8 },
     { path: '/ask-pandit', priority: 0.8 },
     { path: '/nri', priority: 0.9 },
+    { path: '/nri/ca', priority: 0.85 },
     { path: '/upgrade', priority: 0.7 },
     { path: '/waitlist', priority: 0.6 },
     // Support

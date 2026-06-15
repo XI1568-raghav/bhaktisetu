@@ -44,6 +44,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4 batch): SEO surface shipped — /nri/ca landing page (edge runtime, Service JSON-LD, 6-metro grid Toronto/Vancouver/Brampton/Mississauga/Calgary/Edmonton/Montreal/Ottawa, 6 founder-FAQs incl. transparent CAD-checkout gating), sitemap entry priority 0.85. Status STAYS in_progress — Stripe CAD rail + 1K paid CAD users blocked on founder action U2 (Stripe Canada KYC + dashboard activation) AND R-Q3-S-007 (10 Canada pandits onboarded). Engineering follow-up scoped in docs/geo/R-Q3-G-002-canada-launch-handoff.md (createStripeOrder currency param, formatPrice CAD path, Payment.currency enum, vitest cases). DO NOT auto-flip status to shipped until first real CAD payment recorded in Supabase.
 
 tags: ["geo","nri","canada","launch"]
 created_at: 2026-06-09T22:02:50.119Z
