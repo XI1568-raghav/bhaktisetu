@@ -38,6 +38,11 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): scaffold + sampradaya brief + per-city target mix + coordinator strategy
+    shipped via docs/supply/R-Q4-S-001-central-india-trio-25-pandits-handoff.md.
+    Status remains in_progress — KPI requires founder-action (physical recruitment +
+    verification of 25 humans across Indore/Bhopal/Nagpur). Phased 10/8/7 with
+    recommended late-October corridor trip post-Ganesh+Pitra-Paksh quiet window.
 
 tags: ["supply","pandit","central-india","mp"]
 created_at: 2026-06-09T22:09:26.554Z
