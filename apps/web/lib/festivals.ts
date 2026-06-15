@@ -12,7 +12,7 @@ export interface FestivalInfo {
   description: string;
   rituals: string[];
   pujasAvailable: string[]; // slug references — used to link to /pujas/[slug]
-  fastingType: 'full' | 'partial' | 'none';
+  fastingType: 'full' | 'partial' | 'one-meal' | 'phalahar' | 'none';
   significance: string;
 }
 

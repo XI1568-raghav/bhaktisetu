@@ -832,8 +832,8 @@ export function calculateKundli(
  const minute = parseInt(minuteStr!, 10);
 
  // Get coordinates — prefer direct override (from CityAutocomplete) over string lookup (fallback-prone).
- const coords = coordsOverride
-   ? { latitude: coordsOverride.lat, longitude: coordsOverride.lng, timezone: coordsOverride.tzOffset }
+ const coords: CityCoords = coordsOverride
+   ? { lat: coordsOverride.lat, lng: coordsOverride.lng, timezone: coordsOverride.tzOffset }
    : getCityCoordinates(birthPlace);
 
  // Convert local time to UT
@@ -848,7 +848,7 @@ export function calculateKundli(
  // Calculate tropical positions and convert to sidereal
  const sunTrop = getSunLongitude(jd);
  const moonTrop = getMoonLongitude(jd);
- const ascTrop = getAscendant(jd, coords.latitude, coords.longitude);
+ const ascTrop = getAscendant(jd, coords.lat, coords.lng);
 
  const sunSid = tropicalToSidereal(sunTrop, ayanamsa);
  const moonSid = tropicalToSidereal(moonTrop, ayanamsa);
