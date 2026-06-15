@@ -759,6 +759,40 @@ class AstrologyService {
     };
   }
 
+  // ── Get Astrologer By Slug Or UUID ────────────────────────────────────────
+  // R-Q1-E-010 dual-lookup helper. Routes/clients may pass either the legacy
+  // slug ("astro_002") or — once DB-backed astrologers ship — a UUID. Order:
+  // 1. UUID regex match → attempt UUID lookup (currently no-op against the
+  //    in-memory ASTROLOGERS seed; reserved for future DB-backed lookup).
+  // 2. Fall back to slug lookup against the in-memory seed.
+  // See docs/engineering/astrologer-slug-uuid-migration-spec.md.
+  getAstrologerByIdOrSlug(idOrSlug: string): AstrologerDetail | null {
+    if (!idOrSlug || typeof idOrSlug !== 'string') return null;
+    const trimmed = idOrSlug.trim();
+    if (!trimmed) return null;
+
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        trimmed,
+      );
+
+    // UUID path reserved for DB-backed lookup (future migration). For now the
+    // in-memory seed only has slug IDs ("astro_001"..) so a UUID will never
+    // resolve here. Still attempt it to keep call sites identifier-agnostic.
+    if (isUuid) {
+      const byUuid = ASTROLOGERS.find((a) => a.id === trimmed);
+      if (byUuid) {
+        return { ...byUuid, reviews: REVIEWS[byUuid.id] ?? [] };
+      }
+      // Intentional fallthrough — caller may have passed a UUID that maps to
+      // a slug via a future mapping table. Until that table exists, return
+      // null rather than 500 so the route can 404 cleanly.
+      return null;
+    }
+
+    return this.getAstrologerById(trimmed);
+  }
+
   // ── Get Specializations ───────────────────────────────────────────────────
   getSpecializations(): Specialization[] {
     return SPECIALIZATIONS;
