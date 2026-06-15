@@ -776,6 +776,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   };
 
+  // R-Q1-G-006 Pune supply onboarding — Marathi-language city landing.
+  const mrPuneEntry = {
+    url: `${BASE_URL}/mr/pune`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.85,
+  };
+
   const bookEntries = [
     { url: `${BASE_URL}/content/books`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
     ...bookSlugs.map((slug) => ({
@@ -875,6 +883,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bhaktiSaintEntries,
     ...langEntries,
     taChennaiEntry,
+    mrPuneEntry,
     ...shlokaEntries,
     ...freePanditEntries,
     ...cityPujaEntries,
