@@ -30,11 +30,17 @@ Per R-Q2-S-003 angel meetings + accelerator outcomes (per R-Q2-F-004 Antler/Surg
 - Pro-rata rights (1x or higher for lead)
 - Board seat (lead 1 + founder 1)
 - Founder vesting 4-year w/ 1-year cliff
-- Anti-dilution: weighted average
-- Liquidation preference: 1x non-participating
+- **Founder-negotiable (not pre-set):** Anti-dilution: weighted average
+- **Founder-negotiable (not pre-set):** Liquidation preference: 1x non-participating preferred
 - Right of first refusal on next round
 - Drag-along rights
 - Tag-along rights
+
+**INDIAN COMPLIANCE:** SAFE not directly recognized in India. For INR-domiciled angels, use CCD (Compulsorily Convertible Debenture) or CCPS (Compulsorily Convertible Preference Shares) per Companies Act 2013. For NRI/foreign: FDI route OR ODI restriction (FEMA 20(R)). Counsel determines.
+
+**Investor type:** AIF Cat-I (early-stage angel funds) vs AIF Cat-II (typical VC) trigger different SEBI registrations. Confirm investor's AIF category before sharing term sheet.
+
+Valuation range ₹2-3Cr / 15-20% dilution sourced from R-Q3-F-001 pre-seed close spec — re-verify before publication.
 
 ## Q2 mid-term checkpoints
 
