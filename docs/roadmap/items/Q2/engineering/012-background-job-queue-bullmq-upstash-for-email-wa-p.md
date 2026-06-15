@@ -38,6 +38,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): scaffold shipped — apps/api/src/services/job-queue.service.ts (env-or-noop BullMQ wrapper) + admin-queue.ts (GET /api/v1/admin/queue/health) + job-queue.service.test.ts (8/8 green). KPI=0 until founder provisions Upstash + sets REDIS_URL on Render. Full activation steps + free-tier warnings in docs/engineering/R-Q2-E-012-handoff.md. Status stays in_progress (founder action required).
 
 tags: ["jobs","async","queue"]
 created_at: 2026-06-09T21:55:16.790Z
