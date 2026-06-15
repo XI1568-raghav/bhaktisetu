@@ -32,3 +32,27 @@ Q1 ship 3 A/B test feature flags via PostHog (per R-Q1-E-008).
 ## Closes
 
 R-Q1-E-009 — spec shipped.
+
+## Implementation (2026-06-15, R4)
+
+- `apps/web/lib/experiments.ts` — `useExperiment(experiment, defaultValue)` hook
+  wraps `useFeatureFlag` and fires one `experiment_exposure` event per page
+  view via `capture()`. PostHog insight on this event powers the
+  `ab_flags_active` KPI (R-Q1-E-009 requires min 100 exposures/variant).
+- `ACTIVE_EXPERIMENTS` const — single source of truth listing the 3 flag
+  keys + variants. Tested in `apps/web/__tests__/experiments.test.ts`.
+- Wiring:
+  - `hero_copy_v2` → `apps/web/components/home/HeroCopyVariant.tsx`
+    (variants: `control` Sanskrit-anchored, `benefit` benefit-led)
+  - `cta_color_test` → `apps/web/components/HomeHeroCta.tsx`
+    (variants: `saffron` = saffron-600, `indigo` = indigo-600)
+  - `nri_lane_above_fold` → `apps/web/components/home/NriLaneAbTest.tsx`
+    mounted twice on `app/page.tsx` (slots `above` and `below`); only the
+    slot matching the resolved variant renders content.
+- Defaults: every flag renders the control variant when PostHog is
+  unconfigured, the SDK hasn't loaded, or the flag is unknown — page never
+  blanks.
+- Founder action remaining (U8 paste): create the 3 flags in PostHog UI
+  with 50/50 rollout, create the `experiment_exposure` insight grouped by
+  `variant` and filtered per `experiment`, wait until ≥100 exposures per
+  variant before calling a winner.
