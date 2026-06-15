@@ -44,6 +44,7 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4 batch): scaffold shipped — /uk landing + formatPrice GBP path + gbpFromInr helper + sample-pricing preview + sitemap entry. Stays in_progress: founder action U2 (Stripe NRI UK GBP) blocks the live paid path. Full handoff: docs/geo/R-Q3-G-001-uk-launch-handoff.md. Branch: geo/R-Q3-G-001-batch-2026-06-15-r4.
 
 tags: ["geo","nri","uk","launch"]
 created_at: 2026-06-09T22:02:50.119Z
