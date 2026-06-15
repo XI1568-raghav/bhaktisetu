@@ -29,15 +29,28 @@ est_hours: 24
 est_cost_inr: 0
 
 success_criteria:
-  - "Populate during first sub-agent emission cycle"
+  - "8 podcast episodes recorded and published in Q4 (target month-11)"
+  - "200K combined plays measured 30 days post-air"
+  - "5K Twitter follower spike cumulative across Q4"
+  - "50+ inbound DMs (investors + customers + pandit interest)"
 
 agent_brief:
-  context_files: []
+  context_files:
+    - docs/marketing/founder-podcast-circuit-q4-spec.md
+    - docs/marketing/founder-podcast-pitch-emails.md
+    - docs/marketing/R-Q4-M-010-handoff.md
+    - docs/marketing/R-Q4-M-010-outreach-tracker.md
   prompt_skeleton: |
-    TBD — populated by first sub-agent cycle.
+    Audit `R-Q4-M-010-outreach-tracker.md` — count rows with status=aired.
+    If count < 8, surface remaining queued/pitched rows and oldest-pitch-without-response
+    needing follow-up. Do not auto-claim shipped — founder updates tracker after each
+    host publishes.
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): handoff + outreach tracker shipped via marketing/R-Q4-M-010-batch-2026-06-15-r4.
+  Status stays in_progress — KPI flips shipped only after founder records + 8 hosts publish.
+  Spec + pitch templates + tracker scaffold all in place. Founder pitch loop is the gate.
 
 tags: ["founder","podcast","awareness"]
 created_at: 2026-06-09T22:09:25.579Z
