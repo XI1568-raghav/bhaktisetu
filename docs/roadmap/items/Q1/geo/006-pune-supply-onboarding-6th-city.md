@@ -45,8 +45,9 @@ agent_brief:
 
 handoff_notes: |
   2026-06-09: bulk-imported from year-1 content sprint.
+  2026-06-15 (R4): Marathi landing /mr/pune + 6 anchor temples (Dagdusheth, Kasba, Parvati, Chaturshringi, Chinchwad Morya, Bhausaheb Rangari) + 15-pandit roster scaffold + cities.ts expansion shipped. KPI city_active_pune still 0; flips to 1 when founder onboards 3 verified pandits via cold-calls + KYC. status stays in_progress per founder-action-required policy. Handoff doc: docs/geo/R-Q1-G-006-pune-supply-onboarding-handoff.md.
 
-tags: ["geo","pune","p2"]
+tags: ["geo","pune","p2","founder-action-required"]
 created_at: 2026-06-09T21:50:55.201Z
 updated_at: 2026-06-09T21:50:55.201Z
 shipped_at: null
