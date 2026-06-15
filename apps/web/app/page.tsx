@@ -42,6 +42,8 @@ import YatraStrip from '../components/home/YatraStrip';
 import TrustStrip from '../components/home/TrustStrip';
 import EmailCapture from '../components/EmailCapture';
 import NextFestivalStrip from '../components/home/NextFestivalStrip';
+import HeroCopyVariant from '../components/home/HeroCopyVariant';
+import NriLaneAbTest from '../components/home/NriLaneAbTest';
 
 // Edge runtime + 1-hour revalidate — TTFB win per Pillar 4 audit (2026-06-08).
 // Panchang chip cache OK at 1h granularity. Personal salutation deferred to client.
@@ -128,23 +130,11 @@ export default async function HomePage() {
  {t('heroBadge')}
  </div>
 
- <h1
- data-reveal="cinematic"
- className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
- >
- {t('heroTitle1')}{' '}
- <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>{t('heroTitle2')}</span>
- </h1>
-
- <p
- data-reveal="up"
- data-delay="2"
- className="mt-4 text-sm leading-relaxed"
- style={{ color: 'var(--color-text-muted)' }}
- >
- {t('heroSubtitle')}
- </p>
+ <HeroCopyVariant
+ controlTitle1={t('heroTitle1')}
+ controlTitle2={t('heroTitle2')}
+ controlSubtitle={t('heroSubtitle')}
+ />
 
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
  <HomeHeroCta />
@@ -212,6 +202,9 @@ export default async function HomePage() {
  <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-text-faint)' }} />
  </div>
  </section>
+
+ {/* ═══ A/B nri_lane_above_fold — above slot (R-Q1-E-009) ═════════════ */}
+ <NriLaneAbTest slot="above" />
 
  {/* ═══ ONBOARDING — intent trio (anon) / continue card (returning) — moved below hero per Phase D-6 ═══ */}
  <ContinueJourneyCard />
@@ -656,6 +649,9 @@ export default async function HomePage() {
  <ConsultStrip />
  <ShopStrip />
  <YatraStrip />
+
+ {/* ═══ A/B nri_lane_above_fold — below slot (R-Q1-E-009) ═════════════ */}
+ <NriLaneAbTest slot="below" />
 
  {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
  <section aria-label="Discover the Library" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
