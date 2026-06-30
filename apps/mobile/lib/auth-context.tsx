@@ -10,8 +10,21 @@ import * as SecureStore from 'expo-secure-store';
 import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
 
 // ─── Demo accounts (mirror of apps/web/lib/auth-context.tsx) ─────────────────
+//
+// DEMO_ENABLED is true only in development bundles (Expo Go / EAS dev profile).
+// Production / preview / testflight builds set DEMO_ENABLED=false so the
+// hardcoded admin@demo.com / demo123 ADMIN role bypass cannot ship to stores.
+//
+// Per CEO audit 2026-07-01 (P0-3): mobile shipped offline ADMIN escalation via
+// these hardcoded records mirroring the web side. Web side gated in prior
+// commit fc52ea5 — mobile side now matches that policy.
 
-const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
+declare const __DEV__: boolean;
+const DEMO_ENABLED =
+  (typeof __DEV__ !== 'undefined' && __DEV__) ||
+  process.env.EXPO_PUBLIC_ALLOW_DEMO_AUTH === 'true';
+
+const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = DEMO_ENABLED ? {
   'devotee@demo.com': {
     password: 'demo123',
     user: {
@@ -129,7 +142,7 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
       role: 'admin',
     },
   },
-};
+} : {};
 
 function makeDemoSession(): AuthSession {
   return {
@@ -140,7 +153,9 @@ function makeDemoSession(): AuthSession {
   };
 }
 
-const DEMO_USER: AuthUser = DEMO_ACCOUNTS['devotee@demo.com']!.user;
+// May be undefined in production bundles where DEMO_ACCOUNTS is the empty
+// object. Consumers (demoSignIn) must guard before using.
+const DEMO_USER: AuthUser | undefined = DEMO_ACCOUNTS['devotee@demo.com']?.user;
 
 // ─── Storage keys ────────────────────────────────────────────────────────────
 
@@ -433,6 +448,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, persistSession]);
 
   const demoSignIn = useCallback(async () => {
+    if (!DEMO_USER) {
+      // Production bundle — demo sign-in disabled per CEO audit 2026-07-01 P0-3.
+      throw new Error('Demo sign-in disabled in this build.');
+    }
     const demoSession = makeDemoSession();
     setSession(demoSession);
     setUser(DEMO_USER);
