@@ -7,7 +7,15 @@ export function middleware(request: NextRequest) {
   const expected = process.env.ADMIN_DASHBOARD_TOKEN;
 
   if (!expected) {
-    return NextResponse.next();
+    // Fail CLOSED — never serve admin world-readable just because the env is missing.
+    // Prior behavior (NextResponse.next()) exposed all 14 admin pages on any misconfig.
+    return new NextResponse(
+      "Admin disabled: ADMIN_DASHBOARD_TOKEN not configured on this deployment.",
+      {
+        status: 503,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      }
+    );
   }
 
   const presented = request.cookies.get(COOKIE_NAME)?.value;
