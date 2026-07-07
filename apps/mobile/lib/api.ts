@@ -17,7 +17,20 @@ function resolveApiBase(): string {
   );
 }
 
-const API_BASE = `${resolveApiBase()}/api/v1`;
+const API_ROOT = resolveApiBase();
+const API_BASE = `${API_ROOT}/api/v1`;
+
+/**
+ * Shared API root (no trailing slash, no `/api/v1` suffix) for screens that
+ * build their own auth-bearing fetch calls. Use this instead of re-reading
+ * `process.env.EXPO_PUBLIC_API_URL` per-screen — that pattern silently fell
+ * back to `localhost:4000` (unreachable from devices) in 6 screens. This
+ * reuses the loud-failing resolver above, so a misconfigured build fails at
+ * first call rather than silently hitting localhost.
+ */
+export function apiBase(): string {
+  return API_ROOT;
+}
 
 export async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);

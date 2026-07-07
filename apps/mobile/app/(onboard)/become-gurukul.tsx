@@ -16,11 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
-
-function apiBase(): string {
-  const b = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
-  return b.replace(/\/$/, '');
-}
+import { apiBase } from '../../lib/api';
 
 const TRADITIONS = ['Advaita', 'Vishishtadvaita', 'Dvaita', 'Smarta', 'Shaiva', 'Shakta', 'Vaishnava'] as const;
 const MODES = ['residential', 'online', 'hybrid'] as const;

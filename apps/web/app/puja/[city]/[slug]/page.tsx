@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITY_PUJAS, CITY_PUJA_SLUGS, getCityPuja } from '../../../../lib/city-pujas';
 
-export const runtime = 'edge';
+// NOTE: no `runtime = 'edge'` — generateStaticParams (below) + edge runtime are
+// mutually exclusive under Next 15 / @cloudflare/next-on-pages and block the
+// whole web build. revalidate=86400 keeps ISR (daily regen) on the default
+// Node runtime, which next-on-pages prerenders fine. (Pre-existing breakage
+// from when edge was cargo-culted onto this route.)
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

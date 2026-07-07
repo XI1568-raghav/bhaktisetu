@@ -7,6 +7,7 @@ import { initApiClient } from '@poojly/api-client';
 import { AuthProvider, getStoredAccessToken } from '../lib/auth-context';
 import { initSentryMobile } from '../lib/sentry';
 import { usePushNotifications } from '../lib/push-notifications';
+import { apiBase } from '../lib/api';
 
 function PushRegister() {
   usePushNotifications();
@@ -17,13 +18,13 @@ function PushRegister() {
 // No-op if EXPO_PUBLIC_SENTRY_DSN is missing.
 initSentryMobile();
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
-
 // Initialise the api-client once at module load.
 // getAuthToken reads from expo-secure-store via the auth context's helper.
+// apiBase() reuses the shared loud-failing resolver in lib/api so a build
+// missing EXPO_PUBLIC_API_URL fails at first call instead of silently hitting
+// localhost:4000 (unreachable from physical devices).
 initApiClient({
-  baseUrl: API_BASE_URL,
+  baseUrl: apiBase(),
   getAuthToken: getStoredAccessToken,
   timeout: 30_000,
 });

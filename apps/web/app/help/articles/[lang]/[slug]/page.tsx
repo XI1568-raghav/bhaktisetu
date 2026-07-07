@@ -9,7 +9,13 @@ import {
  type HelpLang,
 } from "../../../../../lib/help-articles";
 
-export const runtime = "edge";
+// NOTE: do NOT set `runtime = 'edge'` here. generateStaticParams (below) +
+// edge runtime are mutually exclusive under Next 15 / @cloudflare/next-on-pages
+// ("Page cannot use both runtime = 'edge' and generateStaticParams"), and the
+// combination blocks the entire web build. revalidate=86400 keeps ISR; the
+// default Node runtime prerenders the static params fine on next-on-pages.
+// (origin PR #75 cargo-culted `runtime='edge'` from /astrology/[id], which
+// has no generateStaticParams and so is unaffected.)
 export const revalidate = 86400;
 
 type Params = Promise<{ lang: string; slug: string }>;

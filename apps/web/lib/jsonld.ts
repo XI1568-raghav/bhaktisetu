@@ -12,7 +12,6 @@ export const organizationJsonLd = {
   description:
     "India's devotional super-app — live darshan, puja booking with video proof, AI spiritual guidance, gaushala seva.",
   sameAs: [
-    'https://twitter.com/darshya_app',
     'https://www.instagram.com/darshya.online',
     'https://www.facebook.com/darshya.online',
     'https://www.youtube.com/@darshya',

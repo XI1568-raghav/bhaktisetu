@@ -3,9 +3,17 @@ name: Roadmap Finalize
 on:
   push:
     branches: [main]
+    # Only run when roadmap-relevant files change. Prevents re-running on
+    # every docs-only / agent-report-only push that has no [skip ci].
+    paths:
+      - 'docs/roadmap/**'
+      - 'scripts/agents/roadmap/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
     paths-ignore:
       - 'docs/roadmap/done/**'   # don't loop on our own commits
       - 'docs/roadmap/_alerts/**'
+  workflow_dispatch: {}
 
 permissions:
   contents: write
