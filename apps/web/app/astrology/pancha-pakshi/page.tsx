@@ -5,7 +5,6 @@ import { ACTIVITIES, ACTIVITY_COLOR, PANCHA_PAKSHI_BIRDS } from '../../../lib/pa
 
 const BASE_URL = 'https://darshya.online';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

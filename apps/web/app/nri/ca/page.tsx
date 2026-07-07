@@ -11,7 +11,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

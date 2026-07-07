@@ -6,7 +6,6 @@ import Link from 'next/link';
 import KundliMilanClient from './KundliMilanClient';
 import { allNakshatraOptions } from '../../../lib/kundli-milan';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

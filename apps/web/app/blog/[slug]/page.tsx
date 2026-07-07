@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { getBlogPost, listBlogPosts } from '../../../lib/blog-posts';
 import { markdownToHtml } from '../../../lib/markdown';
 
-export const runtime = 'edge';
 export const revalidate = 3600;
 
 interface Params {

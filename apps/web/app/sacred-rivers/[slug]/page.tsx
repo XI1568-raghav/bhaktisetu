@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { getSacredRiver, SACRED_RIVERS, sacredRiverSlugs } from '../../../lib/sacred-rivers';
 import { getTirtha } from '../../../lib/tirthas';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

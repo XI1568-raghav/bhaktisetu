@@ -28,12 +28,11 @@ import {
   luckyNumberOfDay,
 } from '../../../../../lib/horoscope-templates';
 
-// Next 15 disallows `runtime='edge'` + `generateStaticParams` together.
-// CF Pages adapter rejected this route without edge runtime; choosing edge SSR
-// over SSG so the IST date in "today's horoscope" stays current per request.
+// No `runtime = 'edge'` — forbidden under @opennextjs/cloudflare (Node runtime
+// only, via nodejs_compat). This route uses SSR-per-request (no generateStaticParams)
+// so the IST date in "today's horoscope" stays current on each request.
 // getRashi() validates the slug and calls notFound() on miss — equivalent guard
-// to the prior dynamicParams=false. 12 rashis, pure JS compute, no DB hit.
-export const runtime = 'edge';
+// to a dynamicParams=false config. 12 rashis, pure JS compute, no DB hit.
 
 interface Params {
   params: Promise<{ rashi: string }>;

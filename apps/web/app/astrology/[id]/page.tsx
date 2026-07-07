@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export const runtime = 'edge';
 
 // Canonical astrologer profile lives at /astrology/view?id=… for historical
 // reasons. Provider-strip cards + "similar astrologers" rail + any external

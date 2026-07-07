@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import RoiCalculator from './RoiCalculator';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'Darshya for Temple Chains, Ashrams & Mathas — B2B SaaS',

@@ -7,7 +7,6 @@ import BabyNameClient from './BabyNameClient';
 import { allNakshatraOptions, NAKSHATRA_PADA_SYLLABLES } from '../../../lib/baby-names';
 import { NAKSHATRAS } from '../../../lib/nakshatras';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

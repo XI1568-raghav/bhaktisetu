@@ -7,7 +7,6 @@ import { getYatraBySlug } from '../../../../lib/yatra-data';
 // route resolves end-to-end (5 packages: char-dham, vaishno-devi,
 // tirupati-south, ayodhya-kashi, shirdi-sai).
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 type Params = { slug: string };

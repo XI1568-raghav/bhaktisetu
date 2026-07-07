@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VEDIC_MONTHS, getVedicMonthBySlug } from '../../../lib/vedic-months';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
