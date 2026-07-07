@@ -1,9 +1,14 @@
-name: Deploy Web to Cloudflare Pages
+name: Deploy Web to Cloudflare Workers
 
-# Free-tier: manual-only. CF Pages git integration deploys on push to main
-# from the CF dashboard side (free 500 builds/mo). This workflow duplicated
-# the build and burned ~6 min/push of GH Actions cap. Keep for emergency
-# manual redeploy from the Actions tab. See docs/free-tier-budgets.md.
+# Migrated 2026-07-07 from @cloudflare/next-on-pages (Pages, archived/dead —
+# couldn't build Next 15.5.x) to @opennextjs/cloudflare (Workers). The build
+# runs `opennextjs-cloudflare build` (→ .open-next/worker.js + assets) and the
+# deploy runs `opennextjs-cloudflare deploy` (→ `wrangler deploy`, Workers).
+# See apps/web/wrangler.jsonc (name: darshya, main: .open-next/worker.js).
+#
+# Free-tier: manual-only. GH Actions cap is conserved — this fires only from
+# the Actions tab. Keep for emergency/manual redeploy. See
+# docs/free-tier-budgets.md.
 
 on:
   workflow_dispatch:
@@ -33,17 +38,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build for Cloudflare Pages
+      - name: Type-check + tests (gate)
+        working-directory: apps/web
+        run: |
+          pnpm run type-check
+          pnpm run test
+
+      - name: Build for Cloudflare Workers (OpenNext)
         working-directory: apps/web
         env:
           NEXT_PUBLIC_API_URL: https://api.darshya.online
           NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
-        run: pnpm exec next-on-pages
+        run: pnpm run cf:build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm exec wrangler pages deploy .vercel/output/static --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME || 'darshya' }} --branch=main
+        run: pnpm exec opennextjs-cloudflare deploy
