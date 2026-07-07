@@ -3,11 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITY_PUJAS, CITY_PUJA_SLUGS, getCityPuja } from '../../../../lib/city-pujas';
 
-// NOTE: no `runtime = 'edge'` — generateStaticParams (below) + edge runtime are
-// mutually exclusive under Next 15 / @cloudflare/next-on-pages and block the
-// whole web build. revalidate=86400 keeps ISR (daily regen) on the default
-// Node runtime, which next-on-pages prerenders fine. (Pre-existing breakage
-// from when edge was cargo-culted onto this route.)
+// NOTE: no `runtime = 'edge'` — forbidden under @opennextjs/cloudflare (Node
+// runtime only, via nodejs_compat). revalidate=86400 keeps ISR (daily regen);
+// generateStaticParams (below) prerenders the static slugs on the default
+// Node runtime, which OpenNext handles natively.
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

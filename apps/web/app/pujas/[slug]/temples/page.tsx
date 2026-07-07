@@ -5,7 +5,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export const runtime = 'edge';
 export const revalidate = 3600;
 
 const API_BASE = process.env.API_URL || 'http://localhost:4000/api/v1';

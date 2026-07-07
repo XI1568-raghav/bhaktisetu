@@ -9,13 +9,12 @@ import {
  type HelpLang,
 } from "../../../../../lib/help-articles";
 
-// NOTE: do NOT set `runtime = 'edge'` here. generateStaticParams (below) +
-// edge runtime are mutually exclusive under Next 15 / @cloudflare/next-on-pages
-// ("Page cannot use both runtime = 'edge' and generateStaticParams"), and the
-// combination blocks the entire web build. revalidate=86400 keeps ISR; the
-// default Node runtime prerenders the static params fine on next-on-pages.
-// (origin PR #75 cargo-culted `runtime='edge'` from /astrology/[id], which
-// has no generateStaticParams and so is unaffected.)
+// NOTE: no `runtime = 'edge'` here — forbidden under @opennextjs/cloudflare
+// (Node runtime only, via nodejs_compat). generateStaticParams (below) + ISR
+// (revalidate=86400) both run on the default Node runtime, which OpenNext
+// prerenders fine. (Earlier, under @cloudflare/next-on-pages, edge +
+// generateStaticParams were mutually exclusive and blocked the whole build;
+// that constraint is moot now that edge runtime is removed app-wide.)
 export const revalidate = 86400;
 
 type Params = Promise<{ lang: string; slug: string }>;

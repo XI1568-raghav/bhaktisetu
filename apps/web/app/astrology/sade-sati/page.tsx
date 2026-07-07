@@ -7,7 +7,6 @@ import Link from 'next/link';
 import SadeSatiClient from './SadeSatiClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

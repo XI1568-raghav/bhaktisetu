@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PANCHA_BHOOTA, getPanchaBhootaBySlug } from '../../../lib/pancha-bhoota';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

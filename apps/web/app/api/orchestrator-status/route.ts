@@ -9,7 +9,6 @@
 //
 // Auth: none required (public repo). Optional GITHUB_TOKEN env bumps rate limit 60→5000/h.
 
-export const runtime = 'edge';
 export const revalidate = 30; // cache 30s — UI polls every 10s, 3 polls share 1 GH call
 
 const OWNER = 'XI1568-raghav';

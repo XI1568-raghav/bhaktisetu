@@ -47,7 +47,6 @@ import NriLaneAbTest from '../components/home/NriLaneAbTest';
 
 // Edge runtime + 1-hour revalidate — TTFB win per Pillar 4 audit (2026-06-08).
 // Panchang chip cache OK at 1h granularity. Personal salutation deferred to client.
-export const runtime = 'edge';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {

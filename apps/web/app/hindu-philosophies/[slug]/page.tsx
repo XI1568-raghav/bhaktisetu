@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getHinduPhilosophy, HINDU_PHILOSOPHIES } from '../../../lib/hindu-philosophies';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

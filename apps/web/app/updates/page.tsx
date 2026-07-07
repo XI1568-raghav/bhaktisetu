@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { API_BASE_URL } from '../../lib/api-config';
 
-export const runtime = 'edge';
 export const revalidate = 1800; // 30 min — fresh enough, doesn't hammer API
 
 export const metadata: Metadata = {
