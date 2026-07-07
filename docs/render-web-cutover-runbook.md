@@ -26,11 +26,12 @@
    - **Region:** Oregon
    - **Docker Build Context Directory:** `.` (repo root — **not** `apps/web`)
    - **Dockerfile Path:** `apps/web/Dockerfile`
-4. **Environment tab** — the `render.yaml` already sets the publishable `NEXT_PUBLIC_*` (Render bakes them as build args). Add these **secret** runtime env vars (set as *Secret*, not plaintext) — the server reads them at runtime:
-   - `GITHUB_TOKEN` (server-side GitHub fetches, if used in prod routes)
-   - `IVS_REPLAY_BUCKET_BASE` (if used in prod)
-   - `API_URL=https://api.darshya.online`
-   - Any other server-side keys the app needs (check `apps/web/.env.example` + grep `process.env.` in `apps/web/app` / `apps/web/lib`).
+4. **Environment tab** — the `render.yaml` already sets the publishable `NEXT_PUBLIC_*` (Render bakes them as build args). Add these **secret** runtime env vars (set as *Secret*, not plaintext) — the server reads them at runtime (verified by grepping `process.env.` in `apps/web/app` + `apps/web/lib`):
+   - `API_URL=https://api.darshya.online` (server-side fetch base — used by `/pujas/[slug]`, `/yatra-packages`, etc.)
+   - `GITHUB_TOKEN` (used by `/api/orchestrator-status` route)
+   - `IVS_REPLAY_BUCKET_BASE` (used by `/darshan/[id]/replay`)
+   - `INDEXNOW_KEY` (used by the IndexNow ping route, if you want search-engine submission active — optional for first deploy)
+   - Any others from `apps/web/.env.example`. The `cf:*` scripts and `@opennextjs/cloudflare`/`wrangler` deps were removed (commit `f85718a9`) — there is nothing Cloudflare left to configure.
 5. **Create Web Service** → first build kicks off. Watch the deploy log for `node server.js` to start + the health check (`/`) to pass.
 6. Once live, Render gives a URL like `https://darshya-web.onrender.com`. **Copy it** — that's the pre-cutover verification target.
 
