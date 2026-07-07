@@ -2,7 +2,9 @@
 
 > **Status:** code + CI smoke ready (branch `worktree-cf-opennext-migration`). The three manual steps below require dashboard access — no Render/CF API token is available locally. Do them in order after the CI smoke workflow is green.
 >
-> **Latest commits:** `9087da37` (consultation `[id]`/`[room]` slug-conflict fix — was 500-ing every route), `f85718a9` (removed dead `@opennextjs/cloudflare`+`wrangler`+`cf:*` scripts — was spawning `workerd` at build time, ENOENT on alpine). Smoke build is green post these fixes; boot/curl is the remaining gate.
+> **Latest commits:** `9087da37` (consultation `[id]`/`[room]` slug-conflict fix — was 500-ing every route), `f85718a9` (removed dead `@opennextjs/cloudflare`+`wrangler`+`cf:*` scripts — was spawning `workerd` at build time, ENOENT on alpine).
+>
+> **✅ CI smoke GREEN** — run `28899801790`, all 7 checks PASS (verified from log): server boots in 4s, `/` → 200, `/sitemap.xml` → 200, `/robots.txt` → 200, `/api/orchestrator-status` → 200, `/kundli` → 308 `/astrology/kundli`, `/_next/static/chunks/webpack-*.js` → 200. The standalone Docker image builds on `node:20-alpine`, boots `node server.js`, and serves SSG + route handlers + redirects + static assets. The artifact is proven before any Render push.
 >
 > **Why:** OpenNext→Workers deploy is blocked (bundle 5.3 MiB gzip > free 3 MiB limit). The app uses no CF bindings in prod, so it self-hosts on Render Node free tier via Next `output: 'standalone'`. The API already runs on Render.
 
