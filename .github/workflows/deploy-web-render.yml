@@ -1,0 +1,85 @@
+# Smoke-test the Render Node (standalone) build before any Render push.
+# Context: the @opennextjs/cloudflare (Workers) path was abandoned 2026-07-07 —
+# the OpenNext server-function bundle (5.3 MiB gzip) exceeded the free Workers
+# 3 MiB limit. darshya web now self-hosts on Render Node free tier via Next
+# `output: 'standalone'` (apps/web/Dockerfile). This workflow builds that exact
+# Docker image and verifies `node server.js` boots and serves 200 on /, so a
+# broken standalone build is caught here, not on Render.
+#
+# Trigger: workflow_dispatch (manual) + on push to the migration branch while
+# the cutover is being verified. After prod is live on Render, this becomes the
+# web deploy gate (Render itself also builds, but CI smoke fails faster).
+name: Smoke Render web build
+on:
+  workflow_dispatch:
+  push:
+    branches: [worktree-cf-opennext-migration]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+      - '.github/workflows/deploy-web-render.yml'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build the standalone image
+        # Bake the same NEXT_PUBLIC_* vars CI uses for the Workers build so the
+        # client bundle matches prod. These are publishable (non-secret) values,
+        # passed as --build-arg (the Dockerfile declares matching ARG + ENV so
+        # `next build` sees them). Real secrets are runtime-only, never baked.
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.darshya.online \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://hlkvfarvfblhzhhnhtbp.supabase.co \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc \
+            --build-arg NEXT_PUBLIC_ENV=production \
+            -t darshya-web:smoke \
+            apps/web
+
+      - name: Boot server + smoke-test routes
+        run: |
+          # Run the image detached on a fixed host port; Render injects PORT
+          # automatically, but here we set it explicitly so the container maps
+          # 3000 -> host 3000.
+          docker run -d --name web-smoke -p 3000:3000 -e PORT=3000 darshya-web:smoke
+          # Wait for the standalone server to accept connections (up to 60s).
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://127.0.0.1:3000/; then echo "server up after ${i}x2s"; break; fi
+            sleep 2
+          done
+          fail=0
+          check() {
+            local path="$1" expect="$2"
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000${path}")
+            if [ "$code" = "$expect" ]; then echo "PASS  $path -> $code"; else echo "FAIL  $path -> $code (expected $expect)"; fail=1; fi
+          }
+          check "/" 200
+          check "/sitemap.xml" 200
+          check "/robots.txt" 200
+          check "/api/orchestrator-status" 200
+          # Legacy redirect: /kundli -> /astrology/kundli (301 permanent).
+          code_redir=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000/kundli")
+          loc=$(curl -s -o /dev/null -w "%{redirect_url}" "http://127.0.0.1:3000/kundli")
+          if [ "$code_redir" = "301" ] && echo "$loc" | grep -q "/astrology/kundli"; then
+            echo "PASS  /kundli -> 301 /astrology/kundli"
+          else echo "FAIL  /kundli -> $code_redir ($loc) (expected 301 -> /astrology/kundli)"; fail=1; fi
+          # A static asset must resolve (proves .next/static was copied into standalone).
+          asset=$(curl -s http://127.0.0.1:3000/ | grep -oE '/_next/static/[^"]+\.js' | head -1)
+          if [ -n "$asset" ]; then
+            acode=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000${asset}")
+            if [ "$acode" = "200" ]; then echo "PASS  $asset -> 200"; else echo "FAIL  $asset -> $acode"; fail=1; fi
+          else echo "FAIL  no /_next/static asset found on / (standalone static copy broken?)"; fail=1; fi
+          echo "--- server logs (last 20) ---"
+          docker logs --tail 20 web-smoke || true
+          docker stop web-smoke >/dev/null 2>&1 || true
+          exit $fail

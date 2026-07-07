@@ -1,0 +1,30 @@
+# Keep the Docker build context small + prevent Cloudflare secrets/env from
+# leaking into the Render image (the CF Workers path is abandoned; .dev.vars
+# and wrangler hold local CF tokens).
+node_modules
+.next
+.open-next
+.vercel
+.git
+.gitignore
+
+# Tests + coverage (not needed in the runtime image).
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+coverage
+.next/cache
+
+# Cloudflare Workers artifacts (dead — Render Node path doesn't use them).
+wrangler.jsonc
+open-next.config.ts
+cloudflare-env.d.ts
+.dev.vars
+.wrangler
+
+# Editor / OS noise.
+.DS_Store
+*.log
+.idea
+.vscode

@@ -27,3 +27,39 @@ services:
         - prisma/**
         - package.json
         - pnpm-lock.yaml
+  # ─────────────────────────────────────────────────────────────────────────
+  # Web (Next.js 15, standalone) — migrated off Cloudflare Workers 2026-07-07.
+  # The OpenNext server-function bundle (5.3 MiB gzip) exceeded the free
+  # Workers 3 MiB limit and the app uses no CF bindings in prod, so it self-
+  # hosts on Render Node free tier via Next `output: 'standalone'`. The
+  # Dockerfile builds standalone + copies static/public and runs `node server.js`.
+  # NEXT_PUBLIC_* vars are baked at build time (set as build env in Render);
+  # renderBuildFilter keeps web-only pushes from rebuilding the API (and vice-versa).
+  - type: web
+    name: darshya-web
+    env: docker
+    plan: free
+    region: oregon
+    dockerContext: apps/web
+    dockerfilePath: apps/web/Dockerfile
+    healthCheckPath: /
+    autoDeploy: false
+    # NEXT_PUBLIC_* are publishable (non-secret). Render auto-translates `env`
+    # keys to Docker build args (https://render.com/docs/docker), so the
+    # Dockerfile's matching ARG declarations bake them into the Next client
+    # bundle at build time. They're also present at runtime (harmless — public).
+    # Real secrets (GITHUB_TOKEN, IVS_REPLAY_BUCKET_BASE, server-side keys) are
+    # set in the Render dashboard as Secret env and are runtime-only (never
+    # ARG-declared, so they never touch the image layers).
+    env:
+      NEXT_PUBLIC_API_URL: https://api.darshya.online
+      NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
+      NEXT_PUBLIC_ENV: production
+    renderBuildFilter:
+      paths:
+        - apps/web/**
+        - packages/**
+        - package.json
+        - pnpm-lock.yaml
+        - turbo.json

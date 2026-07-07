@@ -9,6 +9,12 @@ import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
+  // Self-host on Render (Node free tier) — OpenNext/Cloudflare Workers was
+  // abandoned 2026-07-07: the OpenNext server-function bundle (5.3 MiB gzip)
+  // exceeded the free Workers 3 MiB limit and the app uses no CF bindings in
+  // prod. `standalone` produces a self-contained server.js + minimal deps so
+  // the Docker image runs `node server.js` directly. See apps/web/Dockerfile.
+  output: 'standalone',
   transpilePackages: ['@poojly/ui', '@poojly/shared', '@poojly/api-client'],
   typescript: {
     // pnpm hoists @types/react@18 (mobile) alongside @types/react@19 (web),
