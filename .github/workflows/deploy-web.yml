@@ -57,17 +57,29 @@ jobs:
         if: always()
         run: |
           echo "=== OpenNext server-function bundle composition (target: <3 MiB gzip free-tier) ==="
-          echo "--- handler.mjs raw size ---"
+          echo "--- handler.mjs raw + gzip size ---"
           ls -lh .open-next/server-functions/default/apps/web/handler.mjs 2>/dev/null || echo "(no handler)"
-          echo "--- top 30 largest files under .open-next/server-functions ---"
-          find .open-next/server-functions -type f -not -path "*/node_modules/.pnpm/*" 2>/dev/null \
-            | xargs du -k 2>/dev/null | sort -rn | head -30
-          echo "--- bundled node_modules: top 25 by size (these are deps pulled into the Worker) ---"
-          du -sm .open-next/server-functions/default/node_modules/* 2>/dev/null | sort -rn | head -25
-          du -sm .open-next/server-functions/default/apps/web/node_modules/* 2>/dev/null | sort -rn | head -25
-          echo "--- gzip of the server handler (what counts toward the 3 MiB limit) ---"
           gzip -c .open-next/server-functions/default/apps/web/handler.mjs 2>/dev/null | wc -c \
-            | awk '{printf "%.2f KiB gzip\n", $1/1024}'
+            | awk '{printf "handler.mjs gzip: %.2f KiB\n", $1/1024}'
+          echo "--- top 20 largest files under .open-next/server-functions (excl .pnpm) ---"
+          find .open-next/server-functions -type f -not -path "*/node_modules/.pnpm/*" 2>/dev/null \
+            | xargs du -k 2>/dev/null | sort -rn | head -20
+          echo "--- esbuild metafile: top 30 INLINED modules by bytes (handler.mjs.meta.json) ---"
+          node -e '
+            const fs=require("fs"),path=require("path");
+            const m=path.join(".open-next/server-functions/default/apps/web/handler.mjs.meta.json");
+            if(!fs.existsSync(m)){console.log("(no meta.json)");process.exit(0);}
+            const d=JSON.parse(fs.readFileSync(m,"utf8"));
+            const out=Object.entries(d.outputs||{}).flatMap(([o,v])=>(v.inputs||[]).map(i=>({out:o,inp:i.path,bytes:i.bytes})));
+            const byInp={};for(const e of out){byInp[e.inp]=(byInp[e.inp]||0)+e.bytes;}
+            const top=Object.entries(byInp).sort((a,b)=>b[1]-a[1]).slice(0,30);
+            let tot=0;for(const[,b] of Object.entries(byInp))tot+=b;
+            console.log(`total inlined bytes across ${Object.keys(byInp).length} modules: ${(tot/1048576).toFixed(1)} MiB`);
+            for(const [p,b] of top) console.log(`${(b/1024).toFixed(0).padStart(7)} KiB  ${p}`);
+          '
+          echo "--- bundled node_modules: top 15 by size ---"
+          (du -sm .open-next/server-functions/default/node_modules/* 2>/dev/null; du -sm .open-next/server-functions/default/apps/web/node_modules/* 2>/dev/null) | sort -rn | head -15
+
 
       - name: Deploy to Cloudflare Workers
         working-directory: apps/web
