@@ -5,7 +5,6 @@ import { ELEMENT_COLOR, getBird, PANCHA_PAKSHI_BIRDS } from '../../../../lib/pan
 
 const BASE_URL = 'https://darshya.online';
 
-export const runtime = 'edge';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
  const { slug } = await params;

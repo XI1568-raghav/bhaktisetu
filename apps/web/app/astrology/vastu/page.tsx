@@ -3,7 +3,6 @@ import Link from 'next/link';
 import VastuClient from './VastuClient';
 import { DISHAS, ROOMS } from '../../../lib/vastu';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

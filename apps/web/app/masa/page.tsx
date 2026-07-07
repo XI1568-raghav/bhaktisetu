@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { VEDIC_MONTHS } from '../../lib/vedic-months';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSacredTree, SACRED_TREES } from '../../../lib/sacred-trees';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SHAKTI_PEETHS, getShaktiPeethBySlug, type ShaktiPeethCountry } from '../../../lib/shakti-peeths';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

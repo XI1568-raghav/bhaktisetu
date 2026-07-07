@@ -4,7 +4,6 @@
 
 import { listBlogPosts } from '../../lib/blog-posts';
 
-export const runtime = 'edge';
 export const revalidate = 1800; // 30 min — matches /updates cadence
 
 const SITE = 'https://darshya.online';

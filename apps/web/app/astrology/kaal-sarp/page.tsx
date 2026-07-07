@@ -3,7 +3,6 @@ import Link from 'next/link';
 import KaalSarpClient from './KaalSarpClient';
 import { KAAL_SARP_TYPES } from '../../../lib/kaal-sarp';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';

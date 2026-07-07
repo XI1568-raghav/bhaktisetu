@@ -15,7 +15,6 @@ import {
 import EmailCapture from '../../components/EmailCapture';
 import { formatPrice, gbpFromInr } from '../../lib/pricing';
 
-export const runtime = 'edge';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

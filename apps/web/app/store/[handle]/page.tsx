@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export const runtime = 'edge';
 
 // Canonical product detail lives at /store/view?handle=… (a single 'use client'
 // page that resolves the handle against the in-memory PRODUCTS seed catalogue
