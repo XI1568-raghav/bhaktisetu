@@ -1,0 +1,29 @@
+# Render Blueprint v1 — API web service only.
+# Path-filtered so only API-relevant changes trigger a rebuild (free-tier quota
+# protection). Docs-only / web-only / admin-only / agent-report pushes are
+# skipped by Render's renderBuildFilter. Verified 2026-07-07.
+#
+# Build/start commands are the EXACT scripts from apps/api/package.json:
+#   "build": "tsc"
+#   "start": "prisma migrate deploy && node dist/server.js"
+# scoped to the @poojly/api workspace package via pnpm --filter.
+services:
+  - type: web
+    name: bhaktisetu
+    env: node
+    plan: free
+    region: oregon
+    # apps/api/package.json: "build": "tsc"  (run inside the @poojly/api pkg)
+    buildCommand: pnpm --filter @poojly/api build
+    # apps/api/package.json: "start": "prisma migrate deploy && node dist/server.js"
+    # pnpm --filter ... start runs the script in the package dir, so dist/ and
+    # the local prisma binary resolve correctly.
+    startCommand: pnpm --filter @poojly/api start
+    healthCheckPath: /health
+    renderBuildFilter:
+      paths:
+        - apps/api/**
+        - packages/**
+        - prisma/**
+        - package.json
+        - pnpm-lock.yaml

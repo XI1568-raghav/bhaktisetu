@@ -16,7 +16,6 @@ import {
  Mail,
  MapPin,
  Facebook,
- Twitter,
  Instagram,
  Youtube,
  Sparkles,
@@ -77,6 +76,13 @@ const crimsonPro = Crimson_Pro({
 });
 
 export const metadata: Metadata = {
+ // P0-6 (CEO audit 2026-07-01): metadataBase resolves relative OG image
+ // paths (e.g. "/og/default.png" used by ~15 child pages) against this
+ // origin. Without it Next.js falls back to http://localhost:3000 \u2014
+ // breaking every WhatsApp/FB/X/LinkedIn share preview. Hard-code the
+ // canonical apex (NEXT_PUBLIC_SITE_URL env is not reliably set in the
+ // build env; this matches the absolute URLs already used in alternates).
+ metadataBase: new URL("https://darshya.online"),
  title: {
  default: "Darshya \u2014 India\u2019s Devotional Super App",
  template: "%s | Darshya",
@@ -423,15 +429,6 @@ export default function RootLayout({
  className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Facebook className="w-4 h-4" />
- </a>
- <a
- href="https://twitter.com/darshya_app"
- target="_blank"
- rel="noopener noreferrer"
- aria-label="Twitter"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
- >
- <Twitter className="w-4 h-4" />
  </a>
  <a
  href="https://www.instagram.com/darshya.online"

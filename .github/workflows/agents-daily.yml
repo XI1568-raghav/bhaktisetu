@@ -65,9 +65,15 @@ jobs:
             # Critical daily (post-Sprint-2-S1 kill + S2 Wave 1 add):
             # producing-only set. Wave 1 ops agents file P0 GH issues directly
             # on SLA breaches / refund signals — no human polling needed.
+            #
+            # paused 2026-07: needs RESEND_API_KEY / inbound queue
+            #   - onboarding-nudge        (no RESEND_API_KEY = no outbound nudge)
+            #   - support-intent-triage   (no inbound queue = nothing to triage)
+            # Both burn ~150 min/mo with zero artifacts. Re-enable once
+            # RESEND_API_KEY secret is set and an inbound support queue exists.
             node scripts/agents/run-all.mjs \
               broken-link weekly-digest \
-              booking-quality-monitor onboarding-nudge support-intent-triage \
+              booking-quality-monitor \
               cold-temple-outreach referral-nudge dormant-reactivation \
               daily-devotional-broadcast funnel-drop-analyzer \
               social-content-multiplexer investor-weekly-digest-v2

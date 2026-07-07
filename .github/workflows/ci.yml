@@ -33,16 +33,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # pnpm/action-setup@v4 reads the `packageManager` pin (pnpm@10.33.0)
+      # from package.json automatically. Do NOT set `version` — that input
+      # was deprecated and causes an immediate setup error on newer v4 builds
+      # (the 4-5s "setup failed" symptom seen on the last 6 main runs).
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # package.json engines: ">=20.0.0". Pin 20.x LTS for free-tier
+          # stability and so setup-node's pnpm cache init finds pnpm on PATH.
+          node-version: 20
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
         run: pnpm --filter @poojly/api exec prisma generate

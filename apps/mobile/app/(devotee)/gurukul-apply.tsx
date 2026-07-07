@@ -5,11 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
-
-function apiBase(): string {
-  const b = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
-  return b.replace(/\/$/, '');
-}
+import { apiBase } from '../../lib/api';
 
 type ApplicantType = 'self' | 'parent';
 
