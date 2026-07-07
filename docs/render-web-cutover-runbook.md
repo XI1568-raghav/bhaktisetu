@@ -1,6 +1,8 @@
 # Render Web Cutover Runbook — `darshya.online` off Cloudflare Pages → Render Node
 
-> **Status:** code + CI smoke ready (commit `f063b2a9`, branch `worktree-cf-opennext-migration`). The two manual steps below (Render service creation + DNS cutover) require dashboard access — no Render/CF API token is available locally. Do them in order after the CI smoke workflow is green.
+> **Status:** code + CI smoke ready (branch `worktree-cf-opennext-migration`). The three manual steps below require dashboard access — no Render/CF API token is available locally. Do them in order after the CI smoke workflow is green.
+>
+> **Latest commits:** `9087da37` (consultation `[id]`/`[room]` slug-conflict fix — was 500-ing every route), `f85718a9` (removed dead `@opennextjs/cloudflare`+`wrangler`+`cf:*` scripts — was spawning `workerd` at build time, ENOENT on alpine). Smoke build is green post these fixes; boot/curl is the remaining gate.
 >
 > **Why:** OpenNext→Workers deploy is blocked (bundle 5.3 MiB gzip > free 3 MiB limit). The app uses no CF bindings in prod, so it self-hosts on Render Node free tier via Next `output: 'standalone'`. The API already runs on Render.
 
@@ -10,6 +12,20 @@
 | Web build artifact | Next standalone `server.js` (`apps/web/Dockerfile`) |
 | CI smoke workflow | `.github/workflows/deploy-web-render.yml` (builds image, boots, curls `/` + sitemap + robots + API route + `/kundli` redirect + a `/_next/static` asset) |
 | Render Blueprint | `render.yaml` — second service `darshya-web` (docker, free, oregon, repo-root context) |
+| **CF Pages zombie** | The `darshya` Pages project is **repo-connected and auto-deploys on every push**, running `pnpm --filter @poojly/web pages:build` — a script deleted in `f85718a9`. It now fails every push (`ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT`). This is a **dashboard-side** build (NOT the GH Actions `deploy-web.yml`, which is `workflow_dispatch`-only). Fix = Step 0 below. |
+
+---
+
+## Step 0 — Disconnect the CF Pages zombie auto-deploy (do FIRST, ~2 min)
+
+Every push to the branch triggers a failing CF Pages dashboard build (log: `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT: None of the selected packages has a "pages:build" script`). The CF/Workers path is abandoned, so stop it from building:
+
+1. Cloudflare dashboard → **Workers & Pages** → the **`darshya`** project (the live one; `poojly-web` is the already-unused legacy).
+2. **Settings** → **Build & deployments** (or **Build settings**) → disconnect the GitHub integration: either set **Build command** to a no-op (`echo skip`) + **Deployments** → **Disable** automatic deployments, or fully remove the Git integration under **Settings → Git**.
+3. Verify: push a trivial change (or just watch the next push) — no new CF Pages build should kick off. The legacy `poojly-web` project likewise — disable it too if still connected.
+4. Keep the project + custom domain live until **Step B** DNS cutover is verified (rollback safety). Delete only in post-cutover cleanup.
+
+> Optional later cleanup: delete `.github/workflows/deploy-web.yml` (CF, `workflow_dispatch`-only, dead) + `apps/web/CLOUDFLARE.md` + `apps/web/wrangler.jsonc` + `apps/web/open-next.config.ts` + `apps/web/cloudflare-env.d.ts`. I'll handle these in the post-cutover pass; they're inert now.
 | Current prod | `darshya.online` apex → CNAME-flattened to `darshya.pages.dev` (CF Pages project `darshya`) |
 | API (unchanged) | Render, `api.darshya.online` |
 
