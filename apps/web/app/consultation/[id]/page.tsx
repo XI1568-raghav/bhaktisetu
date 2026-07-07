@@ -9,16 +9,23 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
 /**
  * Live consultation room — embeds Jitsi Meet.
  *
- * URL: /consultation/[room]?provider=Acharya+Vinod
+ * URL: /consultation/[id]?provider=Acharya+Vinod
+ *
+ * The dynamic segment is the Jitsi room name (acts as the shared identifier
+ * between devotee and provider). It is named `[id]` (not `[room]`) so it
+ * shares the slug name with the sibling `/consultation/[id]/success` route —
+ * Next's App Router forbids different slug names for the same dynamic path
+ * level ('id' !== 'room' raised at runtime). The value here is a room name,
+ * not a DB consultation id; callers pass `roomName` (see Inbox.tsx,
+ * astrology/view/page.tsx).
  *
  * Jitsi Meet on the public meet.jit.si server is free, requires no API key,
- * and supports HD video + audio + screen share + chat. The room name in the
- * URL acts as the shared identifier between devotee and provider.
+ * and supports HD video + audio + screen share + chat.
  */
 export default function ConsultationRoomPage() {
  const params = useParams();
  const searchParams = useSearchParams();
- const room = params.room as string;
+ const room = params.id as string;
  const providerName = searchParams.get('provider') ?? 'Provider';
  const [ready, setReady] = useState(false);
 

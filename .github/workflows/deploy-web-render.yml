@@ -71,12 +71,14 @@ jobs:
           check "/sitemap.xml" 200
           check "/robots.txt" 200
           check "/api/orchestrator-status" 200
-          # Legacy redirect: /kundli -> /astrology/kundli (301 permanent).
+          # Legacy redirect: /kundli -> /astrology/kundli. Next 15 App Router
+          # emits 308 (permanent) for `permanent: true` redirects — accept 301
+          # or 308; what matters is the destination.
           code_redir=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000/kundli")
           loc=$(curl -s -o /dev/null -w "%{redirect_url}" "http://127.0.0.1:3000/kundli")
-          if [ "$code_redir" = "301" ] && echo "$loc" | grep -q "/astrology/kundli"; then
-            echo "PASS  /kundli -> 301 /astrology/kundli"
-          else echo "FAIL  /kundli -> $code_redir ($loc) (expected 301 -> /astrology/kundli)"; fail=1; fi
+          if { [ "$code_redir" = "301" ] || [ "$code_redir" = "308" ]; } && echo "$loc" | grep -q "/astrology/kundli"; then
+            echo "PASS  /kundli -> $code_redir /astrology/kundli"
+          else echo "FAIL  /kundli -> $code_redir ($loc) (expected 301|308 -> /astrology/kundli)"; fail=1; fi
           # A static asset must resolve (proves .next/static was copied into standalone).
           asset=$(curl -s http://127.0.0.1:3000/ | grep -oE '/_next/static/[^"]+\.js' | head -1)
           if [ -n "$asset" ]; then
