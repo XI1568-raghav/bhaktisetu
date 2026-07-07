@@ -67,10 +67,18 @@ const COLOR_STYLE: Record<string, { border: string; bg: string; text: string; ch
   Violet: { border: 'border-violet-300', bg: 'bg-violet-50', text: 'text-violet-900', chip: 'bg-violet-600 text-white', ring: 'ring-violet-300' },
 };
 
-function colorKey(color: string): keyof typeof COLOR_STYLE {
+const FALLBACK_STYLE: { border: string; bg: string; text: string; chip: string; ring: string } = {
+  border: 'border-violet-300',
+  bg: 'bg-violet-50',
+  text: 'text-violet-900',
+  chip: 'bg-violet-600 text-white',
+  ring: 'ring-violet-300',
+};
+
+function colorStyle(color: string): { border: string; bg: string; text: string; chip: string; ring: string } {
   const first = color.split(/[\s(/]/)[0];
-  if (first in COLOR_STYLE) return first as keyof typeof COLOR_STYLE;
-  return 'Violet';
+  const matched = first ? COLOR_STYLE[first] : undefined;
+  return matched ?? FALLBACK_STYLE;
 }
 
 export default async function ChakraDetail({
@@ -82,12 +90,15 @@ export default async function ChakraDetail({
   const c = getChakra(slug);
   if (!c) notFound();
 
-  const style = COLOR_STYLE[colorKey(c.color)];
+  const style = colorStyle(c.color);
 
   // Mod-7 prev/next navigation (wrap both ends so user can cycle Muladhara ↔ Sahasrara).
+  // idx is always >= 0 here because we `notFound()` above if `c` (found via getChakra)
+  // is missing, and getChakra matches a CHAKRAS entry — so the modular index always
+  // resolves. The `?? c` fallback only satisfies TS under noUncheckedIndexedAccess.
   const idx = CHAKRAS.findIndex((x) => x.slug === c.slug);
-  const prev = CHAKRAS[(idx - 1 + CHAKRAS.length) % CHAKRAS.length];
-  const next = CHAKRAS[(idx + 1) % CHAKRAS.length];
+  const prev = CHAKRAS[(idx - 1 + CHAKRAS.length) % CHAKRAS.length] ?? c;
+  const next = CHAKRAS[(idx + 1) % CHAKRAS.length] ?? c;
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">

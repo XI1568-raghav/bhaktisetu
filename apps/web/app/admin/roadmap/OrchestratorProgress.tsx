@@ -298,7 +298,7 @@ export default function OrchestratorProgress() {
           </div>
           <div className="space-y-1">
             {livePhases.map((p, idx) => {
-              const prevEta = idx === 0 ? 0 : livePhases[idx - 1].etaSec;
+              const prevEta = idx === 0 ? 0 : (livePhases[idx - 1]?.etaSec ?? 0);
               const done = liveElapsedSec >= p.etaSec;
               const running = !done && liveElapsedSec >= prevEta;
               return (

@@ -72,8 +72,10 @@ export default async function SacredTreeDetail({
   if (!t) notFound();
 
   const idx = SACRED_TREES.findIndex((x) => x.slug === slug);
-  const prev = SACRED_TREES[(idx - 1 + SACRED_TREES.length) % SACRED_TREES.length];
-  const next = SACRED_TREES[(idx + 1) % SACRED_TREES.length];
+  // notFound() above guarantees idx >= 0, so the modular index always resolves;
+  // `?? t` only satisfies TS under noUncheckedIndexedAccess.
+  const prev = SACRED_TREES[(idx - 1 + SACRED_TREES.length) % SACRED_TREES.length] ?? t;
+  const next = SACRED_TREES[(idx + 1) % SACRED_TREES.length] ?? t;
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">

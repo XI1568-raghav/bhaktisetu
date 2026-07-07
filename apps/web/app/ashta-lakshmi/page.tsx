@@ -80,7 +80,7 @@ export default function AshtaLakshmiIndexPage() {
             <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900">Vahana: {l.vahana.split(';')[0]}</span>
               <span className="rounded-full bg-pink-100 px-2 py-0.5 text-pink-900">Color: {l.color}</span>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-900">{l.bestDay.split('+')[0].trim()}</span>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-900">{l.bestDay.split('+')[0]?.trim() ?? ''}</span>
               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-indigo-900">{l.numberOfHands} hands</span>
             </div>
             <p className="mt-3 text-xs italic text-gray-600">{l.benefit}</p>

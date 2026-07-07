@@ -159,11 +159,16 @@ async function fetchQueueDir(): Promise<{ count: number; items: QueueItem[] }> {
   // Filename pattern: 2026-06-12T00-01-49-218Z-{role}-{itemId}-{slug}.md
   const items: QueueItem[] = mds.slice(0, 20).map((e) => {
     const m = e.name.match(/^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)-([a-z]+)-(R-Q\d+-[A-Z]+-\d+)-/);
+    const cycleTsRaw = m?.[1] ?? '';
     return {
       name: e.name,
-      cycleTs: m ? m[1].replace(/-/g, ':').replace(/^(\d{4}):(\d{2}):(\d{2}):(\d{2}):(\d{2}):(\d{2}):(\d{3})Z$/, '$1-$2-$3T$4:$5:$6.$7Z') : '',
-      role: m ? m[2] : '',
-      itemId: m ? m[3] : '',
+      cycleTs: cycleTsRaw
+        ? cycleTsRaw
+            .replace(/-/g, ':')
+            .replace(/^(\d{4}):(\d{2}):(\d{2}):(\d{2}):(\d{2}):(\d{2}):(\d{3})Z$/, '$1-$2-$3T$4:$5:$6.$7Z')
+        : '',
+      role: m?.[2] ?? '',
+      itemId: m?.[3] ?? '',
     };
   });
   return { count: mds.length, items };

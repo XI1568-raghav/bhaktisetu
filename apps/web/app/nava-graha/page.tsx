@@ -47,7 +47,7 @@ const dayColor: Record<string, string> = {
 
 function dayBadge(day: string) {
   const k = day.split(' ')[0];
-  return dayColor[k] || 'bg-surface-100 text-surface-700 border-surface-300';
+  return dayColor[k ?? ''] || 'bg-surface-100 text-surface-700 border-surface-300';
 }
 
 export default function NavaGrahaIndex() {
@@ -105,7 +105,7 @@ export default function NavaGrahaIndex() {
                 <strong className="text-surface-800">Dasha:</strong> {g.mahadashaYears}y
               </span>
               <span>
-                <strong className="text-surface-800">Deity:</strong> {g.presidingDeity.split(',')[0].split('(')[0].trim()}
+                <strong className="text-surface-800">Deity:</strong> {g.presidingDeity.split(',')[0]?.split('(')[0]?.trim() ?? ''}
               </span>
             </div>
           </Link>

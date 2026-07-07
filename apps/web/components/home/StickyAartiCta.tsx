@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import Link from 'next/link';
 import { Flame, X, ArrowRight } from 'lucide-react';
 

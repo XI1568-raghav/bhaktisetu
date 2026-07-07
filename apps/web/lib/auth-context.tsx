@@ -34,6 +34,8 @@ export interface AuthUser {
  subscriptionTier: string;
  isNewUser?: boolean;
  role: UserRole;
+ /** Display name for analytics identity (PostHog identify). Optional — populated when available. */
+ displayName?: string;
 }
 
 export interface AuthSession {

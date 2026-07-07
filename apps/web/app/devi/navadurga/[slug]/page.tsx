@@ -12,8 +12,9 @@ export function generateStaticParams() {
  return NAVADURGA.map((n) => ({ slug: n.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
- const form = getNavadurga(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const { slug } = await params;
+ const form = getNavadurga(slug);
  if (!form) return { title: 'Not found' };
  return {
   title: `${form.name} (${form.sanskrit}) — Day ${form.day} of Navratri | Navadurga Guide | Darshya`,
@@ -22,8 +23,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
  };
 }
 
-export default function NavadurgaFormPage({ params }: { params: { slug: string } }) {
- const form = getNavadurga(params.slug);
+export default async function NavadurgaFormPage({ params }: { params: Promise<{ slug: string }> }) {
+ const { slug } = await params;
+ const form = getNavadurga(slug);
  if (!form) return notFound();
 
  const idx = NAVADURGA.findIndex((n) => n.slug === form.slug);

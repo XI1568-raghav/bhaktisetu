@@ -50,10 +50,10 @@ describe('CategoryNav', () => {
 
   it('toggling the same trigger twice closes the panel', () => {
     render(<CategoryNav />);
-    const wisdom = screen.getByRole('button', { name: /^Wisdom$/i });
-    fireEvent.click(wisdom);
+    const library = screen.getByRole('button', { name: /^Library$/i });
+    fireEvent.click(library);
     expect(screen.getByRole('menu')).toBeInTheDocument();
-    fireEvent.click(wisdom);
+    fireEvent.click(library);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });

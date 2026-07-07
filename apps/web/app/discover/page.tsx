@@ -203,7 +203,7 @@ export default function DiscoverPage() {
       {/* Group jump-nav */}
       <nav className="mb-10 flex flex-wrap gap-2 text-sm">
         {GROUPS.map((g) => {
-          const a = ACCENT_CLASS[g.accent];
+          const a = ACCENT_CLASS[g.accent] ?? { header: '', pill: '', border: '', bg: '' };
           return (
             <a
               key={g.key}
@@ -217,7 +217,7 @@ export default function DiscoverPage() {
       </nav>
 
       {GROUPS.map((g) => {
-        const a = ACCENT_CLASS[g.accent];
+        const a = ACCENT_CLASS[g.accent] ?? { header: '', pill: '', border: '', bg: '' };
         return (
           <section key={g.key} id={g.key} className="mb-12 scroll-mt-20">
             <header className="mb-4">

@@ -117,7 +117,7 @@ export default async function GrahaDetail({
       </header>
 
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <div className={`rounded-lg border p-3 ${dayColor[dayKey] || 'border-surface-200 bg-surface-50'}`}>
+        <div className={`rounded-lg border p-3 ${dayColor[dayKey ?? ''] || 'border-surface-200 bg-surface-50'}`}>
           <div className="text-xs mb-0.5 opacity-80">Day</div>
           <div className="font-bold">{dayKey}</div>
         </div>

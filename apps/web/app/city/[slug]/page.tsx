@@ -16,11 +16,12 @@ export function generateStaticParams() {
 }
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const c = getCity(params.slug);
+  const { slug } = await params;
+  const c = getCity(slug);
   if (!c) return { title: 'City — Darshya' };
   return {
     title: `Pujas and temples in ${c.name} — verified pandits, video proof`,
@@ -37,7 +38,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function CityPage({ params }: Params) {
-  const c = getCity(params.slug);
+  const { slug } = await params;
+  const c = getCity(slug);
   if (!c) notFound();
 
   // Tolerant API lookup — page still useful for SEO even if API is asleep.

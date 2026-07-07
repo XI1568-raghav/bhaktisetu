@@ -22,8 +22,10 @@ export default async function MasaDetailPage({ params }: { params: Promise<{ slu
   if (!month) notFound();
 
   const idx = VEDIC_MONTHS.findIndex((x) => x.slug === slug);
-  const prev = idx > 0 ? VEDIC_MONTHS[idx - 1] : VEDIC_MONTHS[VEDIC_MONTHS.length - 1];
-  const next = idx < VEDIC_MONTHS.length - 1 ? VEDIC_MONTHS[idx + 1] : VEDIC_MONTHS[0];
+  // notFound() above guarantees idx >= 0, so the modular index always resolves;
+  // `?? month` only satisfies TS under noUncheckedIndexedAccess.
+  const prev = (idx > 0 ? VEDIC_MONTHS[idx - 1] : VEDIC_MONTHS[VEDIC_MONTHS.length - 1]) ?? month;
+  const next = (idx < VEDIC_MONTHS.length - 1 ? VEDIC_MONTHS[idx + 1] : VEDIC_MONTHS[0]) ?? month;
 
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
