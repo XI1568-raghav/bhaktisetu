@@ -72,15 +72,19 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-  // Sentry release tracking (R-Q2-E-015): emit production source maps so the
-  // Sentry Release workflow (.github/workflows/sentry-release.yml) can upload
-  // them via `@sentry/cli sourcemaps upload apps/web/.next`. Source maps are
-  // served alongside chunks but not referenced by `//# sourceMappingURL=`
-  // (Next 15 default behaviour); raw stack traces in CSP reports / Cloudflare
-  // logs become readable in the Sentry UI after upload. Bundle size impact
-  // on Cloudflare Pages workers is zero — maps are emitted as separate .map
-  // files, not bundled into JS chunks.
-  productionBrowserSourceMaps: true,
+  // Sentry release tracking (R-Q2-E-015) originally set this to `true` so the
+  // Sentry Release workflow could upload source maps. DISABLED 2026-07-07:
+  // no Sentry release tag has ever been cut (sentry-release.yml is tag-triggered
+  // and skips gracefully when SENTRY_AUTH_TOKEN is absent), so the maps were
+  // generated on every build for zero benefit. Worse, `@cloudflare/next-on-pages`
+  // has a documented history of build/deploy failures with browser source maps
+  // enabled — the CF Pages production deploy has been red on every commit since
+  // 2026-06-15 (commit dd0c7d67 introduced this flag; /uk, /nri/ca, /help/articles
+  // from that window are still 404 on prod 3 weeks later). Reverting to `false`
+  // to unblock the deploy. Re-enable only after the Sentry release pipeline is
+  // actually wired (auth token set + a v* tag cut) AND a CF Pages green build
+  // is confirmed with maps on.
+  productionBrowserSourceMaps: false,
   reactStrictMode: true,
   webpack: (config) => {
     // Workspace packages (@poojly/api-client, @poojly/shared) use NodeNext-style
