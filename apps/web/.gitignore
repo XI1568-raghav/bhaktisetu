@@ -1,1 +1,9 @@
 .vercel
+
+# OpenNext (@opennextjs/cloudflare) build output
+.open-next
+
+# Wrangler local state + dev vars
+.wrangler
+.dev.vars*
+!.dev.vars.example

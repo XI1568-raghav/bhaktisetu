@@ -10,11 +10,23 @@
 # P0-5 (CEO audit 2026-07-01): keep /admin out of the index. AuthGuard
 # remains the real authz (session lives in localStorage, unreachable by the
 # edge); this just prevents the admin surface from being crawlable/
-# discoverable. _headers path scopes ARE honored on Cloudflare Pages
-# (verified: the global /* block above is served on prod). A Next.js
-# middleware approach was tried in 7adbd875 and REVERTED in 9c71e60b —
-# @cloudflare/next-on-pages requires every route to declare runtime='edge'
-# once middleware exists (~250 file changes), so middleware is unusable
-# on this stack. _headers is the build-safe path.
+# discoverable. _headers path scopes ARE honored by Cloudflare Workers
+# Static Assets (the `assets` binding in wrangler.jsonc serves this file —
+# verified pattern carried over from Pages). A Next.js middleware approach
+# was tried in 7adbd875 and REVERTED in 9c71e60b because the prior
+# @cloudflare/next-on-pages adapter required every route to declare
+# runtime='edge' once middleware existed (~250 file changes). That constraint
+# is gone under @opennextjs/cloudflare (Node runtime, middleware supported),
+# but _headers remains the low-risk path so we keep it.
 /admin/*
   X-Robots-Tag: noindex, nofollow
+
+# Next build artefacts are content-hashed → immutable caching is safe.
+# Added by the OpenNext migration (matches `opennextjs-cloudflare migrate`).
+# next.config.ts headers() also sets this, but Workers Static Assets may
+# serve /_next/static/* directly (before the worker), so declaring it here
+# guarantees the immutable header on every response path.
+# https://developers.cloudflare.com/workers/static-assets/headers
+# https://opennext.js.org/cloudflare/caching#static-assets-caching
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

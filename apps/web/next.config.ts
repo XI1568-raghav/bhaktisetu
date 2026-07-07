@@ -1,13 +1,12 @@
 import type { NextConfig } from 'next';
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 
-// Cloudflare next-on-pages dev platform — hooks up Cloudflare bindings in `next dev`.
-// Only run in development so production builds stay lean.
-if (process.env.NODE_ENV === 'development') {
-  void (async () => {
-    const { setupDevPlatform } = await import('@cloudflare/next-on-pages/next-dev');
-    await setupDevPlatform();
-  })();
-}
+// OpenNext dev platform — wires Cloudflare bindings (KV/D1/R2/etc. per
+// wrangler.jsonc) into `next dev` so routes that read `getRequestContext()`
+// work locally. Replaces @cloudflare/next-on-pages' setupDevPlatform().
+// Must run at module load (not inside NODE_ENV guard) — the helper itself
+// no-ops outside development. See https://opennext.js.org/cloudflare.
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@poojly/ui', '@poojly/shared', '@poojly/api-client'],
@@ -76,14 +75,12 @@ const nextConfig: NextConfig = {
   // Sentry Release workflow could upload source maps. DISABLED 2026-07-07:
   // no Sentry release tag has ever been cut (sentry-release.yml is tag-triggered
   // and skips gracefully when SENTRY_AUTH_TOKEN is absent), so the maps were
-  // generated on every build for zero benefit. Worse, `@cloudflare/next-on-pages`
-  // has a documented history of build/deploy failures with browser source maps
-  // enabled — the CF Pages production deploy has been red on every commit since
-  // 2026-06-15 (commit dd0c7d67 introduced this flag; /uk, /nri/ca, /help/articles
-  // from that window are still 404 on prod 3 weeks later). Reverting to `false`
-  // to unblock the deploy. Re-enable only after the Sentry release pipeline is
-  // actually wired (auth token set + a v* tag cut) AND a CF Pages green build
-  // is confirmed with maps on.
+  // generated on every build for zero benefit. Originally also disabled because
+  // @cloudflare/next-on-pages had documented build failures with browser source
+  // maps — that adapter is now removed (migrated to @opennextjs/cloudflare), but
+  // the flag stays off until the Sentry release pipeline is actually wired
+  // (auth token set + a v* tag cut) AND a green OpenNext build is confirmed
+  // with maps on.
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
   webpack: (config) => {
@@ -190,11 +187,11 @@ const nextConfig: NextConfig = {
 
 // Browser-side Sentry deferred — even just having @sentry/nextjs in
 // dependencies caused Next 15 to auto-bundle @sentry/node + OpenTelemetry
-// into every route, which @cloudflare/next-on-pages can't dedupe across
-// route bundles ("duplicated identifier" abort). The package was removed
-// from apps/web/package.json entirely. Server-side Sentry on the Render
-// API (uses @sentry/node directly) is unaffected and still catching
-// real bugs.
+// into every route, which the prior @cloudflare/next-on-pages adapter
+// couldn't dedupe across route bundles ("duplicated identifier" abort).
+// The package was removed from apps/web/package.json entirely. Server-side
+// Sentry on the Render API (uses @sentry/node directly) is unaffected and
+// still catching real bugs.
 //
 // Future: when browser error capture is wanted, add @sentry/browser as
 // a small standalone dep — that package is pure-browser and tree-shakes
