@@ -13,11 +13,12 @@ export async function generateStaticParams() {
 }
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const a = getAarti(params.slug);
+  const { slug } = await params;
+  const a = getAarti(slug);
   if (!a) return { title: 'Aarti — Darshya' };
   return {
     title: `${a.name} Lyrics — Hindi + English + Meaning — Darshya`,
@@ -33,8 +34,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default function AartiPage({ params }: Params) {
-  const a = getAarti(params.slug);
+export default async function AartiPage({ params }: Params) {
+  const { slug } = await params;
+  const a = getAarti(slug);
   if (!a) notFound();
 
   const otherAartis = AARTIS.filter((x) => x.slug !== a.slug).slice(0, 6);

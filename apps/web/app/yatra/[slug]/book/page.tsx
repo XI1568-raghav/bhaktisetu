@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
   return {
     title: `Book ${yatra.title} — pandit-curated package`,
-    description: `Book ${yatra.title}: ${yatra.duration}, all-inclusive package starting from ₹${yatra.basePrice.toLocaleString('en-IN')}. Verified pandits, hotel + transport handled, Razorpay secure checkout.`,
+    description: `Book ${yatra.title}: ${yatra.durationDays} days, all-inclusive package starting from ₹${yatra.startingPrice.toLocaleString('en-IN')}. Verified pandits, hotel + transport handled, Razorpay secure checkout.`,
     alternates: { canonical: `/yatra/${slug}/book` },
   };
 }

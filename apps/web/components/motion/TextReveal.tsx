@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 
 type AsTag = 'h1' | 'h2' | 'h3' | 'h4' | 'p';
 

@@ -7,11 +7,12 @@ import { markdownToHtml } from '../../../lib/markdown';
 export const revalidate = 3600;
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const p = await getBlogPost(params.slug);
+  const { slug } = await params;
+  const p = await getBlogPost(slug);
   if (!p) return { title: 'Blog post — Darshya' };
   return {
     title: `${p.title} — Darshya blog`,
@@ -35,7 +36,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function BlogPostPage({ params }: Params) {
-  const post = await getBlogPost(params.slug);
+  const { slug } = await params;
+  const post = await getBlogPost(slug);
   if (!post) notFound();
 
   // Strip H1 from body (we render it as <h1> ourselves in the header).

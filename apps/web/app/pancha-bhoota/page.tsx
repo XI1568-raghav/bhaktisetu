@@ -44,6 +44,13 @@ const ELEMENT_THEME: Record<string, { bg: string; ring: string; text: string; ch
   },
 };
 
+const FALLBACK_THEME = ELEMENT_THEME['Earth (Prithvi)'] ?? {
+  bg: 'bg-amber-50',
+  ring: 'border-amber-300',
+  text: 'text-amber-900',
+  chip: 'bg-amber-200 text-amber-900 border-amber-400',
+};
+
 export default function PanchaBhootaIndexPage() {
   const itemListJsonLd = {
     '@context': 'https://schema.org',
@@ -91,7 +98,7 @@ export default function PanchaBhootaIndexPage() {
       <section className="mx-auto max-w-6xl px-4 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {PANCHA_BHOOTA.map((t) => {
-            const theme = ELEMENT_THEME[t.element] || ELEMENT_THEME['Earth (Prithvi)'];
+            const theme = ELEMENT_THEME[t.element] ?? FALLBACK_THEME;
             return (
               <Link
                 key={t.slug}
@@ -112,9 +119,9 @@ export default function PanchaBhootaIndexPage() {
                   <span className="font-medium">{t.city}, {t.state}</span>
                 </div>
                 <div className="text-sm text-gray-700 mb-3 line-clamp-2">
-                  <span className="font-medium">Lingam:</span> {t.lingaForm.split('—')[0].trim()}
+                  <span className="font-medium">Lingam:</span> {t.lingaForm.split('—')[0]?.trim() ?? ''}
                 </div>
-                <div className="text-xs text-gray-600 italic">Sthala Vriksha: {t.sthalaVriksha.split('—')[0].trim()}</div>
+                <div className="text-xs text-gray-600 italic">Sthala Vriksha: {t.sthalaVriksha.split('—')[0]?.trim() ?? ''}</div>
               </Link>
             );
           })}

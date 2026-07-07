@@ -12,8 +12,9 @@ export function generateStaticParams() {
  return MAHAVIDYAS.map((m) => ({ slug: m.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
- const m = getMahavidya(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const { slug } = await params;
+ const m = getMahavidya(slug);
  if (!m) return { title: 'Not found' };
  return {
   title: `${m.name} (${m.sanskrit}) — Mahavidya ${m.order} | Mantra, Iconography & Sadhana | Darshya`,
@@ -22,8 +23,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
  };
 }
 
-export default function MahavidyaPage({ params }: { params: { slug: string } }) {
- const m = getMahavidya(params.slug);
+export default async function MahavidyaPage({ params }: { params: Promise<{ slug: string }> }) {
+ const { slug } = await params;
+ const m = getMahavidya(slug);
  if (!m) return notFound();
 
  const idx = MAHAVIDYAS.findIndex((x) => x.slug === m.slug);

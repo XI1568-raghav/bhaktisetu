@@ -57,12 +57,19 @@ const COLOR_STYLE: Record<string, { border: string; bg: string; text: string; ch
   Violet: { border: 'border-violet-300', bg: 'bg-violet-50', text: 'text-violet-900', chip: 'bg-violet-600 text-white' },
 };
 
-function colorKey(color: string): keyof typeof COLOR_STYLE {
+const FALLBACK_STYLE: { border: string; bg: string; text: string; chip: string } = {
+  border: 'border-violet-300',
+  bg: 'bg-violet-50',
+  text: 'text-violet-900',
+  chip: 'bg-violet-600 text-white',
+};
+
+function colorStyle(color: string): { border: string; bg: string; text: string; chip: string } {
   // CHAKRAS use compound colour strings (e.g. 'Green (some traditions pink)', 'Blue (sky blue or turquoise)',
   // 'Violet or pure white / golden'). Match by leading token.
   const first = color.split(/[\s(/]/)[0];
-  if (first in COLOR_STYLE) return first as keyof typeof COLOR_STYLE;
-  return 'Violet';
+  const matched = first ? COLOR_STYLE[first] : undefined;
+  return matched ?? FALLBACK_STYLE;
 }
 
 export default function ChakrasIndex() {
@@ -89,7 +96,7 @@ export default function ChakrasIndex() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {CHAKRAS.map((c) => {
-          const style = COLOR_STYLE[colorKey(c.color)];
+          const style = colorStyle(c.color);
           return (
             <Link
               key={c.slug}

@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!t) return { title: 'Not found' };
   return {
     title: `${t.templeName} — ${t.element} Pancha Bhoota | Darshya`,
-    description: `${t.templeName} in ${t.city}, ${t.state} — the ${t.element} Pancha Bhoota Stalam. ${t.lingaForm.split('—')[0].trim()}. Mantra, ritual, festival, travel guide.`,
+    description: `${t.templeName} in ${t.city}, ${t.state} — the ${t.element} Pancha Bhoota Stalam. ${t.lingaForm.split('—')[0]?.trim() ?? ''}. Mantra, ritual, festival, travel guide.`,
     alternates: { canonical: `https://darshya.online/pancha-bhoota/${t.slug}` },
   };
 }
@@ -24,6 +24,12 @@ const ELEMENT_THEME: Record<string, { bg: string; border: string; text: string }
   'Ether / Space (Akasha)': { bg: 'bg-violet-50', border: 'border-violet-300', text: 'text-violet-900' },
 };
 
+const FALLBACK_THEME = ELEMENT_THEME['Earth (Prithvi)'] ?? {
+  bg: 'bg-amber-50',
+  border: 'border-amber-300',
+  text: 'text-amber-900',
+};
+
 export default async function PanchaBhootaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const t = getPanchaBhootaBySlug(slug);
@@ -32,7 +38,7 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
   const idx = PANCHA_BHOOTA.findIndex((p) => p.slug === t.slug);
   const prev = idx > 0 ? PANCHA_BHOOTA[idx - 1] : null;
   const next = idx < PANCHA_BHOOTA.length - 1 ? PANCHA_BHOOTA[idx + 1] : null;
-  const theme = ELEMENT_THEME[t.element] || ELEMENT_THEME['Earth (Prithvi)'];
+  const theme = ELEMENT_THEME[t.element] ?? FALLBACK_THEME;
 
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
@@ -48,7 +54,7 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
     '@context': 'https://schema.org',
     '@type': 'Place',
     name: t.templeName,
-    description: `${t.element} Pancha Bhoota Stalam — ${t.lingaForm.split('—')[0].trim()}`,
+    description: `${t.element} Pancha Bhoota Stalam — ${t.lingaForm.split('—')[0]?.trim() ?? ''}`,
     address: {
       '@type': 'PostalAddress',
       addressLocality: t.city,
