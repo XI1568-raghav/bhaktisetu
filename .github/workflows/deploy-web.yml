@@ -52,9 +52,27 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
         run: pnpm run cf:build
 
+      - name: Analyze bundle size (diagnostic)
+        working-directory: apps/web
+        if: always()
+        run: |
+          echo "=== OpenNext server-function bundle composition (target: <3 MiB gzip free-tier) ==="
+          echo "--- handler.mjs raw size ---"
+          ls -lh .open-next/server-functions/default/apps/web/handler.mjs 2>/dev/null || echo "(no handler)"
+          echo "--- top 30 largest files under .open-next/server-functions ---"
+          find .open-next/server-functions -type f -not -path "*/node_modules/.pnpm/*" 2>/dev/null \
+            | xargs du -k 2>/dev/null | sort -rn | head -30
+          echo "--- bundled node_modules: top 25 by size (these are deps pulled into the Worker) ---"
+          du -sm .open-next/server-functions/default/node_modules/* 2>/dev/null | sort -rn | head -25
+          du -sm .open-next/server-functions/default/apps/web/node_modules/* 2>/dev/null | sort -rn | head -25
+          echo "--- gzip of the server handler (what counts toward the 3 MiB limit) ---"
+          gzip -c .open-next/server-functions/default/apps/web/handler.mjs 2>/dev/null | wc -c \
+            | awk '{printf "%.2f KiB gzip\n", $1/1024}'
+
       - name: Deploy to Cloudflare Workers
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec opennextjs-cloudflare deploy
+
