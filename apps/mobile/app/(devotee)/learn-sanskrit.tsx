@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
+import { apiBase } from '../../lib/api';
 
 interface Lesson {
   id: string;
@@ -25,11 +26,6 @@ const STATIC_CATALOG: Lesson[] = [
   { id: 'l02-devanagari-consonants', title: 'Devanagari Consonants', subtitle: '33 consonants in 5 vargas', level: 'beginner', minutes: 10 },
   { id: 'l03-namaste', title: 'Your first word: नमस्ते', subtitle: 'Etymology of namaste', level: 'beginner', minutes: 5 },
 ];
-
-function apiBase(): string {
-  const b = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
-  return b.replace(/\/$/, '');
-}
 
 export default function LearnSanskritScreen() {
   const { session } = useAuth();

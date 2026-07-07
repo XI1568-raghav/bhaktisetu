@@ -12,6 +12,11 @@ export function generateStaticParams() {
     'siddhivinayak-mumbai', 'siddhivinayak',
     'mahakaleshwar-ujjain', 'mahakaleshwar',
     'vaishno-devi', 'jagannath-puri',
+    // P0-18 (2026-06-15 audit) — temples linked from the /darshan browse page
+    // (Ramanathaswamy, Baba Baidyanath Dham, Dwarkadhish) that have no live
+    // stream yet. Prerendered here so /darshan/<slug> resolves to the honest
+    // "Coming soon" panel (200) instead of 404 under @cloudflare/next-on-pages.
+    'rameshwaram', 'baidyanath-dham', 'dwarkadhish',
   ].map((id) => ({ id }));
 }
 import type { Metadata } from 'next';

@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 /**
  * Token-gated read-only ops feeds for the Sprint-2 Wave-1 agents.
@@ -31,6 +33,28 @@ function authorisedToken(provided: string | undefined): boolean {
 interface TokenQuery {
   token?: string;
 }
+
+// ─── P0-17 SLA-breach bulk-resolve ─────────────────────────────────────────
+// Founder-gated companion to GET /sla-overdue-bookings. The GET feed lists
+// overdue puja bookings; this POST lets the founder resolve them in bulk
+// (refund / fulfill / cancel) for record-keeping. It ONLY mutates booking
+// state — it does NOT move money. The founder must process the actual
+// Razorpay refund in the Razorpay dashboard (see comment on the route).
+//
+// BookingStatus has no REFUND_REQUESTED / REFUND_APPROVED states (see
+// admin-bookings.ts header comment) so we follow the project convention:
+// refund + cancel → status `cancelled` with a `cancellationReason`
+// annotation; fulfill → status `completed` with the same annotation field
+// (PujaBooking has no dedicated notes/Json column, so cancellationReason
+// doubles as the free-text ops audit trail, mirroring the
+// `[video-flagged] …` pattern in admin-bookings.ts).
+const resolveSchema = z.object({
+  bookingIds: z.array(z.string().min(1).max(64)).min(1).max(200),
+  action: z.enum(['refund', 'fulfill', 'cancel']),
+  note: z.string().min(1).max(500),
+});
+
+export const __testing = { resolveSchema };
 
 export async function adminOpsRoutes(server: FastifyInstance) {
   // KYC-abandoned leads — provider self-onboard rows still NEW after N hours.
@@ -115,6 +139,98 @@ export async function adminOpsRoutes(server: FastifyInstance) {
       generatedAt: new Date().toISOString(),
     });
   });
+
+  // ─── POST /sla-overdue-bookings/resolve ───────────────────────────────────
+  // Founder-gated bulk-resolve for the SLA-overdue bookings listed by the
+  // GET above. Accepts a list of booking ids (UUID or bookingNumber — we
+  // resolve either), an action, and a note. Mutates booking state only.
+  //
+  // IMPORTANT — no money moves here. This endpoint only flips the booking
+  // row + writes a `cancellationReason` annotation for the audit trail.
+  // The founder MUST process the actual Razorpay refund in the Razorpay
+  // dashboard (Dashboard → Payments → select payment → Refund). This route
+  // exists so the booking ledger reflects the founder's dashboard action
+  // and the SLA-overdue feed stops re-listing already-resolved rows.
+  //
+  // Auth: authenticateUser + requireRole('admin'). This is a destructive
+  // mutation (cancels/completes bookings) so it must NOT share the
+  // CRON_AUTH_TOKEN gate the read-only agent feeds use — agents must never
+  // be able to mutate booking state. Matches the admin-bookings.ts
+  // adminPreHandlers pattern.
+  server.post<{ Body: unknown }>(
+    '/sla-overdue-bookings/resolve',
+    { preHandler: [authenticateUser, requireRole('admin')] },
+    async (request, reply) => {
+      const parsed = resolveSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: 'Invalid body', details: parsed.error.flatten() });
+      }
+      const { bookingIds, action, note } = parsed.data;
+      const dateTag = new Date().toISOString().slice(0, 10);
+
+      // action → (status, reasonPrefix). refund/cancel both land on
+      // `cancelled`; the prefix is what distinguishes them in the audit
+      // trail. fulfill lands on `completed`.
+      const plan = action === 'fulfill'
+        ? { status: 'completed' as const, prefix: 'SLA breach fulfilled' }
+        : action === 'refund'
+          ? { status: 'cancelled' as const, prefix: 'SLA breach auto-refund' }
+          : { status: 'cancelled' as const, prefix: 'SLA breach cancelled' };
+      const reason = `${plan.prefix} ${dateTag} — ${note}`;
+
+      const resolved: { bookingId: string; action: string; status: string }[] = [];
+      const errors: { bookingId: string; error: string }[] = [];
+
+      for (const bookingId of bookingIds) {
+        try {
+          // Resolve either a UUID `id` or a human-readable `bookingNumber`
+          // (e.g. BS-20260427-K3HSD). findUnique covers the UUID path; fall
+          // back to findFirst on bookingNumber for the BS-… form the SLA
+          // feed's consumers typically paste.
+          let booking = await prisma.pujaBooking.findUnique({
+            where: { id: bookingId },
+            select: { id: true, bookingNumber: true, status: true },
+          });
+          if (!booking) {
+            booking = await prisma.pujaBooking.findFirst({
+              where: { bookingNumber: bookingId },
+              select: { id: true, bookingNumber: true, status: true },
+            });
+          }
+          if (!booking) {
+            errors.push({ bookingId, error: 'Booking not found' });
+            continue;
+          }
+
+          await prisma.pujaBooking.update({
+            where: { id: booking.id },
+            data: {
+              status: plan.status,
+              cancellationReason: reason,
+              ...(plan.status === 'cancelled' ? { cancelledAt: new Date() } : {}),
+            },
+            select: { id: true, status: true },
+          });
+
+          resolved.push({
+            bookingId: booking.bookingNumber ?? booking.id,
+            action,
+            status: plan.status,
+          });
+        } catch (err) {
+          request.log.error({ err, bookingId }, 'sla-overdue resolve: update failed');
+          errors.push({
+            bookingId,
+            error: err instanceof Error ? err.message : 'Update failed',
+          });
+        }
+      }
+
+      return reply.send({ ok: true, resolved, errors });
+    },
+  );
 
   // referral-nudge feed: users whose first booking landed 7-8 days ago.
   // Picks the single oldest booking per user; agent DMs the user a referral

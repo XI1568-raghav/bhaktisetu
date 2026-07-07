@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
+import { apiBase } from '../../lib/api';
 
 interface QuizQ { q: string; options: string[]; correct: number; explanation?: string }
 interface Lesson {
@@ -52,11 +53,6 @@ const CATALOG: Record<string, Lesson> = {
     ],
   },
 };
-
-function apiBase(): string {
-  const b = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
-  return b.replace(/\/$/, '');
-}
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

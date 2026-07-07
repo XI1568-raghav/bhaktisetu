@@ -5,6 +5,29 @@
 > **Scope**: Postgres database (Supabase) + R2 weekly dump
 >
 > Read alongside `docs/data-retention-policy.md`.
+>
+> ---
+>
+> **CURRENT BACKUP MECHANISM — see
+> [`docs/db-backup-runbook-2026-07-07.md`](./db-backup-runbook-2026-07-07.md).**
+>
+> The activation / secrets / mechanism sections below describe the **older
+> weekly R2 dump** (`apps/api/scripts/backup.mjs` + `R2_*` env vars), which
+> has been superseded by the **daily GitHub Actions Supabase Storage
+> backup** at `.github/workflows/db-backup.yml` + `scripts/backup/supabase-backup.mjs`.
+>
+> - For **activating the live backup** (which secrets to set, where to get
+>   them, how to verify a dump actually lands): use the 2026-07-07 runbook.
+> - The **"Required env vars"** table and **"Manual backup"** command in
+>   this doc reference the R2 mechanism and are **stale** for the GH
+>   Actions backup.
+> - The **restore procedure** (Steps 1-5), **DR drill checklist**, and
+>   **known caveats** below remain valid — for a `--format=custom` dump
+>   swap `psql -f pg-restore.sql` for
+>   `pg_restore -d "$STAGING_DATABASE_URL" --no-owner --no-privileges pg-restore.dump`.
+> - **RPO gap**: the live workflow runs daily (24h RPO) while this doc
+>   targets 1h. See the 2026-07-07 runbook's RPO section for the
+>   reconciliation options.
 
 ## Targets
 

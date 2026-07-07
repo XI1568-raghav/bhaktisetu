@@ -17,6 +17,13 @@ export function generateStaticParams() {
     'om-jai-jagdish-hare-aarti', 'aarti-kunj-bihari-ki', 'jai-ganesh-deva-aarti',
     'shiv-chalisa', 'ganesh-chalisa', 'durga-chalisa', 'krishna-chalisa',
     'lakshmi-chalisa', 'saraswati-chalisa',
+    // P0-18 (2026-06-15 audit) — slugs linked from the content listing / API
+    // response + chalisas.ts that 404'd under @cloudflare/next-on-pages because
+    // they were neither in generateStaticParams nor ISR-rendered at the edge.
+    // Prerendering them here guarantees 200; getContentBySlug() falls back to
+    // the graceful loading panel when the API has no matching entry yet.
+    'om-jai-shiv-omkara-aarti', 'om-jai-lakshmi-mata-aarti', 'bajrang-baan',
+    'hare-krishna-maha-mantra', 'navratri-festival-guide',
   ].map((slug) => ({ slug }));
 }
 
