@@ -33,18 +33,22 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build the standalone image
-        # Bake the same NEXT_PUBLIC_* vars CI uses for the Workers build so the
-        # client bundle matches prod. These are publishable (non-secret) values,
-        # passed as --build-arg (the Dockerfile declares matching ARG + ENV so
-        # `next build` sees them). Real secrets are runtime-only, never baked.
+        # Build context = repo root (the Dockerfile is at apps/web/Dockerfile
+        # but COPYs workspace root files + sibling packages/ + tooling/, so the
+        # context must be the repo root, not apps/web). Bake the same
+        # NEXT_PUBLIC_* vars CI uses for the Workers build so the client bundle
+        # matches prod — passed as --build-arg (Dockerfile declares matching
+        # ARG + ENV so `next build` sees them). Real secrets are runtime-only,
+        # never baked. The repo-root .dockerignore keeps the context small.
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://api.darshya.online \
             --build-arg NEXT_PUBLIC_SUPABASE_URL=https://hlkvfarvfblhzhhnhtbp.supabase.co \
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc \
             --build-arg NEXT_PUBLIC_ENV=production \
+            -f apps/web/Dockerfile \
             -t darshya-web:smoke \
-            apps/web
+            .
 
       - name: Boot server + smoke-test routes
         run: |

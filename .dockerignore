@@ -1,0 +1,49 @@
+# Repo-root .dockerignore — applies to both apps/web (Render) and apps/api
+# (Render) Docker builds, which both use the repo root as build context.
+# Keeps the context small + prevents secrets/CF artifacts from entering images.
+# DO NOT exclude anything a Dockerfile COPYs: apps/, packages/, tooling/,
+# pnpm-lock.yaml, pnpm-workspace.yaml, package.json, turbo.json, prisma/.
+
+node_modules
+**/node_modules
+.next
+.open-next
+**/.next
+**/.open-next
+.vercel
+.git
+.gitignore
+.turbo
+**/.turbo
+**/dist
+coverage
+**/coverage
+playwright-report
+test-results
+
+# Tests + e2e + data not needed in runtime images.
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+e2e
+tests
+seeds
+data
+sql
+supabase
+
+# Cloudflare Workers artifacts (dead — Render Node path). Keep wrangler /
+# .dev.vars / .wrangler out of the image so no CF tokens leak.
+**/wrangler.jsonc
+**/wrangler.toml
+**/open-next.config.ts
+**/cloudflare-env.d.ts
+**/.dev.vars
+**/.wrangler
+
+# Editor / OS noise.
+.DS_Store
+**/*.log
+.idea
+.vscode

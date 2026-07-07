@@ -40,7 +40,7 @@ services:
     env: docker
     plan: free
     region: oregon
-    dockerContext: apps/web
+    dockerContext: .
     dockerfilePath: apps/web/Dockerfile
     healthCheckPath: /
     autoDeploy: false
