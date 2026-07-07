@@ -1,12 +1,4 @@
 import type { NextConfig } from 'next';
-import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
-
-// OpenNext dev platform — wires Cloudflare bindings (KV/D1/R2/etc. per
-// wrangler.jsonc) into `next dev` so routes that read `getRequestContext()`
-// work locally. Replaces @cloudflare/next-on-pages' setupDevPlatform().
-// Must run at module load (not inside NODE_ENV guard) — the helper itself
-// no-ops outside development. See https://opennext.js.org/cloudflare.
-initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   // Self-host on Render (Node free tier) — OpenNext/Cloudflare Workers was
