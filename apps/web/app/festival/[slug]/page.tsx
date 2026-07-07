@@ -14,7 +14,7 @@ export async function generateStaticParams() {
 }
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 function fmtDate(iso: string): string {
@@ -29,7 +29,8 @@ function daysUntil(iso: string): number {
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const f = getFestival(params.slug);
+  const { slug } = await params;
+  const f = getFestival(slug);
   if (!f) return { title: 'Festival — Darshya' };
   return {
     title: `${f.name} 2026 — ${fmtDate(f.date2026)}, rituals, pujas online`,
@@ -45,8 +46,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default function FestivalPage({ params }: Params) {
-  const f = getFestival(params.slug);
+export default async function FestivalPage({ params }: Params) {
+  const { slug } = await params;
+  const f = getFestival(slug);
   if (!f) notFound();
 
   const days = daysUntil(f.date2026);

@@ -149,7 +149,7 @@ export default function EkadashiIndexPage() {
           <p className="mt-3 line-clamp-3 text-sm text-gray-700">{e.storySummary}</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
            <span className="rounded-full bg-saffron-50 px-2 py-0.5 text-[11px] text-saffron-800">
-            {e.presidingDeity.split('(')[0].trim()}
+            {e.presidingDeity.split('(')[0]?.trim() ?? ''}
            </span>
           </div>
          </Link>

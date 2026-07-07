@@ -56,7 +56,7 @@ export default function KundliPage() {
 
  function handleReset() {
  setKundli(null);
- setFormData({ name: '', date: '', time: '', place: '' });
+ setFormData({ name: '', date: '', time: '' });
  setActiveTab('chart');
  }
 

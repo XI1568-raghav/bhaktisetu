@@ -29,6 +29,9 @@ export function CategoryNav() {
   );
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set briefly while Escape returns focus to a trigger, so the trigger's
+  // onFocus handler doesn't immediately re-open the panel it just closed.
+  const suppressFocusOpenRef = useRef(false);
   const baseId = useId();
 
   const clearTimers = useCallback(() => {
@@ -72,7 +75,15 @@ export function CategoryNav() {
       if (e.key === 'Escape') {
         const trigger = triggerRefs.current.get(openKey);
         closeNow();
+        // Focus the trigger for keyboard users, but suppress the onFocus
+        // handler so it doesn't re-open the panel we just closed. The flag is
+        // cleared on the next event loop tick so subsequent legitimate focus
+        // events (Tab/Arrow keys) open the panel as expected.
+        suppressFocusOpenRef.current = true;
         trigger?.focus();
+        setTimeout(() => {
+          suppressFocusOpenRef.current = false;
+        }, 0);
       }
     };
     const onClick = (e: MouseEvent) => {
@@ -145,6 +156,7 @@ export function CategoryNav() {
             aria-controls={isOpen ? panelId : undefined}
             onMouseEnter={() => scheduleOpen(category.key)}
             onFocus={() => {
+              if (suppressFocusOpenRef.current) return;
               clearTimers();
               setOpenKey(category.key);
             }}

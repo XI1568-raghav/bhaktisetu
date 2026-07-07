@@ -13,11 +13,12 @@ export async function generateStaticParams() {
 }
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const c = getChalisa(params.slug);
+  const { slug } = await params;
+  const c = getChalisa(slug);
   if (!c) return { title: 'Chalisa — Darshya' };
   return {
     title: `${c.name} — Lyrics, Meaning, Benefits — Darshya`,
@@ -33,8 +34,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default function ChalisaPage({ params }: Params) {
-  const c = getChalisa(params.slug);
+export default async function ChalisaPage({ params }: Params) {
+  const { slug } = await params;
+  const c = getChalisa(slug);
   if (!c) notFound();
 
   const otherChalisas = CHALISAS.filter((x) => x.slug !== c.slug);

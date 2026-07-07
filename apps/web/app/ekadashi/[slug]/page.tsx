@@ -12,8 +12,9 @@ export function generateStaticParams() {
  return EKADASHIS.map((e) => ({ slug: e.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
- const e = getEkadashi(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+ const { slug } = await params;
+ const e = getEkadashi(slug);
  if (!e) return { title: 'Not found' };
  return {
   title: `${e.name} — Story, Fasting Rules, Mantra & Benefits | Darshya`,
@@ -22,8 +23,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
  };
 }
 
-export default function EkadashiDetailPage({ params }: { params: { slug: string } }) {
- const e = getEkadashi(params.slug);
+export default async function EkadashiDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+ const { slug } = await params;
+ const e = getEkadashi(slug);
  if (!e) return notFound();
 
  const idx = EKADASHIS.findIndex((x) => x.slug === e.slug);

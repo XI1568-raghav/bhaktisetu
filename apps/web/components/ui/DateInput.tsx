@@ -46,7 +46,10 @@ function formatForDisplay(iso: string): string {
 function parseFromDisplay(input: string): string {
   const slashMatch = input.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (slashMatch) {
-    return `${slashMatch[3]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[1].padStart(2, '0')}`;
+    const year = slashMatch[3] ?? '';
+    const month = slashMatch[2] ?? '';
+    const day = slashMatch[1] ?? '';
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   const isoMatch = input.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (isoMatch) return input;

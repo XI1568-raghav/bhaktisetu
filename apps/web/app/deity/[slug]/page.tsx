@@ -16,7 +16,7 @@ export async function generateStaticParams() {
 }
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 function fmtINR(s: string): string {
@@ -25,7 +25,8 @@ function fmtINR(s: string): string {
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const d = getDeity(params.slug);
+  const { slug } = await params;
+  const d = getDeity(slug);
   if (!d) return { title: 'Deity — Darshya' };
   return {
     title: `${d.name} pujas online — verified pandits, video proof`,
@@ -42,7 +43,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function DeityPage({ params }: Params) {
-  const d = getDeity(params.slug);
+  const { slug } = await params;
+  const d = getDeity(slug);
   if (!d) notFound();
 
   // API filter on deity field — list active pujas for this deity. Tolerant of

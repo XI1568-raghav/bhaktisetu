@@ -36,8 +36,8 @@ export default async function SacredRiverPage({ params }: Props) {
   const idx = slugs.findIndex((s) => s === slug);
   const prevSlug = slugs[(idx - 1 + slugs.length) % slugs.length];
   const nextSlug = slugs[(idx + 1) % slugs.length];
-  const prev = getSacredRiver(prevSlug);
-  const next = getSacredRiver(nextSlug);
+  const prev = getSacredRiver(prevSlug ?? '');
+  const next = getSacredRiver(nextSlug ?? '');
 
   const relatedTirthas = r.majorTirthas
     .map((s) => getTirtha(s))

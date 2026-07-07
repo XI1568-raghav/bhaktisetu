@@ -66,7 +66,7 @@ export default function SacredMountainsIndexPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {SACRED_MOUNTAINS.map((m) => {
-          const access = ACCESS_LABEL[m.modernAccess];
+          const access = ACCESS_LABEL[m.modernAccess] ?? { label: '', cls: '' };
           return (
             <Link
               key={m.slug}

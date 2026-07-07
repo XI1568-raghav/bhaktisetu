@@ -154,7 +154,7 @@ export default async function HinduSymbolDetailPage({ params }: Props) {
             <>
               the{' '}
               <Link href={`/deity/${s.deitySlug}`} className="text-amber-700 underline">
-                {s.associatedDeity.split('(')[0].trim()} guide
+                {s.associatedDeity.split('(')[0]?.trim() ?? ''} guide
               </Link>
               ,{' '}
             </>

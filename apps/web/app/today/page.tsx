@@ -48,7 +48,7 @@ export default async function TodayPage() {
   const now = new Date();
   const dayOfWeek = now.getDay();
   const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek];
-  const todayInfo = DAY_DEITY[dayOfWeek];
+  const todayInfo = DAY_DEITY[dayOfWeek] ?? { name: 'Ganesha', slug: 'ganesha', reason: 'A neutral daily devotion for removing obstacles and inviting auspiciousness.', suggestedPuja: 'ganesh-puja' };
 
   // Tolerant fetch — panchang API may be cold/down.
   const panchang = await getTodayPanchang().catch(() => null);

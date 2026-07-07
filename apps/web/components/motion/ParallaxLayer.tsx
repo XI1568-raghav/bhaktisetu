@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type JSX } from 'react';
 
 interface ParallaxLayerProps {
   children: ReactNode;

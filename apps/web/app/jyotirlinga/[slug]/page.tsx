@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const j = getJyotirlingaBySlug(slug);
   if (!j) return { title: 'Not found' };
   return {
-    title: `${j.name} Jyotirlinga (${j.number} of 12) — Darshan Timings, ${j.signatureRitual.split('(')[0].trim()} | Darshya`,
+    title: `${j.name} Jyotirlinga (${j.number} of 12) — Darshan Timings, ${j.signatureRitual.split('(')[0]?.trim() ?? ''} | Darshya`,
     description: `${j.name} (${j.sanskrit}) — ${j.number}th Jyotirlinga in ${j.city}, ${j.state}. Darshan ${j.darshanTimings}. Signature ritual: ${j.signatureRitual}. ${j.significance.slice(0, 90)}…`,
     alternates: { canonical: `${BASE_URL}/jyotirlinga/${j.slug}` },
     openGraph: {
