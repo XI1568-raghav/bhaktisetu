@@ -3,27 +3,32 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'rawshape | services'
+        description: 'cfdns | render'
         required: false
-        default: 'rawshape'
+        default: 'cfdns'
 jobs:
   diag:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Probe Render
+      - name: Probe
         env:
+          CF_T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           RK: ${{ secrets.RENDER_API_KEY }}
           MODE: ${{ github.event.inputs.mode }}
         run: |
           set -uo pipefail
-          A="Authorization: Bearer $RK"
-          echo "=== RAW services list first 1200 chars ==="
-          curl -s -H "$A" "https://api.render.com/v1/services?limit=3" | head -c 1200
-          echo ""
-          echo "=== top-level keys of first element ==="
-          curl -s -H "$A" "https://api.render.com/v1/services?limit=3" | jq '.[0] | keys'
-          echo "=== try .[0].service vs .[0] flat ==="
-          curl -s -H "$A" "https://api.render.com/v1/services?limit=3" | jq '{asFlat: {name:.[0].name, id:.[0].id}, asService: {name:.[0].service.name, id:.[0].service.id}}'
-          echo "=== names via .service.name ==="
-          curl -s -H "$A" "https://api.render.com/v1/services?limit=20" | jq -r '.[]?.service.name // "WRAP_FAIL"' | head -20
+          if [ "$MODE" = "cfdns" ]; then
+            CFA="Authorization: Bearer $CF_T"
+            zone=$(curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
+            echo "zone=$zone"
+            for NAME in darshya.online www.darshya.online; do
+              echo "--- DNS records for $NAME (raw HTTP status + body) ---"
+              code=$(curl -s -o /tmp/r.json -w "%{http_code}" -H "$CFA" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=$NAME")
+              echo "HTTP $code"
+              jq '{success, count:(.result|length), records:[.result[]? | {id,type,name,content,proxied}]}' /tmp/r.json
+            done
+            echo "=== ALL records in zone (first 30) ==="
+            curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?per_page=30" | jq -r '.result[]? | "  \(.type) \(.name) -> \(.content)  proxied=\(.proxied)  id=\(.id)"'
+          fi
