@@ -10,19 +10,28 @@
 
 ---
 
-## 🟡 Autonomous cutover attempt — 2026-07-08 (PAUSED per user)
+## 🟢 CUTOVER COMPLETE — 2026-07-08 (prod on Render, verified)
 
-The cutover was wired as an autonomous `workflow_dispatch` workflow `.github/workflows/render-cutover.yml` (Steps 0/A1/A2/B1/B2/B3 — all API-driven, no dashboard). **Three attempts ran; A1/A2/B1 now pass; B2 (DNS) is blocked on a CF token scope gap; a separate 502 runtime bug was found + fixed.** Prod is unchanged (still on CF, 200). Resume turnkey once the one blocker is cleared.
+The autonomous cutover workflow `.github/workflows/render-cutover.yml` ran to **success** on 2026-07-08 (run `28957245665`). All steps passed: 0 (CF Pages zombie kill) → A1 (service reuse) → A2 (live) → B1 (custom domains) → **B2 (DNS CNAMEs written)** → B3 (9 prod checks). End-to-end green.
 
-**Verified live state (independent curl, 2026-07-08 ~09:56 UTC):**
-- Render service `darshya-web` (`srv-d970l2ks728c738fc33g`) — **LIVE + serving 200** at `https://darshya-web.onrender.com` (`x-render-origin-server: Render`). Deploy `dep-d971r037uimc73e6u4hg`, branch `main`. `/jyotirlinga/somnath` → 200 (prerendered), `/sitemap.xml` → 200, `/api/orchestrator-status` → 200.
-- Custom domains `darshya.online` + `www.darshya.online` — **registered on the Render service** (Step B1 passed).
-- Prod `https://darshya.online` — **unchanged, still on CF** (`server: cloudflare`, 200). No DNS record was modified (B2 failed before any write).
+**Final verified live state (independent curl, 2026-07-08 ~16:08 UTC):**
+- Render service `darshya-web` (`srv-d970l2ks728c738fc33g`) — LIVE + serving 200 at `https://darshya-web.onrender.com`.
+- CF DNS: `darshya.online` + `www.darshya.online` → CNAME `darshya-web.onrender.com` (orange-cloud proxy; `server: cloudflare` + `x-render-origin-server: Render` in prod headers — CF edge in front, Render origin).
+- Prod `https://darshya.online` — **200**, `<title>Darshya, India's Devotional Super App</title>`, `/jyotirlinga/somnath` → 200 with `Somnath` body marker, `/kundli` → 308 `/astrology/kundli`, `www` → 301 apex. All 9 B3 checks PASS.
+- CF Pages project `darshya` auto-deploy still KILLED — no build pipeline, last frozen deploy preserved as rollback.
 
-**The ONE remaining blocker — CF token lacks DNS:Edit:**
-- Step B2's `GET /zones/{zone}/dns_records` returned **CF error 10000 "Authentication error"** (verified via `render-diag` run `28931418264`). The `CLOUDFLARE_API_TOKEN` GH secret has Pages + Zone:Read scopes but **NOT `Zone → DNS → Edit`** on the `darshya.online` zone. Token itself is valid (`/user/tokens/verify` → active).
-- **To resume autonomously:** Cloudflare dashboard → My Profile → API Tokens → edit the token backing `CLOUDFLARE_API_TOKEN` → add permission **Zone · DNS · Edit** (zone: `darshya.online`) → save. No need to re-issue the secret unless the token value changes. Then re-fire `gh workflow run "Render prod cutover" -f branch=main` — A1 reuses the live service, A2 sees live, B1 is idempotent, B2 writes the apex + www CNAMEs (DNS-only), B3 runs the 9 prod checks. End-to-end.
-- **Alternative (no token change):** manually add the 2 CNAMEs in the CF dashboard (apex `darshya.online` → `darshya-web.onrender.com`, DNS-only/grey-cloud; `www.darshya.online` → `darshya-web.onrender.com`, DNS-only), then run the B3 verification standalone (`render-diag` `deploy` mode curls the 9 routes, or `deploy-web-render.yml` smoke).
+**The blocker that was resolved — CF token DNS:Edit scope:**
+- The original `CLOUDFLARE_API_TOKEN` GH secret (token ID `f5fbb661c60a9767c8f45d9c2cef07fb`) had Pages + Zone:Read but NOT Zone·DNS·Edit → B2 failed HTTP 403 / CF error 10000 across three attempts.
+- **Fix applied 2026-07-08:** minted a fresh CF token with **Account·Pages·Edit + Zone·DNS·Edit + Zone·Zone·Read** scoped to `darshya.online`, pasted into the `CLOUDFLARE_API_TOKEN` GH secret via `gh secret set`. New token ID `a890cf5fe88921d35a270fe46e05be09`. Verified via `render-diag.yml` `cftoken` mode (DNS GET → 200).
+- **Token cleanup (dashboard action, founder):** the old token `f5fbb661c60a9767c8f45d9c2cef07fb` ("bhaktisetu build token") is no longer used by any secret — **revoke it in the CF dashboard** (My Profile → API Tokens → ⋯ → Delete/Roll). Optionally rename the active token `a890cf5fe88921d35a270fe46e05be09` (currently `darshya-probe-test`) to `darshya-ci-deploy` for clarity — cosmetic only, no secret change.
+
+**Diagnostic workflow:** `.github/workflows/render-diag.yml` (`workflow_dispatch`) — modes: `deploy` (trigger deploy + poll live + curl 9 routes), `logs2` (fetch `/v1/logs` app/request/build logs), `cftoken` (verify the GH-secret CF token's ID + DNS-records GET 200 vs 403). Keep it; it's the operational telescope for the Render service.
+
+**Rollback (if ever needed):** CF dashboard → DNS → repoint apex + www CNAMEs back to `darshya.pages.dev` (the frozen deploy still served by CF Pages). Takes ~1 min DNS TTL. Render service stays live at `*.onrender.com` either way.
+
+## 🟡 Historical: autonomous cutover attempts — 2026-07-08 (prior to completion)
+
+The cutover was wired as an autonomous `workflow_dispatch` workflow `.github/workflows/render-cutover.yml` (Steps 0/A1/A2/B1/B2/B3 — all API-driven, no dashboard). **Three attempts ran; A1/A2/B1 passed; B2 (DNS) was blocked on a CF token scope gap; a separate 502 runtime bug was found + fixed.** The fourth attempt (after token scope fix) completed green — see the 🟢 block above. The notes below are retained for the bug-fix history.
 
 **Bugs found + fixed during the attempts (all merged to `main`):**
 1. `.service.url` → `.service.serviceDetails.url` (Render create-response has no top-level `.url`; webServiceDetails.url is the public URL) — commit `9e99c458`.

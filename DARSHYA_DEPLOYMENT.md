@@ -1,17 +1,25 @@
 # Darshya — Going Live on darshya.online
 
-This is the step-by-step runbook to take darshya.online from "domain purchased at Hostinger" to "live website + working API". Free tier on every layer. **Estimated time: 60–90 minutes.**
+> ⚠️ **CUTOVER COMPLETE 2026-07-08 — web now ships from Render, NOT Cloudflare Pages.**
+> This doc's original Phase E (CF Pages deploy) + Phase F (CF Pages custom domain) are **OBSOLETE**.
+> Current web deploy = Render `darshya-web` (Next standalone docker) + CF DNS proxy edge.
+> Authoritative current runbook: `docs/render-web-cutover-runbook.md`. Operational telescope: `.github/workflows/render-diag.yml` (modes `deploy`/`logs2`/`cftoken`).
+> The Phase C (API on Render) + Phase D (api.darshya.custom domain) + Phase B (Supabase) sections below remain accurate and are kept as historical/backup reference.
 
 ---
 
-## Architecture (free-tier stack)
+This is the step-by-step runbook to take darshya.online from "domain purchased at Hostinger" to "live website + working API". Free tier on every layer.
+
+---
+
+## Architecture (free-tier stack — CURRENT post-2026-07-08 cutover)
 
 ```
 [ User ]
     │
     ▼
-darshya.online           ──────►  Cloudflare Pages       (apps/web — Next.js)
-api.darshya.online       ──────►  Render Web Service     (apps/api — Fastify)
+darshya.online + www       ──CF DNS proxy──►  Render `darshya-web`     (apps/web — Next.js standalone docker)
+api.darshya.online         ───────────────►  Render `bhaktisetu-api`   (apps/api — Fastify)
                                        │
                                        ▼
                                   Supabase Postgres       (managed DB)
@@ -19,12 +27,19 @@ api.darshya.online       ──────►  Render Web Service     (apps/api
 
 | Layer    | Provider          | Free tier                                          |
 |----------|-------------------|----------------------------------------------------|
-| Web      | Cloudflare Pages  | Unlimited bandwidth, free SSL, builds from GitHub |
+| Web      | Render            | 750 hr/mo, sleeps 15 min idle, ~30–50s cold start, Next standalone docker |
 | API      | Render            | 750 hr/mo, sleeps after 15 min idle, ~30 s cold start |
 | Database | Supabase          | 500 MB Postgres, 50,000 monthly active users      |
-| DNS      | Hostinger         | Already paid for darshya.online                   |
+| DNS+edge | Cloudflare        | darshya.online zone DNS, orange-cloud proxy, edge SSL (CF Pages build pipeline KILLED) |
 
-**Honest cost note**: The API will sleep on the free tier. First request after 15 min of inactivity takes ~30 s while it spins up. For a real production launch you'll want $7/mo Render Starter ($0 cold start) once you have users.
+**Honest cost note**: Both web + API sleep on the free tier. First request after 15 min of inactivity takes ~30 s while they spin up. For a real production launch you'll want $7/mo Render Starter ($0 cold start) once you have users.
+
+### Why Render for web (not Cloudflare Pages)
+Cloudflare Pages + `@cloudflare/next-on-pages` was the original plan but hit three dead-ends (verified 2026-07-08):
+1. `next-on-pages` adapter abandoned/dead for our Next version.
+2. OpenNext Workers bundle 5.3 MiB gzip > free-tier 3 MiB worker limit.
+3. `apps/web/middleware.ts` build-breaker on the Pages adapter.
+Render Node free tier via Next standalone avoids all three. Full rationale + cutover evidence in memory `reference_darshya_cf_pages_next_on_pages_dead`.
 
 ---
 
@@ -122,7 +137,13 @@ I'll do this step locally once you give me the `DATABASE_URL`.
    - TTL: `14400`
 5. Wait 2–10 min for DNS propagation. Render auto-provisions SSL.
 
-### Phase E — Web (Cloudflare Pages) (15 min)
+### Phase E — Web (Cloudflare Pages) (15 min) — ❌ OBSOLETE post-2026-07-08
+
+> **Do NOT follow this phase.** Web now ships from Render `darshya-web`.
+> To deploy web: push to `main` → Render auto-deploys `darshya-web`; OR re-fire `gh workflow run "Render prod cutover" --repo XI1568-raghav/bhaktisetu -f branch=main` (idempotent, reuses live service).
+> The CF Pages steps below are kept as historical reference + rollback target only.
+
+### Phase E (historical) — Web on Cloudflare Pages
 
 1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
 2. Select GitHub → authorize → pick `bhaktisetu` repo → branch `main`
@@ -139,7 +160,11 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 5. Click **Save and Deploy**. First build takes ~3–5 min.
 6. Once live, your site is at `https://darshya.pages.dev`.
 
-### Phase F — Custom domain darshya.online (10 min)
+### Phase F — Custom domain darshya.online (10 min) — ❌ OBSOLETE post-2026-07-08
+
+> **Do NOT follow this phase.** Domain wiring now done by `render-cutover.yml` Step B2 (CNAME apex + www → `darshya-web.onrender.com`, CF DNS) + Step B1 (Render custom domains). Already executed 2026-07-08 (PROD GREEN, all 9 B3 checks pass). Rollback = repoint those CNAMEs back to `darshya.pages.dev`.
+
+### Phase F (historical) — CF Pages custom domain
 
 1. In Cloudflare Pages → your project → **Custom domains** → **Set up a custom domain** → `darshya.online`
 2. Cloudflare gives you DNS records (usually CNAME `@` → `darshya.pages.dev` or specific IPs for apex)
@@ -152,12 +177,13 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 
 ## Verification checklist
 
-- [ ] `https://darshya.online` loads the homepage
+- [ ] `https://darshya.online` loads the homepage (served by Render — header `x-render-origin-server: Render`)
 - [ ] `https://api.darshya.online/api/v1/health` returns `{ "ok": true }`
 - [ ] Login at `https://darshya.online/auth/login` with `devotee@demo.com` / `demo123` works
 - [ ] Browse `/temples`, `/pujas`, `/darshan` — data renders
-- [ ] Cloudflare Pages deploy on next `git push origin main` (auto)
-- [ ] Render auto-deploys API on next push (auto)
+- [ ] Render `darshya-web` auto-deploys on next `git push origin main` (web)
+- [ ] Render `bhaktisetu-api` auto-deploys on next push (API)
+- [ ] **CF Pages does NOT build** on push (auto-deploy killed 2026-07-08 — verify no new `darshya` Pages deploy appears)
 
 ---
 
@@ -177,7 +203,7 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 
 ## When something breaks
 
-- **Cloudflare build fails on monorepo paths**: Cloudflare needs `NODE_VERSION=20` env var. Check workflow file in `.github/workflows/deploy-web.yml`.
+- **Cloudflare build fails on monorepo paths** (HISTORICAL — CF Pages no longer builds web post-2026-07-08): was `NODE_VERSION=20` env var issue under `@cloudflare/next-on-pages`. If you re-enable CF Pages for any reason, see `docs/cf-pages-env-wiring-2026-05-13.md`. Web now builds on Render via `apps/web/Dockerfile`.
 - **Render build OOMs**: Free tier has 512 MB RAM during build. If pnpm install crashes, switch build command to use `--prefer-offline --no-frozen-lockfile`.
 - **API returns 502 after wake**: Cold start. Wait 30 s and retry. Upgrade to Starter to eliminate.
 - **DNS not resolving**: Use https://dnschecker.org/#CNAME/api.darshya.online to verify global propagation. Can take up to 1 hour.
