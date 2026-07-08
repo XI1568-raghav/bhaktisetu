@@ -1,8 +1,19 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify from 'fastify';
+import { prismaMock } from '../lib/__mocks__/prisma.js';
+
+// Mock prisma so the demo-token bypass in authenticateUser doesn't hit a real
+// DB. The bypass calls prisma.user.findUnique({ where: { email } }); returning
+// null makes it fall through to the synthetic-id path (roles from the demo
+// profile, no seed needed) — which is exactly the "No DB" intent this test
+// documents. Without the mock, CI (no DATABASE_URL) throws at query time → 500
+// instead of the expected 401/403/200. Broke CI 2026-07-08 once type-check was
+// unblocked and the Test step actually ran.
+vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
+
 import adminRoadmapRoutes, { __testing } from './admin-roadmap.js';
 
 /**
@@ -13,6 +24,14 @@ import adminRoadmapRoutes, { __testing } from './admin-roadmap.js';
 
 let tmpRoot: string;
 const ORIG_ROADMAP_ROOT = process.env.ROADMAP_ROOT;
+
+// Demo-token bypass: findUnique → null forces the synthetic-id fallback
+// (roles come from the demo profile, no DB row needed). Cleared per-test so
+// a later test that stubs a real user doesn't leak.
+beforeEach(() => {
+  vi.clearAllMocks();
+  prismaMock.user.findUnique.mockResolvedValue(null);
+});
 
 beforeAll(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), 'admin-roadmap-test-'));

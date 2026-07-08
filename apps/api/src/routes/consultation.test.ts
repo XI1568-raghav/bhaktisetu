@@ -11,7 +11,11 @@ describe('consultation bookSchema', () => {
   });
 
   it('accepts optional scheduledAt iso datetime', () => {
-    const r = bookSchema.safeParse({ ...valid, scheduledAt: '2026-06-01T10:00:00.000Z' });
+    // bookSchema refines `scheduledAt must be in the future`, so the fixture
+    // must stay ahead of the wall clock — a fixed past date is a time-bomb
+    // (broke CI 2026-07-08 once the date aged into the past). Use 2099 so the
+    // test survives without periodic edits.
+    const r = bookSchema.safeParse({ ...valid, scheduledAt: '2099-06-01T10:00:00.000Z' });
     expect(r.success).toBe(true);
   });
 

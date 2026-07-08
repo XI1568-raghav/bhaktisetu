@@ -16,7 +16,7 @@ import { authenticateUser } from './auth.js';
 function makeReq(authHeader?: string) {
   return {
     headers: authHeader ? { authorization: authHeader } : {},
-    log: { error: vi.fn() },
+    log: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
     currentUser: undefined as any,
   } as any;
 }
