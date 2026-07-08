@@ -3,27 +3,30 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'cferrors | cfdns'
+        description: 'servicehealth'
         required: false
-        default: 'cferrors'
+        default: 'servicehealth'
+      sid:
+        description: 'service id'
+        required: false
+        default: 'srv-d970l2ks728c738fc33g'
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Probe
+      - name: Probe Render service health
         env:
-          CF_T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          MODE: ${{ github.event.inputs.mode }}
+          RK: ${{ secrets.RENDER_API_KEY }}
+          SID: ${{ github.event.inputs.sid }}
         run: |
           set -uo pipefail
-          CFA="Authorization: Bearer $CF_T"
-          zone=$(curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
-          echo "zone=$zone"
-          echo "=== verify token (which scopes does it have?) ==="
-          curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/user/tokens/verify" | jq '{success, status:.result.status, permissions:.result.policies}'
-          echo "=== full 403 errors body for dns_records GET ==="
-          curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=darshya.online" | jq '{success, errors}'
-          echo "=== try a POST dns_records (dry: invalid to see auth error not validation) ==="
-          curl -s -X POST -H "$CFA" -H "Content-Type: application/json" --data '{"type":"TXT","name":"darshya.online","content":"probe"}' "https://api.cloudflare.com/client/v4/zones/$zone/dns_records" | jq '{success, errors}'
+          A="Authorization: Bearer $RK"
+          echo "=== service object ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq '{id,name,status:.status,suspended,serviceDetails:{url:.serviceDetails.url,runtime:.serviceDetails.runtime,plan:.serviceDetails.plan,healthCheckPath:.serviceDetails.healthCheckPath,env:.serviceDetails.env,dockerfilePath:.serviceDetails.envSpecificDetails.dockerfilePath,dockerContext:.serviceDetails.envSpecificDetails.dockerContext}}'
+          echo "=== last 3 deploys (status + dates) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=3" | jq '.[]? | {id:.deploy.id, status:.deploy.status, createdAt:.deploy.createdAt, finishedAt:.deploy.finishedAt, trigger:.deploy.trigger}'
+          echo "=== events (last 10 — crashes/health checks) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/events?limit=10" | jq '.[]? | {createdAt, type, message:.message[0:200]}'
+          echo "=== POST a fresh deploy (in case container died) ==="
+          curl -s -X POST -H "$A" -H "Content-Type: application/json" --data '{}' "https://api.render.com/v1/services/$SID/deploys" | jq '{id, status}'
