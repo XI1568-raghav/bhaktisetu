@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'cfdns | render'
+        description: 'cferrors | cfdns'
         required: false
-        default: 'cfdns'
+        default: 'cferrors'
 jobs:
   diag:
     runs-on: ubuntu-latest
@@ -15,20 +15,15 @@ jobs:
         env:
           CF_T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          RK: ${{ secrets.RENDER_API_KEY }}
           MODE: ${{ github.event.inputs.mode }}
         run: |
           set -uo pipefail
-          if [ "$MODE" = "cfdns" ]; then
-            CFA="Authorization: Bearer $CF_T"
-            zone=$(curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
-            echo "zone=$zone"
-            for NAME in darshya.online www.darshya.online; do
-              echo "--- DNS records for $NAME (raw HTTP status + body) ---"
-              code=$(curl -s -o /tmp/r.json -w "%{http_code}" -H "$CFA" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=$NAME")
-              echo "HTTP $code"
-              jq '{success, count:(.result|length), records:[.result[]? | {id,type,name,content,proxied}]}' /tmp/r.json
-            done
-            echo "=== ALL records in zone (first 30) ==="
-            curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?per_page=30" | jq -r '.result[]? | "  \(.type) \(.name) -> \(.content)  proxied=\(.proxied)  id=\(.id)"'
-          fi
+          CFA="Authorization: Bearer $CF_T"
+          zone=$(curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
+          echo "zone=$zone"
+          echo "=== verify token (which scopes does it have?) ==="
+          curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/user/tokens/verify" | jq '{success, status:.result.status, permissions:.result.policies}'
+          echo "=== full 403 errors body for dns_records GET ==="
+          curl -s -H "$CFA" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=darshya.online" | jq '{success, errors}'
+          echo "=== try a POST dns_records (dry: invalid to see auth error not validation) ==="
+          curl -s -X POST -H "$CFA" -H "Content-Type: application/json" --data '{"type":"TXT","name":"darshya.online","content":"probe"}' "https://api.cloudflare.com/client/v4/zones/$zone/dns_records" | jq '{success, errors}'
