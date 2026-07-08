@@ -1,0 +1,34 @@
+name: Render diag
+on:
+  workflow_dispatch:
+    inputs:
+      sid:
+        description: 'service id (srv-...)'
+        required: true
+      did:
+        description: 'deploy id (dep-...) — blank to just list'
+        required: false
+        default: ''
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe Render deploy state
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          SID: ${{ github.event.inputs.sid }}
+          DID: ${{ github.event.inputs.did }}
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer $RK"
+          echo "=== service object ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq '{id,name,status,serviceDetails:.serviceDetails|{url,runtime,plan,region}}'
+          echo "=== deploys list (limit 5) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=5" | jq '.[]? | {id,status,createdAt,finishedAt,commit:.commit.id,message}'
+          if [ -n "$DID" ]; then
+            echo "=== specific deploy $DID ==="
+            curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$DID" | jq '{id,status,createdAt,finishedAt,commit:.commit.id}'
+          fi
+          echo "=== raw deploy list (first 2000 chars) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=3" | head -c 2000
