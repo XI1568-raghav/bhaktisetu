@@ -14,11 +14,13 @@
 | Web build artifact | Next standalone `server.js` (`apps/web/Dockerfile`) |
 | CI smoke workflow | `.github/workflows/deploy-web-render.yml` (builds image, boots, curls `/` + sitemap + robots + API route + `/kundli` redirect + a `/_next/static` asset) |
 | Render Blueprint | `render.yaml` — second service `darshya-web` (docker, free, oregon, repo-root context) |
-| **CF Pages zombie** | The `darshya` Pages project is **repo-connected and auto-deploys on every push**, running `pnpm --filter @poojly/web pages:build` — a script deleted in `f85718a9`. It now fails every push (`ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT`). This is a **dashboard-side** build (NOT the GH Actions `deploy-web.yml`, which is `workflow_dispatch`-only). Fix = Step 0 below. |
+| **CF Pages zombie** | ✅ **KILLED 2026-07-08** (workflow `cf-kill-zombie.yml`, run `28926701272`). The `darshya` Pages project was repo-connected + auto-deploying on every push via `pnpm --filter @poojly/web pages:build` (deleted in `f85718a9`) → `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT` each push. Disabled via CF API PATCH (`source.config.deployments_enabled` + `production_deployments_enabled` → false). Verified: post-disable GET shows both flags `n/a` (no longer `true`); `https://darshya.online` still `200` on `server: cloudflare` (last deploy preserved — disabling auto-deploy does NOT delete existing deployments). `poojly-web` project already absent. Reversible: re-enable via same workflow (flip flags true) or dashboard. |
 
 ---
 
-## Step 0 — Disconnect the CF Pages zombie auto-deploy (do FIRST, ~2 min)
+## Step 0 — Disconnect the CF Pages zombie auto-deploy ✅ DONE 2026-07-08
+
+> **Completed autonomously** via `.github/workflows/cf-kill-zombie.yml` (run `28926701272`, live; `28926559483` dry-run). No dashboard access needed — the workflow uses the `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` GH secrets to PATCH `source.config.deployments_enabled` + `production_deployments_enabled` → false on the `darshya` project. Verified prod still live (`200`, `server: cloudflare`). The manual dashboard steps below are the **rollback / re-enable** path if ever needed.
 
 Every push to the branch triggers a failing CF Pages dashboard build (log: `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT: None of the selected packages has a "pages:build" script`). The CF/Workers path is abandoned, so stop it from building:
 
