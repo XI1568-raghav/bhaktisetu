@@ -8,6 +8,30 @@
 >
 > **Why:** OpenNext→Workers deploy is blocked (bundle 5.3 MiB gzip > free 3 MiB limit). The app uses no CF bindings in prod, so it self-hosts on Render Node free tier via Next `output: 'standalone'`. The API already runs on Render.
 
+---
+
+## 🟡 Autonomous cutover attempt — 2026-07-08 (PAUSED per user)
+
+The cutover was wired as an autonomous `workflow_dispatch` workflow `.github/workflows/render-cutover.yml` (Steps 0/A1/A2/B1/B2/B3 — all API-driven, no dashboard). **Three attempts ran; A1/A2/B1 now pass; B2 (DNS) is blocked on a CF token scope gap; a separate 502 runtime bug was found + fixed.** Prod is unchanged (still on CF, 200). Resume turnkey once the one blocker is cleared.
+
+**Verified live state (independent curl, 2026-07-08 ~09:56 UTC):**
+- Render service `darshya-web` (`srv-d970l2ks728c738fc33g`) — **LIVE + serving 200** at `https://darshya-web.onrender.com` (`x-render-origin-server: Render`). Deploy `dep-d971r037uimc73e6u4hg`, branch `main`. `/jyotirlinga/somnath` → 200 (prerendered), `/sitemap.xml` → 200, `/api/orchestrator-status` → 200.
+- Custom domains `darshya.online` + `www.darshya.online` — **registered on the Render service** (Step B1 passed).
+- Prod `https://darshya.online` — **unchanged, still on CF** (`server: cloudflare`, 200). No DNS record was modified (B2 failed before any write).
+
+**The ONE remaining blocker — CF token lacks DNS:Edit:**
+- Step B2's `GET /zones/{zone}/dns_records` returned **CF error 10000 "Authentication error"** (verified via `render-diag` run `28931418264`). The `CLOUDFLARE_API_TOKEN` GH secret has Pages + Zone:Read scopes but **NOT `Zone → DNS → Edit`** on the `darshya.online` zone. Token itself is valid (`/user/tokens/verify` → active).
+- **To resume autonomously:** Cloudflare dashboard → My Profile → API Tokens → edit the token backing `CLOUDFLARE_API_TOKEN` → add permission **Zone · DNS · Edit** (zone: `darshya.online`) → save. No need to re-issue the secret unless the token value changes. Then re-fire `gh workflow run "Render prod cutover" -f branch=main` — A1 reuses the live service, A2 sees live, B1 is idempotent, B2 writes the apex + www CNAMEs (DNS-only), B3 runs the 9 prod checks. End-to-end.
+- **Alternative (no token change):** manually add the 2 CNAMEs in the CF dashboard (apex `darshya.online` → `darshya-web.onrender.com`, DNS-only/grey-cloud; `www.darshya.online` → `darshya-web.onrender.com`, DNS-only), then run the B3 verification standalone (`render-diag` `deploy` mode curls the 9 routes, or `deploy-web-render.yml` smoke).
+
+**Bugs found + fixed during the attempts (all merged to `main`):**
+1. `.service.url` → `.service.serviceDetails.url` (Render create-response has no top-level `.url`; webServiceDetails.url is the public URL) — commit `9e99c458`.
+2. Deploy-list status path `.[0].status` → `.[0].deploy.status` (deploys list wraps each entry `{"deploy":{...}}`); A2 now polls the specific deployId (`.status` at root) — commit `02a407bf`.
+3. Services-list lookup `.name`/`.ownerId` → `.service.name`/`.service.ownerId` (services list wraps `{"cursor":..,"service":{..}}`); A1 now paginates + is 409-tolerant — commit `29fcde28`.
+4. **502 Bad Gateway on the live service** — Next standalone `server.js` bound to `process.env.HOSTNAME` (Render sets it to the pod hostname) instead of `0.0.0.0`, so Render's port scan found no open port on `0.0.0.0` → 502 despite "Ready". Fixed: `ENV HOSTNAME=0.0.0.0` in `apps/web/Dockerfile` — commit `c40d4bc6`. Verified: post-fix deploy `dep-d971r037uimc73e6u4hg` → live, `warm 1: 200`, all routes 200.
+
+**Diagnostic workflow:** `.github/workflows/render-diag.yml` (`workflow_dispatch`) — modes: `deploy` (trigger deploy + poll live + curl 9 routes), `logs2` (fetch `/v1/logs` app/request/build logs), `cfdns`/`cferrors` (CF token/record probes). Keep it; it's the operational telescope for the Render service.
+
 ## Current state (verified)
 | Thing | Value |
 |---|---|
