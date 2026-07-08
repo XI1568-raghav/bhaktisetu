@@ -21,11 +21,11 @@
 |---|---|
 | Remote | `https://github.com/XI1568-raghav/bhaktisetu.git` |
 | Branches | `main` (prod) + `rebrand/darshya` (force-synced mirror) |
-| Render watches | `main` |
-| CF Pages auto-deploys | `main` |
+| Render watches (web + API) | `main` |
+| CF Pages auto-deploys | **KILLED 2026-07-08** (zombie disabled via `cf-kill-zombie.yml`; last deploy frozen as rollback) |
 | HEAD (verified 2026-05-21) | `a5e9542` |
 
-**Push policy**: agents don't push. Main thread commits + pushes. New commits → both Render + CF Pages auto-build.
+**Push policy**: agents don't push. Main thread commits + pushes. New commits → Render web (`darshya-web`) + Render API (`bhaktisetu`) auto-build. CF Pages no longer builds on push (auto-deploy disabled).
 
 ---
 
@@ -43,14 +43,25 @@
 
 ---
 
-## 3. Cloudflare Pages (web)
+## 3. Web host — Render (`darshya-web`) — cutover 2026-07-08
 
-- **Project**: `poojly-web` (legacy name, do not rename)
-- **URL**: `https://darshya.online`
-- **WebFetch returns 403** — do not WebFetch the live domain
-- **Env vars**: Dashboard → Workers & Pages → poojly-web → Settings → Environment variables → only `NEXT_PUBLIC_*` needed for browser
-- **Apply env changes**: Deployments tab → Retry deployment, OR push empty commit
-- **Build adapter**: `@cloudflare/next-on-pages` (invokes Vercel CLI under the hood; use `@sentry/browser` standalone, NOT `@sentry/nextjs`)
+- **Service**: `darshya-web` (`srv-d970l2ks728c738fc33g`) — docker, free, oregon
+- **URL**: `https://darshya-web.onrender.com` → custom domains `darshya.online` + `www.darshya.online` (CNAME, CF DNS proxied)
+- **Origin**: Next standalone `apps/web/Dockerfile` (`ENV HOSTNAME=0.0.0.0` — Render port scan needs 0.0.0.0, not pod hostname, else 502)
+- **Deploy**: Render auto-deploys on main push (does NOT honor `[skip ci]`); manual via `render-diag.yml` `deploy` mode or dashboard
+- **Env vars baked at build**: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_ENV`, `API_URL` (set in `render-cutover.yml` Step A1 + `render.yaml`)
+- **Apply env changes**: Render dashboard → darshya-web → Environment → Save (triggers rebuild); or re-fire `render-cutover.yml` (idempotent — reuses service)
+- **Cold start**: free tier sleeps after 15 min idle, ~30–50s first hit — B3 smoke + `render-diag` warm-retry handle this
+- **CI smoke**: `.github/workflows/deploy-web-render.yml` (9 checks incl. 2 `[slug]` prerendered body-marker)
+- **Operational telescope**: `.github/workflows/render-diag.yml` — modes `deploy` | `logs2` | `cftoken`
+- **Runbook**: `docs/render-web-cutover-runbook.md`
+- **Rollback**: CF DNS → repoint apex + www CNAMEs back to `darshya.pages.dev` (last frozen deploy preserved)
+
+### 3b. Cloudflare — DNS + edge proxy only (NOT a build host)
+- **Role post-cutover**: DNS for `darshya.online` zone + orange-cloud edge proxy on apex/www (`server: cloudflare` + `x-render-origin-server: Render` in prod headers). CF provisions the edge cert.
+- **CF Pages project `darshya`**: auto-deploy DISABLED 2026-07-08 (`cf-kill-zombie.yml`). Last deploy frozen, kept as rollback. **No build pipeline, no 500/mo quota, no `next-on-pages`, no edge-runtime constraints.**
+- **CF API token in GH secret `CLOUDFLARE_API_TOKEN`**: must have **Account·Pages·Edit** + **Zone·Zone·Read** + **Zone·DNS·Edit** on `darshya.online`. Verify via `render-diag.yml` `cftoken` mode (prints token ID + DNS GET 200 vs 403). Current token ID: `a890cf5fe88921d35a270fe46e05be09`. Old token `f5fbb661c60a9767c8f45d9c2cef07fb` unused → revoke in dashboard.
+- **WebFetch returns 403 on `darshya.online`** (CF edge blocks bot UAs) — use `curl` from CI/`render-diag`, not WebFetch.
 
 ---
 
@@ -86,8 +97,8 @@ Migrations MUST be idempotent (`IF NOT EXISTS`, `DO $$ ... $$`). If "relation X 
 
 | Surface | Domain | Host |
 |---|---|---|
-| Web | `darshya.online` | CF Pages |
-| API | `api.darshya.online` | Render |
+| Web | `darshya.online` + `www.darshya.online` | Render `darshya-web` (CF DNS proxy edge) |
+| API | `api.darshya.online` | Render `bhaktisetu-api` |
 | Admin | path on web | `darshya_admin_session` cookie + `ADMIN_DASHBOARD_TOKEN` env |
 
 **Email**:
@@ -132,9 +143,9 @@ Env-or-noop: missing key → push silently skipped, no crash.
 | Service | Env var | Where |
 |---|---|---|
 | Sentry API | `SENTRY_DSN` | Render |
-| Sentry web | `NEXT_PUBLIC_SENTRY_DSN` | CF Pages |
-| PostHog | `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com` | CF Pages |
-| CF Web Analytics | `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | usually auto-injected by CF Pages |
+| Sentry web | `NEXT_PUBLIC_SENTRY_DSN` | Render web `darshya-web` (build-time bake) |
+| PostHog | `NEXT_PUBLIC_POSTHOG_KEY` + `NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com` | Render web `darshya-web` (build-time bake) |
+| CF Web Analytics | `NEXT_PUBLIC_CLOUDFLARE_BEACON_TOKEN` | n/a — CF beacon was CF-Pages-injected; verify post-Render or drop |
 
 DSN/key paste = gates U6 (Sentry) + U8 (PostHog). Verify via DevTools network tab post-deploy.
 
@@ -204,8 +215,8 @@ Phase 1-5 of `docs/mobile-plan.md` substantially shipped (verified 2026-05-13). 
 ## 13. Standing constraints (verbatim — carry across sessions)
 
 - **Resend key `***REMOVED***` LEAKED** — user must rotate. Runbook `docs/security-rotation-2026-05-13.md`.
-- **Do not rename** `poojly_*` storage keys, `package.json name`, package names (`@poojly/api|web|admin|mobile`), or CF project `poojly-web`.
-- **Do not WebFetch** `darshya.online` (CF 403).
+- **Do not rename** `poojly_*` storage keys, `package.json name`, package names (`@poojly/api|web|admin|mobile`). (CF project `darshya` is post-cutover frozen — not renamed, not deployed.)
+- **Do not WebFetch** `darshya.online` (CF edge 403 on bot UA — use `curl` from CI / `render-diag`).
 - **Do not touch** Razorpay/Stripe live keys without explicit instruction.
 - **Do not enable** `ALLOW_DEMO_PAYMENTS` or any test/skip-payment branch beyond gate U15.
 - **Do not change** Prisma schema in agent runs unless absolutely necessary — prefer `Json?` + raw SQL `CREATE TABLE IF NOT EXISTS`.
