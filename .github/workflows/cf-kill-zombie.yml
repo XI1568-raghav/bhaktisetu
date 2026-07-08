@@ -1,0 +1,74 @@
+# Kill the Cloudflare Pages zombie auto-deploy (surgical, reversible).
+#
+# WHY: The CF Pages projects `darshya` (live) + `poojly-web` (legacy) are still
+# GitHub-connected in the CF dashboard and auto-deploy on EVERY push, running
+# `pnpm --filter @poojly/web pages:build` — a script deleted in f85718a9 when the
+# OpenNext/Cloudflare deploy path was abandoned (bundle 5.3 MiB > free 3 MiB;
+# web now self-hosts on Render via Next standalone). Every push now fails CF
+# Pages with ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT. This is a DASHBOARD-side build
+# (NOT a GH Actions workflow), so it can only be stopped via the CF API or the
+# CF dashboard UI — no token exists locally, so run this from CI.
+#
+# SAFE: disabling auto-deploy keeps the LAST successful CF deploy serving
+# (darshya.online stays live on Pages until the Render DNS cutover). A failing
+# zombie build never replaced prod; disabling it changes nothing user-facing.
+# REVERSIBLE: re-enable deployments via the same API or dashboard.
+#
+# This is Step 0 of render-cutover.yml, extracted as a standalone, non-
+# consequential step so the prod DNS flip (Steps A→B) can be done separately
+# after verifying the Render *.onrender.com URL. Do NOT bundle the zombie kill
+# with the DNS cutover.
+name: CF Pages kill zombie
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = report current auto-deploy state only, no changes'
+        required: false
+        default: 'true'
+
+jobs:
+  kill-zombie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disable CF Pages auto-deploy (kill zombie)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -uo pipefail
+          if [ "$DRY" = "true" ]; then echo "=== DRY RUN — reporting state only, no changes ==="; else echo "=== LIVE — disabling auto-deploy on both projects ==="; fi
+          for PROJ in darshya poojly-web; do
+            echo "--- CF Pages: $PROJ ---"
+            g=$(curl -s -H "Authorization: Bearer ${CF_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCT}/pages/projects/${PROJ}")
+            if ! echo "$g" | jq -e '.success' >/dev/null 2>&1; then
+              echo "WARN  $PROJ not found/inaccessible — skipping"; echo "$g" | jq '.errors' 2>/dev/null || true; continue
+            fi
+            # Show current auto-deploy state (source + deployments_enabled, if present).
+            echo "$g" | jq -c '{name:.result.name, source:.result.source, deployments_enabled:(.result.deployments_enabled // "n/a"), builds_enabled:(.result.builds_enabled // "n/a")}'
+            if [ "$DRY" = "true" ]; then echo "  (dry-run) would disable auto-deploy"; continue; fi
+            # Stop auto-deployments. Try deployments_enabled+builds_enabled first
+            # (current schema); if the API rejects the field, fall back to
+            # builds_enabled only, then to nulling the source. Any one severs the
+            # push→build loop. A succeeding no-op build would clobber prod, so we
+            # DISABLE (keeps last deploy) rather than rebuild.
+            disabled=0
+            for BODY in \
+              '{"deployments_enabled":false,"builds_enabled":false}' \
+              '{"builds_enabled":false}' \
+              '{"source":null}'; do
+              p=$(curl -s -X PATCH -H "Authorization: Bearer ${CF_TOKEN}" \
+                -H "Content-Type: application/json" --data "$BODY" \
+                "https://api.cloudflare.com/client/v4/accounts/${CF_ACCT}/pages/projects/${PROJ}")
+              if echo "$p" | jq -e '.success' >/dev/null 2>&1; then
+                echo "PASS  $PROJ auto-deploy disabled ($BODY)"; disabled=1; break
+              else
+                echo "  attempt $BODY -> $(echo "$p" | jq -c '.errors' 2>/dev/null)"
+              fi
+            done
+            [ "$disabled" = "1" ] || echo "WARN  $PROJ could not be disabled via any field (non-blocking — zombie builds already failing, prod unchanged)"
+          done
+          if [ "$DRY" = "true" ]; then echo "=== DRY RUN complete — re-run with dry_run=false to disable ==="; else echo "=== Zombie killed. darshya.online still served by last CF deploy until Render DNS cutover. ==="; fi
