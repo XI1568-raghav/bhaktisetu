@@ -253,19 +253,51 @@ jobs:
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          set +e   # explicit error handling below — cf_get + `|| exit 1` print
+                  # the CF error body instead of errexit killing the script on
+                  # a non-2xx response with zero diagnostic (the 2026-07-08
+                  # cutover died at "--- darshya.online ---" with no error body
+                  # because `curl -sf` + `set -e` = curl exit 22 = silent kill).
           AUTH="Authorization: Bearer ${CF_TOKEN}"
           # CNAME target = host of the Render service URL (<slug>.onrender.com).
           target=$(echo "${{ env.service_url }}" | sed -E 's#^https?://##; s#/.*$##')
           echo "CNAME target: $target"
           [[ "$target" == *.onrender.com ]] || { echo "FAIL  service URL not onrender.com: $target"; exit 1; }
-          zone=$(curl -sf -H "$AUTH" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
+          # cf_get — CF GET that reports the error body instead of dying silently.
+          # stdout = body JSON (captured by the caller via $()); stderr = the
+          # diagnostic on failure (visible in the Actions log even inside command
+          # substitution, since $() only captures stdout); exit 1 propagates via
+          # the caller's `... || exit 1`. Replaces the old `curl -sf` calls that
+          # returned curl exit 22 on any non-2xx CF response and, under `set -e`,
+          # terminated the step with NO error body printed.
+          cf_get() {  # $1 = full CF API URL
+            local resp code body
+            resp=$(curl -s -H "$AUTH" -w "\n%{http_code}" "$1")
+            code=$(printf '%s' "$resp" | tail -1)
+            body=$(printf '%s' "$resp" | sed '$d')
+            if [ "${code:0:1}" != "2" ]; then
+              echo "FAIL  CF API $1 -> HTTP $code; body:" >&2
+              { echo "$body" | jq . 2>/dev/null || echo "$body"; } >&2
+              echo "HINT  CLOUDFLARE_API_TOKEN secret likely lacks Zone·DNS·Edit on darshya.online. CF error 10000 = Authentication error (insufficient token scope)." >&2
+              return 1
+            fi
+            if ! echo "$body" | jq -e '.success' >/dev/null 2>&1; then
+              echo "FAIL  CF API $1 -> .success=false; errors:" >&2
+              { echo "$body" | jq '.errors' 2>/dev/null || echo "$body"; } >&2
+              echo "HINT  CLOUDFLARE_API_TOKEN secret likely lacks Zone·DNS·Edit on darshya.online." >&2
+              return 1
+            fi
+            echo "$body"
+          }
+          body=$(cf_get "https://api.cloudflare.com/client/v4/zones?name=darshya.online") || exit 1
+          zone=$(echo "$body" | jq -r '.result[0].id')
           [ -n "$zone" ] && [ "$zone" != "null" ] || { echo "FAIL  no CF zone for darshya.online"; exit 1; }
           echo "zone=$zone"
           for NAME in darshya.online www.darshya.online; do
             echo "--- $NAME ---"
-            recs=$(curl -sf -H "$AUTH" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=$NAME")
-            rid=$(echo "$recs" | jq -r '.result[] | .id' | head -1)
+            recs=$(cf_get "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=$NAME") || exit 1
+            rid=$(echo "$recs" | jq -r '.result[] | .id' | head -1 || true)
             BODY="{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$target\",\"proxied\":false,\"ttl\":1}"
             if [ -n "$rid" ]; then
               # Try PUT first (works when type is already CNAME). If the existing
@@ -277,13 +309,20 @@ jobs:
                 echo "PASS  updated $NAME -> CNAME $target"; continue
               fi
               echo "  PUT failed ($(echo "$r" | jq -c '.errors')), trying delete+create…"
-              curl -sf -X DELETE -H "$AUTH" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records/$rid" >/dev/null
+              dr=$(curl -s -X DELETE -H "$AUTH" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records/$rid")
+              if echo "$dr" | jq -e '.success' >/dev/null 2>&1; then
+                echo "  deleted old record $rid"
+              else
+                echo "FAIL  DELETE $NAME (rid=$rid); CF body:" >&2
+                { echo "$dr" | jq . 2>/dev/null || echo "$dr"; } >&2
+                exit 1
+              fi
             fi
             r=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" --data "$BODY" \
               "https://api.cloudflare.com/client/v4/zones/$zone/dns_records")
             echo "$r" | jq -e '.success' >/dev/null 2>&1 \
               && echo "PASS  created CNAME $NAME -> $target" \
-              || { echo "FAIL  create $NAME"; echo "$r" | jq .; exit 1; }
+              || { echo "FAIL  create $NAME; CF body:"; echo "$r" | jq . 2>/dev/null || echo "$r"; exit 1; }
           done
 
       - name: Step B3 - Wait for cert + DNS, then verify prod (9 checks)
