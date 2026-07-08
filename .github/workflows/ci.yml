@@ -65,6 +65,16 @@ jobs:
         run: pnpm turbo build --filter=!@poojly/remotion-pitch
 
       - name: Upload Build Artifacts
+        # Non-fatal: this is a convenience step (save build output for download),
+        # NOT a quality gate — lint/type/test/build above already passed. On the
+        # free tier the GitHub Actions artifact-storage quota (2 GB) gets
+        # exhausted by 7-day retention of multi-package .next/dist dirs and
+        # "Failed to CreateArtifact: Artifact storage quota has been hit" then
+        # reddens the whole CI for 6-12h until usage is recalculated. That masks
+        # the real (green) result and blocks required-checks/PR merges. So let a
+        # quota/upload failure degrade gracefully (artifact simply unavailable)
+        # instead of failing the run. Re-enable hard-fail if/when on a paid plan.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
