@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'servicehealth'
+        description: 'logs'
         required: false
-        default: 'servicehealth'
+        default: 'logs'
       sid:
         description: 'service id'
         required: false
@@ -15,18 +15,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Probe Render service health
+      - name: Fetch Render service logs
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
           SID: ${{ github.event.inputs.sid }}
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
-          echo "=== service object ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq '{id,name,status:.status,suspended,serviceDetails:{url:.serviceDetails.url,runtime:.serviceDetails.runtime,plan:.serviceDetails.plan,healthCheckPath:.serviceDetails.healthCheckPath,env:.serviceDetails.env,dockerfilePath:.serviceDetails.envSpecificDetails.dockerfilePath,dockerContext:.serviceDetails.envSpecificDetails.dockerContext}}'
-          echo "=== last 3 deploys (status + dates) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=3" | jq '.[]? | {id:.deploy.id, status:.deploy.status, createdAt:.deploy.createdAt, finishedAt:.deploy.finishedAt, trigger:.deploy.trigger}'
-          echo "=== events (last 10 — crashes/health checks) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/events?limit=10" | jq '.[]? | {createdAt, type, message:.message[0:200]}'
-          echo "=== POST a fresh deploy (in case container died) ==="
-          curl -s -X POST -H "$A" -H "Content-Type: application/json" --data '{}' "https://api.render.com/v1/services/$SID/deploys" | jq '{id, status}'
+          echo "=== latest deploy id ==="
+          did=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=1" | jq -r '.[0].deploy.id')
+          echo "deployId=$did"
+          echo "=== service logs (GET /services/{id}/logs) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/logs?limit=50" | jq -r '.[]? | (.timestamp // .createdAt // "?") + " " + (.message // .text // (. | tostring))' 2>/dev/null | tail -40
+          echo "=== RAW service logs first 1500 ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/logs?limit=20" | head -c 1500
+          echo ""
+          echo "=== deploy logs (GET /services/{id}/deploys/{did}/logs) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did/logs?limit=50" | jq -r '.[]? | (.timestamp // .createdAt // "?") + " " + (.message // .text // (. | tostring))' 2>/dev/null | tail -40
+          echo "=== RAW deploy logs first 1500 ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did/logs?limit=20" | head -c 1500
