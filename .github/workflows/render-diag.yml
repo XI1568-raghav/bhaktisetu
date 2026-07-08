@@ -3,34 +3,28 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'logs'
+        description: 'logs2'
         required: false
-        default: 'logs'
-      sid:
-        description: 'service id'
-        required: false
-        default: 'srv-d970l2ks728c738fc33g'
+        default: 'logs2'
 jobs:
   diag:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Fetch Render service logs
+      - name: Fetch logs via /v1/logs
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
-          SID: ${{ github.event.inputs.sid }}
+          OID: tea-d7kka32qqhas738d8ui0
+          SID: srv-d970l2ks728c738fc33g
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
-          echo "=== latest deploy id ==="
-          did=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=1" | jq -r '.[0].deploy.id')
-          echo "deployId=$did"
-          echo "=== service logs (GET /services/{id}/logs) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/logs?limit=50" | jq -r '.[]? | (.timestamp // .createdAt // "?") + " " + (.message // .text // (. | tostring))' 2>/dev/null | tail -40
-          echo "=== RAW service logs first 1500 ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/logs?limit=20" | head -c 1500
+          echo "=== APP logs (type=app, last 50) ==="
+          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=app&limit=50&direction=backward" | jq '{hasMore, logs:[.logs[]? | {ts:.createdAt, txt:(.text // .message // (. | tostring))}]}' 2>/dev/null | head -60
+          echo "=== APP logs RAW first 2000 ==="
+          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=app&limit=20" | head -c 2000
           echo ""
-          echo "=== deploy logs (GET /services/{id}/deploys/{did}/logs) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did/logs?limit=50" | jq -r '.[]? | (.timestamp // .createdAt // "?") + " " + (.message // .text // (. | tostring))' 2>/dev/null | tail -40
-          echo "=== RAW deploy logs first 1500 ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did/logs?limit=20" | head -c 1500
+          echo "=== REQUEST logs with statusCode=502 ==="
+          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=request&statusCode=502&limit=10" | jq '{hasMore, logs:[.logs[]? | {ts:.createdAt, status:.statusCode, txt:(.text // .message // (. | tostring))}]}' 2>/dev/null | head -30
+          echo "=== BUILD logs for latest deploy (errors) ==="
+          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=build&limit=30&direction=backward" | jq -r '.logs[]? | (.createdAt // "?") + " " + (.text // .message // (.|tostring))' 2>/dev/null | tail -20
