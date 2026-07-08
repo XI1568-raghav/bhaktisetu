@@ -50,8 +50,16 @@ RUN test -d .next/static \
  && test -f .next/standalone/apps/web/server.js \
  || (echo "FATAL: standalone output incomplete — missing .next/static, public/, or server.js" && exit 1)
 
-# Runtime: Render injects PORT (the standalone server binds to it).
+# Runtime: Render injects PORT (the standalone server binds to it) AND sets
+# HOSTNAME to the pod's hostname (e.g. srv-...-hibernate-...). Next.js
+# standalone server.js reads process.env.HOSTNAME and, if set, binds ONLY to
+# that interface — so Render's proxy, which scans 0.0.0.0 for the open port,
+# sees "No open HTTP ports detected on 0.0.0.0" and returns 502 Bad Gateway
+# even though the app is "Ready" (diagnosed via /v1/logs on darshya-web,
+# 2026-07-08). Force HOSTNAME=0.0.0.0 so Next binds all interfaces and
+# Render's port scan succeeds.
 ENV NODE_ENV=production
-EXPOSE 3000
+ENV HOSTNAME=0.0.0.0
+EXPOSE 10000
 WORKDIR /app/apps/web/.next/standalone/apps/web
 CMD ["node", "server.js"]
