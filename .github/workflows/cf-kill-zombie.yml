@@ -47,16 +47,26 @@ jobs:
             if ! echo "$g" | jq -e '.success' >/dev/null 2>&1; then
               echo "WARN  $PROJ not found/inaccessible — skipping"; echo "$g" | jq '.errors' 2>/dev/null || true; continue
             fi
-            # Show current auto-deploy state (source + deployments_enabled, if present).
-            echo "$g" | jq -c '{name:.result.name, source:.result.source, deployments_enabled:(.result.deployments_enabled // "n/a"), builds_enabled:(.result.builds_enabled // "n/a")}'
-            if [ "$DRY" = "true" ]; then echo "  (dry-run) would disable auto-deploy"; continue; fi
-            # Stop auto-deployments. Try deployments_enabled+builds_enabled first
-            # (current schema); if the API rejects the field, fall back to
-            # builds_enabled only, then to nulling the source. Any one severs the
-            # push→build loop. A succeeding no-op build would clobber prod, so we
-            # DISABLE (keeps last deploy) rather than rebuild.
+            # Show current auto-deploy state. The live flag is nested at
+            # source.config.deployments_enabled (top-level deployments_enabled
+            # is "n/a" on this schema) — confirmed by the dry-run output.
+            cur_dep=$(echo "$g" | jq -r '.result.source.config.deployments_enabled // "n/a"')
+            cur_prod=$(echo "$g" | jq -r '.result.source.config.production_deployments_enabled // "n/a"')
+            echo "  current: source.config.deployments_enabled=$cur_dep  production_deployments_enabled=$cur_prod"
+            if [ "$DRY" = "true" ]; then echo "  (dry-run) would set both deployments_enabled + production_deployments_enabled = false"; continue; fi
+            # Stop auto-deployments. PRIMARY: PATCH the nested source.config with the
+            # FULL config object, only flipping deployments_enabled + production_deployments_enabled
+            # to false — preserves the GitHub connection (owner/repo/branch/path filters)
+            # so the project stays inspectable + re-enableable, just stops building on push.
+            # A succeeding no-op build would clobber prod, so we DISABLE (keeps last deploy)
+            # rather than rebuild. Fallbacks: top-level fields, then source:null (severs GH link).
             disabled=0
-            for BODY in \
+            # PRIMARY — whole-source PATCH with flipped flags (build the body from the live config).
+            BODY_PRIMARY=$(echo "$g" | jq -c '.result.source
+              | .config.deployments_enabled = false
+              | .config.production_deployments_enabled = false
+              | {source: .}')
+            for BODY in "$BODY_PRIMARY" \
               '{"deployments_enabled":false,"builds_enabled":false}' \
               '{"builds_enabled":false}' \
               '{"source":null}'; do
@@ -64,9 +74,12 @@ jobs:
                 -H "Content-Type: application/json" --data "$BODY" \
                 "https://api.cloudflare.com/client/v4/accounts/${CF_ACCT}/pages/projects/${PROJ}")
               if echo "$p" | jq -e '.success' >/dev/null 2>&1; then
-                echo "PASS  $PROJ auto-deploy disabled ($BODY)"; disabled=1; break
+                # Verify the flag actually flipped (API can return success without applying).
+                new_dep=$(echo "$p" | jq -r '.result.source.config.deployments_enabled // "n/a"')
+                new_prod=$(echo "$p" | jq -r '.result.source.config.production_deployments_enabled // "n/a"')
+                echo "PASS  $PROJ auto-deploy disabled (now deployments_enabled=$new_dep production_deployments_enabled=$new_prod)"; disabled=1; break
               else
-                echo "  attempt $BODY -> $(echo "$p" | jq -c '.errors' 2>/dev/null)"
+                echo "  attempt -> $(echo "$p" | jq -c '.errors' 2>/dev/null)"
               fi
             done
             [ "$disabled" = "1" ] || echo "WARN  $PROJ could not be disabled via any field (non-blocking — zombie builds already failing, prod unchanged)"
