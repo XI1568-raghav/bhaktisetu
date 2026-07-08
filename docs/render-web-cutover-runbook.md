@@ -4,7 +4,7 @@
 >
 > **Latest commits:** `9087da37` (consultation `[id]`/`[room]` slug-conflict fix — was 500-ing every route), `f85718a9` (removed dead `@opennextjs/cloudflare`+`wrangler`+`cf:*` scripts — was spawning `workerd` at build time, ENOENT on alpine).
 >
-> **✅ CI smoke GREEN** — run `28899801790`, all 7 checks PASS (verified from log): server boots in 4s, `/` → 200, `/sitemap.xml` → 200, `/robots.txt` → 200, `/api/orchestrator-status` → 200, `/kundli` → 308 `/astrology/kundli`, `/_next/static/chunks/webpack-*.js` → 200. The standalone Docker image builds on `node:20-alpine`, boots `node server.js`, and serves SSG + route handlers + redirects + static assets. The artifact is proven before any Render push.
+> **✅ CI smoke GREEN (e2e-hardened)** — authoritative run `28913304398`, all 9 checks PASS (verified from runtime stdout): server boots in 4s, `/` → 200, `/sitemap.xml` → 200, `/robots.txt` → 200, `/api/orchestrator-status` → 200, **`/jyotirlinga/somnath` → 200 (real prerendered HTML, 'somnath' marker in body)**, **`/nava-graha/surya` → 200 (real prerendered HTML, 'surya' marker)**, `/kundli` → 308 `/astrology/kundli`, `/_next/static/chunks/webpack-*.js` → 200. The two `[slug]` checks prove the 1792-page prerender pipeline — the exact thing that broke under CF — serves real HTML from standalone, not a stub/404. The Dockerfile's standalone-copy guards (static + public + server.js) all passed; a partial standalone now fails the build, not runtime. The artifact is proven before any Render push.
 >
 > **Why:** OpenNext→Workers deploy is blocked (bundle 5.3 MiB gzip > free 3 MiB limit). The app uses no CF bindings in prod, so it self-hosts on Render Node free tier via Next `output: 'standalone'`. The API already runs on Render.
 
