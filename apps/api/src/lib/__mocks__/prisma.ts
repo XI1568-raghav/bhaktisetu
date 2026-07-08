@@ -228,6 +228,9 @@ export const prismaMock = {
     count: vi.fn(),
   },
   $queryRaw: vi.fn(),
+  $queryRawUnsafe: vi.fn(),
+  $executeRaw: vi.fn(),
+  $executeRawUnsafe: vi.fn(),
   $transaction: vi.fn((fn: any) => fn(prismaMock)),
 };
 
