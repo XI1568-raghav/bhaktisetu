@@ -39,9 +39,16 @@ RUN pnpm run prebuild && pnpm run build
 
 # Next standalone emits a self-contained server.js at .next/standalone/apps/web
 # but does NOT copy static assets or /public — both must be placed next to it
-# or the server serves 404s for JS/CSS/images. Copy them in.
-RUN cp -r .next/static .next/standalone/apps/web/.next/static \
- && cp -r public .next/standalone/apps/web/public
+# or the server serves 404s for JS/CSS/images. Each copy is its own RUN with an
+# explicit existence guard, so a partial standalone (missing static, or an empty
+# public/) fails the BUILD loudly here instead of shipping a 404-serving image
+# that only fails at runtime on Render.
+RUN test -d .next/static \
+ && cp -r .next/static .next/standalone/apps/web/.next/static \
+ && test -d public \
+ && cp -r public .next/standalone/apps/web/public \
+ && test -f .next/standalone/apps/web/server.js \
+ || (echo "FATAL: standalone output incomplete — missing .next/static, public/, or server.js" && exit 1)
 
 # Runtime: Render injects PORT (the standalone server binds to it).
 ENV NODE_ENV=production
