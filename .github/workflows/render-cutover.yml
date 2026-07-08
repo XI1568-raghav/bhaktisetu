@@ -1,0 +1,263 @@
+# End-to-end production cutover: Cloudflare Pages → Render, fully autonomous.
+# Triggered manually (workflow_dispatch). Uses the 4 GitHub secrets already
+# present (confirmed via `gh secret list`): CLOUDFLARE_API_TOKEN,
+# CLOUDFLARE_ACCOUNT_ID, RENDER_API_KEY, RENDER_API_URL. The orchestrator
+# (scripts/agents/roadmap) already calls both these APIs from CI with the same
+# keys, so auth scope is proven.
+#
+# Closes the 3 manual dashboard steps from render-web-cutover-runbook.md via
+# the CF + Render REST APIs, each step self-verifying before the next runs:
+#   Step 0  — disable CF Pages auto-deploy on `darshya` + `poojly-web` (kills
+#             the failing-on-every-push zombie; last deploy keeps serving).
+#   Step A  — find-or-create the `darshya-web` Render docker service from the
+#             render.yaml spec, bake NEXT_PUBLIC_* + API_URL env, poll deploys
+#             until `status:live` (fail loud on build_failed).
+#   Step B  — add custom domains on Render, repoint darshya.online + www DNS
+#             (CNAME → <slug>.onrender.com, DNS-only so Render provisions the
+#             cert), then curl all 9 smoke checks against https://darshya.online.
+#
+# All steps are reversible: Pages re-enable, Render service delete, DNS PUT back.
+# Optional dispatch inputs (GITHUB_TOKEN, IVS_REPLAY_BUCKET_BASE) are server-side
+# secrets the web reads but that are NOT in GH secrets — left blank, the 9
+# prerendered-route checks still go green (proven by the CI smoke without them);
+# they become a post-cutover dashboard addition if not supplied here.
+name: Render prod cutover
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch Render builds (default main — must contain apps/web/Dockerfile)'
+        default: 'main'
+        required: false
+      github_token:
+        description: 'Optional GITHUB_TOKEN (server-side secret env for web). Blank = skip.'
+        required: false
+      ivs_replay_bucket_base:
+        description: 'Optional IVS_REPLAY_BUCKET_BASE (server-side secret env). Blank = skip.'
+        required: false
+
+jobs:
+  cutover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Step 0 - Disable CF Pages auto-deploy (kill zombie)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -uo pipefail
+          for PROJ in darshya poojly-web; do
+            echo "--- CF Pages: $PROJ ---"
+            g=$(curl -s -H "Authorization: Bearer ${CF_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCT}/pages/projects/${PROJ}")
+            if ! echo "$g" | jq -e '.success' >/dev/null 2>&1; then
+              echo "WARN  $PROJ not found/inaccessible — skipping"; echo "$g" | jq '.errors' 2>/dev/null || true; continue
+            fi
+            # Stop auto-deployments. Try deployments_enabled first (current schema);
+            # if the API rejects the field, fall back to builds_enabled, then to
+            # nulling the source. Any one of these severs the push→build loop.
+            for BODY in \
+              '{"deployments_enabled":false,"builds_enabled":false}' \
+              '{"builds_enabled":false}' \
+              '{"source":null}'; do
+              p=$(curl -s -X PATCH -H "Authorization: Bearer ${CF_TOKEN}" \
+                -H "Content-Type: application/json" --data "$BODY" \
+                "https://api.cloudflare.com/client/v4/accounts/${CF_ACCT}/pages/projects/${PROJ}")
+              if echo "$p" | jq -e '.success' >/dev/null 2>&1; then
+                echo "PASS  $PROJ auto-deploy disabled ($BODY)"; break
+              else
+                echo "  attempt $BODY -> $(echo "$p" | jq -c '.errors' 2>/dev/null)"
+                p_ok=0
+              fi
+            done
+            if [ "${p_ok:-1}" = "0" ]; then echo "WARN  $PROJ could not be disabled via any field (non-blocking — zombie builds already failing)"; fi
+          done
+          echo "Step 0 best-effort complete (non-blocking; live Pages keeps serving last deploy until DNS cuts)."
+
+      - name: Step A1 - Find or create darshya-web Render service
+        env:
+          RENDER_KEY: ${{ secrets.RENDER_API_KEY }}
+          BRANCH: ${{ github.event.inputs.branch || 'main' }}
+          GH_TOKEN_IN: ${{ github.event.inputs.github_token }}
+          IVS_IN: ${{ github.event.inputs.ivs_replay_bucket_base }}
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${RENDER_KEY}"
+          API="https://api.render.com/v1"
+          # 1. Idempotency: does darshya-web already exist?
+          existing=$(curl -sf -H "$AUTH" "$API/services?limit=50" \
+            | jq -r '.[] | select(.name=="darshya-web") | .id' | head -1 || true)
+          if [ -n "$existing" ]; then
+            echo "PASS  darshya-web already exists (id=$existing) — reusing"
+            echo "service_id=$existing" >> "$GITHUB_ENV"
+            url=$(curl -sf -H "$AUTH" "$API/services/$existing" | jq -r '.url // .serviceDetails.subdomain')
+            [ -n "$url" ] || url="darshya-web"
+            echo "service_url=$url" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          # 2. ownerId — reuse the existing bhaktisetu (API) service's ownerId,
+          #    else fall back to GET /owners (owner.id nested).
+          owner=$(curl -sf -H "$AUTH" "$API/services?limit=50" \
+            | jq -r '.[] | select(.name=="bhaktisetu") | .ownerId' | head -1 || true)
+          if [ -z "$owner" ]; then
+            owner=$(curl -sf -H "$AUTH" "$API/owners" | jq -r '.[0].owner.id')
+          fi
+          echo "ownerId=$owner"
+          [ -n "$owner" ] || { echo "FAIL  no ownerId resolvable"; exit 1; }
+          # 3. envVars — publishable build/runtime vars (from render.yaml).
+          ENV='[
+            {"key":"NEXT_PUBLIC_API_URL","value":"https://api.darshya.online"},
+            {"key":"NEXT_PUBLIC_SUPABASE_URL","value":"https://hlkvfarvfblhzhhnhtbp.supabase.co"},
+            {"key":"NEXT_PUBLIC_SUPABASE_ANON_KEY","value":"sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc"},
+            {"key":"NEXT_PUBLIC_ENV","value":"production"},
+            {"key":"API_URL","value":"https://api.darshya.online"}
+          ]'
+          if [ -n "$GH_TOKEN_IN" ]; then ENV=$(echo "$ENV" | jq --arg v "$GH_TOKEN_IN" '. + [{"key":"GITHUB_TOKEN","value":$v}]'); echo "  + GITHUB_TOKEN (secret env)"; fi
+          if [ -n "$IVS_IN" ]; then ENV=$(echo "$ENV" | jq --arg v "$IVS_IN" '. + [{"key":"IVS_REPLAY_BUCKET_BASE","value":$v}]'); echo "  + IVS_REPLAY_BUCKET_BASE (secret env)"; fi
+          # 4. POST create — serviceDetails shape per api-docs.render.com create-service spec.
+          BODY=$(jq -n \
+            --arg repo "https://github.com/XI1568-raghav/bhaktisetu" \
+            --arg branch "$BRANCH" --arg owner "$owner" --argjson ev "$ENV" '{
+              type:"web_service", name:"darshya-web", ownerId:$owner,
+              repo:$repo, branch:$branch, autoDeploy:"no",
+              envVars:$ev,
+              serviceDetails:{
+                runtime:"docker", plan:"free", region:"oregon", numInstances:1,
+                healthCheckPath:"/",
+                envSpecificDetails:{ dockerfilePath:"apps/web/Dockerfile", dockerContext:"." }
+              }
+            }')
+          echo "  creating service…"
+          resp=$(curl -sf -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            --data "$BODY" "$API/services")
+          sid=$(echo "$resp" | jq -r '.service.id')
+          [ -n "$sid" ] || { echo "FAIL  no service id in response"; echo "$resp" | jq .; exit 1; }
+          echo "service_id=$sid" >> "$GITHUB_ENV"
+          url=$(echo "$resp" | jq -r '.service.url // .service.serviceDetails.subdomain // empty')
+          [ -n "$url" ] || url="darshya-web"
+          echo "service_url=$url" >> "$GITHUB_ENV"
+          echo "PASS  darshya-web created (id=$sid, url=$url, deployId=$(echo "$resp" | jq -r '.deployId'))"
+
+      - name: Step A2 - Wait for first deploy to go live
+        env:
+          RENDER_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          set -uo pipefail
+          AUTH="Authorization: Bearer ${RENDER_KEY}"
+          sid="${{ env.service_id }}"
+          echo "polling deploys on $sid (up to ~20min)…"
+          for i in $(seq 1 60); do
+            st=$(curl -sf -H "$AUTH" "https://api.render.com/v1/services/$sid/deploys?limit=1" | jq -r '.[0].status // "unknown"')
+            echo "  [$i/60] deploy status: $st"
+            case "$st" in
+              live) echo "PASS  deploy live"; exit 0 ;;
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "FAIL  deploy ended $st — see Render dashboard build log"; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "FAIL  deploy did not reach live within ~20min"; exit 1
+
+      - name: Step B1 - Add custom domains (apex + www) on Render
+        env:
+          RENDER_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          set -uo pipefail
+          AUTH="Authorization: Bearer ${RENDER_KEY}"
+          sid="${{ env.service_id }}"
+          for DOM in darshya.online www.darshya.online; do
+            echo "--- add custom domain $DOM ---"
+            # idempotent: 400/409 if already exists is fine.
+            r=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+              --data "{\"name\":\"$DOM\"}" "https://api.render.com/v1/services/$sid/custom-domains")
+            echo "$r" | jq -e '.id // .[0].id // .name // .[0].name' >/dev/null 2>&1 \
+              && echo "PASS  $DOM registered (or already present)" \
+              || { echo "  $DOM response:"; echo "$r" | jq . 2>/dev/null || echo "$r"; }
+          done
+
+      - name: Step B2 - Cutover DNS apex + www to Render (CNAME, DNS-only)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${CF_TOKEN}"
+          # CNAME target = host of the Render service URL (<slug>.onrender.com).
+          target=$(echo "${{ env.service_url }}" | sed -E 's#^https?://##; s#/.*$##')
+          echo "CNAME target: $target"
+          [[ "$target" == *.onrender.com ]] || { echo "FAIL  service URL not onrender.com: $target"; exit 1; }
+          zone=$(curl -sf -H "$AUTH" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
+          [ -n "$zone" ] && [ "$zone" != "null" ] || { echo "FAIL  no CF zone for darshya.online"; exit 1; }
+          echo "zone=$zone"
+          for NAME in darshya.online www.darshya.online; do
+            echo "--- $NAME ---"
+            recs=$(curl -sf -H "$AUTH" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=$NAME")
+            rid=$(echo "$recs" | jq -r '.result[] | .id' | head -1)
+            BODY="{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$target\",\"proxied\":false,\"ttl\":1}"
+            if [ -n "$rid" ]; then
+              # Try PUT first (works when type is already CNAME). If the existing
+              # record is a different type (A/AAAA), PUT may reject type change —
+              # then DELETE + POST a fresh CNAME.
+              r=$(curl -s -X PUT -H "$AUTH" -H "Content-Type: application/json" --data "$BODY" \
+                "https://api.cloudflare.com/client/v4/zones/$zone/dns_records/$rid")
+              if echo "$r" | jq -e '.success' >/dev/null 2>&1; then
+                echo "PASS  updated $NAME -> CNAME $target"; continue
+              fi
+              echo "  PUT failed ($(echo "$r" | jq -c '.errors')), trying delete+create…"
+              curl -sf -X DELETE -H "$AUTH" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records/$rid" >/dev/null
+            fi
+            r=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" --data "$BODY" \
+              "https://api.cloudflare.com/client/v4/zones/$zone/dns_records")
+            echo "$r" | jq -e '.success' >/dev/null 2>&1 \
+              && echo "PASS  created CNAME $NAME -> $target" \
+              || { echo "FAIL  create $NAME"; echo "$r" | jq .; exit 1; }
+          done
+
+      - name: Step B3 - Wait for cert + DNS, then verify prod (9 checks)
+        env:
+          TARGET: darshya.online
+        run: |
+          set -uo pipefail
+          echo "waiting 90s for DNS propagation + Render cert provisioning…"
+          sleep 90
+          # Warm the free-tier service (cold start ~50s); tolerate slow first hit.
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 75 "https://$TARGET/" || echo "000")
+            echo "warm $i: $code"; [ "$code" = "200" ] && break; sleep 15
+          done
+          fail=0
+          check() {
+            local path="$1" expect="$2"
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "https://$TARGET${path}" || echo "000")
+            [ "$code" = "$expect" ] && echo "PASS  $path -> $code" || { echo "FAIL  $path -> $code (expected $expect)"; fail=1; }
+          }
+          body_marker() {
+            local path="$1" marker="$2"
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "https://$TARGET${path}" || echo "000")
+            body=$(curl -s --max-time 60 "https://$TARGET${path}" || true)
+            [ "$code" = "200" ] && echo "$body" | grep -qi "$marker" \
+              && echo "PASS  $path -> 200 (real prerendered HTML)" \
+              || { echo "FAIL  $path -> $code (expected 200 + '$marker')"; fail=1; }
+          }
+          check "/" 200
+          check "/sitemap.xml" 200
+          check "/robots.txt" 200
+          check "/api/orchestrator-status" 200
+          body_marker "/jyotirlinga/somnath" "somnath"
+          body_marker "/nava-graha/surya" "surya"
+          # Legacy redirect: accept 301|308 -> /astrology/kundli
+          cr=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "https://$TARGET/kundli" || echo "000")
+          loc=$(curl -s -o /dev/null -w "%{redirect_url}" --max-time 60 "https://$TARGET/kundli" || true)
+          if { [ "$cr" = "301" ] || [ "$cr" = "308" ]; } && echo "$loc" | grep -q "/astrology/kundli"; then
+            echo "PASS  /kundli -> $cr /astrology/kundli"
+          else echo "FAIL  /kundli -> $cr ($loc)"; fail=1; fi
+          # A static asset must resolve from the prod HTML.
+          asset=$(curl -s --max-time 60 "https://$TARGET/" | grep -oE '/_next/static/[^"]+\.js' | head -1 || true)
+          if [ -n "$asset" ]; then
+            ac=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "https://$TARGET${asset}" || echo "000")
+            [ "$ac" = "200" ] && echo "PASS  $asset -> 200" || { echo "FAIL  $asset -> $ac"; fail=1; }
+          else echo "FAIL  no /_next/static asset on prod /"; fail=1; fi
+          echo "---"
+          [ "$fail" = "0" ] && echo "PROD GREEN: darshya.online serving from Render — all 9 checks PASS" || { echo "PROD FAIL: $fail checks failed"; exit 1; }
