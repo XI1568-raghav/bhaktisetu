@@ -101,6 +101,12 @@ jobs:
             url=$(curl -sf -H "$AUTH" "$API/services/$existing" | jq -r '.serviceDetails.url // empty')
             [ -n "$url" ] || url="darshya-web"
             echo "service_url=$url" >> "$GITHUB_ENV"
+            # For the reuse path, grab the latest deploy id (list entries are
+            # wrapped {"deploy":{...}} — verified via render-diag 2026-07-08) so
+            # A2 can poll the specific deploy. Blank if none yet (A2 falls back
+            # to the list path).
+            did=$(curl -sf -H "$AUTH" "$API/services/$existing/deploys?limit=1" | jq -r '.[0].deploy.id // empty')
+            [ -n "$did" ] && echo "deploy_id=$did" >> "$GITHUB_ENV" || echo "  (no prior deploy — A2 will poll the list)"
             exit 0
           fi
           # 2. ownerId — reuse the existing bhaktisetu (API) service's ownerId,
@@ -151,7 +157,11 @@ jobs:
           url=$(echo "$resp" | jq -r '.service.serviceDetails.url // empty')
           [ -n "$url" ] || url="darshya-web"
           echo "service_url=$url" >> "$GITHUB_ENV"
-          echo "PASS  darshya-web created (id=$sid, url=$url, deployId=$(echo "$resp" | jq -r '.deployId'))"
+          # Export the initial deployId so A2 polls the specific deploy (its
+          # status is at .status at root — verified via render-diag 2026-07-08).
+          init_dep=$(echo "$resp" | jq -r '.deployId // empty')
+          [ -n "$init_dep" ] && echo "deploy_id=$init_dep" >> "$GITHUB_ENV"
+          echo "PASS  darshya-web created (id=$sid, url=$url, deployId=$init_dep)"
 
       - name: Step A2 - Wait for first deploy to go live
         env:
@@ -160,9 +170,24 @@ jobs:
           set -uo pipefail
           AUTH="Authorization: Bearer ${RENDER_KEY}"
           sid="${{ env.service_id }}"
-          echo "polling deploys on $sid (up to ~20min)…"
+          # CRITICAL: the deploy LIST endpoint wraps each entry as
+          # {"deploy":{...,"status":"..."},"cursor":...} — verified via render-diag
+          # (run 28930175925, 2026-07-08): GET /services/{sid}/deploys returns
+          # [{"deploy":{"id":"dep-...","status":"live",...}}]. So the status path
+          # is .[0].deploy.status, NOT .[0].status (which is null → "unknown"
+          # → false 20-min timeout, even though the deploy was live the whole
+          # time — that was the first cutover attempt's failure, run 28928817158).
+          # PRIMARY: query the specific deployId from A1 — that endpoint returns
+          # the deploy object at ROOT (status at .status, verified by diag).
+          # FALLBACK: list endpoint, .[0].deploy.status.
+          did="${{ env.deploy_id }}"
+          echo "polling deploy on $sid (deployId=$did, up to ~20min)…"
           for i in $(seq 1 60); do
-            st=$(curl -sf -H "$AUTH" "https://api.render.com/v1/services/$sid/deploys?limit=1" | jq -r '.[0].status // "unknown"')
+            if [ -n "$did" ]; then
+              st=$(curl -sf -H "$AUTH" "https://api.render.com/v1/services/$sid/deploys/$did" | jq -r '.status // "unknown"')
+            else
+              st=$(curl -sf -H "$AUTH" "https://api.render.com/v1/services/$sid/deploys?limit=1" | jq -r '.[0].deploy.status // "unknown"')
+            fi
             echo "  [$i/60] deploy status: $st"
             case "$st" in
               live) echo "PASS  deploy live"; exit 0 ;;
