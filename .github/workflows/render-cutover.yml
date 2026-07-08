@@ -93,7 +93,12 @@ jobs:
           if [ -n "$existing" ]; then
             echo "PASS  darshya-web already exists (id=$existing) — reusing"
             echo "service_id=$existing" >> "$GITHUB_ENV"
-            url=$(curl -sf -H "$AUTH" "$API/services/$existing" | jq -r '.url // .serviceDetails.subdomain')
+            # Render service object has NO top-level .url; the public URL is at
+            # .serviceDetails.url (webServiceDetails — verified against
+            # api-docs.render.com create-service schema 2026-07-08). Falls back
+            # to dashboardUrl only as a last resort (not a valid CNAME target,
+            # so Step B2 would catch it if url is truly missing).
+            url=$(curl -sf -H "$AUTH" "$API/services/$existing" | jq -r '.serviceDetails.url // empty')
             [ -n "$url" ] || url="darshya-web"
             echo "service_url=$url" >> "$GITHUB_ENV"
             exit 0
@@ -136,7 +141,14 @@ jobs:
           sid=$(echo "$resp" | jq -r '.service.id')
           [ -n "$sid" ] || { echo "FAIL  no service id in response"; echo "$resp" | jq .; exit 1; }
           echo "service_id=$sid" >> "$GITHUB_ENV"
-          url=$(echo "$resp" | jq -r '.service.url // .service.serviceDetails.subdomain // empty')
+          # Create response is wrapped: {service:{...}, deployId}. The service
+          # object has NO top-level .url — public URL is at .service.serviceDetails.url
+          # (webServiceDetails.url, required field — verified against
+          # api-docs.render.com serviceAndDeploy + webServiceDetails schemas
+          # 2026-07-08). Reading .service.url returns null → would fall through
+          # to the "darshya-web" default → Step B2's *.onrender.com assertion
+          # would fail and block the DNS cutover. Fixed to read the real path.
+          url=$(echo "$resp" | jq -r '.service.serviceDetails.url // empty')
           [ -n "$url" ] || url="darshya-web"
           echo "service_url=$url" >> "$GITHUB_ENV"
           echo "PASS  darshya-web created (id=$sid, url=$url, deployId=$(echo "$resp" | jq -r '.deployId'))"
