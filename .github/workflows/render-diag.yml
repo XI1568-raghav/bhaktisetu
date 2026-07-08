@@ -2,11 +2,16 @@ name: Render diag
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'services | deploy | both'
+        required: false
+        default: 'services'
       sid:
-        description: 'service id (srv-...)'
-        required: true
+        description: 'service id (for deploy mode)'
+        required: false
+        default: ''
       did:
-        description: 'deploy id (dep-...) — blank to just list'
+        description: 'deploy id (blank = list)'
         required: false
         default: ''
 jobs:
@@ -14,21 +19,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Probe Render deploy state
+      - name: Probe Render
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
+          MODE: ${{ github.event.inputs.mode }}
           SID: ${{ github.event.inputs.sid }}
           DID: ${{ github.event.inputs.did }}
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
-          echo "=== service object ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq '{id,name,status,serviceDetails:.serviceDetails|{url,runtime,plan,region}}'
-          echo "=== deploys list (limit 5) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=5" | jq '.[]? | {id,status,createdAt,finishedAt,commit:.commit.id,message}'
-          if [ -n "$DID" ]; then
-            echo "=== specific deploy $DID ==="
-            curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$DID" | jq '{id,status,createdAt,finishedAt,commit:.commit.id}'
+          if [ "$MODE" = "services" ] || [ "$MODE" = "both" ]; then
+            echo "=== ALL services (name + id, paginated) ==="
+            cursor=""
+            n=0
+            while :; do
+              url="https://api.render.com/v1/services?limit=20"
+              [ -n "$cursor" ] && url="$url&cursor=$cursor"
+              page=$(curl -s -H "$A" "$url")
+              echo "$page" | jq -r '.[]? | "  \(.name)  id=\(.id)  status=\(.status // "null")"'
+              cursor=$(echo "$page" | jq -r '.[-1:].cursor // empty' 2>/dev/null)
+              cnt=$(echo "$page" | jq 'length')
+              n=$((n+cnt)); [ "$cnt" -lt 20 ] && break
+              [ -z "$cursor" ] && break
+            done
+            echo "total listed: $n"
+            echo "=== darshya-web specifically ==="
+            curl -s -H "$A" "https://api.render.com/v1/services" | jq '[.[] | select(.name=="darshya-web")] | length'
           fi
-          echo "=== raw deploy list (first 2000 chars) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=3" | head -c 2000
+          if [ "$MODE" = "deploy" ] || [ "$MODE" = "both" ]; then
+            echo "=== deploys for $SID ==="
+            curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=3" | jq '.[]? | {id:.deploy.id, status:.deploy.status, createdAt:.deploy.createdAt}'
+          fi
