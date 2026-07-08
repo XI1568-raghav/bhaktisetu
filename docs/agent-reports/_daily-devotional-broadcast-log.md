@@ -1,6 +1,8 @@
 # daily-devotional-broadcast log
 
 
+- 2026-07-08T06:13:46.841Z — dow=3 deity=Ganesha sent=0 failed=0 skipped=0
+
 - 2026-07-07T07:02:04.091Z — dow=2 deity=Hanuman sent=0 failed=0 skipped=0
 
 - 2026-07-06T08:03:36.282Z — dow=1 deity=Shiva sent=0 failed=0 skipped=0
