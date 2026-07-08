@@ -87,32 +87,47 @@ jobs:
           set -euo pipefail
           AUTH="Authorization: Bearer ${RENDER_KEY}"
           API="https://api.render.com/v1"
+          # CRITICAL: Render LIST endpoints wrap each entry as
+          # {"cursor":"...","service":{...}} (services) / {"deploy":{...}} (deploys)
+          # — verified via render-diag run 28930659711, 2026-07-08. So the service
+          # fields are at .[].service.*, NOT .[].* (flat reads null). The first
+          # two cutover attempts failed because A1's lookup used flat paths and
+          # never found the existing darshya-web → fell to POST create → 409
+          # conflict → curl -sf exit 22.
+          # Paginate the services list (Render caps ~20/page) to find by name.
+          fetch_field() {  # $1 = service name, $2 = jq path under .service → echoes value (paginated)
+            local cursor="" page url
+            while :; do
+              url="$API/services?limit=20"; [ -n "$cursor" ] && url="$url&cursor=$cursor"
+              page=$(curl -s -H "$AUTH" "$url")
+              local v; v=$(echo "$page" | jq -r --arg n "$1" ".[] | select(.service.name==\$n) | .service.$2" | head -1)
+              [ -n "$v" ] && { echo "$v"; return 0; }
+              cursor=$(echo "$page" | jq -r '.[-1:].cursor // empty' 2>/dev/null)
+              [ "$(echo "$page" | jq 'length')" -lt 20 ] && break
+              [ -z "$cursor" ] && break
+            done
+            return 1
+          }
           # 1. Idempotency: does darshya-web already exist?
-          existing=$(curl -sf -H "$AUTH" "$API/services?limit=50" \
-            | jq -r '.[] | select(.name=="darshya-web") | .id' | head -1 || true)
+          existing=$(fetch_field darshya-web id || true)
           if [ -n "$existing" ]; then
             echo "PASS  darshya-web already exists (id=$existing) — reusing"
             echo "service_id=$existing" >> "$GITHUB_ENV"
-            # Render service object has NO top-level .url; the public URL is at
-            # .serviceDetails.url (webServiceDetails — verified against
-            # api-docs.render.com create-service schema 2026-07-08). Falls back
-            # to dashboardUrl only as a last resort (not a valid CNAME target,
-            # so Step B2 would catch it if url is truly missing).
+            # GET /services/{id} returns the service object at ROOT (serviceDetails
+            # at .serviceDetails) — verified via render-diag. The public URL is at
+            # .serviceDetails.url (webServiceDetails.url).
             url=$(curl -sf -H "$AUTH" "$API/services/$existing" | jq -r '.serviceDetails.url // empty')
             [ -n "$url" ] || url="darshya-web"
             echo "service_url=$url" >> "$GITHUB_ENV"
-            # For the reuse path, grab the latest deploy id (list entries are
-            # wrapped {"deploy":{...}} — verified via render-diag 2026-07-08) so
-            # A2 can poll the specific deploy. Blank if none yet (A2 falls back
-            # to the list path).
+            # Grab the latest deploy id (list wrapped {"deploy":{...}}) so A2
+            # polls the specific deploy. Blank → A2 falls back to the list path.
             did=$(curl -sf -H "$AUTH" "$API/services/$existing/deploys?limit=1" | jq -r '.[0].deploy.id // empty')
             [ -n "$did" ] && echo "deploy_id=$did" >> "$GITHUB_ENV" || echo "  (no prior deploy — A2 will poll the list)"
             exit 0
           fi
-          # 2. ownerId — reuse the existing bhaktisetu (API) service's ownerId,
-          #    else fall back to GET /owners (owner.id nested).
-          owner=$(curl -sf -H "$AUTH" "$API/services?limit=50" \
-            | jq -r '.[] | select(.name=="bhaktisetu") | .ownerId' | head -1 || true)
+          # 2. ownerId — reuse the existing bhaktisetu (API) service's ownerId
+          #    (paginated list, .service.ownerId via fetch_field), else GET /owners.
+          owner=$(fetch_field bhaktisetu ownerId || true)
           if [ -z "$owner" ]; then
             owner=$(curl -sf -H "$AUTH" "$API/owners" | jq -r '.[0].owner.id')
           fi
@@ -142,10 +157,29 @@ jobs:
               }
             }')
           echo "  creating service…"
-          resp=$(curl -sf -X POST -H "$AUTH" -H "Content-Type: application/json" \
+          # Use -s (not -sf) so a 409 name-conflict (race / re-run after a prior
+          # create) doesn't hard-exit; detect + fall back to reusing the existing
+          # service instead of failing the cutover.
+          resp=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
             --data "$BODY" "$API/services")
-          sid=$(echo "$resp" | jq -r '.service.id')
-          [ -n "$sid" ] || { echo "FAIL  no service id in response"; echo "$resp" | jq .; exit 1; }
+          sid=$(echo "$resp" | jq -r '.service.id // empty')
+          if [ -z "$sid" ]; then
+            # 409 conflict → a darshya-web already exists (lookup missed it). Re-fetch.
+            echo "  POST did not return a service id — likely 409 conflict; response:"
+            echo "$resp" | jq -c '{message:(.message // .errors)}' 2>/dev/null || echo "$resp" | head -c 300
+            sid=$(fetch_field darshya-web id || true)
+            if [ -n "$sid" ]; then
+              echo "PASS  darshya-web already exists (id=$sid) — reusing (recovered from conflict)"
+              # Pull its URL + latest deploy for A2.
+              url=$(curl -sf -H "$AUTH" "$API/services/$sid" | jq -r '.serviceDetails.url // empty')
+              [ -n "$url" ] || url="darshya-web"
+              echo "service_id=$sid" >> "$GITHUB_ENV"; echo "service_url=$url" >> "$GITHUB_ENV"
+              did=$(curl -sf -H "$AUTH" "$API/services/$sid/deploys?limit=1" | jq -r '.[0].deploy.id // empty')
+              [ -n "$did" ] && echo "deploy_id=$did" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "FAIL  no service id in create response and could not reuse"; echo "$resp" | jq . 2>/dev/null || echo "$resp"; exit 1
+          fi
           echo "service_id=$sid" >> "$GITHUB_ENV"
           # Create response is wrapped: {service:{...}, deployId}. The service
           # object has NO top-level .url — public URL is at .service.serviceDetails.url
