@@ -3,28 +3,53 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'logs2'
+        description: 'deploy | logs2'
         required: false
-        default: 'logs2'
+        default: 'deploy'
+      sid:
+        description: 'service id'
+        required: false
+        default: 'srv-d970l2ks728c738fc33g'
+      branch:
+        description: 'branch to deploy (for clearCache)'
+        required: false
+        default: 'main'
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
-      - name: Fetch logs via /v1/logs
+      - name: Trigger deploy + poll to live + curl
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
-          OID: tea-d7kka32qqhas738d8ui0
-          SID: srv-d970l2ks728c738fc33g
+          SID: ${{ github.event.inputs.sid }}
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
-          echo "=== APP logs (type=app, last 50) ==="
-          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=app&limit=50&direction=backward" | jq '{hasMore, logs:[.logs[]? | {ts:.createdAt, txt:(.text // .message // (. | tostring))}]}' 2>/dev/null | head -60
-          echo "=== APP logs RAW first 2000 ==="
-          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=app&limit=20" | head -c 2000
-          echo ""
-          echo "=== REQUEST logs with statusCode=502 ==="
-          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=request&statusCode=502&limit=10" | jq '{hasMore, logs:[.logs[]? | {ts:.createdAt, status:.statusCode, txt:(.text // .message // (. | tostring))}]}' 2>/dev/null | head -30
-          echo "=== BUILD logs for latest deploy (errors) ==="
-          curl -s -H "$A" "https://api.render.com/v1/logs?ownerId=$OID&resource=$SID&type=build&limit=30&direction=backward" | jq -r '.logs[]? | (.createdAt // "?") + " " + (.text // .message // (.|tostring))' 2>/dev/null | tail -20
+          echo "=== trigger fresh deploy (clearCache: yes to pick up Dockerfile change) ==="
+          r=$(curl -s -X POST -H "$A" -H "Content-Type: application/json" \
+            --data "{\"clearCache\":\"yes\"}" "https://api.render.com/v1/services/$SID/deploys")
+          did=$(echo "$r" | jq -r '.id // .deploy.id // empty')
+          echo "deployId=$did  response: $(echo "$r" | jq -c '{id:.id, status:.status}')"
+          [ -n "$did" ] || { echo "FAIL no deploy id"; echo "$r" | jq .; exit 1; }
+          echo "=== poll deploy to live (up to ~15min) ==="
+          for i in $(seq 1 45); do
+            st=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did" | jq -r '.status // "unknown"')
+            echo "  [$i/45] $st"
+            case "$st" in
+              live) echo "PASS live"; break ;;
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated) echo "FAIL $st"; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "=== curl the service URL (warm: retry on cold start) ==="
+          url=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq -r '.serviceDetails.url')
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 75 "$url/" || echo 000)
+            echo "  warm $i: $code"; [ "$code" = "200" ] && break; sleep 20
+          done
+          echo "=== prerendered route + sitemap + asset ==="
+          curl -s -o /dev/null -w "/jyotirlinga/somnath %{http_code}\n" --max-time 60 "$url/jyotirlinga/somnath"
+          curl -s -o /dev/null -w "/sitemap.xml %{http_code}\n" --max-time 60 "$url/sitemap.xml"
+          curl -s -o /dev/null -w "/api/orchestrator-status %{http_code}\n" --max-time 60 "$url/api/orchestrator-status"
