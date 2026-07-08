@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'deploy | logs2'
+        description: 'deploy | logs2 | cftoken'
         required: false
         default: 'deploy'
       sid:
@@ -19,7 +19,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: cftoken — verify the CF token in the GH secret + probe DNS scope
+        if: ${{ github.event.inputs.mode == 'cftoken' }}
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -uo pipefail
+          AUTH="Authorization: Bearer ${CF_TOKEN}"
+          # /user/tokens/verify returns the ACTIVE token's id + status (no extra
+          # perms needed — any valid token verifies itself). That id is the
+          # unambiguous match for the dashboard "bhaktisetu build token" row.
+          echo "=== /user/tokens/verify (the secret token's own id) ==="
+          v=$(curl -s -H "$AUTH" "https://api.cloudflare.com/client/v4/user/tokens/verify")
+          echo "$v" | jq .
+          tid=$(echo "$v" | jq -r '.result.id // empty')
+          [ -n "$tid" ] && echo "SECRET_TOKEN_ID=$tid  (match this against the dashboard token's ID)"
+          # DNS-records GET — same call render-cutover Step B2 makes. 403/10000 =
+          # DNS:Edit still missing on THIS token for darshya.online. 200 = scope landed.
+          zone=$(curl -s -H "$AUTH" "https://api.cloudflare.com/client/v4/zones?name=darshya.online" | jq -r '.result[0].id')
+          echo "=== /zones/{zone}/dns_records?name=darshya.online (zone=$zone) ==="
+          resp=$(curl -s -H "$AUTH" -w "\n%{http_code}" "https://api.cloudflare.com/client/v4/zones/$zone/dns_records?name=darshya.online")
+          code=$(printf '%s' "$resp" | tail -1); body=$(printf '%s' "$resp" | sed '$d')
+          echo "HTTP $code"
+          echo "$body" | jq .
+          if [ "${code:0:1}" = "2" ] && echo "$body" | jq -e '.success' >/dev/null 2>&1; then
+            echo "PASS  DNS:Edit scope present — re-fire render-cutover Step B2"
+          else
+            echo "FAIL  DNS still denied (HTTP $code). The 'bhaktisetu build token' (id=$tid) is what the secret uses — its Permissions MUST show 'Zone · DNS · Edit' with Zone Resource = darshya.online. If you edited a DIFFERENT token, the secret is unaffected."
+          fi
+
       - name: Trigger deploy + poll to live + curl
+        if: ${{ github.event.inputs.mode != 'cftoken' }}
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
           SID: ${{ github.event.inputs.sid }}
