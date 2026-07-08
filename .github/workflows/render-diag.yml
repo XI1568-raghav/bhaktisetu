@@ -27,9 +27,9 @@ jobs:
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
-          echo "=== trigger fresh deploy (clearCache: yes to pick up Dockerfile change) ==="
+          echo "=== trigger fresh deploy (clearCache: clear to pick up Dockerfile change) ==="
           r=$(curl -s -X POST -H "$A" -H "Content-Type: application/json" \
-            --data "{\"clearCache\":\"yes\"}" "https://api.render.com/v1/services/$SID/deploys")
+            --data "{\"clearCache\":\"clear\"}" "https://api.render.com/v1/services/$SID/deploys")
           did=$(echo "$r" | jq -r '.id // .deploy.id // empty')
           echo "deployId=$did  response: $(echo "$r" | jq -c '{id:.id, status:.status}')"
           [ -n "$did" ] || { echo "FAIL no deploy id"; echo "$r" | jq .; exit 1; }
