@@ -3,8 +3,13 @@
 # the OpenNext server-function bundle (5.3 MiB gzip) exceeded the free Workers
 # 3 MiB limit. darshya web now self-hosts on Render Node free tier via Next
 # `output: 'standalone'` (apps/web/Dockerfile). This workflow builds that exact
-# Docker image and verifies `node server.js` boots and serves 200 on /, so a
-# broken standalone build is caught here, not on Render.
+# Docker image and verifies `node server.js` boots and serves:
+#   - framework routes: / , /sitemap.xml , /robots.txt , /api/orchestrator-status
+#   - a legacy redirect: /kundli -> /astrology/kundli
+#   - REAL prerendered [slug] pages: /jyotirlinga/somnath , /nava-graha/surya
+#     (the prerender pipeline that broke under CF — proven here, not on Render)
+#   - a /_next/static asset (proves .next/static was copied into standalone)
+# so a broken standalone build is caught here, not on Render.
 #
 # Trigger: workflow_dispatch (manual) + on push to the migration branch while
 # the cutover is being verified. After prod is live on Render, this becomes the
@@ -35,11 +40,11 @@ jobs:
       - name: Build the standalone image
         # Build context = repo root (the Dockerfile is at apps/web/Dockerfile
         # but COPYs workspace root files + sibling packages/ + tooling/, so the
-        # context must be the repo root, not apps/web). Bake the same
-        # NEXT_PUBLIC_* vars CI uses for the Workers build so the client bundle
-        # matches prod — passed as --build-arg (Dockerfile declares matching
-        # ARG + ENV so `next build` sees them). Real secrets are runtime-only,
-        # never baked. The repo-root .dockerignore keeps the context small.
+        # context must be the repo root, not apps/web). Bake the production
+        # NEXT_PUBLIC_* vars as --build-arg so the client bundle matches prod
+        # (Dockerfile declares matching ARG + ENV so `next build` sees them).
+        # Real secrets are runtime-only, never baked. The repo-root
+        # .dockerignore keeps the context small.
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://api.darshya.online \
@@ -71,6 +76,23 @@ jobs:
           check "/sitemap.xml" 200
           check "/robots.txt" 200
           check "/api/orchestrator-status" 200
+          # Prerendered [slug] routes — the pipeline that broke under CF (the
+          # original 3-week outage). These pages are prerendered at `next build`
+          # from LOCAL static seed (apps/web/lib/jyotirlingas.ts, nava-grahas.ts)
+          # via generateStaticParams — no live API needed, so they exist in the
+          # image with no DB. Assert 200 AND a route-specific marker in the body,
+          # so a stub/empty/404 page (which also returns 200) can't pass. This
+          # proves the 1792-page prerender output actually serves from standalone.
+          body_jy=$(curl -s "http://127.0.0.1:3000/jyotirlinga/somnath")
+          code_jy=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000/jyotirlinga/somnath")
+          if [ "$code_jy" = "200" ] && echo "$body_jy" | grep -qi "somnath"; then
+            echo "PASS  /jyotirlinga/somnath -> 200 (real prerendered HTML)"
+          else echo "FAIL  /jyotirlinga/somnath -> $code_jy (expected 200 + 'somnath' marker in body)"; fail=1; fi
+          body_ng=$(curl -s "http://127.0.0.1:3000/nava-graha/surya")
+          code_ng=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000/nava-graha/surya")
+          if [ "$code_ng" = "200" ] && echo "$body_ng" | grep -qi "surya"; then
+            echo "PASS  /nava-graha/surya -> 200 (real prerendered HTML)"
+          else echo "FAIL  /nava-graha/surya -> $code_ng (expected 200 + 'surya' marker in body)"; fail=1; fi
           # Legacy redirect: /kundli -> /astrology/kundli. Next 15 App Router
           # emits 308 (permanent) for `permanent: true` redirects — accept 301
           # or 308; what matters is the destination.

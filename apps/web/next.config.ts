@@ -16,7 +16,13 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    // Cloudflare Pages doesn't support Next's default image optimizer without a custom loader.
+    // Historically `unoptimized: true` because Cloudflare Pages couldn't run
+    // Next's default image optimizer. Cloudflare is now out (self-host on
+    // Render Node via `output: 'standalone'`, where the optimizer WOULD work),
+    // but the flag is kept for now: on the free-tier Node box, sharp-based
+    // on-the-fly optimization adds CPU per request and free-tier RAM is tight.
+    // Remote images are already served optimized from Supabase/CloudFront, so
+    // the optimizer buys little. Revisit if/when moving off free tier.
     unoptimized: true,
     remotePatterns: [
       {
@@ -75,10 +81,11 @@ const nextConfig: NextConfig = {
   // and skips gracefully when SENTRY_AUTH_TOKEN is absent), so the maps were
   // generated on every build for zero benefit. Originally also disabled because
   // @cloudflare/next-on-pages had documented build failures with browser source
-  // maps — that adapter is now removed (migrated to @opennextjs/cloudflare), but
-  // the flag stays off until the Sentry release pipeline is actually wired
-  // (auth token set + a v* tag cut) AND a green OpenNext build is confirmed
-  // with maps on.
+  // maps. The Cloudflare adapters (next-on-pages + @opennextjs/cloudflare) are
+  // now fully removed (self-host on Render via `output: 'standalone''), so the
+  // adapter-incompatibility reason is gone — but the flag stays off until the
+  // Sentry release pipeline is actually wired (auth token set + a v* tag cut);
+  // turning maps back on without a release to attach them to is still pointless.
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
   webpack: (config) => {
