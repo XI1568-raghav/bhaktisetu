@@ -26,6 +26,10 @@ on:
         description: 'true = report current auto-deploy state only, no changes'
         required: false
         default: 'true'
+      verify_only:
+        description: 'true = only list recent CF Pages deployments (prove zombie dead after a push) — no PATCH'
+        required: false
+        default: 'false'
 
 jobs:
   kill-zombie:
@@ -37,8 +41,23 @@ jobs:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DRY: ${{ github.event.inputs.dry_run }}
+          VERIFY: ${{ github.event.inputs.verify_only }}
         run: |
           set -uo pipefail
+          if [ "$VERIFY" = "true" ]; then
+            echo "=== VERIFY ONLY — listing recent CF Pages deployments to confirm no new build fired ==="
+            for PROJ in darshya poojly-web; do
+              echo "--- recent deployments: $PROJ ---"
+              d=$(curl -s -H "Authorization: Bearer ${CF_TOKEN}" \
+                "https://api.cloudflare.com/client/v4/accounts/${CF_ACCT}/pages/projects/${PROJ}/deployments?sort_by=created_on&sort_order=desc&per_page=5")
+              if ! echo "$d" | jq -e '.success' >/dev/null 2>&1; then
+                echo "  WARN  $PROJ not found/inaccessible"; continue
+              fi
+              echo "$d" | jq -r '.result[]? | "  \(.created_on)  latest_stage=\(.latest_stage.status // "?")  env=\(.environment // "?")  source=\(.deployment_trigger.metadata.commit_message // .deployment_trigger.metadata.branch // "?")"'
+            done
+            echo "=== VERIFY complete — if no deployment timestamped AFTER the last push, zombie is dead ==="
+            exit 0
+          fi
           if [ "$DRY" = "true" ]; then echo "=== DRY RUN — reporting state only, no changes ==="; else echo "=== LIVE — disabling auto-deploy on both projects ==="; fi
           for PROJ in darshya poojly-web; do
             echo "--- CF Pages: $PROJ ---"
