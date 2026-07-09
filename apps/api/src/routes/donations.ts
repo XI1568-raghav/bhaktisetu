@@ -42,7 +42,8 @@ const razorpay = isDemoPayment
 type DonationRow = {
   id: string;
   user_id: string;
-  gaushala_id: string;
+  gaushala_id: string | null;
+  temple_id: string | null;
   amount_inr: string; // numeric → string in Prisma raw queries
   razorpay_order_id: string;
   razorpay_payment_id: string | null;
@@ -80,13 +81,28 @@ function nextReceiptNumber(): string {
 // donations are an obvious fraud/dust vector. Cap: ₹10,00,000 per single
 // transaction — a misclick safety rail; large donors should call us.
 const createOrderSchema = z.object({
-  gaushalaId: z.string().min(1, 'gaushalaId is required'),
+  // P0 #PBO-2 (2026-07-09): polymorphic donee. The old schema required
+  // gaushalaId, so temple donations were either rejected or forced through
+  // the gaushala path (temple_id never set, receipts named the wrong entity).
+  // Now the caller declares the cause kind; exactly one of (gaushalaId,
+  // templeId) must match the kind. Backward-compat: omitting causeKind
+  // defaults to 'gaushala' with gaushalaId required (legacy callers).
+  causeKind: z.enum(['gaushala', 'temple']).optional(),
+  gaushalaId: z.string().min(1).optional(),
+  templeId: z.string().uuid().optional(),
   amountInr: z.number({ invalid_type_error: 'amountInr must be a number' })
     .int('amountInr must be a whole number of rupees')
     .min(101, 'Minimum donation is ₹101')
     .max(1000000, 'Maximum single donation via this endpoint is ₹10,00,000'),
   planId: z.string().optional(),
-});
+}).refine(
+  (d) => {
+    const kind = d.causeKind ?? 'gaushala';
+    if (kind === 'temple') return !!d.templeId && !d.gaushalaId;
+    return !!d.gaushalaId && !d.templeId;
+  },
+  { message: 'Provide gaushalaId for a gaushala cause or templeId for a temple cause (not both).', path: ['causeKind'] },
+);
 
 const verifyDonationSchema = z.object({
   donationId: z.string().min(1, 'donationId is required'),
@@ -109,7 +125,8 @@ export async function donationRoutes(server: FastifyInstance) {
         details: parsed.error.flatten(),
       });
     }
-    const { gaushalaId, amountInr, planId } = parsed.data;
+    const { causeKind, gaushalaId, templeId, amountInr, planId } = parsed.data;
+    const kind = causeKind ?? 'gaushala';
     const amount = amountInr;
 
     const userId = request.currentUser!.id;
@@ -121,22 +138,43 @@ export async function donationRoutes(server: FastifyInstance) {
         amount: Math.round(amount * 100), // paise
         currency: 'INR',
         receipt: donationId,
-        notes: { gaushalaId, planId: planId ?? '', userId },
+        notes: {
+          causeKind: kind,
+          ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: gaushalaId! }),
+          planId: planId ?? '',
+          userId,
+        },
       });
       razorpayOrderId = order.id;
     } else {
       razorpayOrderId = `order_demo_${Date.now()}`;
     }
 
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status)
-       VALUES ($1, $2::uuid, $3, $4, $5, 'created')`,
-      donationId,
-      userId,
-      gaushalaId,
-      amount,
-      razorpayOrderId,
-    );
+    // P0 #PBO-2 (2026-07-09): write the correct donee id. Temple donations
+    // set temple_id (gaushala_id NULL); gaushala donations keep the legacy
+    // stringified-user_id in gaushala_id. The Donation row's polymorphic
+    // invariant (exactly one non-null) is upheld by the schema refine above.
+    if (kind === 'temple') {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO donations (id, user_id, temple_id, amount_inr, razorpay_order_id, status)
+         VALUES ($1, $2::uuid, $3::uuid, $4, $5, 'created')`,
+        donationId,
+        userId,
+        templeId,
+        amount,
+        razorpayOrderId,
+      );
+    } else {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status)
+         VALUES ($1, $2::uuid, $3, $4, $5, 'created')`,
+        donationId,
+        userId,
+        gaushalaId,
+        amount,
+        razorpayOrderId,
+      );
+    }
 
     return reply.send({
       donationId,
@@ -159,7 +197,7 @@ export async function donationRoutes(server: FastifyInstance) {
     }
     const body = parsed.data;
     const rows = await prisma.$queryRawUnsafe<DonationRow[]>(
-      `SELECT id, user_id, gaushala_id, amount_inr, razorpay_order_id,
+      `SELECT id, user_id, gaushala_id, temple_id, amount_inr, razorpay_order_id,
               razorpay_payment_id, receipt_number, status, created_at, paid_at
          FROM donations
         WHERE id = $1
@@ -217,22 +255,47 @@ export async function donationRoutes(server: FastifyInstance) {
       }
     }
 
-    // Lookup user + gaushala for receipt
+    // P0 #PBO-2 (2026-07-09): load the correct donee entity for the receipt.
+    // Temple donations (temple_id set) load the Temple; gaushala donations
+    // (gaushala_id set) keep the legacy gaushala path. The receipt names the
+    // actual donee + its address — previously a temple donation named the
+    // gaushala network (or nothing) because only the gaushala branch ran.
     const user = await prisma.user.findUnique({ where: { id: donation.user_id } });
-    const gaushalaProfile = await prisma.gaushalaProfile.findFirst({
-      where: { userId: donation.gaushala_id },
-    }).catch(() => null);
+
+    const isTempleDonation = !!donation.temple_id;
+    const temple = isTempleDonation
+      ? await prisma.temple.findUnique({
+          where: { id: donation.temple_id! },
+          select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true },
+        }).catch(() => null)
+      : null;
+
+    const gaushalaProfile = !isTempleDonation
+      ? await prisma.gaushalaProfile.findFirst({
+          where: { userId: donation.gaushala_id ?? undefined },
+        }).catch(() => null)
+      : null;
 
     // Raw SQL fetch for pan + regn_80g — not in Prisma client until next
-    // schema regeneration (see ensureGaushalaTaxFields).
+    // schema regeneration (see ensureGaushalaTaxFields). Temples have no
+    // tax fields on the model yet, so temple receipts carry the temple name +
+    // address with blank 80G/PAN (schema follow-up).
     let taxFields: GaushalaTaxRow | null = null;
-    if (gaushalaProfile) {
+    if (gaushalaProfile && donation.gaushala_id) {
       const taxRows = await prisma.$queryRawUnsafe<GaushalaTaxRow[]>(
         `SELECT pan, regn_80g FROM gaushala_profiles WHERE user_id = $1::uuid LIMIT 1;`,
         donation.gaushala_id,
       ).catch(() => [] as GaushalaTaxRow[]);
       taxFields = taxRows[0] ?? null;
     }
+
+    // Resolve the receipt-facing donee name + address for either cause.
+    const doneeName = isTempleDonation
+      ? (temple?.name ?? 'Darshya Temple')
+      : (gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network');
+    const doneeAddress = isTempleDonation && temple
+      ? `${temple.addressLine}, ${temple.city}, ${temple.state} ${temple.pincode}`
+      : gaushalaProfile?.address;
 
     const receiptNumber = nextReceiptNumber();
     const donationDate = new Date().toLocaleDateString('en-IN', {
@@ -251,7 +314,9 @@ export async function donationRoutes(server: FastifyInstance) {
       receiptNumber,
     );
 
-    // Generate 80G PDF
+    // Generate 80G PDF. doneeName/doneeAddress carry the correct entity for
+    // either cause; tax fields remain gaushala-only (temples have no PAN/80G
+    // on the model yet).
     let pdfBuffer: Buffer | null = null;
     try {
       pdfBuffer = await generate80GReceipt({
@@ -262,10 +327,10 @@ export async function donationRoutes(server: FastifyInstance) {
         receiptNumber,
         paymentMode: isDemoPayment ? 'Other' : 'UPI',
         paymentReference: body.razorpay_payment_id,
-        gaushalaName: gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network',
+        gaushalaName: doneeName,
         gaushala80GNumber: taxFields?.regn_80g ?? undefined,
         gaushalaPan: taxFields?.pan ?? undefined,
-        gaushalaAddress: gaushalaProfile?.address ?? undefined,
+        gaushalaAddress: doneeAddress ?? undefined,
       });
     } catch (err) {
       server.log.error({ err }, 'Failed to generate 80G receipt PDF');
@@ -276,7 +341,7 @@ export async function donationRoutes(server: FastifyInstance) {
       const tpl = donationReceiptEmail({
         donorName: user.fullName ?? 'Devotee',
         amount: `₹${amountInr.toLocaleString('en-IN')}`,
-        gaushalaName: gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network',
+        gaushalaName: doneeName,
         receiptNumber,
         date: donationDate,
       });
@@ -300,3 +365,6 @@ export async function donationRoutes(server: FastifyInstance) {
     });
   });
 }
+
+export const __testing = { createOrderSchema };
+
