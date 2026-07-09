@@ -38,11 +38,14 @@ interface SearchHit {
 // Map each whitelisted table to its display columns.
 const TABLE_COLS: Record<
   'content_items' | 'temples' | 'puja_types',
-  { titleCol: string; snippetCol: string }
+  { titleCol: string; snippetCol: string; statusSql: string }
 > = {
-  content_items: { titleCol: 'title', snippetCol: 'body' },
-  temples:       { titleCol: 'name',  snippetCol: 'description' },
-  puja_types:    { titleCol: 'name',  snippetCol: 'description' },
+  // P0 #PUB-06 (2026-07-09): status filter appended to the vector-path WHERE
+  // so draft/unpublished content and pending_review temples never leak to the
+  // public semantic-search (matching /api/v1/search + /api/v1/content).
+  content_items: { titleCol: 'title', snippetCol: 'body', statusSql: "status = 'published'" },
+  temples:       { titleCol: 'name',  snippetCol: 'description', statusSql: "status = 'active'" },
+  puja_types:    { titleCol: 'name',  snippetCol: 'description', statusSql: 'is_active = true' },
 };
 
 async function vectorSearch(
@@ -60,6 +63,7 @@ async function vectorSearch(
   const titleColSql = Prisma.raw(titleCol);
   const snippetColSql = Prisma.raw(snippetCol);
   const tableSql = Prisma.raw(table);
+  const statusSql = Prisma.raw(TABLE_COLS[table].statusSql);
   try {
     return await prisma.$queryRaw<
       Array<{ id: string; title: string; snippet: string; score: number }>
@@ -70,6 +74,7 @@ async function vectorSearch(
              1 - (embedding <=> ${lit}::vector) as score
         from ${tableSql}
        where embedding is not null
+         and ${statusSql}
        order by embedding <=> ${lit}::vector
        limit ${lim}`;
   } catch (err) {
@@ -88,7 +93,7 @@ async function fallbackLike(
   if (kind === 'content' || kind === 'all') {
     const items = await prisma.contentItem
       .findMany({
-        where: { OR: [{ title: { contains: q, mode: 'insensitive' } }, { body: { contains: q, mode: 'insensitive' } }] },
+        where: { status: 'published', OR: [{ title: { contains: q, mode: 'insensitive' } }, { body: { contains: q, mode: 'insensitive' } }] },
         select: { id: true, title: true, body: true, slug: true },
         take: limit,
       })
@@ -107,7 +112,7 @@ async function fallbackLike(
   if (kind === 'temple' || kind === 'all') {
     const items = await prisma.temple
       .findMany({
-        where: { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
+        where: { status: 'active', OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
         select: { id: true, name: true, description: true, slug: true },
         take: limit,
       })
@@ -126,7 +131,7 @@ async function fallbackLike(
   if (kind === 'puja' || kind === 'all') {
     const items = await prisma.pujaType
       .findMany({
-        where: { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
+        where: { isActive: true, OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
         select: { id: true, name: true, description: true, slug: true },
         take: limit,
       })

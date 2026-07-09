@@ -281,6 +281,21 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         razorpayOrderId = `order_demo_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
       }
 
+      // P0 #wp-01 (2026-07-09): capacity check. The old handler created a
+      // PENDING_PAYMENT enrollment without comparing the enrolled count to
+      // session.capacity, so N concurrent enrolls over-booked past the cap.
+      // Count PAID + PENDING_PAYMENT (pending holds a slot until payment
+      // completes or the enrollment is reaped). Re-enrolling an existing
+      // pending row does not consume a new slot, so only gate the create path.
+      if (!existing) {
+        const held = await prisma.wellnessEnrollment.count({
+          where: { sessionId: session.id, status: { in: ['PAID', 'PENDING_PAYMENT'] } },
+        });
+        if (held >= session.capacity) {
+          return reply.code(409).send({ error: 'Session is full' });
+        }
+      }
+
       const enrollment = existing
         ? await prisma.wellnessEnrollment.update({
             where: { id: existing.id },
@@ -335,6 +350,15 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
           return reply.code(400).send({ error: 'Razorpay verification fields missing' });
         }
+        // NOTE (P0 #wp-02, 2026-07-09): an order-id mismatch guard belongs here
+        // (compare razorpayOrderId to the order id persisted at enroll time),
+        // but WellnessEnrollment has no razorpay_order_id column and no Payment
+        // row is created at enroll — the order id is only returned to the
+        // client, never stored. Adding the guard requires a schema migration
+        // (add wellness_enrollments.razorpay_order_id, or create a Payment row
+        // at enroll with gatewayOrderId). Tracked as a deferred follow-up; the
+        // ownership check above + amount bound to the session price (not the
+        // client) limit the blast radius until then.
         const expected = crypto
           .createHmac('sha256', razorpayKeySecret)
           .update(`${razorpayOrderId}|${razorpayPaymentId}`)

@@ -80,6 +80,14 @@ export async function priestRoutes(server: FastifyInstance) {
         languages: profile.languages ?? [],
         experienceYears: profile.experience ?? 0,
         bio: profile.bio ?? null,
+        // P0 #ag-01 / pp-04 (2026-07-09): a backfilled Priest is NOT active
+        // until an admin verifies it. The old default (status=active) granted
+        // instant priest powers to any pandit who hit /priest/dashboard
+        // without onboarding approval. Now backfill creates an inactive,
+        // pending-verification row — requireRole('priest') blocks it until
+        // an admin flips status to active.
+        status: 'inactive',
+        verificationStatus: 'pending',
       },
       select: { id: true },
     });

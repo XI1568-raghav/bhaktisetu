@@ -281,9 +281,30 @@ export class BookingService {
       );
     }
 
+    // P0 #pp-01 (2026-07-09): defense-in-depth denylist. The route layer
+    // already whitelists fields per-status, but this service is a shared
+    // chokepoint (also called by priest.service paths), so strip the
+    // financial/identity fields here too — they are server-authoritative and
+    // must never be client-settable via a status PATCH.
+    const FORBIDDEN_DATA_KEYS = new Set([
+      'priestPayout',
+      'platformCommission',
+      'priceAmount',
+      'userId',
+      'priestId',
+      'id',
+    ]);
+    const sanitizedData: Record<string, any> | undefined = data
+      ? Object.fromEntries(
+          Object.entries(data).filter(([k]) => !FORBIDDEN_DATA_KEYS.has(k))
+        )
+      : undefined;
+
     const updateData: Prisma.PujaBookingUpdateInput = {
       status: newStatus,
-      ...data,
+      ...(sanitizedData && Object.keys(sanitizedData).length > 0
+        ? sanitizedData
+        : {}),
     };
 
     const updated = await prisma.pujaBooking.update({

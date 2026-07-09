@@ -306,21 +306,33 @@ export async function astrologyRoutes(server: FastifyInstance) {
     const schema = z.object({ status: z.enum(['COMPLETED', 'CANCELLED']) });
     const parsed = schema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.errors[0]?.message ?? 'Invalid' });
+    const me = request.currentUser!;
     try {
-      const updated = await astrologyService.updateConsultation(id, parsed.data.status);
+      const updated = await astrologyService.updateConsultation(id, parsed.data.status, {
+        userId: me.id,
+        isAdmin: me.roles.includes('ADMIN'),
+      });
       return { consultation: updated };
     } catch (e) {
-      return reply.code(404).send({ error: e instanceof Error ? e.message : 'Not found' });
+      const msg = e instanceof Error ? e.message : 'Not found';
+      if (msg.includes('Not authorized')) return reply.code(403).send({ error: msg });
+      return reply.code(404).send({ error: msg });
     }
   });
 
   server.post('/consultations/:id/start-call', { preHandler: [authenticateUser] }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const me = request.currentUser!;
     try {
-      const result = await astrologyService.startCall(id);
+      const result = await astrologyService.startCall(id, {
+        userId: me.id,
+        isAdmin: me.roles.includes('ADMIN'),
+      });
       return { roomUrl: result.roomUrl };
     } catch (e) {
-      return reply.code(404).send({ error: e instanceof Error ? e.message : 'Not found' });
+      const msg = e instanceof Error ? e.message : 'Not found';
+      if (msg.includes('Not authorized')) return reply.code(403).send({ error: msg });
+      return reply.code(404).send({ error: msg });
     }
   });
 }
