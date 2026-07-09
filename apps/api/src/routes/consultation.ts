@@ -373,6 +373,43 @@ export async function consultationRoutes(server: FastifyInstance) {
       consultationId,
     );
 
+    // P0 #AP-06 (2026-07-09): write a Commission ledger row so the astrologer's
+    // earnings are reconcilable. The booking stores astrologer_id as a TEXT
+    // (mock id / slug today, real AstrologerProfile.id once profiles are live),
+    // so resolve it to a real AstrologerProfile → userId for providerId. If no
+    // real profile exists (mock astrologer), skip — there is no real provider
+    // to credit, and we must not violate Commission.providerId's UUID constraint.
+    // Idempotent (findFirst on bookingId). Fire-and-forget: a ledger write
+    // failure must never block the verified response.
+    void (async () => {
+      try {
+        const existing = await prisma.commission.findFirst({
+          where: { bookingId: row.id },
+          select: { id: true },
+        });
+        if (existing) return;
+        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.astrologer_id);
+        const profile = looksLikeUuid
+          ? await prisma.astrologerProfile.findUnique({ where: { id: row.astrologer_id }, select: { id: true, userId: true } })
+          : await prisma.astrologerProfile.findFirst({ where: { displayName: row.astrologer_name }, select: { id: true, userId: true } });
+        if (!profile?.userId) return; // mock astrologer — no real provider to credit
+        const total = Number(row.amount_inr);
+        const COMMISSION_RATE = 0.3; // platform takes 30%, astrologer keeps 70%
+        const commissionAmount = Math.round(total * COMMISSION_RATE * 100) / 100;
+        await prisma.commission.create({
+          data: {
+            bookingId: row.id,
+            providerId: profile.userId,
+            amount: commissionAmount,
+            percentage: COMMISSION_RATE,
+            status: 'PENDING',
+          },
+        });
+      } catch (err) {
+        server.log.warn({ err }, '[consultation] commission write failed');
+      }
+    })();
+
     return reply.send({
       verified: true,
       consultationId: row.id,
