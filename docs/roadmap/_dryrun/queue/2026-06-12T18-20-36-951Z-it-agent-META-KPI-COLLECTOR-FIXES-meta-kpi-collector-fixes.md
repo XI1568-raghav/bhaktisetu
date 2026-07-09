@@ -1,4 +1,4 @@
----
+﻿---
 queueId: Q-C-20260612T1820-META-KPI-FIXES
 itemId: META-KPI-COLLECTOR-FIXES
 role: it-agent
@@ -7,9 +7,9 @@ cycle: C-20260612T1820
 priority: P0
 estTokens: 4500
 estMinutes: 45
-consumedAt: null
-consumedBy: null
-consumedInSessionId: null
+consumedAt: 2026-07-07T08:27:18Z
+consumedBy: claude-code
+consumedInSessionId: unknown-session
 featureFlag: null
 prFlag: true
 founderActionRequired: false
