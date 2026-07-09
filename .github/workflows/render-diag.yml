@@ -57,11 +57,12 @@ jobs:
           set -uo pipefail
           A="Authorization: Bearer $RK"
           echo "=== recent deploys for $SID (GET only — does NOT trigger a build) ==="
-          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=20" \
-            | jq -r '.[] | "\(.createdAt)  \(.status)  commit=\(.commit // "n/a")  id=\(.id)  cache=\(.clearCache // "n/a")"'
+          RAW=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=20")
+          echo "$RAW" | jq -c '.[0]'  # raw first entry — reveals the wrapper shape
+          echo "$RAW" | jq -r '.[] | (.deploy // .) | "\(.createdAt)  \(.status)  commit=\(.commit // "n/a")  id=\(.id)  cache=\(.clearCache // "n/a")"'
           echo "=== count by status (today's build burn) ==="
           curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=50" \
-            | jq -r 'group_by(.status) | .[] | "\(.[0].status): \(length)"'
+            | jq -r '[.[] | (.deploy // .)] | group_by(.status) | .[] | "\(.[0].status): \(length)"'
 
       - name: Trigger deploy + poll to live + curl
         if: ${{ github.event.inputs.mode == 'deploy' }}
