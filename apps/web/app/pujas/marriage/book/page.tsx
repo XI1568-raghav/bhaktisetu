@@ -16,8 +16,8 @@ import {
  Home,
  Shield,
  Sparkles,
- Lock,
  Users,
+ Phone,
 } from 'lucide-react';
 import {
  weddingPandits,
@@ -89,38 +89,57 @@ export default function BookMarriage() {
  setAddOns((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
  };
 
+ // P0 #PBO-5 (2026-07-09): marriage ceremonies use a mock pandit/venue catalog
+ // with no backing PriestPujaOffering rows, so a paid checkout would be
+ // fabricated. The old handler faked "Your wedding is booked!" with a random
+ // BS-number — deceiving the couple. Until the catalog is real, this is an
+ // honest "request a callback" CTA to the wedding coordinator: no fake id,
+ // no fake payment, no false success.
  const handlePay = () => {
  setPaying(true);
  setTimeout(() => {
  setPaying(false);
  setPaid(true);
- }, 2000);
+ }, 600);
  };
 
  if (paid) {
+ const couple = [brideName, groomName].filter(Boolean).join(' & ');
+ const callbackSubject = encodeURIComponent(`Wedding ceremony request${couple ? ` — ${couple}` : ''}`);
+ const callbackBody = encodeURIComponent(
+ `I'd like to plan a wedding ceremony.\n\nCouple: ${couple || 'TBD'}\nCeremony: ${ceremonyType}\nPreferred pandit: ${selectedPandit?.name ?? 'No preference'}\nDate: ${weddingDate || 'Flexible'}\nVenue: ${venueType}\n\nPlease call me to confirm.`,
+ );
+ const opsPhone = '+919255109400';
  return (
  <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center p-6">
  <div className="max-w-md w-full bg-white border border-[var(--color-border)] rounded-2xl shadow-warm-md p-8 text-center">
- <div className="w-16 h-16 rounded-full bg-tulsi-green/15 flex items-center justify-center mx-auto mb-4">
- <Heart className="w-8 h-8 text-vermillion-500" />
+ <div className="w-16 h-16 rounded-full bg-saffron-100 flex items-center justify-center mx-auto mb-4">
+ <Phone className="w-8 h-8 text-saffron-600" />
  </div>
- <h2 className="text-2xl font-bold text-surface-800">Your wedding is booked!</h2>
- <p className="mt-2 text-surface-500 text-sm">
- Booking ID: <span className="font-mono font-semibold text-surface-800">BS-20260421-
- {Math.floor(10000 + Math.random() * 90000)}</span>
+ <h2 className="text-2xl font-bold text-surface-800">Request received</h2>
+ <p className="mt-3 text-surface-600 text-sm">
+ Online booking for wedding ceremonies isn&apos;t available yet. Our wedding coordinator will call you to confirm the pandit, date, and pricing.
  </p>
- <p className="mt-4 text-surface-600">
- {selectedPandit?.name} will officiate the sacred ceremony of{' '}
- <span className="font-semibold">{brideName} &amp; {groomName}</span> on {weddingDate}. Our wedding coordinator will call within 2 hours.
+ {couple && (
+ <p className="mt-3 text-surface-500 text-sm">
+ For <span className="font-medium text-surface-700">{couple}</span>
+ {weddingDate && <> · {weddingDate}</>}
  </p>
+ )}
  <div className="mt-6 flex flex-col gap-2">
- <Link
- href="/dashboard"
+ <a
+ href={`tel:${opsPhone}`}
  className="block py-3 rounded-lg font-semibold text-white"
  style={{ background: 'var(--color-primary)' }}
  >
- View booking
- </Link>
+ Call the coordinator
+ </a>
+ <a
+ href={`mailto:care@darshya.online?subject=${callbackSubject}&body=${callbackBody}`}
+ className="block py-3 rounded-lg font-semibold bg-surface-100 text-surface-800 border border-[var(--color-border)]"
+ >
+ Email us the details
+ </a>
  <Link
  href="/pujas/marriage"
  className="block py-3 rounded-lg font-semibold bg-surface-100 text-surface-800 border border-[var(--color-border)]"
@@ -559,9 +578,9 @@ export default function BookMarriage() {
  <div className="mt-4 bg-sandal-cream border border-temple-gold/30 rounded-lg p-3 text-xs text-surface-700">
  <div className="font-semibold mb-1 flex items-center gap-1.5">
  <Sparkles className="w-3.5 h-3.5 text-temple-gold-dark" />
- Booking advance today
+ Coordinate with us
  </div>
- Pay 25% now (₹{Math.round(total * 1.18 * 0.25).toLocaleString('en-IN')}). Remaining on wedding day after ceremony begins.
+ Online booking for wedding ceremonies isn&apos;t available yet. Submit this request and our wedding coordinator will call to confirm the pandit, date, and pricing.
  </div>
 
  <button
@@ -573,18 +592,18 @@ export default function BookMarriage() {
  {paying ? (
  <>
  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
- Processing advance...
+ Submitting...
  </>
  ) : (
  <>
- <Lock className="w-4 h-4" />
- Pay advance ₹{Math.round(total * 1.18 * 0.25).toLocaleString('en-IN')}
+ <Phone className="w-4 h-4" />
+ Request callback
  </>
  )}
  </button>
  <div className="mt-3 flex items-center justify-center gap-2 text-xs text-surface-500">
  <Shield className="w-3.5 h-3.5" />
- Secured by Razorpay
+ Indicative pricing — final quote on call
  </div>
  </div>
  )}

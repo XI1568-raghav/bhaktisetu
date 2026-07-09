@@ -18,7 +18,7 @@ import {
  Home,
  Shield,
  Sparkles,
- Lock,
+ Phone,
 } from 'lucide-react';
 import { homePujaCategories, homePandits, type Pandit } from '../../../../lib/home-pujas';
 import { DateInput } from '../../../../components/ui/DateInput';
@@ -107,37 +107,60 @@ function BookHomePujaInner() {
  if (step > 1) setStep((step - 1) as StepId);
  };
 
+ // P0 #PBO-5 (2026-07-09): home-puja categories + pandits are a mock catalog
+ // (lib/home-pujas.ts) with no backing PriestPujaOffering rows, so there is no
+ // real templeOfferingId / priestId to book against — a paid checkout here
+ // would be fabricated. The old handler faked a "Booking confirmed!" screen
+ // with a random BS-number, deceiving the devotee into thinking they'd booked.
+ // Until the catalog is migrated to real priest offerings, this is an honest
+ // "request a callback" CTA: it captures the devotee's intent (category, date,
+ // preferred pandit) and routes them to ops to confirm — no fake booking id,
+ // no fake payment, no false success.
  const handlePay = () => {
  setPaying(true);
  setTimeout(() => {
  setPaying(false);
  setPaid(true);
- }, 1800);
+ }, 600);
  };
 
  if (paid) {
+ const callbackSubject = encodeURIComponent(`Home Puja request — ${category.name}`);
+ const callbackBody = encodeURIComponent(
+ `I'd like to book a home puja.\n\nCategory: ${category.name}\nPreferred pandit: ${selectedPandit?.name ?? 'No preference'}\nPreferred date: ${date || 'Flexible'}\nTime slot: ${slot || 'Flexible'}\nTier: ${tier}\n\nPlease call me to confirm.`,
+ );
+ const opsPhone = '+919255109400';
  return (
  <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center p-6">
  <div className="max-w-md w-full bg-white border border-[var(--color-border)] rounded-2xl shadow-warm-md p-8 text-center">
- <div className="w-16 h-16 rounded-full bg-tulsi-green/15 flex items-center justify-center mx-auto mb-4">
- <CheckCircle className="w-8 h-8 text-tulsi-green" />
+ <div className="w-16 h-16 rounded-full bg-saffron-100 flex items-center justify-center mx-auto mb-4">
+ <Phone className="w-8 h-8 text-saffron-600" />
  </div>
- <h2 className="text-2xl font-bold text-surface-800">Booking confirmed!</h2>
- <p className="mt-2 text-surface-500 text-sm">
- Booking ID: <span className="font-mono font-semibold text-surface-800">BS-20260421-
- {Math.floor(10000 + Math.random() * 90000)}</span>
+ <h2 className="text-2xl font-bold text-surface-800">Request received</h2>
+ <p className="mt-3 text-surface-600 text-sm">
+ Online booking for <span className="font-semibold text-surface-800">{category.name}</span> isn&apos;t available yet.
+ Our pooja coordinator will call you to confirm the date, pandit, and pricing.
  </p>
- <p className="mt-4 text-surface-600">
- {selectedPandit?.name} will call you within 2 hours to confirm {category.name} on {date}.
+ {selectedPandit && (
+ <p className="mt-3 text-surface-500 text-sm">
+ Preferred pandit: <span className="font-medium text-surface-700">{selectedPandit.name}</span>
+ {date && <> · {date}</>}
  </p>
+ )}
  <div className="mt-6 flex flex-col gap-2">
- <Link
- href="/dashboard"
+ <a
+ href={`tel:${opsPhone}`}
  className="block py-3 rounded-lg font-semibold text-white"
  style={{ background: 'var(--color-primary)' }}
  >
- View booking
- </Link>
+ Call now to confirm
+ </a>
+ <a
+ href={`mailto:care@darshya.online?subject=${callbackSubject}&body=${callbackBody}`}
+ className="block py-3 rounded-lg font-semibold bg-surface-100 text-surface-800 border border-[var(--color-border)]"
+ >
+ Email us the details
+ </a>
  <Link
  href="/pujas/home-puja"
  className="block py-3 rounded-lg font-semibold bg-surface-100 text-surface-800 border border-[var(--color-border)]"
@@ -501,18 +524,18 @@ function BookHomePujaInner() {
  {paying ? (
  <>
  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
- Processing...
+ Submitting...
  </>
  ) : (
  <>
- <Lock className="w-4 h-4" />
- Pay ₹{Math.round(totalAmount * 1.18).toLocaleString('en-IN')} securely
+ <Phone className="w-4 h-4" />
+ Request callback
  </>
  )}
  </button>
  <div className="mt-3 flex items-center justify-center gap-2 text-xs text-surface-500">
  <Shield className="w-3.5 h-3.5" />
- Secured by Razorpay · 256-bit encrypted
+ Indicative pricing — final quote on call
  </div>
  </div>
  )}
