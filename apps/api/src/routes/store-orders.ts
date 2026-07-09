@@ -67,6 +67,44 @@ function isAdmin(req: any): boolean {
   return Array.isArray(req.currentUser?.roles) && req.currentUser.roles.includes('ADMIN');
 }
 
+function isStoreOwner(req: any): boolean {
+  return Array.isArray(req.currentUser?.roles) && req.currentUser.roles.includes('STORE_OWNER');
+}
+
+// P0 #S-02 (2026-07-09): resolve the caller's StoreProfile id (null if not a
+// store owner / no profile). StoreOrder has no storeProfileId FK, so order-to-
+// store attribution is via items[].productId → StoreProduct.storeProfileId.
+async function resolveStoreProfileId(userId: string): Promise<string | null> {
+  const profile = await prisma.storeProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  return profile?.id ?? null;
+}
+
+// P0 #S-01 (2026-07-09): a STORE_OWNER may manage orders that contain at least
+// one product belonging to their store. Falls back to admin check. Returns the
+// set of the order's productIds so callers can reuse them for stock attribution.
+async function canManageOrder(
+  req: any,
+  order: { items?: any[] } | null,
+): Promise<boolean> {
+  if (!order) return false;
+  if (isAdmin(req)) return true;
+  if (!isStoreOwner(req)) return false;
+  const storeProfileId = await resolveStoreProfileId(req.currentUser!.id);
+  if (!storeProfileId) return false;
+  const productIds = Array.isArray(order.items)
+    ? order.items.map((it: any) => it.productId).filter(Boolean)
+    : [];
+  if (productIds.length === 0) return false;
+  const owned = await prisma.storeProduct.findMany({
+    where: { id: { in: productIds }, storeProfileId },
+    select: { id: true },
+  });
+  return owned.length > 0;
+}
+
 function serializeOrder(order: any) {
   return {
     ...order,
@@ -84,6 +122,38 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         .send({ error: 'Invalid request body', details: parsed.error.flatten() });
     }
     const userId = request.currentUser!.id;
+
+    // P0 #PBO (2026-07-09): server-authoritative pricing + stock. The old
+    // handler trusted client-sent totalAmountInr + items[].priceAtPurchase
+    // (₹499 product could be ordered for ₹1) and never checked/decremented
+    // stock (overselling). Now we look up each product, enforce the catalog
+    // price, validate stock ≥ qty, recompute the total, and decrement stock
+    // atomically. The client-sent price/total are ignored.
+    const requestedItems = parsed.data.items;
+    const productIds = requestedItems.map((it) => it.productId);
+    const products = await prisma.storeProduct.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, price: true, stock: true, isActive: true },
+    });
+    const productById = new Map(products.map((p) => [p.id, p]));
+    const serverItems: { productId: string; qty: number; priceAtPurchase: number; name?: string }[] = [];
+    let serverTotal = 0;
+    for (const it of requestedItems) {
+      const product = productById.get(it.productId);
+      if (!product) {
+        return reply.code(400).send({ error: `Unknown product: ${it.productId}` });
+      }
+      if (!product.isActive) {
+        return reply.code(409).send({ error: `Product no longer available: ${it.productId}` });
+      }
+      if (product.stock < it.qty) {
+        return reply.code(409).send({ error: `Insufficient stock for ${it.productId} (have ${product.stock}, want ${it.qty})` });
+      }
+      const unitPrice = Number(product.price);
+      serverItems.push({ productId: it.productId, qty: it.qty, priceAtPurchase: unitPrice });
+      serverTotal += unitPrice * it.qty;
+    }
+
     const initialHistory = [
       {
         status: 'PENDING',
@@ -92,16 +162,28 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         note: 'Order created',
       },
     ];
-    const order = await prisma.storeOrder.create({
-      data: {
-        orderNumber: nextOrderNumber(),
-        userId,
-        items: parsed.data.items,
-        totalAmountInr: parsed.data.totalAmountInr,
-        shippingAddress: parsed.data.shippingAddress,
-        paymentId: parsed.data.paymentId ?? null,
-        statusHistory: initialHistory,
-      },
+
+    // Create the order + decrement stock atomically so a concurrent order
+    // can't oversell the same last unit.
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.storeOrder.create({
+        data: {
+          orderNumber: nextOrderNumber(),
+          userId,
+          items: serverItems,
+          totalAmountInr: serverTotal,
+          shippingAddress: parsed.data.shippingAddress,
+          paymentId: parsed.data.paymentId ?? null,
+          statusHistory: initialHistory,
+        },
+      });
+      for (const it of serverItems) {
+        await tx.storeProduct.update({
+          where: { id: it.productId },
+          data: { stock: { decrement: it.qty } },
+        });
+      }
+      return created;
     });
     return reply.code(201).send({ data: serializeOrder(order) });
   });
@@ -118,14 +200,16 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     return reply.send({ data: orders.map(serializeOrder) });
   });
 
-  // GET /orders/:id — owner or admin
+  // GET /orders/:id — owner, store-owner (whose products are in it), or admin
   server.get('/orders/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
     const params = orderIdParams.safeParse(request.params);
     if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
     const order = await prisma.storeOrder.findUnique({ where: { id: params.data.id } });
     if (!order) return reply.code(404).send({ error: 'Order not found' });
     const userId = request.currentUser!.id;
-    if (order.userId !== userId && !isAdmin(request)) {
+    const ownerOk = order.userId === userId;
+    const manageOk = ownerOk || isAdmin(request) || (await canManageOrder(request, order as any));
+    if (!manageOk) {
       return reply.code(403).send({ error: 'Not authorized to view this order' });
     }
     return reply.send({ data: serializeOrder(order) });
@@ -138,9 +222,6 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     '/orders/:id/status',
     { preHandler: [authenticateUser] },
     async (request, reply) => {
-      if (!isAdmin(request)) {
-        return reply.code(403).send({ error: 'Admin role required' });
-      }
       const params = orderIdParams.safeParse(request.params);
       if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
       const body = updateStatusSchema.safeParse(request.body ?? {});
@@ -151,6 +232,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       }
       const order = await prisma.storeOrder.findUnique({ where: { id: params.data.id } });
       if (!order) return reply.code(404).send({ error: 'Order not found' });
+      // P0 #S-01 (2026-07-09): allow STORE_OWNER for their own store's orders.
+      if (!isAdmin(request) && !(await canManageOrder(request, order as any))) {
+        return reply.code(403).send({ error: 'Admin or store-owner role required' });
+      }
 
       const adminId = request.currentUser!.id;
       const historyEntry = {
@@ -181,9 +266,6 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     '/orders/:id/payment-confirm',
     { preHandler: [authenticateUser] },
     async (request, reply) => {
-      if (!isAdmin(request)) {
-        return reply.code(403).send({ error: 'Admin role required' });
-      }
       if (
         process.env.NODE_ENV === 'production' &&
         process.env.ALLOW_DEMO_PAYMENTS !== 'true'
@@ -200,6 +282,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         include: { user: { select: { fullName: true, email: true } } },
       });
       if (!order) return reply.code(404).send({ error: 'Order not found' });
+      // P0 #S-01 (2026-07-09): allow STORE_OWNER for their own store's orders.
+      if (!isAdmin(request) && !(await canManageOrder(request, order as any))) {
+        return reply.code(403).send({ error: 'Admin or store-owner role required' });
+      }
       if (order.status !== 'PENDING') {
         return reply.code(409).send({ error: `Order is already ${order.status}` });
       }

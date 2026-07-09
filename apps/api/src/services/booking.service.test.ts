@@ -282,6 +282,48 @@ describe('BookingService.updateBookingStatus', () => {
       service.updateBookingStatus('booking-1', 'confirmed' as any)
     ).rejects.toThrow('Invalid status transition');
   });
+
+  // P0 #pp-01 (2026-07-09): the service denylist must strip financial/identity
+  // fields from the data payload even if a caller smuggles them in — they are
+  // server-authoritative and must never be client-settable via a status PATCH.
+  it('strips forbidden financial/identity fields from data (denylist)', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'completed',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'video_uploaded',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
+    });
+
+    await service.updateBookingStatus('booking-1', 'video_uploaded' as any, {
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+      // smuggled fields that must be stripped:
+      priestPayout: 999999,
+      platformCommission: 0,
+      priceAmount: 1,
+      userId: 'attacker-uuid',
+      priestId: 'attacker-priest-uuid',
+      id: 'forged-id',
+    } as any);
+
+    const updateCall = prismaMock.pujaBooking.update.mock.calls[0]![0]!;
+    expect(updateCall.data).toMatchObject({
+      status: 'video_uploaded',
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+    });
+    // None of the smuggled fields survive into the Prisma update.
+    expect(updateCall.data).not.toHaveProperty('priestPayout');
+    expect(updateCall.data).not.toHaveProperty('platformCommission');
+    expect(updateCall.data).not.toHaveProperty('priceAmount');
+    expect(updateCall.data).not.toHaveProperty('userId');
+    expect(updateCall.data).not.toHaveProperty('priestId');
+    expect(updateCall.data).not.toHaveProperty('id');
+  });
 });
 
 // ─── cancelBooking ───────────────────────────────────────────────────────────

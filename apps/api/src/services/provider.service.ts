@@ -168,6 +168,32 @@ const mockReviews: Array<{
 
 // ─── Service ────────────────────────────────────────────────────────────────────
 
+// P0 #PUB-01 / PUB-07 (2026-07-09): fields never exposed on PUBLIC provider
+// listings/detail. userId (cross-table linkage), gstNumber, commission
+// (internal payout rate), aadhaarVerified (internal KYC), availability
+// (internal schedule), approved/approvedAt (internal state) all leak to
+// logged-out users when full rows are returned. Stripped at the public
+// service boundary so the underlying queries don't need per-type selects.
+const PUBLIC_PROVIDER_DENYLIST = new Set([
+  'userId',
+  'gstNumber',
+  'commission',
+  'aadhaarVerified',
+  'availability',
+  'approved',
+  'approvedAt',
+  'createdAt',
+  'updatedAt',
+]);
+
+function stripProviderPii<T extends Record<string, unknown>>(p: T): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(p)) {
+    if (!PUBLIC_PROVIDER_DENYLIST.has(k)) out[k] = v;
+  }
+  return out;
+}
+
 export class ProviderService {
   async getProviders(type: ProviderTypeKey, filters: ProviderFilters): Promise<ProviderListResult> {
     const page = filters.page ?? 1;
@@ -182,7 +208,8 @@ export class ProviderService {
       const enriched = await Promise.all(
         result.providers.map((p) => this.enrichRatingFields(type, p)),
       );
-      return { ...result, providers: enriched };
+      // Strip internal PII before returning to a public (logged-out) caller.
+      return { ...result, providers: enriched.map(stripProviderPii) };
     } catch {
       return this.getMockProviders(type, filters, page, limit);
     }
@@ -256,7 +283,12 @@ export class ProviderService {
       });
 
       const enriched = await this.enrichRatingFields(type, provider);
-      return { ...enriched, reviews };
+      // P0 #PUB-07 (2026-07-09): strip internal PII + only expose approved
+      // providers on the public detail endpoint. Unapproved providers (pending/
+      // rejected) are not reachable here — the approved-gate in queryProviderById
+      // returns null → route 404s.
+      if (provider && (provider as Record<string, unknown>).approved === false) return null;
+      return { ...stripProviderPii(enriched as Record<string, unknown>), reviews };
     } catch {
       const mockList = MOCK_MAP[type] ?? [];
       const provider = mockList.find((p) => p.id === id) ?? null;
@@ -449,19 +481,23 @@ export class ProviderService {
   }
 
   private async queryProviderById(type: ProviderTypeKey, id: string): Promise<Record<string, unknown> | null> {
+    // P0 #PUB-07 (2026-07-09): approved-gate. The old findUnique({where:{id}})
+    // returned the full row of an UNAPPROVED provider to any logged-out user
+    // who guessed/obtained the UUID. Now findFirst with approved:true so
+    // pending/rejected providers 404 on the public detail endpoint.
     switch (type) {
       case 'pandit':
-        return (await prisma.panditProfile.findUnique({ where: { id } })) as unknown as Record<string, unknown> | null;
+        return (await prisma.panditProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       case 'store':
-        return (await prisma.storeProfile.findUnique({ where: { id } })) as unknown as Record<string, unknown> | null;
+        return (await prisma.storeProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       case 'astrologer':
-        return (await prisma.astrologerProfile.findUnique({ where: { id } })) as unknown as Record<string, unknown> | null;
+        return (await prisma.astrologerProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       case 'wellness':
-        return (await prisma.wellnessProfile.findUnique({ where: { id } })) as unknown as Record<string, unknown> | null;
+        return (await prisma.wellnessProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       case 'gaushala':
-        return (await prisma.gaushalaProfile.findUnique({ where: { id } })) as unknown as Record<string, unknown> | null;
+        return (await prisma.gaushalaProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       case 'temple':
-        return (await prisma.templeProfile.findUnique({ where: { id } })) as unknown as Record<string, unknown> | null;
+        return (await prisma.templeProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       default:
         return null;
     }
