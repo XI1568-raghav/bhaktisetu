@@ -574,8 +574,16 @@ export class PaymentService {
     userId: string,
   ): Promise<{ verified: true; storeOrderId: string; orderNumber: string }> {
     if (!isDemoPayment) {
+      // P0 #PBO (2026-07-09): hard-fail on an empty/missing secret. If
+      // RAZORPAY_KEY_SECRET is unset, the HMAC key is '' — a deterministic,
+      // publicly-computable signature — so any attacker could forge a valid
+      // verification. Never verify against an empty secret in production.
+      const secret = process.env.RAZORPAY_KEY_SECRET ?? '';
+      if (!secret) {
+        throw new Error('Payment verification failed: server secret not configured.');
+      }
       const expected = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET ?? '')
+        .createHmac('sha256', secret)
         .update(`${razorpayOrderId}|${razorpayPaymentId}`)
         .digest('hex');
       const a = Buffer.from(expected, 'utf8');

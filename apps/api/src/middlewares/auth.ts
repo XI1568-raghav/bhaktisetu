@@ -332,14 +332,19 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
 
     const userRoles = request.currentUser.roles ?? [];
 
-    // Legacy 'priest' role check
+    // Legacy 'priest' role check. P0 #ag-01 / pp-04 (2026-07-09): the PANDIT
+    // role alone is NOT sufficient — it must be backed by an ACTIVE Priest
+    // row. The old code short-circuited `if (userRoles.includes('PANDIT'))
+    // return;` before the status check, which let any self-signup pandit
+    // (no Priest row, or an inactive/suspended one) reach every priest
+    // endpoint — bypassing the whole priest-verification model. Now we
+    // always require the active Priest record; PANDIT only gets you to the
+    // lookup, not past it.
     if (role === 'priest') {
-      if (userRoles.includes('PANDIT')) return;
-
       // Synthetic ids (`demo-*`, `anon-*`) are not real UUIDs — Prisma's
-      // uuid validator rejects them, so don't attempt a DB lookup. Fall
-      // back to the role list above. Caught in production by Sentry as
-      // "Inconsistent column data: Error creating UUID, ...".
+      // uuid validator rejects them, so don't attempt a DB lookup. These
+      // can never be an onboarded priest. (Caught in production by Sentry
+      // as "Inconsistent column data: Error creating UUID, ...".)
       const userId = request.currentUser.id;
       if (userId.startsWith('demo-') || userId.startsWith('anon-')) {
         reply.code(403).send({

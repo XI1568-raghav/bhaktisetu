@@ -170,12 +170,33 @@ export async function donationRoutes(server: FastifyInstance) {
     if (!donation) {
       return reply.code(404).send({ error: 'Donation not found' });
     }
+
+    // P0 #PBO-1 (2026-07-09): ownership guard. The old handler verified a
+    // Razorpay signature but never checked that the caller owns this
+    // donation, so an attacker could pay ₹101 anywhere and mark a victim's
+    // ₹10,00,000 donation paid + receive an 80G receipt for money they
+    // never gave. Mirror consultation.ts:270.
+    const me = request.currentUser!;
+    if (donation.user_id !== me.id && !me.roles.includes('ADMIN')) {
+      return reply.code(403).send({
+        error: 'Forbidden',
+        message: 'Not authorized to verify this donation.',
+      });
+    }
+
     const amountInr = Number(donation.amount_inr);
 
     // Verify Razorpay signature (skip in demo mode)
     if (!isDemoPayment) {
       if (!body.razorpay_order_id || !body.razorpay_payment_id || !body.razorpay_signature) {
         return reply.code(400).send({ error: 'Razorpay verification fields missing' });
+      }
+      // P0 #PBO-1 (2026-07-09): order-id match. The signature was verified
+      // over the client-supplied order id but never compared to the donation
+      // row's stored order id — so a valid signature for ANY of the caller's
+      // orders would mark THIS donation paid. Mirror consultation.ts:288.
+      if (body.razorpay_order_id !== donation.razorpay_order_id) {
+        return reply.code(400).send({ error: 'Order id mismatch.' });
       }
       const expected = crypto
         .createHmac('sha256', razorpayKeySecret)
