@@ -350,11 +350,6 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
 
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2 text-sm">
- <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
- <span className="font-semibold text-surface-700">
- {(temple.trustScore / 20).toFixed(1)}
- </span>
- <span className="text-surface-300">•</span>
  <span className="flex items-center gap-1 text-saffron-700">
  <Flame className="h-3.5 w-3.5" /> {temple.deityPrimary}
  </span>
