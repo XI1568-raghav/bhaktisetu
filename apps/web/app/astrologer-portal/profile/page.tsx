@@ -235,8 +235,8 @@ function Content() {
             <input
               type="number"
               value={profile.pricePerMinute}
-              onChange={(e) => updateField('pricePerMinute', Math.max(0, parseFloat(e.target.value) || 0))}
-              min={0}
+              onChange={(e) => updateField('pricePerMinute', Math.max(1, parseFloat(e.target.value) || 1))}
+              min={1}
               className="w-32 pl-9 pr-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
             />
           </div>

@@ -213,8 +213,12 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Only PAID-ish orders (not PENDING/CANCELLED/REFUNDED) count toward sales.
+    // P0 #S-15 (2026-07-09): scope to THIS store's orders. The old query had no
+    // storeProfileId filter, so a store owner's dashboard aggregated every
+    // store's sales on the platform (cross-vendor leak + wrong revenue).
     const orders = await prisma.storeOrder.findMany({
       where: {
+        storeProfileId,
         status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
         createdAt: { gte: monthStart },
       },
@@ -336,6 +340,8 @@ export async function storeAdminRoutes(server: FastifyInstance) {
 
     const orders = await prisma.storeOrder.findMany({
       where: {
+        // P0 #S-15: scope to this store (see dashboard orders query above).
+        storeProfileId,
         status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
         createdAt: { gte: yearStart },
       },

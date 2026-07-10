@@ -90,6 +90,53 @@ describe('BookingService.createBooking', () => {
     expect(result.status).toBe('pending_payment');
   });
 
+  // P0 #PBO-3 (2026-07-09): the charged total must include the platform fee
+  // (₹51) and, when prasad delivery is requested, the prasad fee (₹150) —
+  // previously only the base puja price was charged, leaking both fees.
+  // Commission + priest payout stay on the PUJA price (fees are platform
+  // revenue / prasad pass-through, not the priest's earned split).
+  it('charges base + platform fee when prasad not requested', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.pujaBooking.create.mockResolvedValue({
+      id: 'booking-1', bookingNumber: 'BS-TODAY-XXXXX', status: 'pending_payment',
+      priceAmount: 551, currency: 'INR',
+      scheduledDate: new Date('2026-12-25'), scheduledTimeSlot: '10:00', createdAt: new Date(),
+    });
+
+    await service.createBooking(validInput);
+    const data = prismaMock.pujaBooking.create.mock.calls[0]![0] as any;
+    // base 500 + platform 51 = 551
+    expect(Number(data.data.priceAmount)).toBe(551);
+    // commission 30% of PUJA price (500) = 150, not of the total
+    expect(Number(data.data.platformCommission)).toBe(150);
+    // priest payout 70% of PUJA price (500) = 350
+    expect(Number(data.data.priestPayout)).toBe(350);
+  });
+
+  it('charges base + platform fee + prasad fee when prasad requested', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1' });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.pujaBooking.create.mockResolvedValue({
+      id: 'booking-1', bookingNumber: 'BS-TODAY-XXXXX', status: 'pending_payment',
+      priceAmount: 701, currency: 'INR',
+      scheduledDate: new Date('2026-12-25'), scheduledTimeSlot: '10:00', createdAt: new Date(),
+    });
+
+    await service.createBooking({ ...validInput, prasadDeliveryRequested: true, prasadDeliveryAddressId: 'addr-1' });
+    const data = prismaMock.pujaBooking.create.mock.calls[0]![0] as any;
+    // base 500 + platform 51 + prasad 150 = 701
+    expect(Number(data.data.priceAmount)).toBe(701);
+    // commission still 30% of PUJA price (500) = 150 — fees not in the split
+    expect(Number(data.data.platformCommission)).toBe(150);
+    expect(Number(data.data.priestPayout)).toBe(350);
+  });
+
   it('throws if offering not found', async () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(null);
 
@@ -281,6 +328,125 @@ describe('BookingService.updateBookingStatus', () => {
     await expect(
       service.updateBookingStatus('booking-1', 'confirmed' as any)
     ).rejects.toThrow('Invalid status transition');
+  });
+
+  // P0 #pp-01 (2026-07-09): the service denylist must strip financial/identity
+  // fields from the data payload even if a caller smuggles them in — they are
+  // server-authoritative and must never be client-settable via a status PATCH.
+  it('strips forbidden financial/identity fields from data (denylist)', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'completed',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'video_uploaded',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
+    });
+
+    await service.updateBookingStatus('booking-1', 'video_uploaded' as any, {
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+      // smuggled fields that must be stripped:
+      priestPayout: 999999,
+      platformCommission: 0,
+      priceAmount: 1,
+      userId: 'attacker-uuid',
+      priestId: 'attacker-priest-uuid',
+      id: 'forged-id',
+    } as any);
+
+    const updateCall = prismaMock.pujaBooking.update.mock.calls[0]![0]!;
+    expect(updateCall.data).toMatchObject({
+      status: 'video_uploaded',
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+    });
+    // None of the smuggled fields survive into the Prisma update.
+    expect(updateCall.data).not.toHaveProperty('priestPayout');
+    expect(updateCall.data).not.toHaveProperty('platformCommission');
+    expect(updateCall.data).not.toHaveProperty('priceAmount');
+    expect(updateCall.data).not.toHaveProperty('userId');
+    expect(updateCall.data).not.toHaveProperty('priestId');
+    expect(updateCall.data).not.toHaveProperty('id');
+  });
+
+  // P0 #pp-02 (2026-07-09): transitioning a booking to video_uploaded (or
+  // delivered) must mint a PriestPayout row — otherwise the priest Earnings +
+  // Payouts dashboards are permanently ₹0. createPriestPayout is fire-and-
+  // forget from the service, so we flush the microtask queue before asserting.
+  it('writes a PriestPayout on transition to video_uploaded', async () => {
+    // Valid transition: completed -> video_uploaded (priest uploads proof).
+    // updateBookingStatus calls findUnique first (needs status: 'completed' to
+    // allow the transition); createPriestPayout then re-fetches the SAME booking
+    // and needs the post-transition row (status: 'video_uploaded' + priestId +
+    // priestPayout) for its guard + amount. So queue two resolves in order.
+    prismaMock.pujaBooking.findUnique
+      .mockResolvedValueOnce({
+        id: 'booking-1',
+        status: 'completed',
+      })
+      .mockResolvedValue({
+        id: 'booking-1',
+        status: 'video_uploaded',
+        priestId: 'pr-1',
+        priestPayout: 700,
+        currency: 'INR',
+        bookingNumber: 'BK-1',
+      });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'video_uploaded',
+      priceAmount: 1000,
+      platformCommission: 300,
+      priestId: 'pr-1',
+      priestPayout: 700,
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
+    });
+    // createPriestPayout internal lookups (it re-fetches the booking).
+    prismaMock.priest.findUnique.mockResolvedValue({ id: 'pr-1', aadhaarVerified: true, displayName: 'Pandit Joshi' });
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+    prismaMock.priestPayout.create.mockResolvedValue({ id: 'payout-1', priestId: 'pr-1', bookingId: 'booking-1', amount: 700 });
+
+    const result = await service.updateBookingStatus('booking-1', 'video_uploaded' as any);
+    expect(result.status).toBe('video_uploaded');
+
+    // Flush the fire-and-forget createPriestPayout promise.
+    await new Promise((r) => setImmediate(r));
+
+    expect(prismaMock.priestPayout.create).toHaveBeenCalled();
+    const createCall = prismaMock.priestPayout.create.mock.calls[0]![0] as any;
+    expect(createCall.data.bookingId).toBe('booking-1');
+    expect(createCall.data.priestId).toBe('pr-1');
+    expect(Number(createCall.data.amount)).toBe(700);
+    expect(createCall.data.status).toBe('pending');
+  });
+
+  it('does NOT write a PriestPayout on transition to completed (video not uploaded yet)', async () => {
+    // Valid transition: in_progress -> completed (puja performed, no proof yet).
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'in_progress',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'completed',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
+    });
+
+    await service.updateBookingStatus('booking-1', 'completed' as any);
+    await new Promise((r) => setImmediate(r));
+
+    // createPriestPayout is only fired on video_uploaded/delivered — completed
+    // means the puja was performed but the proof video is not yet uploaded.
+    expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
   });
 });
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { API_BASE_URL } from '../../lib/api-config';
 import { getAstrologerImage } from '../../lib/images';
 import {
  Star,
@@ -255,6 +256,27 @@ export default function AstrologyPage() {
  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || '');
  const [selectedRashi, setSelectedRashi] = useState<string | null>(() => searchParams.get('rashi'));
  const [showOnlineOnly, setShowOnlineOnly] = useState(() => searchParams.get('online') === '1');
+
+ // P0 #AP-11 (2026-07-09): fetch from the API on mount instead of rendering
+ // hardcoded fallbackAstrologers forever. The fallback is kept as an error-only
+ // safety net (e.g. the API is unreachable), but the page is now API-driven so
+ // profile edits made via PATCH /astrologer-portal/profile surface here.
+ const [apiError, setApiError] = useState(false);
+ useEffect(() => {
+  let cancelled = false;
+  (async () => {
+   try {
+    const r = await fetch(`${API_BASE_URL}/astrology/astrologers?limit=100`);
+    if (!r.ok) { if (!cancelled) setApiError(true); return; }
+    const j = await r.json();
+    const list = Array.isArray(j?.astrologers) ? j.astrologers : [];
+    if (!cancelled && list.length > 0) setAstrologers(list);
+   } catch {
+    if (!cancelled) setApiError(true);
+   }
+  })();
+  return () => { cancelled = true; };
+ }, []);
 
  useEffect(() => {
   const params = new URLSearchParams();

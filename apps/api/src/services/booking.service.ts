@@ -2,6 +2,7 @@ import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
 import { ensureConversationForBooking } from './conversation.service.js';
+import { paymentService } from './payment.service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,16 @@ export interface UserBookingsFilters {
   page?: number;
   limit?: number;
 }
+
+// P0 #PBO-3 (2026-07-09): fees that the booking wizard shows but previously
+// never COLLECTED — the charged total was only the base puja price, so the
+// ₹51 platform fee and the ₹150 prasad-delivery fee (when requested) leaked.
+// These are the single source of truth for the amounts; the web price
+// breakdown should mirror them. The Razorpay order is created from
+// priceAmount (see /bookings/create-order), so folding the fees in here is
+// what actually charges them at checkout.
+export const PLATFORM_FEE_INR = 51;
+export const PRASAD_DELIVERY_FEE_INR = 150;
 
 function pushMessageFor(
   status: BookingStatus,
@@ -179,14 +190,27 @@ export class BookingService {
     }
 
     const basePrice = offering.priceOverride ?? offering.pujaType.basePrice;
-    const priceAmount = user.isNri
+    const pujaPrice = user.isNri
       ? offering.pujaType.nriPrice
       : basePrice;
 
-    // Platform commission 30%, priest payout 70%
-    const platformCommission = new Prisma.Decimal(priceAmount.toString())
+    // P0 #PBO-3 (2026-07-09): collect the platform + prasad fees shown in the
+    // wizard. The charged total (priceAmount) is the puja price + platform fee
+    // + prasad-delivery fee (when requested). Commission + priest payout are
+    // computed on the PUJA price only — the fees are platform revenue / prasad
+    // pass-through, not part of the priest's earned 70% split.
+    const platformFee = new Prisma.Decimal(PLATFORM_FEE_INR);
+    const prasadFee = data.prasadDeliveryRequested
+      ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
+      : new Prisma.Decimal(0);
+    const priceAmount = new Prisma.Decimal(pujaPrice.toString())
+      .add(platformFee)
+      .add(prasadFee);
+
+    // Platform commission 30% of the PUJA price, priest payout 70%.
+    const platformCommission = new Prisma.Decimal(pujaPrice.toString())
       .mul(new Prisma.Decimal('0.30'));
-    const priestPayoutAmount = new Prisma.Decimal(priceAmount.toString())
+    const priestPayoutAmount = new Prisma.Decimal(pujaPrice.toString())
       .mul(new Prisma.Decimal('0.70'));
 
     // 5. Generate booking number (retry on collision)
@@ -281,9 +305,30 @@ export class BookingService {
       );
     }
 
+    // P0 #pp-01 (2026-07-09): defense-in-depth denylist. The route layer
+    // already whitelists fields per-status, but this service is a shared
+    // chokepoint (also called by priest.service paths), so strip the
+    // financial/identity fields here too — they are server-authoritative and
+    // must never be client-settable via a status PATCH.
+    const FORBIDDEN_DATA_KEYS = new Set([
+      'priestPayout',
+      'platformCommission',
+      'priceAmount',
+      'userId',
+      'priestId',
+      'id',
+    ]);
+    const sanitizedData: Record<string, any> | undefined = data
+      ? Object.fromEntries(
+          Object.entries(data).filter(([k]) => !FORBIDDEN_DATA_KEYS.has(k))
+        )
+      : undefined;
+
     const updateData: Prisma.PujaBookingUpdateInput = {
       status: newStatus,
-      ...data,
+      ...(sanitizedData && Object.keys(sanitizedData).length > 0
+        ? sanitizedData
+        : {}),
     };
 
     const updated = await prisma.pujaBooking.update({
@@ -324,6 +369,23 @@ export class BookingService {
       } catch (err) {
         console.warn('[booking.service] commission write failed:', err);
       }
+    }
+
+    // P0 #pp-02 (2026-07-09): when a booking reaches video_uploaded/delivered,
+    // write the PriestPayout row so the priest Earnings + Payouts dashboards
+    // are not permanently ₹0. paymentService.createPriestPayout is idempotent
+    // (guards on an existing payout + Aadhaar KYC) and only mints a row when
+    // a priest is assigned — exactly the completion transitions it was built
+    // for but never wired into. Fire-and-forget: a payout write failure must
+    // never block the booking status flip (admin can reconcile from the
+    // ledger). The commission row above already captured the platform cut at
+    // confirm time; this is the priest's share.
+    if (newStatus === 'video_uploaded' || newStatus === 'delivered') {
+      void paymentService
+        .createPriestPayout(updated.id)
+        .catch((err) =>
+          console.warn('[booking.service] priest payout write failed:', err),
+        );
     }
 
     // Push notification on key transitions. Fire-and-forget — push failure

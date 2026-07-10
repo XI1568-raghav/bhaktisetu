@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Save, Plus, Trash2, ArrowLeft, Clock } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
 
 /**
  * Temple manager schedule self-edit. Mirrors /admin/temples/[slug] from Layer K3
@@ -22,6 +23,8 @@ type TimingsForm = {
 const HH_MM_RANGE = /^\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*$/;
 
 export default function TempleScheduleEditor() {
+  const { session } = useAuth();
+  const token = session?.accessToken;
   const [slug, setSlug] = useState<string | null>(null);
   const [form, setForm] = useState<TimingsForm | null>(null);
   const [saving, setSaving] = useState(false);
@@ -36,7 +39,10 @@ export default function TempleScheduleEditor() {
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/v1/temple-portal/schedule?slug=${encodeURIComponent(slug)}`, { credentials: 'include' })
+    fetch(`/api/v1/temple-portal/schedule?slug=${encodeURIComponent(slug)}`, {
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
       .then((r) => r.ok ? r.json() : Promise.reject(r))
       .then((data) => {
         const ti = data?.timingInfo ?? {};
@@ -88,7 +94,10 @@ export default function TempleScheduleEditor() {
       const res = await fetch(`/api/v1/temple-portal/schedule?slug=${encodeURIComponent(slug)}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ regularHours, closedOn: form.closedOn || null, specialDays: form.specialDays || null }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
