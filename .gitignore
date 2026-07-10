@@ -60,3 +60,4 @@ apps/web/pitch-captures/
 
 # Pitch reel intermediate artifacts (regenerable via stitch-pitch-video-v2.sh)
 apps/web/scripts/build/
+.worktrees/
