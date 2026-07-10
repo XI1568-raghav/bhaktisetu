@@ -1,66 +1,8 @@
 {
-  "cycleId": "C-20260702T1802",
-  "spawnPlan": [
-    {
-      "role": "cto",
-      "itemIds": [
-        "R-Q1-E-013"
-      ],
-      "briefing": "Ship webhook idempotency middleware for Razorpay/Stripe callbacks. Blocker for safe payment activation (once founder unblocks razorpay_live). Requirements: 1) Add `webhook_events` table (id, provider, event_id UNIQUE, payload_hash, processed_at). 2) Fastify plugin `apps/api/src/plugins/webhook-idempotency.ts` that dedupes by provider+event_id, returns cached response on replay. 3) Wire into /webhooks/razorpay and /webhooks/stripe routes. 4) Unit tests for double-delivery scenario. 5) Update webhook_idempotency_active KPI collector to check presence. This item is NOT in queue — safe to spawn. Est 30-40min agent time. Keep single PR, small diff.",
-      "estTokens": 18000
-    },
-    {
-      "role": "cmo",
-      "itemIds": [
-        "R-Q1-M-005",
-        "R-Q1-M-006"
-      ],
-      "briefing": "These items are NOT in the current queue (verified against 81-item queue list). Focus: organic content that drives NRI-diaspora SEO before Diwali 2026. R-Q1-M-005: Draft 3 pillar-article outlines for `/nri/` cluster (topics: \"How NRIs book puja at ancestral village temple\", \"Sending Ganga jal to USA — legal + logistics\", \"Virtual Rudrabhishek from Kashi\"). R-Q1-M-006: 5 supporting cluster articles per pillar as SEO briefs (H1/H2/target-KW/internal-links). Output as `docs/agent-reports/cmo/R-Q1-M-005-pillar-outlines.md` and `R-Q1-M-006-cluster-briefs.md`. Do NOT publish — briefs only. Use Ahrefs/free keyword data via researcher patterns. Est 25min.",
-      "estTokens": 15000
-    },
-    {
-      "role": "sales",
-      "itemIds": [
-        "R-Q2-S-005",
-        "R-Q2-S-006"
-      ],
-      "briefing": "These items are NOT in the current queue — verified. Focus: NRI diaspora org outreach kits (no founder-blocked items). R-Q2-S-005: Compile target list of 25 NRI Hindu temple/community orgs (HTCC USA, VHP UK, Hindu Council of Australia, Sringeri centers abroad, etc.) with named contacts, emails, LinkedIn. R-Q2-S-006: Draft 3 email templates for diaspora orgs (temple partnership offer, cultural-outreach collab, Diwali corporate program). Output as `docs/agent-reports/sales/R-Q2-S-005-diaspora-list.csv` + `R-Q2-S-006-email-templates.md`. Founder ships from these. Est 30min.",
-      "estTokens": 18000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q1-CS-010",
-        "R-Q1-CS-011"
-      ],
-      "briefing": "These items are NOT in the current queue — verified. Focus: CS macro authoring (English-only; multilingual is founder-blocked per R-Q2-CS-003). R-Q1-CS-010: Author 15 English CS macros for top user issues (booking failed, pandit no-show, refund requested, muhurat clarification, NRI timezone confusion, Razorpay decline, WhatsApp bot handoff, prasad delivery, temple photo request, pooja rescheduling, invoice/GST, account deletion DPDP, language change, price question, group booking). Each macro: title, trigger keywords, response body (≤120 words, warm tone), escalation criteria. R-Q1-CS-011: Wire macros into a JSON file `apps/api/src/data/cs-macros.json` + CS admin route to list/search. Est 30min. Do NOT touch multilingual — that's blocked.",
-      "estTokens": 18000
-    }
-  ],
-  "deferrals": [
-    {
-      "itemId": "T-010-QUEUE-DRAIN",
-      "reason": "Queue depth 81 with oldest item at 498.9h (~21 days). Orchestrator has spawned 4/cycle for weeks but Claude Code runner is NOT consuming queue. Queue backlog now exceeds what any spawn rate can address. Spawning more will make it worse.",
-      "suggestedAction": "1) SSH to Render bg-worker and check queue-consumer logs. 2) Verify Claude Code runner has valid ANTHROPIC_API_KEY and GH token. 3) Check if runner process is alive or crashed. 4) If runner is dead, either restart it or manually process top-10 oldest queue items via `pnpm queue:drain --limit 10`. Until queue drains below 20, orchestrator will throttle spawns to 2/cycle."
-    },
-    {
-      "itemId": "KPI-COLLECTOR-INFRASTRUCTURE",
-      "reason": "~95% of KPIs are stale with errors like \"TBD-populate-before-orchestrator-go-live\" or malformed shell commands (unquoted parens, missing files). Orchestrator is flying blind on all revenue/growth metrics. META-KPI-COLLECTOR-FIXES has been in queue since 2026-06-12 and never consumed. Without KPI data, revenue-impact ranking is guesswork.",
-      "suggestedAction": "Manually run `pnpm kpi:collectors:audit` and fix the top 20 \"TBD-populate\" placeholders in scripts/kpi-collectors/*.ts. Priority collectors: razorpay_live_active, pages_cdn_cached, funnel_events_wired, mau_total, api_p95_ms. Deploy fix, then re-queue META-KPI-COLLECTOR-FIXES with fresh timestamp."
-    },
-    {
-      "itemId": "CRON-AUTH-RAZORPAY-GATES",
-      "reason": "cron_auth_token_set=0 and razorpay_live_active=0 — both are revenue-blocking. Cron token gates all scheduled billing/notification workflows. Razorpay live mode is required for any INR revenue. These are founder-only actions (secrets management + KYC).",
-      "suggestedAction": "1) Generate CRON_AUTH_TOKEN via `openssl rand -hex 32`, set in Render env for api service. 2) Complete Razorpay merchant KYC at dashboard.razorpay.com, then set RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET (live) in Render env. 3) Test with `curl -X POST $API/health/cron -H \"x-cron-token: $TOKEN\"` and one ₹1 test payment."
-    }
-  ],
+  "cycleId": "C-20260710T1306",
+  "spawnPlan": [],
+  "deferrals": [],
   "kills": [],
-  "decisionNote": {
-    "reasoning": "Cycle dominated by two crises: (1) T-010 fired — queue at 81 items with 498.9h oldest, meaning the Claude Code queue-consumer is not running or is starved. Spawning more items just deepens the backlog. (2) KPI collector infrastructure is broken — ~95% of metrics return \"TBD-populate\" errors, leaving orchestrator blind to revenue signals. Both are founder-side infra problems that no agent can fix (secrets, runner health, deploy). Deferred all three critical founder actions (queue drain, KPI collectors, Razorpay+cron auth). Then spawned 4 agents on items VERIFIED not-in-queue, covering mandatory role coverage: CTO (webhook idempotency — pre-req for safe Razorpay go-live), CMO (NRI pillar/cluster content briefs — pre-Diwali SEO runway), Sales (diaspora org list + email templates — feeds founder outreach), CS (English CS macros + admin route — deflection foundation). All spawns are artifact-only (docs, JSON, small code) — no infra changes, no free-tier risk (budgets at 0.0%). Deliberately avoided all 81 queued IDs and all 57 founder-blocked items. Kept spawn count at 4 (not 7) to avoid worsening queue backlog while founder investigates runner.",
-    "kpiDeltas": "No measurable KPI deltas this cycle — collector infrastructure broken. Only 4 non-stale metrics: max_contact_count_bumped=3 (unchanged), razorpay_live_active=0 (revenue-blocking), uptime_monitors_active=4 (healthy), cron_auth_token_set=0 (blocking cron jobs). Cannot rank by revenue-impact until KPI collectors are repaired — flagged to founder as top priority.",
-    "marketSignals": "Pre-Diwali runway is closing (Diwali 2026 = Nov 8). NRI content SEO needs ~90 days lead time — pillar work must ship in July or it misses the wave. Razorpay live activation is now the single largest revenue gate: without it, zero INR revenue is possible regardless of demand.",
-    "nextCycleHypothesis": "If founder drains queue + repairs KPI collectors before next cycle (T+6h), orchestrator can resume 4-6 spawns/cycle with real revenue-impact ranking. If not, throttle to 2 spawns/cycle and escalate queue-runner issue as P0 tripwire. Next cycle should verify: (a) queue depth trending down, (b) razorpay_live_active KPI reports real value, (c) cron_auth_token_set=1. If any fail, kill all new spawns and dedicate cycle to founder-facing infra remediation memo."
-  },
   "firedTripwires": [
     {
       "id": "T-010",
@@ -69,10 +11,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-02T18:03:46.702Z"
+      "firedAt": "2026-07-10T13:07:45.438Z"
     }
   ],
-  "savedAt": "2026-07-02T18:04:41.581Z",
+  "savedAt": "2026-07-10T13:11:09.900Z",
   "consumed": true,
-  "consumedAt": "2026-07-02T18:06:11.121Z"
+  "consumedAt": "2026-07-10T13:11:09.901Z"
 }
