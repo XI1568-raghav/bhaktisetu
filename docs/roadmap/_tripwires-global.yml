@@ -47,7 +47,12 @@ tripwires:
 
   - id: T-007
     name: Engineering velocity flatline
-    condition: "ctx.verticals.engineering.commits7d < 3 && ctx.verticals.engineering.openP0Bugs === 0"
+    # Guarded with ?. — orchestrator passes external without a `verticals.engineering`
+    # field (kpi cache doesn't populate it yet), so ctx.verticals.engineering is
+    # undefined. Without ?. the sandbox throws (caught as a warn, non-fatal, but
+    # pollutes logs + masks real tripwire state). Absent data = tripwire does NOT
+    # fire (can't detect a flatline without velocity data).
+    condition: "ctx.verticals?.engineering?.commits7d != null && ctx.verticals.engineering.commits7d < 3 && ctx.verticals.engineering.openP0Bugs === 0"
     action: spawn_subagent
     spawnRole: cto
     spawnBrief: "7-day commit count < 3. Review planned items, propose 3 ready-to-ship."
