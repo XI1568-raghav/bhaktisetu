@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail, magicLinkEmail } from '../lib/email.js';
 
@@ -22,6 +22,15 @@ import { sendEmail, magicLinkEmail } from '../lib/email.js';
  * for an MVP a 15-min window is acceptable.
  */
 
+// P0 #P0-2 (2026-07-10): boot-fatal guard mirroring the demo-token pattern in
+// middlewares/auth.ts. A hardcoded public fallback secret in production would
+// let anyone forge magic-link tokens (HMAC-SHA256 over email+nonce+expiry) and
+// sign in as any user. Refuse to boot in prod without a real JWT_SECRET.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  // eslint-disable-next-line no-console
+  console.error('[FATAL] JWT_SECRET unset in production — magic-link token forgery risk. Refusing to boot.');
+  process.exit(1);
+}
 const JWT_SECRET = process.env.JWT_SECRET ?? 'darshya-dev-secret';
 const TOKEN_TTL_MIN = 15;
 
@@ -45,7 +54,15 @@ function verifyToken(token: string): { email: string; expiresAt: number } | null
     return null;
   }
   const expectedSig = createHmac('sha256', JWT_SECRET).update(payload).digest('base64url');
-  if (sig !== expectedSig) return null;
+  // P2 (2026-07-10): constant-time compare to avoid a timing oracle on the
+  // signature. `!==` short-circuits on the first differing byte, leaking how
+  // many leading bytes match. Match the pattern in subscriptions.ts:115 —
+  // guard with a length check so timingSafeEqual never sees mismatched-length
+  // buffers (which throw).
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expectedSig);
+  if (a.length !== b.length) return null;
+  if (!timingSafeEqual(a, b)) return null;
   const [email, , expiresAtStr] = payload.split('.');
   if (!email || !expiresAtStr) return null;
   const expiresAt = parseInt(expiresAtStr, 10);

@@ -103,6 +103,20 @@ export const prismaMock = {
     createMany: vi.fn(),
     deleteMany: vi.fn(),
   },
+  wellnessSession: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
+  },
+  wellnessEnrollment: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
+  },
   onboardingStep: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
@@ -162,6 +176,14 @@ export const prismaMock = {
     update: vi.fn(),
     updateMany: vi.fn(),
     count: vi.fn(),
+  },
+  lead: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
+    groupBy: vi.fn(),
   },
   chatConversation: {
     findFirst: vi.fn(),

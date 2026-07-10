@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
  Calendar,
@@ -142,41 +143,31 @@ function isCompleted(booking: BookingListItem): boolean {
 
 function BookingsContent() {
  const { session } = useAuth();
- const [bookings, setBookings] = useState<BookingListItem[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
  const [activeTab, setActiveTab] = useState<TabFilter>('all');
 
- useEffect(() => {
- async function fetchBookings() {
- setError(null);
- try {
- const res = await fetch(`${API_BASE_URL}/bookings/my`, {
- headers: {
- Authorization: `Bearer ${session?.accessToken ?? ''}`,
- },
+ // P1-17: replaced manual useEffect + useState(loading/error/bookings) with
+ // useQuery — gives cached refetch, single loading/error state, and avoids
+ // the old "setState after unmount" footgun. StaleTime 60s (QueryProvider
+ // default) matches how often a devotee would realistically re-open the list.
+ const { data: bookings = [], isPending: loading, error } = useQuery({
+  queryKey: ['bookings', 'my', session?.accessToken],
+  enabled: !!session?.accessToken,
+  queryFn: async () => {
+   const res = await fetch(`${API_BASE_URL}/bookings/my`, {
+    headers: {
+     Authorization: `Bearer ${session?.accessToken ?? ''}`,
+    },
+   });
+   if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+   }
+   const data = await res.json();
+   const raw: ApiBooking[] = data.bookings ?? data.data ?? [];
+   return raw.map(mapBooking);
+  },
  });
- if (!res.ok) {
-   const body = await res.text().catch(() => '');
-   throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
- }
- const data = await res.json();
- const raw: ApiBooking[] = data.bookings ?? data.data ?? [];
- setBookings(raw.map(mapBooking));
- } catch (e) {
- const msg = e instanceof Error ? e.message : 'Network error';
- setError(msg);
- setBookings([]);
- } finally {
- setLoading(false);
- }
- }
- if (session?.accessToken) {
-   fetchBookings();
- } else {
-   setLoading(false);
- }
- }, [session]);
+ const errorText = error instanceof Error ? error.message : null;
 
  const filteredBookings = bookings.filter((b) => {
  switch (activeTab) {
@@ -222,9 +213,9 @@ function BookingsContent() {
  </div>
 
  <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
- {error && (
+ {errorText && (
    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-     Could not load your bookings: {error}
+     Could not load your bookings: {errorText}
    </div>
  )}
  {/* Tabs */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -120,7 +120,7 @@ function renderStars(trustScore: number) {
   return stars;
 }
 
-function TempleCard({ temple }: { temple: Temple }) {
+const TempleCard = React.memo(function TempleCard({ temple }: { temple: Temple }) {
   const detailUrl = `https://darshya.online/temples/${encodeURIComponent(temple.id)}?utm_source=mobile-app&utm_medium=temple-card`;
   const openTemple = () => {
     if (temple.liveDarshanEnabled) {
@@ -194,7 +194,7 @@ function TempleCard({ temple }: { temple: Temple }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 export default function TemplesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -268,7 +268,10 @@ export default function TemplesScreen() {
       <FlatList
         data={filteredTemples}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TempleCard temple={item} />}
+        renderItem={useCallback(
+          ({ item }: { item: Temple }) => <TempleCard temple={item} />,
+          []
+        )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

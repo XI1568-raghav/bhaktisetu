@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-type RoleType = 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER';
+export type RoleType = 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER';
 
 interface OnboardingProgress {
   userId: string;
@@ -217,6 +217,50 @@ export class OnboardingService {
 
     const profileId = await this.fetchProfileId(userId, role);
     return { role, profileId };
+  }
+
+  /**
+   * Flip a provider profile to approved=true (immediately bookable). Used by
+   * the lead-CONVERTED path (PBO-6) so an admin's conversion click both
+   * provisions the profile AND activates it in one step — mirroring what
+   * AdminService.updateUser does on /admin/approvals, without the role
+   * re-seed or approval-email side effects (the caller sends its own
+   * contextual lead-conversion email). Only PanditProfile carries an
+   * approvedAt timestamp; the others have only `approved`.
+   */
+  async approveProviderProfile(userId: string, role: RoleType): Promise<boolean> {
+    const now = new Date();
+    switch (role) {
+      case 'PANDIT': {
+        const r = await prisma.panditProfile.updateMany({
+          where: { userId },
+          data: { approved: true, approvedAt: now },
+        });
+        return r.count > 0;
+      }
+      case 'STORE_OWNER': {
+        const r = await prisma.storeProfile.updateMany({ where: { userId }, data: { approved: true } });
+        return r.count > 0;
+      }
+      case 'ASTROLOGER': {
+        const r = await prisma.astrologerProfile.updateMany({ where: { userId }, data: { approved: true } });
+        return r.count > 0;
+      }
+      case 'WELLNESS_INSTRUCTOR': {
+        const r = await prisma.wellnessProfile.updateMany({ where: { userId }, data: { approved: true } });
+        return r.count > 0;
+      }
+      case 'GAUSHALA_MANAGER': {
+        const r = await prisma.gaushalaProfile.updateMany({ where: { userId }, data: { approved: true } });
+        return r.count > 0;
+      }
+      case 'TEMPLE_MANAGER': {
+        const r = await prisma.templeProfile.updateMany({ where: { userId }, data: { approved: true } });
+        return r.count > 0;
+      }
+      default:
+        return false;
+    }
   }
 
   async getProviderProfile(userId: string, role: RoleType): Promise<Record<string, unknown> | null> {

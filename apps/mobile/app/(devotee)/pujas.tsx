@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -157,7 +157,7 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
   return 'shiva';
 }
 
-function PujaCard({ puja }: { puja: Puja }) {
+const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
   const bookUrl = `https://darshya.online/pujas/book?slug=${encodeURIComponent(puja.slug)}&utm_source=mobile-app&utm_medium=puja-card`;
   return (
     <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
@@ -234,7 +234,7 @@ function PujaCard({ puja }: { puja: Puja }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 export default function PujasScreen() {
   const [activeCategory, setActiveCategory] = useState<PujaCategory>('all');
@@ -325,7 +325,10 @@ export default function PujasScreen() {
       <FlatList
         data={filteredPujas}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PujaCard puja={item} />}
+        renderItem={useCallback(
+          ({ item }: { item: Puja }) => <PujaCard puja={item} />,
+          []
+        )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

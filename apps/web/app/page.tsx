@@ -351,14 +351,15 @@ export default async function HomePage() {
 
  <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/9] relative">
- <img
+ <Image
  src={getTempleHero('mahakaleshwar')}
  alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
  width={1280}
  height={720}
+ sizes="(max-width: 768px) 100vw, 960px"
  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
- fetchPriority="high"
- decoding="async"
+ priority
+ unoptimized
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
  <div className="absolute top-3 left-3 flex items-center gap-2">

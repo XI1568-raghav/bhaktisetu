@@ -1,0 +1,57 @@
+name: commitlint
+
+# Conventional Commits enforcement on every PR. Free-tier: ~15-20s/run, no
+# `pnpm install` needed — npx fetches @commitlint/cli + config-conventional
+# (cached on the runner). Lints the FULL commit range of the PR, not just HEAD,
+# so a squash-merge carries a clean history.
+#
+# This is the enforcement layer for the commit-message standard documented in
+# the project CLAUDE.md. The config lives at /commitlint.config.js (extends
+# @commitlint/config-conventional + a project-specific `security` type).
+#
+# NOTE: this workflow ALWAYS runs on pull_request (no paths-ignore) so a
+# docs-only PR still gets its commit messages linted — that's the one gate we
+# do not skip, per the roadmap decision.
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-commits:
+    name: Lint commit messages
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the PR's full commit range is lintable.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Determine commit range
+        id: range
+        run: |
+          # PR base = the merge-base of HEAD and the base branch. Using
+          # ${{ github.event.pull_request.base.sha }} is robust to force-pushes
+          # and rebase; fall back to HEAD~1 for single-commit edge cases.
+          BASE="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE" ] || [ "$BASE" = "null" ]; then
+            BASE=$(git rev-list --max-parents=0 HEAD | head -1)
+          fi
+          # Guard: if BASE resolves to the root commit, lint from there.
+          echo "from=$BASE" >> "$GITHUB_OUTPUT"
+          echo "Linting commits from $BASE to HEAD"
+
+      - name: Run commitlint
+        run: |
+          npx --yes -p @commitlint/cli@19 -p @commitlint/config-conventional@19 -- commitlint \
+            --from "${{ steps.range.outputs.from }}" \
+            --to HEAD \
+            --verbose

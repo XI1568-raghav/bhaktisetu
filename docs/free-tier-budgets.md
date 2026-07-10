@@ -2,7 +2,7 @@
 
 > **READ before adding any workflow / cron / integration / SDK / page.**
 > User refuses paid plans. Every external service must fit free tier.
-> Going over → service paused → user blocked from launching. Last updated 2026-05-28.
+> Going over → service paused → user blocked from launching. Last updated 2026-07-10.
 
 ## Hard caps per service
 
@@ -27,23 +27,49 @@
 | **DuckDuckGo HTML** (used by SERP agents) | rate-limited soft | per IP | competitor-watch, keyword-rank-tracker. | n/a — back off on 429 |
 | **Nitter** mirrors | rate-limited soft | per mirror | x-engagement-digest. | rotate 3 mirrors |
 
-## GitHub Actions per-workflow burn (post 2026-05-28 cuts)
+## GitHub Actions per-workflow burn (reconciled 2026-07-10)
+
+> Reconciled by grepping every `.github/workflows/*.yml` for `cron:` / trigger
+> blocks. Prior table (2026-05-28, ~846 min/mo) omitted four scheduled
+> workflows that were added afterward AND kept a stale `lighthouse-weekly`
+> weekly row whose cron had already been killed. Honest numbers below.
 
 | Workflow | Trigger | Min/run | Runs/mo | Min/mo |
 |---|---|---|---|---|
 | `ci.yml` | PR + push to main (paths-filtered, no docs) | ~5 | ~80 push estimate | ~400 |
-| `e2e.yml` | PR only + Sun weekly + manual | ~15 | ~5 | ~75 |
+| `e2e.yml` | **Sun weekly + manual only** (PR trigger removed 2026-07-10) | ~15 | 4 | ~60 |
 | `agents-health.yml` | every 12h | ~3 | 60 | 180 |
-| `agents-daily.yml` | daily 03:30 UTC (6 critical agents) | ~2 | 30 | 60 |
+| `agents-daily.yml` | daily 03:30 UTC (critical ~10 agents) | ~3.5 | 30 | 105 |
 | `agents-weekly.yml` | Mon 04:00 UTC (20 agents) | ~10 | 4 | 40 |
-| `lighthouse-weekly.yml` | Mon 04:00 UTC | ~12 | 4 | 48 |
+| `lighthouse-weekly.yml` | **cron KILLED 2026-05-28** → manual only | ~12 | 0 | 0 |
 | `daily-cron.yml` | daily 00:00 UTC | ~0.1 | 30 | 3 |
 | `pr-checks.yml` | PR only (paths-filtered) | ~0.5 | ~20 | 10 |
 | `sentry-release.yml` | tag only (manual cut) | ~15 | ~2 | 30 |
-| `deploy-web.yml` | manual only | ~6 | 0 | 0 |
-| **Total estimate** | | | | **~846 min/mo** |
+| `deploy-web-render.yml` | manual + push to `worktree-cf-opennext-migration` branch only (NOT main) | ~25 | 0 on main flow | 0 |
+| `roadmap-loop.yml` | **every 8h = 3 cycles/day** | ~12 (doc: 12×3×30) | 90 | **1080** |
+| `onboarding-fleet-v2.yml` | **daily 09:23 UTC** | ~3 | 30 | 90 |
+| `db-backup.yml` | **daily 19:00 UTC** | ~5 | 30 | 150 |
+| `cxo-advisory.yml` | **Mon 08:07 UTC weekly** | ~3 | 4 | 12 |
+| `roadmap-finalize.yml` | push to main, paths-filtered on `docs/roadmap/**` only | ~1 | ~10 | ~10 |
+| `cf-kill-zombie.yml` / `render-diag.yml` / `render-cutover.yml` | manual only | n/a | 0 | 0 |
+| **Total estimate** | | | | **~2160 min/mo** |
 
-Cap = 2000 min/mo. Headroom ~1150 min/mo for ad-hoc reruns and manual.
+Cap = 2000 min/mo. **Headroom: NEGATIVE ~160 min/mo.** The fleet is over cap.
+
+**Dominant consumer:** `roadmap-loop.yml` alone is ~1080 min/mo (54% of the
+cap) at 3 cycles/day. Per its own header comment, the 8h cadence was chosen
+specifically to stay under cap assuming a ~840 baseline — but the baseline
+grew (db-backup +onboarding-fleet-v2 +cxo-advisory +roadmap-finalize were
+added after), pushing the combined total over.
+
+**Recommended cuts to get back under cap (ops decision, not done here):**
+1. Drop `roadmap-loop.yml` to every 12h (2/day): 12×2×30 = 720 → saves 360 → total ~1800. SAFE.
+2. Or drop to 1 cycle/day: 12×1×30 = 360 → saves 720 → total ~1440. More headroom.
+3. `db-backup.yml` (150) + `onboarding-fleet-v2.yml` (90) are the next-largest
+   scheduled costs — both daily; neither is a candidate to cut without product
+   impact (backups + onboarding drips).
+4. Re-enabling `lighthouse-weekly.yml` cron would add ~48 min/mo — do NOT
+   re-enable until the silent-failure root cause is fixed AND the cap has room.
 
 ## Pre-cut state (2026-05-27, billing failed)
 

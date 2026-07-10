@@ -1,6 +1,13 @@
 // ──────────────────────────────────────────────
 // @poojly/ui — Design Tokens / Theme
 // Spiritual saffron-based design system
+//
+// CANONICAL SAFFRON SOURCE: `saffron.500 = #E16318` (true saffron / kesari).
+// This file is the single source of truth for the brand saffron. Web
+// (apps/web/globals.css), mobile (apps/mobile/lib/theme.ts) and remotion
+// (apps/remotion-pitch/src/tokens.ts) should derive their saffron from this
+// value rather than hardcoding their own. (A2 owns globals.css, A3 owns the
+// mobile theme, A7 owns remotion — they sync to #E16318 per their specs.)
 // ──────────────────────────────────────────────
 
 export const theme = {
@@ -12,7 +19,7 @@ export const theme = {
       200: "#FFDAA8",
       300: "#FFC170",
       400: "#FFA63D",
-      500: "#FF8C00",
+      500: "#E16318", // canonical true saffron (kesari) — single source of truth
       600: "#E07800",
       700: "#B85E00",
       800: "#8C4700",
@@ -180,7 +187,7 @@ export const theme = {
     md: "0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05)",
     lg: "0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04)",
     xl: "0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)",
-    glow: "0 0 20px rgba(255, 140, 0, 0.3)",
+    glow: "0 0 20px rgba(225, 99, 24, 0.3)", // saffron.500 #E16318
     inner: "inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)",
   },
 

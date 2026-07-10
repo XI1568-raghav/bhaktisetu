@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from '../../lib/t';
 import { getProductImage } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
-import { listProducts } from "../../lib/medusa";
+import { listProducts, isMedusaEnabled } from "../../lib/medusa";
 import { storeItemListJsonLd, type StoreProductLite } from "../../lib/jsonld";
 import {
  ShoppingBag,
@@ -78,12 +78,30 @@ export default async function StorePage() {
  const products = await listProducts();
  const t = await getTranslations('store');
  const itemListJsonLd = storeItemListJsonLd(products as StoreProductLite[]);
+ // P2-41: Medusa is configured but every product resolved from the seed
+ // fallback — i.e. the Storefront API is down or returning non-OK. Surface a
+ // banner so devotees know live inventory/pricing may be stale. When Medusa
+ // isn't configured at all the seed catalogue *is* the source of truth, so no
+ // banner is warranted in that case.
+ const isStoreDegraded =
+   isMedusaEnabled() && products.length > 0 && products.every((p) => p.source === 'seed');
  return (
  <div className="min-h-[100dvh] bg-surface-50">
  <script
    type="application/ld+json"
    dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
  />
+ {isStoreDegraded && (
+   <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
+     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
+       <Package className="w-4 h-4 shrink-0" />
+       <span>
+         Live store inventory is temporarily unavailable. Showing our curated
+         catalogue — checkout is unaffected, but prices and stock may refresh shortly.
+       </span>
+     </div>
+   </div>
+ )}
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

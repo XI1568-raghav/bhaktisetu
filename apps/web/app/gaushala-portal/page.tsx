@@ -62,7 +62,8 @@ export default function GaushalaDashboard() {
  const [recentCows, setRecentCows] = useState<DashboardCow[]>([]);
 
  useEffect(() => {
- if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ // P0 #AP-07 (2026-07-10): fetch for demo sessions too (see KYC block below).
+ if (!session?.accessToken) return;
  (async () => {
  try {
  const r = await fetch(`${API_BASE_URL}/gaushala-portal/dashboard`, {
@@ -87,7 +88,12 @@ export default function GaushalaDashboard() {
  ];
 
  useEffect(() => {
- if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ // P0 #AP-07 (2026-07-10): fetch for demo sessions too. The old
+ // startsWith('demo-') skip left a demo gaushala manager on hardcoded
+ // zero stats + KYC 'unsubmitted', masking backend bugs during demo.
+ // The API accepts demo tokens in non-prod; a non-OK / catch keeps the
+ // existing fallback.
+ if (!session?.accessToken) return;
  (async () => {
  try {
  const r = await fetch(`${API_BASE_URL}/provider-kyc`, {

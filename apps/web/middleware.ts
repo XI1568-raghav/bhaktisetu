@@ -1,60 +1,54 @@
-// P0 #B3/ag-02 (2026-07-09): server-side portal gate.
+// Server-side portal session gate (audit remediation P1-16, 2026-07-10).
 //
-// Before this middleware, every portal layout (/admin, /priest, /store-admin,
-// /astrologer-portal, /wellness-portal, /gaushala-portal) gated access purely
-// client-side — the page shell rendered for logged-out users, leaking nav,
-// menu structure, and (for some layouts) skeleton data before the client
-// redirect fired. This middleware runs on the edge before the page renders:
-// it reads the poojly_user cookie (URL-encoded JSON with a `role` field) and
-// 307-redirects anyone without the right role to /auth/sign-in.
+// SECURITY MODEL: this middleware checks ONLY "session exists" — it verifies
+// the `poojly_user` cookie is present and non-empty. It deliberately does NOT
+// trust the `role` field inside that cookie. The cookie is client-set
+// (auth-context setCookie: lib/auth-context.tsx:264-266) as plain,
+// unsigned, non-HttpOnly JSON, so its `role` value is user-spoofable.
+// Gating on it here would let an attacker set `role:'admin'` in their cookie
+// and bypass the shell flash — reducing real protection to nothing.
 //
-// The cookie is client-set (auth-context setCookie) and is NOT a security
-// boundary on its own — the API still enforces role auth on every call. This
-// middleware is defence-in-depth + UX: it stops the shell from rendering for
-// the wrong audience and avoids a flash of gated chrome. The API remains the
-// source of truth for authorization.
+// Role enforcement is API-side: every portal API call is authenticated by the
+// server against the real session/JWT, and the client AuthGuard
+// (AuthGuard in lib/auth-context) renders the correct portal shell only after
+// the server confirms the role. This middleware is defence-in-depth + UX only:
+// it stops the page shell from rendering for a fully logged-out user (no
+// cookie at all) and avoids a flash of gated chrome before the client redirect
+// can fire. A user with ANY cookie passes this gate; the API + AuthGuard are
+// the real authorization boundary.
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-type RolePathRule = {
-  prefix: string;
-  roles: string[]; // allowed roles (lower-case UserRole values)
-};
-
-// Portal -> allowed roles. Mirrors auth-context UserRole + getRoleDashboardPath.
-const RULES: RolePathRule[] = [
-  { prefix: '/admin', roles: ['admin'] },
-  { prefix: '/priest', roles: ['priest'] },
-  { prefix: '/store-admin', roles: ['store_owner'] },
-  { prefix: '/astrologer-portal', roles: ['astrologer'] },
-  { prefix: '/wellness-portal', roles: ['wellness_instructor'] },
-  { prefix: '/gaushala-portal', roles: ['gaushala_manager'] },
+// Portal path prefixes that require a logged-in session to render.
+// NOTE: these are no longer role-gated — see comment above.
+const PORTAL_PREFIXES = [
+  '/admin',
+  '/priest',
+  '/store-admin',
+  '/astrologer-portal',
+  '/wellness-portal',
+  '/gaushala-portal',
 ];
 
-function roleFromCookie(req: NextRequest): string | null {
+// A session exists iff the poojly_user cookie is present and non-empty.
+// We intentionally do NOT parse or trust the `role` field inside it.
+function hasSession(req: NextRequest): boolean {
   const raw = req.cookies.get('poojly_user')?.value;
-  if (!raw) return null;
-  try {
-    const decoded = decodeURIComponent(raw);
-    const parsed = JSON.parse(decoded) as { role?: string };
-    const role = parsed?.role;
-    return role ? String(role).toLowerCase() : null;
-  } catch {
-    return null;
-  }
+  return !!raw && raw.trim().length > 0;
 }
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const rule = RULES.find((r) => pathname === r.prefix || pathname.startsWith(r.prefix + '/'));
-  if (!rule) return NextResponse.next();
 
-  const role = roleFromCookie(req);
-  const ok = role !== null && rule.roles.includes(role);
-  if (ok) return NextResponse.next();
+  const isPortal = PORTAL_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  );
+  if (!isPortal) return NextResponse.next();
 
-  // Redirect to login, preserving the intended destination for post-login
-  // bounce-back. Logged-out + wrong-role both land here.
+  if (hasSession(req)) return NextResponse.next();
+
+  // No session cookie at all → redirect to login, preserving the intended
+  // destination for post-login bounce-back.
   const signIn = new URL('/auth/login', req.url);
   signIn.searchParams.set('redirect', pathname);
   return NextResponse.redirect(signIn, 307);

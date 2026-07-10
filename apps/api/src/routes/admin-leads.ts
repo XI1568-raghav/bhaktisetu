@@ -5,6 +5,8 @@ import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { runDailyOps } from '../jobs/master-cron.js';
 import { sendEmail } from '../lib/email.js';
+import { onboardingService } from '../services/onboarding.service.js';
+import { mapLeadRoleToOnboarding, isLeadRole } from '../lib/lead-role-mapping.js';
 
 // Lead pipeline + Outreach + Waitlist admin routes.
 //
@@ -416,6 +418,68 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
             notes: `${noteLine}\n${(existing as { notes?: string | null }).notes ?? ''}`,
           },
         });
+
+        // PBO-6 (2026-07-10): on CONVERTED, provision a real User + provider
+        // profile + approve it, so the lead can actually sign in. Previously
+        // the handler flipped status + sent a "you're verified, sign in"
+        // email WITHOUT creating any account — the lead hit a dead link.
+        // Idempotent: if convertedUserId is already set we skip re-provisioning
+        // (a second conversion click just re-sends the email). Best-effort:
+        // wrapped so a profile-upsert failure logs but does not roll back the
+        // status flip or block the email.
+        let provisionedUserId: string | null = null;
+        if (parsed.data.status === 'CONVERTED' && !(existing as { convertedUserId?: string | null }).convertedUserId) {
+          try {
+            const leadEmail = (existing as { email?: string | null }).email;
+            const leadRoleRaw = String((existing as { role?: string }).role ?? '');
+            if (leadEmail && isLeadRole(leadRoleRaw)) {
+              const mappedRole = mapLeadRoleToOnboarding(leadRoleRaw);
+
+              // Find-or-create the User by email (mirrors magic-link.ts).
+              let user = await prisma.user.findFirst({ where: { email: leadEmail } });
+              if (!user) {
+                user = await prisma.user.create({
+                  data: {
+                    email: leadEmail,
+                    fullName: (existing as { name?: string }).name ?? leadEmail,
+                    // phone is @unique; a lead may not have one yet, so use a
+                    // stable placeholder keyed off the email (mirrors
+                    // magic-link.ts) to avoid collisions on repeated converts.
+                    phone: (existing as { phone?: string | null }).phone ?? `email-${leadEmail}`,
+                    locationCity: (existing as { city?: string | null }).city ?? null,
+                    locationState: (existing as { state?: string | null }).state ?? null,
+                  },
+                });
+              }
+
+              // Seed the DEVOTEE baseline (every provider is also a devotee)
+              // + the provider role + profile, then flip approved=true so the
+              // profile is immediately bookable.
+              await prisma.userRoleAssignment.upsert({
+                where: { userId_role: { userId: user.id, role: 'DEVOTEE' } },
+                update: {},
+                create: { userId: user.id, role: 'DEVOTEE', isPrimary: false },
+              }).catch(() => undefined);
+              await onboardingService.upsertProviderProfile(user.id, mappedRole, {
+                templeName: (existing as { name?: string }).name,
+                displayName: (existing as { name?: string }).name,
+                city: (existing as { city?: string | null }).city,
+                state: (existing as { state?: string | null }).state,
+                bio: `Converted from lead pipeline (${(existing as { source?: string }).source ?? 'unknown'}).`,
+              });
+              await onboardingService.approveProviderProfile(user.id, mappedRole);
+
+              provisionedUserId = user.id;
+              await lead.update({
+                where: { id: request.params.id },
+                data: { convertedUserId: user.id },
+              }).catch(() => undefined);
+            }
+          } catch (provErr) {
+            request.log.error({ err: provErr, leadId: request.params.id }, 'lead conversion provisioning failed');
+          }
+        }
+
         if (parsed.data.sendEmail && existing.email) {
           const roleLabel = String(existing.role || 'partner').toLowerCase().replace('_', ' ');
           const isApproval = parsed.data.status === 'CONVERTED';
@@ -434,7 +498,7 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
             }).catch(() => null);
           }
         }
-        return { lead: updated };
+        return { lead: updated, provisionedUserId };
       } catch (err) {
         request.log.error({ err }, 'status mutation failed');
         return reply.code(500).send({ error: 'Failed to update status' });
