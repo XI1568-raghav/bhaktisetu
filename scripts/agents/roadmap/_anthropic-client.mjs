@@ -1,6 +1,9 @@
 // Anthropic client w/ no-silent-swap guarantee.
-// - ALWAYS Opus 4.7 (refuses other models per user directive)
-// - ModelRejectedError on 403 Free-tier reject — workflow MUST halt (no fallback)
+// - ALWAYS a verified-working model: blackboxai/z-ai/glm-5.2 on the Blackbox
+//   proxy (the open-source-only endpoint 403-rejects closed models opus/sonnet/
+//   haiku — verified 2026-07; the orchestrator was failing CI on opus-4.7 403s).
+//   Direct (non-proxy) base URL → claude-opus-4-7 (local dev / non-Blackbox).
+// - ModelRejectedError on 403 reject — workflow MUST halt (no fallback)
 // - 3x exponential retry on 5xx + 429
 // - 4xx (non-429) throws immediately
 // - AUTO-STREAMING for max_tokens ≥ 8192 OR explicit stream:true
@@ -8,6 +11,10 @@
 //   that may take longer than 10 minutes" otherwise — was killing Decision Agent
 //   at 32k tokens on Render bg-worker, observed 2026-06-11)
 // Usage: callOpus47({ system?, messages, maxTokens, temperature, tools, client?, retryDelayMs?, stream? })
+//
+// NOTE on naming: the function keeps the historical name callOpus47 for callers,
+// but on the Blackbox proxy it now resolves to GLM-5.2 (the only model the
+// endpoint serves). See reference_roadmap_orchestrator_opus_lock_403 memory.
 import Anthropic from '@anthropic-ai/sdk';
 
 const RETRY_DELAYS = [2000, 8000, 30000];
@@ -119,20 +126,26 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
   });
   const delays = retryDelayMs !== undefined ? [retryDelayMs, retryDelayMs, retryDelayMs] : RETRY_DELAYS;
 
-  // User directive: NEVER silent-swap model. Always Opus 4.7.
+  // No-silent-swap guard: resolve a VERIFIED-WORKING model. The Blackbox proxy
+  // is open-source-only (2026) — closed models (opus/sonnet/haiku) 403-reject.
+  // The only confirmed-working model on that endpoint is blackboxai/z-ai/glm-5.2.
+  // A direct (non-Blackbox) base URL → claude-opus-4-7 (local dev / direct API).
+  // ANTHROPIC_MODEL env wins if it names a verified-working model; an env value
+  // naming an unknown model is REJECTED (preserves the original "no silent swap
+  // to an arbitrary model" intent — we just point the default at the right model).
   // Read env at call-time (not module-load) so tests + runtime overrides both work.
-  // Default updated 2026-06-12 to Blackbox proxy convention. Direct Anthropic
-  // accepts 'claude-opus-4-7'; Blackbox needs 'blackboxai/anthropic/claude-opus-4.7'.
-  // ANTHROPIC_MODEL env wins if set explicitly (Render + GH can override per environment).
   const baseUrl = (process.env.ANTHROPIC_BASE_URL || '').toLowerCase();
   const isBlackbox = /blackbox/.test(baseUrl);
-  // 2026-07-10: Blackbox proxy is open-source-only — claude-opus-* returns 403
-  // ("Only open-source models are supported"). Only blackboxai/z-ai/glm-5.2 works.
-  // Direct Anthropic (non-Blackbox) still uses Opus 4.7. ANTHROPIC_MODEL env wins if set.
-  const model = process.env.ANTHROPIC_MODEL ||
-    (isBlackbox ? 'blackboxai/z-ai/glm-5.2' : 'claude-opus-4-7');
-  if (!/opus-4[\.-]7|glm-5[\.-]2/.test(model)) {
-    throw new ModelRejectedError(`Refusing to call unsupported model: ${model}. Set ANTHROPIC_MODEL to an Opus 4.7 variant or blackboxai/z-ai/glm-5.2.`, null);
+  const DEFAULT_MODEL = isBlackbox ? 'blackboxai/z-ai/glm-5.2' : 'claude-opus-4-7';
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+  // Verified-working model set. glm-5.2 variants on Blackbox; opus-4-7 on direct.
+  const VERIFIED = /^(blackboxai\/z-ai\/glm-5\.2|claude-opus-4-7|claude-opus-4\.7)$/;
+  if (!VERIFIED.test(model)) {
+    throw new ModelRejectedError(
+      `Refusing to call unverified model: ${model}. Blackbox proxy is open-source-only (opus/sonnet/haiku 403-reject). ` +
+      `Set ANTHROPIC_MODEL to blackboxai/z-ai/glm-5.2 (Blackbox) or claude-opus-4-7 (direct), or unset it for the default.`,
+      null,
+    );
   }
 
   // Auto-stream above SDK threshold OR explicit caller request.
@@ -156,8 +169,10 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
       }
       return await c.messages.create(baseParams);
     } catch (e) {
-      // 403 + "Free tier" / "forbidden" / "access" → ModelRejectedError, NO retry, NO swap
-      if (e.status === 403 && /Free tier|forbidden|access/i.test(e.message)) {
+      // 403 + model-access rejection → ModelRejectedError, NO retry, NO swap.
+      // Matches both the old "Free tier/forbidden/access" phrasing and the
+      // Blackbox open-source-only message "Only open-source models are supported".
+      if (e.status === 403 && /Free tier|forbidden|access|open-source models/i.test(e.message)) {
         throw new ModelRejectedError(`Blackbox proxy rejected ${model}: ${e.message}`, 403);
       }
       // 4xx other than 429 → throw immediately
