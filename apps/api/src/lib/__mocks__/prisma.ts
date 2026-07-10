@@ -181,6 +181,7 @@ export const prismaMock = {
     aggregate: vi.fn(),
   },
   commission: {
+    findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

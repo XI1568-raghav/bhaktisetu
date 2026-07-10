@@ -97,7 +97,9 @@ export class TempleService {
             images: true,
             timingInfo: true,
             isVerified: true,
-            trustScore: true,
+            // P0 #PUB-02 (2026-07-09): trustScore is an internal ranking signal,
+            // not a public field — removed from the public list select. It is
+            // still used for ordering (orderBy below), just not returned.
             liveDarshanEnabled: true,
           },
           orderBy: [{ trustScore: 'desc' }, { name: 'asc' }],
@@ -124,7 +126,34 @@ export class TempleService {
     return cached(`temple:slug:${slug}`, CACHE_TTL.TEMPLE_DETAIL, async () => {
     const temple = await prisma.temple.findUnique({
       where: { slug },
-      include: {
+      // P0 #PUB-02/PUB-08 (2026-07-09): public detail whitelist. The old
+      // `include`-only fetch returned the FULL Temple row to logged-out users —
+      // phone, email, streamUrl, status, verificationDate, trustScore. A
+      // top-level select whitelists only public columns; internal/contact
+      // fields stay server-side. darshanStream is included but the route
+      // serializes only its public viewUrl (not internal stream keys).
+      select: {
+        id: true,
+        name: true,
+        nameLocal: true,
+        slug: true,
+        description: true,
+        deityPrimary: true,
+        deities: true,
+        tradition: true,
+        addressLine: true,
+        city: true,
+        state: true,
+        pincode: true,
+        country: true,
+        lat: true,
+        lng: true,
+        websiteUrl: true,
+        images: true,
+        timingInfo: true,
+        isVerified: true,
+        liveDarshanEnabled: true,
+        createdAt: true,
         priests: {
           include: {
             priest: {
@@ -208,7 +237,7 @@ export class TempleService {
       SELECT * FROM (
         SELECT
           id, name, name_local, slug, deity_primary, tradition,
-          city, state, lat, lng, images, is_verified, trust_score,
+          city, state, lat, lng, images, is_verified,
           live_darshan_enabled,
           (
             6371 * acos(
@@ -243,7 +272,7 @@ export class TempleService {
       lng: t.lng,
       images: t.images,
       isVerified: t.is_verified,
-      trustScore: t.trust_score,
+      // P0 #PUB-02: trustScore omitted from the public nearby response.
       liveDarshanEnabled: t.live_darshan_enabled,
       distanceKm: Number(t.distance_km.toFixed(2)),
     }));
@@ -284,7 +313,7 @@ export class TempleService {
           state: true,
           images: true,
           isVerified: true,
-          trustScore: true,
+          // P0 #PUB-02: trustScore omitted from the public search response.
           liveDarshanEnabled: true,
         },
         orderBy: [{ trustScore: 'desc' }, { name: 'asc' }],

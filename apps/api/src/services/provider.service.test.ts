@@ -94,13 +94,13 @@ describe('ProviderService.getProviders (mock fallback)', () => {
 
 describe('ProviderService.getProviderById', () => {
   it('returns null when DB returns null and mock has no match', async () => {
-    prismaMock.panditProfile.findUnique.mockResolvedValue(null);
+    prismaMock.panditProfile.findFirst.mockResolvedValue(null);
     const out = await service.getProviderById('pandit', 'nope');
     expect(out).toBeNull();
   });
 
   it('attaches reviews from prisma when DB hit', async () => {
-    prismaMock.panditProfile.findUnique.mockResolvedValue({ id: 'pandit-001', name: 'X' });
+    prismaMock.panditProfile.findFirst.mockResolvedValue({ id: 'pandit-001', name: 'X', approved: true });
     prismaMock.review.findMany.mockResolvedValue([
       { id: 'r1', rating: 5, comment: 'Great' },
     ]);
@@ -112,11 +112,34 @@ describe('ProviderService.getProviderById', () => {
   });
 
   it('falls back to mock data + mockReviews when prisma errors', async () => {
-    prismaMock.panditProfile.findUnique.mockRejectedValue(new Error());
+    prismaMock.panditProfile.findFirst.mockRejectedValue(new Error());
     const out = await service.getProviderById('pandit', 'pandit-001');
     expect(out).not.toBeNull();
     expect((out as any).id).toBe('pandit-001');
     expect(Array.isArray((out as any).reviews)).toBe(true);
+  });
+
+  // P0 #PUB-07 (2026-07-09): approved-gate — an unapproved provider must not be
+  // reachable on the public detail endpoint (returns null → route 404s).
+  it('returns null for an UNAPPROVED provider (approved-gate)', async () => {
+    prismaMock.panditProfile.findFirst.mockResolvedValue({ id: 'pandit-001', name: 'X', approved: false });
+    const out = await service.getProviderById('pandit', 'pandit-001');
+    expect(out).toBeNull();
+  });
+
+  // P0 #PUB-01 (2026-07-09): PII denylist — userId/gstNumber/commission/etc.
+  // must never appear on a public provider response.
+  it('strips internal PII (userId, gstNumber, commission) from the response', async () => {
+    prismaMock.panditProfile.findFirst.mockResolvedValue({
+      id: 'pandit-001', name: 'X', approved: true,
+      userId: 'secret-uuid', gstNumber: 'GST123', commission: 0.3, aadhaarVerified: true,
+    });
+    prismaMock.review.findMany.mockResolvedValue([]);
+    const out = await service.getProviderById('pandit', 'pandit-001') as Record<string, unknown>;
+    expect(out.userId).toBeUndefined();
+    expect(out.gstNumber).toBeUndefined();
+    expect(out.commission).toBeUndefined();
+    expect(out.aadhaarVerified).toBeUndefined();
   });
 });
 
@@ -164,6 +187,11 @@ describe('ProviderService.updateProvider', () => {
   });
 
   it('merges updates onto provider in mock fallback when ownership matches', async () => {
+    // updateProviderProfile calls findUnique first; the prior getProviderById
+    // tests now mock findFirst (not findUnique), so findUnique must be set
+    // here to a row whose userId matches, otherwise the DB path returns null
+    // before the rejected update triggers the mock-fallback catch.
+    prismaMock.panditProfile.findUnique.mockResolvedValue({ id: 'pandit-001', userId: 'user-002' });
     prismaMock.panditProfile.update.mockRejectedValue(new Error());
     const out = await service.updateProvider('pandit', 'pandit-001', 'user-002', { bio: 'Updated' });
     expect((out as any).bio).toBe('Updated');

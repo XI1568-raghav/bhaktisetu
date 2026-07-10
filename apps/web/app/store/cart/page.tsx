@@ -12,8 +12,10 @@ import {
  Truck,
  Shield,
  Tag,
+ LogIn,
 } from 'lucide-react';
 import { useCart } from '../../../components/CartContext';
+import { useAuth } from '../../../lib/auth-context';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -24,6 +26,11 @@ function formatPrice(amount: number): string {
 }
 
 export default function CartPage() {
+ // P0 #S-07 (2026-07-09): surface auth state so a logged-out cart user sees a
+ // "Login to checkout" CTA instead of being bounced silently at /store/checkout
+ // (which is wrapped in AuthGuard). The checkout link is still shown, but the
+ // label + a sign-in prompt set the right expectation.
+ const { user } = useAuth();
  const {
  items,
  itemCount,
@@ -237,9 +244,14 @@ export default function CartPage() {
  href="/store/checkout"
  className="w-full flex items-center justify-center gap-2 py-3.5 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
  >
- Proceed to Checkout
- <ArrowRight className="w-4 h-4" />
+ {user ? 'Proceed to Checkout' : 'Login to Checkout'}
+ {user ? <ArrowRight className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
  </Link>
+ {!user && (
+ <p className="text-xs text-center text-surface-500">
+ You&apos;ll be asked to sign in to complete your order.
+ </p>
+ )}
  </div>
 
  {/* Trust */}

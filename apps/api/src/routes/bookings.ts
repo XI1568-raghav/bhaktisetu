@@ -40,21 +40,39 @@ const createBookingSchema = z.object({
   prasadDeliveryAddressId: z.string().uuid().optional(),
 });
 
-const updateBookingStatusSchema = z.object({
-  status: z.enum([
-    'pending_payment',
-    'confirmed',
-    'priest_assigned',
-    'in_progress',
-    'completed',
-    'video_uploaded',
-    'delivered',
-    'cancelled',
-    'refunded',
-  ]),
-  priestId: z.string().uuid().optional(),
-  data: z.record(z.any()).optional(),
-});
+// P0 #pp-01 (2026-07-09): the old schema accepted `data: z.record(z.any())`
+// and the route spread it raw into the Prisma update, letting any caller set
+// financial/identity fields (priestPayout, platformCommission, priceAmount,
+// userId) and self-assign as priest. Now `data` is a strict per-status
+// allowlist — only the fields relevant to each transition are accepted, and
+// the financial/identity denylist is never client-settable.
+const VIDEO_PROOF_FIELDS = z.object({
+  videoProofUrl: z.string().url().max(2000).optional(),
+  videoUploadedAt: z.string().datetime().optional(),
+}).strict();
+
+// No user-mutable fields for these transitions — strict empty object rejects
+// any client-supplied data keys (replaces the old wide-open z.record(z.any())).
+const EMPTY_DATA = z.object({}).strict();
+
+const updateBookingStatusDataSchema = z.discriminatedUnion('status', [
+  // No user-mutable fields for these transitions.
+  z.object({ status: z.literal('pending_payment'), priestId: z.string().uuid().optional(), data: EMPTY_DATA.optional() }),
+  z.object({ status: z.literal('confirmed'), priestId: z.string().uuid().optional(), data: EMPTY_DATA.optional() }),
+  // priest_assigned: priestId may move with the assignment (admin only — enforced
+  // in the route handler; non-admins cannot reach a priest-assigned transition
+  // for a booking they don't own/haven't been assigned to).
+  z.object({ status: z.literal('priest_assigned'), priestId: z.string().uuid().optional(), data: EMPTY_DATA.optional() }),
+  z.object({ status: z.literal('in_progress'), priestId: z.string().uuid().optional(), data: EMPTY_DATA.optional() }),
+  // completed / video_uploaded / delivered: only video-proof fields.
+  z.object({ status: z.literal('completed'), priestId: z.string().uuid().optional(), data: VIDEO_PROOF_FIELDS.optional() }),
+  z.object({ status: z.literal('video_uploaded'), priestId: z.string().uuid().optional(), data: VIDEO_PROOF_FIELDS.optional() }),
+  z.object({ status: z.literal('delivered'), priestId: z.string().uuid().optional(), data: VIDEO_PROOF_FIELDS.optional() }),
+  z.object({ status: z.literal('cancelled'), priestId: z.string().uuid().optional(), data: z.object({ cancelReason: z.string().max(500).optional() }).optional() }),
+  z.object({ status: z.literal('refunded'), priestId: z.string().uuid().optional(), data: z.object({ refundReason: z.string().max(500).optional() }).optional() }),
+]);
+
+const updateBookingStatusSchema = updateBookingStatusDataSchema;
 
 const cancelBookingSchema = z.object({
   reason: z.string().max(500).optional(),
@@ -223,6 +241,12 @@ export async function bookingRoutes(server: FastifyInstance) {
   );
 
   // PATCH /:id - Update booking status
+  // P0 #pp-01 (2026-07-09): added ownership/role authorization. The old
+  // handler ran only authenticateUser, so any logged-in user (even a plain
+  // devotee) could drive ANY booking through the state machine and set
+  // financial fields. Now only the booking owner, the assigned priest, or an
+  // admin may PATCH; financial/identity fields are blocked by the schema
+  // whitelist + the service denylist.
   server.patch(
     '/:id',
     { preHandler: [authenticateUser] },
@@ -230,11 +254,46 @@ export async function bookingRoutes(server: FastifyInstance) {
       try {
         const { id } = paramsWithId.parse(request.params);
         const body = updateBookingStatusSchema.parse(request.body);
+        const me = request.currentUser!;
+
+        // Authorization: fetch the booking's owner + assigned priest.
+        const booking = await prisma.pujaBooking.findUnique({
+          where: { id },
+          select: {
+            userId: true,
+            priestId: true,
+            status: true,
+            priest: { select: { userId: true } },
+          },
+        });
+        if (!booking) {
+          return reply.status(404).send({ error: 'Booking not found.' });
+        }
+
+        const isOwner = booking.userId === me.id;
+        const isAdmin = me.roles.includes('ADMIN');
+        const isAssignedPriest = !!booking.priestId && booking.priest?.userId === me.id;
+
+        if (!isOwner && !isAdmin && !isAssignedPriest) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Not your booking.',
+          });
+        }
+
+        // Only an admin may reassign the priest via this endpoint; a priest
+        // self-assigning to someone else's booking is the IDOR we're closing.
+        if (body.priestId && body.priestId !== booking.priestId && !isAdmin) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Only an admin may reassign the priest.',
+          });
+        }
 
         const updated = await bookingService.updateBookingStatus(
           id,
-          body.status,
-          body.data
+          body.status as BookingStatus,
+          body.data as Record<string, any> | undefined,
         );
 
         return { booking: updated };
@@ -1125,6 +1184,8 @@ export async function bookingRoutes(server: FastifyInstance) {
           body.razorpayOrderId,
           body.razorpayPaymentId,
           body.razorpaySignature,
+          request.currentUser!.id,
+          request.currentUser!.roles,
         );
         return result;
       } catch (error: any) {

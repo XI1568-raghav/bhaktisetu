@@ -8,7 +8,12 @@ const profileUpdateSchema = z.object({
   specialties: z.array(z.string().max(50)).max(20).optional(),
   experience: z.number().int().min(0).max(80).optional(),
   languages: z.array(z.string().max(30)).max(20).optional(),
-  pricePerMinute: z.number().min(0).max(100000).optional(),
+  // P0 #AP-09 (2026-07-09): floor at ₹1/min, not 0. The old .min(0) let an
+  // astrologer save ₹0/min; devotees then hit /consultation/book's "Minimum
+  // consultation amount is ₹50" 400 with no hint that the rate was the cause.
+  // ₹1/min × the shortest slot still clears ₹50 for any reasonable duration;
+  // the booking endpoint enforces the absolute ₹50 floor independently.
+  pricePerMinute: z.number().min(1, 'Per-minute rate must be at least ₹1.').max(100000).optional(),
   bio: z.string().max(2000).optional(),
 });
 
@@ -40,52 +45,68 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
 
     const profile = await prisma.astrologerProfile.findUnique({ where: { userId } });
 
+    // P0 #AP-04/05 (2026-07-09): astrologer attribution. astrologer_consultations.
+    // astrologer_id is TEXT and has been written as several forms over time —
+    // the mock slug ('astro-001'), the AstrologerProfile.id (UUID), and (legacy)
+    // the User UUID. Filtering on a single value (the User UUID) missed every
+    // row stored under the profile id, so a real astrologer saw 0 consultations
+    // / 0 earnings / 0 upcoming forever. Match on BOTH the profile id and the
+    // User UUID so all attribution forms resolve. (Mock-slug demo rows still
+    // won't match — correct, they aren't a real astrologer's bookings.)
+    const astrologerIdValues = [profile?.id, userId].filter(
+      (v): v is string => typeof v === 'string' && v.length > 0,
+    );
+
     // Surface real bookings from raw-SQL astrologer_consultations table.
-    // Matches on astrologer_id = userId (real-astrologer flow) — rows from the
-    // in-memory astrology service use synthetic ids that won't match, which is
-    // intentional (they're demo data). Safe-default empty arrays on table miss.
+    // Safe-default empty arrays on table miss.
     let consultationsToday = 0;
     let earningsTodayInr = 0;
     let earningsMonthInr = 0;
     let totalEarningsInr = 0;
     let upcomingSessions: unknown[] = [];
     try {
-      const today = await prisma.$queryRawUnsafe<Array<{ count: string; sum: string | null }>>(
-        `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum
-         FROM astrologer_consultations
-         WHERE astrologer_id = $1 AND status = 'confirmed'
-           AND paid_at::date = CURRENT_DATE`,
-        userId,
-      );
-      consultationsToday = Number(today[0]?.count ?? 0);
-      earningsTodayInr = Number(today[0]?.sum ?? 0);
+      if (astrologerIdValues.length > 0) {
+        // Build an IN-list placeholder per value ($2, $3, ...) — $1 is the count
+        // for Postgres ANY-array isn't needed; use ANY($1::text[]) instead so we
+        // pass a single array param regardless of how many ids resolved.
+        const idArray = astrologerIdValues;
+        const today = await prisma.$queryRawUnsafe<Array<{ count: string; sum: string | null }>>(
+          `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum
+           FROM astrologer_consultations
+           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
+             AND paid_at::date = CURRENT_DATE`,
+          idArray,
+        );
+        consultationsToday = Number(today[0]?.count ?? 0);
+        earningsTodayInr = Number(today[0]?.sum ?? 0);
 
-      const month = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
-        `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
-         FROM astrologer_consultations
-         WHERE astrologer_id = $1 AND status = 'confirmed'
-           AND date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)`,
-        userId,
-      );
-      earningsMonthInr = Number(month[0]?.sum ?? 0);
+        const month = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
+          `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
+           FROM astrologer_consultations
+           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
+             AND date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)`,
+          idArray,
+        );
+        earningsMonthInr = Number(month[0]?.sum ?? 0);
 
-      const all = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
-        `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
-         FROM astrologer_consultations
-         WHERE astrologer_id = $1 AND status = 'confirmed'`,
-        userId,
-      );
-      totalEarningsInr = Number(all[0]?.sum ?? 0);
+        const all = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
+          `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
+           FROM astrologer_consultations
+           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'`,
+          idArray,
+        );
+        totalEarningsInr = Number(all[0]?.sum ?? 0);
 
-      upcomingSessions = await prisma.$queryRawUnsafe<unknown[]>(
-        `SELECT id, reference, user_id, minutes, amount_inr, scheduled_at, room_name, status, created_at
-         FROM astrologer_consultations
-         WHERE astrologer_id = $1 AND status = 'confirmed'
-           AND (scheduled_at IS NULL OR scheduled_at >= now() - interval '1 hour')
-         ORDER BY COALESCE(scheduled_at, created_at) ASC
-         LIMIT 20`,
-        userId,
-      );
+        upcomingSessions = await prisma.$queryRawUnsafe<unknown[]>(
+          `SELECT id, reference, user_id, minutes, amount_inr, scheduled_at, room_name, status, created_at
+           FROM astrologer_consultations
+           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
+             AND (scheduled_at IS NULL OR scheduled_at >= now() - interval '1 hour')
+           ORDER BY COALESCE(scheduled_at, created_at) ASC
+           LIMIT 20`,
+          idArray,
+        );
+      }
     } catch (err) {
       server.log.warn({ err }, 'astrologer_consultations query failed (table may not exist yet)');
     }

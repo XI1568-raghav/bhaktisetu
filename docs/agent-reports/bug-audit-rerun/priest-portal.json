@@ -1,0 +1,86 @@
+{
+  "domain": "priest-portal",
+  "auditedAt": "2026-07-09",
+  "scope": "apps/web/app/priest/**, apps/api/src/routes/priest.ts + bookings.ts, apps/api/src/services/{priest,booking,payment}.service.ts, apps/web/lib/pandit-api.ts, schema.prisma Priest",
+  "auditor": "main-loop-direct (agent retry died with proxy socket error after 13 tool-uses — fallback per doctrine)",
+  "findings": [
+    {
+      "id": "pp-01-booking-patch-no-guard-idor",
+      "title": "PATCH /api/v1/bookings/:id has no role/ownership guard and spreads arbitrary body.data into the booking row (IDOR + payout fraud)",
+      "severity": "critical",
+      "file": "apps/api/src/routes/bookings.ts:225-260 + apps/api/src/services/booking.service.ts:261-298 (updateBookingStatus)",
+      "evidence": "Route: `server.patch('/:id', { preHandler: [authenticateUser] }, ...)` — only authenticateUser, no requireRole, no ownership check. `const body = updateBookingStatusSchema.parse(request.body)` where schema allows any of 9 statuses + `data: z.record(z.any()).optional()`. updateBookingStatus: `const updateData: Prisma.PujaBookingUpdateInput = { status: newStatus, ...data }; await prisma.pujaBooking.update({ where: { id: bookingId }, data: updateData })`. Only VALID_TRANSITIONS validated. No check that caller owns the booking, is the assigned priest, or is admin.",
+      "impact": "Any logged-in user (even DEVOTEE) can transition ANY booking UUID through the full state machine and, because data is spread unchecked, POST {status:'completed', data:{priestId:'<ownId>', priestPayout:999999, videoProofUrl:'...', priceAmount:1}} to self-assign as priest, inflate own payout / cut platform commission, forge video proof, complete+deliver a booking they never performed, trigger devotee notifications + payouts. Breaks the entire booking integrity model.",
+      "repro": "1. Sign in as any user. 2. Get any bookingId (own /bookings list or a UUID). 3. curl -X PATCH $API/api/v1/bookings/$ID -H 'Authorization: Bearer $TOK' -H 'Content-Type: application/json' -d '{\"status\":\"completed\",\"data\":{\"priestId\":\"<yourPriestId>\",\"priestPayout\":999999,\"videoProofUrl\":\"https://x/y.mp4\"}}'. Expected: 403. Observed: 200, status=completed, priestId+payout overwritten.",
+      "suggestedFix": "Route-layer authorization (owner OR assigned priest OR admin) + strict per-status field whitelist. Replace `data: z.record(z.any())` with a discriminated union per status; block priestPayout/platformCommission/priceAmount/userId from ever being client-set (server-authoritative). Keep updateBookingStatus service generic (shared with guarded priest.service paths) but strip a financial/identity denylist there as defense-in-depth. Add tests: non-owner PATCH → 403; setting priestPayout → rejected; priest A on priest B's booking → 403.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "pp-02-priest-payout-zero-callers",
+      "title": "createPriestPayout has zero callers — priest Earnings dashboard + Payouts page permanently ₹0",
+      "severity": "high",
+      "file": "apps/api/src/services/payment.service.ts:882-957 (createPriestPayout) — no callers across apps/api/src (confirmed via grep)",
+      "evidence": "createPriestPayout exists but grep across apps/api/src shows no route/service invokes it. Booking completion (booking.service completePuja) writes the Commission row but never calls createPriestPayout, so no PriestPayout row is ever written. The priest Earnings page reads from PriestPayout/Commission aggregation → always 0.",
+      "impact": "Priests see ₹0 earnings + empty payouts page despite completing pujas. Demoralizing for the core provider base; no payout can ever be disbursed. High (broken core provider flow).",
+      "repro": "1. As a priest, complete a puja end-to-end. 2. GET /api/v1/priest/earnings → 0. 3. Visit /priest/earnings + /priest/payouts → empty. Expected: earnings reflect completed pujas; a PriestPayout row is created on completion. Observed: 0.",
+      "suggestedFix": "Wire createPriestPayout into the booking-completion path (completePuja in booking.service or the priest complete endpoint) so completing a puja writes a PriestPayout row with the priest's share (priceAmount - platformCommission). Add a test: completing a puja creates a PriestPayout with the correct amount.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "pp-03-bookings-nav-404",
+      "title": "Priest bookings 'Upload Video' button + every booking card link to non-existent /priest/bookings/:id dynamic route → 404 on primary nav",
+      "severity": "high",
+      "file": "apps/web/app/priest/bookings/page.tsx:219,294 (links) vs apps/web/app/priest/bookings/view/page.tsx (the only real detail route, query-param based)",
+      "evidence": "Bookings list links point to /priest/bookings/:id (dynamic segment), but no /priest/bookings/[id]/page.tsx exists — the only detail page is /priest/bookings/view (query-param ?id=). So every card click + the 'Upload Video' button 404.",
+      "impact": "Primary priest nav path (view a booking to upload video/complete) is broken — priests cannot reach the booking detail UI. High (broken core flow).",
+      "repro": "1. As a priest, go to /priest/bookings. 2. Click any booking card or 'Upload Video'. Expected: booking detail page. Observed: 404 (or the catch-all).",
+      "suggestedFix": "Either (a) add /priest/bookings/[id]/page.tsx that renders the detail, or (b) repoint the links to /priest/bookings/view?id=<id>. Prefer (a) for clean URLs. Add a test/route check that the link target resolves.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "pp-04-priest-verification-dead",
+      "title": "requireRole('priest') grants on PANDIT alone + getPriestId auto-creates active Priest — unverified/un-onboarded pandits get full priest powers instantly",
+      "severity": "critical",
+      "file": "apps/api/src/middlewares/auth.ts:336-363 + apps/api/src/routes/priest.ts:57-87 + apps/api/prisma/schema.prisma:301,305",
+      "evidence": "(see auth-gating ag-01 for full evidence) requireRole('priest') line 337 returns on PANDIT alone before the status check; getPriestId auto-creates a Priest without setting status → schema default status=active; verificationStatus defaults pending but is never checked. A self-signup pandit becomes an active priest on first /dashboard call.",
+      "impact": "Bypass of the entire priest verification/onboarding-approval model. Anyone can self-signup as pandit and act as an active (unverified) priest — accept pujas, complete bookings, (once wired) receive payouts. Critical for logged-in trust + logged-out devotee trust (devotees assume verified priests).",
+      "repro": "See ag-01. Signup role=pandit → GET /priest/dashboard → active Priest auto-created → full powers.",
+      "suggestedFix": "See ag-01: remove the PANDIT short-circuit in requireRole('priest'); always require priest.status=active && verificationStatus=verified; stop getPriestId auto-create (403 if no onboarded Priest); block self-role-assign at signup (DEVOTEE only, provider roles via admin-approved onboarding).",
+      "priorVerdict": "confirmed (elevated high→critical after schema-status-default evidence)"
+    },
+    {
+      "id": "pp-05-no-reject-release",
+      "title": "Priests cannot reject/decline/release an assigned or pending-accept booking — accepted pujas get stranded with no escape path",
+      "severity": "medium",
+      "file": "apps/api/src/routes/priest.ts + apps/api/src/services/priest.service.ts (no reject endpoint anywhere)",
+      "evidence": "No /priest/bookings/:id/reject or release endpoint exists in priest.ts. Booking state machine (VALID_TRANSITIONS) has no priest-initiated path back to pending/unassigned. Once a priest accepts (or is auto-assigned), they cannot decline — the only exit is admin intervention or the unauthorized PATCH.",
+      "impact": "A priest who accepts then has a conflict (emergency, double-book) cannot release the booking back to the pool. Booking gets stranded, devotee waits, support burden. Medium.",
+      "repro": "1. As a priest, accept a booking. 2. Try to decline/release it — no UI button + no API endpoint. Expected: a reject/release action returning the booking to pending/unassigned. Observed: impossible.",
+      "suggestedFix": "Add POST /priest/bookings/:id/reject (priest-scoped) that transitions the booking back to pending/unassigned (valid transition) and notifies the devotee + re-queue for assignment. Add to the booking detail UI.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "pp-06-profile-save-swallows-errors",
+      "title": "Priest profile edit save swallows all errors and non-OK responses — user gets no feedback when the save fails",
+      "severity": "medium",
+      "file": "apps/web/app/priest/profile/page.tsx:153-180 (handleSave)",
+      "evidence": "handleSave does not surface non-OK responses / thrown errors to the user — the catch path either logs silently or shows a generic state, so a failed PUT /priest/profile looks identical to a success to the priest.",
+      "impact": "Priest edits profile (specialties, pricing, bio) → believes it saved → it didn't → devotees see stale data, priest loses work. Medium UX/data-integrity.",
+      "repro": "1. As a priest, edit profile + cause a server error (e.g. disconnect network mid-save, or send invalid data the client allows). 2. Observe no error toast. Expected: clear failure feedback. Observed: silent.",
+      "suggestedFix": "In handleSave, check response.ok + try/catch; on failure show an error toast/banner with the server message; only show 'saved' on 2xx. Add a test.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "pp-07-placeholder-video-url",
+      "title": "Bookings list 'video' action posts a hardcoded placeholder URL instead of a real uploaded video",
+      "severity": "low",
+      "file": "apps/web/app/priest/bookings/page.tsx:140-177 (handleAction) + :155",
+      "evidence": "handleAction's 'video' branch posts a hardcoded placeholder URL (not an uploaded/signed videoProofUrl) to the booking update endpoint.",
+      "impact": "Video 'proof' submitted for completed pujas is fake — undermines the proof-of-completion model + devotee trust. Low (no direct revenue loss, but integrity degradation; overlaps with the missing upload UI from pp-03).",
+      "repro": "1. As a priest, click the 'video' action on a booking. 2. Inspect the PATCH body — videoProofUrl is a placeholder, not a real upload. Expected: an upload flow → real URL. Observed: placeholder.",
+      "suggestedFix": "Wire a real video upload flow (file input → upload to storage → signed URL → PATCH). Remove the placeholder. Once pp-03 (detail page) is fixed, host the upload UI there.",
+      "priorVerdict": "confirmed"
+    }
+  ],
+  "summary": "7 findings (2 critical, 2 high, 2 medium, 1 low). All 7 prior priest findings CONFIRMED by direct code read. pp-04 elevated to critical (verification-bypass). pp-01 is the same root bug as payments PBO overlap. NOTE: a full IDOR sweep of priest.ts (priest A reading priest B's bookings beyond the PATCH) + pandit-api.ts client error handling was partially covered by the successful agent run earlier (the first workflow's priest finder completed) — but the verify stage for those dropped. Recommend re-verifying priest-specific IDOR once proxy stabilizes."
+}

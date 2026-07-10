@@ -481,13 +481,11 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
   // Token-gated via CRON_TICK_TOKEN env. Returns 401 if missing/wrong.
   // Path mounts under same prefix as admin (/api/v1/admin) but bypasses auth.
   server.get('/cron/tick', async (request, reply) => {
-    // P0 hardening — accept token via header (preferred) OR query (legacy).
-    // Query-only leaks token into Render access logs + CDN caches; header
-    // path keeps it out of URL. Timing-safe compare to defeat byte-by-byte
+    // P0 #PUB-03 (2026-07-09): header-only. The legacy `?token=` query fallback
+    // leaked the cron secret into Render access logs + CDN caches. Header path
+    // keeps it out of the URL. Timing-safe compare to defeat byte-by-byte
     // probe. Still 503 if env unset (default-deny).
-    const headerToken = (request.headers['x-cron-token'] as string | undefined) ?? null;
-    const queryToken = (request.query as { token?: string })?.token ?? null;
-    const provided = headerToken ?? queryToken ?? '';
+    const provided = (request.headers['x-cron-token'] as string | undefined) ?? '';
     const expected = process.env.CRON_AUTH_TOKEN ?? process.env.CRON_TICK_TOKEN;
     if (!expected) {
       return reply.code(503).send({ error: 'CRON token not configured' });

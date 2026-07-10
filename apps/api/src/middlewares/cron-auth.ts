@@ -81,3 +81,28 @@ export async function requireCronQueryToken(
     return;
   }
 }
+
+/**
+ * requireCronSecretHeader — for endpoints gated by CRON_SECRET (e.g. the
+ * horoscope prewarm) via the `x-cron-secret` header. P0 #PUB-04 (2026-07-09):
+ * the old inline handler compared the secret with `!==` (timing oracle) AND
+ * skipped auth entirely when CRON_SECRET was unset (default-allow). This
+ * middleware uses constant-time compare + fail-loud default-deny, mirroring
+ * requireCronBearer/requireCronQueryToken.
+ */
+export async function requireCronSecretHeader(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const expected = process.env.CRON_SECRET ?? '';
+  if (!expected) {
+    console.error('[FATAL] CRON_SECRET env var unset — refusing cron request');
+    reply.code(401).send({ error: 'cron_secret_misconfigured' });
+    return;
+  }
+  const provided = (request.headers['x-cron-secret'] as string | undefined) ?? '';
+  if (!constantTimeEq(provided, expected)) {
+    reply.code(401).send({ error: 'cron_unauthorized' });
+    return;
+  }
+}

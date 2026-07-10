@@ -1,0 +1,211 @@
+{
+  "domain": "store-admin",
+  "auditedAt": "2026-07-08",
+  "filesReviewed": [
+    "apps/api/src/routes/store-orders.ts",
+    "apps/api/src/routes/store-admin.ts",
+    "apps/api/src/routes/store.ts",
+    "apps/api/src/services/payment.service.ts",
+    "apps/api/src/services/store.service.ts",
+    "apps/api/src/middlewares/auth.ts",
+    "apps/api/prisma/schema.prisma",
+    "apps/api/src/server.ts",
+    "apps/web/app/store-admin/layout.tsx",
+    "apps/web/app/store-admin/page.tsx",
+    "apps/web/app/store-admin/orders/page.tsx",
+    "apps/web/app/store/checkout/page.tsx",
+    "apps/web/components/AuthGuard.tsx",
+    "apps/web/components/CartContext.tsx",
+    "apps/web/lib/api-config.ts",
+    "apps/web/lib/store-admin-api.ts",
+    "apps/web/lib/medusa.ts",
+    "apps/web/lib/products.ts"
+  ],
+  "findings": [
+    {
+      "id": "S-01",
+      "title": "Store-admin order mutations gated on ADMIN role, not STORE_OWNER -> store-owner Orders page status dropdown + payment-confirm are dead (403)",
+      "severity": "HIGH",
+      "file": "apps/api/src/routes/store-orders.ts",
+      "evidence": "isAdmin(req) only checks ADMIN: `function isAdmin(req: any): boolean { return Array.isArray(req.currentUser?.roles) && req.currentUser.roles.includes('ADMIN'); }` (L66-68). PATCH /orders/:id/status hard-gates: `if (!isAdmin(request)) { return reply.code(403).send({ error: 'Admin role required' }); }` (L141-143). POST /orders/:id/payment-confirm same gate (L184-186). Contrast store-admin.ts which correctly gates products/dashboard on STORE_OWNER: `if (!roles.includes('STORE_OWNER')) { return reply.code(403).send({ error: 'STORE_OWNER role required' }); }` (store-admin.ts L72-74,88-90,119-121,151-153,194-195). The store-admin layout wraps in AuthGuard allowedRoles={['store_owner']} (layout.tsx L155), so a logged-in store owner reaches the page but every status PATCH returns 403.",
+      "impact": "Store owners can manage their product catalog (STORE_OWNER-gated) but cannot fulfill orders: the Orders page status dropdown, reverse-transition confirm, and note prompt all POST to PATCH /store/orders/:id/status which 403s. The page shows an error toast 'Admin role required' on every action. Order fulfillment is impossible for the intended role.",
+      "repro": "1) Log in as a user with role STORE_OWNER (not ADMIN). 2) Open /store-admin/orders. 3) Pick any order, change the 'Change status' dropdown. 4) Confirm in the modal. 5) Request: PATCH https://api.darshya.online/api/v1/store/orders/{id}/status -> 403 { error: 'Admin role required' }. Toast shows the error; order status never changes.",
+      "suggestedFix": "Add a STORE_OWNER authorization path alongside admin. Replace the isAdmin-only gate with a helper that (a) allows ADMIN, or (b) allows STORE_OWNER only for orders whose items[].productId belongs to the caller's StoreProfile (reuse attributeOrderToStore + resolveStoreProfileId from store-admin.ts). Bare `isAdmin` must not be the sole gate on store-order mutations.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-02",
+      "title": "Store-owner Orders list returns the owner's personal purchases (userId=buyer filter), not their store's sales; StoreOrder has no storeProfileId FK so no store-scoped query exists",
+      "severity": "HIGH",
+      "file": "apps/api/src/routes/store-orders.ts",
+      "evidence": "GET /orders: `const userId = request.currentUser!.id; const where = isAdmin(request) ? {} : { userId }; const orders = await prisma.storeOrder.findMany({ where, ... })` (L110-117). StoreOrder schema has only buyer link, no store FK: `model StoreOrder { ... userId String @map(\"user_id\") @db.Uuid ... user User @relation(fields: [userId], references: [id]) ... }` (schema.prisma L1292-1315) — no storeProfileId. The store-admin dashboard route DOES attribute correctly via item productId matching: `const { revenue } = attributeOrderToStore(o.items, productIds)` (store-admin.ts L238) using `productIds = new Set(products.map(p => p.id))` for the owner's StoreProfile, but the orders LIST endpoint does not use this attribution.",
+      "impact": "A store owner opening /store-admin/orders sees orders where THEY are the customer (their own purchases from any store), not orders of products they sell. If they never bought anything, the list is empty even if their store has real sales. Admins get ALL orders unscoped (cross-store leak). The store owner cannot see or fulfill actual sales.",
+      "repro": "1) As store_owner A who once bought an item from store B, open /store-admin/orders. 2) GET /api/v1/store/orders filters where userId=A -> returns A's purchase(s) as customer. 3) A real sale of A's product to a third party does NOT appear (its userId is the buyer's, not A's).",
+      "suggestedFix": "For STORE_OWNER callers, resolve their StoreProfile, load their productIds, and return only StoreOrders where at least one items[].productId is in that set (mirror the dashboard's attributeOrderToStore logic). Add a storeProfileId FK to StoreOrder for O(1) attribution. Keep ADMIN seeing all, but scope revenue/attribution server-side.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-03",
+      "title": "Orders list never renders: API returns {data:[...]} but both orders page and dashboard read json.orders -> empty list; and fields are misnamed (totalAmountInr string vs totalAmount, no customerName, items have no name)",
+      "severity": "HIGH",
+      "file": "apps/web/app/store-admin/orders/page.tsx",
+      "evidence": "API shape: `return reply.send({ data: orders.map(serializeOrder) });` (store-orders.ts L118). Orders page parse ignores .data: `const list: any[] = Array.isArray(json) ? json : Array.isArray(json?.orders) ? json.orders : [];` (orders/page.tsx L213). Dashboard same bug: `const orders: StoreOrderApi[] = Array.isArray(ordersJson) ? ordersJson : Array.isArray(ordersJson?.orders) ? ordersJson.orders : [];` (store-admin/page.tsx L228-231). serializeOrder emits totalAmountInr as string: `totalAmountInr: order.totalAmountInr?.toString?.() ?? order.totalAmountInr` (store-orders.ts L73). Items stored without name: schema comment `items Json // items: [{ productId, qty, priceAtPurchase }]` (schema.prisma L1296-1297) and checkout sends `{ productId: it.product.id, qty: it.quantity, priceAtPurchase: it.product.price }` (checkout/page.tsx L175-179) — no name. normalizeOrder reads missing fields: `customerName: raw.customerName || raw.customer || 'Customer'` (orders/page.tsx L147), `totalAmount: Number(raw.totalAmount ?? raw.total) || 0` (L151) — but API key is totalAmountInr, so this is 0; items name `it.name || it.productName || 'Item'` (L132) -> 'Item'.",
+      "impact": "Even before the role/IDOR issues, the orders page and dashboard show ZERO orders because the response envelope {data:...} is never read (the code looks for {orders:...} or a bare array). If the envelope were fixed, every order would still render as total ₹0, customer 'Customer', item 'Item x1' because field names and the items[].name denormalization are missing. Dashboard revenue/aggregates also read Number(o.totalAmount) -> 0 (store-admin/page.tsx L120,146).",
+      "repro": "1) As any authed user, GET /api/v1/store/orders -> 200 { data: [ {...totalAmountInr:'499.00', items:[{productId,qty,priceAtPurchase}], shippingAddress:{fullName,...}, userId, ...} ] }. 2) Orders page sets list=[] (no json.orders, not array). 3) UI: 'No orders received yet.' Even if patched to read json.data, each row shows ₹0 / 'Customer' / 'Item x1'.",
+      "suggestedFix": "Read json.data in both pages. Have serializeOrder emit consumer-facing aliases: totalAmount (number), customerName (from shippingAddress.fullName or joined user.fullName), items:[{name, qty, price}] by joining StoreProduct.name at serialize time (or store name in items at checkout). Update normalizeOrder/aggregateFromOrders to read totalAmountInr as the canonical field.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-04",
+      "title": "Store-order payment confirmation writes NO Commission row and there is no store-owner Payout model -> store owners are never paid for sales",
+      "severity": "MEDIUM",
+      "file": "apps/api/src/services/payment.service.ts",
+      "evidence": "verifyStoreOrderPayment only captures Payment + flips status, no commission: the transaction body is `await tx.payment.update({ where:{id:payment.id}, data:{ status:'captured', gatewayPaymentId: razorpayPaymentId } }); if (shouldConfirm) { ... await tx.storeOrder.update({ where:{id:storeOrder.id}, data:{ status:'CONFIRMED', statusHistory:[...] } }); }` (L610-633) — no prisma.commission.create. Commission model is booking-only: `model Commission { bookingId String @map(\"booking_id\") ... }` (schema.prisma L920-933) with no storeOrderId. The only commission writer is puja-specific: `async function writePujaCommissionOnConfirm(bookingId)` (L188) called only for bookings (L455). No store-owner payout model exists — only `model PriestPayout` (schema.prisma L501-517) and `payouts PriestPayout[]` on User (L312). StoreProfile has a commission rate that is never used: `commission Decimal @default(0.20)` (schema.prisma L789).",
+      "impact": "Every captured store-order payment accrues to the platform with no ledger entry for the store owner's share and no payout mechanism. Store owners see sales in the dashboard (via attributeOrderToStore revenue) but are never reconciled or paid. The /store-admin/revenue API and any payout flow have nothing to draw on for store owners.",
+      "repro": "1) Complete a real Razorpay checkout for a store product. 2) verifyStoreOrderPayment runs, Payment -> captured, StoreOrder -> CONFIRMED. 3) Query commissions table: no row for this order (and no column to hold one). 4) Query priest_payouts / any payout table: none for store owners. Owner's 80% share is untracked.",
+      "suggestedFix": "Add storeOrderId to Commission (or a StoreOrderCommission model). In verifyStoreOrderPayment, after capture, write a Commission row: providerId=storeProfile.userId, amount=totalAmountInr*(1-storeProfile.commission), percentage=storeProfile.commission, status=PENDING. Add a StoreOwnerPayout model + settlement flow mirroring PriestPayout, flipping Commission PAID on payout.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-05",
+      "title": "Demo/staging store-order verify skips Razorpay signature check -> any order_demo_* + pay_demo_* + signature 'demo' flips an order to CONFIRMED without payment",
+      "severity": "MEDIUM",
+      "file": "apps/api/src/services/payment.service.ts",
+      "evidence": "verifyStoreOrderPayment skips HMAC when isDemoPayment: `if (!isDemoPayment) { const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET ?? '').update(`${razorpayOrderId}|${razorpayPaymentId}`).digest('hex'); ... if (a.length !== b.length || !crypto.timingSafeEqual(a,b)) { throw new Error('Payment verification failed: invalid signature.'); } }` (L576-586). isDemoPayment is true when key id missing/demo: `const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';` (L231). Checkout exploits this: `const isDemoOrder = rzpOrder.orderId.startsWith('order_demo_'); if (isDemoOrder) { await verifyStoreOrderPayment({ storeOrderId, razorpayOrderId: rzpOrder.orderId, razorpayPaymentId: `pay_demo_${Date.now()}`, razorpaySignature: 'demo', authHeaders }); ... }` (checkout/page.tsx L234-246). The verify then only checks `if (storeOrder.userId !== userId) throw` (L602) — i.e. the caller must own the order, but no payment occurred.",
+      "impact": "In any environment where ALLOW_DEMO_PAYMENTS=true (staging, investor demos, or a misconfigured prod), a buyer can POST /payments/store-orders/{id}/verify with their own PENDING order id, razorpayOrderId=order_demo_xxx, razorpayPaymentId=pay_demo_xxx, razorpaySignature='demo' and the order flips to CONFIRMED + invoice fires with no money captured. Free goods. The production boot guard (L238-247) throws if isDemoPayment in prod without ALLOW_DEMO_PAYMENTS, so prod-with-real-keys is safe; the exposure is the demo/staging surface and any prod flip of ALLOW_DEMO_PAYMENTS.",
+      "repro": "Precondition: ALLOW_DEMO_PAYMENTS=true (or no real Razorpay keys). 1) Create a StoreOrder via POST /store/orders (PENDING). 2) POST /payments/store-orders/{id}/razorpay -> returns orderId 'order_demo_...'. 3) POST /payments/store-orders/{id}/verify with { razorpayOrderId: that id, razorpayPaymentId: 'pay_demo_1', razorpaySignature: 'demo' }. 4) 200 verified, StoreOrder -> CONFIRMED, invoice emailed. No Razorpay payment exists.",
+      "suggestedFix": "Even in demo mode, do not skip signature verification for store orders; instead issue a demo-side HMAC with a server secret and verify it, or gate demo-confirm to a clearly-marked demo Payment.status (e.g. 'demo_captured') that never counts toward real revenue/payouts. At minimum, refuse to confirm if NODE_ENV=production regardless of ALLOW_DEMO_PAYMENTS for store orders (mirror the payment-confirm prod gate at store-orders.ts L187-194).",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-06",
+      "title": "Dashboard Total Products / active / out-of-stock computed from the public mock /store/products catalog, not the owner's real store_products table",
+      "severity": "MEDIUM",
+      "file": "apps/web/app/store-admin/page.tsx",
+      "evidence": "Dashboard fetches the public catalog: `const pRes = await fetch(`${API_BASE_URL}/store/products`, { headers }); ... const list = ... Array.isArray(pJson?.products) ? pJson.products : []; productsSummary = { total: list.length, active: list.filter((p) => p.isActive !== false).length, outOfStock: list.filter((p) => (p.stock ?? 0) <= 0).length };` (store-admin/page.tsx L242-261). /store/products is the curated mock: `server.get('/products', ... ) -> const result = storeService.getProducts(...)` (store.ts L9-19) backed by the hand-curated seed (schema comment at L800-802: 'storeService.getProducts() catalog in store.service.ts — that one is hand-curated'). The owner's real catalog is at /store-admin/products (store-admin-api.ts L80-87 -> {products}). The /store-admin/dashboard API route already computes lowStock correctly from store_products: `const products = await prisma.storeProduct.findMany({ where: { storeProfileId } ... }); const lowStock = products.filter((p) => p.stock <= 5).length;` (store-admin.ts L207-211), but the web dashboard ignores /store-admin/dashboard for the products panel.",
+      "impacting": "Total Products/Active/OOS shown to a store owner reflect the platform seed catalog (fixed N items, all in stock) rather than their own inventory. A store owner with 3 products all out of stock still sees the seed's counts. Decisions on restocking are made against wrong numbers.",
+      "repro": "1) As store_owner, add 2 products in /store-admin/products, mark 1 out of stock (stock=0). 2) Open /store-admin dashboard. 3) GET /api/v1/store/products returns the mock seed (e.g. 8+ items). 4) Total Products shows seed count, OOS shows seed out-of-stock count — not 2 total / 1 OOS.",
+      "suggestedFix": "Drive the products panel from /store-admin/products (the owner's store_products) or extend /store-admin/dashboard to return { total, active, outOfStock } computed from prisma.storeProduct.findMany({ where:{ storeProfileId } }) (already done for lowStock) and consume that. Stop reading /store/products for owner metrics.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-07",
+      "title": "Checkout hard-gated behind login -> logged-out cart users bounced to /auth/login; AuthGuard uses window.location.href so SPA state/cart context is lost (cart survives only via localStorage)",
+      "severity": "LOW",
+      "file": "apps/web/app/store/checkout/page.tsx",
+      "evidence": "CheckoutPage wraps in AuthGuard with no allowedRoles: `export default function CheckoutPage() { return ( <AuthGuard> <CheckoutContent /> </AuthGuard> ); }` (checkout/page.tsx L540-545). AuthGuard hard-redirects unauthenticated users: `if (!isAuthenticated) { const currentPath = window.location.pathname; window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`; return; }` (AuthGuard.tsx L35-39). This is a full page navigation (window.location.href), not next/router, so the React tree is torn down.",
+      "impact": "A guest who adds items to the cart (CartContext persists to localStorage, CartContext.tsx L66-78) and clicks Checkout is bounced to login. The cart contents survive in localStorage so they are not fully lost on return, but the user loses their place in the flow and any in-memory UI state, and there is no guest-checkout path. The redirect URL is preserved (?redirect=/store/checkout) so they return, but the friction is real and there is no indication before reaching checkout that login is required.",
+      "repro": "1) Incognito: browse /store, add items (cart saved to localStorage). 2) Click Checkout -> /store/checkout. 3) AuthGuard sees !isAuthenticated -> window.location.href = /auth/login?redirect=%2Fstore%2Fcheckout. 4) Full reload; user must login then is sent back. No guest checkout.",
+      "suggestedFix": "Either (a) allow guest checkout: defer StoreOrder.userId by creating orders against a guest identifier and requiring auth only at payment, or (b) intercept earlier with a 'Login to checkout' CTA on the cart page, and use next/navigation router.push instead of window.location.href to preserve SPA state. Cart already persists to localStorage so it survives either way.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-08",
+      "title": "Checkout creates the StoreOrder (PENDING) before payment with no idempotency key -> double-submit and refresh produce duplicate/orphan PENDING orders; no paymentId linkage until razorpay step",
+      "severity": "LOW",
+      "file": "apps/web/app/store/checkout/page.tsx",
+      "evidence": "handlePlaceOrder POSTs the order first: `const res = await fetch(`${API_BASE_URL}/store/orders`, { method:'POST', headers: authHeaders, credentials:'include', body: JSON.stringify({ items: items.map(...), totalAmountInr: total, shippingAddress: {...} }) });` (checkout/page.tsx L170-191). The POST handler creates a fresh row every call with a new random orderNumber and no dedup: `const order = await prisma.storeOrder.create({ data: { orderNumber: nextOrderNumber(), userId, items: parsed.data.items, totalAmountInr: parsed.data.totalAmountInr, shippingAddress: parsed.data.shippingAddress, paymentId: parsed.data.paymentId ?? null, statusHistory: initialHistory } });` (store-orders.ts L95-105) — nextOrderNumber is `ORD-${ymd}-${crypto.randomBytes(2)}` (L59-64), no idempotency key check. The only double-click guard is client-side `setPlacing(true)` disabling the button (checkout/page.tsx L98, L510) — not server-enforced. Razorpay modal ondismiss rejects with 'Payment cancelled' (L267) but the StoreOrder row already exists as PENDING.",
+      "impact": "If the user double-clicks before the button disables, network retry, or refreshes mid-flow, multiple StoreOrder rows are created for one cart — only one gets a Payment linked, the rest stay orphan PENDING forever (no cleanup, no expiry). A user who opens Razorpay and dismisses it leaves a PENDING order with no payment. These pollute the orders list and any 'pending orders' metric.",
+      "repro": "1) Add items, go to checkout, open devtools network throttle to Slow 3G. 2) Click 'Place Order' twice rapidly. 3) Two POST /store/orders -> two StoreOrder rows (two ORD-... numbers), two subsequent /razorpay calls. 4) Dismiss the Razorpay modal on one -> its order stays PENDING with paymentId null forever.",
+      "suggestedFix": "Accept an idempotency key (client-generated UUID in the POST body, persisted on StoreOrder via a unique column) and return the existing row on key collision. Or create the StoreOrder only inside the Razorpay order creation step / on verify success. Add a TTL sweeper or a 'cancel pending order' on Razorpay dismiss that DELETEs/VOIDs the PENDING row when paymentId is null.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-09",
+      "title": "Sidebar links to /store-admin/revenue but no such page exists -> 404 (the /store-admin/revenue API route exists, but the web page does not)",
+      "severity": "LOW",
+      "file": "apps/web/app/store-admin/layout.tsx",
+      "evidence": "Sidebar entry: `{ href: '/store-admin/revenue', label: 'Revenue', icon: IndianRupee }` (layout.tsx L29). The store-admin directory has no revenue page: present entries are layout.tsx, messages, orders, page.tsx, products, reviews (no revenue/ directory). The API route exists: `server.get('/revenue', { preHandler: [authenticateUser] }, ...)` with `if (!roles.includes('STORE_OWNER')) ...` (store-admin.ts L316-319), but there is no apps/web/app/store-admin/revenue/page.tsx to render it.",
+      "impact": "Clicking 'Revenue' in the store-admin sidebar navigates to /store-admin/revenue which is not a route -> Next.js 404. Store owners cannot reach a dedicated revenue view even though the backend supports it. Revenue data is only visible as summary tiles on the dashboard.",
+      "repro": "1) As store_owner, open /store-admin. 2) Click 'Revenue' in the sidebar. 3) Browser navigates to /store-admin/revenue -> 404 (This page could not be found).",
+      "suggestedFix": "Either create apps/web/app/store-admin/revenue/page.tsx that consumes GET /store-admin/revenue (store-admin-api already has the pattern), or remove the sidebar link and surface revenue only on the dashboard. Prefer the former since the API and sidebar already exist.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-10",
+      "title": "Reverting REFUNDED/CANCELLED -> DELIVERED appends statusHistory but never reverses the Razorpay refund or Payment status -> ledger desync",
+      "severity": "LOW",
+      "file": "apps/api/src/routes/store-orders.ts",
+      "evidence": "PATCH /orders/:id/status only flips status + appends history, no refund reversal: `const updated = await prisma.storeOrder.update({ where: { id: order.id }, data: { status: body.data.status, trackingNumber: body.data.trackingNumber ?? order.trackingNumber, statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[] } });` (store-orders.ts L163-170). No call to reverse a refund, no Payment.status update. The only refund path is puja-booking-specific: `async processRefund(bookingId, adminId) { const booking = await prisma.pujaBooking.findUnique(...) ... razorpay.payments.refund(...) ... await prisma.payment.update({ data: { refundAmount, status: 'refunded' } }) ... }` (payment.service.ts L808-876) — there is no store-order refund or refund-reversal. The route comment explicitly allows reverse transitions: 'Reverse transitions (e.g. SHIPPED -> PROCESSING) are intentionally allowed — the statusHistory column is the authoritative audit trail.' (store-orders.ts L134-136).",
+      "impact": "If an order was marked REFUNDED (Payment.status='refunded', Razorpay refund issued, money returned) and an admin reverts it to DELIVERED to resume fulfillment, the statusHistory shows DELIVERED but the customer was already refunded and Payment stays 'refunded'. The store ships goods for free; accounting (Payment/Commission) says refunded while StoreOrder says delivered. Same for CANCELLED->DELIVERED if a refund had been issued. No guard prevents reverting a terminal state.",
+      "repro": "1) Order O: Payment captured, StoreOrder CONFIRMED. 2) Admin sets REFUNDED (statusHistory appended; assume a refund was issued out-of-band or via a future store refund path). 3) Admin reverts to DELIVERED via the dropdown (reverse-transition modal, types order number). 4) PATCH succeeds, StoreOrder=DELIVERED, statusHistory has the entry. 5) Payment is still 'refunded'; customer kept the money; goods now ship.",
+      "suggestedFix": "Block reverse transitions out of REFUNDED (and out of any state where Payment.status==='refunded') unless a refund-reversal is performed first. Add a store-order refund/reversal service that calls razorpay.payments.refund and updates Payment.status, and only allow REFUNDED->DELIVERED after a successful reversal (or require an explicit 'reverse refund' admin action). At minimum, refuse PATCH to DELIVERED/SHIPPED when the linked Payment.status is 'refunded'.",
+      "priorVerdict": "confirmed"
+    },
+    {
+      "id": "S-11",
+      "title": "[NEW] StoreOrder has no storeProfileId foreign key -> order-to-store attribution is only possible by intersecting items[].productId with the owner's product set; multi-store products and deleted products break attribution",
+      "severity": "MEDIUM",
+      "file": "apps/api/prisma/schema.prisma",
+      "evidence": "model StoreOrder { id, orderNumber, userId (buyer), items Json, totalAmountInr, status, shippingAddress, paymentId?, trackingNumber?, statusHistory, createdAt, updatedAt, user, payment } (schema.prisma L1292-1315) — no storeProfileId / storeProductId relation. The dashboard attributes via runtime intersection: `const productIds = new Set(products.map((p) => p.id)); ... const { revenue } = attributeOrderToStore(o.items, productIds)` (store-admin.ts L207-238) where attributeOrderToStore skips any line whose productId is not in the set (store-admin.ts L177-187).",
+      "impact": "If a store owner deletes a product after it was sold, its productId leaves the owner's set and the order stops attributing to that store (revenue silently drops to 0 for that order in dashboard/revenue). If the same productId were ever reused across stores (it won't be, UUIDs, but the model doesn't enforce uniqueness to a store), attribution is ambiguous. There is no way to query 'all orders for store X' without loading all orders and filtering in JS. This is the structural root of S-02 and S-04 (no commission attribution).",
+      "repro": "1) Store owner sells product P (StoreOrder O created with items:[{productId:P,...}]). 2) Owner deletes P from catalog. 3) GET /store-admin/dashboard: productIds no longer contains P -> attributeOrderToStore(O.items, productIds) returns revenue 0 -> O excluded from monthSales/recentOrders. 4) The sale vanishes from the owner's dashboard.",
+      "suggestedFix": "Add storeProfileId String @db.Uuid to StoreOrder with a relation to StoreProfile, set at checkout by looking up the product's store (reject mixed-store carts or split into multiple StoreOrders). Then attribute by FK directly. Backfill existing rows from items[].productId via StoreProduct history.",
+      "priorVerdict": "new"
+    },
+    {
+      "id": "S-12",
+      "title": "[NEW] POST /store/orders trusts client-sent totalAmountInr and priceAtPurchase with no server recompute -> underpayment / price manipulation",
+      "severity": "MEDIUM",
+      "file": "apps/api/src/routes/store-orders.ts",
+      "evidence": "createOrderSchema accepts arbitrary total: `const createOrderSchema = z.object({ items: z.array(orderItemSchema).min(1), totalAmountInr: z.number().positive(), shippingAddress: shippingAddressSchema, paymentId: z.string().uuid().optional() });` (store-orders.ts L36-41) and orderItemSchema takes client price: `const orderItemSchema = z.object({ productId: z.string().min(1), qty: z.number().int().positive(), priceAtPurchase: z.number().nonnegative() });` (L19-23). The handler persists them verbatim: `items: parsed.data.items, totalAmountInr: parsed.data.totalAmountInr` (L99-100). Checkout sends client values: `items: items.map((it) => ({ productId: it.product.id, qty: it.quantity, priceAtPurchase: it.product.price })), totalAmountInr: total` (checkout/page.tsx L175-180). No server-side lookup of StoreProduct.price, no sum check, no stock check.",
+      "impact": "A tampered client can POST /store/orders with totalAmountInr=1 and priceAtPurchase=0.01 for an item that actually costs 499. createStoreOrderRazorpay then creates a Razorpay order for 100 paise. On payment capture the order is CONFIRMED for ₹1 while goods are worth ₹499. Also no stock decrement/validation -> overselling. Because attribution/commission (S-04) reads these same client values, the owner's revenue is computed from attacker-controlled numbers.",
+      "repro": "1) Authed user intercepts the checkout POST (or calls the API directly) with body { items:[{productId:<real>, qty:1, priceAtPurchase:0.01}], totalAmountInr:1, shippingAddress:{...} }. 2) 201, StoreOrder totalAmountInr=1. 3) POST /payments/store-orders/{id}/razorpay -> Razorpay order for 100 paise. 4) Pay ₹1, verify -> CONFIRMED. Goods worth ₹499 secured for ₹1.",
+      "suggestedFix": "Server-side: look up each StoreProduct by id, verify isActive and stock>=qty, recompute line price from StoreProduct.price (ignore client priceAtPurchase except as an audit snapshot), recompute totalAmountInr = sum + delivery + tax, and decrement stock in the same transaction. Reject if client total != server total (within tolerance).",
+      "priorVerdict": "new"
+    },
+    {
+      "id": "S-13",
+      "title": "[NEW] No stock validation or decrement on store order -> overselling; stock only changes via manual admin edits",
+      "severity": "MEDIUM",
+      "file": "apps/api/src/routes/store-orders.ts",
+      "evidence": "POST /orders creates the order with no stock interaction (store-orders.ts L95-105 — no prisma.storeProduct lookup or update). verifyStoreOrderPayment captures and confirms with no stock decrement (payment.service.ts L610-633). The StoreProduct model has stock: `stock Int @default(0)` (schema.prisma L811) but nothing mutates it on sale. The dashboard reads lowStock from store_products (store-admin.ts L207-211) but sales never reduce it.",
+      "impact": "A product with stock=1 can be ordered 100 times; all 100 orders confirm. Store owners see inventory that never moves, leading to unfulfillable orders and bad OOS metrics (S-06 compound). The 'outOfStock' dashboard signal is only meaningful via manual edits.",
+      "repro": "1) Store owner creates product with stock=1. 2) Two customers checkout that product concurrently. 3) Both POST /store/orders succeed, both payments verify, both CONFIRMED. 4) store_products.stock still =1.",
+      "suggestedFix": "In the order-creation transaction (or at verify), lock the StoreProduct row (SELECT ... FOR UPDATE via prisma.$queryRaw or a conditional update) and decrement stock by qty only if stock>=qty; otherwise 409 Out of stock. Set a restock threshold for lowStock alerts.",
+      "priorVerdict": "new"
+    },
+    {
+      "id": "S-14",
+      "title": "[NEW] IDOR: GET /store/orders/:id and PATCH /store/orders/:id/status authorization uses buyer userId / admin only — a store owner cannot manage a sale of their own product, and any BUYER can read their own order (fine), but a store owner has NO path to act on orders containing their products",
+      "severity": "MEDIUM",
+      "file": "apps/api/src/routes/store-orders.ts",
+      "evidence": "GET /orders/:id: `if (order.userId !== userId && !isAdmin(request)) { return reply.code(403).send({ error: 'Not authorized to view this order' }); }` (store-orders.ts L128-130). PATCH /orders/:id/status: `if (!isAdmin(request)) { return reply.code(403).send({ error: 'Admin role required' }); }` (L141-143). There is no branch that grants a STORE_OWNER access to an order because one of its items belongs to the owner's store. Combined with S-02 (list returns buyer's own orders), a store owner literally cannot reach their store's sales to view or fulfill them — only the buyer or a platform ADMIN can.",
+      "impact": "The store-owner portal is structurally incapable of order management: the owner can neither list (S-02) nor view nor status-change an order of their own product. Only platform admins can fulfill store orders, which defeats the self-service store model. This is the IDOR-in-reverse: not a leak to another store, but a total denial of access to the rightful owner.",
+      "repro": "1) Store_owner A's product is bought by buyer B (StoreOrder O, userId=B). 2) A calls GET /store/orders/O.id -> 403 (O.userId=B != A, A is not ADMIN). 3) A calls PATCH /store/orders/O.id/status -> 403 'Admin role required'. 4) A cannot see or fulfill the sale of their own product.",
+      "suggestedFix": "Introduce an isStoreOrderOwner(request, order) helper: resolve caller's StoreProfile, load productIds, return true if any of order.items[].productId is in the set. Grant GET and PATCH to ADMIN OR isStoreOrderOwner. This pairs with S-11 (add storeProfileId for O(1) checks).",
+      "priorVerdict": "new"
+    },
+    {
+      "id": "S-15",
+      "title": "[NEW] /store-admin/dashboard orders query is not store-scoped — it loads ALL orders in CONFIRMED..DELIVERED this month across every store, then filters by productIds in JS (perf + leaky aggregation as order count grows)",
+      "severity": "LOW",
+      "file": "apps/api/src/routes/store-admin.ts",
+      "evidence": "Dashboard fetches all paid orders globally then filters in memory: `const orders = await prisma.storeOrder.findMany({ where: { status: { in: ['CONFIRMED','PROCESSING','SHIPPED','DELIVERED'] }, createdAt: { gte: monthStart } }, orderBy: { createdAt: 'desc' }, include: { user: { select: { fullName: true } } } }); for (const o of orders) { const { revenue } = attributeOrderToStore(o.items, productIds); if (revenue === 0) continue; ... }` (store-admin.ts L220-240). The where clause has no storeProfileId (none exists — S-11).",
+      "impact": "Every store owner's dashboard request loads every paid order on the platform for the month into memory and loops them. At scale this is O(orders) per request per owner and pulls other stores' order data (user.fullName, items, amounts) into the owner's request process. Today volume is low so it's a latent perf/privacy issue, but it scales badly and exposes cross-store order metadata to the worker handling the request.",
+      "repro": "1) Platform has 10k paid orders this month across 50 stores. 2) Any one store owner opens dashboard -> 10k rows loaded + JS loop, ~10k*items attribution work, every row's user.fullName + items in memory.",
+      "suggestedFix": "After adding storeProfileId (S-11), query `where: { storeProfileId, status: { in: [...] }, createdAt: { gte: monthStart } }` so the DB returns only this store's orders. Until then, at least project only items + totals and avoid include user.fullName unless the order attributes to the store.",
+      "priorVerdict": "new"
+    },
+    {
+      "id": "S-16",
+      "title": "[NEW] Razorpay signature verification uses a raw env read with empty-string fallback secret — if RAZORPAY_KEY_SECRET is unset but KEY_ID is set, isDemoPayment is false and HMAC uses '' as the secret, accepting attacker-forged signatures",
+      "severity": "MEDIUM",
+      "file": "apps/api/src/services/payment.service.ts",
+      "evidence": "isDemoPayment only checks key id: `const razorpayKeyId = process.env.RAZORPAY_KEY_ID || ''; const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || ''; const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';` (L229-231). The verify HMAC uses the empty fallback as the secret if only the secret is missing: `const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET ?? '').update(`${razorpayOrderId}|${razorpayPaymentId}`).digest('hex');` (L577-580). The production boot guard only fires when isDemoPayment is true (L238-247) — i.e. only when KEY_ID is missing/demo, not when KEY_ID is present but SECRET is empty.",
+      "impact": "Misconfiguration where RAZORPAY_KEY_ID is set to a real key but RAZORPAY_KEY_SECRET is unset/empty (e.g. secret rotated and not redeployed, or a typo) leaves isDemoPayment=false, so the signature check runs but with HMAC key ''. An attacker who knows a razorpayOrderId (guessable/leaked in the checkout response) can compute HMAC-SHA256 with key '' over orderId|paymentId and forge a valid signature, flipping any PENDING order they own to CONFIRMED without a real Razorpay payment. The boot guard does not catch this case.",
+      "repro": "Precondition: RAZORPAY_KEY_ID set to a real id, RAZORPAY_KEY_SECRET unset. 1) Server boots (no throw, isDemoPayment=false). 2) Attacker creates a StoreOrder, gets a real razorpayOrderId via /razorpay. 3) Attacker computes HMAC-SHA256(key='', msg=`${orderId}|${fakePaymentId}`) and POSTs /verify with that signature. 4) timingSafeEqual passes (expected computed with '' too), order CONFIRMED, no real payment.",
+      "suggestedFix": "Compute isDemoPayment from EITHER key missing: `const isDemoPayment = !razorpayKeyId || !razorpayKeySecret || razorpayKeyId === 'rzp_test_demo';`. Add a boot guard that throws in production if razorpayKeySecret is empty when razorpayKeyId is set. In verify, if the secret is empty and not demo, throw 'Payment gateway misconfigured' rather than HMAC with ''.",
+      "priorVerdict": "new"
+    }
+  ],
+  "summary": {
+    "priorFindings": 10,
+    "confirmed": 10,
+    "refuted": 0,
+    "partial": 0,
+    "newFindings": 6,
+    "total": 16,
+    "topFinding": "S-01/S-02/S-14 (one root cause): store-order routes gate mutations on the ADMIN role while the rest of the store portal gates on STORE_OWNER, and StoreOrder carries no storeProfileId FK — so a logged-in store owner can manage products but is 403-blocked from viewing, listing, or fulfilling their own store's sales (the orders list instead returns the owner's personal purchases). The orders page is additionally broken at the transport layer (reads json.orders but the API returns {data:[...]}) so it renders zero orders even for an admin."
+  }
+}

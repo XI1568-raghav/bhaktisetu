@@ -210,7 +210,15 @@ export default function StoreAdminOrdersPage() {
      });
      if (!res.ok) throw new Error(`Failed to fetch orders (${res.status})`);
      const json = await res.json();
-     const list: any[] = Array.isArray(json) ? json : Array.isArray(json?.orders) ? json.orders : [];
+     // S-03 (2026-07-09): the store-orders API returns { data: [...] }, not
+     // { orders: [...] }. The old parse read json.orders -> always empty.
+     const list: any[] = Array.isArray(json)
+       ? json
+       : Array.isArray(json?.data)
+         ? json.data
+         : Array.isArray(json?.orders)
+           ? json.orders
+           : [];
      setOrders(list.map(normalizeOrder));
    } catch (err) {
      setError(err instanceof Error ? err.message : 'Failed to load orders');
