@@ -1,0 +1,57 @@
+name: AI Code Review
+
+# Self-hosted GLM-5.2 code review on PRs (P4.21). Posts findings as a PR comment.
+# Advisory — exit 0 regardless of verdict: the COMMENT is the gate (a human reads
+# it), not the workflow status. This prevents a flaky proxy/model from blocking
+# unrelated PR checks. Runs only on PRs touching code/migrations/config.
+#
+# Free-tier budget: ~2 min/run × ~15 PRs/mo = 30 min/mo. Well under 5% of the
+# 2000 min/mo GH Actions budget. See darshya-free-tier-check skill.
+#
+# Required GH repo secrets (already set for roadmap-loop):
+#   ANTHROPIC_API_KEY_BLACKBOX_PROXY  proxy key
+#   ANTHROPIC_BASE_URL                Blackbox proxy URL
+#   (GITHUB_TOKEN auto-provided, has comment permission on PRs)
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'prisma/**'
+      - 'packages/**'
+      - '.github/workflows/**'
+      - 'scripts/agents/**'
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review diff (GLM-5.2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history for accurate diff context
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run AI review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
+          ANTHROPIC_API_KEY_BLACKBOX_PROXY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/agents/pr-review.mjs
