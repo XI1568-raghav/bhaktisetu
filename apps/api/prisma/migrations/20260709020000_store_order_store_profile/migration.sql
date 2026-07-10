@@ -15,7 +15,7 @@ FROM (
   SELECT so2.id AS order_id, sp2.id AS store_id
   FROM "store_orders" so2,
        jsonb_array_elements(so2.items::jsonb) WITH ORDINALITY AS arr(item, idx)
-  JOIN "store_products" prod ON prod.id = (arr.item ->> 'productId')
+  JOIN "store_products" prod ON prod.id = ((arr.item ->> 'productId')::uuid)
   JOIN "store_profiles" sp2 ON sp2.id = prod.store_profile_id
   WHERE so2."store_profile_id" IS NULL
   GROUP BY so2.id, sp2.id
