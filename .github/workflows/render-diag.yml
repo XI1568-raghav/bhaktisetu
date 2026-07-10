@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'deploys | deploy | logs2 | cftoken'
+        description: 'deploys | deploy | list | logs2 | cftoken'
         required: false
         default: 'deploys'
       sid:
@@ -47,6 +47,17 @@ jobs:
           else
             echo "FAIL  DNS still denied (HTTP $code). The 'bhaktisetu build token' (id=$tid) is what the secret uses — its Permissions MUST show 'Zone · DNS · Edit' with Zone Resource = darshya.online. If you edited a DIFFERENT token, the secret is unaffected."
           fi
+
+      - name: list — enumerate all Render services (read-only, finds service IDs)
+        if: ${{ github.event.inputs.mode == 'list' }}
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer $RK"
+          echo "=== all services (name, id, type, branch, url, lastDeploy) ==="
+          curl -s -H "$A" "https://api.render.com/v1/services?limit=50" \
+            | jq -r '.[] | (.service // .) | "\(.name)  id=\(.id)  type=\(.type // .env)  branch=\(.repoBranch // .autoDeploy // "n/a")  url=\(.serviceDetails.url // "n/a")  status=\(.status // "n/a")"'
 
       - name: deploys — read-only recent deploy history (NO trigger, zero build cost)
         if: ${{ github.event.inputs.mode == 'deploys' }}
