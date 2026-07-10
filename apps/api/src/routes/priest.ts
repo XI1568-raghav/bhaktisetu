@@ -144,6 +144,23 @@ export async function priestRoutes(server: FastifyInstance) {
     }
   });
 
+  // ─── PATCH /bookings/:id/reject ─────────────────────────────────────────────
+  // P0 #pp-05 (2026-07-09): priest releases an assigned booking back to the
+  // queue. The accept/start/complete triplet had no escape valve — a priest
+  // who couldn't fulfil left the booking stuck. Reject clears priestId +
+  // drops to `confirmed` so the assignment queue re-picks it.
+
+  server.patch('/bookings/:id/reject', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      const booking = await priestService.rejectBooking(id, priestId);
+      return { message: 'Booking released back to the queue.', booking };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
   // ─── PATCH /bookings/:id/start ──────────────────────────────────────────────
 
   server.patch('/bookings/:id/start', { preHandler: priestAuth }, async (request, reply) => {

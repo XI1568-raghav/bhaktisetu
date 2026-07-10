@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -316,6 +316,11 @@ function PujaBookingInner() {
  // Data state
  const [puja, setPuja] = useState<PujaInfo | null>(null);
  const [loading, setLoading] = useState(true);
+ // PBO-7 (2026-07-09): honest load-failure state. Previously a fetch failure
+ // silently substituted hardcoded mock puja data (getFallbackPuja) + fake slot
+ // availability, then submitted the mock templeOfferingId — a real booking
+ // against fabricated catalog data. Now we surface the failure + a retry.
+ const [loadError, setLoadError] = useState(false);
 
  // Wizard state
  const [currentStep, setCurrentStep] = useState(0);
@@ -326,6 +331,8 @@ function PujaBookingInner() {
  const [selectedSlot, setSelectedSlot] = useState('');
  const [slotAvailability, setSlotAvailability] = useState<SlotAvailability[]>([]);
  const [loadingSlots, setLoadingSlots] = useState(false);
+ // PBO-7: honest slot-load failure flag (no mock availability fallback).
+ const [slotsError, setSlotsError] = useState(false);
 
  // Step 2
  const [devotees, setDevotees] = useState<Devotee[]>([
@@ -362,6 +369,13 @@ function PujaBookingInner() {
  const [paymentLoading, setPaymentLoading] = useState(false);
  const [paymentError, setPaymentError] = useState('');
  const [bookingSuccess, setBookingSuccess] = useState(false);
+ // P0 #PBO-16 (2026-07-09): in-flight create-order guard. paymentLoading is
+ // state (async re-render) so a rapid double-click before the spinner paints
+ // can fire create-order twice -> two booking rows + two Razorpay orders
+ // (slot overbooking + orphan pending bookings). This ref is set synchronously
+ // on entry and reset only on terminal failure (NOT on Razorpay modal dismiss,
+ // so a dismiss + re-click doesn't create a second order for the same attempt).
+ const creatingOrderRef = useRef(false);
  const [bookingNumber, setBookingNumber] = useState('');
 
  // NRI / USD checkout toggle. Default heuristic: browser timezone outside
@@ -383,24 +397,31 @@ function PujaBookingInner() {
  const [errors, setErrors] = useState<Record<string, string>>({});
 
  // ─── Fetch puja data ────────────────────────────────────────
+ // PBO-7 (2026-07-09): on fetch failure show an honest "could not load" state
+ // with a retry — do NOT substitute mock catalog data (getFallbackPuja), which
+ // previously led to submitting a fabricated templeOfferingId. retryTick lets
+ // the user re-trigger the fetch without a full page reload.
+ const [retryTick, setRetryTick] = useState(0);
  useEffect(() => {
+ let cancelled = false;
  async function fetchPuja() {
  try {
  const res = await fetch(`${API_BASE_URL}/pujas/types/${slug}`);
  if (res.ok) {
  const data = await res.json();
- setPuja(data);
+ if (!cancelled) { setPuja(data); setLoadError(false); }
  } else {
- setPuja(getFallbackPuja(slug));
+ if (!cancelled) { setLoadError(true); }
  }
  } catch {
- setPuja(getFallbackPuja(slug));
+ if (!cancelled) { setLoadError(true); }
  } finally {
- setLoading(false);
+ if (!cancelled) { setLoading(false); }
  }
  }
  fetchPuja();
- }, [slug]);
+ return () => { cancelled = true; };
+ }, [slug, retryTick]);
 
  // Pre-select temple from URL param
  useEffect(() => {
@@ -445,6 +466,7 @@ function PujaBookingInner() {
 
  async function fetchSlots() {
  setLoadingSlots(true);
+ setSlotsError(false);
  try {
  const res = await fetch(
  `${API_BASE_URL}/bookings/slots?templeId=${selectedTemple!.id}&date=${selectedDate}`,
@@ -456,14 +478,11 @@ function PujaBookingInner() {
  throw new Error('API unavailable');
  }
  } catch {
- // Fallback: generate mock availability
- const mockSlots: SlotAvailability[] = selectedTemple!.availableSlots.map((s) => ({
- time: s.time,
- label: s.label,
- remaining: Math.floor(Math.random() * 8) + 2,
- total: 10,
- }));
- setSlotAvailability(mockSlots);
+ // PBO-7 (2026-07-09): do NOT fabricate mock slot availability. The old
+ // fallback generated random `remaining` counts, letting the user "book" a
+ // slot that may not exist. Surface the failure so the user can retry.
+ setSlotAvailability([]);
+ setSlotsError(true);
  } finally {
  setLoadingSlots(false);
  }
@@ -548,7 +567,13 @@ function PujaBookingInner() {
  // ─── Payment ────────────────────────────────────────────────
 
  const handlePayment = async () => {
+ // P0 #PBO-16: block a second create-order while one is in flight (double-
+ // click, or dismiss + re-click). Reset only on a real failure below.
+ if (creatingOrderRef.current) return;
+ creatingOrderRef.current = true;
+
  if (!isAuthenticated) {
+ creatingOrderRef.current = false;
  window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
  return;
  }
@@ -601,6 +626,7 @@ function PujaBookingInner() {
  : 'Network error reaching the booking service. Check your connection and try again.';
  setPaymentError(message);
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  return;
  }
 
@@ -608,6 +634,7 @@ function PujaBookingInner() {
  if (!data?.orderId || !data?.razorpayOrderId || !data?.amount) {
  setPaymentError('Booking service returned an unexpected response. Please try again.');
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  return;
  }
  orderId = data.orderId;
@@ -619,6 +646,7 @@ function PujaBookingInner() {
  if (!Razorpay) {
  setPaymentError('Could not load Razorpay checkout. Please retry.');
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  return;
  }
 
@@ -664,6 +692,7 @@ function PujaBookingInner() {
  `Please email support@darshya.online with this payment ID and we'll reconcile within 24 hours.`,
  );
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  return;
  }
 
@@ -677,10 +706,16 @@ function PujaBookingInner() {
  setBookingNumber(bkNum);
  setBookingSuccess(true);
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  },
  modal: {
  ondismiss: () => {
  setPaymentLoading(false);
+ // P0 #PBO-16: release the in-flight guard so the user can retry. A retry
+ // re-POSTs create-order, but the server reuses the existing initiated
+ // payment for the same bookingId (payment.service idempotency), so no
+ // duplicate booking/order is created.
+ creatingOrderRef.current = false;
  },
  },
  };
@@ -693,12 +728,14 @@ function PujaBookingInner() {
  'Payment failed. Please try again or use a different payment method.',
  );
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  });
 
  rzp.open();
  } catch (err: any) {
  setPaymentError(err.message || 'Something went wrong. Please try again.');
  setPaymentLoading(false);
+ creatingOrderRef.current = false;
  }
  };
 
@@ -862,6 +899,10 @@ function PujaBookingInner() {
 
  // Demo payment for testing without Razorpay
  const handleDemoPayment = () => {
+ // P0 #PBO-9 (2026-07-09): hard block unless the app is in demo mode. The
+ // button is also gated in the render below, but this is the real gate — a
+ // production build must never simulate a successful payment.
+ if (process.env.NEXT_PUBLIC_ALLOW_DEMO_PAYMENTS !== 'true') return;
  safeCapture('booking_started', {
  pujaSlug: slug,
  templeSlug: selectedTemple?.templeSlug,
@@ -889,6 +930,30 @@ function PujaBookingInner() {
  <div className="text-center">
  <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-saffron-200 border-t-saffron-600" />
  <p className="text-sm text-surface-500">Loading puja details...</p>
+ </div>
+ </div>
+ );
+ }
+
+ if (loadError) {
+ return (
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
+ <div className="text-center">
+ <Flame className="mx-auto mb-4 h-12 w-12 text-surface-300" />
+ <h2 className="mb-2 text-xl font-bold text-surface-700">Could not load puja details</h2>
+ <p className="mb-4 text-surface-500">We couldn&apos;t reach the catalog. Please check your connection and retry.</p>
+ <div className="flex flex-col items-center gap-3">
+ <button
+ type="button"
+ onClick={() => { setLoading(true); setLoadError(false); setRetryTick((t) => t + 1); }}
+ className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ >
+ Retry
+ </button>
+ <Link href="/pujas" className="text-sm text-surface-500 hover:text-saffron-600">
+ ← Browse all pujas
+ </Link>
+ </div>
  </div>
  </div>
  );
@@ -1193,7 +1258,19 @@ function PujaBookingInner() {
  </p>
  )}
 
- {loadingSlots ? (
+ {slotsError ? (
+ <div className="flex flex-col items-center justify-center py-8 text-center">
+ <AlertCircle className="h-6 w-6 text-surface-300" />
+ <p className="mt-2 text-sm text-surface-500">Couldn&apos;t load slot availability.</p>
+ <button
+ type="button"
+ onClick={() => { setSlotsError(false); setRetryTick((t) => t + 1); }}
+ className="mt-2 text-sm font-medium text-saffron-600 hover:text-saffron-700"
+ >
+ Retry
+ </button>
+ </div>
+ ) : loadingSlots ? (
  <div className="flex items-center justify-center py-8">
  <Loader2 className="h-6 w-6 animate-spin text-saffron-500" />
  <span className="ml-2 text-sm text-surface-500">Checking availability...</span>
@@ -1942,7 +2019,7 @@ function PujaBookingInner() {
  <div className="flex flex-col gap-3 sm:flex-row">
  <button
  onClick={payInUsd ? handleStripePayment : handlePayment}
- disabled={paymentLoading}
+ disabled={paymentLoading || bookingSuccess}
  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-saffron-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-saffron-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {paymentLoading ? (
@@ -1964,7 +2041,10 @@ function PujaBookingInner() {
  </button>
  </div>
 
- {/* Demo payment button (for testing) */}
+ {/* Demo payment button (for testing) — P0 #PBO-9 (2026-07-09): only render
+   when the app is explicitly in demo mode. Previously this was always visible,
+   including production, letting anyone bypass real payment for a booking. */}
+ {process.env.NEXT_PUBLIC_ALLOW_DEMO_PAYMENTS === 'true' && (
  <div className="mt-3 text-center">
  <button
  onClick={handleDemoPayment}
@@ -1974,6 +2054,7 @@ function PujaBookingInner() {
  Demo: Simulate Successful Payment
  </button>
  </div>
+ )}
  </div>
 
  {/* Back button */}

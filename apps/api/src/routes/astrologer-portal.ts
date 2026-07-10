@@ -8,7 +8,12 @@ const profileUpdateSchema = z.object({
   specialties: z.array(z.string().max(50)).max(20).optional(),
   experience: z.number().int().min(0).max(80).optional(),
   languages: z.array(z.string().max(30)).max(20).optional(),
-  pricePerMinute: z.number().min(0).max(100000).optional(),
+  // P0 #AP-09 (2026-07-09): floor at ₹1/min, not 0. The old .min(0) let an
+  // astrologer save ₹0/min; devotees then hit /consultation/book's "Minimum
+  // consultation amount is ₹50" 400 with no hint that the rate was the cause.
+  // ₹1/min × the shortest slot still clears ₹50 for any reasonable duration;
+  // the booking endpoint enforces the absolute ₹50 floor independently.
+  pricePerMinute: z.number().min(1, 'Per-minute rate must be at least ₹1.').max(100000).optional(),
   bio: z.string().max(2000).optional(),
 });
 

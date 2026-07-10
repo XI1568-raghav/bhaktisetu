@@ -1,0 +1,39 @@
+{
+  "domain": "auth-gating",
+  "auditedAt": "2026-07-09",
+  "scope": "apps/api/src/middlewares/auth.ts, apps/api/src/routes/auth.ts, apps/web portal layouts, schema.prisma Priest model",
+  "auditor": "main-loop-direct (agent retries died with proxy socket errors — fallback per multi-agent-mandatory-execution doctrine)",
+  "findings": [
+    {
+      "id": "ag-01-priest-verification-dead",
+      "title": "Priest verification gate is dead: PANDIT role + auto-created active Priest = any self-signup user becomes a verified priest",
+      "severity": "critical",
+      "file": "apps/api/src/middlewares/auth.ts:336-363 + apps/api/src/routes/priest.ts:75-86 + apps/api/prisma/schema.prisma:301,305 + apps/api/src/routes/auth.ts:783-838",
+      "evidence": "requireRole('priest') line 337: `if (userRoles.includes('PANDIT')) return;` — grants access on PANDIT role ALONE, BEFORE the status check at line 356 (`if (!priest || priest.status !== 'active')`). The status check is unreachable for PANDIT holders. getPriestId (priest.ts:75-86) auto-creates a Priest via `prisma.priest.create({ data: { userId, displayName, specializations, languages, experienceYears, bio } })` — it does NOT set status or verificationStatus, so schema defaults apply: `status @default(active)` (schema:305) and `verificationStatus @default(pending)` (schema:301). auth.ts:783-838 SIGNUP_ROLE_ENUM lets a user POST /signup with role:'pandit' → UserRoleAssignment.create({role:'PANDIT'}) with NO approval step.",
+      "impact": "Any unauthenticated visitor can self-signup as role='pandit' (no approval), then call any /api/v1/priest/* endpoint: requireRole('priest') returns on PANDIT, getPriestId auto-creates an ACTIVE priest record, and they have full priest powers — accepting pujas, marking bookings complete, uploading video proof, (once payouts are wired) receiving payouts. The entire priest-verification/onboarding-approval model is bypassable. Logged-in impact; also degrades trust for logged-out devotees who assume priests are verified.",
+      "repro": "1. POST /api/v1/auth/signup {email, password, role:'pandit', fullName} → 200, UserRoleAssignment PANDIT created. 2. POST /api/v1/auth/login → token. 3. GET /api/v1/priest/dashboard → 200 (getPriestId auto-creates active Priest). 4. Accept/complete a booking via PATCH /api/v1/bookings/:id (see C1). Expected: signup-as-pandit requires admin approval; /priest/* requires status=active + verificationStatus=verified. Observed: full access immediately.",
+      "suggestedFix": "Two-part: (a) requireRole('priest') — REMOVE the early `if (userRoles.includes('PANDIT')) return;`. Always run the priest-lookup + require `priest.status === 'active' && priest.verificationStatus === 'verified'`. Only ADMIN may waive. (b) Signup — do NOT let /signup self-assign any role other than DEVOTEE. A 'pandit' (or any provider) role request must create a Lead/Pending profile (onboarding.service.ts) and require admin approval before UserRoleAssignment is written. (c) getPriestId — do NOT auto-create an active Priest; if no Priest row exists, 403 'priest account not onboarded' (it should only be created by the onboarding/approval flow with status=pending). (d) Re-run priest.service tests + add: signup-as-pandit does NOT yield priest powers until admin approves."
+    },
+    {
+      "id": "ag-02-no-web-middleware-shell-leak",
+      "title": "No apps/web/middleware.ts — all 6 portal layouts gated client-side only; logged-out/non-role users receive the full portal HTML/JS shell before redirect",
+      "severity": "low",
+      "file": "apps/web/app/{admin,priest,store-admin,astrologer-portal,wellness-portal,gaushala-portal}/layout.tsx + apps/web/components/AuthGuard.tsx (no apps/web/middleware.ts exists)",
+      "evidence": "Confirmed no apps/web/middleware.ts. All portal layouts use <AuthGuard allowedRoles=[...]> which runs in a client useEffect — the server renders the portal shell (nav, sidebar, page chrome) to a 200 response, THEN the client checks the session and redirects. API routes remain protected (requireRole server-side), so no data leak, but the shell (nav labels, route structure, sometimes static placeholder text) is visible to anyone hitting /admin etc. directly.",
+      "impact": "Logged-out or wrong-role users see a brief flash of the portal shell (nav/labels) on /admin, /priest, /store-admin, /astrologer-portal, /wellness-portal, /gaushala-portal before client redirect. No data exfiltration (API gated), but it leaks portal structure and is a poor auth boundary. Low severity; medium if any portal page hardcodes sensitive constants.",
+      "repro": "1. Open a fresh browser (no session). 2. Visit https://darshya.online/admin. Expected: server redirects to /auth/login before render. Observed: portal shell HTML renders (200), then client redirects.",
+      "suggestedFix": "Add apps/web/middleware.ts that checks the session cookie/token and redirects unauthenticated/non-role users from /admin/**, /priest/**, /store-admin/**, /astrologer-portal/**, /wellness-portal/**, /gaushala-portal/** to /auth/login before the page renders. NOTE: memory reference_bhaktisetu_cf_pages_no_middleware says middleware.ts was a build-breaker on the OLD Cloudflare Pages deploy — but prod is now Render Node standalone (reference_darshya_cf_pages_next_on_pages_dead), so middleware is safe to add. Verify the build still passes."
+    },
+    {
+      "id": "ag-03-demo-admin-bypass-guarded",
+      "title": "Demo-token ADMIN bypass (demo-admin → ADMIN) — guarded by boot-fatal + prod reject, but a prod env misconfigure (ALLOW_DEMO_TOKENS=true) would re-arm it",
+      "severity": "low",
+      "file": "apps/api/src/middlewares/auth.ts:11-15,98-110,113-123 + apps/api/src/routes/auth.ts:643-666",
+      "evidence": "DEMO_ROLE_MAP maps 'admin' → ['ADMIN','DEVOTEE'] (auth.ts:122). Defenses: line 98-99 `demoAllowed = NODE_ENV !== 'production' || ALLOW_DEMO_TOKENS === 'true'`; line 104 rejects demo tokens when !demoAllowed; line 11-15 boot-fatal: `if (ALLOW_DEMO_TOKENS==='true' && NODE_ENV==='production') process.exit(1)`. Same gate on /login demo accounts (auth.ts:645). DEPLOY.md:15 sets NODE_ENV=production.",
+      "impact": "In correctly-configured prod (NODE_ENV=production, ALLOW_DEMO_TOKENS unset): demo-admin token is 401-rejected; cannot become admin. The bypass is only re-armed if an operator sets ALLOW_DEMO_TOKENS=true in prod — but the boot guard crashes the server first, so it cannot serve traffic. Defense-in-depth is strong. Low severity (residual misconfig risk only).",
+      "repro": "1. In prod (NODE_ENV=production, no ALLOW_DEMO_TOKENS): curl -H 'Authorization: Bearer demo-admin-...' /api/v1/admin/users → 401 'Demo tokens not accepted in production.' 2. If operator sets ALLOW_DEMO_TOKENS=true in prod → API process exits at boot (FATAL log).",
+      "suggestedFix": "No code change needed (guards are correct). Defense-in-depth: add a deploy-time check / Render env validation that refuses ALLOW_DEMO_TOKENS=true in the prod service. Optionally add a test asserting the boot-fatal guard. Ensure ALLOW_DEMO_TOKENS is absent (not 'false') in prod env to avoid any string-truth edge."
+    }
+  ],
+  "summary": "3 findings (1 critical, 2 low). The critical (ag-01) is the real find: priest verification is dead because requireRole('priest') short-circuits on PANDIT and getPriestId auto-creates an active Priest — any self-signup-as-pandit user bypasses the whole verified-priest model. The demo-admin bypass (ag-03) is REFUTED-for-prod (boot-fatal guarded) — logged as low defense-in-depth. No-web-middleware (ag-02) confirms prior #31, low. NOTE: a deeper auth.ts signup/session review (token refresh, expiry edge cases, password-hash verify path) was not exhaustively done by the main loop due to proxy-failed agent retries — recommend a focused agent re-run once the proxy stabilizes."
+}

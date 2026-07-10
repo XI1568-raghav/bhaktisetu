@@ -53,7 +53,11 @@ export default function AstrologerDashboard() {
  const [api, setApi] = useState<ApiAstroDashboard | null>(null);
 
  useEffect(() => {
-  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+  // P0 #AP-07 (2026-07-09): do NOT skip the API for demo sessions. The old
+  // `startsWith('demo-')` early-return left a demo astrologer on hardcoded
+  // ZERO_STATS forever. The API accepts demo tokens in non-prod, so let the
+  // fetch run; a non-OK / catch keeps the existing mock fallback.
+  if (!session?.accessToken) return;
   (async () => {
    try {
     const r = await fetch(`${API_BASE_URL}/astrologer-portal/dashboard`, {
@@ -69,7 +73,8 @@ export default function AstrologerDashboard() {
  }, [session]);
 
  useEffect(() => {
- if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ // P0 #AP-07: same fix — fetch KYC for demo sessions too (no demo-token skip).
+ if (!session?.accessToken) return;
  (async () => {
  try {
  const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
