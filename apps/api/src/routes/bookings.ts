@@ -1184,6 +1184,8 @@ export async function bookingRoutes(server: FastifyInstance) {
           body.razorpayOrderId,
           body.razorpayPaymentId,
           body.razorpaySignature,
+          request.currentUser!.id,
+          request.currentUser!.roles,
         );
         return result;
       } catch (error: any) {

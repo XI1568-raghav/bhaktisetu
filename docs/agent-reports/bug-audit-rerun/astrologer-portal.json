@@ -1,0 +1,132 @@
+{
+  "domain": "astrologer-portal",
+  "auditedAt": "2026-07-08",
+  "scope": "apps/web/app/astrologer-portal/**, apps/api/src/routes/astrologer-portal.ts + consultation.ts + astrology.ts, apps/api/src/services/astrology.service.ts, apps/web/app/astrology/**, apps/web/app/consultation/[id]/**",
+  "findings": [
+    {
+      "id": "AP-01",
+      "title": "Video-call room URL has NO paid gate — logged-out user gets a free Jitsi consultation room with zero payment, zero auth, zero backend call",
+      "severity": "critical",
+      "file": "apps/web/app/astrology/view/page.tsx:353-371 (Call button) + apps/web/app/consultation/[id]/page.tsx:25-101 (room page)",
+      "evidence": "view/page.tsx Call button builds the room entirely client-side and navigates with no auth/payment: `const roomId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID().replace(/-/g, '').slice(0, 24) : ...; const room = \\`darshya-astrologer-${slug}-${roomId}\\`; window.location.href = \\`/consultation/${room}?provider=...\\``. The room page consultation/[id]/page.tsx embeds Jitsi for ANY visitor with no check: `const jitsiUrl = \\`https://meet.jit.si/${encodeURIComponent(room)}#config.prejoinPageEnabled=false...\\`` then `<iframe allow=\"camera; microphone; fullscreen; display-capture; autoplay\" src={jitsiUrl} .../>`. There is no AuthGuard, no consultation-status lookup, no payment verification.",
+      "impact": "The entire paid astrology consultation flow is bypassable. A logged-out user (no account, no payment) clicks 'Call' on any astrologer profile and is dropped into a working HD video room with the astrologer's name. The paid /consultation/book + /verify-payment flow (Razorpay, ₹50 minimum, signature verification) is rendered pointless because the free path exists alongside it. Astrologers receive zero revenue for these calls. Also a privacy/safety issue: any internet user can open a room branded with a real astrologer's name and lure victims (impersonation).",
+      "repro": "1) Open incognito (not logged in). 2) Visit /astrology/view?id=astro_001. 3) Click 'Call' (green button, enabled when isOnline && !isBusy). 4) Landing on /consultation/darshya-astrologer-pt-raghunath-sharma-<id> embeds meet.jit.si and requests camera+mic — full video call, no login, no payment.",
+      "suggestedFix": "Remove the client-side room-generation Call button, or route it through POST /consultation/start (which itself must add a paid/role gate — see AP-02). The /consultation/[id] room page MUST wrap in <AuthGuard> and, for paid consultations, verify server-side that the calling user owns a confirmed (paid) consultation whose room_name === id before embedding Jitsi. Mirror the success page (consultation/[id]/success/page.tsx) which already only reveals jitsiUrl when status==='confirmed'."
+    },
+    {
+      "id": "AP-02",
+      "title": "POST /consultation/start returns a Jitsi room URL to ANY authenticated user with no payment, no role check, no DB row — roomUrl leak",
+      "severity": "high",
+      "file": "apps/api/src/routes/consultation.ts:127-155",
+      "evidence": "Route only has `preHandler: [authenticateUser]` (any logged-in user, any role). Comment admits the bypass: `// Ephemeral Jitsi room (kept for backward-compat — used by /astrology page \"Call\" button which spins a free-trial room w/o payment).` Body is unvalidated (`request.body ?? {}`). It returns `roomName`, `jitsiUrl`, `embedUrl` immediately: `return reply.send({ roomName, jitsiUrl: \\`https://meet.jit.si/${roomName}#userInfo.displayName=...\\`, embedUrl: ..., provider: 'jitsi', kind, createdAt: ... });`",
+      "impact": "Any logged-in user (even a brand-new DEVOTEE with no astrologer role, no booking, no payment) can mint unlimited free video-call rooms for any astrologer/priest/wellness provider by POSTing {providerName: '...'} . The paid /consultation/book flow that charges ₹50+ and verifies a Razorpay signature is circumvented. This is the server-side twin of AP-01.",
+      "repro": "curl -X POST $API/v1/consultation/start -H 'Authorization: Bearer <any-valid-token>' -H 'Content-Type: application/json' -d '{\"providerName\":\"Pt Raghunath Sharma\",\"kind\":\"astrologer\"}' → 200 with jitsiUrl. No payment, no booking row.",
+      "suggestedFix": "Gate /consultation/start behind a confirmed (paid) consultation lookup: require a consultationId in the body, verify the caller owns a row with status='confirmed' (or 'completed' in-progress), and return only that row's stored room_name. Remove the free-trial room path or restrict it to ADMIN/demo mode only."
+    },
+    {
+      "id": "AP-03",
+      "title": "IDOR: PATCH /astrology/consultations/:id and POST /astrology/consultations/:id/start-call perform NO ownership check — any logged-in user can complete/cancel/start-call ANY consultation",
+      "severity": "high",
+      "file": "apps/api/src/routes/astrology.ts:304-325 + apps/api/src/services/astrology.service.ts:866-885",
+      "evidence": "Route layer passes only the id to the service with no caller binding: `server.patch('/consultations/:id', { preHandler: [authenticateUser] }, async (request, reply) => { const { id } = request.params as { id: string }; ... const updated = await astrologyService.updateConsultation(id, parsed.data.status); ... })` and `server.post('/consultations/:id/start-call', { preHandler: [authenticateUser] }, async (request, reply) => { const { id } = request.params; const result = await astrologyService.startCall(id); ... })`. Service methods ignore the caller entirely: `async updateConsultation(id, status) { const session = this.sessions.get(id); if (!session) throw new Error('Consultation not found'); session.status = ...; return session; }` and `async startCall(id) { const session = this.sessions.get(id); if (!session) throw new Error('Consultation not found'); if (!session.roomUrl) { session.roomUrl = \\`https://meet.jit.si/darshya-${id}\\`; session.status = 'in_progress'; } return { roomUrl: session.roomUrl }; }`. request.currentUser is read by the route for the auth prehandler but never used to authorize the action.",
+      "impact": "A logged-in user A can complete or cancel user B's consultation ( PATCH /astrology/consultations/<B's session id> with {status:'COMPLETED'|'CANCELLED'} ) and can mint the Jitsi room for B's session ( start-call ). Session ids are `session_${Date.now()}_${6-char-base36}` — the Date.now() portion is enumerable and the random suffix is only ~36^6 ≈ 2B, plus the in-memory store is shared across all users. Lets a malicious user disrupt other users' consultations and harvest room URLs. The astrologer portal Consultations page (handleJoin/handlePatch) drives these endpoints.",
+      "repro": "1) As user A, start a consultation: POST /astrology/consult/start {astrologerId:'astro_001', mode:'video'} → note session id. 2) As user B (different account), PATCH /astrology/consultations/<A's session id> {status:'COMPLETED'} → 200 {consultation:{...status:'completed'}}. B just closed A's session. Same for start-call.",
+      "suggestedFix": "Pass request.currentUser.id into updateConsultation/startCall and verify session.userId === caller.id (for devotee) OR session.astrologerId maps to caller (for astrologer) before mutating. Return 403 on mismatch. Mirror consultation.ts:481 which does `if (row.user_id !== request.currentUser!.id) return reply.code(403)...`."
+    },
+    {
+      "id": "AP-04",
+      "title": "Astrologer portal Consultations page is permanently empty — listConsultations filters by UUID but sessions store slug astrologerId, so the astrologer sees zero consultations",
+      "severity": "high",
+      "file": "apps/api/src/services/astrology.service.ts:859-863 + apps/api/src/routes/astrology.ts:297-302 + apps/web/app/astrologer-portal/consultations/page.tsx:78",
+      "evidence": "Service: `async listConsultations({ userId, role }) { const all = Array.from(this.sessions.values()); if (role === 'astrologer') return all.filter((s) => s.astrologerId === userId); return all.filter((s) => s.userId === userId); }`. startConsultation stores the slug, not the user UUID: `this.sessions.set(sessionId, { id: sessionId, userId, astrologerId, ... })` where astrologerId is the in-memory slug 'astro_001' (passed from the client). Route passes the caller's UUID as userId: `const userId = request.currentUser!.id; const role = (request.query).role ?? 'astrologer'; const consultations = await astrologyService.listConsultations({ userId, role });`. The UI calls with role=astrologer: `fetch(\\`${API_BASE_URL}/astrology/consultations?role=astrologer\\`)`. UUID !== 'astro_001' → filter returns [].",
+      "impact": "The astrologer-portal/consultations page (the astrologer's session-management screen with Join/End/Cancel buttons) will ALWAYS render 'No upcoming consultations' / 'No past consultations' for any real logged-in astrologer. The astrologer cannot see or manage sessions assigned to them. Combined with AP-05, the entire astrologer portal consultations surface is dead.",
+      "repro": "1) Log in as astrologer (demo-astro-token or real astrologer account). 2) Open /astrologer-portal/consultations. 3) Even after a devotee starts a consultation with that astrologer via /astrology/consult/start, the page shows 'No upcoming consultations'. Network: GET /astrology/consultations?role=astrologer returns {consultations:[]}.",
+      "suggestedFix": "Map the in-memory astrologer slug to the real User UUID (the deferred 'slug→User onboarding' pass the code comments keep deferring), OR have startConsultation store the resolved astrologer's userId when the caller is the astrologer. Short term: have listConsultations for role=astrologer also match on a slug↔user lookup table."
+    },
+    {
+      "id": "AP-05",
+      "title": "Astrologer dashboard earnings/consultations queries filter by UUID astrologer_id, but paid bookings store the slug — real astrologers see 0 earnings, 0 consultations, 0 upcoming sessions forever",
+      "severity": "high",
+      "file": "apps/api/src/routes/astrologer-portal.ts:52-91 + apps/api/src/routes/consultation.ts:214-230",
+      "evidence": "Dashboard query filters by the caller's UUID: `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum FROM astrologer_consultations WHERE astrologer_id = $1 AND status = 'confirmed' AND paid_at::date = CURRENT_DATE` with `userId` (UUID) bound to $1 (line 58). Same UUID filter for month/total/upcoming (lines 64-88). But the book flow inserts the slug: `INSERT INTO astrologer_consultations (reference, user_id, astrologer_id, astrologer_name, ...) VALUES ($1, $2::uuid, $3, $4, ...)` where `$3 = astrologerId` = parsed.data.astrologerId = the client-sent slug 'astro_001' (consultation.ts:166,223). The code's own comment acknowledges the mismatch but hand-waves it as 'intentional (demo data)' (astrologer-portal.ts:43-46) — it is NOT intentional for real bookings.",
+      "impact": "Every confirmed, paid astrology consultation (via /consultation/book → /verify-payment) writes astrologer_id = 'astro_001' (slug). The astrologer's dashboard queries WHERE astrologer_id = <UUID>, so NONE of their real paid sessions ever appear. The astrologer sees earningsTodayInr=0, earningsMonthInr=0, totalEarningsInr=0, consultationsToday=0, upcomingSessions=[] permanently. Astrologers cannot see their real revenue or upcoming paid sessions. This is the same slug-vs-UUID gap as AP-04 but on the PAID path — meaning even genuinely paid consultations are invisible to the provider.",
+      "repro": "1) As a devotee, book + pay for a consultation with astro_001 via /consultation/book + /verify-payment (row inserted with astrologer_id='astro_001'). 2) Log in as the astrologer tied to astro_001. 3) GET /astrologer-portal/dashboard → stats.consultationsToday=0, totalEarningsInr=0, upcomingSessions=[] despite the paid confirmed row existing in the table.",
+      "suggestedFix": "Resolve the slug→User UUID mapping at booking time (store the real astrologer User.id in astrologer_id, keep slug in a separate column for display), or change the dashboard WHERE clause to match on the slug via a join/lookup. The deferred 'real astrologer onboarding' pass is now blocking both earnings visibility (AP-05) and session management (AP-04)."
+    },
+    {
+      "id": "AP-06",
+      "title": "Astrologer earnings from paid consultations NEVER create a Commission/payout row — earnings page is permanently 0 (same class as the priest createPriestPayout zero-callers bug)",
+      "severity": "high",
+      "file": "apps/api/src/routes/consultation.ts:253-329 (verify-payment) + apps/api/src/services/booking.service.ts:304-323 (the only commission writer) + apps/web/app/astrologer-portal/earnings/page.tsx + apps/web/components/CommissionsPanel.tsx",
+      "evidence": "consultation.ts /verify-payment flips status to 'confirmed' and mints a room but writes NO commission: `await prisma.$executeRawUnsafe(\\`UPDATE astrologer_consultations SET status = 'confirmed', razorpay_payment_id = $1, room_name = $2, paid_at = now() WHERE id = $3::uuid;\\`, razorpay_payment_id ?? null, roomName, consultationId);` — no prisma.commission.create anywhere in the file (grep confirms commission.create exists only in payment.service.ts:213 and booking.service.ts:314, both puja paths). booking.service.ts:304-323 shows the correct pattern for puja: `if (newStatus === 'confirmed') { ... await prisma.commission.create({ data: { bookingId: updated.id, providerId: updated.priestId, amount: updated.platformCommission, percentage, status: 'PENDING' } }) }`. The astrologer earnings page renders CommissionsPanel which reads ONLY the Commission table: `mode === 'admin' ? await listCommissions(...) : await listMyCommissions(...)` (CommissionsPanel.tsx:79-82) → GET /admin/commissions?providerId=me.",
+      "impact": "The astrologer-portal Earnings page (and the dashboard EarningsCard) draw exclusively from the Commission ledger. Because no astrology consultation ever writes a Commission row, an astrologer's earnings are permanently ₹0 in the payouts UI regardless of how many paid consultations they complete. This is the exact 'createPriestPayout zero-callers' failure pattern, now on the astrology side: the payout/earnings surface is wired to a ledger that the consultation flow never feeds. Payout reconciliation is impossible for admins too (/admin/commissions will never list astrology revenue).",
+      "repro": "1) Complete a full paid consultation: devotee books + pays (Razorpay verify succeeds), admin marks /:id/complete. 2) Log in as the astrologer → /astrologer-portal/earnings → 'No commission records yet.' 3) As admin → /admin/commissions → no astrology row exists. The astrologer_consultations row is 'completed' with amount_inr set, but no Commission row was ever created.",
+      "suggestedFix": "In consultation.ts /verify-payment (or /:id/complete), after flipping to confirmed/completed, write a prisma.commission.create with bookingId=consultation.id, providerId=resolved-astrologer-User-id, amount=platform commission (compute from amount_inr * platform rate), status='PENDING' — guarded by findFirst for idempotency, exactly as booking.service.ts:304-323 does for pujas."
+    },
+    {
+      "id": "AP-07",
+      "title": "Astrologer dashboard silently skips the API for demo sessions — demo astrologer sees hardcoded ZERO_STATS, never real data",
+      "severity": "medium",
+      "file": "apps/web/app/astrologer-portal/page.tsx:55-69",
+      "evidence": "`useEffect(() => { if (!session?.accessToken || session.accessToken.startsWith('demo-')) return; (async () => { try { const r = await fetch(\\`${API_BASE_URL}/astrologer-portal/dashboard\\`, { headers: { Authorization: \\`Bearer ${session.accessToken}\\` } }); ... })(); }, [session]);` The same demo-skip guard repeats for the KYC fetch (line 72). A demo astrologer token is `demo-astro-token` (auth-context.tsx:214 `accessToken: \\`demo-${handle}-token\\``), which starts with 'demo-'.",
+      "impact": "The only way to log in as an astrologer in dev/staging/demo (demo-astro-token, astro@demo.com) makes the dashboard render ZERO_STATS (0 sessions, 0 earnings, '—' rating) and KYC 'unsubmitted' — the API is never called. Investors/devs testing the astrologer portal see an empty dashboard and assume the backend is broken or the astrologer has no activity, when in fact the client refused to fetch. Masks real backend bugs (AP-04/AP-05) during demo. Note: the demo token IS accepted by the API middleware (auth.ts:111 demoAllowed), so the fetch would work — the client just chooses not to.",
+      "repro": "1) Log in as demo astrologer (astro@demo.com / demo123, or demo-astro-token). 2) /astrologer-portal shows 0 everything + KYC unsubmitted. 3) Network tab: no GET /astrologer-portal/dashboard request is made.",
+      "suggestedFix": "Remove the `session.accessToken.startsWith('demo-')` early-return (the API accepts demo tokens in non-prod). If demo must be visually distinct, fetch real data and overlay a 'demo data' badge instead of suppressing the call."
+    },
+    {
+      "id": "AP-08",
+      "title": "Assigned astrologer can NEVER mark their own consultation complete — /:id/complete requires ADMIN because astrologer_id (slug) can never equal currentUser.id (UUID)",
+      "severity": "medium",
+      "file": "apps/api/src/routes/consultation.ts:436-465",
+      "evidence": "Gate: `const isAdmin = roles.includes('ADMIN'); const isAssignedAstrologer = row.astrologer_id === request.currentUser!.id; if (!isAdmin && !isAssignedAstrologer) return reply.code(403).send({ error: 'Only the assigned astrologer or admin can mark complete.' });`. The code's own comment (lines 430-435) admits the gap: `// astrologer_id stores the in-memory astrology.service slug (e.g. 'astro_002'), not a User.id UUID, so equality with currentUser.id can never succeed for a real astrologer. ... until then only ADMIN can close the lifecycle.`",
+      "impact": "The lifecycle close (confirmed → completed, which is what triggers payout eligibility and frees the astrologer) is admin-only in practice. The assigned astrologer cannot end their own session via the API — the portal Consultations page 'End' button (handlePatch) targets the in-memory /astrology/consultations/:id service instead, which doesn't touch the paid astrologer_consultations row at all. So paid consultations can only be completed by an admin manually via /admin/consultations, creating an ops bottleneck and leaving rows stuck in 'confirmed'.",
+      "repro": "1) As the astrologer tied to astro_001, call PATCH /consultation/<confirmed-consultation-id>/complete → 403 'Only the assigned astrologer or admin can mark complete.' 2) As admin → 200 completed.",
+      "suggestedFix": "Resolve slug→User.id (same fix as AP-04/AP-05) so isAssignedAstrologer can be true for the real astrologer, OR add an explicit astrologer-self path that looks up the astrologer's profile by userId and matches on the slug stored in the row."
+    },
+    {
+      "id": "AP-09",
+      "title": "Astrologer portal profile 'Save Changes' sends pricePerMinute=0 as valid — astrologer can silently set their rate to ₹0/min (and the paid flow then rejects with ₹50 min, confusingly)",
+      "severity": "low",
+      "file": "apps/api/src/routes/astrologer-portal.ts:6-13,110-140 + apps/web/app/astrologer-portal/profile/page.tsx:238",
+      "evidence": "Schema allows 0: `pricePerMinute: z.number().min(0).max(100000).optional(),` (line 11). The UI clamps to >=0: `onChange={(e) => updateField('pricePerMinute', Math.max(0, parseFloat(e.target.value) || 0))}`. PATCH /profile accepts it: `const profile = await prisma.astrologerProfile.update({ where: { userId }, data: parsed.data });`. But the book flow (consultation.ts:176-183) computes `amountInr = Math.round(perMinuteRate * minutes)` and rejects `if (amountInr < 50) return reply.code(400).send({ error: 'Minimum consultation amount is ₹50.' })`.",
+      "impact": "An astrologer can save pricePerMinute=0 (or any rate yielding <₹50 for the chosen minutes). Their profile shows ₹0/min, devotees book, but /consultation/book returns 400 'Minimum consultation amount is ₹50' — the booking silently fails at payment time with an error that doesn't explain the rate is the problem. Mismatched validation between profile-save and booking creates a broken astrologer listing.",
+      "repro": "1) As astrologer, set Per-Minute Rate = 0, Save → 200 OK. 2) As devotee, open /astrology/<id>/book, 15 min × ₹0 = ₹0, click Pay → 400 'Minimum consultation amount is ₹50.'",
+      "suggestedFix": "Set pricePerMinute min to a positive floor (e.g. .min(1)) in profileUpdateSchema, and ideally enforce a minimum that aligns with the ₹50-amount rule (rate × minMinutes >= 50). Surface a clear error on the profile form if the rate is too low."
+    },
+    {
+      "id": "AP-10",
+      "title": "GET /consultation/:id (single consultation fetch) excludes astrologers/admins — assigned astrologer gets 403 reading their own consultation",
+      "severity": "low",
+      "file": "apps/api/src/routes/consultation.ts:469-500",
+      "evidence": "Only the booking user is authorized: `if (row.user_id !== request.currentUser!.id) return reply.code(403).send({ error: 'Not authorized.' });`. There is no branch for the assigned astrologer (row.astrologer_id) or ADMIN. The success page (consultation/[id]/success) uses this endpoint, so an astrologer opening a success link gets 403.",
+      "impact": "An astrologer who navigates to a consultation detail/success URL (e.g. via a notification or the admin share) is wrongly rejected with 'Not authorized' even though it is their own session. Admins must use /admin/all instead. Minor UX/auth gap; the astrologer already has /astrologer/mine for listing, but single-fetch is devotee-only.",
+      "repro": "As the assigned astrologer, GET /consultation/<their-session-id> → 403 'Not authorized.'",
+      "suggestedFix": "Allow the assigned astrologer (once slug→UUID resolved) and ADMIN: `const isAssignedAstrologer = row.astrologer_id === request.currentUser!.id; const isAdmin = roles.includes('ADMIN'); if (!isAssigned && !isAssignedAstrologer && !isAdmin) return 403;` and strip sensitive devotee fields (user_id) when the caller is the astrologer."
+    },
+    {
+      "id": "AP-11",
+      "title": "Astrology public list/detail pages render hardcoded fallback data and never call the API — profile edits (PATCH /astrologer-portal/profile) have zero effect on what devotees see",
+      "severity": "medium",
+      "file": "apps/web/app/astrology/AstrologyClient.tsx:73-210 (fallback list) + apps/web/app/astrology/view/page.tsx:56-129 (fallback detail) + apps/api/src/routes/astrologer-portal.ts:110-140 (profile edit)",
+      "evidence": "AstrologyClient.tsx initializes state from hardcoded `fallbackAstrologers` (lines 73-210) and never fetches /astrology/astrologers in a useEffect — the API client exists (astrologer-api.ts) but the list page doesn't use it for the cards. view/page.tsx uses a hardcoded `allAstrologers` record (lines 56-129) keyed by astro_001/002/003 and falls back to astro_001 for unknown ids: `const astrologer = allAstrologers[id] || allAstrologers['astro_001']!;`. Meanwhile the astrologer portal PATCH /astrologer-portal/profile updates the AstrologerProfile DB row (displayName, bio, specialties, pricePerMinute) — but that row is never read by either public page.",
+      "impact": "An astrologer's profile edits (bio, specialties, per-minute rate, display name) saved in the portal are invisible to devotees — the public pages show the hardcoded demo data (Pt. Raghunath Sharma ₹50, etc.) regardless. A real astrologer onboarding and setting their rate to ₹75/min will still appear as ₹50/min to every devotee. The /astrology/astrologers API endpoint exists and returns the in-memory service list, but neither public page consumes it for the cards/detail, so there's a total disconnect between the provider-editable profile and the devotee-visible listing.",
+      "repro": "1) As astrologer, edit profile: change display name to 'Test Astrologer', rate to ₹75, Save → 200. 2) Open /astrology and /astrology/view?id=<your-id> → still shows hardcoded fallback (e.g. 'Pt. Raghunath Sharma', ₹50).",
+      "suggestedFix": "Have AstrologyClient.tsx fetch GET /astrology/astrologers and view/page.tsx fetch GET /astrology/astrologers/:id on mount (with the existing hardcoded arrays as error fallback only). The in-memory astrology.service ASTROLOGERS list should itself be seeded from / be replaced by AstrologerProfile rows so portal edits propagate."
+    }
+  ],
+  "summary": {
+    "critical": 1,
+    "high": 5,
+    "medium": 3,
+    "low": 2,
+    "total": 11,
+    "topFinding": "AP-01 — Video-call room URL has no paid gate: a logged-out user clicking 'Call' on any astrologer profile is dropped into a working Jitsi video room with zero auth, zero payment, zero backend call, fully bypassing the Razorpay paid-consultation flow and enabling astrologer-name impersonation.",
+    "rootCauseThreads": [
+      "Slug-vs-UUID identity gap (AP-04, AP-05, AP-08, AP-10): in-memory astrology.service uses slug ids ('astro_001') while auth/DB use UUIDs; every astrologer-scoped query/match against currentUser.id silently returns nothing. This single deferred 'onboarding' pass breaks consultations list, dashboard earnings, complete-lifecycle, and single-fetch.",
+      "Missing paid gate on roomUrl (AP-01, AP-02): both client-side (Call button builds room in-browser) and server-side (/consultation/start) hand out Jitsi rooms without verifying a paid/confirmed consultation, defeating the entire Razorpay flow.",
+      "Missing ownership checks on in-memory consultation mutations (AP-03): updateConsultation/startCall ignore the caller → IDOR.",
+      "Payout ledger never fed (AP-06): consultation.ts never writes a Commission row, so the earnings/payouts UI (which reads only the Commission table) is permanently ₹0 for astrologers — same class as the priest createPriestPayout zero-callers bug.",
+      "Public/portal data disconnect (AP-11, AP-07): public astrology pages render hardcoded demo arrays and never call the API; the portal dashboard skips the API for demo tokens — so portal edits never reach devotees and demo logins show empty state, masking the deeper backend gaps."
+    ]
+  }
+}

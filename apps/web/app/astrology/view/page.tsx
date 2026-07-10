@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { API_BASE_URL } from '../../../lib/api-config';
 import { getAstrologerImage } from '../../../lib/images';
 import {
  Star,
@@ -170,7 +171,30 @@ function AstrologerDetailInner() {
  const sp = useSearchParams();
  const id = (sp.get('id') ?? '') as string;
 
- const astrologer = allAstrologers[id] || allAstrologers['astro_001']!;
+ const baseAstrologer = allAstrologers[id] || allAstrologers['astro_001']!;
+ // P0 #AP-11 (2026-07-09): overlay real data from GET /astrology/astrologers/:id
+ // when available, so profile edits (PATCH /astrologer-portal/profile) surface
+ // on the public detail page. The hardcoded allAstrologers map is the fallback
+ // only (e.g. API unreachable / unknown id).
+ const [astrologer, setAstrologer] = useState(baseAstrologer);
+ useEffect(() => {
+  let cancelled = false;
+  if (!id) return;
+  (async () => {
+   try {
+    const r = await fetch(`${API_BASE_URL}/astrology/astrologers/${encodeURIComponent(id)}`);
+    if (!r.ok) return;
+    const j = await r.json();
+    const detail = (j as any)?.astrologer;
+    if (!cancelled && detail && typeof detail === 'object') {
+     setAstrologer((prev) => ({ ...prev, ...detail }));
+    }
+   } catch {
+    // keep fallback
+   }
+  })();
+  return () => { cancelled = true; };
+ }, [id]);
 
  function getStatusColor() {
  if (astrologer.isOnline && !astrologer.isBusy) return 'bg-emerald-400';

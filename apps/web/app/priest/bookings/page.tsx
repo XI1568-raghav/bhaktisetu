@@ -146,13 +146,32 @@ function PriestBookingsInner() {
 
  const method = action === 'video' ? 'POST' : 'PATCH';
 
+ // P0 #pp-07 (2026-07-09): prompt for the real recording URL instead of
+ // posting a hardcoded placeholder. The API persists whatever is sent, so
+ // the placeholder became the stored "video proof" for every booking.
+ let videoUrl: string | null = null;
+ if (action === 'video') {
+ videoUrl = window.prompt('Paste the video recording URL for this booking:')?.trim() ?? null;
+ if (!videoUrl) {
+ setActionLoading(null);
+ return;
+ }
+ // Basic URL sanity check — the API only requires a non-empty string, but a
+ // missing scheme produces a useless proof link.
+ try { new URL(videoUrl); } catch {
+ alert('That doesn\'t look like a valid URL. Please paste a full https:// link.');
+ setActionLoading(null);
+ return;
+ }
+ }
+
  const res = await fetch(endpoint, {
  method,
  headers: {
  Authorization: `Bearer ${session?.accessToken}`,
  'Content-Type': 'application/json',
  },
- ...(action === 'video' ? { body: JSON.stringify({ videoUrl: 'https://placeholder.com/video' }) } : {}),
+ ...(action === 'video' ? { body: JSON.stringify({ videoUrl }) } : {}),
  });
 
  if (res.ok) {
@@ -216,7 +235,7 @@ function PriestBookingsInner() {
  case 'completed':
  return (
  <Link
- href={`/priest/bookings/${booking.id}`}
+ href={`/priest/bookings/view?id=${booking.id}`}
  className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700 transition-colors"
  >
  <Video className="w-3.5 h-3.5" />
@@ -291,7 +310,7 @@ function PriestBookingsInner() {
  return (
  <Link
  key={booking.id}
- href={`/priest/bookings/${booking.id}`}
+ href={`/priest/bookings/view?id=${booking.id}`}
  className="block bg-white rounded-xl border border-surface-100 p-5 hover:border-saffron-200 card-hover transition-all"
  >
  <div className="flex flex-col sm:flex-row sm:items-start gap-4">
