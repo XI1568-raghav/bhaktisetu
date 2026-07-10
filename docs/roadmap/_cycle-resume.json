@@ -1,7 +1,9 @@
 {
-  "cycleId": "C-20260710T1306",
+  "cycleId": "C-20260710T1339",
   "spawnPlan": [],
-  "deferrals": [],
+  "deferrals": [
+    {}
+  ],
   "kills": [],
   "firedTripwires": [
     {
@@ -11,10 +13,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-10T13:07:45.438Z"
+      "firedAt": "2026-07-10T13:41:06.389Z"
     }
   ],
-  "savedAt": "2026-07-10T13:11:09.900Z",
+  "savedAt": "2026-07-10T13:44:32.714Z",
   "consumed": true,
-  "consumedAt": "2026-07-10T13:11:09.901Z"
+  "consumedAt": "2026-07-10T13:44:32.715Z"
 }
