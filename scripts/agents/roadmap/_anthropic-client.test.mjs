@@ -31,16 +31,25 @@ describe('callOpus47', () => {
     expect(mockClient.messages.create).toHaveBeenCalledTimes(3);
   });
 
-  it('never falls back to non-Opus-4.7 model', async () => {
-    const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
-    await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
-    const callArgs = mockClient.messages.create.mock.calls[0][0];
-    expect(callArgs.model).toMatch(/opus-4[\.-]7/);
+  it('never falls back to non-Opus-4.7 model on direct Anthropic (non-Blackbox)', async () => {
+    const _savedBase = process.env.ANTHROPIC_BASE_URL;
+    delete process.env.ANTHROPIC_BASE_URL;
+    try {
+      const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
+      await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
+      const callArgs = mockClient.messages.create.mock.calls[0][0];
+      expect(callArgs.model).toBe('claude-opus-4-7');
+    } finally {
+      if (_savedBase === undefined) delete process.env.ANTHROPIC_BASE_URL;
+      else process.env.ANTHROPIC_BASE_URL = _savedBase;
+    }
   });
 
-  it('auto-selects blackboxai/anthropic/claude-opus-4.7 when ANTHROPIC_BASE_URL contains "blackbox"', async () => {
+  it('allows explicit ANTHROPIC_MODEL override to opus on Blackbox (for environments with a non-free Anthropic key)', async () => {
     const _savedBase = process.env.ANTHROPIC_BASE_URL;
+    const _savedModel = process.env.ANTHROPIC_MODEL;
     process.env.ANTHROPIC_BASE_URL = 'https://api.blackbox.ai/v1';
+    process.env.ANTHROPIC_MODEL = 'blackboxai/anthropic/claude-opus-4.7';
     try {
       const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
       await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
@@ -49,6 +58,8 @@ describe('callOpus47', () => {
     } finally {
       if (_savedBase === undefined) delete process.env.ANTHROPIC_BASE_URL;
       else process.env.ANTHROPIC_BASE_URL = _savedBase;
+      if (_savedModel === undefined) delete process.env.ANTHROPIC_MODEL;
+      else process.env.ANTHROPIC_MODEL = _savedModel;
     }
   });
 
@@ -75,6 +86,24 @@ describe('callOpus47', () => {
       delete process.env.ANTHROPIC_MODEL;
     }
     expect(mockClient.messages.create).not.toHaveBeenCalled();
+  });
+
+  it('auto-selects blackboxai/z-ai/glm-5.2 when ANTHROPIC_BASE_URL contains "blackbox" and ANTHROPIC_MODEL unset (Opus 403-rejected on Blackbox)', async () => {
+    const _savedBase = process.env.ANTHROPIC_BASE_URL;
+    const _savedModel = process.env.ANTHROPIC_MODEL;
+    delete process.env.ANTHROPIC_MODEL;
+    process.env.ANTHROPIC_BASE_URL = 'https://api.blackbox.ai/v1';
+    try {
+      const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
+      await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
+      const callArgs = mockClient.messages.create.mock.calls[0][0];
+      expect(callArgs.model).toBe('blackboxai/z-ai/glm-5.2');
+    } finally {
+      if (_savedBase === undefined) delete process.env.ANTHROPIC_BASE_URL;
+      else process.env.ANTHROPIC_BASE_URL = _savedBase;
+      if (_savedModel === undefined) delete process.env.ANTHROPIC_MODEL;
+      else process.env.ANTHROPIC_MODEL = _savedModel;
+    }
   });
 
   describe('streaming auto-switch', () => {
