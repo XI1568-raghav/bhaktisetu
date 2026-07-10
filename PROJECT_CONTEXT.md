@@ -7,7 +7,7 @@
 - **Product**: Darshya — India devotional super-app (live darshan, puja w/ video proof, content, gaushala seva, e-commerce, astrology, wellness, yatra).
 - **Domain**: `darshya.online` · API `api.darshya.online`
 - **Repo**: `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — never rename without migration).
-- **Surfaces**: web (CF Pages), API (Render), admin (Next), mobile (Expo 50), commerce (MedusaJS).
+- **Surfaces**: web (Render), API (Render), admin (Next), mobile (Expo 50), commerce (Prisma StoreProduct/StoreOrder).
 - **Stack**: Next 15 + Fastify 5 + Prisma + Supabase Postgres. Detail → docs.
 
 ## Cross-platform contracts

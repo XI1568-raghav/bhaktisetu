@@ -196,6 +196,47 @@ export async function getStoredAccessToken(): Promise<string | undefined> {
   return session?.accessToken ?? undefined;
 }
 
+// ─── onUnauthorised wiring (module-level ref + single-flight latch) ─────────
+//
+// initApiClient() runs at _layout.tsx module scope, before the AuthProvider
+// mounts, so it cannot call signOut() directly (the hook/context don't exist
+// yet). Instead we expose a mutable ref that the AuthProvider sets on mount,
+// and a single-flight latch so that N concurrent 401s only fire one sign-out
+// (api-client itself also de-dupes, but this is the defence-in-depth here).
+//
+// P0-8b per CEO audit 2026-07-10.
+
+let handleAuthExpired: (() => void) | null = null;
+
+/**
+ * Called by the AuthProvider on mount so the api-client onUnauthorised hook
+ * can reach back into a live signOut() (clear token + navigate to login).
+ */
+export function setOnAuthExpired(fn: (() => void) | null): void {
+  handleAuthExpired = fn;
+}
+
+let authExpiredInProgress: Promise<void> | null = null;
+
+/**
+ * Invoked by api-client when any request receives a 401. Single-flight: the
+ * first 401 kicks off the sign-out; concurrent 401s attach to the same promise
+ * and do nothing extra. The latch resets once sign-out settles.
+ */
+export async function onUnauthorisedMobile(): Promise<void> {
+  if (authExpiredInProgress) return authExpiredInProgress;
+  const fn = handleAuthExpired;
+  if (!fn) return;
+  authExpiredInProgress = (async () => {
+    try {
+      await fn();
+    } finally {
+      authExpiredInProgress = null;
+    }
+  })();
+  return authExpiredInProgress;
+}
+
 // ─── Sign-up data type ───────────────────────────────────────────────────────
 
 export interface SignUpData {
@@ -446,6 +487,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await persistSession(null, null);
     }
   }, [session, persistSession]);
+
+  // Wire the module-level onUnauthorised ref so api-client 401s trigger a
+  // single signOut + navigate to login. Set on mount, cleared on unmount.
+  // (Declared after `signOut` so the ref is in scope.)
+  useEffect(() => {
+    setOnAuthExpired(() => {
+      void signOut();
+    });
+    return () => {
+      setOnAuthExpired(null);
+    };
+  }, [signOut]);
 
   const demoSignIn = useCallback(async () => {
     if (!DEMO_USER) {

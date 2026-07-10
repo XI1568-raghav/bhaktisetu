@@ -9,8 +9,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
  * so test overrides + Render redeploys both take effect.
  *
  * Two surfaces:
- *   - requireCronBearer  — Authorization: Bearer <token>  (used by /api/v1/cron/*)
- *   - requireCronQueryToken — ?token=<token>              (used by /api/v1/admin/cron/* legacy GET)
+ *   - requireCronBearer  — Authorization: Bearer <token>  (used by /api/v1/cron/* and /api/v1/admin/cron/*)
+ *   - requireCronSecretHeader — x-cron-secret: <CRON_SECRET> (used by horoscope prewarm etc.)
  *
  * Constant-time compare via crypto.timingSafeEqual (defends against
  * timing oracle on token guess attempts).
@@ -61,25 +61,6 @@ export async function requireCronBearer(
     return;
   }
   // Pass — Fastify continues route handler since reply not sent.
-}
-
-export async function requireCronQueryToken(
-  request: FastifyRequest,
-  reply: FastifyReply,
-): Promise<void> {
-  const expected = readEnvToken();
-  if (!expected) {
-    logMisconfigured();
-    reply.code(401).send({ error: 'cron_auth_misconfigured' });
-    return;
-  }
-
-  const q = (request.query ?? {}) as { token?: string };
-  const provided = q.token ?? '';
-  if (!constantTimeEq(provided, expected)) {
-    reply.code(401).send({ error: 'cron_unauthorized' });
-    return;
-  }
 }
 
 /**

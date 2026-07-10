@@ -95,6 +95,12 @@ function parseRedisUrl(url: string): { host: string; port: number; password?: st
 /**
  * Enqueue a background job. Safe to call without REDIS_URL — returns
  * `{ noop: true }` and logs a warning rather than throwing.
+ *
+ * P2-13 (2026-07-10): email/whatsapp/notification no-ops emit a structured
+ * `queueNoop` console event (JSON) so downstream observability can surface
+ * "queue degraded" without grepping. PAYOUT no-ops must NOT silently drop —
+ * use `enqueuePayout()` (below) which throws when the queue is unavailable so a
+ * priest payout is never lost.
  */
 export async function enqueue<TData extends Record<string, unknown>>(
   queueName: JobQueueName,
@@ -104,14 +110,75 @@ export async function enqueue<TData extends Record<string, unknown>>(
 ): Promise<EnqueueResult> {
   if (QUEUE_DISABLED) {
     warnNoopOnce(queueName, jobName);
+    emitQueueNoopEvent(queueName, jobName, 'disabled');
     return { jobId: `noop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, queue: queueName, noop: true };
   }
   const queue = await getQueue(queueName);
   if (!queue) {
+    emitQueueNoopEvent(queueName, jobName, 'construct-failed');
     return { jobId: `noop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, queue: queueName, noop: true };
   }
   const job = await queue.add(jobName, data, opts);
   return { jobId: String(job.id ?? `unknown-${Date.now()}`), queue: queueName, noop: false };
+}
+
+/**
+ * P2-13: enqueue a payout job, FAILING LOUD when the queue is unavailable.
+ * Silently dropping a payout (the old `enqueue('payout', ...)` behavior under
+ * noop) would leave a priest unpaid with no signal — worse than a thrown error
+ * that surfaces in logs + Sentry. Producers that dispatch payouts MUST call
+ * this instead of `enqueue('payout', ...)` so the failure is never swallowed.
+ */
+export async function enqueuePayout<TData extends Record<string, unknown>>(
+  jobName: string,
+  data: TData,
+  opts: JobsOptions = {}
+): Promise<EnqueueResult> {
+  if (QUEUE_DISABLED) {
+    throw new Error(
+      `[job-queue] PAYOUT job "${jobName}" cannot be enqueued — REDIS_URL not set or JOB_QUEUE_DISABLED. ` +
+        `Refusing to silently drop a payout. Set REDIS_URL (Upstash) on Render to activate BullMQ workers.`,
+    );
+  }
+  const queue = await getQueue('payout');
+  if (!queue) {
+    throw new Error(
+      `[job-queue] PAYOUT job "${jobName}" failed — BullMQ queue could not be constructed. ` +
+        `Refusing to silently drop a payout.`,
+    );
+  }
+  const job = await queue.add(jobName, data, opts);
+  return { jobId: String(job.id ?? `unknown-${Date.now()}`), queue: 'payout', noop: false };
+}
+
+/**
+ * P2-13: structured noop event for observability. Emitted for email/whatsapp/
+ * notification enqueues that degrade to noop (queue disabled or construct
+ * failed). Payouts never reach this path — `enqueuePayout` throws instead.
+ */
+function emitQueueNoopEvent(queueName: JobQueueName, jobName: string, reason: 'disabled' | 'construct-failed'): void {
+  if (queueName === 'payout') return; // payouts throw via enqueuePayout, never noop-emit
+  // eslint-disable-next-line no-console
+  console.log(
+    JSON.stringify({
+      event: 'queueNoop',
+      queue: queueName,
+      job: jobName,
+      reason,
+      ts: new Date().toISOString(),
+    }),
+  );
+}
+
+/**
+ * P2-13: is the background job queue configured + able to accept jobs?
+ * Exposed on /ready as `queue: 'ok' | 'degraded'` so load balancers + ops
+ * dashboards can see when BullMQ is offline (REDIS_URL unset or construct
+ * failed) without parsing logs. Cheap — no Redis round-trip, just checks the
+ * configured-disabled flag. A separate deep probe lives in getQueueHealth().
+ */
+export function isJobQueueAvailable(): boolean {
+  return !QUEUE_DISABLED;
 }
 
 export interface QueueHealth {

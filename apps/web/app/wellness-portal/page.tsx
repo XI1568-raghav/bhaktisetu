@@ -3,7 +3,8 @@ import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import EarningsCard from '../../components/provider/EarningsCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
  Users,
@@ -60,46 +61,51 @@ type ApiWellnessDashboard = {
 export default function WellnessDashboard() {
  const { session, user } = useAuth();
  const displayName = user?.fullName || 'Instructor';
- const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
- const [kycReason, setKycReason] = useState<string | null>(null);
- const [api, setApi] = useState<ApiWellnessDashboard | null>(null);
 
- useEffect(() => {
-  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
-  (async () => {
-   try {
-    const r = await fetch(`${API_BASE_URL}/wellness-portal/dashboard`, {
-     headers: { Authorization: `Bearer ${session.accessToken}` },
-    });
-    if (!r.ok) return;
-    const j = (await r.json()) as ApiWellnessDashboard;
-    setApi(j);
-   } catch {
-    // graceful — keep mock
-   }
-  })();
- }, [session]);
-
- useEffect(() => {
- if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
- (async () => {
- try {
- const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
- headers: { Authorization: `Bearer ${session.accessToken}` },
+ // P1-17: dashboard + KYC fetches migrated from manual useEffect/useState to
+ // useQuery. Both were read-only fetch-once-per-session patterns (no
+ // optimistic mutation), so the cache + single loading state come for free.
+ // P0 #AP-07 (2026-07-10) still honored: demo tokens are sent in non-prod and
+ // a non-OK/catch keeps the mock fallback (query stays in error/no-data).
+ const { data: api } = useQuery({
+  queryKey: ['wellness', 'dashboard', session?.accessToken],
+  enabled: !!session?.accessToken,
+  queryFn: async () => {
+   const token = session!.accessToken;
+   const r = await fetch(`${API_BASE_URL}/wellness-portal/dashboard`, {
+    headers: { Authorization: `Bearer ${token}` },
+   });
+   if (!r.ok) throw new Error(`dashboard ${r.status}`);
+   return (await r.json()) as ApiWellnessDashboard;
+  },
+  retry: false,
  });
- if (!r.ok) return;
- const j = await r.json();
- if (!j.kyc) setKycState('unsubmitted');
- else if (j.kyc.verified) setKycState('verified');
- else if (j.kyc.rejectionReason) {
- setKycState('rejected');
- setKycReason(j.kyc.rejectionReason);
- } else setKycState('pending');
- } catch {
- // graceful fallback
- }
- })();
- }, [session]);
+
+ const { data: kyc } = useQuery({
+  queryKey: ['provider-kyc', session?.accessToken],
+  enabled: !!session?.accessToken,
+  queryFn: async () => {
+   const token = session!.accessToken;
+   const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+    headers: { Authorization: `Bearer ${token}` },
+   });
+   if (!r.ok) throw new Error(`kyc ${r.status}`);
+   return (await r.json()) as { kyc?: { verified?: boolean; rejectionReason?: string | null } };
+  },
+  retry: false,
+ });
+
+ // Derive the KYC badge state from the query payload — replaces the old
+ // imperative setKycState/setKycReason chain. Defaults to 'unsubmitted' until
+ // the query resolves, matching the prior initial state.
+ const { kycState, kycReason } = useMemo(() => {
+  if (!kyc?.kyc) return { kycState: 'unsubmitted' as const, kycReason: null };
+  if (kyc.kyc.verified) return { kycState: 'verified' as const, kycReason: null };
+  if (kyc.kyc.rejectionReason) {
+   return { kycState: 'rejected' as const, kycReason: kyc.kyc.rejectionReason };
+  }
+  return { kycState: 'pending' as const, kycReason: null };
+ }, [kyc]);
 
  const liveStats = api?.stats;
  const statCards = [

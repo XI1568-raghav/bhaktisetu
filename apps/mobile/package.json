@@ -8,7 +8,6 @@
     "type-check": "tsc --noEmit",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
     "build:android:dev": "eas build --profile development --platform android",
     "build:android:preview": "eas build --profile preview --platform android",
     "build:android:prod": "eas build --profile production --platform android",
@@ -42,15 +41,13 @@
     "expo-system-ui": "~4.0.0",
     "expo-video": "~2.0.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
     "react-native": "~0.76.0",
     "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0",
-    "react-native-web": "~0.19.13"
+    "react-native-screens": "~4.4.0"
   },
   "devDependencies": {
     "@poojly/tsconfig": "workspace:*",
-    "@types/react": "^19.0.0",
+    "@types/react": "^18.3.0",
     "typescript": "^5.8.3"
   }
 }

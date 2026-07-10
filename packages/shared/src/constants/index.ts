@@ -258,9 +258,10 @@ export const SUBSCRIPTION_PLANS = {
 // ─── API Endpoints ───────────────────────────
 
 export const API_ENDPOINTS = {
-  // Auth
-  AUTH_REQUEST_OTP: "/api/v1/auth/otp/request",
-  AUTH_VERIFY_OTP: "/api/v1/auth/otp/verify",
+  // Auth — matches apps/api/src/routes/auth.ts (mounted at /api/v1/auth)
+  // /send-otp (line 247), /verify-otp (line 288), /refresh (line 378), /logout (line 485)
+  AUTH_REQUEST_OTP: "/api/v1/auth/send-otp",
+  AUTH_VERIFY_OTP: "/api/v1/auth/verify-otp",
   AUTH_REFRESH_TOKEN: "/api/v1/auth/refresh",
   AUTH_LOGOUT: "/api/v1/auth/logout",
 

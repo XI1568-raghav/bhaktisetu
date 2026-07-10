@@ -487,7 +487,11 @@ model Payment {
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
   user    User         @relation(fields: [userId], references: [id])
-  booking PujaBooking? @relation(fields: [bookingId], references: [id])
+  // P1-11: onDelete SetNull — bookingId is nullable, so a deleted booking keeps
+  // its Payment rows (refund/audit history must survive even if the booking is
+  // purged). Previously Restrict (Prisma default), which blocked booking deletes
+  // that orphaned no real data.
+  booking PujaBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   storeOrders         StoreOrder[]         @relation("StoreOrderPayment")
   wellnessEnrollments WellnessEnrollment[] @relation("WellnessEnrollmentPayment")
@@ -510,7 +514,12 @@ model PriestPayout {
   createdAt       DateTime     @default(now()) @map("created_at")
 
   priest  Priest      @relation(fields: [priestId], references: [id])
-  booking PujaBooking @relation(fields: [bookingId], references: [id])
+  // P1-11: onDelete Cascade — bookingId is NON-nullable, so SetNull is illegal
+  // (a payout can't exist without its booking). Cascade means deleting a booking
+  // removes its pending payout rows; a paid-out booking shouldn't be deleted
+  // anyway, and an orphaned payout row would be unreconcilable. This is the
+  // correct behavior for a non-nullable dependent FK.
+  booking PujaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([priestId])
   @@index([status])
@@ -1373,13 +1382,14 @@ model WellnessSession {
 }
 
 model WellnessEnrollment {
-  id         String                   @id @default(uuid()) @db.Uuid
-  sessionId  String                   @map("session_id") @db.Uuid
-  userId     String                   @map("user_id") @db.Uuid
-  paymentId  String?                  @map("payment_id") @db.Uuid
-  status     WellnessEnrollmentStatus @default(PENDING_PAYMENT)
-  enrolledAt DateTime                 @default(now()) @map("enrolled_at")
-  attendedAt DateTime?                @map("attended_at")
+  id              String                   @id @default(uuid()) @db.Uuid
+  sessionId       String                   @map("session_id") @db.Uuid
+  userId          String                   @map("user_id") @db.Uuid
+  paymentId       String?                  @map("payment_id") @db.Uuid
+  razorpayOrderId String?                  @map("razorpay_order_id")
+  status          WellnessEnrollmentStatus @default(PENDING_PAYMENT)
+  enrolledAt      DateTime                 @default(now()) @map("enrolled_at")
+  attendedAt      DateTime?                @map("attended_at")
 
   session WellnessSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1388,6 +1398,7 @@ model WellnessEnrollment {
   @@unique([sessionId, userId])
   @@index([userId])
   @@index([status])
+  @@index([razorpayOrderId])
   @@map("wellness_enrollments")
 }
 

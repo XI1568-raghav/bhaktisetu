@@ -20,6 +20,12 @@ services:
     # the local prisma binary resolve correctly.
     startCommand: pnpm --filter @poojly/api start
     healthCheckPath: /health
+    # autoDeploy:false mirrors the web docker service below. On the free tier
+    # a new push to main cancels any in-flight deploy; disabling auto-deploy
+    # means deploys happen only on dashboard/manual trigger (or a dedicated
+    # deploy workflow), so a code merge isn't silently killed by a follow-up
+    # CI/docs push. See reference_render_concurrent_push_cancels_build memory.
+    autoDeploy: false
     renderBuildFilter:
       paths:
         - apps/api/**
@@ -51,11 +57,24 @@ services:
     # Real secrets (GITHUB_TOKEN, IVS_REPLAY_BUCKET_BASE, server-side keys) are
     # set in the Render dashboard as Secret env and are runtime-only (never
     # ARG-declared, so they never touch the image layers).
-    env:
-      NEXT_PUBLIC_API_URL: https://api.darshya.online
-      NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
-      NEXT_PUBLIC_ENV: production
+    #
+    # NOTE: Render Blueprint uses `envVars:` (a list of {key,value}) for the
+    # variable map — NOT `env:`. An earlier draft used `env:` here, which (a)
+    # collided with the `env: docker` runtime-environment scalar key above
+    # (YAML "duplicated mapping key" — the whole file failed to parse) and
+    # (b) is not a valid Render Blueprint key. Fixed 2026-07-10. Render
+    # auto-translates each envVar key into a Docker build ARG of the same name,
+    # so the Dockerfile's matching ARG declarations bake NEXT_PUBLIC_* into the
+    # Next client bundle at build time.
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.darshya.online
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://hlkvfarvfblhzhhnhtbp.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
+      - key: NEXT_PUBLIC_ENV
+        value: production
     renderBuildFilter:
       paths:
         - apps/web/**

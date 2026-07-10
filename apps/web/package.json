@@ -9,7 +9,7 @@
     "prebuild": "node scripts/build-search-index.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "echo \"lint: ok\"",
+    "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit"
@@ -39,6 +39,8 @@
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "eslint": "^8",
+    "eslint-config-next": "^15.5",
     "happy-dom": "^20.10.2",
     "jsdom": "^26.1.0",
     "typescript": "^5.8.3"

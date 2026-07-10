@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Canada pandit prospector — R-Q3-S-007 cycle slice.
  *

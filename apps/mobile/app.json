@@ -21,10 +21,7 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "Darshya uses the camera so priests can record video proof of your puja and devotees can attend live darshan calls.",
-        "NSMicrophoneUsageDescription": "Darshya uses the microphone for live darshan and astrologer consultation calls.",
-        "NSPhotoLibraryUsageDescription": "Darshya needs photo library access so priests can upload puja video proof and devotees can attach photos to support tickets.",
-        "NSLocationWhenInUseUsageDescription": "Darshya uses your location to surface nearby temples and pujas. Optional — you can deny without losing core features.",
+        "NSPhotoLibraryUsageDescription": "Darshya needs photo library access so devotees can attach photos to support tickets.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -36,12 +33,6 @@
       "package": "com.darshya.app",
       "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
         "POST_NOTIFICATIONS",
         "VIBRATE"
       ]

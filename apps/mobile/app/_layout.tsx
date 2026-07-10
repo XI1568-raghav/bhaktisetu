@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initApiClient } from '@poojly/api-client';
-import { AuthProvider, getStoredAccessToken } from '../lib/auth-context';
+import { AuthProvider, getStoredAccessToken, onUnauthorisedMobile } from '../lib/auth-context';
 import { initSentryMobile } from '../lib/sentry';
 import { usePushNotifications } from '../lib/push-notifications';
 import { apiBase } from '../lib/api';
@@ -27,6 +27,10 @@ initApiClient({
   baseUrl: apiBase(),
   getAuthToken: getStoredAccessToken,
   timeout: 30_000,
+  // P0-8b: clear token + route to login on 401. Delegates to the module-level
+  // ref in lib/auth-context (single-flight latch) so the provider's signOut is
+  // invoked once even under concurrent 401s.
+  onUnauthorised: onUnauthorisedMobile,
 });
 
 export default function RootLayout() {

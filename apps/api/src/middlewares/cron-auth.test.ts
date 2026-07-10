@@ -85,40 +85,13 @@ describe('cronAuth — bearer', () => {
   });
 });
 
-describe('cronAuth — query token (admin-cron compat)', () => {
-  const realEnv = process.env.CRON_AUTH_TOKEN;
-
-  beforeEach(() => {
-    process.env.CRON_AUTH_TOKEN = 'real-token-abcdef123456';
-    vi.resetModules();
-  });
-
-  afterEach(() => {
-    if (realEnv === undefined) delete process.env.CRON_AUTH_TOKEN;
-    else process.env.CRON_AUTH_TOKEN = realEnv;
-  });
-
-  it('401s when query.token missing', async () => {
-    const { requireCronQueryToken } = await import('./cron-auth.js');
-    const req = makeReq({}, {});
-    const reply = makeReply();
-    await requireCronQueryToken(req, reply);
-    expect(reply.statusCode).toBe(401);
-  });
-
-  it('401s when query.token mismatches', async () => {
-    const { requireCronQueryToken } = await import('./cron-auth.js');
-    const req = makeReq({}, { token: 'wrong-token-abcdef123456' });
-    const reply = makeReply();
-    await requireCronQueryToken(req, reply);
-    expect(reply.statusCode).toBe(401);
-  });
-
-  it('passes when query.token matches env', async () => {
-    const { requireCronQueryToken } = await import('./cron-auth.js');
-    const req = makeReq({}, { token: 'real-token-abcdef123456' });
-    const reply = makeReply();
-    await requireCronQueryToken(req, reply);
-    expect(reply.sent).toBe(false);
+describe('cronAuth — query-token surface removed (PUB-03)', () => {
+  // P0 #PUB-03 (2026-07-10): the `?token=` query middleware leaked the cron
+  // secret into access logs / CDN caches. It has been deleted. This block is
+  // a regression guard: the export must stay gone so no route can silently
+  // re-wire itself back onto the leaky surface.
+  it('no longer exports requireCronQueryToken', async () => {
+    const mod = await import('./cron-auth.js');
+    expect((mod as Record<string, unknown>).requireCronQueryToken).toBeUndefined();
   });
 });

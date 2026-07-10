@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -127,20 +127,20 @@ const typeIcons: Record<ContentType, React.ComponentProps<typeof Ionicons>['name
   bhajan: 'musical-notes',
 };
 
-function ContentItemRow({
+const ContentItemRow = React.memo(function ContentItemRow({
   item,
   isPlaying,
   onPress,
 }: {
   item: ContentItem;
   isPlaying: boolean;
-  onPress: () => void;
+  onPress: (id: string) => void;
 }) {
   return (
     <TouchableOpacity
       style={[styles.contentRow, isPlaying && styles.contentRowActive]}
       activeOpacity={0.7}
-      onPress={onPress}
+      onPress={() => onPress(item.id)}
     >
       {/* Icon */}
       <View
@@ -197,7 +197,7 @@ function ContentItemRow({
               styles.playSmall,
               isPlaying && styles.playSmallActive,
             ]}
-            onPress={onPress}
+            onPress={() => onPress(item.id)}
           >
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
@@ -209,7 +209,7 @@ function ContentItemRow({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 function inferContentType(category?: string | null, title?: string | null): ContentType {
   const c = `${category ?? ''} ${title ?? ''}`.toLowerCase();
@@ -223,6 +223,13 @@ export default function ContentScreen() {
   const [activeTab, setActiveTab] = useState<ContentType>('aarti');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const contentQuery = useContent();
+
+  // Stable toggle so renderItem stays referentially equal across re-renders
+  // (paired with React.memo on ContentItemRow → only the row whose isPlaying
+  // changed re-renders).
+  const handleTogglePlay = useCallback((id: string) => {
+    setPlayingId((prev) => (prev === id ? null : id));
+  }, []);
   const [refreshing, setRefreshing] = useState(false);
 
   const apiContent = contentQuery.data?.data ?? [];
@@ -298,14 +305,15 @@ export default function ContentScreen() {
       <FlatList
         data={filteredContent}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ContentItemRow
-            item={item}
-            isPlaying={playingId === item.id}
-            onPress={() =>
-              setPlayingId((prev) => (prev === item.id ? null : item.id))
-            }
-          />
+        renderItem={useCallback(
+          ({ item }: { item: ContentItem }) => (
+            <ContentItemRow
+              item={item}
+              isPlaying={playingId === item.id}
+              onPress={handleTogglePlay}
+            />
+          ),
+          [playingId, handleTogglePlay]
         )}
         contentContainerStyle={[
           styles.listContent,

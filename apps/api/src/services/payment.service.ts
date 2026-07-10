@@ -188,44 +188,51 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
  *
  * Idempotent — uses a unique-on-bookingId guard via findFirst, so a
  * webhook retry after a verifyPayment success won't double-write.
+ *
+ * P1-12 (2026-07-10): accepts an optional `tx` client so the commission write
+ * can run INSIDE the same `$transaction` as the capture+confirm. Previously it
+ * ran after the tx committed and SWALLOWED errors — a silent failure meant a
+ * confirmed booking with no payout-ledger row (priest never credited). Now a
+ * failure propagates and rolls back the whole capture+confirm+commission.
  */
-async function writePujaCommissionOnConfirm(bookingId: string): Promise<void> {
-  try {
-    const booking = await prisma.pujaBooking.findUnique({
-      where: { id: bookingId },
-      select: {
-        id: true,
-        priceAmount: true,
-        platformCommission: true,
-        priestId: true,
-      },
-    });
-    if (!booking || !booking.priestId) return;
-    const existing = await prisma.commission.findFirst({
-      where: { bookingId: booking.id },
-      select: { id: true },
-    });
-    if (existing) return;
-    // Decimal.js arithmetic — never coerce money to JS Number for the
-    // ledger. percentage column is Decimal(5,4); it gets rounded by the
-    // DB driver but the *input* must already be exact rational division.
-    const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
-    const commission = new Prisma.Decimal(booking.platformCommission as Prisma.Decimal);
-    const percentage = price.gt(0)
-      ? commission.div(price)
-      : new Prisma.Decimal(0);
-    await prisma.commission.create({
-      data: {
-        bookingId: booking.id,
-        providerId: booking.priestId,
-        amount: commission,
-        percentage,
-        status: 'PENDING',
-      },
-    });
-  } catch (err) {
-    console.warn('[payment.service] writePujaCommissionOnConfirm failed:', err);
-  }
+type TxClient = Prisma.TransactionClient | typeof prisma;
+
+async function writePujaCommissionOnConfirm(
+  bookingId: string,
+  tx: TxClient = prisma,
+): Promise<void> {
+  const booking = await tx.pujaBooking.findUnique({
+    where: { id: bookingId },
+    select: {
+      id: true,
+      priceAmount: true,
+      platformCommission: true,
+      priestId: true,
+    },
+  });
+  if (!booking || !booking.priestId) return;
+  const existing = await tx.commission.findFirst({
+    where: { bookingId: booking.id },
+    select: { id: true },
+  });
+  if (existing) return;
+  // Decimal.js arithmetic — never coerce money to JS Number for the
+  // ledger. percentage column is Decimal(5,4); it gets rounded by the
+  // DB driver but the *input* must already be exact rational division.
+  const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
+  const commission = new Prisma.Decimal(booking.platformCommission as Prisma.Decimal);
+  const percentage = price.gt(0)
+    ? commission.div(price)
+    : new Prisma.Decimal(0);
+  await tx.commission.create({
+    data: {
+      bookingId: booking.id,
+      providerId: booking.priestId,
+      amount: commission,
+      percentage,
+      status: 'PENDING',
+    },
+  });
 }
 
 // P0 #PBO-12 (2026-07-09): single post-confirm side-effect block. The client
@@ -235,8 +242,18 @@ async function writePujaCommissionOnConfirm(bookingId: string): Promise<void> {
 // confirms via webhook, not client-verify) referees were never credited. This
 // helper is the one place all three confirmation paths call so the side-effects
 // can never drift apart again.
-async function applyPostConfirmSideEffects(bookingId: string, userId: string): Promise<void> {
-  await writePujaCommissionOnConfirm(bookingId);
+//
+// P1-12 (2026-07-10): the COMMISSION ledger write is now part of the caller's
+// `$transaction` (pass `tx` to `writePujaCommissionOnConfirm` directly inside
+// the tx callback — see each call site). This helper retains ONLY the
+// post-commit fire-and-forget side-effects (invoice email + referral reward)
+// that must NOT run inside the tx (network calls that shouldn't roll back a
+// captured payment). Callers do: `await writePujaCommissionOnConfirm(id, tx)`
+// inside the tx, then `fireAndForgetPostConfirmSideEffects(id, userId)` after.
+async function fireAndForgetPostConfirmSideEffects(
+  bookingId: string,
+  userId: string,
+): Promise<void> {
   void sendPujaBookingInvoice(bookingId);
   // Fire-and-forget — referral reward MUST NOT fail booking confirmation.
   void tryRewardReferralForBooking(userId, bookingId);
@@ -250,64 +267,63 @@ async function applyPostConfirmSideEffects(bookingId: string, userId: string): P
 // platform commission rate, and writes a PENDING Commission row for the
 // store-owner's share (providerId = storeProfile.userId). Idempotent: a
 // duplicate confirm (webhook + client verify) does not double-write.
-async function writeStoreOrderCommissionOnConfirm(storeOrderId: string): Promise<void> {
-  try {
-    const existing = await prisma.commission.findFirst({
-      where: { storeOrderId },
-      select: { id: true },
-    });
-    if (existing) return;
+async function writeStoreOrderCommissionOnConfirm(
+  storeOrderId: string,
+  tx: TxClient = prisma,
+): Promise<void> {
+  const existing = await tx.commission.findFirst({
+    where: { storeOrderId },
+    select: { id: true },
+  });
+  if (existing) return;
 
-    const order = await prisma.storeOrder.findUnique({
-      where: { id: storeOrderId },
-      select: {
-        id: true,
-        totalAmountInr: true,
-        items: true,
-      },
-    });
-    if (!order) return;
+  const order = await tx.storeOrder.findUnique({
+    where: { id: storeOrderId },
+    select: {
+      id: true,
+      totalAmountInr: true,
+      items: true,
+    },
+  });
+  if (!order) return;
 
-    // Resolve the owning store via the first line item's product. items is
-    // [{ productId, qty, priceAtPurchase }, ...]. Mixed-store carts are not
-    // supported (single store per order) — see S-11 for the proper FK.
-    const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
-    const firstProductId = items.find((it) => it?.productId)?.productId;
-    if (!firstProductId) return;
+  // Resolve the owning store via the first line item's product. items is
+  // [{ productId, qty, priceAtPurchase }, ...]. Mixed-store carts are not
+  // supported (single store per order) — see S-11 for the proper FK.
+  const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
+  const firstProductId = items.find((it) => it?.productId)?.productId;
+  if (!firstProductId) return;
 
-    const product = await prisma.storeProduct.findUnique({
-      where: { id: firstProductId },
-      select: { storeProfileId: true },
-    });
-    if (!product?.storeProfileId) return;
+  const product = await tx.storeProduct.findUnique({
+    where: { id: firstProductId },
+    select: { storeProfileId: true },
+  });
+  if (!product?.storeProfileId) return;
 
-    const storeProfile = await prisma.storeProfile.findUnique({
-      where: { id: product.storeProfileId },
-      select: { userId: true, commission: true },
-    });
-    if (!storeProfile) return;
+  const storeProfile = await tx.storeProfile.findUnique({
+    where: { id: product.storeProfileId },
+    select: { userId: true, commission: true },
+  });
+  if (!storeProfile) return;
 
-    // storeProfile.commission is the PLATFORM's cut (default 0.20). The store
-    // owner's earnings = total * (1 - commission). The Commission row records
-    // the provider's (store owner's) amount + the platform percentage for the
-    // ledger. Decimal arithmetic — never coerce money to JS Number.
-    const total = new Prisma.Decimal(order.totalAmountInr as Prisma.Decimal);
-    const platformRate = new Prisma.Decimal(storeProfile.commission as Prisma.Decimal);
-    const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
-    const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
+  // storeProfile.commission is the PLATFORM's cut (default 0.20). The store
+  // owner's earnings = total * (1 - commission). The Commission row records
+  // the provider's (store owner's) amount + the platform percentage for the
+  // ledger. Decimal arithmetic — never coerce money to JS Number.
+  const total = new Prisma.Decimal(order.totalAmountInr as Prisma.Decimal);
+  const platformRate = new Prisma.Decimal(storeProfile.commission as Prisma.Decimal);
+  const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
+  const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
 
-    await prisma.commission.create({
-      data: {
-        storeOrderId: order.id,
-        providerId: storeProfile.userId,
-        amount: storeShare,
-        percentage,
-        status: 'PENDING',
-      },
-    });
-  } catch (err) {
-    console.warn('[payment.service] writeStoreOrderCommissionOnConfirm failed:', err);
-  }
+  await tx.commission.create({
+    data: {
+      storeOrderId: order.id,
+      providerId: storeProfile.userId,
+      amount: storeShare,
+      percentage,
+      status: 'PENDING',
+    },
+  });
 }
 
 // ─── Razorpay client ────────────────────────────────────────────────────────────
@@ -545,20 +561,23 @@ export class PaymentService {
           where: { id: payment.booking!.id },
           data: { status: 'confirmed' },
         });
+        // P1-12: write the commission ledger row INSIDE the same transaction.
+        // A failure here rolls back the capture+confirm (better than a silent
+        // missing payout row). Idempotent via the findFirst guard inside.
+        await writePujaCommissionOnConfirm(payment.booking!.id, tx);
       }
     });
 
-    // Side-effects (commission ledger, invoice email, referral reward) run
-    // after the transaction commits so a downstream failure cannot rollback
-    // the captured payment. Routed through applyPostConfirmSideEffects so the
-    // webhook paths stay in sync (PBO-12).
+    // Post-commit side-effects (invoice email + referral reward) are network
+    // calls that must NOT roll back a captured payment — fire-and-forget.
+    const booking = payment.booking!;
     if (shouldConfirm) {
-      await applyPostConfirmSideEffects(payment.booking.id, payment.booking.userId);
+      await fireAndForgetPostConfirmSideEffects(booking.id, booking.userId);
     }
 
     return {
       verified: true,
-      bookingId: payment.booking.id,
+      bookingId: booking.id,
       bookingNumber: payment.booking.bookingNumber,
     };
   }
@@ -749,14 +768,16 @@ export class PaymentService {
             statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
           },
         });
+        // P1-12: write the store-owner commission row INSIDE the transaction.
+        // Previously fire-and-forget after commit, swallowing failures — store
+        // owners' payouts were silently never recorded. A failure now rolls
+        // back the whole capture+confirm (no captured payment without a ledger
+        // row). Idempotent via the findFirst guard inside.
+        await writeStoreOrderCommissionOnConfirm(storeOrder.id, tx);
       }
     });
     if (shouldConfirm) {
       void sendStoreOrderInvoice(storeOrder.id);
-      // P0 #S-04: write the store-owner commission row (previously skipped —
-      // store payouts were never recorded). Fire-and-forget so a ledger write
-      // failure cannot roll back the captured payment.
-      void writeStoreOrderCommissionOnConfirm(storeOrder.id);
     }
 
     return {
@@ -845,25 +866,40 @@ export class PaymentService {
         });
 
         if (payment) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'captured',
-              gatewayPaymentId: paymentEntity.id,
-              method: paymentEntity.method ?? null,
-            },
+          const shouldConfirm =
+            !!payment.booking && payment.booking.status === 'pending_payment';
+          // P1-12: capture + confirm + commission ledger write in ONE
+          // transaction. The old webhook path ran payment.update + booking.update
+          // as two separate queries (a crash between them left a captured Payment
+          // with a pending booking) and wrote the commission AFTER with a
+          // swallowed catch. Now any failure rolls back the whole block.
+          await prisma.$transaction(async (tx) => {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'captured',
+                gatewayPaymentId: paymentEntity.id,
+                method: paymentEntity.method ?? null,
+              },
+            });
+            if (shouldConfirm) {
+              await tx.pujaBooking.update({
+                where: { id: payment.booking!.id },
+                data: { status: 'confirmed' },
+              });
+              // P1-12: commission ledger row inside the tx.
+              await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+            }
           });
 
-          if (payment.booking && payment.booking.status === 'pending_payment') {
-            await prisma.pujaBooking.update({
-              where: { id: payment.booking.id },
-              data: { status: 'confirmed' },
-            });
-            // PBO-12: route through the shared side-effect helper so the
-            // webhook path credits the referral reward too (previously
-            // skipped — prod confirms via webhook, so referees were never
-            // credited).
-            await applyPostConfirmSideEffects(payment.booking.id, payment.booking.userId);
+          // PBO-12: post-commit fire-and-forget side-effects (invoice email +
+          // referral reward). Prod confirms via webhook, so the referee credit
+          // MUST run here. Network calls — never inside the tx.
+          if (shouldConfirm) {
+            await fireAndForgetPostConfirmSideEffects(
+              payment.booking!.id,
+              payment.booking!.userId,
+            );
           }
         } else {
           // PBO-11 (2026-07-09): donation webhook backstop. Donations create no
@@ -1295,24 +1331,40 @@ export class PaymentService {
           include: { booking: { select: { id: true, status: true, userId: true } } },
         });
         if (payment) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'captured',
-              gatewayPaymentId: intent.id,
-              method: typeof intent.payment_method_types?.[0] === 'string'
-                ? intent.payment_method_types[0]
-                : 'card',
-            },
-          });
-          if (payment.booking && payment.booking.status === 'pending_payment') {
-            await prisma.pujaBooking.update({
-              where: { id: payment.booking.id },
-              data: { status: 'confirmed' },
+          const shouldConfirm =
+            !!payment.booking && payment.booking.status === 'pending_payment';
+          // P1-12: capture + confirm + commission ledger write in ONE
+          // transaction. Previously two separate updates + a post-commit
+          // commission write that swallowed failures.
+          await prisma.$transaction(async (tx) => {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'captured',
+                gatewayPaymentId: intent.id,
+                method: typeof intent.payment_method_types?.[0] === 'string'
+                  ? intent.payment_method_types[0]
+                  : 'card',
+              },
             });
-            // PBO-12: shared side-effect helper — credits referral reward on
-            // the webhook path (previously skipped here too).
-            await applyPostConfirmSideEffects(payment.booking.id, payment.booking.userId);
+            if (shouldConfirm) {
+              await tx.pujaBooking.update({
+                where: { id: payment.booking!.id },
+                data: { status: 'confirmed' },
+              });
+              // P1-12: commission ledger row inside the tx.
+              await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+            }
+          });
+
+          // PBO-12: post-commit fire-and-forget side-effects (invoice email +
+          // referral reward). Prod confirms via webhook, so the referee credit
+          // MUST run here. Network calls — never inside the tx.
+          if (shouldConfirm) {
+            await fireAndForgetPostConfirmSideEffects(
+              payment.booking!.id,
+              payment.booking!.userId,
+            );
           }
         }
         return { handled: true, event: event.type };

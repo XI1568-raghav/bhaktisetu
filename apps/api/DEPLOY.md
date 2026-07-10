@@ -1,47 +1,15 @@
 # Darshya API Deployment
 
-Fastify + Prisma require Node.js — deploys to Railway (primary) or Fly.io (alternative).
+Production = Render (see repo-root `render.yaml` + `docs/render-web-cutover-runbook.md`).
+Railway/Fly configs retained as untested legacy alternates.
 
-## Railway (primary)
+The API Render web service builds via `pnpm --filter @poojly/api build` (tsc →
+`dist/`) and starts via `pnpm --filter @poojly/api start`
+(`prisma migrate deploy && node dist/server.js`). Health/liveness probe stays
+`/health` (static); readiness is `/ready` (DB + Redis check). The
+`apps/api/Dockerfile` is hardened (non-root `USER node`, `HEALTHCHECK`) for any
+Docker-based alternate deploy but is NOT the Render path — Render uses the
+package scripts above, not the Dockerfile.
 
-1. Go to [railway.app](https://railway.app) -> New Project -> Deploy from GitHub repo.
-2. Select the `bhaktisetu` repo, set root to repo root (not `apps/api`). Railway reads `apps/api/railway.json`.
-3. Add environment variables from `apps/api/.env.example` (fill real values):
-   - `DATABASE_URL`, `DIRECT_URL` (Supabase pooled + direct)
-   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-   - `ANTHROPIC_API_KEY`
-   - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
-   - `CORS_ORIGIN` (comma-separated list, e.g. `https://darshya.pages.dev,https://darshya.online,https://admin.darshya.online`)
-   - `NODE_ENV=production`
-   - `PORT=4000`
-   - `JWT_SECRET`
-4. Railway auto-detects `apps/api/Dockerfile` via `railway.json` and deploys.
-5. Start command runs `prisma migrate deploy` before boot — migrations apply automatically.
-6. Health check at `/health` (timeout 30s).
-
-## Fly.io (alternative)
-
-From `apps/api/`:
-
-```bash
-fly launch           # first time only — reads fly.toml
-fly secrets set DATABASE_URL=... DIRECT_URL=... # etc.
-fly deploy
-```
-
-Region: `bom` (Mumbai). VM: shared 1 CPU / 512 MB. Health check at `/health`.
-
-## Local Docker test
-
-From repo root:
-
-```bash
-docker build -t bhaktisetu -f apps/api/Dockerfile .
-docker run -p 4000:4000 --env-file apps/api/.env bhaktisetu
-```
-
-## Notes
-
-- Prisma migrations run on every boot via `migrate deploy` — safe, only applies pending migrations.
-- CORS reads from `CORS_ORIGIN` (comma-separated). Falls back to localhost in dev.
-- Health endpoint is unauthenticated.
+`railway.json.legacy` and `fly.toml.legacy` are retained for reference only and
+are not tested or maintained.
