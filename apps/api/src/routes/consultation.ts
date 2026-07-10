@@ -122,34 +122,88 @@ const astrologerListSchema = z.object({
 export const __testing = { bookSchema, verifySchema, adminListSchema, astrologerListSchema, nextConsultRef };
 
 export async function consultationRoutes(server: FastifyInstance) {
-  // Ephemeral Jitsi room (kept for backward-compat — used by /astrology
-  // page "Call" button which spins a free-trial room w/o payment).
+  // Ephemeral Jitsi room. P0 #AP-02 (2026-07-09): the old implementation
+  // minted a free room for ANY authenticated user with no payment, no role
+  // check, and no DB row — the /astrology "Call" button used it to spin a
+  // free branded room. Now /start requires a paid consultationId: it looks
+  // up a 'confirmed' consultation owned by the caller (or assigned to them
+  // as astrologer) and returns that row's stored room_name. The web room
+  // page resolves the same room via GET /by-room/:room, so a room is only
+  // ever embedded for a paid, authorized consultation.
   server.post('/start', { preHandler: [authenticateUser] }, async (request, reply) => {
     const body = (request.body ?? {}) as {
+      consultationId?: string;
       providerId?: string;
       providerName?: string;
       kind?: 'astrologer' | 'priest' | 'wellness';
     };
+    const me = request.currentUser!;
 
-    const kind = body.kind ?? 'astrologer';
-    const providerSlug = (body.providerName ?? body.providerId ?? 'provider')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-      .slice(0, 32);
+    if (!body.consultationId) {
+      return reply.code(400).send({
+        error: 'consultationId is required to start a paid consultation room.',
+      });
+    }
 
-    const roomId = randomBytes(16).toString('hex');
-    const roomName = `darshya-${kind}-${providerSlug}-${roomId}`;
-    const userDisplayName = encodeURIComponent(
-      request.currentUser?.fullName ?? 'Devotee',
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<Array<{
+      id: string; user_id: string; astrologer_id: string; status: string;
+      astrologer_name: string; room_name: string | null;
+    }>>(
+      `SELECT id, user_id, astrologer_id, status, astrologer_name, room_name
+         FROM astrologer_consultations
+        WHERE id = $1::uuid
+        LIMIT 1;`,
+      body.consultationId,
     );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(404).send({ error: 'Consultation not found.' });
+    }
+    if (row.status !== 'confirmed' && row.status !== 'completed') {
+      return reply.code(403).send({ error: 'Consultation is not paid/active.' });
+    }
+
+    // Authorization: the devotee who booked, the assigned astrologer, or admin.
+    const isOwner = row.user_id === me.id;
+    const isAdmin = me.roles.includes('ADMIN');
+    let isAssignedAstrologer = false;
+    if (!isOwner && !isAdmin) {
+      const astro = await prisma.astrologerProfile.findUnique({
+        where: { id: row.astrologer_id },
+        select: { userId: true },
+      }).catch(() => null);
+      isAssignedAstrologer = !!astro && astro.userId === me.id;
+    }
+    if (!isOwner && !isAdmin && !isAssignedAstrologer) {
+      return reply.code(403).send({ error: 'Not authorized for this consultation.' });
+    }
+
+    // Return the stored room_name (minted at verify-payment time). If for some
+    // reason it is missing, mint one now and persist it.
+    let roomName = row.room_name;
+    if (!roomName) {
+      const slug = (row.astrologer_name || 'provider')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        .slice(0, 24);
+      roomName = `darshya-astrologer-${slug}-${randomBytes(12).toString('hex')}`;
+      await prisma.$executeRawUnsafe(
+        `UPDATE astrologer_consultations SET room_name = $1 WHERE id = $2::uuid;`,
+        roomName,
+        row.id,
+      );
+    }
+    const userDisplayName = encodeURIComponent(me.fullName ?? 'Devotee');
 
     return reply.send({
       roomName,
+      consultationId: row.id,
       jitsiUrl: `https://meet.jit.si/${roomName}#userInfo.displayName=%22${userDisplayName}%22`,
       embedUrl: `https://meet.jit.si/${roomName}`,
       provider: 'jitsi',
-      kind,
+      kind: body.kind ?? 'astrologer',
       createdAt: new Date().toISOString(),
     });
   });
@@ -319,6 +373,43 @@ export async function consultationRoutes(server: FastifyInstance) {
       consultationId,
     );
 
+    // P0 #AP-06 (2026-07-09): write a Commission ledger row so the astrologer's
+    // earnings are reconcilable. The booking stores astrologer_id as a TEXT
+    // (mock id / slug today, real AstrologerProfile.id once profiles are live),
+    // so resolve it to a real AstrologerProfile → userId for providerId. If no
+    // real profile exists (mock astrologer), skip — there is no real provider
+    // to credit, and we must not violate Commission.providerId's UUID constraint.
+    // Idempotent (findFirst on bookingId). Fire-and-forget: a ledger write
+    // failure must never block the verified response.
+    void (async () => {
+      try {
+        const existing = await prisma.commission.findFirst({
+          where: { bookingId: row.id },
+          select: { id: true },
+        });
+        if (existing) return;
+        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.astrologer_id);
+        const profile = looksLikeUuid
+          ? await prisma.astrologerProfile.findUnique({ where: { id: row.astrologer_id }, select: { id: true, userId: true } })
+          : await prisma.astrologerProfile.findFirst({ where: { displayName: row.astrologer_name }, select: { id: true, userId: true } });
+        if (!profile?.userId) return; // mock astrologer — no real provider to credit
+        const total = Number(row.amount_inr);
+        const COMMISSION_RATE = 0.3; // platform takes 30%, astrologer keeps 70%
+        const commissionAmount = Math.round(total * COMMISSION_RATE * 100) / 100;
+        await prisma.commission.create({
+          data: {
+            bookingId: row.id,
+            providerId: profile.userId,
+            amount: commissionAmount,
+            percentage: COMMISSION_RATE,
+            status: 'PENDING',
+          },
+        });
+      } catch (err) {
+        server.log.warn({ err }, '[consultation] commission write failed');
+      }
+    })();
+
     return reply.send({
       verified: true,
       consultationId: row.id,
@@ -447,7 +538,23 @@ export async function consultationRoutes(server: FastifyInstance) {
     if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
     const roles = request.currentUser!.roles ?? [];
     const isAdmin = roles.includes('ADMIN');
-    const isAssignedAstrologer = row.astrologer_id === request.currentUser!.id;
+    // AP-08 (2026-07-09): resolve the caller's astrologer identity the same way
+    // the portal dashboard does (AP-04/05). astrologer_consultations.
+    // astrologer_id is TEXT and may be the mock slug, the AstrologerProfile.id
+    // (UUID), or (legacy) the User UUID — so a bare `=== currentUser.id`
+    // comparison only matched the legacy-UUID form and was never true for real
+    // astrologers, leaving completion ADMIN-only. Match against the caller's
+    // AstrologerProfile.id + userId instead.
+    const callerId = request.currentUser!.id;
+    let isAssignedAstrologer = row.astrologer_id === callerId;
+    if (!isAssignedAstrologer) {
+      const profile = await prisma.astrologerProfile
+        .findUnique({ where: { userId: callerId }, select: { id: true } })
+        .catch(() => null);
+      if (profile && row.astrologer_id === profile.id) {
+        isAssignedAstrologer = true;
+      }
+    }
     if (!isAdmin && !isAssignedAstrologer) {
       return reply.code(403).send({ error: 'Only the assigned astrologer or admin can mark complete.' });
     }
@@ -478,7 +585,14 @@ export async function consultationRoutes(server: FastifyInstance) {
     );
     const row = rows[0];
     if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
-    if (row.user_id !== request.currentUser!.id) {
+    // P0 #AP-10 (2026-07-09): allow the assigned astrologer + admins too.
+    // Previously only the booking devotee could fetch a single consultation,
+    // so an astrologer opening their own session's detail/success URL got 403.
+    const callerId = request.currentUser!.id;
+    const isOwner = row.user_id === callerId;
+    const isAssignedAstrologer = row.astrologer_id === callerId;
+    const isAdmin = (request.currentUser!.roles ?? []).includes('ADMIN');
+    if (!isOwner && !isAssignedAstrologer && !isAdmin) {
       return reply.code(403).send({ error: 'Not authorized.' });
     }
     return reply.send({
@@ -495,6 +609,11 @@ export async function consultationRoutes(server: FastifyInstance) {
         jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
         scheduledAt: row.scheduled_at,
         createdAt: row.created_at,
+        // P0 #AP-10: surface the devotee id only to the owner/admin — the
+        // assigned astrologer gets the consultation detail but not the
+        // devotee's user id (privacy: astrologers see room + booking meta,
+        // not the underlying account id).
+        ...(isOwner || isAdmin ? { userId: row.user_id } : {}),
       },
     });
   });
@@ -617,6 +736,61 @@ export async function consultationRoutes(server: FastifyInstance) {
         createdAt: row.created_at,
         paidAt: row.paid_at,
       })),
+    });
+  });
+
+  // ─── GET /by-room/:room ───────────────────────────────────────────────
+  // P0 #AP-01 (2026-07-09): paid-gate for the video-call room. The web
+  // /consultation/[id] page used to embed meet.jit.si for ANY visitor using a
+  // client-constructed room name — a logged-out user got a free branded
+  // room and could impersonate the astrologer. Now the page calls this
+  // endpoint; it 403s unless the room is tied to a PAID ('confirmed')
+  // consultation AND the caller is the devotee owner or the assigned
+  // astrologer (or admin). Free-trial `/consultation/start` rooms are NOT
+  // resolvable here (no row) → the page refuses to embed them.
+  server.get('/by-room/:room', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const room = (request.params as { room: string }).room;
+    const me = request.currentUser!;
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<Array<{
+      id: string; user_id: string; astrologer_id: string; status: string;
+      astrologer_name: string; reference: string; room_name: string | null;
+    }>>(
+      `SELECT id, user_id, astrologer_id, status, astrologer_name, reference, room_name
+         FROM astrologer_consultations
+        WHERE room_name = $1
+        LIMIT 1;`,
+      room,
+    );
+    const row = rows[0];
+    if (!row) {
+      return reply.code(404).send({ error: 'Consultation room not found.' });
+    }
+    if (row.status !== 'confirmed' && row.status !== 'completed') {
+      return reply.code(403).send({ error: 'Consultation is not paid/active.' });
+    }
+    // Authorization: the devotee who booked, or the assigned astrologer (by
+    // matching the astrologer_profile.user_id), or an admin.
+    const isOwner = row.user_id === me.id;
+    const isAdmin = me.roles.includes('ADMIN');
+    let isAssignedAstrologer = false;
+    if (!isOwner && !isAdmin) {
+      const astro = await prisma.astrologerProfile.findUnique({
+        where: { id: row.astrologer_id },
+        select: { userId: true },
+      }).catch(() => null);
+      isAssignedAstrologer = !!astro && astro.userId === me.id;
+    }
+    if (!isOwner && !isAdmin && !isAssignedAstrologer) {
+      return reply.code(403).send({ error: 'Not authorized for this consultation.' });
+    }
+    return reply.send({
+      authorized: true,
+      consultationId: row.id,
+      reference: row.reference,
+      astrologerName: row.astrologer_name,
+      roomName: row.room_name,
+      jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
     });
   });
 }

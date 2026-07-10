@@ -80,6 +80,14 @@ export async function priestRoutes(server: FastifyInstance) {
         languages: profile.languages ?? [],
         experienceYears: profile.experience ?? 0,
         bio: profile.bio ?? null,
+        // P0 #ag-01 / pp-04 (2026-07-09): a backfilled Priest is NOT active
+        // until an admin verifies it. The old default (status=active) granted
+        // instant priest powers to any pandit who hit /priest/dashboard
+        // without onboarding approval. Now backfill creates an inactive,
+        // pending-verification row — requireRole('priest') blocks it until
+        // an admin flips status to active.
+        status: 'inactive',
+        verificationStatus: 'pending',
       },
       select: { id: true },
     });
@@ -131,6 +139,23 @@ export async function priestRoutes(server: FastifyInstance) {
       const priestId = await getPriestId(request.currentUser!.id);
       const booking = await priestService.acceptBooking(id, priestId);
       return { message: 'Booking accepted successfully.', booking };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // ─── PATCH /bookings/:id/reject ─────────────────────────────────────────────
+  // P0 #pp-05 (2026-07-09): priest releases an assigned booking back to the
+  // queue. The accept/start/complete triplet had no escape valve — a priest
+  // who couldn't fulfil left the booking stuck. Reject clears priestId +
+  // drops to `confirmed` so the assignment queue re-picks it.
+
+  server.patch('/bookings/:id/reject', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      const booking = await priestService.rejectBooking(id, priestId);
+      return { message: 'Booking released back to the queue.', booking };
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
     }

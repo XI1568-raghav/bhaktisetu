@@ -239,7 +239,11 @@ export default function StoreAdminDashboard() {
        let productsSummary = { total: 0, active: 0, outOfStock: 0 };
        let topProducts: DashboardData['topProducts'] = [];
        try {
-         const pRes = await fetch(`${API_BASE_URL}/store/products`, { headers });
+         // P0 #S-06 (2026-07-09): pull from the owner-scoped /store-admin/products
+         // endpoint (the owner's own inventory), NOT the public /store/products
+         // catalog — the old call reported catalog totals, not the owner's
+         // stock, so Total/Active/Out-of-stock were wrong for multi-vendor.
+         const pRes = await fetch(`${API_BASE_URL}/store-admin/products`, { headers });
          if (pRes.ok) {
            const pJson = await pRes.json();
            const list: Array<{

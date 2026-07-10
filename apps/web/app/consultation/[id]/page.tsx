@@ -3,8 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, LogIn } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
+import { API_BASE_URL } from '../../../lib/api-config';
+import AuthGuard from '../../../components/AuthGuard';
 
+function buildAuthHeaders(accessToken: string | undefined): Record<string, string> {
+  return accessToken ? { authorization: `Bearer ${accessToken}` } : {};
+}
 
 /**
  * Live consultation room — embeds Jitsi Meet.
@@ -19,84 +25,197 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
  * not a DB consultation id; callers pass `roomName` (see Inbox.tsx,
  * astrology/view/page.tsx).
  *
+ * P0 #AP-01 (2026-07-09): the page used to embed meet.jit.si for ANY visitor
+ * using a client-constructed room name — a logged-out user got a free branded
+ * room and could impersonate the astrologer. Now the page resolves the room
+ * via GET /consultation/by-room/:room, which 403s unless the room is tied to a
+ * PAID ('confirmed') consultation AND the caller is the devotee owner or the
+ * assigned astrologer (or admin). The Jitsi iframe is only rendered after the
+ * API authorizes the room; otherwise an "unauthorized / not paid" state is
+ * shown. Free-trial `/consultation/start` rooms are NOT resolvable (no row) →
+ * refused.
+ *
  * Jitsi Meet on the public meet.jit.si server is free, requires no API key,
  * and supports HD video + audio + screen share + chat.
  */
+function ConsultationRoomContent() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const room = params.id as string;
+  const providerName = searchParams.get('provider') ?? 'Provider';
+  const { session } = useAuth();
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'notfound' | 'error'>('checking');
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!room) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/consultation/by-room/${encodeURIComponent(room)}`, {
+          headers: buildAuthHeaders(session?.accessToken),
+          credentials: 'include',
+        });
+        if (cancelled) return;
+        if (res.status === 404) {
+          setAuthStatus('notfound');
+          return;
+        }
+        if (res.status === 401 || res.status === 403) {
+          setAuthStatus('unauthorized');
+          return;
+        }
+        if (!res.ok) {
+          setAuthStatus('error');
+          return;
+        }
+        setAuthStatus('authorized');
+      } catch {
+        if (!cancelled) setAuthStatus('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [room, session?.accessToken]);
+
+  // Tiny delay to avoid hydration mismatch on first paint, only once authorized.
+  useEffect(() => {
+    if (authStatus !== 'authorized') return;
+    const timer = setTimeout(() => setReady(true), 50);
+    return () => clearTimeout(timer);
+  }, [authStatus]);
+
+  if (!room) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
+        <h1 className="text-xl font-semibold text-surface-800 mb-2">Invalid consultation link</h1>
+        <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+          Browse astrologers →
+        </Link>
+      </div>
+    );
+  }
+
+  if (authStatus === 'checking') {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+        <Loader2 className="w-8 h-8 text-saffron-600 mb-4 animate-spin" />
+        <p className="text-sm text-surface-600">Verifying your consultation…</p>
+      </div>
+    );
+  }
+
+  if (authStatus === 'notfound') {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
+        <h1 className="text-xl font-semibold text-surface-800 mb-2">Consultation not found</h1>
+        <p className="text-sm text-surface-600 mb-4 max-w-sm">
+          This room isn&apos;t linked to a paid consultation. Free-trial rooms are no longer available — please book a consultation to join a call.
+        </p>
+        <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+          Browse astrologers →
+        </Link>
+      </div>
+    );
+  }
+
+  if (authStatus === 'unauthorized') {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
+        <h1 className="text-xl font-semibold text-surface-800 mb-2">You can&apos;t join this call</h1>
+        <p className="text-sm text-surface-600 mb-4 max-w-sm">
+          {session?.accessToken
+            ? 'This consultation belongs to another user, or it hasn\'t been paid for yet.'
+            : 'Please sign in to join your consultation.'}
+        </p>
+        {session?.accessToken ? (
+          <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+            Browse astrologers →
+          </Link>
+        ) : (
+          <Link href="/login?redirect=/consultation" className="inline-flex items-center gap-2 text-saffron-600 hover:underline text-sm">
+            <LogIn className="w-4 h-4" /> Sign in
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  if (authStatus === 'error') {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
+        <h1 className="text-xl font-semibold text-surface-800 mb-2">Something went wrong</h1>
+        <p className="text-sm text-surface-600 mb-4">We couldn&apos;t verify your consultation. Please try again.</p>
+        <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+          Browse astrologers →
+        </Link>
+      </div>
+    );
+  }
+
+  // authorized — build Jitsi embed URL with sensible defaults: prejoin off, branding muted
+  const jitsiUrl =
+    `https://meet.jit.si/${encodeURIComponent(room)}` +
+    `#config.prejoinPageEnabled=false` +
+    `&config.disableDeepLinking=true` +
+    `&interfaceConfig.MOBILE_APP_PROMO=false` +
+    `&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
+
+  return (
+    <div className="min-h-[100dvh] flex flex-col" style={{ background: 'var(--color-bg)' }}>
+      {/* Header */}
+      <div className="border-b border-surface-100 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <Link
+            href="/astrology"
+            className="inline-flex items-center gap-2 text-sm text-surface-600 hover:text-saffron-600"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to astrologers
+          </Link>
+          <div className="text-xs text-surface-500">
+            Consultation with{' '}
+            <span className="font-medium text-surface-700">{providerName}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Jitsi iframe */}
+      <div className="flex-1 relative">
+        {ready ? (
+          <iframe
+            allow="camera; microphone; fullscreen; display-capture; autoplay"
+            src={jitsiUrl}
+            className="absolute inset-0 w-full h-full border-0"
+            title="Live consultation"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-surface-500">
+            Connecting…
+          </div>
+        )}
+      </div>
+
+      {/* Privacy footer */}
+      <div className="bg-white border-t border-surface-100 px-4 py-3 text-center">
+        <p className="text-[11px] text-surface-500">
+          Powered by Jitsi Meet — open-source video. Calls are encrypted in
+          transit. No recordings are stored on Darshya servers.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function ConsultationRoomPage() {
- const params = useParams();
- const searchParams = useSearchParams();
- const room = params.id as string;
- const providerName = searchParams.get('provider') ?? 'Provider';
- const [ready, setReady] = useState(false);
-
- useEffect(() => {
- // Tiny delay to avoid hydration mismatch on first paint
- const timer = setTimeout(() => setReady(true), 50);
- return () => clearTimeout(timer);
- }, []);
-
- if (!room) {
- return (
- <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
- <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
- <h1 className="text-xl font-semibold text-surface-800 mb-2">Invalid consultation link</h1>
- <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
- Browse astrologers →
- </Link>
- </div>
- );
- }
-
- // Build Jitsi embed URL with sensible defaults: prejoin off, branding muted
- const jitsiUrl =
- `https://meet.jit.si/${encodeURIComponent(room)}` +
- `#config.prejoinPageEnabled=false` +
- `&config.disableDeepLinking=true` +
- `&interfaceConfig.MOBILE_APP_PROMO=false` +
- `&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
-
- return (
- <div className="min-h-[100dvh] flex flex-col" style={{ background: 'var(--color-bg)' }}>
- {/* Header */}
- <div className="border-b border-surface-100 bg-white">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
- <Link
- href="/astrology"
- className="inline-flex items-center gap-2 text-sm text-surface-600 hover:text-saffron-600"
- >
- <ArrowLeft className="w-4 h-4" />
- Back to astrologers
- </Link>
- <div className="text-xs text-surface-500">
- Consultation with{' '}
- <span className="font-medium text-surface-700">{providerName}</span>
- </div>
- </div>
- </div>
-
- {/* Jitsi iframe */}
- <div className="flex-1 relative">
- {ready ? (
- <iframe
- allow="camera; microphone; fullscreen; display-capture; autoplay"
- src={jitsiUrl}
- className="absolute inset-0 w-full h-full border-0"
- title="Live consultation"
- />
- ) : (
- <div className="absolute inset-0 flex items-center justify-center text-sm text-surface-500">
- Connecting…
- </div>
- )}
- </div>
-
- {/* Privacy footer */}
- <div className="bg-white border-t border-surface-100 px-4 py-3 text-center">
- <p className="text-[11px] text-surface-500">
- Powered by Jitsi Meet — open-source video. Calls are encrypted in
- transit. No recordings are stored on Darshya servers.
- </p>
- </div>
- </div>
- );
+  return (
+    <AuthGuard>
+      <ConsultationRoomContent />
+    </AuthGuard>
+  );
 }

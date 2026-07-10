@@ -41,7 +41,10 @@ interface RevenueBreakdown {
   pendingPayouts: number;
   commissions: Array<{
     id: string;
-    bookingId: string;
+    // P0 #S-04: bookingId is now nullable (a Commission row may back a store
+    // order via storeOrderId instead). Either bookingId or storeOrderId is set.
+    bookingId: string | null;
+    storeOrderId?: string | null;
     providerId: string;
     amount: number;
     status: string;
@@ -534,6 +537,7 @@ export class AdminService {
         commissions: commissions.map((c) => ({
           id: c.id,
           bookingId: c.bookingId,
+          storeOrderId: c.storeOrderId,
           providerId: c.providerId,
           amount: Number(c.amount),
           status: c.status,

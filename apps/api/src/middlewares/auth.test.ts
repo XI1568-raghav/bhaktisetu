@@ -9,7 +9,7 @@ vi.mock('../lib/supabase.js', () => ({
   isDemoMode: false,
 }));
 
-import { authenticateUser } from './auth.js';
+import { authenticateUser, requireRole } from './auth.js';
 
 // Minimal Fastify request/reply harness. We only exercise the slice the
 // middleware touches: headers, log, currentUser, reply.code().send().
@@ -136,5 +136,48 @@ describe('authenticateUser — blocked-user gate (P0 #6)', () => {
 
     expect(reply.statusCode).toBe(200);
     expect(req.currentUser?.id).toBe('u-ok');
+  });
+});
+
+// ─── requireRole('priest') — verification gate (P0 #ag-01 / pp-04) ────────
+// The legacy implementation short-circuited on the PANDIT role alone, BEFORE
+// checking the Priest row's status. That let any self-signup pandit (no
+// Priest row, or an inactive one) reach every priest endpoint. The fix
+// requires an ACTIVE Priest record regardless of the PANDIT role.
+describe("requireRole('priest') — must require an active Priest row", () => {
+  const priestGuard = requireRole('priest');
+
+  function reqWith(roles: string[], userId = 'u-real-uuid') {
+    return {
+      currentUser: { id: userId, roles } as any,
+    } as any;
+  }
+
+  it('403s a PANDIT who has NO Priest row (self-signup bypass)', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue(null);
+    const reply = makeReply();
+    await priestGuard(reqWith(['PANDIT', 'DEVOTEE']), reply);
+    expect(reply.statusCode).toBe(403);
+  });
+
+  it('403s a PANDIT whose Priest row is inactive (backfill / suspended)', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ id: 'p1', status: 'inactive', verificationStatus: 'pending' });
+    const reply = makeReply();
+    await priestGuard(reqWith(['PANDIT', 'DEVOTEE']), reply);
+    expect(reply.statusCode).toBe(403);
+  });
+
+  it('passes a PANDIT with an ACTIVE Priest row (legit onboarded priest)', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ id: 'p1', status: 'active', verificationStatus: 'pending' });
+    const reply = makeReply();
+    await priestGuard(reqWith(['PANDIT', 'DEVOTEE']), reply);
+    expect(reply.statusCode).toBe(200);
+  });
+
+  it('403s a synthetic demo- id even with PANDIT (never hits the DB lookup)', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ id: 'p1', status: 'active', verificationStatus: 'pending' });
+    const reply = makeReply();
+    await priestGuard(reqWith(['PANDIT', 'DEVOTEE'], 'demo-pandit'), reply);
+    expect(reply.statusCode).toBe(403);
   });
 });

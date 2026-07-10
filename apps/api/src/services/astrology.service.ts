@@ -863,9 +863,20 @@ class AstrologyService {
   }
 
   // ── Update Consultation Status ────────────────────────────────────────────
-  async updateConsultation(id: string, status: 'COMPLETED' | 'CANCELLED'): Promise<PortalConsultation> {
+  // P0 #AP-03 (2026-07-09): ownership check. The old method mutated any
+  // session by id — any logged-in user could complete/cancel ANY
+  // consultation. Now the caller must be the devotee owner or the assigned
+  // astrologer (or it throws → route 403).
+  async updateConsultation(
+    id: string,
+    status: 'COMPLETED' | 'CANCELLED',
+    caller: { userId: string; isAdmin: boolean },
+  ): Promise<PortalConsultation> {
     const session = this.sessions.get(id);
     if (!session) throw new Error('Consultation not found');
+    if (!caller.isAdmin && session.userId !== caller.userId && session.astrologerId !== caller.userId) {
+      throw new Error('Not authorized for this consultation');
+    }
     session.status = status === 'COMPLETED' ? 'completed' : 'cancelled';
     if (status === 'COMPLETED') session.endedAt = new Date().toISOString();
     this.sessions.set(id, session);
@@ -873,9 +884,16 @@ class AstrologyService {
   }
 
   // ── Start Call (allocate Jitsi room) ──────────────────────────────────────
-  async startCall(id: string): Promise<{ roomUrl: string }> {
+  // P0 #AP-03 (2026-07-09): same ownership gate as updateConsultation.
+  async startCall(
+    id: string,
+    caller: { userId: string; isAdmin: boolean },
+  ): Promise<{ roomUrl: string }> {
     const session = this.sessions.get(id);
     if (!session) throw new Error('Consultation not found');
+    if (!caller.isAdmin && session.userId !== caller.userId && session.astrologerId !== caller.userId) {
+      throw new Error('Not authorized for this consultation');
+    }
     if (!session.roomUrl) {
       session.roomUrl = `https://meet.jit.si/darshya-${id}`;
       session.status = 'in_progress';

@@ -72,21 +72,25 @@ type OrgRole = 'OWNER' | 'ADMIN' | 'MEMBER';
 
 /**
  * Layer AM gate. If the temple is linked to an Org (org_id set), only
- * OWNER/ADMIN of that org may edit. For legacy unlinked temples, falls
- * back to the existing TEMPLE_MANAGER role check so we don't break
- * trusts that haven't migrated yet.
+ * OWNER/ADMIN of that org may edit. P0 #B1 (2026-07-09): legacy unlinked
+ * temples (no org_id) are admin-ONLY editable — the old `return
+ * hasManagerRole` fallback let ANY TEMPLE_MANAGER overwrite ANY unlinked
+ * temple's timingInfo by guessing the slug. Unlinked temples must be
+ * migrated to an org (or made admin-only) to be editable.
  */
 async function userCanEditTemple(
   templeId: string,
   userId: string,
   hasManagerRole: boolean,
+  isAdmin: boolean,
 ): Promise<boolean> {
+  void hasManagerRole; // legacy role check no longer grants access to unlinked temples
   const rows = await prisma.$queryRawUnsafe<{ org_id: string | null }[]>(
     `SELECT org_id FROM temples WHERE id = $1::uuid LIMIT 1`,
     templeId,
   );
   const orgId = rows[0]?.org_id;
-  if (!orgId) return hasManagerRole;
+  if (!orgId) return isAdmin;
   const member = await prisma.$queryRawUnsafe<{ role: OrgRole }[]>(
     `SELECT role FROM org_members WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
     orgId,
@@ -213,7 +217,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
       if (!slug) return reply.code(400).send({ error: 'slug required' });
       const temple = await prisma.temple.findUnique({ where: { slug }, select: { id: true, slug: true, name: true, timingInfo: true } });
       if (!temple) return reply.code(404).send({ error: 'Temple not found' });
-      const allowed = await userCanEditTemple(temple.id, request.currentUser!.id, hasManager);
+      const allowed = await userCanEditTemple(temple.id, request.currentUser!.id, hasManager, request.currentUser!.roles.includes('ADMIN'));
       if (!allowed) {
         return reply.code(403).send({ error: 'NotAuthorizedForTemple' });
       }
@@ -230,7 +234,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
       if (!slug) return reply.code(400).send({ error: 'slug required' });
       const tRow = await prisma.temple.findUnique({ where: { slug }, select: { id: true } });
       if (!tRow) return reply.code(404).send({ error: 'Temple not found' });
-      const allowed = await userCanEditTemple(tRow.id, request.currentUser!.id, hasManager);
+      const allowed = await userCanEditTemple(tRow.id, request.currentUser!.id, hasManager, request.currentUser!.roles.includes('ADMIN'));
       if (!allowed) {
         return reply.code(403).send({ error: 'NotAuthorizedForTemple' });
       }

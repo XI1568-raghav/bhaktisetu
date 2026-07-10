@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -99,6 +99,11 @@ function CheckoutContent() {
  const [orderPlaced, setOrderPlaced] = useState(false);
  const [orderNumber, setOrderNumber] = useState<string | null>(null);
  const [placeError, setPlaceError] = useState<string | null>(null);
+ // P0 #S-08 (2026-07-09): idempotency key for the create-order POST. Held in a
+ // ref so retries within one checkout attempt share a key (server dedupes),
+ // and regenerated for each fresh attempt. crypto.randomUUID is available in
+ // all evergreen browsers + secure contexts.
+ const idempotencyKeyRef = useRef<string | null>(null);
 
  if (items.length === 0 && !orderPlaced) {
  return (
@@ -155,6 +160,16 @@ function CheckoutContent() {
  async function handlePlaceOrder() {
  setPlacing(true);
  setPlaceError(null);
+ // P0 #S-08: (re)generate an idempotency key for this attempt. If a key is
+ // already set (e.g. this is a retry of the same attempt after a network
+ // error), reuse it so the server returns the existing order. Clearing it
+ // only on a fresh successful placement is handled below.
+ if (!idempotencyKeyRef.current) {
+ idempotencyKeyRef.current =
+ typeof crypto !== 'undefined' && 'randomUUID' in crypto
+ ? crypto.randomUUID()
+ : `ck-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+ }
  try {
  const addr = SAVED_ADDRESSES.find((a) => a.id === selectedAddress);
  if (!addr) throw new Error('Select a delivery address');
@@ -178,6 +193,7 @@ function CheckoutContent() {
  priceAtPurchase: it.product.price,
  })),
  totalAmountInr: total,
+ idempotencyKey: idempotencyKeyRef.current ?? undefined,
  shippingAddress: {
  fullName: user?.fullName ?? addr.label,
  line1: addr.line1,
@@ -197,6 +213,10 @@ function CheckoutContent() {
  const storeOrderId = json.data?.id ?? null;
  const storeOrderNumber = json.data?.orderNumber ?? null;
  setOrderNumber(storeOrderNumber);
+ // P0 #S-08: the order is created — clear the idempotency key so any future
+ // checkout attempt gets a fresh key (this attempt's retries already
+ // completed above).
+ idempotencyKeyRef.current = null;
 
  // COD path: order sits in PENDING; fulfilment confirms manually.
  if (paymentMethod === 'cod') {

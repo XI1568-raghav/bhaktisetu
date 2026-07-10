@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { API_BASE_URL } from '../../../lib/api-config';
 import { getAstrologerImage } from '../../../lib/images';
 import {
  Star,
@@ -170,7 +171,30 @@ function AstrologerDetailInner() {
  const sp = useSearchParams();
  const id = (sp.get('id') ?? '') as string;
 
- const astrologer = allAstrologers[id] || allAstrologers['astro_001']!;
+ const baseAstrologer = allAstrologers[id] || allAstrologers['astro_001']!;
+ // P0 #AP-11 (2026-07-09): overlay real data from GET /astrology/astrologers/:id
+ // when available, so profile edits (PATCH /astrologer-portal/profile) surface
+ // on the public detail page. The hardcoded allAstrologers map is the fallback
+ // only (e.g. API unreachable / unknown id).
+ const [astrologer, setAstrologer] = useState(baseAstrologer);
+ useEffect(() => {
+  let cancelled = false;
+  if (!id) return;
+  (async () => {
+   try {
+    const r = await fetch(`${API_BASE_URL}/astrology/astrologers/${encodeURIComponent(id)}`);
+    if (!r.ok) return;
+    const j = await r.json();
+    const detail = (j as any)?.astrologer;
+    if (!cancelled && detail && typeof detail === 'object') {
+     setAstrologer((prev) => ({ ...prev, ...detail }));
+    }
+   } catch {
+    // keep fallback
+   }
+  })();
+  return () => { cancelled = true; };
+ }, [id]);
 
  function getStatusColor() {
  if (astrologer.isOnline && !astrologer.isBusy) return 'bg-emerald-400';
@@ -350,24 +374,14 @@ function AstrologerDetailInner() {
  : 'border-surface-200 text-surface-400 cursor-not-allowed'
  }`}
  disabled={!astrologer.isOnline || astrologer.isBusy}
- onClick={async () => {
+ onClick={() => {
  if (!astrologer.isOnline || astrologer.isBusy) return;
- // Generate a deterministic-but-unique room id and
- // navigate the user into the Jitsi room. The
- // astrologer would receive the same link via
- // their dashboard in production.
- const roomId =
- typeof crypto !== 'undefined' && 'randomUUID' in crypto
- ? crypto.randomUUID().replace(/-/g, '').slice(0, 24)
- : Math.random().toString(36).slice(2, 14) +
- Math.random().toString(36).slice(2, 14);
- const slug = astrologer.name
- .toLowerCase()
- .replace(/[^a-z0-9]+/g, '-')
- .replace(/(^-|-$)/g, '')
- .slice(0, 24);
- const room = `darshya-astrologer-${slug}-${roomId}`;
- window.location.href = `/consultation/${room}?provider=${encodeURIComponent(astrologer.name)}`;
+ // P0 #AP-01/AP-02 (2026-07-09): free-trial Jitsi rooms are no longer
+ // issued — a video room is only embedded for a PAID consultation (see
+ // /consultation/[id], which resolves the room via GET /consultation/by-room).
+ // Route the caller to the paid booking flow; the room link is returned
+ // after Razorpay verification on the success page.
+ window.location.href = `/astrology/${encodeURIComponent(astrologer.id)}/book`;
  }}
  >
  <Phone className="w-4 h-4" />

@@ -66,6 +66,53 @@ const verifyEnrollmentSchema = z.object({
   razorpaySignature: z.string().optional(),
 });
 
+// P0 #wp-03 (2026-07-09): write the instructor's Commission row on PAID.
+// Previously the verify handler flipped PENDING_PAYMENT -> PAID and stopped,
+// so wellness instructors had no payout ledger entry (earnings effectively ₹0).
+// This writes a PENDING Commission row for the instructor's share
+// (priceInr * (1 - platformCommission)) keyed on wellnessEnrollmentId.
+// Idempotent: a duplicate verify does not double-write. Fire-and-forget so a
+// ledger failure cannot roll back the PAID flip.
+const WELLNESS_PLATFORM_COMMISSION = Number(process.env.WELLNESS_PLATFORM_COMMISSION ?? '0.20');
+async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void> {
+  try {
+    const existing = await prisma.commission.findFirst({
+      where: { wellnessEnrollmentId: enrollmentId },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const enrollment = await prisma.wellnessEnrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        id: true,
+        session: { select: { instructorId: true, priceInr: true } },
+      },
+    });
+    if (!enrollment?.session) return;
+
+    const price = Number(enrollment.session.priceInr);
+    if (!Number.isFinite(price) || price <= 0) return;
+
+    const platformRate = Number.isFinite(WELLNESS_PLATFORM_COMMISSION)
+      ? WELLNESS_PLATFORM_COMMISSION
+      : 0.20;
+    const instructorShare = Math.round(price * (1 - platformRate) * 100) / 100;
+
+    await prisma.commission.create({
+      data: {
+        wellnessEnrollmentId: enrollment.id,
+        providerId: enrollment.session.instructorId,
+        amount: instructorShare,
+        percentage: platformRate,
+        status: 'PENDING',
+      },
+    });
+  } catch (err) {
+    console.warn('[wellness-sessions] writeWellnessCommissionOnPaid failed:', err);
+  }
+}
+
 const sessionIdParams = z.object({ id: z.string().uuid() });
 const enrollmentIdParams = z.object({ id: z.string().uuid() });
 
@@ -281,6 +328,21 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         razorpayOrderId = `order_demo_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
       }
 
+      // P0 #wp-01 (2026-07-09): capacity check. The old handler created a
+      // PENDING_PAYMENT enrollment without comparing the enrolled count to
+      // session.capacity, so N concurrent enrolls over-booked past the cap.
+      // Count PAID + PENDING_PAYMENT (pending holds a slot until payment
+      // completes or the enrollment is reaped). Re-enrolling an existing
+      // pending row does not consume a new slot, so only gate the create path.
+      if (!existing) {
+        const held = await prisma.wellnessEnrollment.count({
+          where: { sessionId: session.id, status: { in: ['PAID', 'PENDING_PAYMENT'] } },
+        });
+        if (held >= session.capacity) {
+          return reply.code(409).send({ error: 'Session is full' });
+        }
+      }
+
       const enrollment = existing
         ? await prisma.wellnessEnrollment.update({
             where: { id: existing.id },
@@ -335,6 +397,15 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
           return reply.code(400).send({ error: 'Razorpay verification fields missing' });
         }
+        // NOTE (P0 #wp-02, 2026-07-09): an order-id mismatch guard belongs here
+        // (compare razorpayOrderId to the order id persisted at enroll time),
+        // but WellnessEnrollment has no razorpay_order_id column and no Payment
+        // row is created at enroll — the order id is only returned to the
+        // client, never stored. Adding the guard requires a schema migration
+        // (add wellness_enrollments.razorpay_order_id, or create a Payment row
+        // at enroll with gatewayOrderId). Tracked as a deferred follow-up; the
+        // ownership check above + amount bound to the session price (not the
+        // client) limit the blast radius until then.
         const expected = crypto
           .createHmac('sha256', razorpayKeySecret)
           .update(`${razorpayOrderId}|${razorpayPaymentId}`)
@@ -348,6 +419,9 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         where: { id: enrollment.id },
         data: { status: 'PAID' },
       });
+
+      // P0 #wp-03: record the instructor's payout ledger entry (fire-and-forget).
+      void writeWellnessCommissionOnPaid(updated.id);
 
       // Best-effort tax invoice — failure here must NOT block the PAID flip.
       void (async () => {

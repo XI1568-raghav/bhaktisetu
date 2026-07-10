@@ -151,12 +151,29 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     process.env.RAZORPAY_KEY_SECRET = 'test_secret_key';
   });
 
+  it('rejects a non-demo order id in demo mode (P0 #S-05)', async () => {
+    const service = await loadService();
+    // A real-looking order id must not be confirmable via the demo path even
+    // with the demo signature sentinel.
+    await expect(
+      service.verifyStoreOrderPayment('order_real_xyz', 'pay_x', 'demo', 'user-1'),
+    ).rejects.toThrow(/invalid demo signature/);
+  });
+
+  it('rejects the wrong demo signature sentinel (P0 #S-05)', async () => {
+    const service = await loadService();
+    await expect(
+      service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'not-demo', 'user-1'),
+    ).rejects.toThrow(/invalid demo signature/);
+    process.env.RAZORPAY_KEY_SECRET = 'test_secret_key';
+  });
+
   it('throws when no payment record matches the gateway order id', async () => {
     const service = await loadService();
     prismaMock.payment.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.verifyStoreOrderPayment('order_x', 'pay_x', 'sig', 'user-1'),
+      service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'demo', 'user-1'),
     ).rejects.toThrow(/Payment record not found/);
   });
 
@@ -168,7 +185,7 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     });
 
     await expect(
-      service.verifyStoreOrderPayment('order_x', 'pay_x', 'sig', 'user-1'),
+      service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'demo', 'user-1'),
     ).rejects.toThrow(/No store order linked/);
   });
 
@@ -183,7 +200,7 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     });
 
     await expect(
-      service.verifyStoreOrderPayment('order_x', 'pay_x', 'sig', 'attacker'),
+      service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'demo', 'attacker'),
     ).rejects.toThrow(/not authorized/);
     expect(prismaMock.payment.update).not.toHaveBeenCalled();
     expect(prismaMock.storeOrder.update).not.toHaveBeenCalled();
@@ -203,7 +220,7 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     prismaMock.payment.update.mockResolvedValue({});
     prismaMock.storeOrder.update.mockResolvedValue({});
 
-    const out = await service.verifyStoreOrderPayment('order_x', 'pay_x', 'sig', 'user-1');
+    const out = await service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'demo', 'user-1');
 
     expect(out).toEqual({
       verified: true,
@@ -238,7 +255,7 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     });
     prismaMock.payment.update.mockResolvedValue({});
 
-    await service.verifyStoreOrderPayment('order_x', 'pay_x', 'sig', 'user-1');
+    await service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'demo', 'user-1');
 
     expect(prismaMock.payment.update).toHaveBeenCalled();
     expect(prismaMock.storeOrder.update).not.toHaveBeenCalled();

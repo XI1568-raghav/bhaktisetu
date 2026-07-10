@@ -15,6 +15,14 @@ import {
  Star,
  Sparkles,
 } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
+
+function initialsOf(name: string | null | undefined): string {
+ if (!name) return '👤';
+ const parts = name.trim().split(/\s+/);
+ if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+ return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
 
 const quickLinks = [
  { icon: BookOpen, label: 'My Bookings', badge: '3', href: '/bookings' },
@@ -32,17 +40,26 @@ const moreLinks = [
 ];
 
 export default function MobileProfile() {
+ // P0 #PUB-05 (2026-07-09): render the real signed-in user instead of a
+ // hardcoded "Arjun Sharma" placeholder. Falls back to a sign-in prompt when
+ // there is no session so the page isn't impersonating a fake user.
+ const { user } = useAuth();
+
  return (
  <div className="bg-surface-50 min-h-full">
  {/* Profile header */}
  <div className="bg-gradient-to-b from-saffron-50 to-surface-50 px-5 pt-6 pb-4">
  <div className="flex items-center gap-4">
  <div className="w-16 h-16 bg-saffron-100 rounded-2xl flex items-center justify-center">
- <span className="text-xl font-bold text-saffron-700">AS</span>
+ <span className="text-xl font-bold text-saffron-700">{initialsOf(user?.fullName)}</span>
  </div>
  <div className="flex-1">
- <h1 className="text-lg font-bold text-surface-900">Arjun Sharma</h1>
- <p className="text-xs text-surface-400">+91 98765 43210</p>
+ <h1 className="text-lg font-bold text-surface-900">
+ {user?.fullName ?? 'Guest'}
+ </h1>
+ <p className="text-xs text-surface-400">
+ {user?.phone ? `+91 ${user.phone.replace(/^\+91/, '').trim()}` : 'Sign in to sync your profile'}
+ </p>
  <div className="flex items-center gap-1.5 mt-1">
  <span className="text-[10px] font-semibold text-saffron-700 bg-saffron-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
  <Shield className="w-2.5 h-2.5" />
@@ -51,9 +68,18 @@ export default function MobileProfile() {
  <span className="text-[10px] font-medium text-surface-400">Member since 2026</span>
  </div>
  </div>
+ {user ? (
  <button className="text-xs font-semibold text-saffron-600 bg-saffron-50 px-3 py-1.5 rounded-xl">
  Edit
  </button>
+ ) : (
+ <a
+ href="/auth/login"
+ className="text-xs font-semibold text-white bg-saffron-600 px-3 py-1.5 rounded-xl"
+ >
+ Sign In
+ </a>
+ )}
  </div>
 
  {/* Stats */}

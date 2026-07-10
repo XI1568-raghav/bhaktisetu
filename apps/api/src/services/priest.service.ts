@@ -286,6 +286,58 @@ export class PriestService {
   }
 
   /**
+   * P0 #pp-05 (2026-07-09): Priest rejects/declines an assigned booking.
+   * Previously a priest could accept/start/complete but never release — a
+   * booking stuck with an unwilling priest had no escape valve short of an
+   * admin cancel. This transitions `priest_assigned` (or `confirmed` when the
+   * priest was soft-assigned) back to `confirmed` with priestId cleared, so
+   * the booking re-enters the assignment queue. In-progress/completed/cancelled
+   * bookings refuse (irreversible). The devotee is notified via the existing
+   * booking-event email path (caller-side, see route).
+   */
+  async rejectBooking(bookingId: string, priestId: string) {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: { id: true, status: true, priestId: true, userId: true, bookingNumber: true },
+    });
+
+    if (!booking) {
+      throw new Error('Booking not found.');
+    }
+
+    // Only the assigned priest may reject. A confirmed-but-unassigned booking
+    // has no priest to reject it — that's a queue/assignment concern.
+    if (booking.priestId && booking.priestId !== priestId) {
+      throw new Error('This booking is assigned to a different priest.');
+    }
+
+    if (
+      booking.status !== 'priest_assigned' &&
+      booking.status !== 'confirmed'
+    ) {
+      throw new Error(
+        `Cannot reject a booking in "${booking.status}" status. Only assigned or confirmed bookings can be released.`
+      );
+    }
+
+    const updated = await prisma.pujaBooking.update({
+      where: { id: bookingId },
+      data: {
+        // Clear the assignment + drop back to confirmed so the assignment
+        // queue can re-pick it. priestId null = unassigned.
+        priestId: null,
+        status: 'confirmed',
+      },
+      include: {
+        temple: { select: { id: true, name: true } },
+        pujaType: { select: { id: true, name: true } },
+      },
+    });
+
+    return updated;
+  }
+
+  /**
    * Priest starts the puja — transitions to in_progress.
    */
   async startPuja(bookingId: string, priestId: string) {
