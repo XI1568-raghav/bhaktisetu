@@ -3,6 +3,12 @@ import { initSentry, captureException } from './lib/sentry.js';
 // imports that might throw, so errors during module load are captured.
 initSentry();
 
+// P1-15: boot-time env validation. MUST run before any route module that reads
+// secrets so a missing prod key (JWT_SECRET, DATABASE_URL, CORS_ORIGIN) fails
+// fast at startup instead of mid-request. Additive — does NOT replace the
+// ad-hoc `process.env.*` reads elsewhere; just adds a schema parse + prod guard.
+import './lib/env.js';
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -100,6 +106,8 @@ import { voicePanditRoutes } from './routes/voice-pandit.js';
 import { recordLatency, snapshotStats, startMetricsReporter } from './lib/route-metrics.js';
 import { prisma } from './lib/prisma.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
+import { isJobQueueAvailable } from './services/job-queue.service.js';
+import { isJobQueueConfigured } from './lib/env.js';
 
 const server = Fastify({
   logger: {
@@ -218,8 +226,71 @@ async function bootstrap() {
   await registerAuthDecorators(server);
 
   // Health + readiness probes (excluded from rate-limit allowList above).
+  //
+  // /health = LIVENESS — intentionally cheap + static. Load balancers (Render
+  // healthCheckPath) hit this on every tick, so it must never false-negative
+  // under DB/Redis pressure. Returns 200 as long as the process is alive.
+  //
+  // NOTE on the "second /health": cron.ts:92 also declares `server.get('/health')`,
+  // but that route is registered under the `/api/v1/cron` prefix (see
+  // server.register(cronRoutes, { prefix: '/api/v1/cron' }) below), so it
+  // resolves to /api/v1/cron/health — NOT a root-level duplicate of this /health.
+  // Only ONE root /health exists. No removal needed.
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
-  server.get('/ready', async () => ({ ready: true, timestamp: new Date().toISOString() }));
+
+  // /ready = READINESS — actually verifies dependencies. Returns 503 if the DB
+  // is unreachable or (when REDIS_URL is set) Redis won't ping. Used by
+  // orchestrators that route traffic only to healthy nodes. Kept OUT of the
+  // liveness path so a transient DB blip doesn't restart the pod.
+  server.get('/ready', async (_request, reply) => {
+    const checks: { db: 'ok' | 'fail'; redis: 'ok' | 'fail' | 'skipped'; queue: 'ok' | 'degraded' } = {
+      db: 'ok',
+      redis: 'skipped',
+      queue: isJobQueueAvailable() ? 'ok' : 'degraded',
+    };
+    let ok = true;
+
+    // DB probe — SELECT 1 is the cheapest round-trip that proves the pool works.
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (err) {
+      ok = false;
+      checks.db = 'fail';
+      server.log.error({ err }, 'readiness DB probe failed');
+    }
+
+    // Redis probe — only when REDIS_URL is configured. Pings the same Upstash
+    // instance BullMQ uses so /ready reflects the real worker dependency.
+    if (isJobQueueConfigured) {
+      try {
+        const { default: Ioredis } = await import('ioredis');
+        const url = process.env.REDIS_URL!;
+        // Parse host/port/password the same way job-queue.service does.
+        const u = new URL(url);
+        const conn = new Ioredis({
+          host: u.hostname,
+          port: u.port ? Number(u.port) : 6379,
+          password: u.password ? decodeURIComponent(u.password) : undefined,
+          username: u.username && u.username !== 'default' ? u.username : undefined,
+          tls: u.protocol === 'rediss:' ? {} : undefined,
+          maxRetriesPerRequest: 1,
+          enableReadyCheck: false,
+          lazyConnect: false,
+        });
+        await conn.ping();
+        checks.redis = 'ok';
+        conn.disconnect();
+      } catch (err) {
+        ok = false;
+        checks.redis = 'fail';
+        server.log.error({ err }, 'readiness Redis probe failed');
+      }
+    }
+
+    const body = { ready: ok, timestamp: new Date().toISOString(), checks };
+    if (!ok) return reply.code(503).send(body);
+    return reply.send(body);
+  });
 
   // ── Per-route latency instrumentation ─────────────────────────────
   // Lightweight in-memory p50/p95/p99 tracker. Reporter logs top-20 by p95

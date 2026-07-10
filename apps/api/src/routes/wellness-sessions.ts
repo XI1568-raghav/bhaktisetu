@@ -346,13 +346,14 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       const enrollment = existing
         ? await prisma.wellnessEnrollment.update({
             where: { id: existing.id },
-            data: { status: 'PENDING_PAYMENT' },
+            data: { status: 'PENDING_PAYMENT', razorpayOrderId },
           })
         : await prisma.wellnessEnrollment.create({
             data: {
               sessionId: session.id,
               userId,
               status: 'PENDING_PAYMENT',
+              razorpayOrderId,
             },
           });
 
@@ -397,20 +398,28 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
           return reply.code(400).send({ error: 'Razorpay verification fields missing' });
         }
-        // NOTE (P0 #wp-02, 2026-07-09): an order-id mismatch guard belongs here
-        // (compare razorpayOrderId to the order id persisted at enroll time),
-        // but WellnessEnrollment has no razorpay_order_id column and no Payment
-        // row is created at enroll — the order id is only returned to the
-        // client, never stored. Adding the guard requires a schema migration
-        // (add wellness_enrollments.razorpay_order_id, or create a Payment row
-        // at enroll with gatewayOrderId). Tracked as a deferred follow-up; the
-        // ownership check above + amount bound to the session price (not the
-        // client) limit the blast radius until then.
+        // P0 #wp-02 (2026-07-10): order-id mismatch guard. The signature is
+        // verified over the client-supplied order id but that id was never
+        // compared to the order id persisted at enroll time — so a valid
+        // signature for ANY of the caller's orders (incl. a stale/cancelled
+        // order) would mark THIS enrollment paid. Mirrors donations.ts /
+        // consultation.ts. A null stored order (pre-fix enrollment with no
+        // recorded order) cannot be verified — reject rather than fall through
+        // to signature-only, which would re-open the gap for null-order rows.
+        if (!enrollment.razorpayOrderId || razorpayOrderId !== enrollment.razorpayOrderId) {
+          return reply.code(400).send({ error: 'Order id mismatch.' });
+        }
         const expected = crypto
           .createHmac('sha256', razorpayKeySecret)
           .update(`${razorpayOrderId}|${razorpayPaymentId}`)
           .digest('hex');
-        if (expected !== razorpaySignature) {
+        // Timing-safe compare — `===` on hex strings leaks signature bytes
+        // through response-time deltas under load (mirrors donations.ts).
+        const expBuf = Buffer.from(expected, 'utf8');
+        const sigBuf = Buffer.from(razorpaySignature, 'utf8');
+        const sigOk =
+          expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
+        if (!sigOk) {
           return reply.code(400).send({ error: 'Invalid payment signature' });
         }
       }

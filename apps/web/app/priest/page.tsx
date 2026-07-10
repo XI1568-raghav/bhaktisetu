@@ -127,7 +127,11 @@ export default function PriestDashboard() {
  }
  }
  async function fetchKyc() {
- if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+ // P0 #AP-07 (2026-07-10): fetch KYC for demo sessions too — the old
+ // startsWith('demo-') skip left a demo priest on 'unsubmitted' KYC,
+ // masking backend state during demo. The API accepts demo tokens in
+ // non-prod; a non-OK / catch keeps the existing fallback.
+ if (!session?.accessToken) return;
  try {
  const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },

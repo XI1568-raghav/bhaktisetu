@@ -61,7 +61,11 @@ export default function TempleDashboard() {
  const [api, setApi] = useState<ApiDashboard | null>(null);
 
  useEffect(() => {
-  if (!session?.accessToken || session.accessToken.startsWith('demo-')) return;
+  // P0 #AP-07 (2026-07-10): fetch for demo sessions too. The old
+  // startsWith('demo-') skip left a demo temple manager on hardcoded
+  // zero stats, masking backend bugs during demo. The API accepts demo
+  // tokens in non-prod; a non-OK / catch keeps the existing fallback.
+  if (!session?.accessToken) return;
   (async () => {
    try {
     const r = await fetch(`${API_BASE_URL}/temple-portal/dashboard`, {

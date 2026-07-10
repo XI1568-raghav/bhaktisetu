@@ -47,3 +47,10 @@ supabase
 **/*.log
 .idea
 .vscode
+
+# PDFs — never needed in a runtime image. The repo carries Bhaktisetu.pdf
+# (~MBs); exclude it (and any other *.pdf) so it never enters the build
+# context or image layers. Do NOT delete the file itself — that's the
+# owner's call, out of scope for the build hardening pass.
+*.pdf
+Bhaktisetu.pdf

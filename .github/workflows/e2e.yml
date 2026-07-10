@@ -1,14 +1,15 @@
 name: E2E (Playwright)
 
-# Free-tier budget: only PRs + weekly schedule + manual. Push trigger removed
-# (was ~15 min × every push = ~900 min/mo). See docs/free-tier-budgets.md.
+# Free-tier budget: schedule + manual ONLY. The pull_request trigger was
+# removed (2026-07-10): it ran ~15 min of non-gating E2E against PROD on
+# every PR, burning ~75+ min/mo to test already-deployed code rather than
+# the PR's own code (no PR-preview infra exists — see P2-36 in fix-spec.md).
+# E2E is INFORMATIONAL: continue-on-error stays true and the base URL is
+# prod, so it must NOT gate PRs. It now catches prod regression on the
+# weekly Sun 04:00 UTC schedule + manual runs only.
+# See docs/free-tier-budgets.md.
 
 on:
-  pull_request:
-    branches: [main, develop]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
   schedule:
     # Weekly Sun 04:00 UTC. Catches prod regression independent of pushes.
     - cron: '0 4 * * 0'
