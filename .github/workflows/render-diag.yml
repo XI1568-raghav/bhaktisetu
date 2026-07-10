@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'deploys | deploy | list | logs2 | cftoken'
+        description: 'deploys | deploy | list | logs | logs2 | cftoken'
         required: false
         default: 'deploys'
       sid:
@@ -58,6 +58,19 @@ jobs:
           echo "=== all services (name, id, type, branch, url, lastDeploy) ==="
           curl -s -H "$A" "https://api.render.com/v1/services?limit=50" \
             | jq -r '.[] | (.service // .) | "\(.name)  id=\(.id)  type=\(.type // .env)  branch=\(.repoBranch // .autoDeploy // "n/a")  url=\(.serviceDetails.url // "n/a")  status=\(.status // "n/a")"'
+
+      - name: logs — fetch recent service runtime logs (shows prisma migrate + server start)
+        if: ${{ github.event.inputs.mode == 'logs' }}
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          SID: ${{ github.event.inputs.sid }}
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer $RK"
+          echo "=== last 80 service log lines for $SID ==="
+          # Render service logs endpoint; limit + tail for the startup transcript
+          raw=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/logs?limit=100")
+          echo "$raw" | jq -r '.[]? // empty' 2>/dev/null | tail -80 || echo "$raw" | tail -80
 
       - name: deploys — read-only recent deploy history (NO trigger, zero build cost)
         if: ${{ github.event.inputs.mode == 'deploys' }}
