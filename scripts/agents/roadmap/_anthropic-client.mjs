@@ -126,10 +126,13 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
   // ANTHROPIC_MODEL env wins if set explicitly (Render + GH can override per environment).
   const baseUrl = (process.env.ANTHROPIC_BASE_URL || '').toLowerCase();
   const isBlackbox = /blackbox/.test(baseUrl);
+  // 2026-07-10: Blackbox proxy is open-source-only — claude-opus-* returns 403
+  // ("Only open-source models are supported"). Only blackboxai/z-ai/glm-5.2 works.
+  // Direct Anthropic (non-Blackbox) still uses Opus 4.7. ANTHROPIC_MODEL env wins if set.
   const model = process.env.ANTHROPIC_MODEL ||
-    (isBlackbox ? 'blackboxai/anthropic/claude-opus-4.7' : 'claude-opus-4-7');
-  if (!/opus-4[\.-]7/.test(model)) {
-    throw new ModelRejectedError(`Refusing to call non-Opus-4.7 model: ${model}. Set ANTHROPIC_MODEL to an Opus 4.7 variant.`, null);
+    (isBlackbox ? 'blackboxai/z-ai/glm-5.2' : 'claude-opus-4-7');
+  if (!/opus-4[\.-]7|glm-5[\.-]2/.test(model)) {
+    throw new ModelRejectedError(`Refusing to call unsupported model: ${model}. Set ANTHROPIC_MODEL to an Opus 4.7 variant or blackboxai/z-ai/glm-5.2.`, null);
   }
 
   // Auto-stream above SDK threshold OR explicit caller request.
