@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
+import { requireCronSecretHeader } from '../middlewares/cron-auth.js';
 import { astrologyService } from '../services/astrology.service.js';
 import {
   generateKundli,
@@ -196,15 +197,11 @@ export async function astrologyRoutes(server: FastifyInstance) {
 
   // ─── POST /horoscope/prewarm ───────────────────────────────────────────────
   // Cron-only endpoint. Token-gated via CRON_SECRET to prevent abuse.
+  // P0 #PUB-04 (2026-07-09): gated through requireCronSecretHeader —
+  // constant-time compare + default-deny when CRON_SECRET is unset (the old
+  // inline check used `!==` (timing oracle) AND skipped auth when unset).
 
-  server.post('/horoscope/prewarm', async (request, reply) => {
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const token = (request.headers['x-cron-secret'] as string | undefined) ?? '';
-      if (token !== cronSecret) {
-        return reply.code(401).send({ error: 'Invalid cron secret.' });
-      }
-    }
+  server.post('/horoscope/prewarm', { preHandler: [requireCronSecretHeader] }, async () => {
     const result = await prewarmDailyHoroscopes();
     return { prewarmed: result };
   });

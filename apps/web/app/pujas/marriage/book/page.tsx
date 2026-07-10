@@ -536,8 +536,13 @@ export default function BookMarriage() {
 
  {step === 5 && (
  <div>
- <h2 className="text-xl font-bold text-surface-800 mb-1">Review & pay</h2>
- <p className="text-sm text-surface-500 mb-6">Confirm details to complete your booking.</p>
+ <h2 className="text-xl font-bold text-surface-800 mb-1">Review & request</h2>
+ {/* P0 #PBO-15 (2026-07-09): this is an inquiry, not a paid booking — the
+   weddings API has no payment/booking endpoint, only /muhurat + /inquiry.
+   Reframed from "Review & pay / complete your booking" so the wizard no
+   longer implies a transaction the backend cannot fulfil. The figures below
+   are an estimate the concierge confirms on the call. */}
+ <p className="text-sm text-surface-500 mb-6">Review the details below. The estimated amount is indicative — our wedding coordinator will call to confirm the pandit, date, and final pricing.</p>
 
  <div className="space-y-3">
  <Row label="Couple" value={`${brideName} & ${groomName}`} />
@@ -570,7 +575,7 @@ export default function BookMarriage() {
  <span>₹{Math.round(total * 0.18).toLocaleString('en-IN')}</span>
  </div>
  <div className="flex justify-between text-lg font-bold text-surface-800 pt-2 border-t border-[var(--color-divider)]">
- <span>Total</span>
+ <span>Estimated total</span>
  <span>₹{Math.round(total * 1.18).toLocaleString('en-IN')}</span>
  </div>
  </div>

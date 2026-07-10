@@ -790,7 +790,9 @@ model StoreProfile {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  products StoreProduct[]
+  products   StoreProduct[]
+  // P0 #S-11: back-relation for StoreOrder.storeProfileId (store attribution).
+  storeOrders StoreOrder[]
 
   @@index([city])
   @@index([approved])
@@ -919,16 +921,25 @@ model MarketplaceSubscription {
 
 model Commission {
   id         String           @id @default(uuid()) @db.Uuid
-  bookingId  String           @map("booking_id")
-  providerId String           @map("provider_id") @db.Uuid
-  amount     Decimal          @db.Decimal(10, 2)
-  percentage Decimal          @db.Decimal(5, 4)
-  status     CommissionStatus @default(PENDING)
-  paidAt     DateTime?        @map("paid_at")
-  createdAt  DateTime         @default(now()) @map("created_at")
+  // P0 #S-04 (2026-07-09): a Commission row is now either puja-booking-backed,
+  // store-order-backed, OR wellness-enrollment-backed. Exactly one of
+  // (bookingId, storeOrderId, wellnessEnrollmentId) is set per row. bookingId
+  // was previously non-null + the only key, so store orders + wellness
+  // enrollments never got a Commission row (payouts were never written).
+  bookingId             String?          @map("booking_id")
+  storeOrderId          String?          @map("store_order_id")
+  wellnessEnrollmentId  String?          @map("wellness_enrollment_id")
+  providerId            String           @map("provider_id") @db.Uuid
+  amount                Decimal          @db.Decimal(10, 2)
+  percentage            Decimal          @db.Decimal(5, 4)
+  status                CommissionStatus @default(PENDING)
+  paidAt                DateTime?        @map("paid_at")
+  createdAt             DateTime         @default(now()) @map("created_at")
 
   @@index([providerId])
   @@index([status])
+  @@index([storeOrderId])
+  @@index([wellnessEnrollmentId])
   @@map("commissions")
 }
 
@@ -1179,6 +1190,11 @@ model Donation {
   razorpayPaymentId String?        @map("razorpay_payment_id")
   receiptNumber     String?        @unique @map("receipt_number")
   status            DonationStatus @default(created)
+  // P0 #PBO-14 (2026-07-09): donor PAN (required ≥ ₹2,000 for 80G) + the
+  // optional dedication message. Collected by DonationForm but previously
+  // dropped before persistence, so the 80G receipt omitted the donor PAN.
+  donorPan          String?        @map("donor_pan")
+  dedication        String?        @map("dedication")
   createdAt         DateTime       @default(now()) @map("created_at")
   paidAt            DateTime?      @map("paid_at")
 
@@ -1292,7 +1308,18 @@ model SupportTicketMessage {
 model StoreOrder {
   id              String           @id @default(uuid()) @db.Uuid
   orderNumber     String           @unique @map("order_number")
+  // P0 #S-08 (2026-07-09): client-generated idempotency key so a double-POST
+  // (network retry, double-click past the disabled-button guard) returns the
+  // existing order instead of creating a duplicate. Unique per user.
+  idempotencyKey  String?          @map("idempotency_key")
   userId          String           @map("user_id") @db.Uuid
+  // P0 #S-11 (2026-07-09): store attribution FK. Previously a StoreOrder had
+  // no direct link to its StoreProfile — attribution was inferred from the
+  // first line item's product, which breaks for mixed-store carts and makes
+  // owner-scoped order queries impossible (see S-15). Set at checkout from the
+  // product's store. Nullable + ON DELETE SET NULL so historical orders survive
+  // a store-profile removal (receipt/tax traceability).
+  storeProfileId  String?          @map("store_profile_id") @db.Uuid
   // items: [{ productId, qty, priceAtPurchase }]
   items           Json
   totalAmountInr  Decimal          @map("total_amount_inr") @db.Decimal(10, 2)
@@ -1305,12 +1332,16 @@ model StoreOrder {
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payment Payment? @relation("StoreOrderPayment", fields: [paymentId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeProfile StoreProfile? @relation(fields: [storeProfileId], references: [id], onDelete: SetNull)
+  payment     Payment?     @relation("StoreOrderPayment", fields: [paymentId], references: [id])
 
   @@index([userId])
+  @@index([storeProfileId])
   @@index([status])
   @@index([createdAt(sort: Desc)])
+  // P0 #S-08: dedupe double-POSTs within a user's checkout attempt.
+  @@unique([userId, idempotencyKey])
   @@map("store_orders")
 }
 

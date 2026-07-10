@@ -1,0 +1,40 @@
+{
+  "domain": "wellness-portal",
+  "auditedAt": "2026-07-09",
+  "scope": "apps/web/app/wellness/** + wellness-portal/**, apps/api/src/routes/wellness-sessions.ts + wellness-portal.ts, apps/web/lib/wellness-api.ts + use-premium.ts",
+  "auditor": "main-loop-direct (agent retry died with proxy socket error — fallback per doctrine)",
+  "findings": [
+    {
+      "id": "wp-01-enroll-capacity-race",
+      "title": "Enrollment has no capacity check — concurrent enrolls over-book past maxParticipants/capacity",
+      "severity": "high",
+      "file": "apps/api/src/routes/wellness-sessions.ts:240-307 (POST /sessions/:id/enroll)",
+      "evidence": "The enroll handler checks session.status (CANCELLED/COMPLETED, lines 252-256) and an existing enrollment (lines 262-267), then creates a PENDING_PAYMENT enrollment (lines 289-295). It NEVER compares the current enrolled count against session.capacity before creating. The capacity is stored (schema capacity field, line 42) and shown on the session, but not enforced at enroll. N concurrent requests (or N sequential before payment completes) all create enrollments regardless of capacity.",
+      "impact": "A session with capacity=20 can receive 50+ enrollments. Instructor over-delivers or has to turn away paid users; or the session is sold out but users keep paying → refunds + trust loss. High (revenue/integrity).",
+      "repro": "1. Create a wellness session with capacity=2. 2. Fire 5 concurrent POST /sessions/:id/enroll as 5 different devotees. Expected: 2 succeed, 3 get 409 'session full'. Observed: all 5 create PENDING_PAYMENT enrollments (5 > capacity 2).",
+      "suggestedFix": "Before creating the enrollment, count PAID+PENDING_PAYMENT enrollments for the session and reject with 409 'session full' if >= capacity. Use a transaction + row lock (SELECT ... FOR UPDATE on the session) or a unique constraint to prevent the race. Note PENDING_PAYMENT should count toward capacity (or expire after N minutes) to avoid holding slots indefinitely. Add a test: concurrent enroll past capacity is rejected."
+    },
+    {
+      "id": "wp-02-verify-order-id-mismatch",
+      "title": "Enrollment verify does not compare client razorpayOrderId to the stored enrollment order id — stale/cancelled order can mark a new enrollment PAID",
+      "severity": "medium",
+      "file": "apps/api/src/routes/wellness-sessions.ts:310-350 (POST /enrollments/:id/verify)",
+      "evidence": "Verify computes HMAC over client-supplied `razorpayOrderId|razorpayPaymentId` (line 338-341) and checks the signature (line 342), then flips status to PAID (line 347-350). It NEVER compares `body.data.razorpayOrderId` to `enrollment.razorpayOrderId` (the order id created at enroll, line 279). Ownership IS checked (line 329 `enrollment.userId !== userId && !isAdmin`), so cross-user exploit is blocked — but a user can verify an enrollment with a Razorpay order id that was created for a DIFFERENT enrollment/amount, or a stale/cancelled order, as long as the signature is valid for that order. Same defect class as donations.ts (C2), mitigated by the ownership check.",
+      "impact": "Payment integrity hole: a user could mark an enrollment PAID using payment proof from a different/cheaper order of their own (amount mismatch not enforced server-side). Medium (ownership prevents the worst case, but amount/order integrity is not verified).",
+      "repro": "1. User enrolls in a ₹1000 session → enrollment A with order_1000. 2. User separately pays a ₹100 Razorpay order (order_100) for anything. 3. POST /enrollments/A/verify {razorpayOrderId: order_100, razorpayPaymentId, razorpaySignature(valid for order_100)}. Expected: 400 order-id mismatch / amount mismatch. Observed: 200, enrollment A flipped PAID (₹1000 session marked paid for a ₹100 payment).",
+      "suggestedFix": "After the ownership check, add `if (body.data.razorpayOrderId !== enrollment.razorpayOrderId) return reply.code(400).send({ error: 'Order id mismatch' });` (mirror consultation.ts:288). Optionally also verify the Razorpay order amount equals session.priceInr. Add a test: verify with a mismatched order id → 400."
+    },
+    {
+      "id": "wp-03-no-payout-write",
+      "title": "Instructor payouts never written — earnings likely ₹0 (same class as priest createPriestPayout zero-callers)",
+      "severity": "medium",
+      "file": "apps/api/src/routes/wellness-sessions.ts:347-350 (verify flips PAID, no payout write) + wellness-portal.ts:66-95 (earnings read from enrollments, no payout table)",
+      "evidence": "The verify handler flips enrollment status to PAID (line 347-350) and fires a best-effort invoice email, but writes NO Commission/Payout row for the instructor. The instructor dashboard (wellness-portal.ts:66-95) computes earnings by aggregating PAID enrollments × session.priceInr in-memory — there is no WellnessPayout/disbursement table or createInstructorPayout call. So 'earnings' is a derived number with no payout ledger.",
+      "impact": "Instructors see a derived earnings figure but no actual payout can be disbursed or tracked — no payout lifecycle (pending/approved/paid). Paralyzes instructor payment ops. Medium (core provider flow, same class as priest pp-02).",
+      "repro": "1. As a devotee, enroll + pay for a session. 2. As the instructor, GET /wellness-portal/dashboard → earnings shows a number but there is no payout record/endpoint to request or track disbursement. Expected: a payout ledger row per paid enrollment. Observed: no payout row exists anywhere.",
+      "suggestedFix": "Either (a) create a WellnessPayout row on PAID (instructor share = priceInr - platformCommission) like the priest createPriestPayout pattern, OR (b) document that earnings are derived + add an admin payout-disbursement flow. Whichever matches the product model — but a payout ledger is needed for ops.",
+      "priorVerdict": "new"
+    }
+  ],
+  "summary": "3 findings (1 high, 2 medium). Wellness is the BEST-BUILT portal of the set: roomUrl IS paid-gated (wellness-sessions.ts:195-236 — stripped from public listing, only PAID enrollee/instructor/admin see it), IDOR is prevented (wellness-portal.ts scopes all queries by instructorId=currentUser.id), ownership is checked on verify (line 329). The 3 real bugs are the capacity race (wp-01, high), the order-id mismatch on verify (wp-02, medium — same class as donations C2 but mitigated by ownership), and the missing payout ledger (wp-03, medium). NO critical found in wellness — a genuine positive. NOTE: instructor onboarding (does becoming WELLNESS_INSTRUCTOR create profile+role or only a Lead, cf the self-onboard bug) + timezone/past-date validation were not exhaustively verified by the main loop due to the dead agent — recommend a focused re-check, but the role-assign path mirrors the priest pattern (likely shares the self-role-assign concern in ag-01)."
+}

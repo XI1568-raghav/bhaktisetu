@@ -76,7 +76,9 @@ export async function paymentRoutes(server: FastifyInstance) {
         const result = await paymentService.verifyPayment(
           body.razorpayOrderId,
           body.razorpayPaymentId,
-          body.razorpaySignature
+          body.razorpaySignature,
+          request.currentUser!.id,
+          request.currentUser!.roles
         );
 
         return result;

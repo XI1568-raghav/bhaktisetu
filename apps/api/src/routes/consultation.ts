@@ -538,7 +538,23 @@ export async function consultationRoutes(server: FastifyInstance) {
     if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
     const roles = request.currentUser!.roles ?? [];
     const isAdmin = roles.includes('ADMIN');
-    const isAssignedAstrologer = row.astrologer_id === request.currentUser!.id;
+    // AP-08 (2026-07-09): resolve the caller's astrologer identity the same way
+    // the portal dashboard does (AP-04/05). astrologer_consultations.
+    // astrologer_id is TEXT and may be the mock slug, the AstrologerProfile.id
+    // (UUID), or (legacy) the User UUID — so a bare `=== currentUser.id`
+    // comparison only matched the legacy-UUID form and was never true for real
+    // astrologers, leaving completion ADMIN-only. Match against the caller's
+    // AstrologerProfile.id + userId instead.
+    const callerId = request.currentUser!.id;
+    let isAssignedAstrologer = row.astrologer_id === callerId;
+    if (!isAssignedAstrologer) {
+      const profile = await prisma.astrologerProfile
+        .findUnique({ where: { userId: callerId }, select: { id: true } })
+        .catch(() => null);
+      if (profile && row.astrologer_id === profile.id) {
+        isAssignedAstrologer = true;
+      }
+    }
     if (!isAdmin && !isAssignedAstrologer) {
       return reply.code(403).send({ error: 'Only the assigned astrologer or admin can mark complete.' });
     }
@@ -569,7 +585,14 @@ export async function consultationRoutes(server: FastifyInstance) {
     );
     const row = rows[0];
     if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
-    if (row.user_id !== request.currentUser!.id) {
+    // P0 #AP-10 (2026-07-09): allow the assigned astrologer + admins too.
+    // Previously only the booking devotee could fetch a single consultation,
+    // so an astrologer opening their own session's detail/success URL got 403.
+    const callerId = request.currentUser!.id;
+    const isOwner = row.user_id === callerId;
+    const isAssignedAstrologer = row.astrologer_id === callerId;
+    const isAdmin = (request.currentUser!.roles ?? []).includes('ADMIN');
+    if (!isOwner && !isAssignedAstrologer && !isAdmin) {
       return reply.code(403).send({ error: 'Not authorized.' });
     }
     return reply.send({
@@ -586,6 +609,11 @@ export async function consultationRoutes(server: FastifyInstance) {
         jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
         scheduledAt: row.scheduled_at,
         createdAt: row.created_at,
+        // P0 #AP-10: surface the devotee id only to the owner/admin — the
+        // assigned astrologer gets the consultation detail but not the
+        // devotee's user id (privacy: astrologers see room + booking meta,
+        // not the underlying account id).
+        ...(isOwner || isAdmin ? { userId: row.user_id } : {}),
       },
     });
   });

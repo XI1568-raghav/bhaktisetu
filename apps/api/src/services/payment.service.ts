@@ -5,6 +5,10 @@ import { prisma } from '../lib/prisma.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
+// PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
+// the booking webhook path never reaches them; these helpers let
+// processWebhookEvent resolve + finalize a donation when no Payment matches.
+import { findDonationByOrderId, finalizeDonationReceipt } from '../routes/donations.js';
 
 /**
  * Send a puja-booking tax invoice to the devotee. Best-effort: any failure
@@ -224,6 +228,88 @@ async function writePujaCommissionOnConfirm(bookingId: string): Promise<void> {
   }
 }
 
+// P0 #PBO-12 (2026-07-09): single post-confirm side-effect block. The client
+// verify path ran commission + invoice + referral reward, but BOTH webhook
+// paths (Razorpay payment.captured + Stripe payment_intent.succeeded) ran only
+// commission + invoice — referral reward was skipped, so in production (which
+// confirms via webhook, not client-verify) referees were never credited. This
+// helper is the one place all three confirmation paths call so the side-effects
+// can never drift apart again.
+async function applyPostConfirmSideEffects(bookingId: string, userId: string): Promise<void> {
+  await writePujaCommissionOnConfirm(bookingId);
+  void sendPujaBookingInvoice(bookingId);
+  // Fire-and-forget — referral reward MUST NOT fail booking confirmation.
+  void tryRewardReferralForBooking(userId, bookingId);
+}
+
+// P0 #S-04 (2026-07-09): write a Commission row for a confirmed store order.
+// The puja path has written commissions since launch, but the store path never
+// did — store owners' payouts were silently never recorded (earnings ₹0). This
+// resolves the store from the order's first line item's product (StoreOrder
+// has no direct storeProfileId FK until S-11 lands), reads the store's
+// platform commission rate, and writes a PENDING Commission row for the
+// store-owner's share (providerId = storeProfile.userId). Idempotent: a
+// duplicate confirm (webhook + client verify) does not double-write.
+async function writeStoreOrderCommissionOnConfirm(storeOrderId: string): Promise<void> {
+  try {
+    const existing = await prisma.commission.findFirst({
+      where: { storeOrderId },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const order = await prisma.storeOrder.findUnique({
+      where: { id: storeOrderId },
+      select: {
+        id: true,
+        totalAmountInr: true,
+        items: true,
+      },
+    });
+    if (!order) return;
+
+    // Resolve the owning store via the first line item's product. items is
+    // [{ productId, qty, priceAtPurchase }, ...]. Mixed-store carts are not
+    // supported (single store per order) — see S-11 for the proper FK.
+    const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
+    const firstProductId = items.find((it) => it?.productId)?.productId;
+    if (!firstProductId) return;
+
+    const product = await prisma.storeProduct.findUnique({
+      where: { id: firstProductId },
+      select: { storeProfileId: true },
+    });
+    if (!product?.storeProfileId) return;
+
+    const storeProfile = await prisma.storeProfile.findUnique({
+      where: { id: product.storeProfileId },
+      select: { userId: true, commission: true },
+    });
+    if (!storeProfile) return;
+
+    // storeProfile.commission is the PLATFORM's cut (default 0.20). The store
+    // owner's earnings = total * (1 - commission). The Commission row records
+    // the provider's (store owner's) amount + the platform percentage for the
+    // ledger. Decimal arithmetic — never coerce money to JS Number.
+    const total = new Prisma.Decimal(order.totalAmountInr as Prisma.Decimal);
+    const platformRate = new Prisma.Decimal(storeProfile.commission as Prisma.Decimal);
+    const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
+    const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
+
+    await prisma.commission.create({
+      data: {
+        storeOrderId: order.id,
+        providerId: storeProfile.userId,
+        amount: storeShare,
+        percentage,
+        status: 'PENDING',
+      },
+    });
+  } catch (err) {
+    console.warn('[payment.service] writeStoreOrderCommissionOnConfirm failed:', err);
+  }
+}
+
 // ─── Razorpay client ────────────────────────────────────────────────────────────
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
@@ -396,7 +482,9 @@ export class PaymentService {
   async verifyPayment(
     razorpayOrderId: string,
     razorpayPaymentId: string,
-    razorpaySignature: string
+    razorpaySignature: string,
+    userId?: string,
+    callerRoles?: string[]
   ): Promise<VerifyPaymentResult> {
     // 1. Verify signature (timing-safe)
     const expectedSignature = crypto
@@ -428,6 +516,18 @@ export class PaymentService {
       throw new Error('No booking linked to this payment.');
     }
 
+    // P0 #PBO-13 (2026-07-09): caller-ownership check. A valid Razorpay
+    // signature only proves the payment happened — it says nothing about WHO
+    // is calling verify. Without this, any authenticated user with a captured
+    // signature could confirm ANY booking (asymmetric with store-order verify,
+    // which IS owner-gated). Admins bypass so support can reconcile.
+    if (userId && payment.booking.userId !== userId) {
+      const callerIsAdmin = Array.isArray(callerRoles) && callerRoles.includes('ADMIN');
+      if (!callerIsAdmin) {
+        throw new Error('You are not authorized to confirm this booking.');
+      }
+    }
+
     // 3+4. Capture payment and confirm booking atomically — a crash
     // between the two updates previously left a captured Payment with a
     // pending_payment Booking until the webhook retried.
@@ -450,13 +550,10 @@ export class PaymentService {
 
     // Side-effects (commission ledger, invoice email, referral reward) run
     // after the transaction commits so a downstream failure cannot rollback
-    // the captured payment.
+    // the captured payment. Routed through applyPostConfirmSideEffects so the
+    // webhook paths stay in sync (PBO-12).
     if (shouldConfirm) {
-      await writePujaCommissionOnConfirm(payment.booking.id);
-      void sendPujaBookingInvoice(payment.booking.id);
-      // Fire-and-forget — referral reward MUST NOT fail booking confirmation
-      // per spec hard rule. R-Q2-M-011 Tier-2 wiring.
-      void tryRewardReferralForBooking(payment.booking.userId, payment.booking.id);
+      await applyPostConfirmSideEffects(payment.booking.id, payment.booking.userId);
     }
 
     return {
@@ -591,6 +688,21 @@ export class PaymentService {
       if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         throw new Error('Payment verification failed: invalid signature.');
       }
+    } else {
+      // P0 #S-05 (2026-07-09): demo mode still gates confirm. Previously the
+      // signature check was skipped entirely, so any order_id matching a
+      // Payment row could be confirmed with no signature at all. Now require
+      // (a) the order id is a server-issued demo order (`order_demo_*`) and
+      // (b) the demo signature sentinel matches. This keeps the demo checkout
+      // flow working (the web client sends signature='demo') while stopping a
+      // demo verify from confirming a real/prod order.
+      const isDemoOrder = razorpayOrderId.startsWith('order_demo_');
+      const a = Buffer.from('demo', 'utf8');
+      const b = Buffer.from(razorpaySignature, 'utf8');
+      const sigOk = a.length === b.length && crypto.timingSafeEqual(a, b);
+      if (!isDemoOrder || !sigOk) {
+        throw new Error('Payment verification failed: invalid demo signature.');
+      }
     }
 
     const payment = await prisma.payment.findFirst({
@@ -641,6 +753,10 @@ export class PaymentService {
     });
     if (shouldConfirm) {
       void sendStoreOrderInvoice(storeOrder.id);
+      // P0 #S-04: write the store-owner commission row (previously skipped —
+      // store payouts were never recorded). Fire-and-forget so a ledger write
+      // failure cannot roll back the captured payment.
+      void writeStoreOrderCommissionOnConfirm(storeOrder.id);
     }
 
     return {
@@ -722,7 +838,9 @@ export class PaymentService {
         const payment = await prisma.payment.findFirst({
           where: { gatewayOrderId: paymentEntity.order_id },
           include: {
-            booking: { select: { id: true, status: true } },
+            // PBO-12: include userId so applyPostConfirmSideEffects can credit
+            // the referral reward on the webhook path.
+            booking: { select: { id: true, status: true, userId: true } },
           },
         });
 
@@ -741,8 +859,22 @@ export class PaymentService {
               where: { id: payment.booking.id },
               data: { status: 'confirmed' },
             });
-            await writePujaCommissionOnConfirm(payment.booking.id);
-            void sendPujaBookingInvoice(payment.booking.id);
+            // PBO-12: route through the shared side-effect helper so the
+            // webhook path credits the referral reward too (previously
+            // skipped — prod confirms via webhook, so referees were never
+            // credited).
+            await applyPostConfirmSideEffects(payment.booking.id, payment.booking.userId);
+          }
+        } else {
+          // PBO-11 (2026-07-09): donation webhook backstop. Donations create no
+          // prisma.payment row (raw INSERT), so when no Payment matches this
+          // order id, try to resolve a donation by razorpay_order_id and
+          // finalize it. Without this, a donor who closes the browser before
+          // client-verify leaves money captured but the donation stuck
+          // 'created' with no receipt. Idempotent via finalizeDonationReceipt.
+          const donation = await findDonationByOrderId(paymentEntity.order_id);
+          if (donation && donation.status !== 'paid') {
+            await finalizeDonationReceipt(donation, paymentEntity.id, undefined);
           }
         }
 
@@ -1158,7 +1290,9 @@ export class PaymentService {
         const intent = event.data.object;
         const payment = await prisma.payment.findFirst({
           where: { gatewayOrderId: intent.id, paymentGateway: 'stripe' },
-          include: { booking: { select: { id: true, status: true } } },
+          // PBO-12: include userId so applyPostConfirmSideEffects can credit
+          // the referral reward on the webhook path.
+          include: { booking: { select: { id: true, status: true, userId: true } } },
         });
         if (payment) {
           await prisma.payment.update({
@@ -1176,8 +1310,9 @@ export class PaymentService {
               where: { id: payment.booking.id },
               data: { status: 'confirmed' },
             });
-            await writePujaCommissionOnConfirm(payment.booking.id);
-            void sendPujaBookingInvoice(payment.booking.id);
+            // PBO-12: shared side-effect helper — credits referral reward on
+            // the webhook path (previously skipped here too).
+            await applyPostConfirmSideEffects(payment.booking.id, payment.booking.userId);
           }
         }
         return { handled: true, event: event.type };

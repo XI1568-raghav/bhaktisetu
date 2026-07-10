@@ -66,6 +66,53 @@ const verifyEnrollmentSchema = z.object({
   razorpaySignature: z.string().optional(),
 });
 
+// P0 #wp-03 (2026-07-09): write the instructor's Commission row on PAID.
+// Previously the verify handler flipped PENDING_PAYMENT -> PAID and stopped,
+// so wellness instructors had no payout ledger entry (earnings effectively ₹0).
+// This writes a PENDING Commission row for the instructor's share
+// (priceInr * (1 - platformCommission)) keyed on wellnessEnrollmentId.
+// Idempotent: a duplicate verify does not double-write. Fire-and-forget so a
+// ledger failure cannot roll back the PAID flip.
+const WELLNESS_PLATFORM_COMMISSION = Number(process.env.WELLNESS_PLATFORM_COMMISSION ?? '0.20');
+async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void> {
+  try {
+    const existing = await prisma.commission.findFirst({
+      where: { wellnessEnrollmentId: enrollmentId },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const enrollment = await prisma.wellnessEnrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        id: true,
+        session: { select: { instructorId: true, priceInr: true } },
+      },
+    });
+    if (!enrollment?.session) return;
+
+    const price = Number(enrollment.session.priceInr);
+    if (!Number.isFinite(price) || price <= 0) return;
+
+    const platformRate = Number.isFinite(WELLNESS_PLATFORM_COMMISSION)
+      ? WELLNESS_PLATFORM_COMMISSION
+      : 0.20;
+    const instructorShare = Math.round(price * (1 - platformRate) * 100) / 100;
+
+    await prisma.commission.create({
+      data: {
+        wellnessEnrollmentId: enrollment.id,
+        providerId: enrollment.session.instructorId,
+        amount: instructorShare,
+        percentage: platformRate,
+        status: 'PENDING',
+      },
+    });
+  } catch (err) {
+    console.warn('[wellness-sessions] writeWellnessCommissionOnPaid failed:', err);
+  }
+}
+
 const sessionIdParams = z.object({ id: z.string().uuid() });
 const enrollmentIdParams = z.object({ id: z.string().uuid() });
 
@@ -372,6 +419,9 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         where: { id: enrollment.id },
         data: { status: 'PAID' },
       });
+
+      // P0 #wp-03: record the instructor's payout ledger entry (fire-and-forget).
+      void writeWellnessCommissionOnPaid(updated.id);
 
       // Best-effort tax invoice — failure here must NOT block the PAID flip.
       void (async () => {

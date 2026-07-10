@@ -8,7 +8,18 @@ export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER
 // rows with full privileges — anyone with the token format gets that session.
 // Default-deny in prod. Crash boot if both flags are set; surfaces misconfig
 // before any traffic. Investor demos must unset NODE_ENV or use a staging URL.
-if (process.env.ALLOW_DEMO_TOKENS === 'true' && process.env.NODE_ENV === 'production') {
+// P0 #ag-03 (2026-07-09): boot-fatal guard — demo tokens grant admin access,
+// so they must NEVER be accepted in production. Extracted as a pure function
+// so the guard is unit-testable (testing process.exit at module load is not
+// practical). The boot-time call below uses it.
+export function shouldRejectDemoTokensInProd(env: {
+  ALLOW_DEMO_TOKENS?: string;
+  NODE_ENV?: string;
+}): boolean {
+  return env.ALLOW_DEMO_TOKENS === 'true' && env.NODE_ENV === 'production';
+}
+
+if (shouldRejectDemoTokensInProd(process.env)) {
   // eslint-disable-next-line no-console
   console.error('[FATAL] ALLOW_DEMO_TOKENS=true in production. Demo tokens grant admin access. Refusing to boot.');
   process.exit(1);

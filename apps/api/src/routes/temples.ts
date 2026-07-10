@@ -145,11 +145,16 @@ export async function templeRoutes(server: FastifyInstance) {
         return reply.status(404).send({ error: 'Temple not found' });
       }
 
+      // P0 #PUB-08 (2026-07-09): expose the public playback URL from the
+      // LiveDarshanStream row, NOT the Temple's internal streamUrl (which is
+      // no longer in the public detail select). The temple's raw streamUrl is
+      // an internal ingest/source field.
+      const liveStream = temple.darshanStream.length > 0 ? temple.darshanStream[0] : null;
       return {
         templeSlug: slug,
         liveDarshanEnabled: temple.liveDarshanEnabled,
-        liveDarshan: temple.darshanStream.length > 0 ? temple.darshanStream[0] : null,
-        streamUrl: temple.streamUrl,
+        liveDarshan: liveStream,
+        streamUrl: liveStream?.playbackUrl ?? null,
       };
     } catch (error) {
       server.log.error(error, 'Failed to fetch darshan info');

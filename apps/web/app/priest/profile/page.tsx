@@ -99,6 +99,8 @@ function PriestProfilePageContent() {
  const [loading, setLoading] = useState(true);
  const [saving, setSaving] = useState(false);
  const [saved, setSaved] = useState(false);
+ // P0 #pp-06 (2026-07-09): surface server errors instead of swallowing them.
+ const [saveError, setSaveError] = useState<string | null>(null);
 
  // Editable fields
  const [displayName, setDisplayName] = useState('');
@@ -153,6 +155,7 @@ function PriestProfilePageContent() {
  async function handleSave() {
  setSaving(true);
  setSaved(false);
+ setSaveError(null);
  try {
  const res = await fetch(`${API_BASE_URL}/priest/profile`, {
  method: 'PATCH',
@@ -171,9 +174,14 @@ function PriestProfilePageContent() {
  if (res.ok) {
  setSaved(true);
  setTimeout(() => setSaved(false), 3000);
+ } else {
+ // P0 #pp-06: show the server message, not a silent fail.
+ let msg = `Save failed (HTTP ${res.status})`;
+ try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+ setSaveError(msg);
  }
- } catch {
- // Silent fail
+ } catch (err) {
+ setSaveError(err instanceof Error ? err.message : 'Network error — please retry.');
  } finally {
  setSaving(false);
  }
@@ -228,6 +236,11 @@ function PriestProfilePageContent() {
  {saved ? 'Saved!' : 'Save Changes'}
  </button>
  </div>
+ {saveError && (
+ <div className="mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+ {saveError}
+ </div>
+ )}
 
  {/* Avatar & Rating */}
  <div className="bg-white rounded-xl border border-surface-100 p-6">

@@ -38,6 +38,9 @@ const createOrderSchema = z.object({
   totalAmountInr: z.number().positive(),
   shippingAddress: shippingAddressSchema,
   paymentId: z.string().uuid().optional(),
+  // P0 #S-08: client-generated idempotency key. On a duplicate POST with the
+  // same key, the existing order is returned instead of creating a new one.
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 
 const updateStatusSchema = z.object({
@@ -105,9 +108,35 @@ async function canManageOrder(
   return owned.length > 0;
 }
 
-function serializeOrder(order: any) {
+// S-03 (2026-07-09): emit consumer-facing aliases the web orders page reads.
+// The raw StoreOrder has totalAmountInr (Decimal->string), items as a Json
+// array of { productId, qty, priceAtPurchase } with NO product name, and no
+// customerName. Enrich with: totalAmount (number), customerName (from the
+// joined buyer's fullName or the shipping address), and items[].name when a
+// productNameMap (productId -> name) is supplied by the list/detail handlers.
+function serializeOrder(order: any, productNameMap?: Map<string, string>) {
+  const rawItems = Array.isArray(order.items) ? order.items : [];
+  const items = rawItems.map((it: any) => ({
+    ...it,
+    name:
+      it.name ||
+      it.productName ||
+      productNameMap?.get(it.productId) ||
+      'Item',
+    quantity: it.qty ?? it.quantity ?? 1,
+  }));
+  const customerName =
+    order.user?.fullName ||
+    order.customerName ||
+    order.customer ||
+    (order.shippingAddress as any)?.fullName ||
+    'Customer';
+  const totalAmount = Number(order.totalAmountInr ?? order.totalAmount ?? 0) || 0;
   return {
     ...order,
+    items,
+    customerName,
+    totalAmount,
     totalAmountInr: order.totalAmountInr?.toString?.() ?? order.totalAmountInr,
   };
 }
@@ -123,6 +152,18 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     }
     const userId = request.currentUser!.id;
 
+    // P0 #S-08 (2026-07-09): idempotency. If the client re-POSTs with the same
+    // idempotencyKey (network retry, double-click), return the existing order
+    // instead of creating a duplicate. Key is unique per user.
+    if (parsed.data.idempotencyKey) {
+      const existing = await prisma.storeOrder.findFirst({
+        where: { userId, idempotencyKey: parsed.data.idempotencyKey },
+      });
+      if (existing) {
+        return reply.code(200).send({ data: serializeOrder(existing) });
+      }
+    }
+
     // P0 #PBO (2026-07-09): server-authoritative pricing + stock. The old
     // handler trusted client-sent totalAmountInr + items[].priceAtPurchase
     // (₹499 product could be ordered for ₹1) and never checked/decremented
@@ -133,11 +174,15 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     const productIds = requestedItems.map((it) => it.productId);
     const products = await prisma.storeProduct.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, price: true, stock: true, isActive: true },
+      select: { id: true, price: true, stock: true, isActive: true, storeProfileId: true },
     });
     const productById = new Map(products.map((p) => [p.id, p]));
     const serverItems: { productId: string; qty: number; priceAtPurchase: number; name?: string }[] = [];
     let serverTotal = 0;
+    // P0 #S-11 (2026-07-09): capture the owning store for the order. A cart
+    // must be single-store (mixed-store carts are unsupported) — reject if
+    // items belong to different stores.
+    let orderStoreProfileId: string | null = null;
     for (const it of requestedItems) {
       const product = productById.get(it.productId);
       if (!product) {
@@ -148,6 +193,12 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       }
       if (product.stock < it.qty) {
         return reply.code(409).send({ error: `Insufficient stock for ${it.productId} (have ${product.stock}, want ${it.qty})` });
+      }
+      if (product.storeProfileId) {
+        if (orderStoreProfileId && orderStoreProfileId !== product.storeProfileId) {
+          return reply.code(400).send({ error: 'Mixed-store carts are not supported. Place a separate order per store.' });
+        }
+        orderStoreProfileId = product.storeProfileId;
       }
       const unitPrice = Number(product.price);
       serverItems.push({ productId: it.productId, qty: it.qty, priceAtPurchase: unitPrice });
@@ -170,6 +221,12 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         data: {
           orderNumber: nextOrderNumber(),
           userId,
+          // P0 #S-11: attribute the order to its store (resolved from the
+          // cart's products above). Nullable for legacy/edge rows.
+          storeProfileId: orderStoreProfileId,
+          // P0 #S-08: persist the idempotency key so a later duplicate POST
+          // returns this order (see the dedupe check above).
+          idempotencyKey: parsed.data.idempotencyKey ?? null,
           items: serverItems,
           totalAmountInr: serverTotal,
           shippingAddress: parsed.data.shippingAddress,
@@ -188,23 +245,71 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     return reply.code(201).send({ data: serializeOrder(order) });
   });
 
-  // GET /orders — list own orders; admin sees all
+  // GET /orders — list orders.
+  // S-02/S-03 (2026-07-09): scope by role. A STORE_OWNER sees SALES of their
+  // store's products (not their personal purchases — the old {userId} filter
+  // returned the owner's own buys). A regular user sees their own purchases.
+  // Admin sees all. Items are enriched with product names + the buyer's name
+  // so the web orders page (which reads json.data + totalAmount + customerName
+  // + items[].name) actually renders.
   server.get('/orders', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
+    let orders: any[];
+    if (isStoreOwner(request)) {
+      const storeProfileId = await resolveStoreProfileId(userId);
+      if (!storeProfileId) {
+        return reply.send({ data: [] });
+      }
+      // Load this store's product ids, then return orders containing any of them.
+      const products = await prisma.storeProduct.findMany({
+        where: { storeProfileId },
+        select: { id: true, name: true },
+      });
+      const productNameMap = new Map(products.map((p) => [p.id, p.name]));
+      const productIds = products.map((p) => p.id);
+      if (productIds.length === 0) return reply.send({ data: [] });
+      const all = await prisma.storeOrder.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        include: { user: { select: { fullName: true } } },
+      });
+      orders = all.filter((o) =>
+        Array.isArray(o.items) &&
+        o.items.some((it: any) => productIds.includes(it.productId)),
+      );
+      return reply.send({ data: orders.map((o) => serializeOrder(o, productNameMap)) });
+    }
     const where = isAdmin(request) ? {} : { userId };
-    const orders = await prisma.storeOrder.findMany({
+    orders = await prisma.storeOrder.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 200,
+      include: { user: { select: { fullName: true } } },
     });
-    return reply.send({ data: orders.map(serializeOrder) });
+    // Build a product-name map for the items in this result set.
+    const productIds = new Set<string>();
+    orders.forEach((o) => {
+      if (Array.isArray(o.items)) o.items.forEach((it: any) => productIds.add(it.productId));
+    });
+    let productNameMap = new Map<string, string>();
+    if (productIds.size > 0) {
+      const named = await prisma.storeProduct.findMany({
+        where: { id: { in: Array.from(productIds) } },
+        select: { id: true, name: true },
+      });
+      productNameMap = new Map(named.map((p) => [p.id, p.name]));
+    }
+    return reply.send({ data: orders.map((o) => serializeOrder(o, productNameMap)) });
   });
 
   // GET /orders/:id — owner, store-owner (whose products are in it), or admin
   server.get('/orders/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
     const params = orderIdParams.safeParse(request.params);
     if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
-    const order = await prisma.storeOrder.findUnique({ where: { id: params.data.id } });
+    const order = await prisma.storeOrder.findUnique({
+      where: { id: params.data.id },
+      include: { user: { select: { fullName: true } } },
+    });
     if (!order) return reply.code(404).send({ error: 'Order not found' });
     const userId = request.currentUser!.id;
     const ownerOk = order.userId === userId;
@@ -212,7 +317,19 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     if (!manageOk) {
       return reply.code(403).send({ error: 'Not authorized to view this order' });
     }
-    return reply.send({ data: serializeOrder(order) });
+    // S-03: enrich items with product names.
+    const productIds = Array.isArray(order.items)
+      ? order.items.map((it: any) => it.productId).filter(Boolean)
+      : [];
+    let productNameMap = new Map<string, string>();
+    if (productIds.length > 0) {
+      const named = await prisma.storeProduct.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true },
+      });
+      productNameMap = new Map(named.map((p) => [p.id, p.name]));
+    }
+    return reply.send({ data: serializeOrder(order, productNameMap) });
   });
 
   // PATCH /orders/:id/status — admin-only status mutation; appends to statusHistory.
@@ -235,6 +352,28 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       // P0 #S-01 (2026-07-09): allow STORE_OWNER for their own store's orders.
       if (!isAdmin(request) && !(await canManageOrder(request, order as any))) {
         return reply.code(403).send({ error: 'Admin or store-owner role required' });
+      }
+
+      // P0 #S-10 (2026-07-09): validate the transition. The old handler accepted
+      // any status, so a CANCELLED/REFUNDED order could be flipped back to
+      // DELIVERED (appending a misleading history entry). Terminal states
+      // (CANCELLED, REFUNDED, DELIVERED) cannot leave; forward moves follow the
+      // fulfilment chain. Admins can still correct via the explicit
+      // payment-confirm override, not this generic endpoint.
+      const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        PENDING: ['CONFIRMED', 'CANCELLED'],
+        CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED'],
+        PROCESSING: ['SHIPPED', 'CANCELLED'],
+        SHIPPED: ['DELIVERED'],
+        DELIVERED: [],
+        CANCELLED: [],
+        REFUNDED: [],
+      };
+      const allowed = ALLOWED_TRANSITIONS[order.status] ?? [];
+      if (!allowed.includes(body.data.status)) {
+        return reply
+          .code(409)
+          .send({ error: `Cannot transition order from ${order.status} to ${body.data.status}.` });
       }
 
       const adminId = request.currentUser!.id;

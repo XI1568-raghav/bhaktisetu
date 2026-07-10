@@ -49,6 +49,10 @@ type DonationRow = {
   razorpay_payment_id: string | null;
   receipt_number: string | null;
   status: 'created' | 'paid' | 'failed';
+  // P0 #PBO-14 (2026-07-09): donor PAN + dedication are persisted at create
+  // time so the 80G receipt can carry the donor PAN.
+  donor_pan: string | null;
+  dedication: string | null;
   created_at: Date;
   paid_at: Date | null;
 };
@@ -77,6 +81,143 @@ function nextReceiptNumber(): string {
   return `DR-${ymd}-${rand}`;
 }
 
+// P0 #PBO-10/PBO-11 (2026-07-09): the donation confirm + receipt flow, in one
+// place. Previously this lived inline in the /verify handler, so the webhook
+// backstop (PBO-11) couldn't reuse it and a double-verify (PBO-10) would mint
+// a second receipt. This helper:
+//  - is IDEMPOTENT: if the donation is already paid, returns the existing
+//    receipt_number without re-minting or re-emailing (fixes PBO-10).
+//  - is shared by /verify AND the Razorpay webhook backstop (PBO-11), so a
+//    closed browser (client-verify never fires) still flips the donation paid
+//    + sends the receipt when Razorpay posts payment.captured.
+// `log` is optional (the webhook has no Fastify server in scope here).
+export async function finalizeDonationReceipt(
+  donation: DonationRow,
+  paymentId: string | null,
+  log?: { warn: (obj: unknown, msg: string) => void; error: (obj: unknown, msg: string) => void } | undefined,
+): Promise<{ receiptNumber: string | null; alreadyPaid: boolean }> {
+  const noop = () => {};
+  const logger = log ?? { warn: noop, error: noop };
+
+  // PBO-10 idempotency: already paid -> return existing receipt, no re-mint.
+  if (donation.status === 'paid') {
+    return { receiptNumber: donation.receipt_number ?? null, alreadyPaid: true };
+  }
+
+  const amountInr = Number(donation.amount_inr);
+
+  // Entity resolution (PBO-2): temple vs gaushala donee.
+  const user = await prisma.user.findUnique({ where: { id: donation.user_id } });
+  const isTempleDonation = !!donation.temple_id;
+  const temple = isTempleDonation
+    ? await prisma.temple.findUnique({
+        where: { id: donation.temple_id! },
+        select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true },
+      }).catch(() => null)
+    : null;
+  const gaushalaProfile = !isTempleDonation
+    ? await prisma.gaushalaProfile.findFirst({
+        where: { userId: donation.gaushala_id ?? undefined },
+      }).catch(() => null)
+    : null;
+  let taxFields: GaushalaTaxRow | null = null;
+  if (gaushalaProfile && donation.gaushala_id) {
+    const taxRows = await prisma.$queryRawUnsafe<GaushalaTaxRow[]>(
+      `SELECT pan, regn_80g FROM gaushala_profiles WHERE user_id = $1::uuid LIMIT 1;`,
+      donation.gaushala_id,
+    ).catch(() => [] as GaushalaTaxRow[]);
+    taxFields = taxRows[0] ?? null;
+  }
+  const doneeName = isTempleDonation
+    ? (temple?.name ?? 'Darshya Temple')
+    : (gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network');
+  const doneeAddress = isTempleDonation && temple
+    ? `${temple.addressLine}, ${temple.city}, ${temple.state} ${temple.pincode}`
+    : gaushalaProfile?.address;
+
+  const receiptNumber = nextReceiptNumber();
+  const donationDate = new Date().toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'long', year: 'numeric',
+  });
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE donations
+        SET status = 'paid',
+            paid_at = now(),
+            razorpay_payment_id = $2,
+            receipt_number = $3
+      WHERE id = $1`,
+    donation.id,
+    paymentId,
+    receiptNumber,
+  );
+
+  let pdfBuffer: Buffer | null = null;
+  try {
+    pdfBuffer = await generate80GReceipt({
+      donorName: user?.fullName ?? 'Devotee',
+      donorEmail: user?.email ?? '',
+      amountInr,
+      donationDate,
+      receiptNumber,
+      paymentMode: 'UPI',
+      paymentReference: paymentId ?? undefined,
+      // P0 #PBO-14: carry the donor's PAN onto the 80G receipt.
+      donorPan: donation.donor_pan ?? undefined,
+      gaushalaName: doneeName,
+      gaushala80GNumber: taxFields?.regn_80g ?? undefined,
+      gaushalaPan: taxFields?.pan ?? undefined,
+      gaushalaAddress: doneeAddress ?? undefined,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Failed to generate 80G receipt PDF');
+  }
+
+  if (user?.email && pdfBuffer) {
+    try {
+      const tpl = donationReceiptEmail({
+        donorName: user.fullName ?? 'Devotee',
+        amount: `₹${amountInr.toLocaleString('en-IN')}`,
+        gaushalaName: doneeName,
+        receiptNumber,
+        date: donationDate,
+      });
+      await sendEmail({
+        to: user.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+        attachments: [
+          { filename: `Darshya-Donation-Receipt-${receiptNumber}.pdf`, content: pdfBuffer },
+        ],
+      });
+    } catch (err) {
+      logger.error({ err }, 'Failed to email donation receipt');
+    }
+  }
+
+  return { receiptNumber, alreadyPaid: false };
+}
+
+// Look up a donation by its Razorpay order id (raw SQL — donations use a raw
+// INSERT, no prisma.payment row). Returns null if no match. Used by the webhook
+// backstop (PBO-11).
+export async function findDonationByOrderId(razorpayOrderId: string): Promise<DonationRow | null> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<DonationRow[]>(
+      `SELECT id, user_id, gaushala_id, temple_id, amount_inr, razorpay_order_id,
+              razorpay_payment_id, receipt_number, status, donor_pan, dedication, created_at, paid_at
+         FROM donations
+         WHERE razorpay_order_id = $1
+         LIMIT 1`,
+      razorpayOrderId,
+    );
+    return (rows as DonationRow[])[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Floor: ₹101. Below ₹100 is below the 80G receipt threshold and ₹1
 // donations are an obvious fraud/dust vector. Cap: ₹10,00,000 per single
 // transaction — a misclick safety rail; large donors should call us.
@@ -95,6 +236,10 @@ const createOrderSchema = z.object({
     .min(101, 'Minimum donation is ₹101')
     .max(1000000, 'Maximum single donation via this endpoint is ₹10,00,000'),
   planId: z.string().optional(),
+  // P0 #PBO-14 (2026-07-09): persist donor PAN (required ≥ ₹2,000 for 80G) +
+  // the optional dedication. Previously accepted by the form but dropped here.
+  donorPan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Invalid PAN format').optional(),
+  dedication: z.string().max(200).optional(),
 }).refine(
   (d) => {
     const kind = d.causeKind ?? 'gaushala';
@@ -156,23 +301,27 @@ export async function donationRoutes(server: FastifyInstance) {
     // invariant (exactly one non-null) is upheld by the schema refine above.
     if (kind === 'temple') {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO donations (id, user_id, temple_id, amount_inr, razorpay_order_id, status)
-         VALUES ($1, $2::uuid, $3::uuid, $4, $5, 'created')`,
+        `INSERT INTO donations (id, user_id, temple_id, amount_inr, razorpay_order_id, status, donor_pan, dedication)
+         VALUES ($1, $2::uuid, $3::uuid, $4, $5, 'created', $6, $7)`,
         donationId,
         userId,
         templeId,
         amount,
         razorpayOrderId,
+        parsed.data.donorPan ?? null,
+        parsed.data.dedication ?? null,
       );
     } else {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status)
-         VALUES ($1, $2::uuid, $3, $4, $5, 'created')`,
+        `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status, donor_pan, dedication)
+         VALUES ($1, $2::uuid, $3, $4, $5, 'created', $6, $7)`,
         donationId,
         userId,
         gaushalaId,
         amount,
         razorpayOrderId,
+        parsed.data.donorPan ?? null,
+        parsed.data.dedication ?? null,
       );
     }
 
@@ -198,7 +347,7 @@ export async function donationRoutes(server: FastifyInstance) {
     const body = parsed.data;
     const rows = await prisma.$queryRawUnsafe<DonationRow[]>(
       `SELECT id, user_id, gaushala_id, temple_id, amount_inr, razorpay_order_id,
-              razorpay_payment_id, receipt_number, status, created_at, paid_at
+              razorpay_payment_id, receipt_number, status, donor_pan, dedication, created_at, paid_at
          FROM donations
         WHERE id = $1
         LIMIT 1`,
@@ -255,116 +404,27 @@ export async function donationRoutes(server: FastifyInstance) {
       }
     }
 
-    // P0 #PBO-2 (2026-07-09): load the correct donee entity for the receipt.
-    // Temple donations (temple_id set) load the Temple; gaushala donations
-    // (gaushala_id set) keep the legacy gaushala path. The receipt names the
-    // actual donee + its address — previously a temple donation named the
-    // gaushala network (or nothing) because only the gaushala branch ran.
-    const user = await prisma.user.findUnique({ where: { id: donation.user_id } });
-
-    const isTempleDonation = !!donation.temple_id;
-    const temple = isTempleDonation
-      ? await prisma.temple.findUnique({
-          where: { id: donation.temple_id! },
-          select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true },
-        }).catch(() => null)
-      : null;
-
-    const gaushalaProfile = !isTempleDonation
-      ? await prisma.gaushalaProfile.findFirst({
-          where: { userId: donation.gaushala_id ?? undefined },
-        }).catch(() => null)
-      : null;
-
-    // Raw SQL fetch for pan + regn_80g — not in Prisma client until next
-    // schema regeneration (see ensureGaushalaTaxFields). Temples have no
-    // tax fields on the model yet, so temple receipts carry the temple name +
-    // address with blank 80G/PAN (schema follow-up).
-    let taxFields: GaushalaTaxRow | null = null;
-    if (gaushalaProfile && donation.gaushala_id) {
-      const taxRows = await prisma.$queryRawUnsafe<GaushalaTaxRow[]>(
-        `SELECT pan, regn_80g FROM gaushala_profiles WHERE user_id = $1::uuid LIMIT 1;`,
-        donation.gaushala_id,
-      ).catch(() => [] as GaushalaTaxRow[]);
-      taxFields = taxRows[0] ?? null;
-    }
-
-    // Resolve the receipt-facing donee name + address for either cause.
-    const doneeName = isTempleDonation
-      ? (temple?.name ?? 'Darshya Temple')
-      : (gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network');
-    const doneeAddress = isTempleDonation && temple
-      ? `${temple.addressLine}, ${temple.city}, ${temple.state} ${temple.pincode}`
-      : gaushalaProfile?.address;
-
-    const receiptNumber = nextReceiptNumber();
-    const donationDate = new Date().toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'long', year: 'numeric',
-    });
-
-    await prisma.$executeRawUnsafe(
-      `UPDATE donations
-          SET status = 'paid',
-              paid_at = now(),
-              razorpay_payment_id = $2,
-              receipt_number = $3
-        WHERE id = $1`,
-      donation.id,
+    // P0 #PBO-10/PBO-11 (2026-07-09): delegate to the shared
+    // finalizeDonationReceipt helper. This makes /verify idempotent (a double-
+    // verify no longer mints a second receipt — PBO-10) and lets the Razorpay
+    // webhook backstop reuse the exact same confirm+receipt flow (PBO-11). The
+    // entity resolution (temple vs gaushala donee — PBO-2) now lives in the
+    // helper, so this handler is just: verify signature -> finalize.
+    const finalized = await finalizeDonationReceipt(
+      donation,
       body.razorpay_payment_id ?? null,
-      receiptNumber,
+      server.log,
     );
-
-    // Generate 80G PDF. doneeName/doneeAddress carry the correct entity for
-    // either cause; tax fields remain gaushala-only (temples have no PAN/80G
-    // on the model yet).
-    let pdfBuffer: Buffer | null = null;
-    try {
-      pdfBuffer = await generate80GReceipt({
-        donorName: user?.fullName ?? 'Devotee',
-        donorEmail: user?.email ?? '',
-        amountInr,
-        donationDate,
-        receiptNumber,
-        paymentMode: isDemoPayment ? 'Other' : 'UPI',
-        paymentReference: body.razorpay_payment_id,
-        gaushalaName: doneeName,
-        gaushala80GNumber: taxFields?.regn_80g ?? undefined,
-        gaushalaPan: taxFields?.pan ?? undefined,
-        gaushalaAddress: doneeAddress ?? undefined,
-      });
-    } catch (err) {
-      server.log.error({ err }, 'Failed to generate 80G receipt PDF');
-    }
-
-    // Email the donor
-    if (user?.email && pdfBuffer) {
-      const tpl = donationReceiptEmail({
-        donorName: user.fullName ?? 'Devotee',
-        amount: `₹${amountInr.toLocaleString('en-IN')}`,
-        gaushalaName: doneeName,
-        receiptNumber,
-        date: donationDate,
-      });
-      await sendEmail({
-        to: user.email,
-        subject: tpl.subject,
-        html: tpl.html,
-        text: tpl.text,
-        attachments: [
-          { filename: `Darshya-Donation-Receipt-${receiptNumber}.pdf`, content: pdfBuffer },
-        ],
-      });
-    }
 
     return reply.send({
       ok: true,
       donationId: donation.id,
-      receiptNumber,
+      receiptNumber: finalized.receiptNumber,
       amount: amountInr,
       status: 'paid',
     });
   });
 }
 
-export const __testing = { createOrderSchema };
+export const __testing = { createOrderSchema, finalizeDonationReceipt, findDonationByOrderId };
 
