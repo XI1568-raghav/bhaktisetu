@@ -31,35 +31,33 @@ describe('callOpus47', () => {
     expect(mockClient.messages.create).toHaveBeenCalledTimes(3);
   });
 
-  it('never falls back to non-Opus-4.7 model on direct Anthropic (non-Blackbox)', async () => {
+  it('never falls back to an unverified model (Blackbox → glm-5.2 default)', async () => {
+    // On a Blackbox base URL, the default must be the verified glm-5.2 — never
+    // a closed model (opus/sonnet/haiku) that the open-source-only endpoint 403s.
     const _savedBase = process.env.ANTHROPIC_BASE_URL;
-    delete process.env.ANTHROPIC_BASE_URL;
+    process.env.ANTHROPIC_BASE_URL = 'https://api.blackbox.ai';
     try {
       const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
       await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
       const callArgs = mockClient.messages.create.mock.calls[0][0];
-      expect(callArgs.model).toBe('claude-opus-4-7');
+      expect(callArgs.model).toBe('blackboxai/z-ai/glm-5.2');
     } finally {
       if (_savedBase === undefined) delete process.env.ANTHROPIC_BASE_URL;
       else process.env.ANTHROPIC_BASE_URL = _savedBase;
     }
   });
 
-  it('allows explicit ANTHROPIC_MODEL override to opus on Blackbox (for environments with a non-free Anthropic key)', async () => {
+  it('auto-selects blackboxai/z-ai/glm-5.2 when ANTHROPIC_BASE_URL contains "blackbox"', async () => {
     const _savedBase = process.env.ANTHROPIC_BASE_URL;
-    const _savedModel = process.env.ANTHROPIC_MODEL;
     process.env.ANTHROPIC_BASE_URL = 'https://api.blackbox.ai/v1';
-    process.env.ANTHROPIC_MODEL = 'blackboxai/anthropic/claude-opus-4.7';
     try {
       const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
       await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
       const callArgs = mockClient.messages.create.mock.calls[0][0];
-      expect(callArgs.model).toBe('blackboxai/anthropic/claude-opus-4.7');
+      expect(callArgs.model).toBe('blackboxai/z-ai/glm-5.2');
     } finally {
       if (_savedBase === undefined) delete process.env.ANTHROPIC_BASE_URL;
       else process.env.ANTHROPIC_BASE_URL = _savedBase;
-      if (_savedModel === undefined) delete process.env.ANTHROPIC_MODEL;
-      else process.env.ANTHROPIC_MODEL = _savedModel;
     }
   });
 
@@ -76,7 +74,9 @@ describe('callOpus47', () => {
     }
   });
 
-  it('throws ModelRejectedError on non-Opus-4.7 model env override', async () => {
+  it('throws ModelRejectedError on unverified model env override (e.g. sonnet)', async () => {
+    // A closed model like sonnet is NOT in the verified set (Blackbox 403s it),
+    // so the no-silent-swap guard must reject it before the API call.
     process.env.ANTHROPIC_MODEL = 'claude-sonnet-4-5';
     const mockClient = { messages: { create: vi.fn() } };
     try {
@@ -88,22 +88,31 @@ describe('callOpus47', () => {
     expect(mockClient.messages.create).not.toHaveBeenCalled();
   });
 
-  it('auto-selects blackboxai/z-ai/glm-5.2 when ANTHROPIC_BASE_URL contains "blackbox" and ANTHROPIC_MODEL unset (Opus 403-rejected on Blackbox)', async () => {
-    const _savedBase = process.env.ANTHROPIC_BASE_URL;
-    const _savedModel = process.env.ANTHROPIC_MODEL;
-    delete process.env.ANTHROPIC_MODEL;
-    process.env.ANTHROPIC_BASE_URL = 'https://api.blackbox.ai/v1';
+  it('accepts an explicit ANTHROPIC_MODEL=blackboxai/z-ai/glm-5.2 override', async () => {
+    process.env.ANTHROPIC_MODEL = 'blackboxai/z-ai/glm-5.2';
+    const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
     try {
-      const mockClient = { messages: { create: vi.fn().mockResolvedValue({ content: [], usage: {} }) } };
       await callOpus47({ messages: [], maxTokens: 100, client: mockClient });
       const callArgs = mockClient.messages.create.mock.calls[0][0];
       expect(callArgs.model).toBe('blackboxai/z-ai/glm-5.2');
     } finally {
-      if (_savedBase === undefined) delete process.env.ANTHROPIC_BASE_URL;
-      else process.env.ANTHROPIC_BASE_URL = _savedBase;
-      if (_savedModel === undefined) delete process.env.ANTHROPIC_MODEL;
-      else process.env.ANTHROPIC_MODEL = _savedModel;
+      delete process.env.ANTHROPIC_MODEL;
     }
+  });
+
+  it('403 with "open-source models" message → ModelRejectedError (no retry)', async () => {
+    // The Blackbox open-source-only rejection message must be caught as a
+    // ModelRejectedError (the old regex only matched "Free tier/forbidden/access").
+    const mockClient = {
+      messages: {
+        create: vi.fn().mockRejectedValue(
+          Object.assign(new Error('Only open-source models are supported'), { status: 403 }),
+        ),
+      },
+    };
+    await expect(callOpus47({ messages: [], maxTokens: 100, client: mockClient }))
+      .rejects.toThrow(ModelRejectedError);
+    expect(mockClient.messages.create).toHaveBeenCalledOnce(); // no retry on 403
   });
 
   describe('streaming auto-switch', () => {
