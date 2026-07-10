@@ -277,6 +277,25 @@ async function main() {
     console.log(`[orchestrator] decision saved to resume state (Render-kill survival).`);
   }
 
+  // 2026-07-10: glm-5.2 (unlike opus) does not reliably call the mandatory
+  // write_decision_note tool — it completes spawn/defer/kill but stops before
+  // the final note. Without this guard the artifact + dashboard get
+  // `Decision note: undefined` (observed on live cron C-20260710T1306 + local
+  // C-20260710T1231), losing the reasoning trail. Also covers the resume path
+  // (resume.decisionNote can be undefined if the prior cycle hit this gap).
+  // Synthesize a default note from the cycle data so a reasoning trace always
+  // exists. Model-agnostic + placement after the if/else covers both paths.
+  if (!decisionNote) {
+    const firedIds = firedTripwires.map(t => `${t.id}:${t.name}`).join(', ') || 'none';
+    decisionNote = {
+      reasoning: `[auto-synthesized — Decision Agent did not call write_decision_note] Cycle produced ${spawnPlan.length} spawn(s), ${deferrals.length} deferral(s), ${kills.length} kill(s). Fired tripwires: ${firedIds}.`,
+      marketSignals: '(not provided by agent this cycle)',
+      kpiDeltas: '(not provided by agent this cycle)',
+      nextCycleHypothesis: '(not provided by agent this cycle)',
+    };
+    console.log(`[orchestrator] WARNING: write_decision_note not called — synthesized default note (glm-5.2 tool-sequence gap)`);
+  }
+
   // HARD CAP: trim spawn plan to 4 sub-agents max regardless of Decision Agent output.
   // Each sub-agent ~6min wall-clock streaming Opus 4.7. 4 × concurrency-2 = 12min for fan-out.
   // Plus ~10min Decision + ~3min setup + ~2min commit/push = ~27min total cycle = fits GH 50min ceiling.
