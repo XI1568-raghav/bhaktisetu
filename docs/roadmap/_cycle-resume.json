@@ -1,48 +1,27 @@
 {
-  "cycleId": "C-20260711T0948",
+  "cycleId": "C-20260711T1715",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q2-E-005",
-        "R-Q2-E-006"
+        "R-Q2-E-001",
+        "R-Q2-E-003"
       ],
-      "briefing": "Advance engineering items R-Q2-E-005 and R-Q2-E-006. CRITICAL CONTEXT: Nearly ALL KPIs are returning 404/500 — the observability/metrics infrastructure is broken. Live KPI values show: cron_auth_token_set=0 (cron endpoints UNPROTECTED — security risk), razorpay_live_active=0 (payments not live), uptime_monitors_active=4. The metrics endpoints need to be wired up so the orchestrator can measure progress. Priority work: (1) Fix KPI/observability endpoints that return 404/500, (2) Set CRON_AUTH_TOKEN in Render env (security), (3) Advance any engineering work not blocked by founder. FIRST: verify these items exist and are in_progress in docs/roadmap/_index.json. If already shipped, find and advance the highest-impact non-blocked engineering items. DO NOT touch founder-blocked items: R-Q1-E-001,E-002,E-008,E-009,E-011,E-012,E-014, R-Q2-E-004,E-009,E-012,E-015, R-Q3-E-002,E-003,E-006, R-Q4-E-003. Stay within GH 2000min/mo and CF 500 builds/mo caps. Budget currently at 0% usage.",
-      "estTokens": 12000
+      "briefing": "CRITICAL KPI SIGNALS: razorpay_live_active=0 (payment NOT live — #1 revenue blocker, zero revenue collection possible), cron_auth_token_set=0 (cron endpoints unprotected — security risk, anyone can trigger cron jobs), 90%+ of KPI endpoints returning 404/500/TBD (observability pipeline completely broken — orchestrator is flying blind).\n\nPRIORITY ORDER:\n1. Razorpay: Verify webhook signature validation, run e2e test against test mode, then flip RAZORPAY_LIVE=true in Render env. Without this, zero revenue.\n2. CRON_AUTH_TOKEN: Set in Render env to protect cron endpoints. Currently 0 = completely open.\n3. KPI observability: Fix metric endpoints (pages_cdn_cached returns GraphQL syntax error \"TBD\", funnel_events_wired 404, api_p95_ms 404, etc.) so orchestrator can read real signals next cycle.\n\nCONSTRAINTS: Skip R-Q1-E-001 (architecture decision — founder-blocked 30d, deferred this cycle). Don't violate free-tier budgets (CF 500 builds/mo, GH 2000 min/mo, Resend 100/day, Render 750h/mo). Check docs/roadmap/_index.json for item specs and dependency DAG. If these item IDs don't exist or are already shipped, work on highest-impact engineering debt from the roadmap.",
+      "estTokens": 15000
     },
-    {
-      "role": "cmo",
-      "itemIds": [
-        "R-Q2-M-001",
-        "R-Q2-M-002"
-      ],
-      "briefing": "Advance marketing items R-Q2-M-001 and R-Q2-M-002. CONTEXT: Many marketing items are founder-blocked (R-Q1-M-003 U8, R-Q1-M-010 U7, R-Q2-M-006 U2, R-Q2-M-008 U7, R-Q3-M-001 through M-012, R-Q4-M-003). R-Q2-M-011 is in queue but stale 706h — DO NOT re-spawn it. Focus on SEO foundations, content creation, social media setup, and distribution channels that can proceed without founder input. KPIs for marketing (pillar_pages_shipped, cluster_articles_shipped, social_posts_scheduled, etc.) are all returning errors — no marketing metrics are measurable yet. FIRST: verify items exist and are in_progress in docs/roadmap/_index.json. If already shipped, find and advance the highest-impact non-blocked marketing items. DO NOT touch founder-blocked items or R-Q2-M-011. Stay within free-tier limits.",
-      "estTokens": 10000
-    },
-    {
-      "role": "sales",
-      "itemIds": [
-        "R-Q2-S-001",
-        "R-Q2-S-002"
-      ],
-      "briefing": "Advance sales/supply items R-Q2-S-001 and R-Q2-S-002. CONTEXT: Multiple sales items are founder-blocked: R-Q1-SA-001 (founder must send WhatsApp to 5 priests — 31 days), R-Q1-SA-006 (true — 29 days), R-Q1-S-008 (founder must dial T1 gaushala prospects — 31 days), R-Q1-S-013 (GOOGLE_PLACES_API_KEY missing in Render env — 30 days), R-Q3-S-002 (recruitment+KYC of 25 humans), R-Q3-SA-001/003/004, R-Q4-SA-001/003. Focus on supply research, temple/pandit data enrichment, outreach kit preparation, B2B LOI drafting — work that agents can do without founder calls. If R-Q2-S-001 or R-Q2-S-002 don't exist or are already shipped, find and advance the highest-impact non-blocked sales/supply items. FIRST: verify item status in docs/roadmap/_index.json. Stay within free-tier limits.",
-      "estTokens": 10000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q2-CS-001",
-        "R-Q2-CS-002"
-      ],
-      "briefing": "Advance CS items R-Q2-CS-001 and R-Q2-CS-002. CONTEXT: R-Q1-CS-002 (U7, 31 days) and R-Q1-CS-006 (U7, 30 days) are founder-blocked. R-Q2-CS-003 is blocked (native-speaker review for ta/te/bn/mr + Wati Meta template approval, 31 days). Focus on support macros, help articles, multilingual CS infrastructure, WhatsApp support setup, and churn/NPS tooling that can proceed without founder input. KPIs for CS (cs_macros_count, multilingual_macros_count, wa_support_active, nps_score) are all stale/erroring — no CS metrics are measurable yet. FIRST: verify items exist and are in_progress in docs/roadmap/_index.json. If already shipped, find and advance the highest-impact non-blocked CS items. DO NOT touch founder-blocked items. Stay within free-tier limits.",
-      "estTokens": 8000
-    }
+    {}
   ],
   "deferrals": [
     {
-      "itemId": "R-Q2-M-011",
-      "reason": "T-010 tripwire fired: Queue oldest item > 72h unconsumed (706.7h / ~29 days stale). R-Q2-M-011 has been sitting in queue unconsumed since June 11. The queue worker appears non-functional — no items have been dequeued in nearly a month. This is a systemic pipeline blockage, not just a single-item issue. Founder must: (1) triage R-Q2-M-011 specifically — either ship it manually or kill it, (2) diagnose why the queue worker isn't consuming items, (3) consider flushing the queue if the worker is broken. Meanwhile, 57 items remain founder-blocked with many at 31 days open — the founder decision bottleneck is the single largest constraint on the entire roadmap.",
-      "suggestedAction": "Manually triage R-Q2-M-011 (ship or kill), then diagnose and fix the queue worker. Address top founder-blocked items: R-Q1-E-001 (architecture decision: CF Pages vs Vercel vs static allowlist — 30 days open), R-Q1-SA-001 (send WhatsApp to 5 priests — 31 days), R-Q1-S-013 (set GOOGLE_PLACES_API_KEY in Render env — 30 days), R-Q1-S-008 (dial T1 gaushala prospects — 31 days). Also: cron_auth_token_set=0 is a live security issue — set CRON_AUTH_TOKEN in Render env immediately."
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked 30 days. This is a foundational decision that blocks multiple downstream engineering items (R-Q1-E-008, E-009, E-011, E-012, E-014 all blocked on related U-gates). Every day of delay cascades across the engineering roadmap.",
+      "suggestedAction": "Make decision this week. Recommend Cloudflare Pages for free-tier build budget compliance (500 builds/mo cap). Document decision in docs/engineering/architecture-decision.md with rationale, migration path, and dep-risk assessment. This unblocks 5+ downstream engineering items."
+    },
+    {
+      "itemId": "R-Q1-SA-001",
+      "reason": "Founder must send WhatsApp to 5 priests — blocked 31 days. This is a 15-minute manual task that unblocks the entire supply onboarding pipeline. Supply (pandits) is the #1 revenue enabler — without priests, no bookings can be fulfilled.",
+      "suggestedAction": "Use outreach kit in docs/sales/. Send 5 WhatsApp messages to priests from the T1 prospect list TODAY. Report back which responded. This is the single highest ROI founder action available — 15 minutes unblocks the supply pipeline."
     }
   ],
   "kills": [],
@@ -54,10 +33,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-11T09:50:04.553Z"
+      "firedAt": "2026-07-11T17:17:12.090Z"
     }
   ],
-  "savedAt": "2026-07-11T09:51:31.966Z",
+  "savedAt": "2026-07-11T17:20:36.269Z",
   "consumed": true,
-  "consumedAt": "2026-07-11T09:54:57.932Z"
+  "consumedAt": "2026-07-11T17:22:38.167Z"
 }
