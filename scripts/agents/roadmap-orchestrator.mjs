@@ -9,10 +9,15 @@ import yaml from 'js-yaml';
 import { scrapeAllKpis } from './roadmap/_kpi-scraper.mjs';
 import { evalTripwires } from './roadmap/_tripwire-eval.mjs';
 import { buildSignalContext } from './roadmap/_signal-context.mjs';
-import { DECISION_SYSTEM_PROMPT, DECISION_TOOLS, buildDecisionUserMessage } from './roadmap/_decision-prompt.mjs';
+import {
+  DECISION_SYSTEM_PROMPT,
+  DECISION_TOOLS,
+  buildDecisionUserMessage,
+} from './roadmap/_decision-prompt.mjs';
 import { runSubagent } from './roadmap/_subagent-runner.mjs';
 import { callOpus47, ModelRejectedError } from './roadmap/_anthropic-client.mjs';
 import { buildIndex } from './roadmap/_index-build.mjs';
+import { createLock } from './roadmap/_lock.mjs';
 
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const QUEUE_DIR = DRY_RUN ? 'docs/roadmap/_dryrun/queue' : 'docs/roadmap/queue';
@@ -42,17 +47,27 @@ function raceWithWall(p, wallMs, fallback, warnMsg) {
 
 function writeAlert(filename, body) {
   mkdirSync(ALERTS_DIR, { recursive: true });
-  writeFileSync(join(ALERTS_DIR, filename), `# Alert\n\n${body}\n\nTs: ${new Date().toISOString()}\n`);
+  writeFileSync(
+    join(ALERTS_DIR, filename),
+    `# Alert\n\n${body}\n\nTs: ${new Date().toISOString()}\n`,
+  );
 }
 
 function readQueue() {
   if (!existsSync(QUEUE_DIR)) return [];
-  return readdirSync(QUEUE_DIR).filter(f => f.endsWith('.md')).map(f => {
-    const content = readFileSync(join(QUEUE_DIR, f), 'utf8');
-    const m = content.match(/^---\r?\n([\s\S]+?)\r?\n---/);
-    if (!m) return null;
-    try { return yaml.load(m[1]); } catch { return null; }
-  }).filter(Boolean);
+  return readdirSync(QUEUE_DIR)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => {
+      const content = readFileSync(join(QUEUE_DIR, f), 'utf8');
+      const m = content.match(/^---\r?\n([\s\S]+?)\r?\n---/);
+      if (!m) return null;
+      try {
+        return yaml.load(m[1]);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 
 const LOCK_PATH = 'docs/roadmap/_lock.json';
@@ -61,28 +76,12 @@ const LOCK_PATH = 'docs/roadmap/_lock.json';
 const LOCK_MAX_AGE_MS = 15 * 60 * 1000;
 const RESUME_STATE_PATH = 'docs/roadmap/_cycle-resume.json';
 
-function checkLock() {
-  if (!existsSync(LOCK_PATH)) return null;
-  try {
-    const lock = JSON.parse(readFileSync(LOCK_PATH, 'utf8'));
-    const age = Date.now() - new Date(lock.acquiredAt).getTime();
-    if (age > LOCK_MAX_AGE_MS) {
-      console.warn(`[orchestrator] stale lock (age ${Math.round(age/60000)}min) — overriding`);
-      return null;
-    }
-    return lock;
-  } catch { return null; }
-}
-
-function acquireLock(cycleId) {
-  writeFileSync(LOCK_PATH, JSON.stringify({ cycleId, acquiredAt: new Date().toISOString(), pid: process.pid }, null, 2));
-}
-
-function releaseLock() {
-  if (existsSync(LOCK_PATH)) {
-    try { writeFileSync(LOCK_PATH, JSON.stringify({ released: true, releasedAt: new Date().toISOString() }, null, 2)); } catch {}
-  }
-}
+// Lock lifecycle lives in ./roadmap/_lock.mjs so it is unit-testable
+// against a temp file. Production defaults: 15min TTL, docs/roadmap/_lock.json.
+const { checkLock, acquireLock, releaseLock } = createLock({
+  lockPath: LOCK_PATH,
+  ttlMs: LOCK_MAX_AGE_MS,
+});
 
 // Resumable Decision plan: persist after Decision Agent completes so a
 // Render mid-cycle kill doesn't waste the Opus call. Next cycle picks up
@@ -92,19 +91,33 @@ function readResumeState() {
   try {
     const s = JSON.parse(readFileSync(RESUME_STATE_PATH, 'utf8'));
     const age = Date.now() - new Date(s.savedAt).getTime();
-    if (age > 25 * 60 * 1000) return null;  // too old, ignore
+    if (age > 25 * 60 * 1000) return null; // too old, ignore
     if (s.consumed) return null;
     return s;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function saveResumeState(cycleId, spawnPlan, deferrals, kills, decisionNote, firedTripwires) {
   try {
-    writeFileSync(RESUME_STATE_PATH, JSON.stringify({
-      cycleId, spawnPlan, deferrals, kills, decisionNote, firedTripwires,
-      savedAt: new Date().toISOString(),
-      consumed: false,
-    }, null, 2));
+    writeFileSync(
+      RESUME_STATE_PATH,
+      JSON.stringify(
+        {
+          cycleId,
+          spawnPlan,
+          deferrals,
+          kills,
+          decisionNote,
+          firedTripwires,
+          savedAt: new Date().toISOString(),
+          consumed: false,
+        },
+        null,
+        2,
+      ),
+    );
   } catch (e) {
     console.warn(`[orchestrator] could not save resume state: ${e.message}`);
   }
@@ -128,32 +141,42 @@ async function main() {
   // 0. LOCK CHECK (prevent concurrent runs from overlapping cron + manual triggers)
   const existing = checkLock();
   if (existing && !existing.released) {
-    console.log(`[orchestrator] another cycle in flight: ${existing.cycleId} acquired ${existing.acquiredAt}. Exiting clean.`);
+    console.log(
+      `[orchestrator] another cycle in flight: ${existing.cycleId} acquired ${existing.acquiredAt}. Exiting clean.`,
+    );
     process.exit(0);
   }
   acquireLock(cycleId);
 
   // 1. PAUSE CHECK
   const budget = existsSync(BUDGET_PATH) ? JSON.parse(readFileSync(BUDGET_PATH, 'utf8')) : {};
-  if (budget.orchestratorPaused) { console.log('[orchestrator] paused — exiting'); releaseLock(); process.exit(0); }
+  if (budget.orchestratorPaused) {
+    console.log('[orchestrator] paused — exiting');
+    releaseLock();
+    process.exit(0);
+  }
 
   // 2. INGEST
   const index = buildIndex();
   const items = index.items;
   const tripwires = yaml.load(readFileSync(TRIPWIRES_PATH, 'utf8')).tripwires;
   const queue = readQueue();
-  console.log(`[orchestrator] ingested ${items.length} items, ${queue.length} queue, ${tripwires.length} tripwires`);
+  console.log(
+    `[orchestrator] ingested ${items.length} items, ${queue.length} queue, ${tripwires.length} tripwires`,
+  );
 
   // 3. SCRAPE KPIS — hard-bounded by per-scraper 90s + outer wall 5min.
   console.log(`[orchestrator] phase=kpi start`);
   const KPI_PHASE_WALL_MS = 5 * 60 * 1000;
   const kpis = await raceWithWall(
-    scrapeAllKpis(items.filter(i => i.kpi?.source)),
+    scrapeAllKpis(items.filter((i) => i.kpi?.source)),
     KPI_PHASE_WALL_MS,
     [],
     `KPI phase wall hit (${KPI_PHASE_WALL_MS}ms) — proceeding with empty KPIs`,
   );
-  console.log(`[orchestrator] scraped ${kpis.length} KPIs (${kpis.filter(k => k.stale).length} stale)`);
+  console.log(
+    `[orchestrator] scraped ${kpis.length} KPIs (${kpis.filter((k) => k.stale).length} stale)`,
+  );
 
   // 3b. REFRESH FLEET AGENT SUMMARIES (24 daily agents → sector-grouped excerpts)
   console.log(`[orchestrator] phase=fleet start`);
@@ -161,7 +184,9 @@ async function main() {
   try {
     const { summarizeFleet } = await import('./roadmap/_agent-fleet-summary.mjs');
     sectorSummaries = summarizeFleet();
-    console.log(`[orchestrator] fleet summary: ${sectorSummaries.agentCount} agents across ${Object.keys(sectorSummaries.bySector || {}).length} sectors`);
+    console.log(
+      `[orchestrator] fleet summary: ${sectorSummaries.agentCount} agents across ${Object.keys(sectorSummaries.bySector || {}).length} sectors`,
+    );
   } catch (e) {
     console.warn(`[orchestrator] fleet summary skipped: ${e.message}`);
   }
@@ -177,7 +202,9 @@ async function main() {
       { results: [], experimentCount: 0 },
       `experiment tracker wall hit (60s) — proceeding with empty`,
     );
-    console.log(`[orchestrator] experiments: ${experiments.experimentCount} tracked (${experiments.decided || 0} decided)`);
+    console.log(
+      `[orchestrator] experiments: ${experiments.experimentCount} tracked (${experiments.decided || 0} decided)`,
+    );
   } catch (e) {
     console.warn(`[orchestrator] experiments skipped: ${e.message}`);
   }
@@ -185,7 +212,9 @@ async function main() {
   // 4. SIGNAL CONTEXT (initial — tripwires re-merged in step 5)
   const externalErr = budget.lastAnthropicError || null;
   const signalContext = buildSignalContext({
-    items, kpis, queue,
+    items,
+    kpis,
+    queue,
     tripwiresFired: [],
     budgets: budget,
     external: { lastAnthropicError: externalErr, experiments },
@@ -195,21 +224,28 @@ async function main() {
   // 5. TRIPWIRES
   const firedTripwires = evalTripwires(tripwires, signalContext);
   signalContext.firedTripwires = firedTripwires;
-  console.log(`[orchestrator] fired tripwires: ${firedTripwires.map(t => t.id).join(', ') || 'none'}`);
+  console.log(
+    `[orchestrator] fired tripwires: ${firedTripwires.map((t) => t.id).join(', ') || 'none'}`,
+  );
 
   // Log signal-context trim outcome (Fix D)
   if (signalContext._trim?.applied) {
     const origKB = (signalContext._trim.originalBytes / 1024).toFixed(1);
     const trimmedKB = (signalContext._trim.trimmedBytes / 1024).toFixed(1);
-    console.log(`[orchestrator] signal-context trimmed ${origKB}KB → ${trimmedKB}KB. drops: ${signalContext._trim.drops.join(', ')}`);
+    console.log(
+      `[orchestrator] signal-context trimmed ${origKB}KB → ${trimmedKB}KB. drops: ${signalContext._trim.drops.join(', ')}`,
+    );
   } else {
     const sizeKB = (JSON.stringify(signalContext).length / 1024).toFixed(1);
     console.log(`[orchestrator] signal-context ${sizeKB}KB (under trim threshold)`);
   }
 
   // 6. T-005 KILL
-  if (firedTripwires.find(t => t.id === 'T-005')) {
-    writeAlert(`tripwire-T-005-${cycleId}.md`, 'Anthropic proxy blocked. Halting workflow per user directive.');
+  if (firedTripwires.find((t) => t.id === 'T-005')) {
+    writeAlert(
+      `tripwire-T-005-${cycleId}.md`,
+      'Anthropic proxy blocked. Halting workflow per user directive.',
+    );
     releaseLock();
     process.exit(2);
   }
@@ -221,13 +257,18 @@ async function main() {
   let spawnPlan, deferrals, kills, decisionNote;
   const resume = readResumeState();
   if (resume) {
-    console.log(`[orchestrator] RESUMING from prior cycle ${resume.cycleId} (saved ${resume.savedAt}). Skipping Decision Agent.`);
+    console.log(
+      `[orchestrator] RESUMING from prior cycle ${resume.cycleId} (saved ${resume.savedAt}). Skipping Decision Agent.`,
+    );
     spawnPlan = resume.spawnPlan;
     deferrals = resume.deferrals;
     kills = resume.kills;
     decisionNote = resume.decisionNote;
     // Use the resumed firedTripwires for the decision note context.
-    if (resume.firedTripwires) firedTripwires.push(...resume.firedTripwires.filter(t => !firedTripwires.find(f => f.id === t.id)));
+    if (resume.firedTripwires)
+      firedTripwires.push(
+        ...resume.firedTripwires.filter((t) => !firedTripwires.find((f) => f.id === t.id)),
+      );
   } else {
     // Fresh Decision Agent call.
     // 16k tokens streaming, 10min wall budget. Smaller = survives Render restart.
@@ -250,10 +291,15 @@ async function main() {
           maxTokens: 16000,
         }),
         timer,
-      ]).finally(() => { if (decisionTimer) clearTimeout(decisionTimer); });
+      ]).finally(() => {
+        if (decisionTimer) clearTimeout(decisionTimer);
+      });
     } catch (e) {
       if (e instanceof ModelRejectedError) {
-        writeAlert(`model-rejected-${cycleId}.md`, `Decision Agent rejected: ${e.message}\nHalting per user directive.`);
+        writeAlert(
+          `model-rejected-${cycleId}.md`,
+          `Decision Agent rejected: ${e.message}\nHalting per user directive.`,
+        );
         budget.lastAnthropicError = e.message;
         writeFileSync(BUDGET_PATH, JSON.stringify(budget, null, 2));
         releaseLock();
@@ -265,11 +311,11 @@ async function main() {
     }
 
     // 8. PARSE TOOL CALLS
-    const toolCalls = decisionResponse.content.filter(c => c.type === 'tool_use');
-    spawnPlan = toolCalls.filter(t => t.name === 'spawn_subagent').map(t => t.input);
-    deferrals = toolCalls.filter(t => t.name === 'defer_to_founder').map(t => t.input);
-    kills = toolCalls.filter(t => t.name === 'kill_item').map(t => t.input);
-    decisionNote = toolCalls.find(t => t.name === 'write_decision_note')?.input;
+    const toolCalls = decisionResponse.content.filter((c) => c.type === 'tool_use');
+    spawnPlan = toolCalls.filter((t) => t.name === 'spawn_subagent').map((t) => t.input);
+    deferrals = toolCalls.filter((t) => t.name === 'defer_to_founder').map((t) => t.input);
+    kills = toolCalls.filter((t) => t.name === 'kill_item').map((t) => t.input);
+    decisionNote = toolCalls.find((t) => t.name === 'write_decision_note')?.input;
 
     // CHECKPOINT: save spawn plan to disk BEFORE sub-agents fire.
     // If Render kills us mid-fan-out, next cycle resumes from this plan.
@@ -286,14 +332,16 @@ async function main() {
   // Synthesize a default note from the cycle data so a reasoning trace always
   // exists. Model-agnostic + placement after the if/else covers both paths.
   if (!decisionNote) {
-    const firedIds = firedTripwires.map(t => `${t.id}:${t.name}`).join(', ') || 'none';
+    const firedIds = firedTripwires.map((t) => `${t.id}:${t.name}`).join(', ') || 'none';
     decisionNote = {
       reasoning: `[auto-synthesized — Decision Agent did not call write_decision_note] Cycle produced ${spawnPlan.length} spawn(s), ${deferrals.length} deferral(s), ${kills.length} kill(s). Fired tripwires: ${firedIds}.`,
       marketSignals: '(not provided by agent this cycle)',
       kpiDeltas: '(not provided by agent this cycle)',
       nextCycleHypothesis: '(not provided by agent this cycle)',
     };
-    console.log(`[orchestrator] WARNING: write_decision_note not called — synthesized default note (glm-5.2 tool-sequence gap)`);
+    console.log(
+      `[orchestrator] WARNING: write_decision_note not called — synthesized default note (glm-5.2 tool-sequence gap)`,
+    );
   }
 
   // HARD CAP: trim spawn plan to 4 sub-agents max regardless of Decision Agent output.
@@ -301,11 +349,15 @@ async function main() {
   // Plus ~10min Decision + ~3min setup + ~2min commit/push = ~27min total cycle = fits GH 50min ceiling.
   const HARD_SPAWN_CAP = 4;
   if (spawnPlan.length > HARD_SPAWN_CAP) {
-    console.log(`[orchestrator] trimming spawn plan ${spawnPlan.length} → ${HARD_SPAWN_CAP} (GH free tier budget)`);
+    console.log(
+      `[orchestrator] trimming spawn plan ${spawnPlan.length} → ${HARD_SPAWN_CAP} (GH free tier budget)`,
+    );
     spawnPlan.splice(HARD_SPAWN_CAP);
   }
 
-  console.log(`[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`);
+  console.log(
+    `[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`,
+  );
 
   console.log(`[orchestrator] phase=subagents start (n=${spawnPlan.length})`);
   // 9. SPAWN SUB-AGENTS (parallel, max concurrency 2 — GH runner has ample memory but
@@ -314,7 +366,9 @@ async function main() {
   const allQueueFiles = [];
   for (let i = 0; i < spawnPlan.length; i += 2) {
     const chunk = spawnPlan.slice(i, i + 2);
-    const results = await Promise.allSettled(chunk.map(p => runSubagent({ ...p, items, cycleId })));
+    const results = await Promise.allSettled(
+      chunk.map((p) => runSubagent({ ...p, items, cycleId })),
+    );
     for (const r of results) {
       if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);
     }
@@ -324,7 +378,9 @@ async function main() {
   mkdirSync(QUEUE_DIR, { recursive: true });
   for (const qf of allQueueFiles) {
     const slug = (qf.frontmatter.itemTitle || qf.frontmatter.itemId || 'untitled')
-      .toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .slice(0, 40);
     const fname = `${cycleTs.replace(/[:.]/g, '-')}-${qf.frontmatter.role}-${qf.frontmatter.itemId}-${slug}.md`;
     writeFileSync(join(QUEUE_DIR, fname), `---\n${yaml.dump(qf.frontmatter)}---\n${qf.body}`);
   }
@@ -333,7 +389,7 @@ async function main() {
   mkdirSync(DECISIONS_DIR, { recursive: true });
   writeFileSync(
     join(DECISIONS_DIR, `${cycleId}.md`),
-    `# Decision ${cycleId}\n\n## Spawn plan\n${JSON.stringify(spawnPlan, null, 2)}\n\n## Deferrals\n${JSON.stringify(deferrals, null, 2)}\n\n## Kills\n${JSON.stringify(kills, null, 2)}\n\n## Decision note\n${JSON.stringify(decisionNote, null, 2)}\n\n## Fired tripwires\n${JSON.stringify(firedTripwires, null, 2)}\n`
+    `# Decision ${cycleId}\n\n## Spawn plan\n${JSON.stringify(spawnPlan, null, 2)}\n\n## Deferrals\n${JSON.stringify(deferrals, null, 2)}\n\n## Kills\n${JSON.stringify(kills, null, 2)}\n\n## Decision note\n${JSON.stringify(decisionNote, null, 2)}\n\n## Fired tripwires\n${JSON.stringify(firedTripwires, null, 2)}\n`,
   );
 
   // 12. UPDATE BUDGET SNAPSHOT
@@ -349,6 +405,49 @@ async function main() {
   releaseLock();
 }
 
+// Signal handlers — release the file lock before the process dies.
+// Without these, when GH Actions cancels the 50min job (timeout/cancel/
+// runner preemption) Node's default SIGTERM disposition terminates the
+// process immediately: the pending main() promise's .then/.catch never
+// runs, releaseLock() is skipped, and _lock.json is left without
+// `released:true`. The 15min TTL self-heals on the next 8h cron, but a
+// tighter retry within 15min sees a live lock and exits clean at the
+// lock check (line ~132), blocking the run. releaseLock is sync
+// (writeFileSync) so it is safe to call directly from a signal handler.
+// Handlers registered BEFORE main() fires so SIGTERM mid-Decision-Agent
+// still releases the lock.
+function shutdownOnSignal(sig) {
+  try {
+    releaseLock();
+  } catch {}
+  console.log(`[orchestrator] ${sig} — lock released, exiting`);
+  // 130 = 128 + SIGINT(2); 143 = 128 + SIGTERM(15). Non-zero so GH Actions
+  // marks the job failed, but the if:always() commit step still runs.
+  process.exit(sig === 'SIGINT' ? 130 : 143);
+}
+process.on('SIGTERM', () => shutdownOnSignal('SIGTERM'));
+process.on('SIGINT', () => shutdownOnSignal('SIGINT'));
+// Dangling async errors (raceWithWall timers, subagent runners) escape
+// main()'s .catch. Release the lock on those too so a stray rejection
+// can't strand the lock.
+process.on('uncaughtException', (e) => {
+  console.error('[orchestrator] uncaughtException', e);
+  try {
+    writeAlert(`uncaught-${Date.now()}.md`, e.stack || String(e));
+  } catch {}
+  try {
+    releaseLock();
+  } catch {}
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[orchestrator] unhandledRejection', reason);
+  try {
+    releaseLock();
+  } catch {}
+  process.exit(1);
+});
+
 main()
   .then(() => {
     // Explicit exit — race-vs-timeout patterns leave dangling timer handles
@@ -357,7 +456,7 @@ main()
     console.log('[orchestrator] exit 0');
     process.exit(0);
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e);
     writeAlert(`uncaught-${Date.now()}.md`, e.stack || String(e));
     releaseLock();
