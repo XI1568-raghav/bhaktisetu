@@ -1,27 +1,50 @@
 {
-  "cycleId": "C-20260711T1715",
+  "cycleId": "C-20260712T0357",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q2-E-001",
-        "R-Q2-E-003"
+        "R-Q1-E-003",
+        "R-Q1-IT-001"
       ],
-      "briefing": "CRITICAL KPI SIGNALS: razorpay_live_active=0 (payment NOT live — #1 revenue blocker, zero revenue collection possible), cron_auth_token_set=0 (cron endpoints unprotected — security risk, anyone can trigger cron jobs), 90%+ of KPI endpoints returning 404/500/TBD (observability pipeline completely broken — orchestrator is flying blind).\n\nPRIORITY ORDER:\n1. Razorpay: Verify webhook signature validation, run e2e test against test mode, then flip RAZORPAY_LIVE=true in Render env. Without this, zero revenue.\n2. CRON_AUTH_TOKEN: Set in Render env to protect cron endpoints. Currently 0 = completely open.\n3. KPI observability: Fix metric endpoints (pages_cdn_cached returns GraphQL syntax error \"TBD\", funnel_events_wired 404, api_p95_ms 404, etc.) so orchestrator can read real signals next cycle.\n\nCONSTRAINTS: Skip R-Q1-E-001 (architecture decision — founder-blocked 30d, deferred this cycle). Don't violate free-tier budgets (CF 500 builds/mo, GH 2000 min/mo, Resend 100/day, Render 750h/mo). Check docs/roadmap/_index.json for item specs and dependency DAG. If these item IDs don't exist or are already shipped, work on highest-impact engineering debt from the roadmap.",
-      "estTokens": 15000
+      "briefing": "CRITICAL REVENUE + SECURITY FOCUS. Two items bundled:\n\n1. R-Q1-E-003 — Payment integration go-live. KPI signal: razorpay_live_active=0. This is the #1 revenue blocker — without Razorpay live, zero bookings can be charged. Implement/complete Razorpay payment integration end-to-end: checkout flow, webhook handling with idempotency, payment verification, refund flow, and error handling. Ensure razorpay_e2e_tested KPI can flip to 1. Also check stripe_elements_embedded for NRI payments. Do NOT touch R-Q1-E-001 (architecture decision — founder-blocked) or R-Q1-E-002/E-008/E-009/E-011/E-012/E-014 (all founder-blocked).\n\n2. R-Q1-IT-001 — Cron auth token security. KPI signal: cron_auth_token_set=0. Cron endpoints are currently unprotected — anyone can trigger them. Set CRON_AUTH_TOKEN in Render env, add auth header validation to all cron routes, and add rate limiting. This is a quick security fix (<2 hours). Do NOT touch R-Q1-IT-003 or R-Q1-IT-005 (founder-blocked).\n\nConstraints: Stay within GH 2000min/mo and CF 500build/mo (both at 0% currently). No paid infra changes without founder approval. Write handoff docs in docs/engineering/ and docs/it/ respectively.",
+      "estTokens": 18000
     },
-    {}
+    {
+      "role": "cmo",
+      "itemIds": [
+        "R-Q1-M-001"
+      ],
+      "briefing": "SEO/CONTENT ORGANIC ACQUISITION FOCUS. Budget is at 0% — organic content is the highest-leverage free acquisition channel.\n\nR-Q1-M-001 — Build SEO foundation: pillar pages, meta tag optimization, schema.org markup, and programmatic content templates. Target KPIs: pillar_pages_shipped, programmatic_pages_live, pages_with_page_schema, gsc_verified.\n\nDo NOT duplicate R-Q2-M-011 (already in queue — stale 724h, deferred to founder for triage). Do NOT touch R-Q1-M-003 or R-Q1-M-010 (founder-blocked).\n\nKey signals: Most KPIs returning 404 — observability is broken, but content shipping doesn't depend on metrics. Focus on what you can ship: landing page copy, blog drafts, schema markup, GSC verification setup.\n\nBalance India + NRI: ensure content serves both Indian domestic users and NRI diaspora. Create deity-of-day cluster content and festival content calendars. Write handoff in docs/agent-reports/marketing/R-Q1-M-001-*.",
+      "estTokens": 14000
+    },
+    {
+      "role": "sales",
+      "itemIds": [
+        "R-Q1-S-001"
+      ],
+      "briefing": "TEMPLE/SUPPLY OUTREACH FOCUS — INDIA MARKET.\n\nR-Q1-S-001 — Temple outreach and supply onboarding preparation. Build structured outreach kits, LOI templates, and verification checklists for T1 city temples. Target KPIs: verified_temples_count_*, temple_reply_rate_pct, temple_calls_made.\n\nCRITICAL CONTEXT: R-Q1-SA-001 (founder WhatsApp 5 priests) is founder-blocked for 32 days — agent CANNOT do this. R-Q1-S-008 (gaushala prospects) and R-Q1-S-013 (Google Places API key) are also founder-blocked. Your job is to PREPARE everything so founder can execute quickly once unblocked.\n\nTasks: (1) Update temple outreach kits with verified contact info, (2) Draft LOI templates for temples and priests, (3) Prepare B2B pilot scoping docs, (4) Create supply onboarding checklists. Focus on existing cities — do NOT open new cities (geo sequencing rule: current cities must hit 80% target first).\n\nWrite handoff in docs/agent-reports/sales/R-Q1-S-001-* and docs/supply/ as needed. Include specific founder action items at top of handoff.",
+      "estTokens": 14000
+    },
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q1-CS-001"
+      ],
+      "briefing": "SUPPORT MACROS + MULTILINGUAL AUTOMATION FOCUS.\n\nR-Q1-CS-001 — Build customer support macro templates and auto-acknowledge flows. Target KPIs: cs_macros_count, multilingual_macros_count, wa_bot_auto_resolve_pct, founder_inbox_auto_ack_pct.\n\nCRITICAL CONTEXT: R-Q1-CS-002 and R-Q1-CS-006 are founder-blocked (U7 — native speaker review needed for ta/te/bn/mr). R-Q2-CS-003 is also founder-blocked (Wati Meta template approval). Your job: draft macro templates in en/hi (languages you CAN handle), prepare structured handoff for native speaker review of ta/te/bn/mr, and set up WhatsApp auto-acknowledge flow for founder inbox.\n\nTasks: (1) Draft 15-20 support macros in en/hi for common queries (booking, refund, rescheduling, priest communication), (2) Create auto-acknowledge flow for founder WhatsApp inbox, (3) Prepare native-speaker review handoff doc for ta/te/bn/mr macros, (4) Document macro impact measurement SQL.\n\nBalance India + NRI: macros should address both domestic Indian users and NRI users (timezone handling, remote puja participation, international payment questions). Write handoff in docs/agent-reports/cs/R-Q1-CS-001-*.",
+      "estTokens": 12000
+    }
   ],
   "deferrals": [
     {
-      "itemId": "R-Q1-E-001",
-      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked 30 days. This is a foundational decision that blocks multiple downstream engineering items (R-Q1-E-008, E-009, E-011, E-012, E-014 all blocked on related U-gates). Every day of delay cascades across the engineering roadmap.",
-      "suggestedAction": "Make decision this week. Recommend Cloudflare Pages for free-tier build budget compliance (500 builds/mo cap). Document decision in docs/engineering/architecture-decision.md with rationale, migration path, and dep-risk assessment. This unblocks 5+ downstream engineering items."
+      "itemId": "R-Q2-M-011",
+      "reason": "T-010 tripwire fired: queue oldest item > 72h unconsumed (724.9h / 30+ days). This CMO item has been stuck in queue since June 11. It is blocking queue throughput and preventing other items from advancing. Needs immediate founder triage — ship it, kill it, or identify and resolve the blocker.",
+      "suggestedAction": "Review R-Q2-M-011 in docs/roadmap. If still relevant and code-ready, merge and deploy. If blocked, identify specific blocker and resolve. If strategically obsolete, kill and replace with updated item. Queue must drain to depth 0 before process health returns."
     },
     {
       "itemId": "R-Q1-SA-001",
-      "reason": "Founder must send WhatsApp to 5 priests — blocked 31 days. This is a 15-minute manual task that unblocks the entire supply onboarding pipeline. Supply (pandits) is the #1 revenue enabler — without priests, no bookings can be fulfilled.",
-      "suggestedAction": "Use outreach kit in docs/sales/. Send 5 WhatsApp messages to priests from the T1 prospect list TODAY. Report back which responded. This is the single highest ROI founder action available — 15 minutes unblocks the supply pipeline."
+      "reason": "32-day-old blocker: \"founder_must_send_whatsapp_to_5_priests.\" This is a 5-minute task that has been blocking the entire priest supply pipeline for over a month. No agent can do this — only the founder can send these WhatsApp messages. This is the single highest-leverage unblock available: 5 minutes of founder time unlocks the Q1 supply onboarding chain.",
+      "suggestedAction": "Send WhatsApp messages to 5 identified priests using the outreach kit already prepared (docs/agent-reports/sales/R-Q1-SA-001-*). Should take <10 minutes. Once done, mark R-Q1-SA-001 as shipped and unblock downstream supply items."
     }
   ],
   "kills": [],
@@ -33,10 +56,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-11T17:17:12.090Z"
+      "firedAt": "2026-07-12T03:58:39.232Z"
     }
   ],
-  "savedAt": "2026-07-11T17:20:36.269Z",
+  "savedAt": "2026-07-12T04:01:17.483Z",
   "consumed": true,
-  "consumedAt": "2026-07-11T17:22:38.167Z"
+  "consumedAt": "2026-07-12T04:05:02.818Z"
 }
