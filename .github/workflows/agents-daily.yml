@@ -40,6 +40,13 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      # 2026-07-13: booking-quality-monitor.mjs files P0 GH issues on SLA
+      # breaches (puja bookings past scheduled date with no videoProofUrl).
+      # Without issues:write the GITHUB_TOKEN's gh issue create fails with
+      # "Resource not accessible by integration" (booking-quality-monitor
+      # report 2026-07-10: 5 breaches detected, 0 issues filed). Add the
+      # scope so the monitor can actually track the breaches it finds.
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
