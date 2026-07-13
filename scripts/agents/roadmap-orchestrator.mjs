@@ -359,19 +359,80 @@ async function main() {
     `[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`,
   );
 
+  // 2026-07-13: F2 empty-spawn guard. The Decision Agent (glm-5.2) sometimes
+  // emits ZERO spawn_subagent tool calls in a cycle (observed C-20260710T1339:
+  // Spawn plan []). When that coincides with zero defers + zero kills too, the
+  // cycle did nothing at all — no queue items, no deferral, no kill — yet exits
+  // 0 "green", so the soak protocol's `grep decision-error` sees a false green.
+  // A cycle that defers everything (e.g. T-010 queue-stale) is legitimate and
+  // NOT flagged here. Only flag a true no-op. Pure observability — does not
+  // force a spawn (forced spawns on cycles with no real work would burn GH
+  // free-tier minutes on low-quality queue files).
+  if (spawnPlan.length === 0 && deferrals.length === 0 && kills.length === 0) {
+    console.warn(
+      `[orchestrator] WARNING: cycle produced 0 spawn + 0 defer + 0 kill — Decision Agent under-spawned (glm-5.2 tool-call gap). No work emitted this cycle.`,
+    );
+    writeAlert(
+      `decision-under-spawn-${cycleId}.md`,
+      `# Decision Agent emitted no work\n\nCycle ${cycleId}: 0 spawn, 0 defer, 0 kill. The Decision Agent (glm-5.2) returned no spawn_subagent / defer_to_founder / kill_item tool calls.\n\n## Fired tripwires\n\n${JSON.stringify(firedTripwires, null, 2)}\n\n## Diagnosis\n\nThis is the dominant 0-queue-output failure mode (F2). Unlike the sub-agent 403/timeout case (F3, see subagent-zero-output-* alerts), here the Decision Agent itself produced no spawn plan, so no sub-agent was ever called. Likely causes:\n- glm-5.2 under-spawns despite the prompt instructing 3-7 (capped 2-4) spawn_subagent calls per cycle.\n- All candidate items were filtered out (already-shipped, already-in-queue, founder-blocked) leaving nothing the agent judged spawnable.\n- A tripwire (e.g. T-010 queue-stale) caused a defer-only cycle — but that path records a deferral, so it would NOT trigger this alert.\n\n## Action\n\nReview _decision-prompt.mjs spawn instructions for glm-5.2 tool-calling reliability. If this fires repeatedly across cycles, the prompt needs tightening or a floor (>=1 spawn unless an explicit defer/kill tripwire fired).\n`,
+    );
+  }
+
   console.log(`[orchestrator] phase=subagents start (n=${spawnPlan.length})`);
   // 9. SPAWN SUB-AGENTS (parallel, max concurrency 2 — GH runner has ample memory but
   // Anthropic streaming queue can stall if too many concurrent. 2 concurrent = stable.
   // 4 sub-agents × ~6min each, 2 at a time = ~12min total fan-out.
   const allQueueFiles = [];
+  // 2026-07-13: sub-agent LLM calls were failing silently every cycle. runSubagent
+  // catches throws (403/ModelRejected/timeout/empty-output) at _subagent-runner.mjs:71
+  // and returns { queueFiles: [], errors: [msg] }. The prior loop here read ONLY
+  // r.value.queueFiles and discarded r.value.errors — so a cycle that decided
+  // "spawn 4" with rich briefings produced "0 queue files written" with ZERO
+  // diagnostic, and the Decision Agent's own deferral note flagged "queue
+  // processor appears broken" for weeks (C-20260712T1717: spawn 4 → 0 files,
+  // 3m41s of silent log between phase=subagents start and cycle done). This
+  // block surfaces every failure mode so the root cause is visible in the GH
+  // Actions log + persists an _alerts/ artifact instead of evaporating.
+  const subagentErrors = [];
   for (let i = 0; i < spawnPlan.length; i += 2) {
     const chunk = spawnPlan.slice(i, i + 2);
     const results = await Promise.allSettled(
       chunk.map((p) => runSubagent({ ...p, items, cycleId })),
     );
-    for (const r of results) {
-      if (r.status === 'fulfilled') allQueueFiles.push(...r.value.queueFiles);
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      const plan = chunk[j];
+      if (r.status === 'rejected') {
+        const msg = `subagent ${plan?.role} (${plan?.itemIds?.join(',')}) REJECTED: ${r.reason?.message || r.reason}`;
+        subagentErrors.push(msg);
+        console.error(`[orchestrator] ${msg}`);
+        continue;
+      }
+      const { queueFiles, errors } = r.value;
+      if (errors?.length) {
+        for (const e of errors) {
+          const msg = `subagent ${plan?.role} (${plan?.itemIds?.join(',')}) error: ${e}`;
+          subagentErrors.push(msg);
+          console.error(`[orchestrator] ${msg}`);
+        }
+      }
+      // Empty-but-no-error = the LLM returned text that didn't parse into the
+      // ---END-QUEUE-FILE--- frontmatter format (glm-5.2 often does this).
+      // Flag it so "0 files" is never silent again.
+      if (!queueFiles?.length && !errors?.length) {
+        const msg = `subagent ${plan?.role} (${plan?.itemIds?.join(',')}) returned 0 queue files + 0 errors (LLM output did not match the queue-file format)`;
+        subagentErrors.push(msg);
+        console.warn(`[orchestrator] ${msg}`);
+      }
+      if (queueFiles?.length) allQueueFiles.push(...queueFiles);
     }
+  }
+  // Persist the failure diagnosis so it survives the ephemeral GH log.
+  if (subagentErrors.length && !allQueueFiles.length) {
+    writeAlert(
+      `subagent-zero-output-${cycleId}.md`,
+      `# Sub-agent fan-out produced 0 queue files\n\nCycle ${cycleId} decided spawn ${spawnPlan.length} / defer ${deferrals.length} / kill ${kills.length} but wrote 0 queue files.\n\n## Failure modes this cycle\n\n${subagentErrors.map((e) => `- ${e}`).join('\n')}\n\n## Spawn plan (briefings that evaporated)\n\n${JSON.stringify(spawnPlan, null, 2)}\n\n## Root cause checklist\n\n- runSubagent calls callOpus47 → glm-5.2 on Blackbox. Confirm the proxy returned text.\n- glm-5.2 may not reliably emit the ---END-QUEUE-FILE--- + YAML frontmatter format. If errors are all "returned 0 + 0", the format contract is the blocker — switch the sub-agent output to tool_use (like the Decision Agent) or relax the parser.\n- A 403/ModelRejected error means the model guard or proxy rejected — check _anthropic-client.mjs VERIFIED set.\n`,
+    );
   }
 
   // 10. WRITE QUEUE FILES

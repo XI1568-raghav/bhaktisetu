@@ -2,12 +2,16 @@ name: Roadmap Orchestrator
 
 on:
   schedule:
-    # Every 6hr = 4 cycles/day. With ~10min cycle wall + ~2min boot = 12min × 30 × 4 = 1440 min/mo.
-    # Baseline other workflows ~846/mo. Total ~2286 = 114% — over cap. So use 4hr → 6 cycles/day:
-    # 12 × 6 × 30 = 2160 + 846 = OVER. Stick to 6hr cron (4/day) = 1440+846=2286. Adjust baseline.
-    # Reality check after migration: actual baseline w/o roadmap-loop's old curl was ~840.
-    # 12min × 4 × 30 = 1440 + 840 = 2280. Just over. Use 8hr cron (3/day) = 1080 + 840 = 1920. SAFE.
-    - cron: '17 */8 * * *'   # 3 cycles/day: 00:17, 08:17, 16:17 UTC
+    # 2026-07-13: cut from every 8h (3/day) to every 12h (2/day). The 8h
+    # cadence was chosen when the baseline was ~840 min/mo (8h×30×12 = 1080 +
+    # 840 = 1920, safe). Since then db-backup (+150), onboarding-fleet-v2
+    # (+90), cxo-advisory (+12), roadmap-finalize (+10) were added, pushing
+    # the combined fleet to ~2160 min/mo — OVER the 2000 GH Actions cap by
+    # ~160 (docs/free-tier-budgets.md reconciled table). Dropping to 2/day:
+    # 12 × 2 × 30 = 720, total ~1800, ~200 headroom. The orchestrator is in
+    # dry-run soak anyway (0 queue files written per cycle until the
+    # sub-agent silent-failure bug is diagnosed), so 2 cycles/day is ample.
+    - cron: '17 */12 * * *' # 2 cycles/day: 00:17, 12:17 UTC
   workflow_dispatch:
     inputs:
       dry_run:
@@ -61,7 +65,7 @@ jobs:
       - name: Run orchestrator
         env:
           DRY_RUN: ${{ github.event.inputs.dry_run || vars.ROADMAP_DRY_RUN || 'true' }}
-          CYCLE_ID: "C-${{ github.run_id }}"
+          CYCLE_ID: 'C-${{ github.run_id }}'
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
           ANTHROPIC_API_KEY_BLACKBOX_PROXY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
@@ -78,7 +82,7 @@ jobs:
           node scripts/agents/roadmap-orchestrator.mjs
 
       - name: Commit + push artifacts
-        if: always()  # commit alerts even on orchestrator failure
+        if: always() # commit alerts even on orchestrator failure
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

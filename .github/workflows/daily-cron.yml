@@ -26,8 +26,14 @@ jobs:
           fi
           # -f makes curl exit non-zero on HTTP 4xx/5xx so the job fails
           # visibly rather than silently swallowing errors.
+          # -d '{}' required: with Content-Type: application/json but an empty
+          # body, Fastify's content-type-parser 400s (FST_ERR_CTP_EMPTY_JSON_BODY)
+          # BEFORE the requireCronBearer preHandler runs — so the cron silently
+          # failed every day for months (run 29219003754 et al, exit 22 / 400).
+          # An empty JSON object satisfies the parser and reaches the handler.
           curl -fsS -X POST \
             -H "Authorization: Bearer $CRON_AUTH_TOKEN" \
             -H "Content-Type: application/json" \
+            -d '{}' \
             "$API_BASE_URL/api/v1/cron/daily" \
             --max-time 240
