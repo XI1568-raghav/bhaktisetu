@@ -1,9 +1,16 @@
 import { z } from 'zod';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 
 // Runs `git log -<count> --pretty=format:'%h|%an|%ad|%s' --date=short` in the
 // cwd (the MCP server runs from the repo root). Pipe-delimited so we don't fight
-// shell quoting across subjects. count is capped at 50, defaults to 10.
+// quoting across subjects. count is Zod-capped at 50, defaults to 10.
+//
+// execFile (not exec) is deliberate: args are passed as an array and never hit a
+// shell, so command injection is structurally impossible. `count` is a
+// Zod-validated integer in 1..50 — it carries no metacharacters today — but if a
+// future edit ever adds a string arg (e.g. --author), the array form keeps it
+// safe without anyone having to remember to switch. This is defense in depth,
+// matching the guard.ts + safeResolve pattern used elsewhere in this package.
 export const RecentCommitsSchema = z
   .object({
     count: z.number().int().positive().max(50).optional(),
@@ -12,10 +19,10 @@ export const RecentCommitsSchema = z
 
 export async function recentCommits(args: z.infer<typeof RecentCommitsSchema>) {
   const count = args.count ?? 10;
-  const cmd = `git log -${count} --pretty=format:%h|%an|%ad|%s --date=short`;
+  const gitArgs = ['log', `-${count}`, '--pretty=format:%h|%an|%ad|%s', '--date=short'];
 
   return new Promise((resolve) => {
-    exec(cmd, (err, stdout, stderr) => {
+    execFile('git', gitArgs, (err, stdout, stderr) => {
       if (err) {
         resolve({
           content: [
