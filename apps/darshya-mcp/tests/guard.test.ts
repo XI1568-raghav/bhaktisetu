@@ -16,6 +16,11 @@ describe('isReadOnlyQuery', () => {
     "SELECT '/*'; DELETE FROM users; SELECT '*/'", // string-literal block-comment bypass (Bypass 1)
     'SELECT * INTO backup_tbl FROM users', // SELECT INTO write (Bypass 2)
     "COPY users FROM '/data.csv'", // COPY bulk-load write (Bypass 2)
+    "COMMENT ON TABLE users IS 'hi'", // metadata write
+    'REFRESH MATERIALIZED VIEW my_mv', // matview recompute/rewrite
+    'REINDEX TABLE users', // index storage rebuild
+    'VACUUM users', // table compaction/maintenance write
+    'CLUSTER users', // physical table reorder/rewrite
   ];
   for (const sql of rejected) {
     it(`rejects: ${sql.slice(0, 40)}`, () => {
@@ -30,6 +35,7 @@ describe('isReadOnlyQuery', () => {
     'select created_at from users', // lowercase
     '   SELECT 1', // leading whitespace
     "SELECT * FROM user_updates WHERE name = 'O''Brien'", // escaped-quote string + _updates identifier
+    'SELECT comment_count FROM posts', // 'comment' substring in identifier must NOT match \bCOMMENT\b
   ];
   for (const sql of allowed) {
     it(`allows: ${sql.slice(0, 40)}`, () => {
