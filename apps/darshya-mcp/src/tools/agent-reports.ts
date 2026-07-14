@@ -89,9 +89,18 @@ export async function agentReports(args: z.infer<typeof AgentReportsSchema>) {
 }
 
 // Resolve a user-supplied path UNDER root, rejecting traversal + absolute paths.
-// Returns the safe absolute path or null if the path escapes root.
+// Returns the safe absolute path or null if the path escapes root or is rejected.
+//
+// Rejection is cross-platform: `path.isAbsolute` only flags `/x` on Linux and
+// `C:\x` on Windows — so a Windows-style `C:\...` path on a Linux runner would
+// slip past `isAbsolute` (backslashes are legal filename chars on Linux) and
+// resolve to a bogus in-root path. We also reject any path containing a colon
+// (drive letters) since legitimate relative report paths never do. Together
+// with the `..` escape check, this makes traversal/absolute rejection uniform
+// across platforms.
 function safeResolve(root: string, rel: string): string | null {
   if (isAbsolute(rel)) return null;
+  if (rel.includes(':')) return null; // drive letters (C:) or any scheme — not a clean relative path
   const resolved = join(root, rel);
   const relFromRoot = relative(root, resolved);
   // If relFromRoot starts with '..' or is absolute, the path escaped root.
