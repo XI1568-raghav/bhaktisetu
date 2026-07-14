@@ -28,6 +28,16 @@ const WRITE_KEYWORDS = [
   'INTO',
   // COPY ... FROM bulk-loads rows into a table (a write). Block outright.
   'COPY',
+  // COMMENT ON ... mutates object metadata (comments). A write verb.
+  'COMMENT',
+  // REFRESH MATERIALIZED VIEW recomputes + rewrites a matview's storage. A write.
+  'REFRESH',
+  // REINDEX rebuilds index storage on disk. A mutation of physical state.
+  'REINDEX',
+  // VACUUM rewrites/dead-tuple-compacts table storage. A maintenance write.
+  'VACUUM',
+  // CLUSTER physically reorders a table by an index (a full rewrite). A write.
+  'CLUSTER',
 ];
 
 export function isReadOnlyQuery(sql: string): boolean {
