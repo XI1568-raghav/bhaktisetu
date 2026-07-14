@@ -39,8 +39,19 @@ describe('prodHealth', () => {
     expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledTimes(1);
     const [sqlArg] = mockPrisma.$queryRawUnsafe.mock.calls[0];
     expect(sqlArg).toMatch(/SELECT/i);
-    expect(sqlArg).toMatch(/information_schema/);
+    expect(sqlArg).toMatch(/COUNT\(\*\)/i);
     expect(sqlArg).not.toMatch(/DELETE|UPDATE|INSERT|DROP/i);
+  });
+
+  it('uses real COUNT(*), NOT the stale pg_class.reltuples estimate', async () => {
+    // reltuples undercounts young prod tables badly (reported 8 users when the
+    // real count was 32) and returns -1 for never-analyzed tables. Lock the
+    // accurate COUNT(*) approach in so nobody reverts to reltuples.
+    mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+    await prodHealth({});
+    const [sqlArg] = mockPrisma.$queryRawUnsafe.mock.calls[0];
+    expect(sqlArg).toMatch(/COUNT\(\*\)/i);
+    expect(sqlArg).not.toMatch(/reltuples/);
   });
 
   it('returns ok:false + error on DB failure', async () => {

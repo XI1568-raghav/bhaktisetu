@@ -7,16 +7,19 @@ import { isReadOnlyQuery } from '../guard.js';
 // defense in depth (so a future edit that accidentally interpolates user input
 // would be caught by the guard before it hits prod). Tables are the snake_case
 // @@map names from schema.prisma.
+//
+// We use real COUNT(*) per table, NOT pg_class.reltuples. reltuples is a stale
+// ANALYZE estimate that returns -1 for never-analyzed tables and undercounts
+// young prod tables badly (e.g. reported 8 users when the real count was 32).
+// A founder-facing health check must show actual row counts, so we pay for 4
+// COUNTs (one round-trip via UNION ALL) for accuracy.
 export const ProdHealthSchema = z.object({}).strict();
 
 const PROD_HEALTH_SQL = `
-  SELECT table_name AS table, c.reltuples::bigint AS rows
-  FROM information_schema.tables t
-  JOIN pg_class c ON c.relname = t.table_name
-  WHERE t.table_schema = 'public'
-    AND t.table_type = 'BASE TABLE'
-    AND t.table_name IN ('users', 'puja_bookings', 'payments', 'donations')
-  ORDER BY t.table_name
+  SELECT 'users' AS table, COUNT(*)::bigint AS rows FROM "users"
+  UNION ALL SELECT 'puja_bookings', COUNT(*)::bigint FROM "puja_bookings"
+  UNION ALL SELECT 'payments', COUNT(*)::bigint FROM "payments"
+  UNION ALL SELECT 'donations', COUNT(*)::bigint FROM "donations"
 `;
 
 export async function prodHealth(_args: z.infer<typeof ProdHealthSchema>) {
