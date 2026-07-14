@@ -1,7 +1,15 @@
 {
-  "cycleId": "C-20260713T1513",
-  "spawnPlan": [],
-  "deferrals": [],
+  "cycleId": "C-20260714T0337",
+  "spawnPlan": [
+    {}
+  ],
+  "deferrals": [
+    {
+      "itemId": "R-Q2-M-011",
+      "reason": "T-010 tripwire fired: Queue oldest item >72h unconsumed (772.5h / 32+ days). This CMO item has been stuck in queue since approximately June 11. Last cycle spawned 0 items and 0 queue files — the queue consumption mechanism appears broken. The item needs triage: (1) Is R-Q2-M-011 still relevant or should it be killed? (2) Why isn't the queue consumer processing items? (3) 57 founder-blocked items have been pending 33-34 days — the backlog is growing faster than it's being cleared. Founder action needed to unblock the pipeline.",
+      "suggestedAction": "1) Manually ship or kill R-Q2-M-011 after reviewing its artifacts. 2) Investigate why the queue consumer (GitHub Actions / Render bg-worker) isn't picking up queue files. 3) Triage the 57 founder-blocked items — many are critical (architecture decisions U1-U14, founder outreach to priests/gaushalas, GOOGLE_PLACES_API_KEY env var, investor design send). At minimum, resolve R-Q1-E-001 (architecture decision: CF Pages vs Vercel vs static allowlist) as it blocks downstream engineering work."
+    }
+  ],
   "kills": [],
   "firedTripwires": [
     {
@@ -11,10 +19,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-13T15:15:24.755Z"
+      "firedAt": "2026-07-14T03:38:58.591Z"
     }
   ],
-  "savedAt": "2026-07-13T15:18:26.217Z",
+  "savedAt": "2026-07-14T03:41:34.533Z",
   "consumed": true,
-  "consumedAt": "2026-07-13T15:18:26.219Z"
+  "consumedAt": "2026-07-14T03:41:34.535Z"
 }
