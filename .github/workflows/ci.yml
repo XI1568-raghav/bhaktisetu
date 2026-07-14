@@ -64,6 +64,15 @@ jobs:
       - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch
 
+      - name: MCP smoke check
+        # Builds @darshya/mcp and asserts the stdio server boots + responds to
+        # tools/list with all 6 tools. The server calls loadEnv() lazily (only
+        # when a DB tool runs), so tools/list works on CI even without
+        # DIRECT_URL. Catches a broken server build or a tool-registration
+        # regression that the unit tests (which mock the SDK transport) can't.
+        # ~20s/run — within the free-tier budget.
+        run: pnpm mcp:smoke
+
       - name: Upload Build Artifacts
         # Non-fatal: this is a convenience step (save build output for download),
         # NOT a quality gate — lint/type/test/build above already passed. On the

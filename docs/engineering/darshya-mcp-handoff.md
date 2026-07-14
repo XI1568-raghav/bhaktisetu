@@ -118,9 +118,13 @@ Each tool was built TDD (test red → implement → green) and reviewed by a sec
 
 ## Known gaps / follow-ups
 
-1. **Read-only DB role not wired.** The `.mcp.json` maps `DIRECT_URL` from `SUPABASE_READONLY_URL` (the `claude_readonly` role), but if that env var isn't exported the server falls back to the **owner** `DIRECT_URL` in `.env.production`. Read-only is currently enforced by `guard.ts` + hardcoded SELECTs, not the DB role. Follow-up: ensure `SUPABASE_READONLY_URL` is exported in the Claude Code environment so the DB itself rejects any write (belt + suspenders). See `docs/engineering/R-Q1-E-014-sentry-postgres-mcp-handoff.md` for the readonly-role setup.
+1. **Read-only DB role: setup SQL ready, role NOT yet created in prod.** Verified 2026-07-14: no `claude_readonly` (or any readonly) role exists in the prod `pg_roles`. The `.mcp.json` wiring is already correct — it maps `DIRECT_URL` from `${env:SUPABASE_READONLY_URL}` — so once the role exists and that env var is set, the server uses the SELECT-only role with **zero code changes**. Until then it falls back to the owner `DIRECT_URL` in `.env.production` (read-only still enforced by `guard.ts` + hardcoded SELECTs, but not by the DB itself). **3 manual steps to close this gap** (require owner Supabase access — not agent-doable, since they create a prod DB credential):
+   1. In the Supabase SQL editor, run `docs/roadmap/setup/supabase-readonly-role.sql` with `REPLACE_WITH_STRONG_RANDOM_PWD` replaced by `openssl rand -base64 24` output. (SQL updated 2026-07-14: role name standardized to `claude_readonly` to match this doc + R-Q1-E-014; was `roadmap_kpi_reader`.)
+   2. Build the connection string: `postgresql://claude_readonly:***REMOVED***@db.<ref>.supabase.co:5432/postgres?sslmode=require` (`<ref>` = same as `SUPABASE_DIRECT_URL`).
+   3. Set it in your Claude Code environment: `$env:SUPABASE_READONLY_URL = "postgresql://..."` (the PS profile / wherever you launch Claude Code). Restart Claude Code so `.mcp.json` resolves the var.
+      Optional: also `gh secret set DATABASE_URL_READONLY --body "postgresql://..."` for the ARE KPI scraper.
 2. **`recentCommits` return type is `Promise<unknown>`** — the `new Promise((resolve) => ...)` has no type param (pre-existing from Task 7). Harmless (the registry types it loosely + try/catch wraps it), but a future tighten-up could add the explicit return type.
-3. **No CI gate on `mcp:smoke` yet.** The script exists (`pnpm mcp:smoke`) but isn't wired into `.github/workflows`. Follow-up: add it as a CI step so a broken server build fails the PR.
+3. **CI gate on `mcp:smoke` added 2026-07-14** — wired into `.github/workflows/ci.yml`.
 
 ## Why this matters for revenue
 

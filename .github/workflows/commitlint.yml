@@ -1,9 +1,10 @@
 name: commitlint
 
-# Conventional Commits enforcement on every PR. Free-tier: ~15-20s/run, no
-# `pnpm install` needed — npx fetches @commitlint/cli + config-conventional
-# (cached on the runner). Lints the FULL commit range of the PR, not just HEAD,
-# so a squash-merge carries a clean history.
+# Conventional Commits enforcement on every PR. Free-tier: ~10-15s/run — installs
+# @commitlint/cli + config-conventional into a temp dir via `npm install --prefix`
+# (NOT a full pnpm install) and points NODE_PATH there so resolve-extends can find
+# the config. Lints the FULL commit range of the PR, not just HEAD, so a
+# squash-merge carries a clean history.
 #
 # This is the enforcement layer for the commit-message standard documented in
 # the project CLAUDE.md. The config lives at /commitlint.config.js (extends
@@ -50,8 +51,23 @@ jobs:
           echo "Linting commits from $BASE to HEAD"
 
       - name: Run commitlint
+        # The previous `npx --yes -p @commitlint/cli -p @commitlint/config-conventional`
+        # form fetched both packages into the npx cache, but commitlint's internal
+        # @commitlint/resolve-extends resolves `extends: ['@commitlint/config-conventional']`
+        # from the repo cwd (where the package is NOT a declared dependency), not from
+        # the npx cache dir → MODULE_NOT_FOUND. Neither @commitlint/cli nor
+        # @commitlint/config-conventional is declared in package.json (deliberately —
+        # keeps the main install lean), so resolve-extends can't find the config.
+        #
+        # Fix: install both into an explicit temp dir with `npm install --prefix` and
+        # point NODE_PATH at it so Node's module resolution finds the config from
+        # anywhere. Portable across runners (no hardcoded cache path), fast (~10s),
+        # no pnpm install needed.
         run: |
-          npx --yes -p @commitlint/cli@19 -p @commitlint/config-conventional@19 -- commitlint \
+          CL_DIR="$(mktemp -d)/commitlint"
+          npm install --prefix "$CL_DIR" --no-save --no-package-lock \
+            @commitlint/cli@19 @commitlint/config-conventional@19
+          NODE_PATH="$CL_DIR/node_modules" node "$CL_DIR/node_modules/@commitlint/cli/lib/cli.js" \
             --from "${{ steps.range.outputs.from }}" \
             --to HEAD \
             --verbose
