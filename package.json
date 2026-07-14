@@ -14,7 +14,8 @@
     "test:agent": "node scripts/test-agent-summary.mjs",
     "clean": "turbo clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "lint:specs": "node scripts/lint-product-specs.mjs"
+    "lint:specs": "node scripts/lint-product-specs.mjs",
+    "mcp:smoke": "pnpm --filter @darshya/mcp build && node scripts/mcp-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
