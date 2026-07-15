@@ -37,38 +37,47 @@ export default function PitchPage() {
           <Link href="https://darshya.online" target="_blank" className="pitch-cta">
             Open the live product →
           </Link>
-          <a href="#demo-reel" className="pitch-cta-ghost">Watch 60-sec reel ↓</a>
-          <a href="#04-product" className="pitch-cta-ghost">See it work ↓</a>
+          <a href="#demo-reel" className="pitch-cta-ghost">
+            Watch 60-sec reel ↓
+          </a>
+          <a href="#04-product" className="pitch-cta-ghost">
+            See it work ↓
+          </a>
         </div>
         <div id="demo-reel" style={{ marginTop: 48 }}>
-          <video
+          <img
             className="pitch-media"
-            src="/pitch/video/darshya-demo-reel.mp4"
-            controls
-            playsInline
-            preload="metadata"
-            poster="/pitch/img/01-home-hero.png"
-            style={{ width: '100%', maxHeight: '70vh', borderRadius: 12 }}
+            src="/pitch/img/01-home-hero.png"
+            alt="Darshya home — live darshan, daily panchang, temple finder"
+            loading="lazy"
+            style={{ width: '100%', maxHeight: '70vh', borderRadius: 12, objectFit: 'cover' }}
           />
           <p style={{ marginTop: 12, fontSize: 13, color: 'var(--ink-dim)' }}>
-            60-second reel · captured live from{' '}
-            <a href="https://darshya.online" style={{ textDecoration: 'underline', color: 'var(--saffron-deep)' }}>darshya.online</a>
+            Live product preview · open{' '}
+            <a
+              href="https://darshya.online"
+              style={{ textDecoration: 'underline', color: 'var(--saffron-deep)' }}
+            >
+              darshya.online
+            </a>
           </p>
         </div>
       </Slide>
 
       <Slide id="02-market" num="02 / 12">
         <span className="pitch-eyebrow">Market</span>
-        <h2 className="pitch-h2">Devotional commerce is bigger than EdTech and HealthTech in India — combined.</h2>
+        <h2 className="pitch-h2">
+          Devotional commerce is bigger than EdTech and HealthTech in India — combined.
+        </h2>
         <div className="pitch-grid pitch-grid-3" style={{ marginTop: 32 }}>
           <Stat value="₹4L Cr" label="annual devotional spend (TAM)" />
           <Stat value="₹65K Cr" label="serviceable online opportunity (SAM)" />
           <Stat value="$43M" label="raised by single competitor (Sri Mandir, AppsForBharat)" />
         </div>
         <p className="pitch-lead" style={{ marginTop: 32 }}>
-          The category has woken up. AppsForBharat raised Series B in 2023.
-          Devdham, Utsav, Bhakti, MyMandir — all chasing the surface area.
-          None has cracked <em>verifiable temple commerce</em>.
+          The category has woken up. AppsForBharat raised Series B in 2023. Devdham, Utsav, Bhakti,
+          MyMandir — all chasing the surface area. None has cracked{' '}
+          <em>verifiable temple commerce</em>.
         </p>
       </Slide>
 
@@ -101,40 +110,67 @@ export default function PitchPage() {
         <span className="pitch-eyebrow">Product</span>
         <h2 className="pitch-h2">A live, working super-app — not slideware.</h2>
         <p className="pitch-lead">
-          Darshya runs in production at <a href="https://darshya.online" target="_blank" style={{ color: 'var(--saffron-deep)' }}>darshya.online</a>.
-          Every screen below is captured from the real product, today.
+          Darshya runs in production at{' '}
+          <a href="https://darshya.online" target="_blank" style={{ color: 'var(--saffron-deep)' }}>
+            darshya.online
+          </a>
+          . Every screen below is captured from the real product, today.
         </p>
         <div className="pitch-media-grid" style={{ marginTop: 32 }}>
-          <MediaCard src="/pitch/img/01-home-hero.png" caption="Home — live darshan, daily panchang, temple finder" href="https://darshya.online" />
-          <MediaCard src="/pitch/img/02-temples-grid.png" caption="20+ verified temples, JSON-LD SEO" href="https://darshya.online/temples" />
-          <MediaCard src="/pitch/img/04-pujas-grid.png" caption="Puja booking with sankalp + video proof" href="https://darshya.online/pujas" />
-          <MediaCard src="/pitch/img/06-darshan.png" caption="Live darshan — AWS IVS streaming" href="https://darshya.online/darshan" />
-          <MediaCard src="/pitch/img/08-astrology.png" caption="Astrology + horoscope, AI panditji" href="https://darshya.online/astrology" />
-          <MediaCard src="/pitch/img/09-gaushala.png" caption="Gaushala adoption + 80G receipt" href="https://darshya.online/gaushala" />
+          <MediaCard
+            src="/pitch/img/01-home-hero.png"
+            caption="Home — live darshan, daily panchang, temple finder"
+            href="https://darshya.online"
+          />
+          <MediaCard
+            src="/pitch/img/02-temples-grid.png"
+            caption="20+ verified temples, JSON-LD SEO"
+            href="https://darshya.online/temples"
+          />
+          <MediaCard
+            src="/pitch/img/04-pujas-grid.png"
+            caption="Puja booking with sankalp + video proof"
+            href="https://darshya.online/pujas"
+          />
+          <MediaCard
+            src="/pitch/img/06-darshan.png"
+            caption="Live darshan — AWS IVS streaming"
+            href="https://darshya.online/darshan"
+          />
+          <MediaCard
+            src="/pitch/img/08-astrology.png"
+            caption="Astrology + horoscope, AI panditji"
+            href="https://darshya.online/astrology"
+          />
+          <MediaCard
+            src="/pitch/img/09-gaushala.png"
+            caption="Gaushala adoption + 80G receipt"
+            href="https://darshya.online/gaushala"
+          />
         </div>
       </Slide>
 
       <Slide id="05-moat" num="05 / 12">
         <span className="pitch-eyebrow">Differentiation</span>
         <h2 className="pitch-h2">
-          Video proof. Verified priests.<br />
-          <span className="pitch-grad-text">A trust moat the competition cannot replicate quickly.</span>
+          Video proof. Verified priests.
+          <br />
+          <span className="pitch-grad-text">
+            A trust moat the competition cannot replicate quickly.
+          </span>
         </h2>
         <div className="pitch-grid pitch-grid-3" style={{ marginTop: 32 }}>
           <Card title="Video-proof puja booking">
-            Every paid puja requires the priest to upload a recording before
-            payout is released. Aadhaar-verified providers, escrow-released
-            settlement.
+            Every paid puja requires the priest to upload a recording before payout is released.
+            Aadhaar-verified providers, escrow-released settlement.
           </Card>
           <Card title="Eight role portals">
-            Devotee, Priest, Astrologer, Wellness, Gaushala, Yatra, Temple
-            Admin, Platform Admin — each with KYC, payouts, dashboards. Not a
-            booking widget. A two-sided market.
+            Devotee, Priest, Astrologer, Wellness, Gaushala, Yatra, Temple Admin, Platform Admin —
+            each with KYC, payouts, dashboards. Not a booking widget. A two-sided market.
           </Card>
           <Card title="80G + INR/USD priced">
-            Auto-generated 80G receipts (DR-YYYYMMDD-XXXX). Native Razorpay +
-            Stripe. NRI pricing 9-10× domestic, configured per puja. Built for
-            Indian + diaspora from day zero.
+            Auto-generated 80G receipts (DR-YYYYMMDD-XXXX). Native Razorpay + Stripe. NRI pricing
+            9-10× domestic, configured per puja. Built for Indian + diaspora from day zero.
           </Card>
         </div>
       </Slide>
@@ -142,14 +178,12 @@ export default function PitchPage() {
       <Slide id="06-portals" num="06 / 12">
         <span className="pitch-eyebrow">Surface area</span>
         <h2 className="pitch-h2">One product, eight separate user journeys.</h2>
-        <video
+        <img
           className="pitch-media"
-          src="/pitch/video/04-pujas-list.webm"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{ marginTop: 24, maxHeight: '60vh' }}
+          src="/pitch/img/04-pujas-grid.png"
+          alt="Puja booking with sankalp + video proof"
+          loading="lazy"
+          style={{ marginTop: 24, maxHeight: '60vh', objectFit: 'cover', borderRadius: 12 }}
         />
         <div className="pitch-row" style={{ marginTop: 24 }}>
           <span className="pitch-tag">Devotee</span>
@@ -166,26 +200,58 @@ export default function PitchPage() {
       <Slide id="07-tech" num="07 / 12">
         <span className="pitch-eyebrow">Tech moat</span>
         <h2 className="pitch-h2">
-          Production-grade.<br />
+          Production-grade.
+          <br />
           <span className="pitch-grad-text">Zero infra spend.</span>
         </h2>
         <p className="pitch-lead">
-          The entire stack runs on free tiers — Supabase, Render, Cloudflare,
-          Groq, Resend, Sentry. We can absorb 10,000 MAU before the first
-          dollar of infrastructure cost.
+          The entire stack runs on free tiers — Supabase, Render, Cloudflare, Groq, Resend, Sentry.
+          We can absorb 10,000 MAU before the first dollar of infrastructure cost.
         </p>
         <table className="pitch-table" style={{ marginTop: 24 }}>
           <thead>
-            <tr><th>Layer</th><th>Stack</th><th>Why</th></tr>
+            <tr>
+              <th>Layer</th>
+              <th>Stack</th>
+              <th>Why</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td>Web</td><td>Next.js 15 + React 19 + Tailwind v4</td><td>SSR, ISR, JSON-LD, edge-deployable</td></tr>
-            <tr><td>API</td><td>Fastify 5 + Prisma + PostgreSQL</td><td>Type-safe, fast, Sentry-instrumented</td></tr>
-            <tr><td>Mobile</td><td>Expo SDK 52 + Expo Router</td><td>Single TS codebase for iOS + Android</td></tr>
-            <tr><td>AI</td><td>Groq (Llama 3.3 70B)</td><td>1500 tok/s, free tier covers MVP load</td></tr>
-            <tr><td>Streaming</td><td>AWS IVS + Jitsi</td><td>Live darshan + 1:1 consultations</td></tr>
-            <tr><td>Payments</td><td>Razorpay + Stripe</td><td>INR + 9-10× NRI pricing native</td></tr>
-            <tr><td>Storage</td><td>Cloudflare R2</td><td>10 GB free, zero egress</td></tr>
+            <tr>
+              <td>Web</td>
+              <td>Next.js 15 + React 19 + Tailwind v4</td>
+              <td>SSR, ISR, JSON-LD, edge-deployable</td>
+            </tr>
+            <tr>
+              <td>API</td>
+              <td>Fastify 5 + Prisma + PostgreSQL</td>
+              <td>Type-safe, fast, Sentry-instrumented</td>
+            </tr>
+            <tr>
+              <td>Mobile</td>
+              <td>Expo SDK 52 + Expo Router</td>
+              <td>Single TS codebase for iOS + Android</td>
+            </tr>
+            <tr>
+              <td>AI</td>
+              <td>Groq (Llama 3.3 70B)</td>
+              <td>1500 tok/s, free tier covers MVP load</td>
+            </tr>
+            <tr>
+              <td>Streaming</td>
+              <td>AWS IVS + Jitsi</td>
+              <td>Live darshan + 1:1 consultations</td>
+            </tr>
+            <tr>
+              <td>Payments</td>
+              <td>Razorpay + Stripe</td>
+              <td>INR + 9-10× NRI pricing native</td>
+            </tr>
+            <tr>
+              <td>Storage</td>
+              <td>Cloudflare R2</td>
+              <td>10 GB free, zero egress</td>
+            </tr>
           </tbody>
         </table>
       </Slide>
@@ -200,9 +266,9 @@ export default function PitchPage() {
           <Stat value="$0" label="monthly infra burn" />
         </div>
         <p className="pitch-lead" style={{ marginTop: 32 }}>
-          Razorpay live. Stripe live. Demo accounts work end-to-end across
-          all eight portals. Mobile binary in EAS Build pipeline. The first
-          90 days are about real-MAU + real-GMV, not feature work.
+          Razorpay live. Stripe live. Demo accounts work end-to-end across all eight portals. Mobile
+          binary in EAS Build pipeline. The first 90 days are about real-MAU + real-GMV, not feature
+          work.
         </p>
       </Slide>
 
@@ -213,22 +279,22 @@ export default function PitchPage() {
           <Card title="Phase 1 · Days 1–30">
             <strong style={{ color: 'var(--saffron-deep)' }}>Anchor temples</strong>
             <p style={{ color: 'var(--ink-dim)', marginTop: 8 }}>
-              Five lighthouse temples + two gaushalas in Varanasi, Mathura,
-              Tirupati. Hand-onboard. Verify the loop end-to-end.
+              Five lighthouse temples + two gaushalas in Varanasi, Mathura, Tirupati. Hand-onboard.
+              Verify the loop end-to-end.
             </p>
           </Card>
           <Card title="Phase 2 · Days 31–60">
             <strong style={{ color: 'var(--saffron-deep)' }}>Public launch</strong>
             <p style={{ color: 'var(--ink-dim)', marginTop: 8 }}>
-              PostHog on every funnel. Performance-gated paid acquisition.
-              Target: 1,000 MAU, 10 paid pujas, ₹50K GMV.
+              PostHog on every funnel. Performance-gated paid acquisition. Target: 1,000 MAU, 10
+              paid pujas, ₹50K GMV.
             </p>
           </Card>
           <Card title="Phase 3 · Days 61–90">
             <strong style={{ color: 'var(--saffron-deep)' }}>NRI activation</strong>
             <p style={{ color: 'var(--ink-dim)', marginTop: 8 }}>
-              USD pricing, US/UK/Canada paid social, diaspora newsletter
-              partnerships. Compound the unit economics 9×.
+              USD pricing, US/UK/Canada paid social, diaspora newsletter partnerships. Compound the
+              unit economics 9×.
             </p>
           </Card>
         </div>
@@ -241,27 +307,59 @@ export default function PitchPage() {
           <Card title="Domestic puja">
             <table className="pitch-table">
               <tbody>
-                <tr><td>Avg ticket</td><td style={{ textAlign: 'right' }}>₹1,500</td></tr>
-                <tr><td>Platform commission</td><td style={{ textAlign: 'right' }}>20–40%</td></tr>
-                <tr><td>Payment fee</td><td style={{ textAlign: 'right' }}>2%</td></tr>
-                <tr><td><strong>Net contribution</strong></td><td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}><strong>₹420</strong></td></tr>
+                <tr>
+                  <td>Avg ticket</td>
+                  <td style={{ textAlign: 'right' }}>₹1,500</td>
+                </tr>
+                <tr>
+                  <td>Platform commission</td>
+                  <td style={{ textAlign: 'right' }}>20–40%</td>
+                </tr>
+                <tr>
+                  <td>Payment fee</td>
+                  <td style={{ textAlign: 'right' }}>2%</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Net contribution</strong>
+                  </td>
+                  <td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}>
+                    <strong>₹420</strong>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </Card>
           <Card title="NRI puja (US/UK)">
             <table className="pitch-table">
               <tbody>
-                <tr><td>Avg ticket</td><td style={{ textAlign: 'right' }}>$165 (₹13,500)</td></tr>
-                <tr><td>Platform commission</td><td style={{ textAlign: 'right' }}>30–45%</td></tr>
-                <tr><td>Payment fee</td><td style={{ textAlign: 'right' }}>3%</td></tr>
-                <tr><td><strong>Net contribution</strong></td><td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}><strong>₹4,800</strong></td></tr>
+                <tr>
+                  <td>Avg ticket</td>
+                  <td style={{ textAlign: 'right' }}>$165 (₹13,500)</td>
+                </tr>
+                <tr>
+                  <td>Platform commission</td>
+                  <td style={{ textAlign: 'right' }}>30–45%</td>
+                </tr>
+                <tr>
+                  <td>Payment fee</td>
+                  <td style={{ textAlign: 'right' }}>3%</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Net contribution</strong>
+                  </td>
+                  <td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}>
+                    <strong>₹4,800</strong>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </Card>
         </div>
         <p className="pitch-lead" style={{ marginTop: 24 }}>
-          One NRI puja ≈ ten domestic. Platform commission scales with trust,
-          not with effort. Video proof is the unlock.
+          One NRI puja ≈ ten domestic. Platform commission scales with trust, not with effort. Video
+          proof is the unlock.
         </p>
       </Slide>
 
@@ -269,15 +367,14 @@ export default function PitchPage() {
         <span className="pitch-eyebrow">Team</span>
         <h2 className="pitch-h2">Solo founder. Full-stack. Shipped.</h2>
         <p className="pitch-lead">
-          Built and shipped the live product, end-to-end — web, API, mobile,
-          eight portals, payment + auth + AI integrations — in &lt; 90 days, on
-          $0 budget. Operator first, founder second. Hiring co-founder + first
-          engineer post-seed.
+          Built and shipped the live product, end-to-end — web, API, mobile, eight portals, payment
+          + auth + AI integrations — in &lt; 90 days, on $0 budget. Operator first, founder second.
+          Hiring co-founder + first engineer post-seed.
         </p>
         <hr className="pitch-divine-rule" />
         <p className="pitch-lead">
-          What this proves: low-burn, fast-iteration, deep ownership. What
-          we're hiring: distribution + temple-side relationships.
+          What this proves: low-burn, fast-iteration, deep ownership. What we're hiring:
+          distribution + temple-side relationships.
         </p>
       </Slide>
 
@@ -292,12 +389,8 @@ export default function PitchPage() {
           <Card title="50% — Distribution">
             Anchor-temple BD, performance marketing, NRI activation
           </Card>
-          <Card title="30% — Team">
-            Co-founder + 2 engineers + 1 operations lead
-          </Card>
-          <Card title="20% — Trust infra">
-            Aadhaar/PAN KYC, video moderation, customer ops
-          </Card>
+          <Card title="30% — Team">Co-founder + 2 engineers + 1 operations lead</Card>
+          <Card title="20% — Trust infra">Aadhaar/PAN KYC, video moderation, customer ops</Card>
         </div>
         <div className="pitch-row" style={{ marginTop: 48 }}>
           <Link href="https://darshya.online" target="_blank" className="pitch-cta">
@@ -311,7 +404,11 @@ export default function PitchPage() {
 
       <footer className="pitch-foot">
         <span>© 2026 Darshya · Confidential — for diligence purposes only</span>
-        <span><Link href="/" style={{ color: 'var(--ink-dim)' }}>← Back to site</Link></span>
+        <span>
+          <Link href="/" style={{ color: 'var(--ink-dim)' }}>
+            ← Back to site
+          </Link>
+        </span>
       </footer>
     </>
   );
@@ -346,9 +443,25 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function MediaCard({ src, caption, href }: { src: string; caption: string; href: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="pitch-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', padding: 12 }}>
-      <Image src={src} alt={caption} width={1920} height={1080} className="pitch-media" style={{ aspectRatio: '16/9', objectFit: 'cover' }} unoptimized />
-      <div style={{ padding: '12px 4px 4px', fontSize: 14, color: 'var(--ink-dim)' }}>{caption}</div>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="pitch-card"
+      style={{ display: 'block', textDecoration: 'none', color: 'inherit', padding: 12 }}
+    >
+      <Image
+        src={src}
+        alt={caption}
+        width={1920}
+        height={1080}
+        className="pitch-media"
+        style={{ aspectRatio: '16/9', objectFit: 'cover' }}
+        unoptimized
+      />
+      <div style={{ padding: '12px 4px 4px', fontSize: 14, color: 'var(--ink-dim)' }}>
+        {caption}
+      </div>
     </a>
   );
 }
