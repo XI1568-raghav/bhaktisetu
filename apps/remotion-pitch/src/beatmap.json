@@ -1,0 +1,1189 @@
+{
+  "bpm": 128,
+  "fps": 60,
+  "beat": 0.46875,
+  "events": [
+    {
+      "kind": "tick",
+      "t": 11.0,
+      "frame": 660,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 11.2344,
+      "frame": 674,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 11.4688,
+      "frame": 688,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 11.7031,
+      "frame": 702,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 11.9375,
+      "frame": 716,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 12.1719,
+      "frame": 730,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 12.4062,
+      "frame": 744,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 12.6406,
+      "frame": 758,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 12.875,
+      "frame": 772,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 13.1094,
+      "frame": 787,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 13.3438,
+      "frame": 801,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 13.5781,
+      "frame": 815,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 13.8125,
+      "frame": 829,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 14.0469,
+      "frame": 843,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 14.2812,
+      "frame": 857,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 14.5156,
+      "frame": 871,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 14.75,
+      "frame": 885,
+      "label": ""
+    },
+    {
+      "kind": "tick",
+      "t": 14.9844,
+      "frame": 899,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 15.0,
+      "frame": 900,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 15.0,
+      "frame": 900,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 15.4688,
+      "frame": 928,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 15.4688,
+      "frame": 928,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 15.9375,
+      "frame": 956,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 16.4062,
+      "frame": 984,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 16.4062,
+      "frame": 984,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 16.875,
+      "frame": 1012,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 16.875,
+      "frame": 1012,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 17.3438,
+      "frame": 1041,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 17.3438,
+      "frame": 1041,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 17.8125,
+      "frame": 1069,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 18.2812,
+      "frame": 1097,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 18.2812,
+      "frame": 1097,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 18.75,
+      "frame": 1125,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 18.75,
+      "frame": 1125,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 19.2188,
+      "frame": 1153,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 19.2188,
+      "frame": 1153,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 19.6875,
+      "frame": 1181,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 20.1562,
+      "frame": 1209,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 20.1562,
+      "frame": 1209,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 20.625,
+      "frame": 1238,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 20.625,
+      "frame": 1238,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 21.0938,
+      "frame": 1266,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 21.0938,
+      "frame": 1266,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 21.5625,
+      "frame": 1294,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 22.0312,
+      "frame": 1322,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 22.0312,
+      "frame": 1322,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 22.5,
+      "frame": 1350,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 22.5,
+      "frame": 1350,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 22.9688,
+      "frame": 1378,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 22.9688,
+      "frame": 1378,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 23.4375,
+      "frame": 1406,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 23.9062,
+      "frame": 1434,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 23.9062,
+      "frame": 1434,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 24.375,
+      "frame": 1462,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 24.375,
+      "frame": 1462,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 24.8438,
+      "frame": 1491,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 24.8438,
+      "frame": 1491,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 25.3125,
+      "frame": 1519,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 25.7812,
+      "frame": 1547,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 25.7812,
+      "frame": 1547,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 26.25,
+      "frame": 1575,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 26.25,
+      "frame": 1575,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 26.7188,
+      "frame": 1603,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 26.7188,
+      "frame": 1603,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 27.1875,
+      "frame": 1631,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 27.6562,
+      "frame": 1659,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 27.6562,
+      "frame": 1659,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 28.125,
+      "frame": 1688,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 28.125,
+      "frame": 1688,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 28.5938,
+      "frame": 1716,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 28.5938,
+      "frame": 1716,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 29.0625,
+      "frame": 1744,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 29.5312,
+      "frame": 1772,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 29.5312,
+      "frame": 1772,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 30.0,
+      "frame": 1800,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 30.0,
+      "frame": 1800,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 30.4688,
+      "frame": 1828,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 30.4688,
+      "frame": 1828,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 30.9375,
+      "frame": 1856,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 31.4062,
+      "frame": 1884,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 31.4062,
+      "frame": 1884,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 31.875,
+      "frame": 1912,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 31.875,
+      "frame": 1912,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 32.3438,
+      "frame": 1941,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 32.3438,
+      "frame": 1941,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 32.8125,
+      "frame": 1969,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 33.2812,
+      "frame": 1997,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 33.2812,
+      "frame": 1997,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 33.75,
+      "frame": 2025,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 33.75,
+      "frame": 2025,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 34.2188,
+      "frame": 2053,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 34.2188,
+      "frame": 2053,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 34.6875,
+      "frame": 2081,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 35.1562,
+      "frame": 2109,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 35.1562,
+      "frame": 2109,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 35.625,
+      "frame": 2138,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 35.625,
+      "frame": 2138,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 36.0938,
+      "frame": 2166,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 36.0938,
+      "frame": 2166,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 36.5625,
+      "frame": 2194,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 37.0312,
+      "frame": 2222,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 37.0312,
+      "frame": 2222,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 37.5,
+      "frame": 2250,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 37.5,
+      "frame": 2250,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 37.9688,
+      "frame": 2278,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 37.9688,
+      "frame": 2278,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 38.4375,
+      "frame": 2306,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 38.9062,
+      "frame": 2334,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 38.9062,
+      "frame": 2334,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 39.375,
+      "frame": 2362,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 39.375,
+      "frame": 2362,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 39.8438,
+      "frame": 2391,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 39.8438,
+      "frame": 2391,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 40.3125,
+      "frame": 2419,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 40.7812,
+      "frame": 2447,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 40.7812,
+      "frame": 2447,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 41.25,
+      "frame": 2475,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 41.25,
+      "frame": 2475,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 41.7188,
+      "frame": 2503,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 41.7188,
+      "frame": 2503,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 42.1875,
+      "frame": 2531,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 42.6562,
+      "frame": 2559,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 42.6562,
+      "frame": 2559,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 43.125,
+      "frame": 2588,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 43.125,
+      "frame": 2588,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 43.5938,
+      "frame": 2616,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 43.5938,
+      "frame": 2616,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 44.0625,
+      "frame": 2644,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 44.5312,
+      "frame": 2672,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 44.5312,
+      "frame": 2672,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 45.0,
+      "frame": 2700,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 45.0,
+      "frame": 2700,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 45.4688,
+      "frame": 2728,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 45.4688,
+      "frame": 2728,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 45.9375,
+      "frame": 2756,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 46.4062,
+      "frame": 2784,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 46.4062,
+      "frame": 2784,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 46.875,
+      "frame": 2812,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 46.875,
+      "frame": 2812,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 47.3438,
+      "frame": 2841,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 47.3438,
+      "frame": 2841,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 47.8125,
+      "frame": 2869,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 48.2812,
+      "frame": 2897,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 48.2812,
+      "frame": 2897,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 48.75,
+      "frame": 2925,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 48.75,
+      "frame": 2925,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 49.2188,
+      "frame": 2953,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 49.2188,
+      "frame": 2953,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 49.6875,
+      "frame": 2981,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 50.1562,
+      "frame": 3009,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 50.1562,
+      "frame": 3009,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 50.625,
+      "frame": 3038,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 50.625,
+      "frame": 3038,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 51.0938,
+      "frame": 3066,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 51.0938,
+      "frame": 3066,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 51.5625,
+      "frame": 3094,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 52.0312,
+      "frame": 3122,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 52.0312,
+      "frame": 3122,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 52.5,
+      "frame": 3150,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 52.5,
+      "frame": 3150,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 52.9688,
+      "frame": 3178,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 52.9688,
+      "frame": 3178,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 53.4375,
+      "frame": 3206,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 53.9062,
+      "frame": 3234,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 53.9062,
+      "frame": 3234,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 54.375,
+      "frame": 3262,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 54.375,
+      "frame": 3262,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 54.8438,
+      "frame": 3291,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 54.8438,
+      "frame": 3291,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 55.3125,
+      "frame": 3319,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 55.7812,
+      "frame": 3347,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 55.7812,
+      "frame": 3347,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 56.25,
+      "frame": 3375,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 56.25,
+      "frame": 3375,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 56.7188,
+      "frame": 3403,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 56.7188,
+      "frame": 3403,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 57.1875,
+      "frame": 3431,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 57.6562,
+      "frame": 3459,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 57.6562,
+      "frame": 3459,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 58.125,
+      "frame": 3488,
+      "label": ""
+    },
+    {
+      "kind": "stab",
+      "t": 58.125,
+      "frame": 3488,
+      "label": "chord"
+    },
+    {
+      "kind": "kick",
+      "t": 58.5938,
+      "frame": 3516,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 58.5938,
+      "frame": 3516,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 59.0625,
+      "frame": 3544,
+      "label": ""
+    },
+    {
+      "kind": "kick",
+      "t": 59.5312,
+      "frame": 3572,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 59.5312,
+      "frame": 3572,
+      "label": ""
+    },
+    {
+      "kind": "snare",
+      "t": 58.0,
+      "frame": 3480,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 58.2344,
+      "frame": 3494,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 58.4688,
+      "frame": 3508,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 58.7031,
+      "frame": 3522,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 58.9375,
+      "frame": 3536,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 59.1719,
+      "frame": 3550,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 59.4062,
+      "frame": 3564,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 59.6406,
+      "frame": 3578,
+      "label": "fill"
+    },
+    {
+      "kind": "snare",
+      "t": 59.875,
+      "frame": 3592,
+      "label": "fill"
+    },
+    {
+      "kind": "kick",
+      "t": 62.0,
+      "frame": 3720,
+      "label": "final"
+    },
+    {
+      "kind": "stab",
+      "t": 62.0,
+      "frame": 3720,
+      "label": "final"
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 import { Img, staticFile, useCurrentFrame, interpolate } from 'remotion';
-import { INK } from '../tokens';
+import { INK, INK_DIM, saffronGlow } from '../tokens';
 
 type Props = {
   src: string;
   url?: string;
-  width?: number;          // 1920 default; downscale for "device on background"
+  width?: number; // 1920 default; downscale for "device on background"
   glow?: boolean;
   durationFrames: number;
 };
@@ -40,8 +40,9 @@ export const BrowserMockup: React.FC<Props> = ({
             position: 'absolute',
             width: width + 320,
             height: (width / 1920) * 1080 + 320,
-            background:
-              'radial-gradient(50% 50% at 50% 50%, rgba(184,115,51,0.55) 0%, rgba(184,115,51,0) 70%)',
+            background: `radial-gradient(50% 50% at 50% 50%, ${saffronGlow(
+              0.55,
+            )} 0%, ${saffronGlow(0)} 70%)`,
             opacity: glowOpacity,
             filter: 'blur(40px)',
           }}
@@ -52,8 +53,7 @@ export const BrowserMockup: React.FC<Props> = ({
           width,
           borderRadius: 20,
           overflow: 'hidden',
-          boxShadow:
-            '0 30px 80px rgba(0,0,0,0.45), 0 8px 24px rgba(184,115,51,0.25)',
+          boxShadow: `0 30px 80px rgba(0,0,0,0.45), 0 8px 24px ${saffronGlow(0.25)}`,
           background: '#fff',
           transform: `translateY(${drift}px)`,
         }}
@@ -81,14 +81,19 @@ export const BrowserMockup: React.FC<Props> = ({
               background: '#fff',
               borderRadius: 6,
               fontSize: 14,
-              color: INK,
+              color: INK_DIM,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 6,
               fontFamily: 'ui-monospace, monospace',
             }}
           >
-            🔒 {url}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="5" y="10" width="14" height="10" rx="2" fill={INK_DIM} />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke={INK_DIM} strokeWidth="2" fill="none" />
+            </svg>
+            {url}
           </div>
         </div>
         <Img src={staticFile(src)} style={{ width: '100%', display: 'block' }} />
