@@ -2,12 +2,14 @@
   "name": "@poojly/remotion-pitch",
   "version": "0.0.0",
   "private": true,
-  "description": "Darshya 60s investor pitch reel - Remotion composition",
+  "description": "Darshya 10/10 animated SaaS demo reel — pure vector UI, 60fps, beat-synced future-bass music",
   "scripts": {
     "dev": "remotion studio src/index.ts",
-    "build": "remotion render src/index.ts DarshyaPitch out/darshya-pitch.mp4 --concurrency=4",
-    "build:fast": "remotion render src/index.ts DarshyaPitch out/darshya-pitch.mp4 --crf=23 --concurrency=8",
-    "ship": "pnpm build && cp out/darshya-pitch.mp4 ../web/public/pitch/video/darshya-demo-reel.mp4 && echo '>>> shipped to apps/web/public/pitch/video/'"
+    "build:hd": "remotion render src/index.ts DarshyaDemo-HD out/darshya-hd.mp4 --concurrency=4",
+    "build:4k": "remotion render src/index.ts DarshyaDemo-4K out/darshya-4k.mp4 --concurrency=4",
+    "build:9x16": "remotion render src/index.ts DarshyaDemo-9x16 out/darshya-9x16.mp4 --concurrency=4",
+    "build": "pnpm build:hd && pnpm build:9x16",
+    "ship": "pnpm build:hd && cp out/darshya-hd.mp4 ../web/public/pitch/video/darshya-demo-reel.mp4 && cp out/darshya-hd.mp4 ../web/public/pitch/video/darshya-hd.mp4 && echo '>>> shipped HD master to apps/web/public/pitch/video/'"
   },
   "dependencies": {
     "@remotion/bundler": "^4.0.420",

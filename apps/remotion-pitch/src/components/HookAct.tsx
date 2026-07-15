@@ -1,5 +1,13 @@
-import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, spring, useVideoConfig } from 'remotion';
-import { BG, INK, SAFFRON, FONT_DISPLAY } from '../tokens';
+import {
+  AbsoluteFill,
+  Img,
+  interpolate,
+  staticFile,
+  useCurrentFrame,
+  spring,
+  useVideoConfig,
+} from 'remotion';
+import { BG, INK, SAFFRON, saffronGlow, FONT_DISPLAY } from '../tokens';
 import { KineticText } from './KineticText';
 
 // ACT 1 — Hook (0–5s)
@@ -19,7 +27,7 @@ export const HookAct: React.FC<{ durationFrames: number }> = ({ durationFrames }
   });
 
   // hero image slow zoom 1.0 -> 1.10
-  const heroScale = interpolate(t, [0, 1], [1.02, 1.10]);
+  const heroScale = interpolate(t, [0, 1], [1.02, 1.1]);
   const heroOpacity = interpolate(t, [0.4, 0.7], [0, 0.32], { extrapolateRight: 'clamp' });
 
   // title fade out near end so next act takes over
@@ -61,7 +69,7 @@ export const HookAct: React.FC<{ durationFrames: number }> = ({ durationFrames }
             letterSpacing: '-0.04em',
             margin: 0,
             transform: `scale(${logoScale})`,
-            textShadow: '0 4px 24px rgba(184,115,51,0.2)',
+            textShadow: `0 4px 24px ${saffronGlow(0.2)}`,
           }}
         >
           DARSHYA

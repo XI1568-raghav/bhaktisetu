@@ -1,5 +1,5 @@
 import { AbsoluteFill, useCurrentFrame, interpolate } from 'remotion';
-import { BG, INK, SAFFRON, FONT_DISPLAY, FONT_BODY } from '../tokens';
+import { BG, INK, SAFFRON, saffronGlow, FONT_DISPLAY, FONT_BODY } from '../tokens';
 import { BrowserMockup } from './BrowserMockup';
 
 // ACT 5 — The Payoff / CTA (60–75s)
@@ -17,8 +17,9 @@ export const PayoffAct: React.FC<{ durationFrames: number }> = ({ durationFrames
       {/* radial saffron glow background */}
       <AbsoluteFill
         style={{
-          background:
-            'radial-gradient(60% 50% at 50% 50%, rgba(184,115,51,0.20) 0%, rgba(184,115,51,0.04) 60%, transparent 100%)',
+          background: `radial-gradient(60% 50% at 50% 50%, ${saffronGlow(
+            0.2,
+          )} 0%, ${saffronGlow(0.04)} 60%, transparent 100%)`,
         }}
       />
       <div style={{ position: 'absolute', inset: 0, opacity: mockupOpacity }}>
