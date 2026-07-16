@@ -4,6 +4,14 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
+// generateInvoice + sendEmail are side-effectful (PDF + SMTP). Mock them so
+// the test asserts the invoice path was actually reached instead of silently
+// swallowing a TypeError from an unmocked storeOrder.findUnique.
+const generateInvoiceMock = vi.fn().mockResolvedValue(Buffer.from('%PDF-1.4 mock'));
+const sendEmailMock = vi.fn().mockResolvedValue(undefined);
+vi.mock('../lib/pdf-invoice.js', () => ({ generateInvoice: generateInvoiceMock }));
+vi.mock('../lib/email.js', () => ({ sendEmail: sendEmailMock }));
+
 const ORIG_ENV = { ...process.env };
 
 beforeEach(() => {
@@ -34,42 +42,52 @@ describe('PaymentService.createStoreOrderRazorpay', () => {
     const service = await loadService();
     prismaMock.storeOrder.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.createStoreOrderRazorpay('missing', 'user-1'),
-    ).rejects.toThrow(/Store order not found/);
+    await expect(service.createStoreOrderRazorpay('missing', 'user-1')).rejects.toThrow(
+      /Store order not found/,
+    );
   });
 
   it('throws when caller is not the owner (forged :id guard)', async () => {
     const service = await loadService();
     prismaMock.storeOrder.findUnique.mockResolvedValue({
-      id: 'so-1', orderNumber: 'ORD-1', userId: 'owner-1',
-      status: 'PENDING', totalAmountInr: 500, paymentId: null,
+      id: 'so-1',
+      orderNumber: 'ORD-1',
+      userId: 'owner-1',
+      status: 'PENDING',
+      totalAmountInr: 500,
+      paymentId: null,
     });
 
-    await expect(
-      service.createStoreOrderRazorpay('so-1', 'attacker'),
-    ).rejects.toThrow(/not authorized/);
+    await expect(service.createStoreOrderRazorpay('so-1', 'attacker')).rejects.toThrow(
+      /not authorized/,
+    );
     expect(prismaMock.payment.create).not.toHaveBeenCalled();
   });
 
   it('refuses to re-initiate for a non-PENDING order', async () => {
     const service = await loadService();
     prismaMock.storeOrder.findUnique.mockResolvedValue({
-      id: 'so-1', orderNumber: 'ORD-1', userId: 'user-1',
-      status: 'CONFIRMED', totalAmountInr: 500, paymentId: null,
+      id: 'so-1',
+      orderNumber: 'ORD-1',
+      userId: 'user-1',
+      status: 'CONFIRMED',
+      totalAmountInr: 500,
+      paymentId: null,
     });
 
-    await expect(
-      service.createStoreOrderRazorpay('so-1', 'user-1'),
-    ).rejects.toThrow(/PENDING/);
+    await expect(service.createStoreOrderRazorpay('so-1', 'user-1')).rejects.toThrow(/PENDING/);
     expect(prismaMock.payment.create).not.toHaveBeenCalled();
   });
 
   it('reuses existing initiated Payment (idempotency on refresh)', async () => {
     const service = await loadService();
     prismaMock.storeOrder.findUnique.mockResolvedValue({
-      id: 'so-1', orderNumber: 'ORD-1', userId: 'user-1',
-      status: 'PENDING', totalAmountInr: 500, paymentId: 'pmt-existing',
+      id: 'so-1',
+      orderNumber: 'ORD-1',
+      userId: 'user-1',
+      status: 'PENDING',
+      totalAmountInr: 500,
+      paymentId: 'pmt-existing',
     });
     prismaMock.payment.findUnique.mockResolvedValue({
       id: 'pmt-existing',
@@ -95,8 +113,12 @@ describe('PaymentService.createStoreOrderRazorpay', () => {
   it('creates Razorpay order + Payment row + links via storeOrder.update', async () => {
     const service = await loadService();
     prismaMock.storeOrder.findUnique.mockResolvedValue({
-      id: 'so-1', orderNumber: 'ORD-1', userId: 'user-1',
-      status: 'PENDING', totalAmountInr: 1234.5, paymentId: null,
+      id: 'so-1',
+      orderNumber: 'ORD-1',
+      userId: 'user-1',
+      status: 'PENDING',
+      totalAmountInr: 1234.5,
+      paymentId: null,
     });
     prismaMock.payment.create.mockResolvedValue({ id: 'pmt-new' });
     prismaMock.storeOrder.update.mockResolvedValue({});
@@ -193,10 +215,15 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     const service = await loadService();
     prismaMock.payment.findFirst.mockResolvedValue({
       id: 'pmt-1',
-      storeOrders: [{
-        id: 'so-1', orderNumber: 'ORD-1',
-        status: 'PENDING', statusHistory: [], userId: 'owner-1',
-      }],
+      storeOrders: [
+        {
+          id: 'so-1',
+          orderNumber: 'ORD-1',
+          status: 'PENDING',
+          statusHistory: [],
+          userId: 'owner-1',
+        },
+      ],
     });
 
     await expect(
@@ -210,15 +237,47 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     const service = await loadService();
     prismaMock.payment.findFirst.mockResolvedValue({
       id: 'pmt-1',
-      storeOrders: [{
-        id: 'so-1', orderNumber: 'ORD-1',
-        status: 'PENDING',
-        statusHistory: [{ status: 'PENDING', changedAt: '2026-05-01T00:00:00.000Z' }],
-        userId: 'user-1',
-      }],
+      storeOrders: [
+        {
+          id: 'so-1',
+          orderNumber: 'ORD-1',
+          status: 'PENDING',
+          statusHistory: [{ status: 'PENDING', changedAt: '2026-05-01T00:00:00.000Z' }],
+          userId: 'user-1',
+        },
+      ],
     });
     prismaMock.payment.update.mockResolvedValue({});
     prismaMock.storeOrder.update.mockResolvedValue({});
+    // sendStoreOrderInvoice reads the full order + user. Previously this was
+    // unmocked → findUnique returned undefined → TypeError swallowed by the
+    // invoice's try/catch → test passed but the invoice path had ZERO real
+    // coverage. Mock it now so the fire-and-forget invoice actually runs.
+    prismaMock.storeOrder.findUnique.mockResolvedValue({
+      id: 'so-1',
+      orderNumber: 'ORD-1',
+      user: { fullName: 'User One', email: 'user-1@example.com' },
+      items: [{ productId: 'p-1', qty: 2, priceAtPurchase: 250, name: 'Diya' }],
+      shippingAddress: {
+        fullName: 'User One',
+        line1: '12 Ashok Rd',
+        city: 'Delhi',
+        pincode: '110001',
+        country: 'India',
+      },
+      totalAmountInr: 500,
+      createdAt: new Date('2026-05-01T00:00:00.000Z'),
+    });
+    // writeStoreOrderCommissionOnConfirm walks product → storeProfile →
+    // commission.create. Mock the chain so the tx callback completes.
+    prismaMock.storeProduct.findUnique.mockResolvedValue({ storeProfileId: 'sp-1' });
+    prismaMock.storeProfile.findUnique.mockResolvedValue({
+      userId: 'store-owner-1',
+      commission: 0.2,
+    });
+    prismaMock.commission.create.mockResolvedValue({});
+    generateInvoiceMock.mockClear();
+    sendEmailMock.mockClear();
 
     const out = await service.verifyStoreOrderPayment('order_demo_x', 'pay_x', 'demo', 'user-1');
 
@@ -242,16 +301,31 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
       changedBy: 'user-1',
       note: 'Razorpay payment verified',
     });
+    // The invoice is fired `void` (fire-and-forget). Flush the microtask queue
+    // so the assertion sees the sendEmail call. This is the line that would
+    // have caught the swallowed TypeError before this fix.
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(generateInvoiceMock).toHaveBeenCalledTimes(1);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    expect(sendEmailMock.mock.calls[0]![0]).toMatchObject({
+      to: 'user-1@example.com',
+      subject: 'Darshya tax invoice — ORD-1',
+    });
   });
 
   it('does not re-flip an already CONFIRMED order (replay safety)', async () => {
     const service = await loadService();
     prismaMock.payment.findFirst.mockResolvedValue({
       id: 'pmt-1',
-      storeOrders: [{
-        id: 'so-1', orderNumber: 'ORD-1',
-        status: 'CONFIRMED', statusHistory: [], userId: 'user-1',
-      }],
+      storeOrders: [
+        {
+          id: 'so-1',
+          orderNumber: 'ORD-1',
+          status: 'CONFIRMED',
+          statusHistory: [],
+          userId: 'user-1',
+        },
+      ],
     });
     prismaMock.payment.update.mockResolvedValue({});
 
@@ -266,13 +340,35 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     const sig = hmacHex('live_secret_key', 'order_x|pay_x');
     prismaMock.payment.findFirst.mockResolvedValue({
       id: 'pmt-1',
-      storeOrders: [{
-        id: 'so-1', orderNumber: 'ORD-1',
-        status: 'PENDING', statusHistory: [], userId: 'user-1',
-      }],
+      storeOrders: [
+        {
+          id: 'so-1',
+          orderNumber: 'ORD-1',
+          status: 'PENDING',
+          statusHistory: [],
+          userId: 'user-1',
+        },
+      ],
     });
     prismaMock.payment.update.mockResolvedValue({});
     prismaMock.storeOrder.update.mockResolvedValue({});
+    // Commission chain + invoice fire-and-forget both run on the CONFIRMED
+    // path — mock them so the tx callback + invoice don't throw unhandled.
+    prismaMock.storeOrder.findUnique.mockResolvedValue({
+      id: 'so-1',
+      orderNumber: 'ORD-1',
+      user: { fullName: 'User One', email: 'user-1@example.com' },
+      items: [{ productId: 'p-1', qty: 1, priceAtPurchase: 100, name: 'Diya' }],
+      shippingAddress: { city: 'Delhi' },
+      totalAmountInr: 100,
+      createdAt: new Date('2026-05-01T00:00:00.000Z'),
+    });
+    prismaMock.storeProduct.findUnique.mockResolvedValue({ storeProfileId: 'sp-1' });
+    prismaMock.storeProfile.findUnique.mockResolvedValue({
+      userId: 'store-owner-1',
+      commission: 0.2,
+    });
+    prismaMock.commission.create.mockResolvedValue({});
 
     const out = await service.verifyStoreOrderPayment('order_x', 'pay_x', sig, 'user-1');
     expect(out.verified).toBe(true);

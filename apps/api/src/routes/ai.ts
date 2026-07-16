@@ -12,7 +12,11 @@ const aiChatRateLimit = {
 };
 
 const chatBodySchema = z.object({
-  message: z.string().trim().min(1, 'Message is required').max(2000, 'Message too long. Maximum 2000 characters.'),
+  message: z
+    .string()
+    .trim()
+    .min(1, 'Message is required')
+    .max(2000, 'Message too long. Maximum 2000 characters.'),
   conversationId: z.string().optional(),
   language: z.string().min(2).max(10).optional(),
 });
@@ -95,7 +99,12 @@ export async function aiRoutes(server: FastifyInstance) {
     }
 
     try {
-      const { stream, conversationId: convId, citations, saveConversation } = await aiService.chat({
+      const {
+        stream,
+        conversationId: convId,
+        citations,
+        saveConversation,
+      } = await aiService.chat({
         userId,
         conversationId,
         message,
@@ -104,17 +113,33 @@ export async function aiRoutes(server: FastifyInstance) {
 
       // SSE: write headers directly to the raw Node response
       // reply.header() doesn't flush for SSE since reply.send() is never called
-      reply.hijack();
-      const raw = reply.raw;
-      raw.writeHead(200, {
+      // SECURITY: do NOT reflect request.headers.origin verbatim — that bypasses
+      // the strict CORS_ORIGIN allowlist registered in server.ts and lets any
+      // attacker-controlled origin make credentialed cross-origin SSE requests
+      // when a logged-in Darshya user visits. Only echo the origin if it is on
+      // the allowlist; otherwise omit both ACAO and ACAC headers so the browser
+      // blocks the cross-origin response.
+      const origin = request.headers.origin;
+      const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+      const isAllowedOrigin = typeof origin === 'string' && allowedOrigins.includes(origin);
+      const sseHeaders: Record<string, string> = {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
-        'Access-Control-Allow-Origin': request.headers.origin || '*',
-        'Access-Control-Allow-Credentials': 'true',
         'X-Conversation-Id': convId,
-      });
+      };
+      if (isAllowedOrigin) {
+        sseHeaders['Access-Control-Allow-Origin'] = origin as string;
+        sseHeaders['Access-Control-Allow-Credentials'] = 'true';
+        sseHeaders['Vary'] = 'Origin';
+      }
+      reply.hijack();
+      const raw = reply.raw;
+      raw.writeHead(200, sseHeaders);
 
       // Track client disconnect
       let clientDisconnected = false;
@@ -123,7 +148,9 @@ export async function aiRoutes(server: FastifyInstance) {
       });
 
       // Send initial metadata event
-      raw.write(`data: ${JSON.stringify({ type: 'metadata', conversationId: convId, citations })}\n\n`);
+      raw.write(
+        `data: ${JSON.stringify({ type: 'metadata', conversationId: convId, citations })}\n\n`,
+      );
 
       // Record this message against the user's usage counter. Fire-and-forget;
       // a counter write must never break the stream. Anonymous IDs no-op.
@@ -147,7 +174,9 @@ export async function aiRoutes(server: FastifyInstance) {
       } catch (streamError) {
         server.log.error(streamError, 'Stream error');
         if (!clientDisconnected) {
-          raw.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream interrupted' })}\n\n`);
+          raw.write(
+            `data: ${JSON.stringify({ type: 'error', message: 'Stream interrupted' })}\n\n`,
+          );
         }
       }
 
@@ -187,69 +216,81 @@ export async function aiRoutes(server: FastifyInstance) {
 
   // ─── GET /conversations — List user conversations ───────────────────────────
 
-  server.get('/conversations', {
-    preHandler: [authenticateUser],
-  }, async (request, reply) => {
-    const { page, limit } = request.query as { page?: string; limit?: string };
-    const userId = request.currentUser!.id;
+  server.get(
+    '/conversations',
+    {
+      preHandler: [authenticateUser],
+    },
+    async (request, reply) => {
+      const { page, limit } = request.query as { page?: string; limit?: string };
+      const userId = request.currentUser!.id;
 
-    try {
-      const result = await aiService.listConversations(
-        userId,
-        Number(page) || 1,
-        Math.min(Number(limit) || 20, 50),
-      );
+      try {
+        const result = await aiService.listConversations(
+          userId,
+          Number(page) || 1,
+          Math.min(Number(limit) || 20, 50),
+        );
 
-      return result;
-    } catch (error) {
-      server.log.error(error, 'Failed to list conversations');
-      return reply.status(500).send({ error: 'Failed to list conversations' });
-    }
-  });
+        return result;
+      } catch (error) {
+        server.log.error(error, 'Failed to list conversations');
+        return reply.status(500).send({ error: 'Failed to list conversations' });
+      }
+    },
+  );
 
   // ─── GET /conversations/:id — Get a conversation ────────────────────────────
 
-  server.get('/conversations/:id', {
-    preHandler: [authenticateUser],
-  }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const userId = request.currentUser!.id;
+  server.get(
+    '/conversations/:id',
+    {
+      preHandler: [authenticateUser],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const userId = request.currentUser!.id;
 
-    try {
-      const conversation = await aiService.getConversation(id, userId);
+      try {
+        const conversation = await aiService.getConversation(id, userId);
 
-      if (!conversation) {
-        return reply.status(404).send({ error: 'Conversation not found' });
+        if (!conversation) {
+          return reply.status(404).send({ error: 'Conversation not found' });
+        }
+
+        return { conversation };
+      } catch (error) {
+        server.log.error(error, 'Failed to get conversation');
+        return reply.status(500).send({ error: 'Failed to get conversation' });
       }
-
-      return { conversation };
-    } catch (error) {
-      server.log.error(error, 'Failed to get conversation');
-      return reply.status(500).send({ error: 'Failed to get conversation' });
-    }
-  });
+    },
+  );
 
   // ─── DELETE /conversations/:id — Delete a conversation ──────────────────────
 
-  server.delete('/conversations/:id', {
-    preHandler: [authenticateUser],
-  }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const userId = request.currentUser!.id;
+  server.delete(
+    '/conversations/:id',
+    {
+      preHandler: [authenticateUser],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const userId = request.currentUser!.id;
 
-    try {
-      const deleted = await aiService.deleteConversation(id, userId);
+      try {
+        const deleted = await aiService.deleteConversation(id, userId);
 
-      if (!deleted) {
-        return reply.status(404).send({ error: 'Conversation not found' });
+        if (!deleted) {
+          return reply.status(404).send({ error: 'Conversation not found' });
+        }
+
+        return { success: true, message: 'Conversation deleted' };
+      } catch (error) {
+        server.log.error(error, 'Failed to delete conversation');
+        return reply.status(500).send({ error: 'Failed to delete conversation' });
       }
-
-      return { success: true, message: 'Conversation deleted' };
-    } catch (error) {
-      server.log.error(error, 'Failed to delete conversation');
-      return reply.status(500).send({ error: 'Failed to delete conversation' });
-    }
-  });
+    },
+  );
 
   // ─── POST /recommend-puja — Puja recommendations ───────────────────────────
 
