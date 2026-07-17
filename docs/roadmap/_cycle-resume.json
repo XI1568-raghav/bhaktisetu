@@ -1,7 +1,23 @@
 {
-  "cycleId": "C-20260717T0340",
+  "cycleId": "C-20260717T1405",
   "spawnPlan": [],
-  "deferrals": [],
+  "deferrals": [
+    {
+      "itemId": "R-Q2-M-011",
+      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item unconsumed for 855h (35+ days). This CMO item has been stuck in the queue since June 11. The queue worker/CI pipeline appears stalled — last cycle also spawned 0 items and consumed 0 queue files. The entire orchestration loop is non-functional: no items are being spawned, no items are being consumed, and the system has been in this state for over a month. Root cause triage needed: (1) Is the queue worker/CI pipeline running? (2) Is there a GitHub Actions or Render bg-worker issue preventing consumption? (3) Are there merge conflicts or build failures blocking the queue? This is a P0 system health issue — the orchestrator cannot make progress until the queue pipeline is unblocked.",
+      "suggestedAction": "Triage the queue consumption pipeline: check GitHub Actions runs for the queue worker, verify Render bg-worker is deployed and running, inspect R-Q2-M-011 queue file for merge conflicts or failing checks. If the item itself is obsolete after 35 days, kill it and let the queue drain. The orchestrator needs at least a functioning queue to cycle work through."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) has been blocked for 36 days. This is the single highest-leverage unblock on the roadmap — it gates the entire deployment pipeline and cascades to multiple downstream engineering items (R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014 and others all depend on this decision). Every day this remains undecided, 10+ engineering items are frozen. Budget context: CF Pages free tier (500 builds/mo, currently 0% used) is the only zero-cost option. Vercel would introduce new spend. Static allowlist limits dynamic API routes needed for booking/payments.",
+      "suggestedAction": "Choose Cloudflare Pages. Rationale: (1) fits free-tier budget constraint (500 builds/mo, 0% used), (2) supports full Next.js SSR/API routes needed for booking flow, (3) CF CDN already in use for static assets, (4) no new vendor cost. Document the decision in docs/engineering/architecture-decision-cf-pages.md and unblock all dependent items. This is a 15-minute decision that unlocks 10+ items."
+    },
+    {
+      "itemId": "R-Q1-S-013",
+      "reason": "GOOGLE_PLACES_API_KEY missing in Render env — blocked 36 days. This is a 5-minute fix that unblocks temple verification across all city expansion work. The handoff doc (docs/supply/R-Q1-S-013-handoff.md) already contains the steps. Supply-side onboarding for temples is frozen across all geo items because this API key is needed for Places API calls to verify temple data. With 31 geo items and 44 supply items in the backlog, this single env var is gating a massive amount of work.",
+      "suggestedAction": "Generate a Google Places API key from Google Cloud Console (enable Places API for the project), add it to Render environment variables as GOOGLE_PLACES_API_KEY, and redeploy. The handoff doc has step-by-step instructions. This is a 5-minute task that unblocks temple verification and city expansion work."
+    }
+  ],
   "kills": [],
   "firedTripwires": [
     {
@@ -11,10 +27,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-17T03:42:14.537Z"
+      "firedAt": "2026-07-17T14:07:06.582Z"
     }
   ],
-  "savedAt": "2026-07-17T03:45:56.817Z",
+  "savedAt": "2026-07-17T14:08:51.668Z",
   "consumed": true,
-  "consumedAt": "2026-07-17T03:45:56.818Z"
+  "consumedAt": "2026-07-17T14:08:51.670Z"
 }
