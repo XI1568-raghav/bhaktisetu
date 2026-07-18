@@ -1,50 +1,58 @@
 {
-  "cycleId": "C-20260718T0334",
+  "cycleId": "C-20260718T1352",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q1-E-003",
-        "R-Q1-E-004"
+        "R-Q1-IT-001",
+        "R-Q1-IT-002"
       ],
-      "briefing": "CRITICAL SITUATION — three live KPI signals demand immediate engineering attention:\n\n1. razorpay_live_active = 0 — No payment processing live. This is the #1 revenue blocker. Without Razorpay, zero bookings can be monetized. Get Razorpay live and e2e tested (razorpay_e2e_tested metric also stale). Check apps/api for Razorpay integration, verify webhook signatures, test sandbox→live transition.\n\n2. ALL KPIs broken — Nearly every metric returns HTTP 404, \"TBD-populate-before-orchestrator-go-live\" (missing shell commands), or syntax errors in grep commands (e.g. posthog_web_active, mock_fallback_killed have unescaped parentheses). 157 items shipped but we have ZERO observability. Fix the metrics collection pipeline: replace TBD commands with real shell scripts, fix syntax errors, wire up metric endpoints. This is blocking all data-driven decisions.\n\n3. cron_auth_token_set = 0 — Cron endpoints are unprotected. Security risk. Set up CRON_AUTH_TOKEN in Render env and enforce auth on cron routes.\n\n4. mock_fallback_killed — Mock fallback in apps/web/app/pujas/book/page.tsx needs removal (grep for mockData|fallback.*mock|silent.*fallback). Users may be seeing fake data in booking flow.\n\nBudget fully available: GH 2000min (0% used), CF 500 builds (0% used), Render 750h (0% used). Last cycle spawned 0 agents — full capacity available.\n\nPriority order: Razorpay live > metrics pipeline fix > cron auth > mock fallback removal. These are revenue-enabling and observability-enabling work items that unblock everything else.",
+      "briefing": "CRITICAL OBSERVABILITY + SECURITY: Most KPIs are broken — returning HTTP 404/500. Only 4 live: max_contact_count_bumped=3, razorpay_live_active=0, uptime_monitors_active=4, cron_auth_token_set=0. Two priorities: (1) FIX METRICS ENDPOINTS — investigate why /api/metrics/* and KPI fetch commands return 404/500. Many KPIs have broken shell commands (TBD-populate-before-orchestrator-go-live not found). Replace TBD placeholders with real commands. (2) CRON AUTH TOKEN — cron_auth_token_set=0 means cron endpoints are unprotected. Set CRON_AUTH_TOKEN env var and enforce Bearer auth on cron routes. STEPS: Check R-Q1-IT-001 and R-Q1-IT-002 status in docs/roadmap/_index.json. If already shipped, inspect roadmap for next in_progress IT/engineering item NOT in founder-blocked list (exclude R-Q1-IT-003, R-Q1-IT-005, R-Q2-IT-001, R-Q2-IT-001). Advance highest revenue-impact/hour item. NEVER exceed GH 2000min/mo or CF 500 builds/mo. Do NOT touch R-Q2-M-011 (in queue).",
       "estTokens": 20000
     },
     {
       "role": "cmo",
       "itemIds": [
-        "R-Q3-M-005",
-        "R-Q3-M-007"
+        "R-Q1-M-001",
+        "R-Q1-M-002"
       ],
-      "briefing": "R-Q2-M-011 has been stuck in queue for 868.5h (36+ days) — being deferred to founder for triage this cycle. Do NOT duplicate that work.\n\nFocus on Q3 content/SEO/distribution work. Key stale metrics revealing opportunity:\n- programmatic_pages_live: \"no manual value\" — need programmatic SEO pages (temple/pandit/deity city pages)\n- pillar_pages_shipped: \"TBD\" command — pillar content strategy not executed\n- cluster_articles_shipped: broken metric — deity-of-day cluster articles not tracked\n- social_accounts_active: \"no manual value\" — social presence not set up\n- social_posts_scheduled: \"no manual value\" — no content calendar\n- posthog_web_active: syntax error — analytics not wired (coordinate with CTO agent)\n- gsc_verified: \"no manual value\" — Google Search Console not verified\n- founder_tweets_posted, founder_threads_published: \"no manual value\" — founder content pipeline not started\n\nPer CEO roadmap: NRI diaspora content is priority. Build programmatic SEO pages for temple/pandit/deity combinations, create pillar content (e.g. \"Complete Guide to Online Puja Booking\"), and prepare social media content calendar. Focus on content that drives organic traffic and converts NRI users.\n\nBudget: GH 2000min, CF 500 builds — all at 0% used.",
+      "briefing": "SEO + CONTENT DISTRIBUTION. R-Q2-M-011 is already in queue — do NOT touch it. Focus: (1) Pillar pages for SEO — verify R-Q1-M-001 status in docs/roadmap/_index.json, advance if in_progress. (2) Programmatic/cluster content — verify R-Q1-M-002 status, advance if in_progress. If either is already shipped, inspect roadmap for next in_progress marketing item NOT in founder-blocked list (exclude: R-Q1-M-003, R-Q1-M-010, R-Q2-M-006, R-Q2-M-008, R-Q3-M-001, M-002, M-003, M-004, M-006, M-012, R-Q4-M-003). Priority areas: pillar pages, cluster articles, programmatic SEO pages, GSC verification, social accounts setup. Target: ship or advance 1-2 content/SEO items with measurable output (files committed, pages created). NEVER exceed GH 2000min/mo or CF 500 builds/mo.",
       "estTokens": 15000
     },
     {
       "role": "sales",
       "itemIds": [
         "R-Q1-SA-002",
-        "R-Q2-SA-002"
+        "R-Q1-SA-003"
       ],
-      "briefing": "Multiple supply items are founder-blocked (being deferred this cycle):\n- R-Q1-SA-001: Founder must send WhatsApp to 5 priests (38 days blocked)\n- R-Q1-S-008: Founder must dial T1 gaushala prospects (38 days blocked)\n- R-Q1-S-013: GOOGLE_PLACES_API_KEY missing in Render (37 days blocked)\n- R-Q1-SA-006: blocked (36 days)\n\nFocus on AGENT-ACTIONABLE supply work that doesn't require founder action:\n1. Prepare structured outreach kits for when founder acts on SA-001 — draft WhatsApp message templates for different priest segments (purohit, archaka, vedapathin)\n2. Compile temple/astrologer/gaushala prospect lists with verified contact info — use public data, temple websites, JustDial, Google Maps\n3. Create B2B LOI templates for corporate Diwali puja packages (corporate_diwali_accounts metric stale)\n4. Research ISKCON/BAPS/Sringeri intro paths and prepare briefing docs for founder\n5. Build supply pipeline spreadsheets with status tracking\n\nKey stale metrics to move from \"no manual value\": temple_reply_rate_pct, temple_calls_made, wa_warm_intros_sent, verified_temples_count_* (varanasi, bengaluru, mumbai, delhi, pune, hyderabad), b2b_qualified_leads, iskcon_intros_made, baps_intro_status, sringeri_intro_status, diaspora_orgs_engaged.\n\nYour structured handoffs will unblock founder-dependent items when founder acts. Budget: GH 2000min, CF 500 builds — all at 0%.",
-      "estTokens": 12000
+      "briefing": "SUPPLY PIPELINE + B2B OUTREACH. Founder-blocked items — do NOT touch: R-Q1-SA-001, R-Q1-SA-006, R-Q1-S-008, R-Q1-S-013, R-Q3-SA-001, SA-003, SA-004, R-Q3-S-002, R-Q4-SA-001, SA-003. STEPS: Verify R-Q1-SA-002 and R-Q1-SA-003 status in docs/roadmap/_index.json. If in_progress, advance them. If already shipped, inspect roadmap for next in_progress sales/supply item NOT in founder-blocked list. Focus areas: temple verification lists for live cities (Varanasi, Bengaluru, Mumbai), B2B pilot scoping artifacts, outreach kit preparation for items NOT requiring founder dialing, gaushala/gurukul prospect research. Target: ship or advance 1-2 supply/sales items with structured handoff docs. NEVER exceed GH 2000min/mo or CF 500 builds/mo.",
+      "estTokens": 15000
     },
-    {}
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q1-CS-001",
+        "R-Q1-CS-003"
+      ],
+      "briefing": "SUPPORT INFRASTRUCTURE + MACROS. Founder-blocked CS items — exclude: R-Q1-CS-002, R-Q1-CS-006, R-Q2-CS-003 (native-speaker review + Wati Meta template approval). STEPS: Verify R-Q1-CS-001 and R-Q1-CS-003 status in docs/roadmap/_index.json. If in_progress, advance. If shipped, find next in_progress CS item not blocked. Focus areas: support macros for common queries (booking, refund, reschedule), help center articles, multilingual macro scaffolding (ta/te/bn/mr — note: native review is blocked but English/hindi scaffolding can proceed), churn prevention playbooks, NPS survey setup. Target: ship or advance 1-2 CS items with documented macros or help articles committed to repo. NEVER exceed GH 2000min/mo or CF 500 builds/mo.",
+      "estTokens": 12000
+    }
   ],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 tripwire fired: queue oldest item > 72h unconsumed (868.5h = 36+ days stale). R-Q2-M-011 has been in queue since ~June 11 but never shipped. The queue processing mechanism appears broken — either the item's artifacts were produced but not committed/merged, or the queue consumer is not running. Triage needed immediately.",
-      "suggestedAction": "Check docs/agent-reports/cmo/R-Q2-M-011-* for shipped artifacts. Three options: (1) Manually verify artifacts are complete and mark as shipped, (2) Kill if work is obsolete/superseded, (3) Reset to backlog for re-spawn with updated briefing. Also investigate why queue consumer is not processing — check Render bg-worker status."
+      "reason": "T-010 tripwire fired: Queue oldest item >72h unconsumed (878.8h / ~36.6 days). R-Q2-M-011 (CMO role) has been sitting in queue since 2026-06-11 with no consumption. This is blocking queue throughput and no other items can advance through the queue pipeline. Triage decision needed: (a) ship/merge the CMO work if artifacts are ready, (b) kill it if strategically obsolete, or (c) re-scope if still relevant. The queue has been effectively stalled for over a month.",
+      "suggestedAction": "Review docs/agent-reports/cmo/R-Q2-M-011-* artifacts. If complete, merge/ship. If stale, kill and clear queue. If re-scope needed, update item and re-queue. Either way, clear this queue blockage so subsequent items can flow."
     },
     {
       "itemId": "R-Q1-S-013",
-      "reason": "GOOGLE_PLACES_API_KEY missing in Render env — 37-day-old blocker. This is a 5-minute infrastructure fix that has been blocking temple/supply data pipeline for over a month. Agent artifacts already shipped per docs/supply/R-Q1-S-013-handoff.md. High revenue-impact: unblocks automated temple/place discovery for supply pipeline.",
-      "suggestedAction": "Log into Render dashboard → Environment → add GOOGLE_PLACES_API_KEY (from Google Cloud Console, enable Places API, generate key) → save → trigger redeploy. 5-minute fix that unblocks 37-day-old item."
+      "reason": "GOOGLE_PLACES_API_KEY missing in Render env for 37 days. This is a trivial env-var configuration fix that is blocking all supply verification workflows (temple/pandit discovery via Google Places). Agent artifacts already shipped per handoff at docs/supply/R-Q1-S-013-handoff.md. No further agent work possible — founder must add the API key to Render environment variables. 37 days is far too long for an env var fix.",
+      "suggestedAction": "Add GOOGLE_PLACES_API_KEY to Render service env vars (Settings → Environment). Verify key is enabled for Places API in Google Cloud Console. Restart service. Then mark R-Q1-S-013 as shipped."
     },
     {
       "itemId": "R-Q1-SA-001",
-      "reason": "Founder must send WhatsApp to 5 priests — 38-day-old blocker. Agent artifacts already shipped. This is a 10-minute founder task (send 5 messages) that unblocks the entire T1 supply pipeline. No agent can perform this — requires founder's personal WhatsApp account and relationships.",
-      "suggestedAction": "Review prepared WhatsApp messages in docs/agent-reports/sales/R-Q1-SA-001-*. Send to 5 priests from your personal WhatsApp. Report back send confirmations so agent can track responses and follow up."
+      "reason": "Founder must send WhatsApp messages to 5 priests — blocked 38 days. This is critical supply-side relationship building that cannot be delegated to agents. Without initial priest relationships, the supply pipeline for puja bookings cannot activate. 38 days of delay is directly impacting revenue potential.",
+      "suggestedAction": "Send WhatsApp messages to 5 T1 priests this week using the outreach kit already prepared. Even 5 messages unblocks the supply pipeline. Document responses in the supply tracker."
     }
   ],
   "kills": [],
@@ -56,10 +64,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-18T03:36:26.869Z"
+      "firedAt": "2026-07-18T13:53:48.811Z"
     }
   ],
-  "savedAt": "2026-07-18T03:39:57.913Z",
+  "savedAt": "2026-07-18T13:55:58.327Z",
   "consumed": true,
-  "consumedAt": "2026-07-18T03:45:24.872Z"
+  "consumedAt": "2026-07-18T14:02:13.226Z"
 }
