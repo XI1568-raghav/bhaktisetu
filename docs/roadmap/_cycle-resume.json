@@ -1,21 +1,21 @@
 {
-  "cycleId": "C-20260719T0357",
+  "cycleId": "C-20260719T1356",
   "spawnPlan": [],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 tripwire fired: Queue oldest item > 72h unconsumed (892.87h / 37+ days stale). This CMO marketing item has been sitting in the queue unconsumed. Possible causes: CI/CD pipeline broken, item needs review/approval, or process bottleneck. Founder must triage — either ship it, kill it, or identify what's blocking queue consumption. Queue depth is 1 and nothing has shipped from queue in 37+ days, suggesting a systemic queue processing issue.",
-      "suggestedAction": "1) Check if CI/CD pipeline / GitHub Actions is functional for this item. 2) Review R-Q2-M-011 artifact quality — is it ready to merge? 3) If blocked, identify specific blocker and resolve. 4) If obsolete, kill it. 5) Investigate why queue consumption has stalled for 37+ days — this is a systemic issue affecting all queued items."
+      "reason": "T-010 tripwire fired: Queue stale at 902.8h (37.6 days). R-Q2-M-011 (CMO item) has been in queue unconsumed since ~June 11. No agents have been spawned in recent cycles (lastCycleSpawned=0). All budget at 0% (GH 0/2000, CF 0/500, Render 0/750) — no builds or deployments have run this month. The item likely has a stuck PR, failing CI, merge conflict, or pending review. The shipping pipeline is completely jammed — this is the only queue item and it has been blocking queue flow for over 5 weeks. Founder must triage immediately to unblock the shipping pipeline.",
+      "suggestedAction": "1) Check queue file Q-C-20260611T2307-R-Q2-M-011 for PR status and associated branch. 2) Check if CI is broken — look at GitHub Actions runs for the branch. 3) If merge conflict, rebase against main. 4) If review pending, review and merge. 5) If CI failing, fix the build issue. 6) If the work is obsolete after 37 days, close the PR and re-plan the item. 7) Once queue is cleared, the orchestrator can resume spawning new work."
     },
     {
       "itemId": "R-Q1-E-001",
-      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked for 38 days. This is a foundational CTO/hosting decision that blocks multiple downstream engineering items. Every day this remains undecided, dependent engineering work (deployment pipeline, CDN strategy, build config) cannot proceed. At 38 days, this is the single highest-leverage unblock for the engineering roadmap.",
-      "suggestedAction": "Make hosting architecture decision now. Consider: (a) CF Pages — aligns with free-tier budget constraints, (b) Vercel — better DX but cost risk, (c) Static allowlist — simplest but limited. Recommend CF Pages given current free-tier budget posture (GH 2000min/mo, CF 500 builds/mo). Document decision in docs/engineering/architecture-decision-hosting.md and unblock dependent items."
+      "reason": "Architecture decision required: CF Pages vs Vercel vs static allowlist. Blocked 38 days. This is the highest-leverage unblock in the entire backlog — R-Q1-E-002 (U1), R-Q1-E-008 (U8), R-Q1-E-009 (U8), R-Q1-E-011 (U5), R-Q1-E-012 (U2), R-Q1-E-014 (U6) and multiple Q2/Q3 engineering items are downstream of this decision. 10+ items are waiting on this single architectural choice. Budget constraint analysis: CF Pages free tier = 500 builds/mo (matches our cap exactly), Vercel Hobby = 100 builds/mo (would violate free-tier budget). Recommendation: Choose Cloudflare Pages — already using CF for DNS/CDN, 500 builds/mo free tier, no egress fees, native edge CDN for India+NRI latency optimization, Workers integration available for SSR. This decision has been pending 38 days and is the single biggest bottleneck in the engineering pipeline.",
+      "suggestedAction": "Choose Cloudflare Pages. Create docs/engineering/architecture-decision-cf-pages.md documenting: (1) decision rationale, (2) migration plan from current deployment, (3) build configuration, (4) impact on downstream items. Update all downstream roadmap items' blocker status from U1/U2/U5/U6/U8 to resolved. Begin migration of frontend deployment to CF Pages. Once documented, 10+ engineering items become eligible for agent spawning."
     },
     {
       "itemId": "R-Q1-S-013",
-      "reason": "GOOGLE_PLACES_API_KEY missing in Render environment for 38 days. This is a configuration fix (not a design decision) that blocks temple/supply verification workflows. Handoff doc exists at docs/supply/R-Q1-S-013-handoff.md. This should be a 5-minute fix — add the env var to Render — yet it's been blocked for 38 days, suggesting it's been overlooked rather than deliberated. Quick unblock with high supply-side impact.",
-      "suggestedAction": "1) Obtain Google Places API key (or confirm it exists in secrets manager). 2) Add GOOGLE_PLACES_API_KEY to Render environment variables. 3) Verify temple/supply verification workflow picks up the key. 4) Mark R-Q1-S-013 unblocked. Estimated time: 15 minutes."
+      "reason": "GOOGLE_PLACES_API_KEY missing in Render env — blocked 38 days. This blocks temple/supply verification pipeline (Google Places data for temple addresses, coordinates, photos, ratings). Handoff documentation already exists at docs/supply/R-Q1-S-013-handoff.md. This is a 15-minute fix that unblocks the entire supply onboarding pipeline for all cities. The supply pipeline is critical for revenue — without verified temple data, the booking funnel cannot function. 38 days of supply verification work has been blocked by a single missing environment variable.",
+      "suggestedAction": "1) Go to Google Cloud Console (console.cloud.google.com). 2) Create or select project 'darshya-prod'. 3) Enable Places API (New) under APIs & Services. 4) Create API key under Credentials. 5) Restrict the key to HTTP referrer '*.darshya.online/*'. 6) Add GOOGLE_PLACES_API_KEY to Render environment variables (dashboard.render.com → service → Environment). 7) Trigger redeploy of the API service. 8) Verify with health check endpoint that Places API connectivity returns 200. Estimated time: 15 minutes. Once done, supply verification items become unblocked for agent spawning."
     }
   ],
   "kills": [],
@@ -27,10 +27,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-19T03:59:01.343Z"
+      "firedAt": "2026-07-19T13:57:33.597Z"
     }
   ],
-  "savedAt": "2026-07-19T04:02:06.355Z",
+  "savedAt": "2026-07-19T14:00:12.432Z",
   "consumed": true,
-  "consumedAt": "2026-07-19T04:02:06.356Z"
+  "consumedAt": "2026-07-19T14:00:12.433Z"
 }
