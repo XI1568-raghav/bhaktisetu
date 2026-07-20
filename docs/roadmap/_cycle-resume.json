@@ -1,21 +1,21 @@
 {
-  "cycleId": "C-20260719T1356",
+  "cycleId": "C-20260720T0407",
   "spawnPlan": [],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 tripwire fired: Queue stale at 902.8h (37.6 days). R-Q2-M-011 (CMO item) has been in queue unconsumed since ~June 11. No agents have been spawned in recent cycles (lastCycleSpawned=0). All budget at 0% (GH 0/2000, CF 0/500, Render 0/750) — no builds or deployments have run this month. The item likely has a stuck PR, failing CI, merge conflict, or pending review. The shipping pipeline is completely jammed — this is the only queue item and it has been blocking queue flow for over 5 weeks. Founder must triage immediately to unblock the shipping pipeline.",
-      "suggestedAction": "1) Check queue file Q-C-20260611T2307-R-Q2-M-011 for PR status and associated branch. 2) Check if CI is broken — look at GitHub Actions runs for the branch. 3) If merge conflict, rebase against main. 4) If review pending, review and merge. 5) If CI failing, fix the build issue. 6) If the work is obsolete after 37 days, close the PR and re-plan the item. 7) Once queue is cleared, the orchestrator can resume spawning new work."
+      "reason": "T-010 tripwire fired: queue oldest item > 72h unconsumed (917h = ~38 days stale). This CMO item has been in queue (Q-C-20260611T2307-R-Q2-M-011) since June 11 with zero consumption. Either the queued Claude Code prompt is stale/incomplete, the queue consumer is broken, or requirements have shifted. This is blocking queue throughput for all subsequent items.",
+      "suggestedAction": "1) Open queue file Q-C-20260611T2307-R-Q2-M-011 and review the prompt. 2) If still relevant: manually execute or fix the consumer process. 3) If stale: kill the queue entry and re-queue with updated requirements. 4) If blocked by missing context: provide the missing brief and re-queue. This MUST be resolved within 24h — 917h stale is a system health failure."
+    },
+    {
+      "itemId": "R-Q1-SA-001",
+      "reason": "Founder must send WhatsApp to 5 priests — blocked 40 days. Supply onboarding is the #1 revenue prerequisite: without priests listed, no bookings can be fulfilled, meaning razorpay_live_active=0 is moot even if payment were live. Every day of delay costs potential booking revenue and supply pipeline velocity. The outreach kit artifacts have already been shipped by agents — only founder action remains.",
+      "suggestedAction": "Use the outreach kit in docs/agent-reports/sales/ to send 5 WhatsApp messages to T1 priests TODAY. Template: introduce Darshya, offer free listing, request 15min call. Report reply outcomes to unblock downstream supply items (R-Q1-S-008 gaushala, R-Q1-S-013 Google Places, etc.). Target: 5 messages sent within 48h."
     },
     {
       "itemId": "R-Q1-E-001",
-      "reason": "Architecture decision required: CF Pages vs Vercel vs static allowlist. Blocked 38 days. This is the highest-leverage unblock in the entire backlog — R-Q1-E-002 (U1), R-Q1-E-008 (U8), R-Q1-E-009 (U8), R-Q1-E-011 (U5), R-Q1-E-012 (U2), R-Q1-E-014 (U6) and multiple Q2/Q3 engineering items are downstream of this decision. 10+ items are waiting on this single architectural choice. Budget constraint analysis: CF Pages free tier = 500 builds/mo (matches our cap exactly), Vercel Hobby = 100 builds/mo (would violate free-tier budget). Recommendation: Choose Cloudflare Pages — already using CF for DNS/CDN, 500 builds/mo free tier, no egress fees, native edge CDN for India+NRI latency optimization, Workers integration available for SSR. This decision has been pending 38 days and is the single biggest bottleneck in the engineering pipeline.",
-      "suggestedAction": "Choose Cloudflare Pages. Create docs/engineering/architecture-decision-cf-pages.md documenting: (1) decision rationale, (2) migration plan from current deployment, (3) build configuration, (4) impact on downstream items. Update all downstream roadmap items' blocker status from U1/U2/U5/U6/U8 to resolved. Begin migration of frontend deployment to CF Pages. Once documented, 10+ engineering items become eligible for agent spawning."
-    },
-    {
-      "itemId": "R-Q1-S-013",
-      "reason": "GOOGLE_PLACES_API_KEY missing in Render env — blocked 38 days. This blocks temple/supply verification pipeline (Google Places data for temple addresses, coordinates, photos, ratings). Handoff documentation already exists at docs/supply/R-Q1-S-013-handoff.md. This is a 15-minute fix that unblocks the entire supply onboarding pipeline for all cities. The supply pipeline is critical for revenue — without verified temple data, the booking funnel cannot function. 38 days of supply verification work has been blocked by a single missing environment variable.",
-      "suggestedAction": "1) Go to Google Cloud Console (console.cloud.google.com). 2) Create or select project 'darshya-prod'. 3) Enable Places API (New) under APIs & Services. 4) Create API key under Credentials. 5) Restrict the key to HTTP referrer '*.darshya.online/*'. 6) Add GOOGLE_PLACES_API_KEY to Render environment variables (dashboard.render.com → service → Environment). 7) Trigger redeploy of the API service. 8) Verify with health check endpoint that Places API connectivity returns 200. Estimated time: 15 minutes. Once done, supply verification items become unblocked for agent spawning."
+      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked 39 days. This is a foundational deployment decision that blocks multiple downstream engineering items — any item depending on deploy pipeline, CI/CD, or hosting strategy cannot proceed without this. The free-tier budget constraint (CF 500 builds/mo, GH 2000 min/mo) makes CF Pages the cost-aligned choice, but founder must confirm to unblock the DAG.",
+      "suggestedAction": "Decide within 48h. Recommendation: CF Pages — aligns with free-tier budget (500 builds/mo sufficient at current velocity), native integration with existing CF CDN cache, zero egress cost. Document decision in docs/architecture/deploy-target.md with rationale. This unblocks R-Q1-E-002, R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014 and potentially 10+ other engineering items in the DAG."
     }
   ],
   "kills": [],
@@ -27,10 +27,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-19T13:57:33.597Z"
+      "firedAt": "2026-07-20T04:08:50.469Z"
     }
   ],
-  "savedAt": "2026-07-19T14:00:12.432Z",
+  "savedAt": "2026-07-20T04:11:26.894Z",
   "consumed": true,
-  "consumedAt": "2026-07-19T14:00:12.433Z"
+  "consumedAt": "2026-07-20T04:11:26.895Z"
 }
