@@ -17,6 +17,25 @@ import {
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 
+// P0-1 (2026-07-17): open-redirect guard. /auth/callback already validated
+// ?redirect= (root-relative or same-origin only) but /auth/login did not — a
+// logged-in user hitting /auth/login?redirect=https://evil.com, or any user
+// completing OTP login with that param, was sent straight to evil.com
+// (phishing / token-grab vector). Mirror the callback guard so the redirect
+// target can never leave the origin.
+function safeRedirect(raw: string | null, fallback: string): string {
+  if (!raw) return fallback;
+  // Root-relative only (reject protocol-relative "//evil.com" and absolute URLs).
+  if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  try {
+    const u = new URL(raw, window.location.origin);
+    if (u.origin === window.location.origin) return u.pathname + u.search + u.hash;
+  } catch {
+    /* malformed — fall through to fallback */
+  }
+  return fallback;
+}
+
 type AuthTab = 'email' | 'phone';
 type Step = 'input' | 'otp';
 
@@ -84,7 +103,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       const params = new URLSearchParams(window.location.search);
-      const redirect = params.get('redirect') || getRoleDashboardPath(user.role);
+      const redirect = safeRedirect(params.get('redirect'), getRoleDashboardPath(user.role));
       window.location.href = redirect;
     }
   }, [isAuthenticated, user]);
@@ -223,7 +242,7 @@ export default function LoginPage() {
       const params = new URLSearchParams(window.location.search);
       const redirect = result.isNewUser
         ? '/profile'
-        : params.get('redirect') || getRoleDashboardPath(user?.role ?? 'devotee');
+        : safeRedirect(params.get('redirect'), getRoleDashboardPath(user?.role ?? 'devotee'));
       window.location.href = redirect;
     } else {
       setError(result.message);
@@ -390,7 +409,10 @@ export default function LoginPage() {
                 try {
                   const supabase = getSupabaseBrowserClient();
                   const params = new URLSearchParams(window.location.search);
-                  const redirect = params.get('redirect');
+                  // P0-1 (2026-07-17): only forward a same-origin redirect to
+                  // /auth/callback — that page re-validates, but don't hand it
+                  // an arbitrary absolute URL to encode into the OAuth callback.
+                  const redirect = safeRedirect(params.get('redirect'), '');
                   const callbackUrl = `${window.location.origin}/auth/callback${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
                   const { error: oauthError } = await supabase.auth.signInWithOAuth({
                     provider: 'google',

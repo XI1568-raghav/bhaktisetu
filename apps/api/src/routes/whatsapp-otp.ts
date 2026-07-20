@@ -3,6 +3,14 @@ import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
 
+// P1-1 (2026-07-17): mirror the 10/min per-IP sensitive-auth rate limit that
+// /auth/send-otp + /auth/login already carry. Without this the WhatsApp-OTP
+// request/verify pair relied on the global 100/min cap — enough to spam SMS
+// templates (real money) or enumerate phones at scale.
+const sensitiveAuthRateLimit = {
+  config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+};
+
 /**
  * WhatsApp-based phone OTP. Cheaper + higher delivery than SMS in India.
  *
@@ -41,7 +49,7 @@ function normalisePhone(input: string): string {
 }
 
 export async function whatsappOtpRoutes(server: FastifyInstance) {
-  server.post('/request', async (request, reply) => {
+  server.post('/request', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { phone?: string };
     if (!body.phone || body.phone.replace(/\D/g, '').length < 10) {
       return reply.code(400).send({ error: 'Valid phone required' });
@@ -61,9 +69,25 @@ export async function whatsappOtpRoutes(server: FastifyInstance) {
       variables: [code],
     });
 
-    if (!whatsapp.enabled || result.skipped) {
-      // Dev mode — surface the code so the developer can complete the flow.
-      return reply.send({ ok: true, sent: false, devCode: code, ttlSec: OTP_TTL_MS / 1000 });
+    // P0-4 (2026-07-17): the devCode return was gated on `whatsapp.enabled`
+    // only — an env-presence check, NOT an environment check. If WHATSAPP_*
+    // env vars were unset in prod, /request returned the live 6-digit code in
+    // the response body, giving instant account takeover of ANY phone number
+    // (the /verify handler creates the user on the fly). Gate the devCode
+    // branch on a real environment check so it can never fire in prod. The
+    // request still succeeds (the code was stored in otpStore) — it just
+    // isn't echoed back, so dev/QA without WhatsApp stays functional via the
+    // in-memory store but prod never leaks the secret.
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (!whatsapp.enabled || (isDev && result.skipped)) {
+      if (isDev) {
+        // Dev mode — surface the code so the developer can complete the flow.
+        return reply.send({ ok: true, sent: false, devCode: code, ttlSec: OTP_TTL_MS / 1000 });
+      }
+      // Prod with WhatsApp disabled: accept the request (code stored) but
+      // do NOT echo the secret. The user cannot self-verify without WhatsApp,
+      // which is the intended fail-closed behaviour.
+      return reply.send({ ok: true, sent: false, ttlSec: OTP_TTL_MS / 1000 });
     }
     if (!result.ok) {
       return reply.code(502).send({ error: 'Failed to send WhatsApp OTP', detail: result.error });
@@ -71,7 +95,7 @@ export async function whatsappOtpRoutes(server: FastifyInstance) {
     return reply.send({ ok: true, sent: true, ttlSec: OTP_TTL_MS / 1000 });
   });
 
-  server.post('/verify', async (request, reply) => {
+  server.post('/verify', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { phone?: string; code?: string };
     if (!body.phone || !body.code) {
       return reply.code(400).send({ error: 'phone and code required' });
@@ -91,7 +115,9 @@ export async function whatsappOtpRoutes(server: FastifyInstance) {
       return reply.code(429).send({ error: 'Too many incorrect attempts — request a new code' });
     }
     if (record.code !== body.code.trim()) {
-      return reply.code(400).send({ error: 'Incorrect code', attemptsLeft: MAX_ATTEMPTS - record.attempts });
+      return reply
+        .code(400)
+        .send({ error: 'Incorrect code', attemptsLeft: MAX_ATTEMPTS - record.attempts });
     }
 
     otpStore.delete(phone);
