@@ -1,5 +1,5 @@
 {
-  "cycleId": "C-20260723T0347",
+  "cycleId": "C-20260723T1435",
   "spawnPlan": [
     {
       "role": "cto",
@@ -7,8 +7,8 @@
         "R-Q1-IT-001",
         "R-Q1-IT-002"
       ],
-      "briefing": "CRITICAL: KPI/observability infrastructure is catastrophically broken — the orchestrator cannot make data-driven decisions. Fix these issues in priority order:\n\n1. REPLACE all \"TBD-populate-before-orchestrator-go-live\" placeholder check commands with REAL shell commands. Affected KPIs include: pages_cdn_cached, pages_with_csp_nonce, pages_with_page_schema, wcag_fixes_shipped, inline_styles_remaining, marketplace_subs_table_shipped, fabricated_entity_removed, pillar_pages_shipped, mock_portals_cleaned, waitlist_modal_active, i18n_coverage_pct, images_optimized_pct, pitch_deck_v2_shipped, cs_macros_count, render_scale_plan_documented, dpdp_user_rights_endpoint_live, programmatic_pages_live, help_articles_published, i18n_string_coverage_pct, sentry_slo_dashboard_live, burn_dashboard_live, read_replica_decision_documented, failover_rto_minutes, failover_runbook_complete, privacy_policy_v2_live. Each should be a simple file-existence check, grep count, or API call.\n\n2. BUILD missing /api/metrics/* HTTP endpoints (currently 404): funnel_events_wired, ab_flags_active, wedding_muhurat_lookups, voice_pandit_sessions_daily, affiliate_tracked_signups, preseed_landing_signups, tier2_city_mau_sum, nps_score, ar_puja_sessions_daily, city_active_users_*, new_cities_live_total, mau_total, retention_d30_pct, au_signups_monthly, nri_mix_pct, adopt_temple_conversion_pct, festival_pre_sale_conv_pct, api_p95_ms.\n\n3. FIX shell syntax errors in check commands (parentheses in grep commands causing \"/bin/sh: Syntax error\"): posthog_web_active, mock_fallback_killed, b2b_api_endpoints_live.\n\n4. FIX SQL permission denied: multilingual_macros_count (sql/cs/multilingual-macro-impact.sql — Permission denied).\n\n5. Working KPIs showing critical zeros: razorpay_live_active=0 (payments NOT live), cron_auth_token_set=0 (cron auth NOT set — security risk). Investigate and fix if in scope.\n\nDo NOT touch R-Q1-IT-003, R-Q1-IT-005, R-Q2-IT-001 — these are founder-blocked. Do NOT touch R-Q1-E-001 (architecture decision blocked). Focus on what you can ship: metrics endpoint code, check command scripts, and observability config.",
-      "estTokens": 20000
+      "briefing": "CRITICAL OBSERVABILITY CRISIS: Nearly all KPIs are returning errors. Three failure patterns: (1) HTTP 404/500 on metric endpoints — /api/v1/metrics/* routes may not be registered or the metrics service is down. (2) \"TBD-populate-before-orchestrator-go-live\" placeholder shell commands — these must be replaced with real queries (grep, curl, sql, etc.). (3) Shell syntax errors — several KPI commands have unescaped parentheses causing /bin/sh \"Syntax error\" (e.g., posthog_web_active, mock_fallback_killed, b2b_api_endpoints_live commands). Also: cron_auth_token_set=0 (CRON_AUTH_TOKEN not set in Render env — cron endpoints unauthenticated, likely why queue consumer is broken). Tasks: (1) Audit all KPI definition files, categorize by failure type. (2) Fix shell syntax errors in KPI command strings (escape parentheses, quote paths). (3) Replace ALL \"TBD-populate-before-orchestrator-go-live\" placeholders with working commands. (4) Verify /api/v1/metrics/* endpoints exist or document what needs to be built. (5) Document CRON_AUTH_TOKEN setup steps for founder. If R-Q1-IT-001 or R-Q1-IT-002 are already shipped, find next non-blocked IT items from docs/roadmap/_index.json. Do NOT touch R-Q1-IT-003 or R-Q1-IT-005 (founder-blocked U6/U12). NEVER violate free-tier: CF 500 builds/mo, GH 2000 min/mo.",
+      "estTokens": 18000
     },
     {
       "role": "cmo",
@@ -16,16 +16,42 @@
         "R-Q1-M-001",
         "R-Q1-M-002"
       ],
-      "briefing": "Advance marketing content production and SEO infrastructure. Current state: ALL marketing KPIs are broken (pillar_pages_shipped, cluster_articles_shipped, social_accounts_active, gsc_verified, founder_tweets_posted, press_pitches_sent, social_posts_scheduled all return errors or \"no manual value\"). \n\nPriority work:\n1. PILLAR PAGES: Write and ship pillar pages for key topics (deity-of-day, festival calendar, puja types, wedding muhurat). Each pillar page should target a high-volume SEO keyword and link to cluster articles.\n2. BLOG/CLUSTER CONTENT: Produce 3-5 cluster articles supporting pillar pages. Focus on terms with Indian devotional search intent (puja booking, online darshan, havan at home, etc.).\n3. SOCIAL MEDIA: Draft setup checklist for Instagram, Twitter/X, YouTube — account creation, bio optimization, first 5 posts per platform.\n4. GSC VERIFICATION: Document steps needed for Google Search Console verification of darshya.online domain.\n5. FOUNDER CONTENT: Draft 3 tweet/thread templates for founder to post (do NOT post — just draft).\n\nDO NOT re-spawn R-Q2-M-011 (already in queue, 988h stale — being triaged by founder). \nDO NOT touch R-Q1-M-003 (U8 blocked), R-Q1-M-010 (U7 blocked), R-Q2-M-006 (U2 blocked), R-Q2-M-008 (U7 blocked), R-Q2-M-011 (in queue).\nDO NOT touch R-Q3-M-* or R-Q4-M-* items (all founder-blocked).\n\nFocus on Q1 marketing items that can ship immediately: content files in docs/agent-reports/blog-drafts/, pillar page HTML/MDX, social media setup docs.",
+      "briefing": "SEO CONTENT SPRINT: Multiple marketing KPIs are stale/erroring (pillar_pages_shipped, cluster_articles_shipped, programmatic_pages_live, pages_with_page_schema all broken). Focus on shipping content that drives organic traffic without requiring founder approval. Prioritize: (1) Deity-of-day pillar pages with proper PageSchema markup. (2) Cluster articles supporting pillar pages. (3) Programmatic SEO pages for city+puja combos (e.g., \"pandit for wedding in Indore\"). Each page must have: proper meta tags, PageSchema JSON-LD, CSP nonce headers, optimized images (next/image with width/height). Do NOT re-spawn R-Q2-M-011 (already in queue, stale 999.5h). Do NOT touch R-Q1-M-003 or R-Q1-M-010 (founder-blocked U8/U7). If R-Q1-M-001 or R-Q1-M-002 are already shipped, find next non-blocked P0 marketing items from docs/roadmap/_index.json. Revenue logic: programmatic city+puja pages = highest organic traffic ROI. Ship 5-10 pages minimum this cycle.",
       "estTokens": 15000
     },
-    {}
+    {
+      "role": "sales",
+      "itemIds": [
+        "R-Q1-S-001"
+      ],
+      "briefing": "SUPPLY PREP SPRINT: Several sales/supply items are founder-blocked (R-Q1-SA-001 WhatsApp to 5 priests, R-Q1-S-008 gaushala calls, R-Q1-S-013 Google Places API key) — do NOT attempt these. Instead, prepare structured handoff packages so the founder can execute rapidly when unblocked: (1) Pandit onboarding kit — contract template, KYC checklist, pricing tiers, commission structure doc. (2) Temple outreach script + LOI template (revenue-share model). (3) Gaushala outreach kit refinement (if R-Q1-S-008 handoff exists in docs/agent-reports/sales/, review and enhance it). (4) B2B pilot scope template for corporate Diwali puja packages. Check R-Q1-S-001 in docs/roadmap/ — if already shipped, find next non-blocked sales/supply item from _index.json. Focus on artifacts that reduce founder time-to-execute from hours to minutes. Revenue logic: every day supply is unprepared, demand-side conversions fail — prep work compounds founder execution speed.",
+      "estTokens": 12000
+    },
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q1-CS-001",
+        "R-Q1-CS-003"
+      ],
+      "briefing": "SUPPORT MACROS SPRINT: CS KPIs are stale (cs_macros_count, multilingual_macros_count, help_articles_published all erroring). Focus on: (1) Ship English-language WhatsApp support macros for top 10 query types (booking help, refund request, priest rescheduling, payment failure, festival timing, puja materials list, cancellation, group booking, NRI payment help, astrologer consultation). (2) Ship help center articles (5 minimum) for booking flow, refund policy, FAQ. (3) Prepare multilingual macro TEMPLATES for ta/te/bn/mr — but do NOT mark as shipped (R-Q2-CS-003 is blocked on native-speaker review + Wati Meta template approval). (4) Fix the multilingual_macros_count KPI shell command (currently fails with \"Permission denied\" on sql/cs/multilingual-macro-impact.sql — likely a file path or permission issue). Do NOT touch R-Q1-CS-002 or R-Q1-CS-006 (founder-blocked U7). If R-Q1-CS-001 or R-Q1-CS-003 are already shipped, find next non-blocked CS items from docs/roadmap/_index.json. Revenue logic: every unanswered support query = potential churn; macros reduce response time from hours to minutes.",
+      "estTokens": 12000
+    }
   ],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 tripwire fired: queue oldest item 988.7h (>72h threshold). R-Q2-M-011 has been in queue since June 11 (~42 days) unconsumed. This is a CMO marketing item. Triage needed: (a) Is the queue processor/worker running on Render? (b) Does the item have an unresolvable dependency? (c) Should the item be killed and re-spawned fresh? (d) Is there a bug in queue consumption logic? The queue has been effectively dead for 6 weeks — this may indicate the queue→ship pipeline is broken systemically.",
-      "suggestedAction": "Check Render bg-worker status for queue consumer. Review docs/agent-reports/cmo/R-Q2-M-011-* for completion artifacts. If item is already done, mark shipped. If blocked, identify blocker. If queue worker is down, restart it. Consider killing R-Q2-M-011 and re-spawning if the work is still relevant."
+      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item > 72h unconsumed (actual: 999.5h / 41.6 days stale). R-Q2-M-011 was queued on 2026-06-11 and has never been consumed. The queue consumer process appears broken — likely related to cron_auth_token_set=0 (CRON_AUTH_TOKEN not set in Render env, so cron endpoints that process the queue are unauthenticated/disabled). This is blocking all agent output from shipping.",
+      "suggestedAction": "1) Check if Render cron job for queue consumer is running (verify CRON_AUTH_TOKEN env var is set). 2) Manually process R-Q2-M-011 output from docs/agent-reports/cmo/R-Q2-M-011-* or close it if obsolete. 3) Set CRON_AUTH_TOKEN in Render env to re-enable automated queue processing. 4) After fix, monitor queue depth — if it drops to 0, queue consumer is fixed."
+    },
+    {
+      "itemId": "R-Q1-F-003",
+      "reason": "CRITICAL REVENUE GATE: Razorpay is NOT live (razorpay_live_active=0). This item has been founder-blocked (U1) for 43 days. Without Razorpay live, zero India revenue can flow — every booking, puja, and festival pre-sale is blocked. This is the #1 revenue gate for the entire India market (CEO roadmap Q1 target). 43 days of blocked revenue is unsustainable.",
+      "suggestedAction": "1) Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Render env vars. 2) Configure Razorpay webhook endpoint (razorpay_webhook_secret). 3) Switch from test mode to live mode in Razorpay dashboard. 4) Run e2e payment test with a real ₹1 transaction. 5) Verify razorpay_live_active KPI flips to 1. If you need a sanity-check on the integration code, agent can prepare a verification script — just ask."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "ARCHITECTURE DECISION GATE: CF Pages vs Vercel vs static allowlist has been blocked for 42 days. This decision gates the entire deployment pipeline — multiple engineering items (R-Q1-E-002, R-Q1-E-008, etc.) depend on this architecture choice. 42 days of indecision is cascading across the engineering roadmap. Free-tier budget constraint: CF Pages (500 builds/mo) is the only option that stays within budget. Vercel would require paid tier.",
+      "suggestedAction": "Choose Cloudflare Pages (free-tier compatible, 500 builds/mo cap, 0% currently used). Document decision in docs/architecture/deployment-decision.md with: (1) chosen platform, (2) build command, (3) output directory, (4) env var strategy, (5) rollback procedure. This unblocks 5+ dependent engineering items. Do NOT choose Vercel — it violates free-tier budget constraints."
     }
   ],
   "kills": [],
@@ -37,10 +63,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-23T03:49:13.849Z"
+      "firedAt": "2026-07-23T14:36:52.592Z"
     }
   ],
-  "savedAt": "2026-07-23T03:53:05.862Z",
+  "savedAt": "2026-07-23T14:40:28.804Z",
   "consumed": true,
-  "consumedAt": "2026-07-23T03:56:27.510Z"
+  "consumedAt": "2026-07-23T14:47:52.969Z"
 }
