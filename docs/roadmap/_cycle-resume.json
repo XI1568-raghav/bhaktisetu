@@ -1,45 +1,58 @@
 {
-  "cycleId": "C-20260725T0340",
+  "cycleId": "C-20260725T1404",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q1-E-001"
+        "R-Q2-E-001",
+        "R-Q2-E-002"
       ],
-      "briefing": "R-Q1-E-001 is founder-blocked on 'architecture-decision-required-cf-pages-vs-vercel-vs-static-allowlist' for 44 days. This is likely blocking multiple downstream engineering items.\n\nYOUR JOB: Prepare a decision-ready comparison doc that lets the founder APPROVE in <15 minutes. This is NOT a ship task — the founder makes the final architecture call.\n\nDeliver a thorough comparison matrix at docs/engineering/R-Q1-E-001-architecture-decision.md covering CF Pages vs Vercel vs static-allowlist across:\n1. Build minutes/month under free tier (CF 500 builds cap — we must NOT exceed)\n2. CDN edge locations relevant to India + NRI markets (US, UK, AU, SG, CA)\n3. Security: CSP nonce support, header control, environment variable management\n4. DX: preview deploys, rollback, branch-based environments\n5. Cost trajectory at scale (when we outgrow free tier)\n6. Migration effort from current setup (what files/configs change)\n7. Framework compatibility (Next.js 14+ App Router, SSR/SSG/ISR)\n\nInclude a CLEAR RECOMMENDATION with rationale, ranked #1/#2/#3. The founder should be able to read the recommendation section alone and decide.\n\nCRITICAL CONSTRAINTS:\n- DO NOT attempt to ship, merge, or deploy anything\n- DO NOT modify any infrastructure config\n- DO NOT violate free-tier budgets\n- This is a PREP/HANDOFF deliverable only — write the doc, commit it, and stop\n- The item remains founder-blocked until the founder approves the architecture choice",
-      "estTokens": 12000
-    },
-    {
-      "role": "sales",
-      "itemIds": [
-        "R-Q1-SA-001"
-      ],
-      "briefing": "R-Q1-SA-001 is founder-blocked on 'founder_must_send_whatsapp_to_5_priests' for 45 days. No handoff doc exists yet (unlike R-Q1-S-008 and R-Q1-S-013 which already have agent artifacts shipped).\n\nYOUR JOB: Prepare a ready-to-send WhatsApp outreach package so the founder can execute in <10 minutes. This is NOT a ship task — the founder must personally send the WhatsApp messages.\n\nDeliver at docs/supply/R-Q1-SA-001-whatsapp-package.md:\n1. 5 target priest contacts from the existing supply pipeline — for each: name, phone number, city, specialization (puja types), and why they were selected (tier-1 criteria)\n2. Personalized WhatsApp message template for EACH priest in Hindi+English (not a generic template — reference their city/specialization)\n3. Follow-up message template for Day 3 if no response (polite, non-pushy)\n4. A one-page onboarding summary PDF/page link to attach or reference\n5. Expected response timeline and what to do when a priest says yes (next steps in the supply onboarding flow)\n\nAlso check: does docs/supply/ have an existing priest pipeline list? Use it. If not, identify priests from temple listings, gaushala contacts, or astrologer networks already in the system.\n\nCRITICAL CONSTRAINTS:\n- DO NOT send any WhatsApp messages — founder must send personally\n- DO NOT create fake priest contacts — use only real data from the system\n- DO NOT attempt to ship the item\n- This is artifact PREP only — write the doc, commit it, and stop\n- The item remains founder-blocked until founder confirms messages sent",
-      "estTokens": 6000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q1-CS-002",
-        "R-Q1-CS-006"
-      ],
-      "briefing": "R-Q1-CS-002 (45 days) and R-Q1-CS-006 (44 days) are both founder-blocked on U7. No handoff docs exist yet for either.\n\nYOUR JOB: Investigate the U7 blocker and prepare everything that CAN be done without the U7 founder decision. This is NOT a ship task.\n\nStep 1: Read docs/activation-gates.md to understand what U7 is (it's an activation gate / founder decision). Document what U7 requires the founder to decide or do.\n\nStep 2: For each item (R-Q1-CS-002 and R-Q1-CS-006), identify what work is INDEPENDENT of the U7 decision:\n- Can CS macros/templates be drafted?\n- Can support process docs be written?\n- Can multilingual response templates be prepared?\n- Can escalation flow diagrams be created?\n\nStep 3: Prepare all U7-independent artifacts. Be thorough — the goal is to have everything ready so that once the founder unblocks U7, these items can ship within hours.\n\nStep 4: Write a consolidated unblocking doc at docs/cs/R-Q1-CS-002-006-unblock-plan.md that:\n- Explains what U7 is (from activation-gates.md)\n- Lists what's already prepped (artifacts created)\n- Lists exactly what founder decision/action U7 requires\n- Estimates time-to-ship once U7 is resolved\n\nCRITICAL CONSTRAINTS:\n- DO NOT attempt to ship either item\n- DO NOT make the U7 decision yourself — only the founder can\n- This is PREP only — write docs, commit them, and stop\n- Both items remain founder-blocked until U7 is resolved",
-      "estTokens": 8000
+      "briefing": "CRITICAL CONTEXT: razorpay_live_active=0 (no payment processing — zero revenue possible), cron_auth_token_set=0 (security gap), nearly all KPIs returning 404/500 (observability broken). These two Q2 engineering items are NOT founder-blocked and should be advanced.\n\nFor these items:\n1. Verify current status in docs/roadmap/_index.json — if already shipped, report and move on\n2. Focus on highest revenue-impact work: if either item relates to payment integration (Razorpay/Stripe), prioritize it — without payments live, no revenue flows\n3. If items relate to API/infrastructure, ensure they align with CF Pages as deployment target (R-Q1-E-001 architecture decision is pending but CF Pages is the recommended path)\n4. Ship code changes via PRs, document in docs/engineering/R-Q2-E-00X-*.md\n5. Respect free-tier: GH Actions <2000min/mo, CF builds <500/mo, Render <750h/mo\n\nDO NOT attempt R-Q1-E-001 (architecture decision — founder-blocked) or any other founder-blocked engineering item. Work only on R-Q2-E-001 and R-Q2-E-002.",
+      "estTokens": 22000
     },
     {
       "role": "cmo",
       "itemIds": [
-        "R-Q1-M-003"
+        "R-Q2-M-001",
+        "R-Q2-M-002"
       ],
-      "briefing": "R-Q1-M-003 is founder-blocked on U8 for 45 days. No handoff doc exists yet.\n\nYOUR JOB: Investigate the U8 blocker and prepare everything that CAN be done without the U8 founder decision. This is NOT a ship task.\n\nStep 1: Read docs/activation-gates.md to understand what U8 is. Document what U8 requires the founder to decide or do.\n\nStep 2: IMPORTANT CONTEXT — Three experiments (EXP-001 hero_copy_v2, EXP-002 cta_color_test, EXP-003 nri_lane_above_fold) are all planned but stale, all linked to R-Q1-E-009 which is ALSO U8-blocked. Investigate whether U8 is related to experimentation/A/B testing infrastructure or PostHog setup. If U8 unblocking would also unblock these experiments, note that in your doc — that multiplies the impact of the founder's U8 decision.\n\nStep 3: Identify what marketing work is INDEPENDENT of U8:\n- Can content/SEO drafts be written?\n- Can social media calendar be prepared?\n- Can pillar/cluster page outlines be drafted?\n- Can NRI audience research be compiled?\n\nStep 4: Prepare all U8-independent artifacts.\n\nStep 5: Write an unblocking doc at docs/marketing/R-Q1-M-003-unblock-plan.md that:\n- Explains what U8 is (from activation-gates.md)\n- Lists what's already prepped\n- Lists exactly what founder decision/action U8 requires\n- Notes the cross-impact on EXP-001/002/003 and R-Q1-E-009\n- Estimates time-to-ship once U8 is resolved\n\nCRITICAL CONSTRAINTS:\n- DO NOT attempt to ship the item\n- DO NOT make the U8 decision yourself — only the founder can\n- DO NOT re-spawn R-Q2-M-011 (it's in queue, being deferred to founder separately)\n- This is PREP only — write docs, commit them, and stop\n- The item remains founder-blocked until U8 is resolved",
-      "estTokens": 8000
+      "briefing": "CONTEXT: R-Q2-M-011 is already in queue (stale 1047h) — do NOT touch it. These two different CMO items (R-Q2-M-001, R-Q2-M-002) are NOT founder-blocked and NOT in queue.\n\nMarketing KPIs are all stale/404 — observability for marketing metrics is broken. Focus on:\n1. Verify current status of R-Q2-M-001 and R-Q2-M-002 in roadmap — if shipped, report\n2. If items relate to SEO/content: ship pillar pages, cluster articles, programmatic SEO pages\n3. If items relate to social: set up scheduled posts, verify social accounts active\n4. If items relate to NRI diaspora outreach: advance WA group seeding, diaspora org engagement\n5. All content must be multilingual-ready (en/hi + eventually ta/te/bn/mr)\n6. Ship artifacts to docs/agent-reports/cmo/R-Q2-M-00X-*.md\n\nDO NOT work on R-Q2-M-006, R-Q2-M-008, R-Q2-M-011 (founder-blocked or in queue). DO NOT work on R-Q1-M-003, R-Q1-M-010 (founder-blocked).",
+      "estTokens": 18000
+    },
+    {
+      "role": "sales",
+      "itemIds": [
+        "R-Q2-S-001",
+        "R-Q2-S-002"
+      ],
+      "briefing": "CONTEXT: Supply is critical — R-Q1-SA-001 (founder must WhatsApp 5 priests) is blocked 45 days, R-Q1-S-008 (gaushala outreach) is blocked, R-Q1-S-013 (Google Places API key missing) is blocked. These Q2 sales items are NOT blocked and can advance.\n\nFocus on:\n1. Verify current status of R-Q2-S-001 and R-Q2-S-002 in roadmap — if shipped, report\n2. If items relate to priest/temple supply onboarding: advance KYC flow, contract templates, onboarding kits\n3. If items relate to B2B LOIs: scope pilot agreements, outreach scripts\n4. If items relate to demand-side: advance user acquisition funnels\n5. Ship structured handoff documents for any founder-execution items (don't block — ship the kit, defer the dial)\n6. All supply artifacts to docs/agent-reports/sales/ or docs/supply/\n\nDO NOT work on R-Q1-S-008, R-Q1-S-013, R-Q1-SA-001, R-Q1-SA-006, R-Q3-S-002, R-Q3-SA-001/003/004, R-Q4-SA-001/003 (all founder-blocked).",
+      "estTokens": 18000
+    },
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q2-CS-001",
+        "R-Q2-CS-002"
+      ],
+      "briefing": "CONTEXT: R-Q1-CS-002 and R-Q1-CS-006 are founder-blocked (45/44 days). R-Q2-CS-003 is blocked (native-speaker review + Wati Meta template approval). These Q2 CS items are NOT blocked.\n\nFocus on:\n1. Verify current status of R-Q2-CS-001 and R-Q2-CS-002 in roadmap — if shipped, report\n2. If items relate to support macros: build multilingual macro library (en/hi at minimum), document in docs/cs/macros/\n3. If items relate to help articles: publish help center content, FAQ pages\n4. If items relate to WhatsApp support: advance Wati integration setup (but do NOT submit Meta templates — that's founder-blocked in R-Q2-CS-003)\n5. If items relate to churn/NPS: build feedback collection mechanisms\n6. Ship artifacts to docs/agent-reports/cs/R-Q2-CS-00X-*.md\n\nDO NOT work on R-Q1-CS-002, R-Q1-CS-006, R-Q2-CS-003 (founder-blocked). Focus on what CAN ship without founder intervention.",
+      "estTokens": 16000
     }
   ],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 tripwire fired: queue oldest item 1036.6h (43 days) unconsumed. R-Q2-M-011 (CMO) has been stuck in queue for 43 days with no shipping. This is the only queue item and the queue consumer appears stalled. Founder must triage: (a) Is the queue consumer/worker process running on Render? (b) Does R-Q2-M-011 have an unmet dependency blocking shipment? (c) Should this item be manually shipped or killed? The queue depth of 1 with 43-day staleness suggests a systemic queue processing failure, not just an item-specific issue.",
-      "suggestedAction": "Check Render bg-worker logs for queue consumer errors. If queue consumer is broken, fix the worker process. If item is dependency-blocked, identify and resolve the dependency. If item is obsolete, kill it. Either way, clear the queue so future items can flow."
+      "reason": "T-010 tripwire fired: queue oldest item >72h unconsumed (1047h / ~43.6 days stale). R-Q2-M-011 has been sitting in the CMO queue since June 11 with no consumption. This is blocking the entire agent queue pipeline — no other items can ship through queue while this remains stuck. Founder must triage: either (a) manually complete/ship this item if artifacts are ready, (b) kill it if strategically obsolete, or (c) reassign to a different role if CMO is not the right owner. The queue is a single-slot bottleneck right now.",
+      "suggestedAction": "Review docs/agent-reports/cmo/R-Q2-M-011-* for shipped artifacts. If complete, mark shipped and clear queue. If blocked, kill with replacement. If misassigned, reassign role. Queue must drain before next cycle for pipeline health."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) has been pending 44 days. This is a foundational infrastructure decision that blocks downstream engineering work. Every day unresolved creates technical debt and prevents agents from making consistent deployment assumptions. Multiple Q2/Q3 engineering items likely depend on this decision being made.",
+      "suggestedAction": "Make a binary decision now. Recommended: Cloudflare Pages (aligns with free-tier budget constraints, zero egress, native CDN caching). Document decision in docs/engineering/architecture-decision-cf-pages.md. Unblock all dependent engineering items by setting CF_PAGES as the canonical deployment target. This single decision likely unblocks 5-10 downstream engineering items."
+    },
+    {
+      "itemId": "R-Q1-SA-001",
+      "reason": "Founder must personally send WhatsApp messages to 5 priests — blocked 45 days. This is the #1 supply-side blocker. Without priests onboarded, no bookings can be fulfilled, meaning zero revenue regardless of demand-side work. razorpay_live_active: 0 means even if bookings came, payment wouldn't process. Both supply and payment are stalled simultaneously, creating a complete revenue freeze.",
+      "suggestedAction": "Send 5 WhatsApp messages to T1 priests today using the outreach kit already shipped by sales agent (docs/agent-reports/sales/R-Q1-SA-001-*). Even 2/5 positive responses unblocks the supply pipeline. This is 30 minutes of founder time that has been deferred for 45 days. Escalate to P0-founder-daily-standup."
     }
   ],
   "kills": [],
@@ -51,10 +64,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-25T03:42:26.383Z"
+      "firedAt": "2026-07-25T14:05:51.078Z"
     }
   ],
-  "savedAt": "2026-07-25T03:45:34.861Z",
+  "savedAt": "2026-07-25T14:08:22.699Z",
   "consumed": true,
-  "consumedAt": "2026-07-25T03:49:24.918Z"
+  "consumedAt": "2026-07-25T14:18:23.449Z"
 }
