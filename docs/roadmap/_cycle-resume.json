@@ -1,14 +1,32 @@
 {
-  "cycleId": "C-20260728T1440",
+  "cycleId": "C-20260729T0343",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q1-IT-001",
-        "R-Q1-IT-004"
+        "R-Q2-E-001",
+        "R-Q2-E-002"
       ],
-      "briefing": "CRITICAL OBSERVABILITY FAILURE: Nearly all KPI metrics are returning HTTP 404 or 500 errors. The metrics infrastructure is down. Specific signals: (1) api_p95_ms → HTTP 404, (2) mau_total → HTTP 404, (3) pages_cdn_cached → GraphQL syntax error 'TBD-populate-before-orchestrator-go-live', (4) sentry_dsn_active → no manual value (stale), (5) sentry_slo_dashboard_live → command failed 'TBD-populate-before-orchestrator-go-live', (6) Many KPIs fail with shell errors like 'TBD-populate-before-orchestrator-go-live: not found' — indicating metric check scripts reference placeholder commands that were never replaced. \n\nTASKS: \n- R-Q1-IT-001: Deploy/fix Sentry DSN configuration. Verify sentry_dsn_active KPI returns true. Wire Sentry release tracking. Check if Sentry DSN env var is set in Render.\n- R-Q1-IT-004: Fix metrics endpoint infrastructure. Multiple KPI check scripts reference 'TBD-populate-before-orchestrator-go-live' as a placeholder — replace ALL TBD placeholders with actual check commands. Deploy /api/v1/metrics endpoints that return real values for api_p95_ms, mau_total, retention_d30_pct, etc. \n\nCONSTRAINTS: Do NOT touch R-Q1-IT-003 (cron auth — founder-blocked on U6) or R-Q1-IT-005 (blocked U12) or R-Q2-IT-001 (blocked U6). Stay within free-tier: GH 2000min/mo, CF 500 builds/mo, Render 750h/mo. The queue pipeline is currently broken (T-010) — produce artifacts that can be manually reviewed and deployed. Check docs/free-tier-budgets.md before any build.",
-      "estTokens": 22000
+      "briefing": "CRITICAL OBSERVABILITY GAP: ALL KPI endpoints return 404/500/TBD errors — we are flying blind with zero measurement capability. The GraphQL metric queries fail with 'TBD-populate-before-orchestrator-go-live' placeholder commands. Live metrics show: razorpay_live_active=0 (NO payment collection), cron_auth_token_set=0 (security gap), uptime_monitors_active=4 (basic monitoring works but KPI endpoints don't).\n\nPrioritize in this order:\n1. Fix the metrics/health endpoint infrastructure so KPI queries succeed. The placeholder 'TBD-populate-before-orchestrator-go-live' commands must be replaced with real implementations (grep/wrangler/curl commands that actually query the API or DB).\n2. If either R-Q2-E-001 or R-Q2-E-002 relates to payment integration or Razorpay, prioritize completing it — razorpay_live_active=0 means zero revenue.\n3. cron_auth_token_set=0 — ensure CRON_AUTH_TOKEN is documented as a required Render env var and the cron endpoint validates it.\n4. Check if items depend on founder-blocked items (R-Q1-E-001 architecture decision, R-Q1-E-002 U1). If so, document the dependency clearly in the handoff.\n\nShip working code + handoff docs. Do NOT ship plans or TODOs.",
+      "estTokens": 18000
+    },
+    {
+      "role": "cmo",
+      "itemIds": [
+        "R-Q2-M-001",
+        "R-Q2-M-002"
+      ],
+      "briefing": "Marketing/distribution focus. Most KPIs are broken so you cannot rely on measurement — prioritize shipping TANGIBLE artifacts that drive signups independently:\n\n1. SEO content: Ship pillar pages, blog drafts, deity-of-day cluster articles. Write actual markdown content files, not outlines.\n2. Social media: Prepare social account setup guides, content calendars, and scheduled post drafts. social_posts_scheduled and social_accounts_active have no manual value — basic social presence isn't established.\n3. NRI outreach: If either item relates to NRI/diaspora marketing, prioritize it — NRI mix is a key CEO roadmap target.\n4. GSC verification: gsc_verified has no manual value — prepare the verification checklist if not done.\n\nIMPORTANT: R-Q2-M-011 is in queue (DO NOT touch it). R-Q2-M-006 and R-Q2-M-008 are founder-blocked — do not attempt those.\n\nShip concrete deliverables: content files in docs/agent-reports/cmo/, social post drafts, landing page copy. Not just strategies.",
+      "estTokens": 15000
+    },
+    {
+      "role": "sales",
+      "itemIds": [
+        "R-Q1-S-001",
+        "R-Q1-S-002"
+      ],
+      "briefing": "Supply onboarding focus. Key context:\n- R-Q1-SA-001 (WhatsApp 5 priests) is FOUNDER-BLOCKED — do NOT attempt this. The founder has been deferred to action it.\n- R-Q1-S-008 (gaushala calls) and R-Q1-S-013 (Google Places API key) are also founder-blocked.\n- R-Q1-SA-006 is founder-blocked.\n\nFocus on what agents CAN ship:\n1. Pandit/temple supply pipeline: Build outreach kits, cold email/WhatsApp templates, LOI templates, onboarding checklists. Ship structured documents that the founder can execute.\n2. Demand-side: B2B lead lists, corporate Diwali account research, qualified lead profiles.\n3. Supply verification: Temple/pandit data collection templates, KYC checklist documents.\n\nShip structured handoff documents in docs/agent-reports/sales/ with ready-to-use templates and contact lists. The founder needs execution-ready kits, not strategy docs.",
+      "estTokens": 15000
     },
     {
       "role": "cs",
@@ -16,35 +34,25 @@
         "R-Q1-CS-001",
         "R-Q1-CS-003"
       ],
-      "briefing": "CS INFRASTRUCTURE GAPS: Multiple CS KPIs are stale or broken. (1) multilingual_macros_count → SQL permission denied (sql/cs/multilingual-macro-impact.sql: Permission denied) — the SQL query file exists but cannot be executed. (2) cs_macros_count → stale, no manual value. (3) cs_macros_documented → stale. (4) wa_support_active → stale. (5) founder_inbox_auto_ack_pct → stale. (6) nps_score → HTTP 404. (7) wa_bot_auto_resolve_pct → stale.\n\nTASKS:\n- R-Q1-CS-001: Create CS macro templates for common query categories (booking confirmation, refund status, pandit reschedule, ceremony pricing, cancellation). Produce macros in hi/en at minimum. Document in docs/cs/macros/. Fix the SQL file permissions issue for multilingual-macro-impact.sql.\n- R-Q1-CS-003: Set up founder inbox auto-acknowledgment flow. When a user emails/fills contact form, auto-respond with expected response time. Wire via Resend (100/day free tier — stay within). Create Wati WhatsApp support macro templates for first-response.\n\nCONSTRAINTS: Do NOT touch R-Q1-CS-002 (blocked U7), R-Q1-CS-006 (blocked U7), or R-Q2-CS-003 (blocked — native speaker review required). Stay within Resend 100 emails/day free tier. The queue pipeline is broken — produce artifacts for manual review. Check docs/cs/ for existing macro drafts before creating new ones.",
-      "estTokens": 18000
-    },
-    {
-      "role": "cmo",
-      "itemIds": [
-        "R-Q1-M-001",
-        "R-Q1-M-002"
-      ],
-      "briefing": "MARKETING FOUNDATION GAPS: Multiple marketing KPIs are stale. (1) pillar_pages_shipped → stale (TBD placeholder). (2) cluster_articles_shipped → stale (command not found). (3) social_accounts_active → stale. (4) gsc_verified → stale. (5) social_posts_scheduled → stale. (6) press_pitches_sent → stale. (7) programmatic_pages_live → stale. (8) images_optimized_pct → stale.\n\nTASKS:\n- R-Q1-M-001: Create foundational SEO pillar pages. Priority pillars: 'Online Puja Booking' (hero), 'Wedding Muhurat Calculator', 'Hindu Priest Booking'. Each pillar page should be 1500+ words, include JSON-LD schema (Service/LocalBusiness), target high-intent keywords. Check if GSC verification meta tag is deployed. Draft 3 deity-of-day cluster articles supporting the puja booking pillar.\n- R-Q1-M-002: Set up social media distribution accounts (Twitter/X, Instagram, YouTube). Create founder Twitter thread templates (3-5 threads about the Darshya vision, online puja access for NRIs, temple adoption program). Schedule first 5 posts. Check docs/marketing/ for existing brand voice guidelines.\n\nCONSTRAINTS: Do NOT touch R-Q1-M-003 (blocked U8), R-Q1-M-010 (blocked U7), R-Q2-M-006 (blocked U2), R-Q2-M-008 (blocked U7), or R-Q2-M-011 (in queue — T-010 tripwire, DO NOT duplicate). Stay within free-tier. The queue is broken — produce content artifacts as markdown files in docs/agent-reports/cmo/ for manual review and deployment.",
-      "estTokens": 20000
-    },
-    {}
+      "briefing": "Support infrastructure focus. Critical gaps: wa_support_active and founder_inbox_auto_ack_pct have no manual value — basic support isn't wired. multilingual_macros_count query fails with permission denied.\n\nPrioritize:\n1. CS macro templates for common queries: booking confirmation, refund requests, rescheduling, pandit no-show, payment failure. Write actual template text in Hindi + English (and ta/te/bn/mr if possible).\n2. WhatsApp support bot setup or Wati integration preparation document — what's needed to go live.\n3. Help center article drafts: How to book a puja, How to reschedule, Refund policy, What to expect, Privacy FAQs.\n4. Auto-acknowledge flow spec for founder inbox — template for automatic reply when users message support.\n\nIMPORTANT: R-Q1-CS-002 and R-Q1-CS-006 are founder-blocked (U7). R-Q2-CS-003 is founder-blocked (native-speaker review). Do NOT attempt those.\n\nShip actual template files and article drafts in docs/agent-reports/cs/. Not just outlines — ready-to-paste content.",
+      "estTokens": 12000
+    }
   ],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item at 1119.6h (46.6 days) unconsumed. CI/CD pipeline appears broken — budget shows 0% GH/CF usage confirming no builds are running. R-Q2-M-011 (CMO item) has been sitting in queue since June 11. This is a systemic pipeline failure, not an item-specific issue. Founder must: (1) check Render bg-worker / CI runner status, (2) verify queue consumer process is alive, (3) manually process or re-queue R-Q2-M-011, (4) confirm webhook from orchestrator → queue consumer is functional. All KPI endpoints also returning 404/500 — observability stack may share the same root cause.",
-      "suggestedAction": "1. SSH into Render and check bg-worker logs for queue consumer. 2. Verify REDIS_URL / queue connection. 3. Manually trigger R-Q2-M-011 processing or drain queue. 4. Check if metrics API deployment is stale (all KPIs returning 404)."
+      "reason": "T-010 TRIPWIRE FIRED: Queue item stuck 1132.6h (~47 days) unconsumed. This is the oldest queue item and has been blocking queue throughput for nearly 7 weeks. The CMO agent that was supposed to ship this item either failed or its output was never consumed. Must triage immediately: (1) Check docs/agent-reports/cmo/R-Q2-M-011-* for any shipped artifacts — if complete, mark as shipped and clear queue. (2) If artifacts are incomplete or missing, decide whether to re-brief or kill the item. (3) Clear the queue entry so the orchestrator can schedule new work. Queue stagnation is blocking the entire delivery pipeline.",
+      "suggestedAction": "Review docs/agent-reports/cmo/ for R-Q2-M-011 artifacts. If shipped, update roadmap status to 'shipped' and remove from queue. If not, either re-spawn with corrected scope or kill item and remove from queue. This must be resolved within 24h — 47 days of queue staleness is a systemic failure."
     },
     {
-      "itemId": "R-Q1-IT-003",
-      "reason": "SECURITY ESCALATION: cron_auth_token_set = 0 confirmed live (fetchedAt 2026-07-28T14:40:48Z, stale=false). Unauthenticated cron endpoints are an active security vulnerability — anyone who discovers the cron URL can trigger jobs (data exfiltration, resource exhaustion, unauthorized writes). This item has been blocked on U6 for 48 days. The founder action required is likely setting CRON_AUTH_TOKEN in Render env vars (a 2-minute task). Given the queue pipeline is also broken, cron endpoints being open compounds the risk. This must be resolved before any public deployment.",
-      "suggestedAction": "Generate a secure random token, set CRON_AUTH_TOKEN in Render environment variables, verify cron endpoints return 401 without header and 200 with Bearer token. Total time: <5 minutes."
+      "itemId": "R-Q1-SA-001",
+      "reason": "49 days blocked on 'founder_must_send_whatsapp_to_5_priests'. This is a 15-minute action that has been overdue for 7 weeks. The outreach kit and priest contact list should already be prepared by the sales agent. Every day this is delayed, the supply pipeline (pandit onboarding) is stalled, which means no bookings can be fulfilled. This is the single highest-leverage founder action remaining — 5 WhatsApp messages could unblock the entire supply side.",
+      "suggestedAction": "Locate the priest outreach kit (likely in docs/agent-reports/sales/ or docs/supply/). Send WhatsApp messages to the 5 listed priests with the prepared template. Document responses in the same folder. Once sent, update item status to unblock downstream supply work. Target: complete within 48h."
     },
     {
-      "itemId": "R-Q1-E-001",
-      "reason": "ARCHITECTURE DECISION ESCALATION: Stale 47 days. 'CF Pages vs Vercel vs static allowlist' decision is blocking multiple downstream engineering items (R-Q1-E-008, E-009 on U8; R-Q2-E-004 on U3). The deployment platform choice affects build pipeline, CSP headers, edge function strategy, and free-tier budget allocation. With the CI queue already broken (T-010), this decision is even more critical — the founder must choose the deployment target so the pipeline can be rebuilt correctly. Recommend: Cloudflare Pages (stays within free tier, matches CF 500/mo build cap, no Vercel vendor lock-in). This is a 30-minute decision that unblocks 5+ items.",
-      "suggestedAction": "Review docs/free-tier-budgets.md and docs/engineering/R-Q1-E-001-handoff.md. Make a binary decision: CF Pages (recommended, free-tier aligned) vs Vercel vs static S3+CF. Document decision in docs/architecture/deployment-platform-decision.md. This unblocks U8 and U3 gates."
+      "itemId": "R-Q1-S-013",
+      "reason": "48 days blocked on 'GOOGLE_PLACES_API_KEY missing in Render env'. This is a 5-minute config fix in the Render dashboard that has been overdue for nearly 7 weeks. Without this key, temple verification and Google Places lookup functionality is completely non-functional, blocking the entire temple/geography supply pipeline. The handoff doc already exists at docs/supply/R-Q1-S-013-handoff.md.",
+      "suggestedAction": "1. Go to Google Cloud Console, enable Places API, generate an API key. 2. Add GOOGLE_PLACES_API_KEY to Render environment variables. 3. Redeploy the API service. 4. Verify with a test call. Total time: 5-10 minutes. This unblocks all temple verification work. Target: complete within 24h."
     }
   ],
   "kills": [],
@@ -56,10 +64,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-28T14:42:18.315Z"
+      "firedAt": "2026-07-29T03:44:58.252Z"
     }
   ],
-  "savedAt": "2026-07-28T14:46:08.035Z",
+  "savedAt": "2026-07-29T03:48:44.240Z",
   "consumed": true,
-  "consumedAt": "2026-07-28T14:51:39.223Z"
+  "consumedAt": "2026-07-29T03:54:10.647Z"
 }
