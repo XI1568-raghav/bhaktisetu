@@ -1,58 +1,41 @@
 {
-  "cycleId": "C-20260730T0332",
+  "cycleId": "C-20260730T1434",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q2-E-001",
-        "R-Q2-E-003"
+        "R-Q1-IT-004",
+        "R-Q2-E-001"
       ],
-      "briefing": "Advance R-Q2-E-001 and R-Q2-E-003 (engineering items not in founder-blocked list). CRITICAL CONTEXT: 47+ KPIs are returning HTTP 404/500 — the observability/metrics endpoints are broken. This is a systemic issue preventing the orchestrator from detecting ready-to-ship items across ALL departments. Also: cron_auth_token_set=0 (security gap — cron endpoints unprotected), razorpay_live_active=0 (payment gateway not live, revenue blocked). Priority actions: (1) Fix any broken metrics/health/KPI endpoints that other departments depend on. (2) Set or verify cron auth token for endpoint security. (3) If either item relates to Razorpay integration, prioritize that as revenue blocker #1. Check depends_on DAG before proceeding — if dependencies aren't met, document and stop. If items are already shipped or don't exist, report back immediately without wasting cycles. Stay within GH 2000min/month, CF 500 builds/month, Render 750h/month free-tier caps — NEVER violate.",
-      "estTokens": 18000
+      "briefing": "CRITICAL OBSERVABILITY CRISIS: 40+ KPI metrics are returning errors ('TBD-populate-before-orchestrator-go-live', HTTP 404/500). The metrics evaluation pipeline is non-functional — the company cannot measure anything data-driven. Also: cron_auth_token_set=0 (security gap — cron endpoints unprotected), uptime_monitors_active=4 (partial).\n\nTasks for R-Q1-IT-004 and R-Q2-E-001:\n1) Fix broken KPI collection scripts — many metrics use placeholder commands 'TBD-populate-before-orchestrator-go-live'. Replace with actual shell/SQL commands that query the real data sources (Render API, Supabase/Postgres, Sentry, GitHub API). Target: get at least 10 core KPIs returning real values (mau_total, api_p95_ms, nps_score, retention_d30_pct, razorpay_live_active, etc.).\n2) Set CRON_AUTH_TOKEN in Render env vars — currently 0/unset. All cron endpoints are unprotected.\n3) Verify Sentry DSN is active and receiving events. If not, wire up Sentry error tracking.\n4) For R-Q2-E-001, check roadmap _index.json for its description and scope — likely engineering work not blocked by activation gates.\n\nIMPORTANT: Before starting, verify each item's status in docs/roadmap/_index.json — if already shipped, report and skip. Check depends_on DAG — do NOT work on items whose dependencies aren't verified shipped. Do NOT touch items blocked by U6/U12 activation gates (R-Q1-IT-003, R-Q1-IT-005, R-Q2-IT-001 are blocked). Stay within free-tier limits (GH 2000min/mo, CF 500 builds/mo — both at 0% currently).",
+      "estTokens": 15000
     },
     {
       "role": "cmo",
       "itemIds": [
         "R-Q2-M-001",
-        "R-Q2-M-002"
+        "R-Q2-M-003"
       ],
-      "briefing": "Advance R-Q2-M-001 and R-Q2-M-002 (marketing items not in founder-blocked list, not in queue). CRITICAL CONTEXT: Nearly all marketing KPIs are stale — social_accounts_active, gsc_verified, social_posts_scheduled, press_pitches_sent, founder_tweets_posted all show \"no manual value\". R-Q2-M-011 is already in queue (stale 1156h/48days, deferred to founder via T-010) — DO NOT re-spawn it. Priority: (1) GSC verification setup if applicable, (2) social media account creation/verification, (3) content/SEO infrastructure. Focus on work that doesn't require founder action (many M items are blocked on U2/U7/U8 gates). Check depends_on before proceeding. If items already shipped or don't exist, report back immediately. Stay within free-tier caps.",
-      "estTokens": 14000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q1-CS-003",
-        "R-Q1-CS-004"
-      ],
-      "briefing": "Advance R-Q1-CS-003 and R-Q1-CS-004 (CS items not in founder-blocked list; R-Q1-CS-002 and R-Q1-CS-006 are blocked on U7). CRITICAL CONTEXT: All CS KPIs are stale — nps_score (404), cs_macros_count (no manual value), multilingual_macros (permission denied on SQL), wa_support_active (no manual value). R-Q2-CS-003 is founder-blocked (native speaker review + Wati Meta template approval). Priority: (1) Build CS macro library (Hindi/English templates for common puja booking, refund, rescheduling queries). (2) Document support workflows. (3) Prepare WhatsApp support infrastructure that doesn't require Wati Meta template approval. Focus on agent-shippable work only — anything requiring native speaker review or Meta approval must be deferred to founder. Check depends_on before proceeding. If items already shipped or don't exist, report back immediately.",
+      "briefing": "Marketing/SEO content creation. These are Q2 marketing items NOT blocked by activation gates (blocked M items are: Q1-M-003/U8, Q1-M-010/U7, Q2-M-006/U2, Q2-M-008/U7, Q3-M-001 thru M-012, Q4-M-003).\n\nTasks for R-Q2-M-001 and R-Q2-M-003:\n1) Create pillar pages for SEO — target deity-of-day clusters, festival guides (Diwali, Navratri, Ganesh Chaturthi), and puja-type landing pages.\n2) Draft programmatic SEO page templates that can scale to hundreds of pages (city + puja-type combos, temple + deity combos).\n3) Create NRI-facing content for diaspora engagement per CEO roadmap — focus on US/UK/Singapore NRI puja needs.\n4) Set up Google Search Console verification if not already done (gsc_verified KPI is stale).\n5) Prepare social media content calendar.\n\nDeliver content as markdown files in docs/agent-reports/marketing/. Include frontmatter with target keywords, schema markup recommendations, and internal linking strategy.\n\nIMPORTANT: Before starting, verify each item's status in docs/roadmap/_index.json — if already shipped, report and skip. Check depends_on DAG. Do NOT work on items blocked by U2/U7/U8 activation gates. Note: R-Q2-M-011 is already in queue (stale 1167h) — do NOT duplicate that work.",
       "estTokens": 12000
     },
-    {
-      "role": "sales",
-      "itemIds": [
-        "R-Q1-S-003",
-        "R-Q1-S-005"
-      ],
-      "briefing": "Advance R-Q1-S-003 and R-Q1-S-005 (sales/supply items not in founder-blocked list; R-Q1-SA-001, R-Q1-SA-006, R-Q1-S-008, R-Q1-S-013 are blocked). CRITICAL CONTEXT: R-Q1-SA-001 (founder must WhatsApp 5 priests) and R-Q1-S-013 (GOOGLE_PLACES_API_KEY missing) are being deferred to founder THIS cycle — both are 49-50 days stale and block supply pipeline. Temple reply rate, ISKCON/BAP/Sringeri intro status, verified temple counts all show \"no manual value\". Priority: (1) Prepare supply onboarding kits that DON'T require founder WhatsApp action. (2) Draft B2B LOI templates. (3) Build temple/priest outreach lists for when founder unblocks SA-001. (4) Any supply research/enrichment that can proceed without GOOGLE_PLACES_API_KEY. Focus on work that creates leverage when founder unblocks the two deferred items. Check depends_on before proceeding. If items already shipped or don't exist, report back immediately. Stay within free-tier caps.",
-      "estTokens": 14000
-    }
+    {}
   ],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item >72h unconsumed — R-Q2-M-011 has been in queue for 1156.4 hours (~48 days). This is a CMO item that was spawned but never completed/processed. The queue processing pipeline appears broken. Founder must triage: (1) Is the sub-agent execution pipeline functional? (2) Does R-Q2-M-011 need to be re-spawned, manually completed, or killed? (3) Why did last cycle report lastCycleQueueFiles:0 despite spawning 3 agents? This stale queue is blocking all downstream work flow.",
-      "suggestedAction": "Founder to inspect queue worker/processor logs for R-Q2-M-011 (Q-C-20260611T2307-R-Q2-M-011). Either manually complete the CMO work, kill the queue item, or fix the queue processing pipeline so future spawns flow correctly. Consider whether the queue stale issue is a systemic bug (Render bg-worker not consuming queue)."
+      "reason": "T-010 tripwire fired: Queue oldest item > 72h unconsumed (1167.5h = 48.6 days). R-Q2-M-011 has been stuck in queue since June 11. The queue consumption mechanism appears broken — no items have been dequeued in nearly 7 weeks. This is a systemic failure: the orchestrator spawns agents, agents ship work to queue, but queue items never get consumed/merged. All downstream agent output may be accumulating without reaching production.",
+      "suggestedAction": "1) Review queue file Q-C-20260611T2307-R-Q2-M-011 — either ship the queued work manually, update with current specs, or kill if scope is stale. 2) Investigate why the queue consumer/processor is not running — check Render cron/worker status. 3) Consider whether the queue mechanism itself needs redesign before spawning more agents that produce queue output. 4) Once queue is draining, confirm with a test dequeue."
     },
     {
-      "itemId": "R-Q1-SA-001",
-      "reason": "Founder-blocked for 50 days on \"founder_must_send_whatsapp_to_5_priests\". This is the single highest-leverage supply pipeline action — 5 WhatsApp messages to priests would unblock the supply onboarding flow. No agent can send WhatsApp messages from the founder's personal number. 50 days of stagnation on a ~30-minute task is the longest-tail bottleneck in the supply vertical.",
-      "suggestedAction": "Founder to send 5 WhatsApp messages to T1 priests using the outreach kit already shipped by the sales agent. Estimated effort: 30 minutes. This unblocks R-Q1-SA-001 and cascades to supply pipeline activation. If founder cannot do this, consider whether a contractor with WhatsApp access can be authorized."
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision required (CF Pages vs Vercel vs static allowlist) — blocked 49 days. This is the single highest-leverage unblock in the entire roadmap: 15+ engineering items are cascading-blocked behind this decision (R-Q1-E-002, E-008, E-009, E-011, E-012, E-014, R-Q2-E-004, E-009, E-012, E-015, etc.). All frontend deployment, SSR/SSG, and CDN caching work is gated. 49 days of engineering throughput is lost.",
+      "suggestedAction": "Make the hosting/deployment architecture decision TODAY. Recommended: Cloudflare Pages (aligns with free-tier budget constraint of 500 builds/mo, already at 0% usage). Document decision in docs/architecture/hosting-decision.md with rationale, then update activation gate U1 to unblock all dependent items. This single decision should cascade-unblock 15+ engineering items."
     },
     {
-      "itemId": "R-Q1-S-013",
-      "reason": "Founder-blocked for 49 days on \"GOOGLE_PLACES_API_KEY missing in Render env\". Agent artifacts and handoff doc already shipped (docs/supply/R-Q1-S-013-handoff.md). This is a 5-minute Render env var configuration that would unblock Google Places API integration for temple/priest supply discovery. No agent can set Render environment variables. This blocks automated supply enrichment for every city expansion.",
-      "suggestedAction": "Founder to add GOOGLE_PLACES_API_KEY to Render environment variables (5-minute task). See docs/supply/R-Q1-S-013-handoff.md for exact key name and setup instructions. Once set, the sales agent can verify integration and proceed with supply enrichment automation."
+      "itemId": "R-Q1-F-003",
+      "reason": "U1 activation gate blocked 50 days. KPI signal: razorpay_live_active=0 — payment processing is NOT live. This is the #1 revenue blocker for the entire company. Without Razorpay live, no marketplace bookings can be paid for, meaning ZERO revenue from the core pandit-booking business. 50 days of blocked revenue is existential. CFO agent cannot resolve this — it requires founder KYC submission and account activation.",
+      "suggestedAction": "1) Complete Razorpay merchant KYC submission immediately. 2) Configure webhook endpoints in Razorpay dashboard pointing to Render API. 3) Set RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET in Render env. 4) Run end-to-end test payment in test mode. 5) Once U1 unblocked, cascade-unblock R-Q1-E-002, R-Q1-F-004, and all other U1-gated items. 6) Also set GOOGLE_PLACES_API_KEY (blocks R-Q1-S-013)."
     }
   ],
   "kills": [],
@@ -64,10 +47,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-30T03:33:42.000Z"
+      "firedAt": "2026-07-30T14:36:14.896Z"
     }
   ],
-  "savedAt": "2026-07-30T03:37:31.379Z",
+  "savedAt": "2026-07-30T14:41:44.234Z",
   "consumed": true,
-  "consumedAt": "2026-07-30T03:44:40.756Z"
+  "consumedAt": "2026-07-30T14:46:10.790Z"
 }
