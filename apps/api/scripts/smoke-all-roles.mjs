@@ -6,14 +6,14 @@ const API = process.argv[2] || 'https://api.darshya.online';
 const WEB = process.argv[3] || 'https://darshya.online';
 
 const roles = [
-  { email: 'devotee@demo.com',  role: 'devotee',    dashboard: '/dashboard' },
-  { email: 'pandit@demo.com',   role: 'priest',     dashboard: '/priest' },
-  { email: 'store@demo.com',    role: 'store',      dashboard: '/store-admin' },
-  { email: 'astro@demo.com',    role: 'astrologer', dashboard: '/astrologer-portal' },
-  { email: 'wellness@demo.com', role: 'wellness',   dashboard: '/wellness-portal' },
-  { email: 'gaushala@demo.com', role: 'gaushala',   dashboard: '/gaushala-portal' },
-  { email: 'temple@demo.com',   role: 'temple',     dashboard: '/temple-portal' },
-  { email: 'admin@demo.com',    role: 'admin',      dashboard: '/admin' },
+  { email: 'devotee@demo.com', role: 'devotee', dashboard: '/dashboard' },
+  { email: 'pandit@demo.com', role: 'priest', dashboard: '/priest' },
+  { email: 'store@demo.com', role: 'store', dashboard: '/store-admin' },
+  { email: 'astro@demo.com', role: 'astrologer', dashboard: '/astrologer-portal' },
+  { email: 'wellness@demo.com', role: 'wellness', dashboard: '/wellness-portal' },
+  { email: 'gaushala@demo.com', role: 'gaushala', dashboard: '/gaushala-portal' },
+  { email: 'temple@demo.com', role: 'temple', dashboard: '/temple-portal' },
+  { email: 'admin@demo.com', role: 'admin', dashboard: '/admin' },
 ];
 
 const publicGets = [
@@ -57,10 +57,7 @@ const roleEndpoints = {
     '/api/v1/store-admin/products',
     '/api/v1/store-admin/revenue',
   ],
-  astrologer: [
-    '/api/v1/users/me',
-    '/api/v1/astrologer-portal/dashboard',
-  ],
+  astrologer: ['/api/v1/users/me', '/api/v1/astrologer-portal/dashboard'],
   wellness: [
     '/api/v1/users/me',
     '/api/v1/wellness-portal/dashboard',
@@ -93,11 +90,11 @@ const roleEndpoints = {
 };
 
 const results = [];
-function record(role, kind, path, status, ok, note='') {
+function record(role, kind, path, status, ok, note = '') {
   results.push({ role, kind, path, status, ok, note });
 }
 
-async function req(method, path, { token, body, headers={} } = {}) {
+async function req(method, path, { token, body, headers = {} } = {}) {
   const init = { method, headers: { ...headers } };
   if (body) {
     init.headers['content-type'] = 'application/json';
@@ -107,7 +104,10 @@ async function req(method, path, { token, body, headers={} } = {}) {
   try {
     const res = await fetch(`${API}${path}`, init);
     const text = await res.text();
-    let json = null; try { json = JSON.parse(text); } catch {}
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch {}
     return { status: res.status, json, text };
   } catch (err) {
     return { status: 0, json: null, text: String(err) };
@@ -118,7 +118,9 @@ async function webGet(path) {
   try {
     const res = await fetch(`${WEB}${path}`, { method: 'GET', redirect: 'manual' });
     return res.status;
-  } catch { return 0; }
+  } catch {
+    return 0;
+  }
 }
 
 async function login(email) {
@@ -130,13 +132,16 @@ async function runPublic() {
   for (const path of publicGets) {
     const r = await req('GET', path);
     const ok = r.status >= 200 && r.status < 300;
-    record('public', 'GET', path, r.status, ok, r.text.slice(0,120).replace(/\s+/g,' '));
+    record('public', 'GET', path, r.status, ok, r.text.slice(0, 120).replace(/\s+/g, ' '));
   }
 }
 
 async function runRole(entry) {
   const token = await login(entry.email);
-  if (!token) { record(entry.role, 'LOGIN', '/api/v1/auth/login', 0, false, 'no token'); return; }
+  if (!token) {
+    record(entry.role, 'LOGIN', '/api/v1/auth/login', 0, false, 'no token');
+    return;
+  }
   record(entry.role, 'LOGIN', '/api/v1/auth/login', 200, true, 'ok');
 
   const webStatus = await webGet(entry.dashboard);
@@ -146,7 +151,7 @@ async function runRole(entry) {
   for (const path of roleEndpoints[entry.role] || []) {
     const r = await req('GET', path, { token });
     const ok = r.status >= 200 && r.status < 300;
-    record(entry.role, 'API', path, r.status, ok, r.text.slice(0,120).replace(/\s+/g,' '));
+    record(entry.role, 'API', path, r.status, ok, r.text.slice(0, 120).replace(/\s+/g, ' '));
   }
 }
 
@@ -154,19 +159,42 @@ async function permsCheck() {
   const dtoken = await login('devotee@demo.com');
   const r = await req('GET', '/api/v1/admin/gurukuls/?status=all', { token: dtoken });
   const ok = r.status === 401 || r.status === 403;
-  record('perms', 'DENY', 'devotee → /admin/gurukuls', r.status, ok, ok ? 'correctly blocked' : 'SHOULD BE BLOCKED');
+  record(
+    'perms',
+    'DENY',
+    'devotee → /admin/gurukuls',
+    r.status,
+    ok,
+    ok ? 'correctly blocked' : 'SHOULD BE BLOCKED',
+  );
 }
 
 async function adminGurukulMutation() {
   const t = await login('admin@demo.com');
   const list = await req('GET', '/api/v1/admin/gurukuls/?status=all', { token: t });
   const id = list.json?.gurukuls?.[0]?.id;
-  if (!id) { record('admin', 'API', 'gurukul-mut: list empty', list.status, false); return; }
+  // Distinguish the two failure modes the old "list empty" note conflated:
+  // an auth/permission failure (401/403) is a REAL bug; a 200 with an empty
+  // list just means no gurukul rows are seeded in prod (data, not auth).
+  if (!id) {
+    const authFailed = list.status === 401 || list.status === 403;
+    const note = authFailed
+      ? `gurukul-mut: AUTH FAILED (HTTP ${list.status}) — real guard bug`
+      : `gurukul-mut: 200 but no gurukul rows seeded in prod — data, not auth`;
+    record('admin', 'API', note, list.status, false);
+    return;
+  }
   const original = list.json.gurukuls[0].isVerified;
-  const off = await req('PATCH', `/api/v1/admin/gurukuls/${id}/verify`, { token: t, body: { isVerified: !original } });
-  record('admin', 'PATCH', `verify toggle`, off.status, off.status === 200, off.text.slice(0,120));
-  const on = await req('PATCH', `/api/v1/admin/gurukuls/${id}/verify`, { token: t, body: { isVerified: original } });
-  record('admin', 'PATCH', `verify restore`, on.status, on.status === 200, on.text.slice(0,120));
+  const off = await req('PATCH', `/api/v1/admin/gurukuls/${id}/verify`, {
+    token: t,
+    body: { isVerified: !original },
+  });
+  record('admin', 'PATCH', `verify toggle`, off.status, off.status === 200, off.text.slice(0, 120));
+  const on = await req('PATCH', `/api/v1/admin/gurukuls/${id}/verify`, {
+    token: t,
+    body: { isVerified: original },
+  });
+  record('admin', 'PATCH', `verify restore`, on.status, on.status === 200, on.text.slice(0, 120));
 }
 
 async function publicWebPages() {
@@ -206,12 +234,15 @@ async function publicWebPages() {
 
   const byRole = {};
   for (const r of results) (byRole[r.role] ||= []).push(r);
-  let pass = 0, fail = 0;
+  let pass = 0,
+    fail = 0;
   for (const [role, rows] of Object.entries(byRole)) {
     console.log(`\n=== ${role} ===`);
     for (const r of rows) {
       const tag = r.ok ? 'PASS' : 'FAIL';
-      console.log(`  [${tag}] ${r.kind.padEnd(5)} ${String(r.status).padEnd(4)} ${r.path}${r.ok ? '' : `  -- ${r.note}`}`);
+      console.log(
+        `  [${tag}] ${r.kind.padEnd(5)} ${String(r.status).padEnd(4)} ${r.path}${r.ok ? '' : `  -- ${r.note}`}`,
+      );
       r.ok ? pass++ : fail++;
     }
   }
