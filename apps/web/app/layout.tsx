@@ -126,14 +126,14 @@ export const metadata: Metadata = {
  description:
  "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
  // OG image: Golden Temple Wikimedia 1280px (works as Twitter summary_large_image fallback; CF worker-cap blocks @vercel/og runtime route, see 292c328)
- images: ["https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg"],
+ images: ["/images/golden-temple-og.jpg"],
  },
  twitter: {
  card: "summary_large_image",
  title: "Darshya \u2014 India\u2019s Devotional Super App",
  description:
  "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
- images: ["https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1280px-The_Golden_Temple_of_Amrithsar_7.jpg"],
+ images: ["/images/golden-temple-og.jpg"],
  },
  robots: {
  index: true,
@@ -264,8 +264,6 @@ export default function RootLayout({
  <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
  <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
  <link rel="dns-prefetch" href="https://images.unsplash.com" />
- <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="anonymous" />
- <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
  <link rel="preconnect" href="https://www.youtube.com" crossOrigin="anonymous" />
  <link rel="dns-prefetch" href="https://www.youtube.com" />
 
