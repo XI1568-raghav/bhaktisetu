@@ -931,3 +931,44 @@ describe('BookingService.checkSlotAvailability', () => {
     expect(result.slots[0]!.remaining).toBe(0);
   });
 });
+
+// ─── escalateStaleBookings (SLA, issue #179) ────────────────────────────────
+
+describe('BookingService.escalateStaleBookings', () => {
+  it('flags priest_assigned bookings past 72h with no videoProof for refund review (cancelled)', async () => {
+    const stale = {
+      id: 'booking-stale-1',
+      scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
+      priestId: 'priest-1',
+    };
+    prismaMock.pujaBooking.findMany.mockResolvedValue([stale] as any);
+    prismaMock.pujaBooking.update.mockResolvedValue({ ...stale, status: 'cancelled' } as any);
+
+    const out = await service.escalateStaleBookings(72);
+
+    expect(out.escalated).toContain('booking-stale-1');
+    expect(out.scanned).toBe(1);
+    expect(prismaMock.pujaBooking.update).toHaveBeenCalledWith({
+      where: { id: 'booking-stale-1' },
+      data: { status: 'cancelled' },
+    });
+  });
+
+  it('queries only priest_assigned + null videoProof + scheduled before cutoff', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([] as any);
+    const out = await service.escalateStaleBookings(72);
+    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where;
+    expect(where.status).toBe('priest_assigned');
+    expect(where.videoProofUrl).toBeNull();
+    expect(where.scheduledDate.lt).toBeInstanceOf(Date);
+    expect(out.escalated).toEqual([]);
+    expect(out.scanned).toBe(0);
+  });
+
+  it('does nothing when no stale bookings exist', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([] as any);
+    const out = await service.escalateStaleBookings(72);
+    expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
+    expect(out).toEqual({ escalated: [], scanned: 0 });
+  });
+});
