@@ -4,6 +4,47 @@
 import yaml from 'js-yaml';
 import { callOpus47 } from './_anthropic-client.mjs';
 
+// Structured-output tool for queue files (0-queue-write fix, 2026-07-31).
+// glm-5.2 does not reliably emit the `---END-QUEUE-FILE---` + YAML-frontmatter
+// text format, so sub-agents returned rich briefings that evaporated into
+// "0 queue files". Request each queue file as a `write_queue` tool_use block —
+// the same structured-output mechanism the Decision Agent already uses — and
+// parse it directly from `content.filter(c => c.type === 'tool_use')`. The
+// legacy text/frontmatter parser below is kept as a fallback.
+const WRITE_QUEUE_TOOL = {
+  name: 'write_queue',
+  description:
+    'Emit ONE queue file for a roadmap item. Call once per item. The input IS the queue file: frontmatter fields at top level + the Claude Code prompt in `body`.',
+  input_schema: {
+    type: 'object',
+    required: [
+      'queueId',
+      'itemId',
+      'role',
+      'emittedAt',
+      'cycle',
+      'priority',
+      'estTokens',
+      'estMinutes',
+      'body',
+    ],
+    properties: {
+      queueId: { type: 'string', description: 'Q-<cycleId>-<itemId>' },
+      itemId: { type: 'string' },
+      role: { type: 'string' },
+      emittedAt: { type: 'string', description: 'ISO timestamp' },
+      cycle: { type: 'string' },
+      priority: { type: 'string', enum: ['P0', 'P1', 'P2', 'P3'] },
+      estTokens: { type: 'integer', minimum: 1000, maximum: 50000 },
+      estMinutes: { type: 'integer', minimum: 15, maximum: 360 },
+      consumedAt: { type: ['string', 'null'] },
+      consumedBy: { type: ['string', 'null'] },
+      consumedInSessionId: { type: ['string', 'null'] },
+      body: { type: 'string', description: 'The self-contained Claude Code prompt (markdown).' },
+    },
+  },
+};
+
 const SUBAGENT_SYSTEM = (role) => `You are ${role}-agent for Bhaktisetu. Opus 4.7 max effort.
 Master Orchestrator spawned you to compose Claude Code prompts for specific roadmap items.
 
@@ -37,11 +78,20 @@ Your job:
 Tone: terse caveman per Bhaktisetu doctrine. Code blocks normal. Security warnings normal.
 Never invent file paths.`;
 
-export async function runSubagent({ role, itemIds, briefing, items, cycleId, opusFn = callOpus47 }) {
+export async function runSubagent({
+  role,
+  itemIds,
+  briefing,
+  items,
+  cycleId,
+  opusFn = callOpus47,
+}) {
   const targetItems = items.filter((i) => itemIds.includes(i.id));
   const userMsg = `Briefing: ${briefing}\n\nItems to process (compose one queue file per item):\n\n${targetItems
     .map((i) => `## ${i.id} — ${i.title}\n\`\`\`yaml\n${yaml.dump(i)}\n\`\`\``)
-    .join('\n\n')}\n\nCycle: ${cycleId}\nEmit each queue file separated by line "---END-QUEUE-FILE---".`;
+    .join(
+      '\n\n',
+    )}\n\nCycle: ${cycleId}\nEmit each queue file by calling the \`write_queue\` tool ONCE per item (structured output — do NOT write ---END-QUEUE-FILE--- markers or raw YAML frontmatter in prose).`;
 
   const errors = [];
   let response;
@@ -64,6 +114,7 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
         system: SUBAGENT_SYSTEM(role),
         messages: [{ role: 'user', content: userMsg }],
         maxTokens: 12000,
+        tools: [WRITE_QUEUE_TOOL],
       }),
       timer,
     ]);
@@ -73,13 +124,32 @@ export async function runSubagent({ role, itemIds, briefing, items, cycleId, opu
     if (timeoutHandle) clearTimeout(timeoutHandle);
   }
 
+  // Preferred path: write_queue tool_use blocks (structured output, immune to
+  // the glm-5.2 text-format drift that caused the 0-queue-write bug).
+  const queueFiles = [];
+  const toolCalls = (response.content || []).filter(
+    (c) => c?.type === 'tool_use' && c?.name === 'write_queue',
+  );
+  for (const tc of toolCalls) {
+    const input = tc?.input ?? {};
+    const { body, ...frontmatter } = input;
+    if (!frontmatter.queueId || !frontmatter.itemId) {
+      errors.push('write_queue block missing queueId or itemId');
+      continue;
+    }
+    queueFiles.push({ frontmatter, body: typeof body === 'string' ? body : '', raw: null });
+  }
+  if (queueFiles.length > 0) {
+    return { queueFiles, errors, usage: response.usage };
+  }
+
+  // Legacy fallback: ---END-QUEUE-FILE--- + YAML-frontmatter text parsing.
   const text = response.content.find((c) => c.type === 'text')?.text || '';
   const chunks = text
     .split(/^---END-QUEUE-FILE---$/m)
     .map((c) => c.trim())
     .filter(Boolean);
 
-  const queueFiles = [];
   for (const chunk of chunks) {
     const m = chunk.match(/^---\r?\n([\s\S]+?)\r?\n---\r?\n([\s\S]*)$/);
     if (!m) {
