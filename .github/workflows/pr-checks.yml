@@ -66,35 +66,10 @@ jobs:
           echo "All agent scripts parse cleanly."
 
       - name: Verify schema-validator targets are routable
-        run: |
-          # Each probe URL must correspond to an app/ route. Pages with
-          # generateStaticParams or [slug] are checked via the parent dir.
-          node <<'EOF'
-          const fs = require('node:fs');
-          const path = require('node:path');
-          const src = fs.readFileSync('scripts/agents/schema-validator.mjs', 'utf8');
-          // Extract { url: '...' } entries
-          const urls = [...src.matchAll(/url:\s*'([^']+)'/g)].map((m) => m[1]);
-          const APP = 'apps/web/app';
-          const missing = [];
-          for (const u of urls) {
-            // Try direct page
-            const seg = u.replace(/^\//, '').split('/').filter(Boolean);
-            const tryPaths = [
-              path.join(APP, ...seg, 'page.tsx'),
-              path.join(APP, ...seg.slice(0, -1), '[slug]', 'page.tsx'),
-              path.join(APP, ...seg.slice(0, -1), `[${seg[seg.length-1]}]`, 'page.tsx'),
-            ];
-            if (seg.length === 0) tryPaths.push(path.join(APP, 'page.tsx'));
-            const hit = tryPaths.some((p) => fs.existsSync(p));
-            if (!hit) missing.push(u);
-          }
-          if (missing.length) {
-            console.error('::error::Probe URLs without matching route: ' + missing.join(', '));
-            process.exit(1);
-          }
-          console.log('All ' + urls.length + ' probe URLs resolve to a route.');
-          EOF
+        # Each probe URL must correspond to an app/ route. Resolved via the
+        # route manifest so named dynamic params ([month], [chapter], [kanda],
+        # [parva], [pada], [slug], catch-alls) all match, not just [slug].
+        run: node scripts/agents/fleet-integrity-check.mjs
 
       - name: Run agent-issue-filer in dry mode (no GH_TOKEN)
         env:
