@@ -103,6 +103,13 @@ export const prismaMock = {
     createMany: vi.fn(),
     deleteMany: vi.fn(),
   },
+  gurukul: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
+  },
   wellnessSession: {
     findUnique: vi.fn(),
     findMany: vi.fn(),
