@@ -812,6 +812,45 @@ export class BookingService {
       slots,
     };
   }
+
+  /**
+   * SLA escalation (issue #179): bookings stuck `priest_assigned` more than
+   * `staleHours` past their scheduled date with no `videoProofUrl` are a
+   * broken service promise — the devotee paid, the priest never delivered
+   * proof. Flag each for cancel + refund review.
+   *
+   * `BookingStatus` has no `refund_pending` member, so we cannot transition
+   * the row to a literal "refund_pending" state within the enum. The
+   * state machine already allows `priest_assigned -> cancelled` and
+   * `* -> refunded`, so the honest, schema-safe action is: transition the
+   * stale booking to `cancelled` (refund path) and return it in `escalated`
+   * so ops/founder reviews the refund. Money movement itself is
+   * founder/finance-adjacent and stays out of this service.
+   *
+   * Returns { escalated: string[], scanned: number }.
+   */
+  async escalateStaleBookings(staleHours = 72) {
+    const cutoff = new Date(Date.now() - staleHours * 60 * 60 * 1000);
+    const stale = await prisma.pujaBooking.findMany({
+      where: {
+        status: 'priest_assigned',
+        videoProofUrl: null,
+        scheduledDate: { lt: cutoff },
+      },
+      select: { id: true, scheduledDate: true, priestId: true },
+    });
+
+    const escalated: string[] = [];
+    for (const b of stale) {
+      // priest_assigned -> cancelled is a VALID_TRANSITION (refund review path).
+      await prisma.pujaBooking.update({
+        where: { id: b.id },
+        data: { status: 'cancelled' },
+      });
+      escalated.push(b.id);
+    }
+    return { escalated, scanned: stale.length };
+  }
 }
 
 export const bookingService = new BookingService();
