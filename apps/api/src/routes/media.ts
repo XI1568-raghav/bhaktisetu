@@ -13,6 +13,30 @@ import { randomBytes } from 'node:crypto';
  * are returned for use in the UI; private content uses presignR2Url
  * generated on demand.
  */
+
+// P1-5 (2026-07-17): the previous handler accepted ANY contentType (defaulting
+// to application/octet-stream) and used `kind` unsanitized in the R2 key path.
+// A caller could presign an upload for an arbitrary type, and a `kind` like
+// `../x` escaped the intended key prefix. Mirror the priest.ts video-upload
+// pattern: a fixed type allowlist, a fixed kind enum, a per-type size cap, and
+// a sanitized kind segment so the R2 key can never leave its prefix.
+const ALLOWED_KINDS = new Set(['puja-proof', 'profile-photo', 'temple-image', 'audio']);
+
+const TYPE_POLICY = {
+  'image/jpeg': { ext: 'jpg', maxSizeMb: 10 },
+  'image/png': { ext: 'png', maxSizeMb: 10 },
+  'image/webp': { ext: 'webp', maxSizeMb: 10 },
+  'image/gif': { ext: 'gif', maxSizeMb: 10 },
+  'audio/mpeg': { ext: 'mp3', maxSizeMb: 25 },
+  'audio/wav': { ext: 'wav', maxSizeMb: 25 },
+  'audio/webm': { ext: 'weba', maxSizeMb: 25 },
+  'video/mp4': { ext: 'mp4', maxSizeMb: 200 },
+  'video/webm': { ext: 'webm', maxSizeMb: 200 },
+  'application/pdf': { ext: 'pdf', maxSizeMb: 10 },
+} as const;
+
+type AllowedContentType = keyof typeof TYPE_POLICY;
+
 export async function mediaRoutes(server: FastifyInstance) {
   server.post('/upload-url', { preHandler: [authenticateUser] }, async (request, reply) => {
     const body = (request.body ?? {}) as {
@@ -21,8 +45,25 @@ export async function mediaRoutes(server: FastifyInstance) {
       ext?: string;
     };
     const kind = body.kind ?? 'profile-photo';
-    const contentType = body.contentType ?? 'application/octet-stream';
-    const ext = (body.ext ?? '').replace(/[^a-z0-9]/gi, '').slice(0, 6);
+    if (!ALLOWED_KINDS.has(kind)) {
+      return reply.code(400).send({
+        error: `Unsupported kind. Allowed: ${[...ALLOWED_KINDS].join(', ')}.`,
+      });
+    }
+    // Sanitize the kind segment so it can never contain path separators / `..`.
+    // ALLOWED_KINDS already restricts it to the enum above; this is belt-and-braces.
+    const safeKind = kind.replace(/[^a-z0-9-]/gi, '');
+
+    const contentType = (body.contentType ?? '').toLowerCase();
+    const policy = TYPE_POLICY[contentType as AllowedContentType];
+    if (!policy) {
+      return reply.code(400).send({
+        error: `Unsupported contentType. Allowed: ${Object.keys(TYPE_POLICY).join(', ')}.`,
+      });
+    }
+    // Derive the extension from the type policy (trusted), but allow a client
+    // override as long as it sanitizes to a short alphanumeric token.
+    const ext = (body.ext ?? policy.ext).replace(/[^a-z0-9]/gi, '').slice(0, 6) || policy.ext;
 
     if (!r2.enabled) {
       return reply.code(503).send({
@@ -34,7 +75,7 @@ export async function mediaRoutes(server: FastifyInstance) {
     const userId = request.currentUser!.id;
     const safeUserId = userId.replace(/[^a-z0-9-]/gi, '');
     const id = randomBytes(8).toString('hex');
-    const key = `${kind}/${safeUserId}/${Date.now()}-${id}${ext ? `.${ext}` : ''}`;
+    const key = `${safeKind}/${safeUserId}/${Date.now()}-${id}.${ext}`;
 
     const result = await presignR2Upload({ key, contentType, expiresInSec: 600 });
     if (!result) {
@@ -49,6 +90,7 @@ export async function mediaRoutes(server: FastifyInstance) {
       expiresIn: 600,
       method: 'PUT',
       headers: { 'Content-Type': contentType },
+      maxSizeMb: policy.maxSizeMb,
     });
   });
 }
