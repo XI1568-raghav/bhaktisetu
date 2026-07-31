@@ -1,36 +1,21 @@
 {
-  "cycleId": "C-20260731T0352",
+  "cycleId": "C-20260731T1438",
   "spawnPlan": [],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item >72h unconsumed (currently 1180.8h / ~49 days stale). R-Q2-M-011 has been sitting in queue Q-C-20260611T2307-R-Q2-M-011 since June 11 with no consumption. The queue worker/processor appears broken or unable to process CMO items. This is blocking all marketing work from advancing through the pipeline. Immediate triage required: (1) investigate why queue worker isn't consuming this item, (2) manually process or re-queue R-Q2-M-011, (3) verify queue worker health on Render bg-worker.",
-      "suggestedAction": "Manually inspect docs/agent-reports/cmo/R-Q2-M-011-*.md output if it exists, mark item as shipped if artifacts are complete, or re-queue with fresh priority. Also check Render bg-worker logs for queue processor errors. This stale queue is the #1 blocker — no new CMO work can flow until resolved."
-    },
-    {
-      "itemId": "R-Q1-E-001",
-      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) has been blocked for 50 days. This is a P0 foundational decision that blocks downstream engineering items — every frontend deployment, SSR decision, and CSP nonce implementation depends on this. Free-tier constraints: CF Pages gives 500 builds/mo + unlimited bandwidth; Vercel free tier is more restrictive. Recommendation: CF Pages (already 0% utilized this month). The 50-day delay is cascading across the entire engineering roadmap.",
-      "suggestedAction": "Decision: Cloudflare Pages. Document in docs/engineering/architecture-decision-cf-pages.md with rationale (free-tier alignment, unlimited bandwidth, native CF CDN integration). Update all depends_on items to proceed with CF Pages assumption. This single decision unblocks R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-014, and potentially 10+ more engineering items."
-    },
-    {
-      "itemId": "R-Q1-SA-001",
-      "reason": "\"Founder must send WhatsApp to 5 priests\" — blocked 51 days. This is a quick, high-leverage supply-side action that requires zero engineering. Without 5 priests onboarded via WhatsApp, the entire pujas booking funnel has no supply to fulfill demand. Revenue impact is direct: every day without priests = every booking attempt fails. Estimated effort: 30 minutes.",
-      "suggestedAction": "Send 5 WhatsApp messages to T1 priests using the outreach kit already shipped by the sales agent (check docs/agent-reports/sales/R-Q1-SA-001-*). Template: personalized greeting + value prop + booking platform invite. Goal: 2-3 positive responses → onboard to platform. This is the single highest revenue-impact/hour action available to the founder right now."
+      "reason": "T-010 tripwire fired: Queue stale. R-Q2-M-011 (CMO) has been unconsumed for 1191.5h (49.6 days). readyToShip is empty — this stale queue item is the ONLY thing in the pipeline and it is blocking flow. The founder must triage: either approve/ship the queued CMO deliverable, kill it if strategically obsolete, or identify and unblock dependencies preventing queue consumption. Additionally, the queue consumer/worker may be broken — it has not processed any item in 49.6 days.",
+      "suggestedAction": "1) Review docs/agent-reports/cmo/R-Q2-M-011-* for the queued CMO deliverable. 2) Either (a) approve and ship, (b) kill if no longer relevant, or (c) specify what dependency is blocking consumption. 3) Investigate why the queue worker has not consumed this item in 49.6 days — check Render bg-worker logs and queue processor health. This is a pipeline health issue beyond just this one item."
     },
     {
       "itemId": "R-Q1-S-013",
-      "reason": "GOOGLE_PLACES_API_KEY missing in Render env — blocked 50 days. The agent has already shipped all artifacts (per docs/supply/R-Q1-S-013-handoff.md). This is a 5-minute fix: add one environment variable to Render. Without it, temple verification, Google Places enrichment, and supply-side geolocation features are all non-functional. This blocks the entire temple onboarding pipeline.",
-      "suggestedAction": "Log into Render dashboard → Environment → Add GOOGLE_PLACES_API_KEY (from Google Cloud Console, enable Places API, generate key, restrict to darshya.online domain). Then redeploy. Total time: 10 minutes. This unblocks temple verification across all target cities (Varanasi, Bengaluru, Mumbai, Delhi, Pune, Hyderabad)."
+      "reason": "GOOGLE_PLACES_API_KEY missing in Render env for 50 days. This is a ~5-minute founder fix (generate key, add env var to Render) that unblocks supply-side temple/priest discovery via Google Places API. Every additional day this remains blocked, supply onboarding and location-based discovery are degraded. Agent artifacts and handoff docs already shipped — only the env var is missing. This is the highest revenue-impact-per-founder-minute item in the entire backlog.",
+      "suggestedAction": "1) Go to Google Cloud Console → APIs & Services → enable Places API. 2) Generate a restricted API key (restrict to Places API + your domain). 3) Add GOOGLE_PLACES_API_KEY to Render service environment variables. 4) Redeploy or restart the API service. 5) Verify supply discovery endpoint returns real Place data. See docs/supply/R-Q1-S-013-handoff.md for detailed walkthrough. Estimated founder time: 5-10 minutes."
     },
     {
-      "itemId": "R-Q1-F-003",
-      "reason": "Finance item blocked by U1 for 51 days. KPI signal: razorpay_live_active=0 — the payment gateway is NOT live. Without Razorpay active, zero revenue can flow through the platform. This is the #1 revenue blocker in the entire system. All booking flows, subscription plans, and B2B pilots depend on payment processing being live. 51 days of zero payment capability = 51 days of zero captured revenue.",
-      "suggestedAction": "Complete Razorpay activation: (1) verify KYC documents submitted, (2) activate live mode in Razorpay dashboard, (3) set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Render env with live keys (not test), (4) run end-to-end test with ₹1 transaction, (5) verify webhook endpoint registered. If KYC is the blocker, contact Razorpay support. This should be the founder's #1 priority this week — without payments, nothing else matters."
-    },
-    {
-      "itemId": "R-Q2-CS-003",
-      "reason": "Native-speaker review for ta/te/bn/mr + Wati Meta template approval — blocked 51 days. Multilingual CS macros cannot ship without native-speaker validation (quality gate) and Wati/Meta template approval (delivery gate). This blocks customer support in 4 major Indian languages, affecting Tamil, Telugu, Bengali, and Marathi users — collectively ~40% of India's population. Every day delayed = support tickets unanswered in these languages = churn risk.",
-      "suggestedAction": "Two parallel actions: (1) Engage 4 native speakers (can be contractors/freelancers on Upwork, ~₹500-1000 each for 1hr review) to validate ta/te/bn/mr macro translations in docs/cs/multilingual-macros/. (2) Submit WhatsApp template messages to Wati for Meta approval (takes 24-48h for review). Start with the highest-volume languages: Hindi (already done?) → Tamil → Telugu → Bengali → Marathi. Total founder time: ~2 hours coordination."
+      "itemId": "R-Q1-SA-001",
+      "reason": "Founder must send WhatsApp messages to 5 target priests — blocked 51 days. This is the seed supply action that bootstraps the entire priest network. Agent has already shipped the outreach kit (templates, target list, scripts). Without these initial 5 warm human-to-human contacts, the supply-side flywheel cannot start, which blocks puja booking revenue, temple partnerships, and the core business model. Only the founder can execute this — it requires personal WhatsApp outreach.",
+      "suggestedAction": "1) Open docs/agent-reports/sales/R-Q1-SA-001-* for the outreach kit (5 target priests, message templates, context notes). 2) Send personalized WhatsApp messages to all 5 priests using the provided templates. 3) Log responses (positive/negative/no-response) in the supply CRM or a simple sheet. 4) For positive responses, hand off to sales agent for onboarding flow. Estimated founder time: 30-45 minutes of messaging + follow-up. This single action unblocks the supply pipeline that R-Q1-S-013 (Places API) supports."
     }
   ],
   "kills": [],
@@ -42,10 +27,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-07-31T03:54:20.602Z"
+      "firedAt": "2026-07-31T14:39:32.952Z"
     }
   ],
-  "savedAt": "2026-07-31T03:56:42.387Z",
+  "savedAt": "2026-07-31T14:41:00.665Z",
   "consumed": true,
-  "consumedAt": "2026-07-31T03:56:42.389Z"
+  "consumedAt": "2026-07-31T14:41:00.666Z"
 }
