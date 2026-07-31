@@ -18,24 +18,48 @@ const userQuerySchema = z.object({
 const userUpdateSchema = z.object({
   approved: z.boolean().optional(),
   blocked: z.boolean().optional(),
-  roles: z.array(z.enum([
-    'DEVOTEE', 'PANDIT', 'STORE_OWNER', 'ASTROLOGER',
-    'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER', 'TEMPLE_MANAGER', 'ADMIN',
-  ])).optional(),
+  roles: z
+    .array(
+      z.enum([
+        'DEVOTEE',
+        'PANDIT',
+        'STORE_OWNER',
+        'ASTROLOGER',
+        'WELLNESS_INSTRUCTOR',
+        'GAUSHALA_MANAGER',
+        'TEMPLE_MANAGER',
+        'ADMIN',
+      ]),
+    )
+    .optional(),
 });
 
 // Permissive write schemas for admin CRUD stubs. Even though these handlers
 // echo today, validating the boundary now means future implementations
 // (see /admin/temples wire-up task) inherit a real safety net instead of
 // trusting `Record<string, unknown>` casts.
-const TRADITIONS = ['shaiva', 'vaishnava', 'shakta', 'smarta', 'jain', 'sikh', 'buddhist', 'other'] as const;
+const TRADITIONS = [
+  'shaiva',
+  'vaishnava',
+  'shakta',
+  'smarta',
+  'jain',
+  'sikh',
+  'buddhist',
+  'other',
+] as const;
 const TEMPLE_STATUSES = ['active', 'inactive', 'pending_review'] as const;
 
 // Strict create schema — Temple has many required NOT NULL columns; if we
 // only validated a subset, prisma.create would 500 on missing fields.
 const templeCreateSchema = z.object({
   name: z.string().min(2).max(200),
-  slug: z.string().min(2).max(120).regex(/^[a-z0-9-]+$/, 'lowercase letters, digits, dashes only').optional(),
+  slug: z
+    .string()
+    .min(2)
+    .max(120)
+    .regex(/^[a-z0-9-]+$/, 'lowercase letters, digits, dashes only')
+    .optional(),
   description: z.string().min(2).max(5000),
   deityPrimary: z.string().min(2).max(120),
   deities: z.array(z.string().max(120)).default([]),
@@ -60,12 +84,14 @@ const templePatchSchema = templeCreateSchema.partial();
 
 // Legacy permissive schema retained for /admin/temples/:id update echo
 // path until full PATCH wiring lands.
-const templeWriteSchema = z.object({
-  name: z.string().min(2).max(200).optional(),
-  city: z.string().max(120).optional(),
-  state: z.string().max(120).optional(),
-  isVerified: z.boolean().optional(),
-}).passthrough();
+const templeWriteSchema = z
+  .object({
+    name: z.string().min(2).max(200).optional(),
+    city: z.string().max(120).optional(),
+    state: z.string().max(120).optional(),
+    isVerified: z.boolean().optional(),
+  })
+  .passthrough();
 
 function slugifyTempleName(name: string): string {
   return name
@@ -77,32 +103,48 @@ function slugifyTempleName(name: string): string {
     .slice(0, 80);
 }
 
-const priestWriteSchema = z.object({
-  displayName: z.string().min(2).max(120).optional(),
-  isVerified: z.boolean().optional(),
-  status: z.enum(['active', 'suspended', 'inactive']).optional(),
-}).passthrough();
+const priestWriteSchema = z
+  .object({
+    displayName: z.string().min(2).max(120).optional(),
+    isVerified: z.boolean().optional(),
+    status: z.enum(['active', 'suspended', 'inactive']).optional(),
+  })
+  .passthrough();
 
-const pujaWriteSchema = z.object({
-  name: z.string().min(2).max(200).optional(),
-  category: z.string().max(80).optional(),
-  basePriceInr: z.number().nonnegative().optional(),
-}).passthrough();
+const pujaWriteSchema = z
+  .object({
+    name: z.string().min(2).max(200).optional(),
+    category: z.string().max(80).optional(),
+    basePriceInr: z.number().nonnegative().optional(),
+  })
+  .passthrough();
 
-const contentWriteSchema = z.object({
-  title: z.string().min(2).max(300).optional(),
-  type: z.string().max(40).optional(),
-  status: z.string().max(40).optional(),
-}).passthrough();
+const contentWriteSchema = z
+  .object({
+    title: z.string().min(2).max(300).optional(),
+    type: z.string().max(40).optional(),
+    status: z.string().max(40).optional(),
+  })
+  .passthrough();
 
-const userCreateSchema = z.object({
-  fullName: z.string().min(2).max(120),
-  email: z.string().email(),
-  role: z.enum([
-    'DEVOTEE', 'PANDIT', 'STORE_OWNER', 'ASTROLOGER',
-    'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER', 'TEMPLE_MANAGER', 'ADMIN',
-  ]).optional(),
-}).passthrough();
+const userCreateSchema = z
+  .object({
+    fullName: z.string().min(2).max(120),
+    email: z.string().email(),
+    role: z
+      .enum([
+        'DEVOTEE',
+        'PANDIT',
+        'STORE_OWNER',
+        'ASTROLOGER',
+        'WELLNESS_INSTRUCTOR',
+        'GAUSHALA_MANAGER',
+        'TEMPLE_MANAGER',
+        'ADMIN',
+      ])
+      .optional(),
+  })
+  .passthrough();
 
 function validateBody<T extends z.ZodTypeAny>(
   schema: T,
@@ -130,31 +172,43 @@ export async function adminRoutes(server: FastifyInstance) {
     const parsed = userQuerySchema.safeParse(query);
 
     if (!parsed.success) {
-      return reply.code(400).send({ error: 'Invalid query parameters', details: parsed.error.flatten() });
+      return reply
+        .code(400)
+        .send({ error: 'Invalid query parameters', details: parsed.error.flatten() });
     }
 
-    const result = await adminService.getUsers({
-      role: parsed.data.role,
-      status: parsed.data.status,
-      search: parsed.data.search,
-      page: parsed.data.page ? Number(parsed.data.page) : undefined,
-      limit: parsed.data.limit ? Number(parsed.data.limit) : undefined,
-    });
+    try {
+      const result = await adminService.getUsers({
+        role: parsed.data.role,
+        status: parsed.data.status,
+        search: parsed.data.search,
+        page: parsed.data.page ? Number(parsed.data.page) : undefined,
+        limit: parsed.data.limit ? Number(parsed.data.limit) : undefined,
+      });
 
-    return result;
+      return result;
+    } catch (err) {
+      request.log.error({ err }, 'admin /users failed');
+      return reply.code(500).send({ error: 'Failed to list users' });
+    }
   });
 
   // ─── GET /users/:id — User detail with profile ─────────────────────────────
 
   server.get('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const user = await adminService.getUserById(id);
+    try {
+      const user = await adminService.getUserById(id);
 
-    if (!user) {
-      return reply.code(404).send({ error: 'User not found' });
+      if (!user) {
+        return reply.code(404).send({ error: 'User not found' });
+      }
+
+      return { user };
+    } catch (err) {
+      request.log.error({ err, id }, 'admin /users/:id failed');
+      return reply.code(500).send({ error: 'Failed to load user' });
     }
-
-    return { user };
   });
 
   // ─── PATCH /users/:id — Update user (approve, block, roles) ────────────────
@@ -165,7 +219,9 @@ export async function adminRoutes(server: FastifyInstance) {
     const parsed = userUpdateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return reply.code(400).send({ error: 'Invalid request body', details: parsed.error.flatten() });
+      return reply
+        .code(400)
+        .send({ error: 'Invalid request body', details: parsed.error.flatten() });
     }
 
     const result = await adminService.updateUser(id, parsed.data);
@@ -180,8 +236,13 @@ export async function adminRoutes(server: FastifyInstance) {
   // ─── GET /dashboard — Platform stats ────────────────────────────────────────
 
   server.get('/dashboard', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const stats = await adminService.getDashboard();
-    return stats;
+    try {
+      const stats = await adminService.getDashboard();
+      return stats;
+    } catch (err) {
+      request.log.error({ err }, 'admin /dashboard failed');
+      return reply.code(500).send({ error: 'Failed to load dashboard' });
+    }
   });
 
   // ─── GET /revenue — Revenue breakdown ───────────────────────────────────────
@@ -205,8 +266,13 @@ export async function adminRoutes(server: FastifyInstance) {
   // ─── GET /pending-approvals — Providers awaiting approval ───────────────────
 
   server.get('/pending-approvals', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const approvals = await adminService.getPendingApprovals();
-    return { approvals, total: approvals.length };
+    try {
+      const approvals = await adminService.getPendingApprovals();
+      return { approvals, total: approvals.length };
+    } catch (err) {
+      request.log.error({ err }, 'admin /pending-approvals failed');
+      return reply.code(500).send({ error: 'Failed to load pending approvals' });
+    }
   });
 
   // ─── Existing Temple/Priest/Puja/Content/Booking/Payment CRUD ───────────────
@@ -214,7 +280,10 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.get('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, q } = request.query as {
-      page?: string; limit?: string; status?: string; q?: string;
+      page?: string;
+      limit?: string;
+      status?: string;
+      q?: string;
     };
     return { temples: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
@@ -224,7 +293,9 @@ export async function adminRoutes(server: FastifyInstance) {
     if (!body) return;
     const slug = body.slug ?? slugifyTempleName(body.name);
     if (!slug) {
-      return reply.code(400).send({ error: 'Could not derive slug from name; provide explicit slug.' });
+      return reply
+        .code(400)
+        .send({ error: 'Could not derive slug from name; provide explicit slug.' });
     }
     try {
       const temple = await prisma.temple.create({
@@ -275,7 +346,10 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.get('/priests', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, q } = request.query as {
-      page?: string; limit?: string; status?: string; q?: string;
+      page?: string;
+      limit?: string;
+      status?: string;
+      q?: string;
     };
     return { priests: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
@@ -299,7 +373,7 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   server.get('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { page, limit, q } = request.query as { page?: string; limit?: string; q?: string; };
+    const { page, limit, q } = request.query as { page?: string; limit?: string; q?: string };
     return { pujas: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
 
@@ -323,7 +397,11 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.get('/content', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, type, status, q } = request.query as {
-      page?: string; limit?: string; type?: string; status?: string; q?: string;
+      page?: string;
+      limit?: string;
+      type?: string;
+      status?: string;
+      q?: string;
     };
     return { content: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
   });
@@ -351,10 +429,17 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.get('/payments', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, dateFrom, dateTo } = request.query as {
-      page?: string; limit?: string; status?: string; dateFrom?: string; dateTo?: string;
+      page?: string;
+      limit?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
     };
     return {
-      payments: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20,
+      payments: [],
+      total: 0,
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       filters: { status, dateFrom, dateTo },
     };
   });

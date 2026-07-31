@@ -1,10 +1,6 @@
 import type { BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import {
-  sendEmail,
-  providerApprovedEmail,
-  providerRejectedEmail,
-} from '../lib/email.js';
+import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -88,96 +84,6 @@ interface ReportsResponse {
   geographicDistribution: Array<{ state: string; users: number; pct: number }>;
 }
 
-// ─── Mock Data ──────────────────────────────────────────────────────────────────
-
-const MOCK_USERS = [
-  {
-    id: 'user-001',
-    fullName: 'Arjun Sharma',
-    email: 'arjun@darshya.online',
-    phone: '+919876543210',
-    roles: ['DEVOTEE'],
-    status: 'active',
-    subscriptionTier: 'bhakti_pass',
-    createdAt: '2026-01-15T10:00:00Z',
-  },
-  {
-    id: 'user-002',
-    fullName: 'Pandit Raghunath',
-    email: 'raghunath@darshya.online',
-    phone: '+919876543211',
-    roles: ['PANDIT'],
-    status: 'active',
-    subscriptionTier: 'free',
-    createdAt: '2026-01-20T10:00:00Z',
-  },
-  {
-    id: 'user-003',
-    fullName: 'Priya Store',
-    email: 'priya@darshya.online',
-    phone: '+919876543212',
-    roles: ['STORE_OWNER'],
-    status: 'pending_approval',
-    subscriptionTier: 'free',
-    createdAt: '2026-02-01T10:00:00Z',
-  },
-  {
-    id: 'user-004',
-    fullName: 'Jyotish Mehta',
-    email: 'jyotish@darshya.online',
-    phone: '+919876543213',
-    roles: ['ASTROLOGER'],
-    status: 'active',
-    subscriptionTier: 'free',
-    createdAt: '2026-02-10T10:00:00Z',
-  },
-  {
-    id: 'user-005',
-    fullName: 'Yoga Meera',
-    email: 'meera@darshya.online',
-    phone: '+919876543214',
-    roles: ['WELLNESS_INSTRUCTOR'],
-    status: 'pending_approval',
-    subscriptionTier: 'free',
-    createdAt: '2026-03-01T10:00:00Z',
-  },
-  {
-    id: 'user-006',
-    fullName: 'Gaushala Seva Trust',
-    email: 'gaushala@darshya.online',
-    phone: '+919876543215',
-    roles: ['GAUSHALA_MANAGER'],
-    status: 'active',
-    subscriptionTier: 'free',
-    createdAt: '2026-03-10T10:00:00Z',
-  },
-  {
-    id: 'user-007',
-    fullName: 'Temple Admin',
-    email: 'temple@darshya.online',
-    phone: '+919876543216',
-    roles: ['TEMPLE_MANAGER'],
-    status: 'active',
-    subscriptionTier: 'free',
-    createdAt: '2026-03-15T10:00:00Z',
-  },
-  {
-    id: 'admin-001',
-    fullName: 'Platform Admin',
-    email: 'admin@darshya.online',
-    phone: '+919876543200',
-    roles: ['ADMIN'],
-    status: 'active',
-    subscriptionTier: 'premium',
-    createdAt: '2026-01-01T10:00:00Z',
-  },
-];
-
-const MOCK_PENDING_APPROVALS: PendingApproval[] = [
-  { id: 'pa-001', userId: 'user-003', role: 'STORE_OWNER', profileName: 'Priya Sacred Store', city: 'Mumbai', createdAt: '2026-02-01T10:00:00Z' },
-  { id: 'pa-002', userId: 'user-005', role: 'WELLNESS_INSTRUCTOR', profileName: 'Yoga Meera', city: 'Bangalore', createdAt: '2026-03-01T10:00:00Z' },
-];
-
 // ─── Service ────────────────────────────────────────────────────────────────────
 
 export class AdminService {
@@ -236,32 +142,12 @@ export class AdminService {
         : enriched;
 
       return { users: filtered, total, page, limit };
-    } catch {
-      // Fallback mock
-      let filtered = [...MOCK_USERS];
-      if (filters.role) {
-        filtered = filtered.filter((u) => u.roles.includes(filters.role!));
-      }
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        filtered = filtered.filter(
-          (u) =>
-            u.fullName.toLowerCase().includes(q) ||
-            u.email.toLowerCase().includes(q) ||
-            u.phone.includes(q)
-        );
-      }
-
-      const page = filters.page ?? 1;
-      const limit = filters.limit ?? 20;
-      const start = (page - 1) * limit;
-
-      return {
-        users: filtered.slice(start, start + limit),
-        total: filtered.length,
-        page,
-        limit,
-      };
+    } catch (err) {
+      // Previously this catch served MOCK_USERS — a DB blip silently returned
+      // 8 fake admin users to the admin UI. Fail loud instead so the operator
+      // sees the real error and the dashboard does not display fake data.
+      console.error('[admin.service.listUsers] DB failure', err);
+      throw err;
     }
   }
 
@@ -296,13 +182,16 @@ export class AdminService {
           temple,
         },
       };
-    } catch {
-      const mockUser = MOCK_USERS.find((u) => u.id === id);
-      return mockUser ?? null;
+    } catch (err) {
+      console.error('[admin.service.getUserById] DB failure', err);
+      throw err;
     }
   }
 
-  async updateUser(id: string, updates: { approved?: boolean; blocked?: boolean; roles?: string[] }) {
+  async updateUser(
+    id: string,
+    updates: { approved?: boolean; blocked?: boolean; roles?: string[] },
+  ) {
     try {
       const user = await prisma.user.findUnique({ where: { id } });
       if (!user) return null;
@@ -313,7 +202,15 @@ export class AdminService {
         await prisma.userRoleAssignment.createMany({
           data: updates.roles.map((role, idx) => ({
             userId: id,
-            role: role as 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER' | 'ADMIN',
+            role: role as
+              | 'DEVOTEE'
+              | 'PANDIT'
+              | 'STORE_OWNER'
+              | 'ASTROLOGER'
+              | 'WELLNESS_INSTRUCTOR'
+              | 'GAUSHALA_MANAGER'
+              | 'TEMPLE_MANAGER'
+              | 'ADMIN',
             isPrimary: idx === 0,
           })),
         });
@@ -330,7 +227,13 @@ export class AdminService {
                 await prisma.panditProfile.upsert({
                   where: { userId: id },
                   update: {},
-                  create: { userId: id, experience: 0, specialties: [], languages: [], pricePerPuja: 500 },
+                  create: {
+                    userId: id,
+                    experience: 0,
+                    specialties: [],
+                    languages: [],
+                    pricePerPuja: 500,
+                  },
                 });
                 break;
               case 'STORE_OWNER':
@@ -344,14 +247,28 @@ export class AdminService {
                 await prisma.astrologerProfile.upsert({
                   where: { userId: id },
                   update: {},
-                  create: { userId: id, displayName: fullName, specialties: [], experience: 0, languages: [], pricePerMinute: 10 },
+                  create: {
+                    userId: id,
+                    displayName: fullName,
+                    specialties: [],
+                    experience: 0,
+                    languages: [],
+                    pricePerMinute: 10,
+                  },
                 });
                 break;
               case 'WELLNESS_INSTRUCTOR':
                 await prisma.wellnessProfile.upsert({
                   where: { userId: id },
                   update: {},
-                  create: { userId: id, displayName: fullName, specialties: [], certifications: [], experience: 0, pricePerSession: 500 },
+                  create: {
+                    userId: id,
+                    displayName: fullName,
+                    specialties: [],
+                    certifications: [],
+                    experience: 0,
+                    pricePerSession: 500,
+                  },
                 });
                 break;
               case 'GAUSHALA_MANAGER':
@@ -391,19 +308,34 @@ export class AdminService {
               });
               break;
             case 'STORE_OWNER':
-              await prisma.storeProfile.updateMany({ where: { userId: id }, data: { approved: updates.approved } });
+              await prisma.storeProfile.updateMany({
+                where: { userId: id },
+                data: { approved: updates.approved },
+              });
               break;
             case 'ASTROLOGER':
-              await prisma.astrologerProfile.updateMany({ where: { userId: id }, data: { approved: updates.approved } });
+              await prisma.astrologerProfile.updateMany({
+                where: { userId: id },
+                data: { approved: updates.approved },
+              });
               break;
             case 'WELLNESS_INSTRUCTOR':
-              await prisma.wellnessProfile.updateMany({ where: { userId: id }, data: { approved: updates.approved } });
+              await prisma.wellnessProfile.updateMany({
+                where: { userId: id },
+                data: { approved: updates.approved },
+              });
               break;
             case 'GAUSHALA_MANAGER':
-              await prisma.gaushalaProfile.updateMany({ where: { userId: id }, data: { approved: updates.approved } });
+              await prisma.gaushalaProfile.updateMany({
+                where: { userId: id },
+                data: { approved: updates.approved },
+              });
               break;
             case 'TEMPLE_MANAGER':
-              await prisma.templeProfile.updateMany({ where: { userId: id }, data: { approved: updates.approved } });
+              await prisma.templeProfile.updateMany({
+                where: { userId: id },
+                data: { approved: updates.approved },
+              });
               break;
           }
         }
@@ -454,21 +386,33 @@ export class AdminService {
       const transactions = recentTransactions;
 
       // Count pending approvals across all profile types
-      const [pendingPandits, pendingStores, pendingAstrologers, pendingWellness, pendingGaushalas, pendingTemples] =
-        await Promise.all([
-          prisma.panditProfile.count({ where: { approved: false } }),
-          prisma.storeProfile.count({ where: { approved: false } }),
-          prisma.astrologerProfile.count({ where: { approved: false } }),
-          prisma.wellnessProfile.count({ where: { approved: false } }),
-          prisma.gaushalaProfile.count({ where: { approved: false } }),
-          prisma.templeProfile.count({ where: { approved: false } }),
-        ]);
+      const [
+        pendingPandits,
+        pendingStores,
+        pendingAstrologers,
+        pendingWellness,
+        pendingGaushalas,
+        pendingTemples,
+      ] = await Promise.all([
+        prisma.panditProfile.count({ where: { approved: false } }),
+        prisma.storeProfile.count({ where: { approved: false } }),
+        prisma.astrologerProfile.count({ where: { approved: false } }),
+        prisma.wellnessProfile.count({ where: { approved: false } }),
+        prisma.gaushalaProfile.count({ where: { approved: false } }),
+        prisma.templeProfile.count({ where: { approved: false } }),
+      ]);
 
       return {
         totalUsers,
         usersByRole,
         totalRevenue,
-        pendingApprovals: pendingPandits + pendingStores + pendingAstrologers + pendingWellness + pendingGaushalas + pendingTemples,
+        pendingApprovals:
+          pendingPandits +
+          pendingStores +
+          pendingAstrologers +
+          pendingWellness +
+          pendingGaushalas +
+          pendingTemples,
         activeSubscriptions: subscriptions,
         recentTransactions: transactions.map((t) => ({
           id: t.id,
@@ -479,27 +423,12 @@ export class AdminService {
           createdAt: t.createdAt.toISOString(),
         })),
       };
-    } catch {
-      return {
-        totalUsers: MOCK_USERS.length,
-        usersByRole: {
-          DEVOTEE: 1,
-          PANDIT: 1,
-          STORE_OWNER: 1,
-          ASTROLOGER: 1,
-          WELLNESS_INSTRUCTOR: 1,
-          GAUSHALA_MANAGER: 1,
-          TEMPLE_MANAGER: 1,
-          ADMIN: 1,
-        },
-        totalRevenue: 125000,
-        pendingApprovals: 2,
-        activeSubscriptions: 3,
-        recentTransactions: [
-          { id: 'txn-001', userId: 'user-001', type: 'BOOKING', amount: 2100, status: 'COMPLETED', createdAt: '2026-04-10T10:00:00Z' },
-          { id: 'txn-002', userId: 'user-004', type: 'SUBSCRIPTION', amount: 999, status: 'COMPLETED', createdAt: '2026-04-08T10:00:00Z' },
-        ],
-      };
+    } catch (err) {
+      // Previously returned a fake dashboard with 8 users and ₹125000 fake
+      // revenue on any DB failure. Fail loud so the admin UI surfaces the real
+      // error instead of misleading the operator with mock numbers.
+      console.error('[admin.service.getMetrics] DB failure', err);
+      throw err;
     }
   }
 
@@ -521,10 +450,18 @@ export class AdminService {
       const totalSubscriptions = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
 
       // Group subscriptions by plan+role
-      const subGroups = new Map<string, { plan: string; role: string; count: number; totalAmount: number }>();
+      const subGroups = new Map<
+        string,
+        { plan: string; role: string; count: number; totalAmount: number }
+      >();
       for (const s of subscriptions) {
         const key = `${s.plan}-${s.role}`;
-        const existing = subGroups.get(key) ?? { plan: s.plan, role: s.role, count: 0, totalAmount: 0 };
+        const existing = subGroups.get(key) ?? {
+          plan: s.plan,
+          role: s.role,
+          count: 0,
+          totalAmount: 0,
+        };
         existing.count += 1;
         existing.totalAmount += Number(s.amount);
         subGroups.set(key, existing);
@@ -551,8 +488,22 @@ export class AdminService {
         totalSubscriptions: 15000,
         pendingPayouts: 8000,
         commissions: [
-          { id: 'com-001', bookingId: 'bk-001', providerId: 'user-002', amount: 630, status: 'PAID', createdAt: '2026-04-10T10:00:00Z' },
-          { id: 'com-002', bookingId: 'bk-002', providerId: 'user-002', amount: 420, status: 'PENDING', createdAt: '2026-04-12T10:00:00Z' },
+          {
+            id: 'com-001',
+            bookingId: 'bk-001',
+            providerId: 'user-002',
+            amount: 630,
+            status: 'PAID',
+            createdAt: '2026-04-10T10:00:00Z',
+          },
+          {
+            id: 'com-002',
+            bookingId: 'bk-002',
+            providerId: 'user-002',
+            amount: 420,
+            status: 'PENDING',
+            createdAt: '2026-04-12T10:00:00Z',
+          },
         ],
         subscriptionRevenue: [
           { plan: 'BASIC', role: 'PANDIT', count: 5, totalAmount: 4995 },
@@ -572,15 +523,15 @@ export class AdminService {
       for (let i = 5; i >= 0; i -= 1) {
         const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-        const label = start.toLocaleString('en-US', { month: 'short' }) +
-          ' ' + String(start.getFullYear()).slice(2);
+        const label =
+          start.toLocaleString('en-US', { month: 'short' }) +
+          ' ' +
+          String(start.getFullYear()).slice(2);
         months.push({ start, end, label });
       }
 
       const userCounts = await Promise.all(
-        months.map((m) =>
-          prisma.user.count({ where: { createdAt: { lt: m.end } } }),
-        ),
+        months.map((m) => prisma.user.count({ where: { createdAt: { lt: m.end } } })),
       );
       const userGrowth = months.map((m, i) => ({
         month: m.label,
@@ -593,7 +544,18 @@ export class AdminService {
       const prevMonthEnd = monthStart;
 
       const statusGroups: Array<[string, BookingStatus[]]> = [
-        ['Total Bookings', ['pending_payment', 'confirmed', 'priest_assigned', 'in_progress', 'completed', 'video_uploaded', 'delivered']],
+        [
+          'Total Bookings',
+          [
+            'pending_payment',
+            'confirmed',
+            'priest_assigned',
+            'in_progress',
+            'completed',
+            'video_uploaded',
+            'delivered',
+          ],
+        ],
         ['Completed', ['completed', 'video_uploaded', 'delivered']],
         ['In Progress', ['confirmed', 'priest_assigned', 'in_progress']],
         ['Cancelled', ['cancelled', 'refunded']],
@@ -615,9 +577,12 @@ export class AdminService {
           const totalToDate = await prisma.pujaBooking.count({
             where: { status: { in: statuses } },
           });
-          const changePct = lastMonth === 0
-            ? (thisMonth > 0 ? null : 0)
-            : Number((((thisMonth - lastMonth) / lastMonth) * 100).toFixed(1));
+          const changePct =
+            lastMonth === 0
+              ? thisMonth > 0
+                ? null
+                : 0
+              : Number((((thisMonth - lastMonth) / lastMonth) * 100).toFixed(1));
           return { label, value: totalToDate, changePct };
         }),
       );
@@ -641,9 +606,7 @@ export class AdminService {
         name: pujaNameMap.get(p.pujaTypeId) ?? 'Unknown Puja',
         bookings: p._count._all,
         revenueInr: Number(p._sum.priceAmount ?? 0),
-        avgRating: p._avg.rating !== null
-          ? Number(p._avg.rating.toFixed(1))
-          : null,
+        avgRating: p._avg.rating !== null ? Number(p._avg.rating.toFixed(1)) : null,
       }));
 
       // ─── 4. Popular services (wellness sessions + astrologer convos) ─────
@@ -663,9 +626,7 @@ export class AdminService {
         where: { userId: { in: wellnessInstructorIds } },
         select: { userId: true, rating: true },
       });
-      const wellnessRatingMap = new Map(
-        wellnessProfiles.map((p) => [p.userId, p.rating] as const),
-      );
+      const wellnessRatingMap = new Map(wellnessProfiles.map((p) => [p.userId, p.rating] as const));
       const wellnessRows = wellnessAgg
         .map((w) => {
           const session = wellnessSessions.find((s) => s.id === w.sessionId);
@@ -691,9 +652,7 @@ export class AdminService {
         where: { userId: { in: astroAgg.map((a) => a.providerId) } },
         select: { userId: true, displayName: true, rating: true },
       });
-      const astroProfileMap = new Map(
-        astrologerProfiles.map((p) => [p.userId, p] as const),
-      );
+      const astroProfileMap = new Map(astrologerProfiles.map((p) => [p.userId, p] as const));
       const astroRows = astroAgg
         .map((a) => {
           const prof = astroProfileMap.get(a.providerId);
@@ -722,21 +681,16 @@ export class AdminService {
       const totalGeoUsers = stateAgg.reduce((sum, s) => sum + s._count._all, 0);
       const top10 = stateAgg.slice(0, 10);
       const otherCount = stateAgg.slice(10).reduce((sum, s) => sum + s._count._all, 0);
-      const geographicDistribution: ReportsResponse['geographicDistribution'] =
-        top10.map((s) => ({
-          state: s.locationState!,
-          users: s._count._all,
-          pct: totalGeoUsers > 0
-            ? Number(((s._count._all / totalGeoUsers) * 100).toFixed(1))
-            : 0,
-        }));
+      const geographicDistribution: ReportsResponse['geographicDistribution'] = top10.map((s) => ({
+        state: s.locationState!,
+        users: s._count._all,
+        pct: totalGeoUsers > 0 ? Number(((s._count._all / totalGeoUsers) * 100).toFixed(1)) : 0,
+      }));
       if (otherCount > 0) {
         geographicDistribution.push({
           state: 'Others',
           users: otherCount,
-          pct: totalGeoUsers > 0
-            ? Number(((otherCount / totalGeoUsers) * 100).toFixed(1))
-            : 0,
+          pct: totalGeoUsers > 0 ? Number(((otherCount / totalGeoUsers) * 100).toFixed(1)) : 0,
         });
       }
 
@@ -791,8 +745,7 @@ export class AdminService {
           userId: p.userId,
           role: 'PANDIT' as const,
           profileName:
-            panditUserName.get(p.userId) ||
-            (p.bio ? p.bio.slice(0, 40) : 'Unnamed Pandit'),
+            panditUserName.get(p.userId) || (p.bio ? p.bio.slice(0, 40) : 'Unnamed Pandit'),
           city: p.city,
           createdAt: p.createdAt.toISOString(),
         })),
@@ -838,9 +791,12 @@ export class AdminService {
         })),
       ];
 
-      return approvals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } catch {
-      return MOCK_PENDING_APPROVALS;
+      return approvals.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    } catch (err) {
+      console.error('[admin.service.getPendingApprovals] DB failure', err);
+      throw err;
     }
   }
 
@@ -904,13 +860,31 @@ export class AdminService {
   private async resolvePublicProfileId(userId: string, role: string): Promise<string | undefined> {
     try {
       switch (role) {
-        case 'PANDIT': return (await prisma.panditProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
-        case 'STORE_OWNER': return (await prisma.storeProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
-        case 'ASTROLOGER': return (await prisma.astrologerProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
-        case 'WELLNESS_INSTRUCTOR': return (await prisma.wellnessProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
-        case 'GAUSHALA_MANAGER': return (await prisma.gaushalaProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
-        case 'TEMPLE_MANAGER': return (await prisma.templeProfile.findUnique({ where: { userId }, select: { id: true } }))?.id;
-        default: return undefined;
+        case 'PANDIT':
+          return (
+            await prisma.panditProfile.findUnique({ where: { userId }, select: { id: true } })
+          )?.id;
+        case 'STORE_OWNER':
+          return (await prisma.storeProfile.findUnique({ where: { userId }, select: { id: true } }))
+            ?.id;
+        case 'ASTROLOGER':
+          return (
+            await prisma.astrologerProfile.findUnique({ where: { userId }, select: { id: true } })
+          )?.id;
+        case 'WELLNESS_INSTRUCTOR':
+          return (
+            await prisma.wellnessProfile.findUnique({ where: { userId }, select: { id: true } })
+          )?.id;
+        case 'GAUSHALA_MANAGER':
+          return (
+            await prisma.gaushalaProfile.findUnique({ where: { userId }, select: { id: true } })
+          )?.id;
+        case 'TEMPLE_MANAGER':
+          return (
+            await prisma.templeProfile.findUnique({ where: { userId }, select: { id: true } })
+          )?.id;
+        default:
+          return undefined;
       }
     } catch {
       return undefined;
@@ -922,12 +896,48 @@ export class AdminService {
 // Centralised so changing a slug in one place fixes both the email link and
 // the approval CTA.
 const ROLE_EMAIL_META = {
-  PANDIT: { label: 'Pandit', fallbackName: 'Panditji', dashboardPath: '/priest', onboardingSlug: 'priest', publicListingType: 'pandit' as const },
-  STORE_OWNER: { label: 'Store', fallbackName: 'Store Owner', dashboardPath: '/store-admin', onboardingSlug: 'store_owner', publicListingType: null },
-  ASTROLOGER: { label: 'Astrologer', fallbackName: 'Astrologer', dashboardPath: '/astrologer-portal', onboardingSlug: 'astrologer', publicListingType: 'astrologer' as const },
-  WELLNESS_INSTRUCTOR: { label: 'Wellness Instructor', fallbackName: 'Instructor', dashboardPath: '/wellness-portal', onboardingSlug: 'wellness_instructor', publicListingType: 'wellness' as const },
-  GAUSHALA_MANAGER: { label: 'Gaushala Manager', fallbackName: 'Sevak', dashboardPath: '/gaushala-portal', onboardingSlug: 'gaushala_manager', publicListingType: 'gaushala' as const },
-  TEMPLE_MANAGER: { label: 'Temple Manager', fallbackName: 'Manager', dashboardPath: '/temple-portal', onboardingSlug: 'temple_manager', publicListingType: 'temple' as const },
+  PANDIT: {
+    label: 'Pandit',
+    fallbackName: 'Panditji',
+    dashboardPath: '/priest',
+    onboardingSlug: 'priest',
+    publicListingType: 'pandit' as const,
+  },
+  STORE_OWNER: {
+    label: 'Store',
+    fallbackName: 'Store Owner',
+    dashboardPath: '/store-admin',
+    onboardingSlug: 'store_owner',
+    publicListingType: null,
+  },
+  ASTROLOGER: {
+    label: 'Astrologer',
+    fallbackName: 'Astrologer',
+    dashboardPath: '/astrologer-portal',
+    onboardingSlug: 'astrologer',
+    publicListingType: 'astrologer' as const,
+  },
+  WELLNESS_INSTRUCTOR: {
+    label: 'Wellness Instructor',
+    fallbackName: 'Instructor',
+    dashboardPath: '/wellness-portal',
+    onboardingSlug: 'wellness_instructor',
+    publicListingType: 'wellness' as const,
+  },
+  GAUSHALA_MANAGER: {
+    label: 'Gaushala Manager',
+    fallbackName: 'Sevak',
+    dashboardPath: '/gaushala-portal',
+    onboardingSlug: 'gaushala_manager',
+    publicListingType: 'gaushala' as const,
+  },
+  TEMPLE_MANAGER: {
+    label: 'Temple Manager',
+    fallbackName: 'Manager',
+    dashboardPath: '/temple-portal',
+    onboardingSlug: 'temple_manager',
+    publicListingType: 'temple' as const,
+  },
 } as const;
 
 export const adminService = new AdminService();

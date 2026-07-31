@@ -30,8 +30,22 @@ describe('AdminService.getUsers', () => {
 
   it('paginates skip/take and returns enriched roles', async () => {
     prismaMock.user.findMany.mockResolvedValue([
-      { id: 'u-1', fullName: 'A', email: 'a@e', phone: '1', subscriptionTier: 'FREE', createdAt: new Date() },
-      { id: 'u-2', fullName: 'B', email: 'b@e', phone: '2', subscriptionTier: 'PRO', createdAt: new Date() },
+      {
+        id: 'u-1',
+        fullName: 'A',
+        email: 'a@e',
+        phone: '1',
+        subscriptionTier: 'FREE',
+        createdAt: new Date(),
+      },
+      {
+        id: 'u-2',
+        fullName: 'B',
+        email: 'b@e',
+        phone: '2',
+        subscriptionTier: 'PRO',
+        createdAt: new Date(),
+      },
     ]);
     prismaMock.user.count.mockResolvedValue(2);
     prismaMock.userRoleAssignment.findMany.mockResolvedValue([
@@ -42,7 +56,7 @@ describe('AdminService.getUsers', () => {
     const out = await service.getUsers({ page: 2, limit: 5 });
 
     expect(prismaMock.user.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 5, take: 5 })
+      expect.objectContaining({ skip: 5, take: 5 }),
     );
     const u1 = out.users.find((u) => u.id === 'u-1');
     expect(u1!.roles).toEqual(expect.arrayContaining(['PANDIT', 'DEVOTEE']));
@@ -52,8 +66,22 @@ describe('AdminService.getUsers', () => {
 
   it('post-filters by role when filter present', async () => {
     prismaMock.user.findMany.mockResolvedValue([
-      { id: 'u-1', fullName: 'A', email: 'a@e', phone: '1', subscriptionTier: null, createdAt: new Date() },
-      { id: 'u-2', fullName: 'B', email: 'b@e', phone: '2', subscriptionTier: null, createdAt: new Date() },
+      {
+        id: 'u-1',
+        fullName: 'A',
+        email: 'a@e',
+        phone: '1',
+        subscriptionTier: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 'u-2',
+        fullName: 'B',
+        email: 'b@e',
+        phone: '2',
+        subscriptionTier: null,
+        createdAt: new Date(),
+      },
     ]);
     prismaMock.user.count.mockResolvedValue(2);
     prismaMock.userRoleAssignment.findMany.mockResolvedValue([
@@ -67,11 +95,12 @@ describe('AdminService.getUsers', () => {
     expect(out.users[0]!.id).toBe('u-1');
   });
 
-  it('falls back to mock list when prisma errors', async () => {
+  it('throws on DB failure instead of serving mock data', async () => {
+    // Changed 2026-07-17: the catch block used to return MOCK_USERS, masking
+    // real DB outages with fake admin data. Now it rethrows so the operator
+    // sees the error and the admin UI surfaces 500.
     prismaMock.user.findMany.mockRejectedValue(new Error('db down'));
-    const out = await service.getUsers({});
-    expect(out.users.length).toBeGreaterThan(0);
-    expect(out.total).toBeGreaterThan(0);
+    await expect(service.getUsers({})).rejects.toThrow('db down');
   });
 });
 
@@ -84,9 +113,7 @@ describe('AdminService.getUserById', () => {
 
   it('attaches role names + per-type profiles when found', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ id: 'u-1', email: 'a@e' });
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
-      { userId: 'u-1', role: 'PANDIT' },
-    ]);
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([{ userId: 'u-1', role: 'PANDIT' }]);
     prismaMock.panditProfile.findUnique.mockResolvedValue({ id: 'pp-1' });
     prismaMock.storeProfile.findUnique.mockResolvedValue(null);
     prismaMock.astrologerProfile.findUnique.mockResolvedValue(null);
@@ -117,7 +144,9 @@ describe('AdminService.updateUser', () => {
 
     const out = await service.updateUser('u-1', { roles: ['PANDIT', 'DEVOTEE'] });
 
-    expect(prismaMock.userRoleAssignment.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u-1' } });
+    expect(prismaMock.userRoleAssignment.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 'u-1' },
+    });
     const createCall = prismaMock.userRoleAssignment.createMany.mock.calls[0]![0]!;
     expect(createCall.data).toEqual([
       { userId: 'u-1', role: 'PANDIT', isPrimary: true },
@@ -128,7 +157,9 @@ describe('AdminService.updateUser', () => {
 
   it('routes approval to correct profile updateMany based on role', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ id: 'u-1' });
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([{ userId: 'u-1', role: 'STORE_OWNER' }]);
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'u-1', role: 'STORE_OWNER' },
+    ]);
     prismaMock.storeProfile.updateMany.mockResolvedValue({ count: 1 });
 
     await service.updateUser('u-1', { approved: true });
@@ -137,7 +168,7 @@ describe('AdminService.updateUser', () => {
       expect.objectContaining({
         where: { userId: 'u-1' },
         data: { approved: true },
-      })
+      }),
     );
   });
 });
@@ -152,8 +183,22 @@ describe('AdminService.getDashboard', () => {
     ]);
     prismaMock.marketplaceSubscription.count.mockResolvedValue(8);
     prismaMock.transaction.findMany.mockResolvedValue([
-      { id: 't1', userId: 'u', type: 'BOOKING', amount: 1000, status: 'COMPLETED', createdAt: new Date('2026-04-10') },
-      { id: 't2', userId: 'u', type: 'SUBSCRIPTION', amount: 500, status: 'COMPLETED', createdAt: new Date('2026-04-09') },
+      {
+        id: 't1',
+        userId: 'u',
+        type: 'BOOKING',
+        amount: 1000,
+        status: 'COMPLETED',
+        createdAt: new Date('2026-04-10'),
+      },
+      {
+        id: 't2',
+        userId: 'u',
+        type: 'SUBSCRIPTION',
+        amount: 500,
+        status: 'COMPLETED',
+        createdAt: new Date('2026-04-09'),
+      },
     ]);
     prismaMock.transaction.aggregate.mockResolvedValue({ _sum: { amount: 1500 } });
     prismaMock.panditProfile.count.mockResolvedValue(1);
@@ -173,19 +218,34 @@ describe('AdminService.getDashboard', () => {
     expect(out.recentTransactions).toHaveLength(2);
   });
 
-  it('falls back to demo dashboard on error', async () => {
+  it('throws on DB failure instead of serving fake metrics', async () => {
+    // Changed 2026-07-17: the catch block used to return a mock dashboard
+    // with 8 fake users + ₹125000 fake revenue, masking real DB outages.
+    // Now it rethrows so the admin UI surfaces the real error.
     prismaMock.user.count.mockRejectedValue(new Error('db down'));
-    const out = await service.getDashboard();
-    expect(out.totalUsers).toBeGreaterThan(0);
-    expect(out.usersByRole.DEVOTEE).toBeDefined();
+    await expect(service.getDashboard()).rejects.toThrow('db down');
   });
 });
 
 describe('AdminService.getRevenue', () => {
   it('aggregates paid + pending commissions and groups subs by plan/role', async () => {
     prismaMock.commission.findMany.mockResolvedValue([
-      { id: 'c1', bookingId: 'b1', providerId: 'p1', amount: 1000, status: 'PAID', createdAt: new Date() },
-      { id: 'c2', bookingId: 'b2', providerId: 'p1', amount: 500, status: 'PENDING', createdAt: new Date() },
+      {
+        id: 'c1',
+        bookingId: 'b1',
+        providerId: 'p1',
+        amount: 1000,
+        status: 'PAID',
+        createdAt: new Date(),
+      },
+      {
+        id: 'c2',
+        bookingId: 'b2',
+        providerId: 'p1',
+        amount: 500,
+        status: 'PENDING',
+        createdAt: new Date(),
+      },
     ]);
     prismaMock.marketplaceSubscription.findMany.mockResolvedValue([
       { plan: 'BASIC', role: 'PANDIT', amount: 999 },
@@ -198,7 +258,9 @@ describe('AdminService.getRevenue', () => {
     expect(out.totalCommissions).toBe(1000);
     expect(out.pendingPayouts).toBe(500);
     expect(out.totalSubscriptions).toBe(999 + 999 + 2999);
-    const basicPandit = out.subscriptionRevenue.find((g) => g.plan === 'BASIC' && g.role === 'PANDIT');
+    const basicPandit = out.subscriptionRevenue.find(
+      (g) => g.plan === 'BASIC' && g.role === 'PANDIT',
+    );
     expect(basicPandit?.count).toBe(2);
     expect(basicPandit?.totalAmount).toBe(1998);
   });
