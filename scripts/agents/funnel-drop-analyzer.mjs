@@ -14,57 +14,58 @@
 
 import { writeReport, upsertLog, fetchJson, API_BASE, TODAY } from './_lib.mjs';
 
-const CRON_TOKEN = process.env.CRON_AUTH_TOKEN || '';
-const GH_TOKEN = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
-const GH_REPO = process.env.GH_REPO || 'XI1568-raghav/bhaktisetu';
-const DROP_THRESHOLD = Number.parseFloat(process.env.FUNNEL_DROP_THRESHOLD || '0.70');
-
 const STAGES = ['landing', 'signup', 'kyc', 'booking', 'payment_success'];
 
 function median(nums) {
-  const arr = nums.filter((n) => Number.isFinite(n)).slice().sort((a, b) => a - b);
+  const arr = nums
+    .filter((n) => Number.isFinite(n))
+    .slice()
+    .sort((a, b) => a - b);
   if (arr.length === 0) return 0;
   const m = Math.floor(arr.length / 2);
   return arr.length % 2 ? arr[m] : (arr[m - 1] + arr[m]) / 2;
 }
 
 function fingerprint(stage, dropPct) {
-  // Round drop to nearest 10% so the same alert dedups for a week.
+  // Round drop to nearest 10% so the same alert dedups for a week. A dead
+  // funnel (baseline 0 → 0, no measurable drop) is one logical alert for the
+  // whole funnel — all stages share the `funnel:dead` fingerprint so a single
+  // all-zero run files exactly ONE issue (and dedupes across days too).
+  if (dropPct === 'dead') return 'funnel:dead';
   const bucket = Math.round(dropPct * 10) / 10;
   return `funnel:${stage}:${bucket}`;
 }
 
-async function ghFetch(path, init = {}) {
-  if (!GH_TOKEN) return { status: 0, json: null };
-  try {
-    const r = await fetch(`https://api.github.com${path}`, {
-      ...init,
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${GH_TOKEN}`,
-        'user-agent': 'darshya-funnel-drop-analyzer',
-        ...(init.headers || {}),
-      },
-    });
-    const json = await r.json().catch(() => null);
-    return { status: r.status, json };
-  } catch (e) { return { status: 0, json: null, error: String(e) }; }
-}
+// Factory: lets tests inject a mock GH fetch layer, IO sinks, funnel source,
+// and tokens without touching the network or env. Public behavior (the
+// env-driven `main()` below) is unchanged — it just calls this with the real
+// defaults. Returns { run } where run() resolves to { findings, filed, skipped }.
+export function createAnalyzer({
+  ghFetch,
+  writeReport: writeReportFn,
+  upsertLog: upsertLogFn,
+  getFunnel,
+  cronToken,
+  ghToken,
+  ghRepo = process.env.GH_REPO || 'XI1568-raghav/bhaktisetu',
+  dropThreshold = Number.parseFloat(process.env.FUNNEL_DROP_THRESHOLD || '0.70'),
+} = {}) {
+  async function alreadyFiled(fp) {
+    const { json } = await ghFetch(
+      `/repos/${ghRepo}/issues?state=open&labels=agent-auto-filed,P0&per_page=50`,
+    );
+    if (!Array.isArray(json)) return false;
+    return json.some((iss) => typeof iss?.body === 'string' && iss.body.includes(fp));
+  }
 
-async function alreadyFiled(fp) {
-  const { json } = await ghFetch(`/repos/${GH_REPO}/issues?state=open&labels=agent-auto-filed,P0&per_page=50`);
-  if (!Array.isArray(json)) return false;
-  return json.some((iss) => typeof iss?.body === 'string' && iss.body.includes(fp));
-}
-
-async function fileIssue(stage, dropPct, yesterday, baseline, fp) {
-  const title = `[P0] Funnel drop: ${stage} fell ${Math.round(dropPct * 100)}% vs 6-day baseline`;
-  const body = `**Funnel-drop-analyzer auto-filed ${TODAY}**
+  async function fileIssue(stage, dropPct, yesterday, baseline, fp) {
+    const title = `[P0] Funnel drop: ${stage} fell ${dropPct === 'dead' ? 100 : Math.round(dropPct * 100)}% vs 6-day baseline`;
+    const body = `**Funnel-drop-analyzer auto-filed ${TODAY}**
 
 Stage: \`${stage}\`
 Yesterday: **${yesterday}**
 6-day median baseline: **${baseline}**
-Drop: **${Math.round(dropPct * 100)}%** (threshold ${Math.round(DROP_THRESHOLD * 100)}%)
+Drop: **${dropPct === 'dead' ? 100 : Math.round(dropPct * 100)}%** (threshold ${Math.round(dropThreshold * 100)}%)
 
 ## Likely causes
 - Upstream stage may have collapsed — check the row above this one
@@ -80,11 +81,129 @@ Drop: **${Math.round(dropPct * 100)}%** (threshold ${Math.round(DROP_THRESHOLD *
 ---
 _fingerprint: \`${fp}\` — re-runs won't duplicate this issue while open_
 `;
-  const { status, json } = await ghFetch(`/repos/${GH_REPO}/issues`, {
-    method: 'POST',
-    body: JSON.stringify({ title, body, labels: ['agent-auto-filed', 'P0', 'funnel-drop'] }),
-  });
-  return { ok: status === 201, number: json?.number, url: json?.html_url };
+    const { status, json } = await ghFetch(`/repos/${ghRepo}/issues`, {
+      method: 'POST',
+      body: JSON.stringify({ title, body, labels: ['agent-auto-filed', 'P0', 'funnel-drop'] }),
+    });
+    return { ok: status === 201, number: json?.number, url: json?.html_url };
+  }
+
+  async function run() {
+    if (!cronToken) {
+      writeReportFn(
+        'funnel-drop-analyzer',
+        `# funnel-drop-analyzer — ${TODAY}\n\n**Skipped:** CRON_AUTH_TOKEN not set.\n`,
+      );
+      return { findings: [], filed: [], skipped: true };
+    }
+
+    const funnel = await getFunnel();
+    if (!funnel || !Array.isArray(funnel.daily) || funnel.daily.length < 2) {
+      writeReportFn(
+        'funnel-drop-analyzer',
+        `# funnel-drop-analyzer — ${TODAY}\n\n**Skipped:** API returned no funnel data (endpoint may not exist yet — Sprint 3 dashboard work).\n`,
+      );
+      return { findings: [], filed: [], skipped: true };
+    }
+
+    // funnel.daily = [{ date: 'YYYY-MM-DD', stages: { landing: N, signup: N, ... } }, ...]
+    const sorted = funnel.daily.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const yesterday = sorted[sorted.length - 1];
+    const prior = sorted.slice(0, -1);
+
+    const findings = [];
+    const filed = [];
+
+    for (const stage of STAGES) {
+      const y = Number(yesterday.stages?.[stage] ?? 0);
+      const baseline = median(prior.map((d) => Number(d.stages?.[stage] ?? 0)));
+      // Dead funnel: baseline 0 AND yesterday 0. Previously this hit an early
+      // `continue` that recorded a 'no-baseline' finding and skipped filing —
+      // so a 100%-drop / all-zero state (the most severe regression) silently
+      // filed ZERO issues for 60+ days. Now, on the first dead stage, file ONE
+      // deduped P0 alert (fingerprint `funnel:dead` shared by all stages) and
+      // record every stage as no-baseline. Subsequent dead stages only record
+      // findings — they do NOT re-file because the shared fingerprint is now
+      // already in the open-issues set.
+      if (baseline === 0 && y === 0) {
+        findings.push({ stage, status: 'no-baseline', y, baseline });
+        const fp = fingerprint(stage, 'dead');
+        if (ghToken && !(await alreadyFiled(fp))) {
+          const r = await fileIssue(stage, 'dead', y, baseline, fp);
+          if (r.ok) filed.push({ stage, number: r.number, url: r.url });
+        }
+        continue;
+      }
+      if (baseline === 0) {
+        findings.push({ stage, status: 'no-baseline', y, baseline });
+        continue;
+      }
+      const dropPct = (baseline - y) / baseline;
+      if (dropPct >= dropThreshold) {
+        findings.push({ stage, status: 'P0', y, baseline, dropPct });
+        const fp = fingerprint(stage, dropPct);
+        if (ghToken && !(await alreadyFiled(fp))) {
+          const r = await fileIssue(stage, dropPct, y, baseline, fp);
+          if (r.ok) filed.push({ stage, number: r.number, url: r.url });
+        }
+      } else if (dropPct >= 0.3) {
+        findings.push({ stage, status: 'warning', y, baseline, dropPct });
+      } else {
+        findings.push({ stage, status: 'ok', y, baseline, dropPct });
+      }
+    }
+
+    const md = `# funnel-drop-analyzer — ${TODAY}
+
+Compared yesterday (${yesterday.date}) vs ${prior.length}-day median baseline.
+Drop threshold for P0: **${Math.round(dropThreshold * 100)}%**.
+
+## Findings
+
+| Stage | Yesterday | Baseline | Δ% | Status |
+|---|---:|---:|---:|---|
+${findings.map((f) => `| \`${f.stage}\` | ${f.y} | ${Math.round(f.baseline)} | ${f.dropPct != null ? `${(f.dropPct * 100).toFixed(0)}%` : '—'} | ${f.status === 'P0' ? '🔴 **P0**' : f.status === 'warning' ? '🟡 warning' : f.status === 'no-baseline' ? '⚪ no-baseline' : '🟢 ok'} |`).join('\n')}
+
+## GH issues filed this run
+
+${filed.length ? filed.map((f) => `- \`${f.stage}\` → #${f.number} ${f.url}`).join('\n') : '_none — all stages within threshold or already filed_'}
+
+${ghToken ? '' : '_⚠ GITHUB_TOKEN not set — would-be P0 issues not filed._'}
+`;
+
+    writeReportFn('funnel-drop-analyzer', md);
+    upsertLogFn('funnel-drop-analyzer', `findings=${findings.length} filed=${filed.length}`);
+    console.log(`[funnel-drop-analyzer] done findings=${findings.length} filed=${filed.length}`);
+    return { findings, filed, skipped: false };
+  }
+
+  return { run };
+}
+
+// ── env-driven entrypoint (CLI / cron) ──────────────────────────────────
+// Behavior identical to the original: reads env, wires real fetch/IO, runs.
+const CRON_TOKEN = process.env.CRON_AUTH_TOKEN || '';
+const GH_TOKEN = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
+const GH_REPO = process.env.GH_REPO || 'XI1568-raghav/bhaktisetu';
+const DROP_THRESHOLD = Number.parseFloat(process.env.FUNNEL_DROP_THRESHOLD || '0.70');
+
+async function ghFetch(path, init = {}) {
+  if (!GH_TOKEN) return { status: 0, json: null };
+  try {
+    const r = await fetch(`https://api.github.com${path}`, {
+      ...init,
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${GH_TOKEN}`,
+        'user-agent': 'darshya-funnel-drop-analyzer',
+        ...(init.headers || {}),
+      },
+    });
+    const json = await r.json().catch(() => null);
+    return { status: r.status, json };
+  } catch (e) {
+    return { status: 0, json: null, error: String(e) };
+  }
 }
 
 async function getFunnel() {
@@ -97,69 +216,23 @@ async function getFunnel() {
 
 async function main() {
   console.log('[funnel-drop-analyzer] starting');
-
-  if (!CRON_TOKEN) {
-    writeReport('funnel-drop-analyzer', `# funnel-drop-analyzer — ${TODAY}\n\n**Skipped:** CRON_AUTH_TOKEN not set.\n`);
-    return;
-  }
-
-  const funnel = await getFunnel();
-  if (!funnel || !Array.isArray(funnel.daily) || funnel.daily.length < 2) {
-    writeReport('funnel-drop-analyzer', `# funnel-drop-analyzer — ${TODAY}\n\n**Skipped:** API returned no funnel data (endpoint may not exist yet — Sprint 3 dashboard work).\n`);
-    return;
-  }
-
-  // funnel.daily = [{ date: 'YYYY-MM-DD', stages: { landing: N, signup: N, ... } }, ...]
-  const sorted = funnel.daily.slice().sort((a, b) => a.date.localeCompare(b.date));
-  const yesterday = sorted[sorted.length - 1];
-  const prior = sorted.slice(0, -1);
-
-  const findings = [];
-  const filed = [];
-
-  for (const stage of STAGES) {
-    const y = Number(yesterday.stages?.[stage] ?? 0);
-    const baseline = median(prior.map((d) => Number(d.stages?.[stage] ?? 0)));
-    if (baseline === 0) { findings.push({ stage, status: 'no-baseline', y, baseline }); continue; }
-    const dropPct = (baseline - y) / baseline;
-    if (dropPct >= DROP_THRESHOLD) {
-      findings.push({ stage, status: 'P0', y, baseline, dropPct });
-      const fp = fingerprint(stage, dropPct);
-      if (GH_TOKEN && !(await alreadyFiled(fp))) {
-        const r = await fileIssue(stage, dropPct, y, baseline, fp);
-        if (r.ok) filed.push({ stage, number: r.number, url: r.url });
-      }
-    } else if (dropPct >= 0.3) {
-      findings.push({ stage, status: 'warning', y, baseline, dropPct });
-    } else {
-      findings.push({ stage, status: 'ok', y, baseline, dropPct });
-    }
-  }
-
-  const md = `# funnel-drop-analyzer — ${TODAY}
-
-Compared yesterday (${yesterday.date}) vs ${prior.length}-day median baseline.
-Drop threshold for P0: **${Math.round(DROP_THRESHOLD * 100)}%**.
-
-## Findings
-
-| Stage | Yesterday | Baseline | Δ% | Status |
-|---|---:|---:|---:|---|
-${findings.map((f) => `| \`${f.stage}\` | ${f.y} | ${Math.round(f.baseline)} | ${f.dropPct != null ? `${(f.dropPct * 100).toFixed(0)}%` : '—'} | ${f.status === 'P0' ? '🔴 **P0**' : f.status === 'warning' ? '🟡 warning' : f.status === 'no-baseline' ? '⚪ no-baseline' : '🟢 ok'} |`).join('\n')}
-
-## GH issues filed this run
-
-${filed.length ? filed.map((f) => `- \`${f.stage}\` → #${f.number} ${f.url}`).join('\n') : '_none — all stages within threshold or already filed_'}
-
-${GH_TOKEN ? '' : '_⚠ GITHUB_TOKEN not set — would-be P0 issues not filed._'}
-`;
-
-  writeReport('funnel-drop-analyzer', md);
-  upsertLog('funnel-drop-analyzer', `findings=${findings.length} filed=${filed.length}`);
-  console.log(`[funnel-drop-analyzer] done findings=${findings.length} filed=${filed.length}`);
+  const analyzer = createAnalyzer({
+    ghFetch,
+    writeReport,
+    upsertLog,
+    getFunnel,
+    cronToken: CRON_TOKEN,
+    ghToken: GH_TOKEN,
+    ghRepo: GH_REPO,
+    dropThreshold: DROP_THRESHOLD,
+  });
+  await analyzer.run();
 }
 
-main().catch((e) => {
-  console.error('[funnel-drop-analyzer] FATAL', e);
-  process.exit(1);
-});
+// Only run when executed directly (not when imported by tests).
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((e) => {
+    console.error('[funnel-drop-analyzer] FATAL', e);
+    process.exit(1);
+  });
+}
