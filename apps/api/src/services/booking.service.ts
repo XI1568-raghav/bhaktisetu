@@ -91,11 +91,7 @@ const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
 };
 
 // Statuses that allow cancellation by the user
-const CANCELLABLE_STATUSES: BookingStatus[] = [
-  'pending_payment',
-  'confirmed',
-  'priest_assigned',
-];
+const CANCELLABLE_STATUSES: BookingStatus[] = ['pending_payment', 'confirmed', 'priest_assigned'];
 
 // ─── BookingService ─────────────────────────────────────────────────────────────
 
@@ -158,7 +154,7 @@ export class BookingService {
     const availableSlots = offering.availableSlots as string[];
     if (!availableSlots.includes(data.scheduledTimeSlot)) {
       throw new Error(
-        `Invalid time slot "${data.scheduledTimeSlot}". Available slots: ${availableSlots.join(', ')}`
+        `Invalid time slot "${data.scheduledTimeSlot}". Available slots: ${availableSlots.join(', ')}`,
       );
     }
 
@@ -175,7 +171,7 @@ export class BookingService {
 
     if (existingCount >= offering.maxBookingsPerSlot) {
       throw new Error(
-        `No availability for the selected slot. Maximum ${offering.maxBookingsPerSlot} bookings allowed.`
+        `No availability for the selected slot. Maximum ${offering.maxBookingsPerSlot} bookings allowed.`,
       );
     }
 
@@ -190,9 +186,7 @@ export class BookingService {
     }
 
     const basePrice = offering.priceOverride ?? offering.pujaType.basePrice;
-    const pujaPrice = user.isNri
-      ? offering.pujaType.nriPrice
-      : basePrice;
+    const pujaPrice = user.isNri ? offering.pujaType.nriPrice : basePrice;
 
     // P0 #PBO-3 (2026-07-09): collect the platform + prasad fees shown in the
     // wizard. The charged total (priceAmount) is the puja price + platform fee
@@ -203,15 +197,15 @@ export class BookingService {
     const prasadFee = data.prasadDeliveryRequested
       ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
       : new Prisma.Decimal(0);
-    const priceAmount = new Prisma.Decimal(pujaPrice.toString())
-      .add(platformFee)
-      .add(prasadFee);
+    const priceAmount = new Prisma.Decimal(pujaPrice.toString()).add(platformFee).add(prasadFee);
 
     // Platform commission 30% of the PUJA price, priest payout 70%.
-    const platformCommission = new Prisma.Decimal(pujaPrice.toString())
-      .mul(new Prisma.Decimal('0.30'));
-    const priestPayoutAmount = new Prisma.Decimal(pujaPrice.toString())
-      .mul(new Prisma.Decimal('0.70'));
+    const platformCommission = new Prisma.Decimal(pujaPrice.toString()).mul(
+      new Prisma.Decimal('0.30'),
+    );
+    const priestPayoutAmount = new Prisma.Decimal(pujaPrice.toString()).mul(
+      new Prisma.Decimal('0.70'),
+    );
 
     // 5. Generate booking number (retry on collision)
     let bookingNumber = this.generateBookingNumber();
@@ -285,7 +279,7 @@ export class BookingService {
   async updateBookingStatus(
     bookingId: string,
     newStatus: BookingStatus,
-    data?: Record<string, any>
+    data?: Record<string, any>,
   ) {
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
@@ -300,9 +294,7 @@ export class BookingService {
     const allowed = VALID_TRANSITIONS[currentStatus];
 
     if (!allowed || !allowed.includes(newStatus)) {
-      throw new Error(
-        `Invalid status transition from "${currentStatus}" to "${newStatus}".`
-      );
+      throw new Error(`Invalid status transition from "${currentStatus}" to "${newStatus}".`);
     }
 
     // P0 #pp-01 (2026-07-09): defense-in-depth denylist. The route layer
@@ -319,16 +311,12 @@ export class BookingService {
       'id',
     ]);
     const sanitizedData: Record<string, any> | undefined = data
-      ? Object.fromEntries(
-          Object.entries(data).filter(([k]) => !FORBIDDEN_DATA_KEYS.has(k))
-        )
+      ? Object.fromEntries(Object.entries(data).filter(([k]) => !FORBIDDEN_DATA_KEYS.has(k)))
       : undefined;
 
     const updateData: Prisma.PujaBookingUpdateInput = {
       status: newStatus,
-      ...(sanitizedData && Object.keys(sanitizedData).length > 0
-        ? sanitizedData
-        : {}),
+      ...(sanitizedData && Object.keys(sanitizedData).length > 0 ? sanitizedData : {}),
     };
 
     const updated = await prisma.pujaBooking.update({
@@ -383,9 +371,7 @@ export class BookingService {
     if (newStatus === 'video_uploaded' || newStatus === 'delivered') {
       void paymentService
         .createPriestPayout(updated.id)
-        .catch((err) =>
-          console.warn('[booking.service] priest payout write failed:', err),
-        );
+        .catch((err) => console.warn('[booking.service] priest payout write failed:', err));
     }
 
     // Push notification on key transitions. Fire-and-forget — push failure
@@ -447,22 +433,17 @@ export class BookingService {
     }
 
     if (!CANCELLABLE_STATUSES.includes(booking.status as BookingStatus)) {
-      throw new Error(
-        `Booking cannot be cancelled in its current status "${booking.status}".`
-      );
+      throw new Error(`Booking cannot be cancelled in its current status "${booking.status}".`);
     }
 
     // Check 24-hour cancellation window (only if not pending_payment)
     if (booking.status !== 'pending_payment') {
       const scheduledDateTime = new Date(booking.scheduledDate);
       const now = new Date();
-      const hoursUntilPuja =
-        (scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const hoursUntilPuja = (scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       if (hoursUntilPuja < 24) {
-        throw new Error(
-          'Cancellation is not allowed within 24 hours of the scheduled puja time.'
-        );
+        throw new Error('Cancellation is not allowed within 24 hours of the scheduled puja time.');
       }
     }
 
@@ -567,13 +548,7 @@ export class BookingService {
    * Get a paginated list of bookings for a user with optional filters.
    */
   async getUserBookings(userId: string, filters?: UserBookingsFilters) {
-    const {
-      status,
-      dateFrom,
-      dateTo,
-      page = 1,
-      limit = 20,
-    } = filters ?? {};
+    const { status, dateFrom, dateTo, page = 1, limit = 20 } = filters ?? {};
 
     const where: Prisma.PujaBookingWhereInput = {
       userId,
@@ -676,7 +651,7 @@ export class BookingService {
 
     if (booking.status !== 'completed') {
       throw new Error(
-        `Video proof can only be uploaded for bookings in "completed" status. Current: "${booking.status}".`
+        `Video proof can only be uploaded for bookings in "completed" status. Current: "${booking.status}".`,
       );
     }
 
@@ -703,12 +678,7 @@ export class BookingService {
    * Submit a review for a completed/delivered booking.
    * Updates both the booking and the priest's aggregate rating.
    */
-  async submitReview(
-    bookingId: string,
-    userId: string,
-    rating: number,
-    reviewText?: string
-  ) {
+  async submitReview(bookingId: string, userId: string, rating: number, reviewText?: string) {
     if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
       throw new Error('Rating must be an integer between 1 and 5.');
     }
@@ -734,7 +704,7 @@ export class BookingService {
 
     if (!['delivered', 'video_uploaded'].includes(booking.status)) {
       throw new Error(
-        `Reviews can only be submitted for bookings in "delivered" or "video_uploaded" status. Current: "${booking.status}".`
+        `Reviews can only be submitted for bookings in "delivered" or "video_uploaded" status. Current: "${booking.status}".`,
       );
     }
 
@@ -757,26 +727,20 @@ export class BookingService {
       },
     });
 
-    // Update the priest's aggregate rating if a priest is assigned
+    // Update the priest's aggregate rating atomically. The previous
+    // read-modify-write (findUnique then update) raced under concurrent
+    // reviews: two reviews both read ratingCount=5, both wrote 6, one
+    // rating was lost. A single atomic SQL UPDATE with the running
+    // average computed inside the statement serializes correctly.
     if (booking.priestId) {
-      const priest = await prisma.priest.findUnique({
-        where: { id: booking.priestId },
-        select: { ratingAvg: true, ratingCount: true },
-      });
-
-      if (priest) {
-        const newCount = priest.ratingCount + 1;
-        const newAvg =
-          (priest.ratingAvg * priest.ratingCount + rating) / newCount;
-
-        await prisma.priest.update({
-          where: { id: booking.priestId },
-          data: {
-            ratingAvg: Math.round(newAvg * 100) / 100,
-            ratingCount: newCount,
-          },
-        });
-      }
+      await prisma.$executeRawUnsafe(
+        `UPDATE priests
+         SET rating_count = rating_count + 1,
+             rating_avg = ROUND(((rating_avg * rating_count) + $1::numeric) / (rating_count + 1), 2)
+         WHERE id = $2::uuid`,
+        rating,
+        booking.priestId,
+      );
     }
 
     return updated;
@@ -822,21 +786,19 @@ export class BookingService {
     });
 
     const bookingCountBySlot = new Map(
-      existingBookings.map((b) => [b.scheduledTimeSlot, b._count.id])
+      existingBookings.map((b) => [b.scheduledTimeSlot, b._count.id]),
     );
 
-    const slots: SlotAvailability[] = (offering.availableSlots as string[]).map(
-      (slot) => {
-        const booked = bookingCountBySlot.get(slot) ?? 0;
-        const remaining = offering.maxBookingsPerSlot - booked;
-        return {
-          time: slot,
-          booked,
-          remaining: Math.max(0, remaining),
-          available: remaining > 0,
-        };
-      }
-    );
+    const slots: SlotAvailability[] = (offering.availableSlots as string[]).map((slot) => {
+      const booked = bookingCountBySlot.get(slot) ?? 0;
+      const remaining = offering.maxBookingsPerSlot - booked;
+      return {
+        time: slot,
+        booked,
+        remaining: Math.max(0, remaining),
+        available: remaining > 0,
+      };
+    });
 
     const hasAvailableSlots = slots.some((s) => s.available);
 

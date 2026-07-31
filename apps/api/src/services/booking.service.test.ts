@@ -56,7 +56,7 @@ describe('BookingService.createBooking', () => {
     const dd = String(yesterday.getDate()).padStart(2, '0');
 
     await expect(
-      service.createBooking({ ...validInput, scheduledDate: `${yyyy}-${mm}-${dd}` })
+      service.createBooking({ ...validInput, scheduledDate: `${yyyy}-${mm}-${dd}` }),
     ).rejects.toThrow('Cannot book a past date');
 
     expect(prismaMock.templePujaOffering.findUnique).not.toHaveBeenCalled();
@@ -101,9 +101,14 @@ describe('BookingService.createBooking', () => {
     prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
     prismaMock.pujaBooking.create.mockResolvedValue({
-      id: 'booking-1', bookingNumber: 'BS-TODAY-XXXXX', status: 'pending_payment',
-      priceAmount: 551, currency: 'INR',
-      scheduledDate: new Date('2026-12-25'), scheduledTimeSlot: '10:00', createdAt: new Date(),
+      id: 'booking-1',
+      bookingNumber: 'BS-TODAY-XXXXX',
+      status: 'pending_payment',
+      priceAmount: 551,
+      currency: 'INR',
+      scheduledDate: new Date('2026-12-25'),
+      scheduledTimeSlot: '10:00',
+      createdAt: new Date(),
     });
 
     await service.createBooking(validInput);
@@ -123,12 +128,21 @@ describe('BookingService.createBooking', () => {
     prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1' });
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
     prismaMock.pujaBooking.create.mockResolvedValue({
-      id: 'booking-1', bookingNumber: 'BS-TODAY-XXXXX', status: 'pending_payment',
-      priceAmount: 701, currency: 'INR',
-      scheduledDate: new Date('2026-12-25'), scheduledTimeSlot: '10:00', createdAt: new Date(),
+      id: 'booking-1',
+      bookingNumber: 'BS-TODAY-XXXXX',
+      status: 'pending_payment',
+      priceAmount: 701,
+      currency: 'INR',
+      scheduledDate: new Date('2026-12-25'),
+      scheduledTimeSlot: '10:00',
+      createdAt: new Date(),
     });
 
-    await service.createBooking({ ...validInput, prasadDeliveryRequested: true, prasadDeliveryAddressId: 'addr-1' });
+    await service.createBooking({
+      ...validInput,
+      prasadDeliveryRequested: true,
+      prasadDeliveryAddressId: 'addr-1',
+    });
     const data = prismaMock.pujaBooking.create.mock.calls[0]![0] as any;
     // base 500 + platform 51 + prasad 150 = 701
     expect(Number(data.data.priceAmount)).toBe(701);
@@ -141,7 +155,7 @@ describe('BookingService.createBooking', () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(null);
 
     await expect(service.createBooking(validInput)).rejects.toThrow(
-      'Temple puja offering not found.'
+      'Temple puja offering not found.',
     );
   });
 
@@ -152,7 +166,7 @@ describe('BookingService.createBooking', () => {
     });
 
     await expect(service.createBooking(validInput)).rejects.toThrow(
-      'This puja offering is currently inactive.'
+      'This puja offering is currently inactive.',
     );
   });
 
@@ -163,7 +177,7 @@ describe('BookingService.createBooking', () => {
     });
 
     await expect(service.createBooking(validInput)).rejects.toThrow(
-      'Offering does not match the specified temple and puja type.'
+      'Offering does not match the specified temple and puja type.',
     );
   });
 
@@ -171,7 +185,7 @@ describe('BookingService.createBooking', () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
 
     await expect(
-      service.createBooking({ ...validInput, scheduledTimeSlot: '08:00' })
+      service.createBooking({ ...validInput, scheduledTimeSlot: '08:00' }),
     ).rejects.toThrow('Invalid time slot');
   });
 
@@ -180,7 +194,7 @@ describe('BookingService.createBooking', () => {
     prismaMock.pujaBooking.count.mockResolvedValue(5); // max is 5
 
     await expect(service.createBooking(validInput)).rejects.toThrow(
-      'No availability for the selected slot'
+      'No availability for the selected slot',
     );
   });
 
@@ -189,9 +203,7 @@ describe('BookingService.createBooking', () => {
     prismaMock.pujaBooking.count.mockResolvedValue(0);
     prismaMock.user.findUnique.mockResolvedValue(null);
 
-    await expect(service.createBooking(validInput)).rejects.toThrow(
-      'User not found.'
-    );
+    await expect(service.createBooking(validInput)).rejects.toThrow('User not found.');
   });
 
   it('creates a booking with correct pricing for domestic user', async () => {
@@ -253,7 +265,7 @@ describe('BookingService.createBooking', () => {
         ...validInput,
         prasadDeliveryRequested: true,
         prasadDeliveryAddressId: 'addr-1',
-      })
+      }),
     ).rejects.toThrow('Prasad delivery address not found');
   });
 });
@@ -264,9 +276,9 @@ describe('BookingService.updateBookingStatus', () => {
   it('throws if booking not found', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.updateBookingStatus('booking-1', 'confirmed' as any)
-    ).rejects.toThrow('Booking not found.');
+    await expect(service.updateBookingStatus('booking-1', 'confirmed' as any)).rejects.toThrow(
+      'Booking not found.',
+    );
   });
 
   it('throws for invalid state transition', async () => {
@@ -275,9 +287,9 @@ describe('BookingService.updateBookingStatus', () => {
       status: 'completed',
     });
 
-    await expect(
-      service.updateBookingStatus('booking-1', 'confirmed' as any)
-    ).rejects.toThrow('Invalid status transition');
+    await expect(service.updateBookingStatus('booking-1', 'confirmed' as any)).rejects.toThrow(
+      'Invalid status transition',
+    );
   });
 
   it('allows valid transition from pending_payment to confirmed', async () => {
@@ -312,10 +324,7 @@ describe('BookingService.updateBookingStatus', () => {
       priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
     });
 
-    const result = await service.updateBookingStatus(
-      'booking-1',
-      'priest_assigned' as any
-    );
+    const result = await service.updateBookingStatus('booking-1', 'priest_assigned' as any);
     expect(result.status).toBe('priest_assigned');
   });
 
@@ -325,9 +334,9 @@ describe('BookingService.updateBookingStatus', () => {
       status: 'refunded',
     });
 
-    await expect(
-      service.updateBookingStatus('booking-1', 'confirmed' as any)
-    ).rejects.toThrow('Invalid status transition');
+    await expect(service.updateBookingStatus('booking-1', 'confirmed' as any)).rejects.toThrow(
+      'Invalid status transition',
+    );
   });
 
   // P0 #pp-01 (2026-07-09): the service denylist must strip financial/identity
@@ -347,16 +356,20 @@ describe('BookingService.updateBookingStatus', () => {
       priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
     });
 
-    await service.updateBookingStatus('booking-1', 'video_uploaded' as any, {
-      videoProofUrl: 'https://r2.example.com/proof.mp4',
-      // smuggled fields that must be stripped:
-      priestPayout: 999999,
-      platformCommission: 0,
-      priceAmount: 1,
-      userId: 'attacker-uuid',
-      priestId: 'attacker-priest-uuid',
-      id: 'forged-id',
-    } as any);
+    await service.updateBookingStatus(
+      'booking-1',
+      'video_uploaded' as any,
+      {
+        videoProofUrl: 'https://r2.example.com/proof.mp4',
+        // smuggled fields that must be stripped:
+        priestPayout: 999999,
+        platformCommission: 0,
+        priceAmount: 1,
+        userId: 'attacker-uuid',
+        priestId: 'attacker-priest-uuid',
+        id: 'forged-id',
+      } as any,
+    );
 
     const updateCall = prismaMock.pujaBooking.update.mock.calls[0]![0]!;
     expect(updateCall.data).toMatchObject({
@@ -408,9 +421,18 @@ describe('BookingService.updateBookingStatus', () => {
       priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
     });
     // createPriestPayout internal lookups (it re-fetches the booking).
-    prismaMock.priest.findUnique.mockResolvedValue({ id: 'pr-1', aadhaarVerified: true, displayName: 'Pandit Joshi' });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      id: 'pr-1',
+      aadhaarVerified: true,
+      displayName: 'Pandit Joshi',
+    });
     prismaMock.priestPayout.findFirst.mockResolvedValue(null);
-    prismaMock.priestPayout.create.mockResolvedValue({ id: 'payout-1', priestId: 'pr-1', bookingId: 'booking-1', amount: 700 });
+    prismaMock.priestPayout.create.mockResolvedValue({
+      id: 'payout-1',
+      priestId: 'pr-1',
+      bookingId: 'booking-1',
+      amount: 700,
+    });
 
     const result = await service.updateBookingStatus('booking-1', 'video_uploaded' as any);
     expect(result.status).toBe('video_uploaded');
@@ -456,9 +478,9 @@ describe('BookingService.cancelBooking', () => {
   it('throws if booking not found', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.cancelBooking('booking-1', 'user-1')
-    ).rejects.toThrow('Booking not found.');
+    await expect(service.cancelBooking('booking-1', 'user-1')).rejects.toThrow(
+      'Booking not found.',
+    );
   });
 
   it('throws if user is not the booking owner', async () => {
@@ -469,9 +491,9 @@ describe('BookingService.cancelBooking', () => {
       payments: [],
     });
 
-    await expect(
-      service.cancelBooking('booking-1', 'user-1')
-    ).rejects.toThrow('not authorized to cancel');
+    await expect(service.cancelBooking('booking-1', 'user-1')).rejects.toThrow(
+      'not authorized to cancel',
+    );
   });
 
   it('throws if booking is not in a cancellable status', async () => {
@@ -482,9 +504,9 @@ describe('BookingService.cancelBooking', () => {
       payments: [],
     });
 
-    await expect(
-      service.cancelBooking('booking-1', 'user-1')
-    ).rejects.toThrow('cannot be cancelled');
+    await expect(service.cancelBooking('booking-1', 'user-1')).rejects.toThrow(
+      'cannot be cancelled',
+    );
   });
 
   it('allows cancellation for pending_payment without time check', async () => {
@@ -517,9 +539,7 @@ describe('BookingService.cancelBooking', () => {
       payments: [],
     });
 
-    await expect(
-      service.cancelBooking('booking-1', 'user-1')
-    ).rejects.toThrow('within 24 hours');
+    await expect(service.cancelBooking('booking-1', 'user-1')).rejects.toThrow('within 24 hours');
   });
 
   it('allows cancellation more than 24 hours before for confirmed', async () => {
@@ -570,9 +590,7 @@ describe('BookingService.getBookingById', () => {
   it('throws if booking not found', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
 
-    await expect(service.getBookingById('booking-1')).rejects.toThrow(
-      'Booking not found.'
-    );
+    await expect(service.getBookingById('booking-1')).rejects.toThrow('Booking not found.');
   });
 
   it('throws if userId does not match booking owner', async () => {
@@ -581,9 +599,9 @@ describe('BookingService.getBookingById', () => {
       userId: 'user-a',
     });
 
-    await expect(
-      service.getBookingById('booking-1', 'user-b')
-    ).rejects.toThrow('not authorized to view');
+    await expect(service.getBookingById('booking-1', 'user-b')).rejects.toThrow(
+      'not authorized to view',
+    );
   });
 
   it('returns booking when user matches', async () => {
@@ -686,7 +704,7 @@ describe('BookingService.uploadVideoProof', () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url')
+      service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url'),
     ).rejects.toThrow('Booking not found.');
   });
 
@@ -698,7 +716,7 @@ describe('BookingService.uploadVideoProof', () => {
     });
 
     await expect(
-      service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url')
+      service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url'),
     ).rejects.toThrow('Only the assigned priest');
   });
 
@@ -710,7 +728,7 @@ describe('BookingService.uploadVideoProof', () => {
     });
 
     await expect(
-      service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url')
+      service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url'),
     ).rejects.toThrow('can only be uploaded for bookings in "completed" status');
   });
 
@@ -728,11 +746,7 @@ describe('BookingService.uploadVideoProof', () => {
       videoUploadedAt: new Date(),
     });
 
-    const result = await service.uploadVideoProof(
-      'booking-1',
-      'priest-1',
-      'https://video.url'
-    );
+    const result = await service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url');
 
     expect(result.status).toBe('video_uploaded');
     expect(result.videoProofUrl).toBe('https://video.url');
@@ -743,29 +757,29 @@ describe('BookingService.uploadVideoProof', () => {
 
 describe('BookingService.submitReview', () => {
   it('throws if rating is below 1', async () => {
-    await expect(
-      service.submitReview('booking-1', 'user-1', 0)
-    ).rejects.toThrow('Rating must be an integer between 1 and 5.');
+    await expect(service.submitReview('booking-1', 'user-1', 0)).rejects.toThrow(
+      'Rating must be an integer between 1 and 5.',
+    );
   });
 
   it('throws if rating is above 5', async () => {
-    await expect(
-      service.submitReview('booking-1', 'user-1', 6)
-    ).rejects.toThrow('Rating must be an integer between 1 and 5.');
+    await expect(service.submitReview('booking-1', 'user-1', 6)).rejects.toThrow(
+      'Rating must be an integer between 1 and 5.',
+    );
   });
 
   it('throws if rating is not an integer', async () => {
-    await expect(
-      service.submitReview('booking-1', 'user-1', 3.5)
-    ).rejects.toThrow('Rating must be an integer between 1 and 5.');
+    await expect(service.submitReview('booking-1', 'user-1', 3.5)).rejects.toThrow(
+      'Rating must be an integer between 1 and 5.',
+    );
   });
 
   it('throws if booking not found', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.submitReview('booking-1', 'user-1', 5)
-    ).rejects.toThrow('Booking not found.');
+    await expect(service.submitReview('booking-1', 'user-1', 5)).rejects.toThrow(
+      'Booking not found.',
+    );
   });
 
   it('throws if user is not the booking owner', async () => {
@@ -777,9 +791,9 @@ describe('BookingService.submitReview', () => {
       rating: null,
     });
 
-    await expect(
-      service.submitReview('booking-1', 'user-1', 5)
-    ).rejects.toThrow('not authorized to review');
+    await expect(service.submitReview('booking-1', 'user-1', 5)).rejects.toThrow(
+      'not authorized to review',
+    );
   });
 
   it('throws if booking status is not delivered or video_uploaded', async () => {
@@ -791,9 +805,9 @@ describe('BookingService.submitReview', () => {
       rating: null,
     });
 
-    await expect(
-      service.submitReview('booking-1', 'user-1', 5)
-    ).rejects.toThrow('Reviews can only be submitted');
+    await expect(service.submitReview('booking-1', 'user-1', 5)).rejects.toThrow(
+      'Reviews can only be submitted',
+    );
   });
 
   it('throws if a review already exists', async () => {
@@ -805,9 +819,9 @@ describe('BookingService.submitReview', () => {
       rating: 4,
     });
 
-    await expect(
-      service.submitReview('booking-1', 'user-1', 5)
-    ).rejects.toThrow('review has already been submitted');
+    await expect(service.submitReview('booking-1', 'user-1', 5)).rejects.toThrow(
+      'review has already been submitted',
+    );
   });
 
   it('submits review and updates priest aggregate rating', async () => {
@@ -824,22 +838,24 @@ describe('BookingService.submitReview', () => {
       rating: 5,
       reviewText: 'Excellent!',
     });
-    prismaMock.priest.findUnique.mockResolvedValue({
-      id: 'priest-1',
-      ratingAvg: 4.0,
-      ratingCount: 10,
-    });
-    prismaMock.priest.update.mockResolvedValue({});
+    // Changed 2026-07-17: submitReview now updates the priest aggregate via a
+    // single atomic SQL UPDATE ($executeRawUnsafe) instead of a read-modify-
+    // write (findUnique + update) that raced under concurrent reviews. The
+    // average is computed inside the SQL statement, so we assert the call
+    // shape rather than the pre-computed JS value.
+    prismaMock.$executeRawUnsafe.mockResolvedValue(1);
 
     const result = await service.submitReview('booking-1', 'user-1', 5, 'Excellent!');
 
     expect(result.rating).toBe(5);
-    expect(prismaMock.priest.update).toHaveBeenCalledTimes(1);
-
-    // Verify the new average: (4.0 * 10 + 5) / 11 = 45/11 = 4.09...
-    const priestUpdate = prismaMock.priest.update.mock.calls[0]![0];
-    expect(priestUpdate.data.ratingAvg).toBeCloseTo(4.09, 2);
-    expect(priestUpdate.data.ratingCount).toBe(11);
+    expect(prismaMock.$executeRawUnsafe).toHaveBeenCalledTimes(1);
+    const [sql, ratingArg, priestIdArg] = prismaMock.$executeRawUnsafe.mock.calls[0]!;
+    expect(sql).toMatch(/UPDATE priests/);
+    expect(sql).toMatch(/rating_count \+ 1/);
+    expect(ratingArg).toBe(5);
+    expect(priestIdArg).toBe('priest-1');
+    // priest.findUnique + priest.update are no longer called for the aggregate.
+    expect(prismaMock.priest.update).not.toHaveBeenCalled();
   });
 });
 
@@ -849,11 +865,7 @@ describe('BookingService.checkSlotAvailability', () => {
   it('returns unavailable if offering not found', async () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(null);
 
-    const result = await service.checkSlotAvailability(
-      'temple-1',
-      'puja-1',
-      '2026-12-25'
-    );
+    const result = await service.checkSlotAvailability('temple-1', 'puja-1', '2026-12-25');
 
     expect(result.available).toBe(false);
     expect(result.slots).toHaveLength(0);
@@ -865,11 +877,7 @@ describe('BookingService.checkSlotAvailability', () => {
       isActive: false,
     });
 
-    const result = await service.checkSlotAvailability(
-      'temple-1',
-      'puja-1',
-      '2026-12-25'
-    );
+    const result = await service.checkSlotAvailability('temple-1', 'puja-1', '2026-12-25');
 
     expect(result.available).toBe(false);
   });
@@ -887,11 +895,7 @@ describe('BookingService.checkSlotAvailability', () => {
       { scheduledTimeSlot: '10:00', _count: { id: 3 } },
     ]);
 
-    const result = await service.checkSlotAvailability(
-      'temple-1',
-      'puja-1',
-      '2026-12-25'
-    );
+    const result = await service.checkSlotAvailability('temple-1', 'puja-1', '2026-12-25');
 
     expect(result.available).toBe(true);
     expect(result.slots).toHaveLength(2);
@@ -920,11 +924,7 @@ describe('BookingService.checkSlotAvailability', () => {
       { scheduledTimeSlot: '10:00', _count: { id: 3 } },
     ]);
 
-    const result = await service.checkSlotAvailability(
-      'temple-1',
-      'puja-1',
-      '2026-12-25'
-    );
+    const result = await service.checkSlotAvailability('temple-1', 'puja-1', '2026-12-25');
 
     expect(result.available).toBe(false);
     expect(result.slots[0]!.available).toBe(false);

@@ -2,7 +2,18 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from '../../../lib/t';
-import { Flame, Phone, Mail, ArrowRight, Loader2, CheckCircle2, ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react';
+import {
+  Flame,
+  Phone,
+  Mail,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  ArrowLeft,
+  Lock,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 
@@ -10,592 +21,637 @@ type AuthTab = 'email' | 'phone';
 type Step = 'input' | 'otp';
 
 function GoogleIcon({ className }: { className?: string }) {
- return (
- <svg className={className} viewBox="0 0 24 24" fill="none">
- <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
- <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
- <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
- <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
- </svg>
- );
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
 }
 
 export default function LoginPage() {
- const { signInWithOtp, verifyOtp, signInWithCredentials, isAuthenticated, user } = useAuth();
- const t = useTranslations('auth');
- const tCommon = useTranslations('common');
+  const { signInWithOtp, verifyOtp, signInWithCredentials, isAuthenticated, user } = useAuth();
+  const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
 
- // Demo chips are hidden by default in production. Pass ?demo=1 to enable
- // them for our own QA / showing the app to investors. Real users never
- // see "demo accounts" cluttering the login screen.
- const showDemoChips =
-   typeof window !== 'undefined' &&
-   (process.env.NEXT_PUBLIC_SHOW_DEMO === 'true' ||
-     new URLSearchParams(window.location.search).get('demo') === '1');
+  // Demo chips are hard-gated to non-production builds. The `demo123` password
+  // lives in the client bundle, so it must NEVER be reachable in prod — if
+  // admin@demo.com were ever seeded in prod, the previous gate (env flag OR
+  // ?demo=1) would let anyone quick-login as admin. NODE_ENV check is the only
+  // safe default; ?demo=1 still works for local QA.
+  const showDemoChips =
+    process.env.NODE_ENV !== 'production' &&
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('demo') === '1';
 
- const [activeTab, setActiveTab] = useState<AuthTab>('email');
- const [step, setStep] = useState<Step>('input');
+  const [activeTab, setActiveTab] = useState<AuthTab>('email');
+  const [step, setStep] = useState<Step>('input');
 
- // Email/password state
- const [email, setEmail] = useState('');
- const [password, setPassword] = useState('');
- const [showPassword, setShowPassword] = useState(false);
+  // Email/password state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
- // Phone/OTP state
- const [phone, setPhone] = useState('');
- const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
- const [resendCountdown, setResendCountdown] = useState(0);
+  // Phone/OTP state
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
+  const [resendCountdown, setResendCountdown] = useState(0);
 
- // Shared state
- const [isSubmitting, setIsSubmitting] = useState(false);
- const [error, setError] = useState('');
- const [successMessage, setSuccessMessage] = useState('');
+  // Shared state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
- const phoneInputRef = useRef<HTMLInputElement>(null);
- const emailInputRef = useRef<HTMLInputElement>(null);
- const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
- // Redirect if already authenticated
- useEffect(() => {
- if (isAuthenticated && user) {
- const params = new URLSearchParams(window.location.search);
- const redirect = params.get('redirect') || getRoleDashboardPath(user.role);
- window.location.href = redirect;
- }
- }, [isAuthenticated, user]);
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || getRoleDashboardPath(user.role);
+      window.location.href = redirect;
+    }
+  }, [isAuthenticated, user]);
 
- // Focus appropriate input on tab change
- useEffect(() => {
- if (activeTab === 'email') {
- emailInputRef.current?.focus();
- } else {
- phoneInputRef.current?.focus();
- }
- }, [activeTab]);
+  // Focus appropriate input on tab change
+  useEffect(() => {
+    if (activeTab === 'email') {
+      emailInputRef.current?.focus();
+    } else {
+      phoneInputRef.current?.focus();
+    }
+  }, [activeTab]);
 
- // Focus first OTP input when moving to OTP step
- useEffect(() => {
- if (step === 'otp') {
- setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
- }
- }, [step]);
+  // Focus first OTP input when moving to OTP step
+  useEffect(() => {
+    if (step === 'otp') {
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+    }
+  }, [step]);
 
- // Resend countdown timer
- useEffect(() => {
- if (resendCountdown <= 0) return;
- const timer = setInterval(() => {
- setResendCountdown((prev) => prev - 1);
- }, 1000);
- return () => clearInterval(timer);
- }, [resendCountdown]);
+  // Resend countdown timer
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
 
- const formatPhoneDisplay = (value: string) => {
- const digits = value.replace(/\D/g, '');
- if (digits.length <= 5) return digits;
- return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
- };
+  const formatPhoneDisplay = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+  };
 
- // ─── Email/Password Login ───────────────────────────────────────
+  // ─── Email/Password Login ───────────────────────────────────────
 
- const handleEmailLogin = async () => {
- setError('');
- setSuccessMessage('');
+  const handleEmailLogin = async () => {
+    setError('');
+    setSuccessMessage('');
 
- if (!email.trim()) {
- setError('Please enter your email address.');
- return;
- }
- if (!password) {
- setError('Please enter your password.');
- return;
- }
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
 
- setIsSubmitting(true);
- const result = await signInWithCredentials(email, password);
- setIsSubmitting(false);
+    setIsSubmitting(true);
+    const result = await signInWithCredentials(email, password);
+    setIsSubmitting(false);
 
- if (result.success) {
- // Redirect happens via useEffect
- } else {
- setError(result.message);
- }
- };
+    if (result.success) {
+      // Redirect happens via useEffect
+    } else {
+      setError(result.message);
+    }
+  };
 
- // ─── Phone OTP Login ────────────────────────────────────────────
+  // ─── Phone OTP Login ────────────────────────────────────────────
 
- const handleSendOtp = async () => {
- setError('');
- setSuccessMessage('');
+  const handleSendOtp = async () => {
+    setError('');
+    setSuccessMessage('');
 
- const digits = phone.replace(/\D/g, '');
- if (digits.length !== 10) {
- setError('Please enter a valid 10-digit mobile number.');
- return;
- }
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
 
- setIsSubmitting(true);
- const fullPhone = `+91${digits}`;
- const result = await signInWithOtp(fullPhone);
- setIsSubmitting(false);
+    setIsSubmitting(true);
+    const fullPhone = `+91${digits}`;
+    const result = await signInWithOtp(fullPhone);
+    setIsSubmitting(false);
 
- if (result.success) {
- setSuccessMessage('OTP sent! Check your phone for the 6-digit code.');
- setStep('otp');
- setResendCountdown(30);
- } else {
- setError(result.message);
- }
- };
+    if (result.success) {
+      setSuccessMessage('OTP sent! Check your phone for the 6-digit code.');
+      setStep('otp');
+      setResendCountdown(30);
+    } else {
+      setError(result.message);
+    }
+  };
 
- const handleOtpChange = (index: number, value: string) => {
- if (value.length > 1) {
- const digits = value.replace(/\D/g, '').slice(0, 6);
- const newOtp = [...otp];
- for (let i = 0; i < 6; i++) {
- newOtp[i] = digits[i] || '';
- }
- setOtp(newOtp);
- const nextEmpty = newOtp.findIndex((d) => d === '');
- const focusIndex = nextEmpty === -1 ? 5 : nextEmpty;
- otpInputRefs.current[focusIndex]?.focus();
- return;
- }
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      const digits = value.replace(/\D/g, '').slice(0, 6);
+      const newOtp = [...otp];
+      for (let i = 0; i < 6; i++) {
+        newOtp[i] = digits[i] || '';
+      }
+      setOtp(newOtp);
+      const nextEmpty = newOtp.findIndex((d) => d === '');
+      const focusIndex = nextEmpty === -1 ? 5 : nextEmpty;
+      otpInputRefs.current[focusIndex]?.focus();
+      return;
+    }
 
- if (value && !/^\d$/.test(value)) return;
+    if (value && !/^\d$/.test(value)) return;
 
- const newOtp = [...otp];
- newOtp[index] = value;
- setOtp(newOtp);
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
 
- if (value && index < 5) {
- otpInputRefs.current[index + 1]?.focus();
- }
- };
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
 
- const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
- if (e.key === 'Backspace' && !otp[index] && index > 0) {
- otpInputRefs.current[index - 1]?.focus();
- }
- };
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
 
- const handleVerifyOtp = useCallback(async () => {
- setError('');
- const otpString = otp.join('');
+  const handleVerifyOtp = useCallback(async () => {
+    setError('');
+    const otpString = otp.join('');
 
- if (otpString.length !== 6) {
- setError('Please enter the complete 6-digit OTP.');
- return;
- }
+    if (otpString.length !== 6) {
+      setError('Please enter the complete 6-digit OTP.');
+      return;
+    }
 
- setIsSubmitting(true);
- const digits = phone.replace(/\D/g, '');
- const fullPhone = `+91${digits}`;
+    setIsSubmitting(true);
+    const digits = phone.replace(/\D/g, '');
+    const fullPhone = `+91${digits}`;
 
- const result = await verifyOtp(fullPhone, otpString);
- setIsSubmitting(false);
+    const result = await verifyOtp(fullPhone, otpString);
+    setIsSubmitting(false);
 
- if (result.success) {
- const params = new URLSearchParams(window.location.search);
- const redirect = result.isNewUser
- ? '/profile'
- : (params.get('redirect') || getRoleDashboardPath(user?.role ?? 'devotee'));
- window.location.href = redirect;
- } else {
- setError(result.message);
- setOtp(['', '', '', '', '', '']);
- otpInputRefs.current[0]?.focus();
- }
- }, [otp, phone, verifyOtp]);
+    if (result.success) {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = result.isNewUser
+        ? '/profile'
+        : params.get('redirect') || getRoleDashboardPath(user?.role ?? 'devotee');
+      window.location.href = redirect;
+    } else {
+      setError(result.message);
+      setOtp(['', '', '', '', '', '']);
+      otpInputRefs.current[0]?.focus();
+    }
+  }, [otp, phone, verifyOtp]);
 
- // Auto-submit when all 6 digits are entered
- useEffect(() => {
- const otpString = otp.join('');
- if (otpString.length === 6 && step === 'otp' && !isSubmitting) {
- handleVerifyOtp();
- }
- }, [otp, step, isSubmitting, handleVerifyOtp]);
+  // Auto-submit when all 6 digits are entered
+  useEffect(() => {
+    const otpString = otp.join('');
+    if (otpString.length === 6 && step === 'otp' && !isSubmitting) {
+      handleVerifyOtp();
+    }
+  }, [otp, step, isSubmitting, handleVerifyOtp]);
 
- const handleResendOtp = async () => {
- if (resendCountdown > 0) return;
+  const handleResendOtp = async () => {
+    if (resendCountdown > 0) return;
 
- setError('');
- setIsSubmitting(true);
+    setError('');
+    setIsSubmitting(true);
 
- const digits = phone.replace(/\D/g, '');
- const fullPhone = `+91${digits}`;
- const result = await signInWithOtp(fullPhone);
+    const digits = phone.replace(/\D/g, '');
+    const fullPhone = `+91${digits}`;
+    const result = await signInWithOtp(fullPhone);
 
- setIsSubmitting(false);
+    setIsSubmitting(false);
 
- if (result.success) {
- setSuccessMessage('New OTP sent!');
- setResendCountdown(30);
- setOtp(['', '', '', '', '', '']);
- otpInputRefs.current[0]?.focus();
- } else {
- setError(result.message);
- }
- };
+    if (result.success) {
+      setSuccessMessage('New OTP sent!');
+      setResendCountdown(30);
+      setOtp(['', '', '', '', '', '']);
+      otpInputRefs.current[0]?.focus();
+    } else {
+      setError(result.message);
+    }
+  };
 
- return (
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-warm overflow-hidden">
- {/* Header */}
- <div className="bg-[#ede9e3] px-6 py-8 text-center border-b border-[var(--color-border)]">
- <div className="flex items-center justify-center gap-2 mb-2">
- <div className="w-7 h-7 bg-saffron-600/15 rounded-lg flex items-center justify-center">
- <Flame className="w-4 h-4 text-saffron-600" />
- </div>
- <span className="text-xl font-semibold text-surface-800 tracking-tight">
- Darsh<span className="text-saffron-600">ya</span>
- </span>
- </div>
- <p className="text-surface-500 text-sm">
- {step === 'otp' ? t('otpLabel') : t('loginSubtitle')}
- </p>
- </div>
+  return (
+    <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      {/* Header */}
+      <div className="border-b border-[var(--color-border)] bg-[#ede9e3] px-6 py-8 text-center">
+        <div className="mb-2 flex items-center justify-center gap-2">
+          <div className="bg-saffron-600/15 flex h-7 w-7 items-center justify-center rounded-lg">
+            <Flame className="text-saffron-600 h-4 w-4" />
+          </div>
+          <span className="text-surface-800 text-xl font-semibold tracking-tight">
+            Darsh<span className="text-saffron-600">ya</span>
+          </span>
+        </div>
+        <p className="text-surface-500 text-sm">
+          {step === 'otp' ? t('otpLabel') : t('loginSubtitle')}
+        </p>
+      </div>
 
- {/* Form body */}
- <div className="px-6 py-6">
- {/* Error message */}
- {error && (
- <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
- {error}
- </div>
- )}
+      {/* Form body */}
+      <div className="px-6 py-6">
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
- {/* Success message */}
- {successMessage && !error && (
- <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
- <CheckCircle2 className="w-4 h-4 shrink-0" />
- {successMessage}
- </div>
- )}
+        {/* Success message */}
+        {successMessage && !error && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {successMessage}
+          </div>
+        )}
 
- {/* ─── OTP Verification Step ─── */}
- {step === 'otp' && (
- <div>
- <button
- onClick={() => {
- setStep('input');
- setOtp(['', '', '', '', '', '']);
- setError('');
- setSuccessMessage('');
- }}
- className="flex items-center gap-1 text-sm text-surface-500 hover:text-saffron-600 mb-4 transition-colors"
- >
- <ArrowLeft className="w-4 h-4" />
- {t('back')}
- </button>
+        {/* ─── OTP Verification Step ─── */}
+        {step === 'otp' && (
+          <div>
+            <button
+              onClick={() => {
+                setStep('input');
+                setOtp(['', '', '', '', '', '']);
+                setError('');
+                setSuccessMessage('');
+              }}
+              className="text-surface-500 hover:text-saffron-600 mb-4 flex items-center gap-1 text-sm transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t('back')}
+            </button>
 
- <p className="text-sm text-surface-600 mb-1">
- {t('otpSent')}
- </p>
- <p className="text-sm font-semibold text-surface-800 mb-6">
- +91 {formatPhoneDisplay(phone)}
- </p>
+            <p className="text-surface-600 mb-1 text-sm">{t('otpSent')}</p>
+            <p className="text-surface-800 mb-6 text-sm font-semibold">
+              +91 {formatPhoneDisplay(phone)}
+            </p>
 
- <div className="flex gap-2 justify-center mb-6">
- {otp.map((digit, index) => (
- <input
- key={index}
- ref={(el) => { otpInputRefs.current[index] = el; }}
- type="text"
- inputMode="numeric"
- maxLength={1}
- value={digit}
- onChange={(e) => handleOtpChange(index, e.target.value)}
- onKeyDown={(e) => handleOtpKeyDown(index, e)}
- onPaste={(e) => {
- e.preventDefault();
- const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
- if (pasted) handleOtpChange(index, pasted);
- }}
- className="w-12 h-14 text-center text-xl font-semibold border-2 border-surface-200 rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-300 focus:border-saffron-400 transition-colors"
- />
- ))}
- </div>
+            <div className="mb-6 flex justify-center gap-2">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => {
+                    otpInputRefs.current[index] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                    if (pasted) handleOtpChange(index, pasted);
+                  }}
+                  className="border-surface-200 text-surface-800 focus:ring-saffron-300 focus:border-saffron-400 h-14 w-12 rounded-lg border-2 text-center text-xl font-semibold transition-colors focus:ring-2 focus:outline-none"
+                />
+              ))}
+            </div>
 
- <button
- onClick={handleVerifyOtp}
- disabled={isSubmitting || otp.join('').length !== 6}
- className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
- >
- {isSubmitting ? (
- <>
- <Loader2 className="w-5 h-5 animate-spin" />
- {tCommon('loading')}
- </>
- ) : (
- <>
- {t('verifyCta')}
- <CheckCircle2 className="w-5 h-5" />
- </>
- )}
- </button>
+            <button
+              onClick={handleVerifyOtp}
+              disabled={isSubmitting || otp.join('').length !== 6}
+              className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {tCommon('loading')}
+                </>
+              ) : (
+                <>
+                  {t('verifyCta')}
+                  <CheckCircle2 className="h-5 w-5" />
+                </>
+              )}
+            </button>
 
- <div className="mt-4 text-center">
- {resendCountdown > 0 ? (
- <p className="text-sm text-surface-400">
- {t('resendIn')}{' '}
- <span className="font-semibold text-surface-600">{resendCountdown}{t('seconds')}</span>
- </p>
- ) : (
- <button
- onClick={handleResendOtp}
- disabled={isSubmitting}
- className="text-sm text-saffron-600 font-semibold hover:text-saffron-700 transition-colors disabled:opacity-50"
- >
- {t('resendOtp')}
- </button>
- )}
- </div>
- </div>
- )}
+            <div className="mt-4 text-center">
+              {resendCountdown > 0 ? (
+                <p className="text-surface-400 text-sm">
+                  {t('resendIn')}{' '}
+                  <span className="text-surface-600 font-semibold">
+                    {resendCountdown}
+                    {t('seconds')}
+                  </span>
+                </p>
+              ) : (
+                <button
+                  onClick={handleResendOtp}
+                  disabled={isSubmitting}
+                  className="text-saffron-600 hover:text-saffron-700 text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {t('resendOtp')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
- {/* ─── Input Step (tabs: Email or Phone) ─── */}
- {step === 'input' && (
- <div>
- {/* Google Sign-In */}
- <button
- onClick={async () => {
- setError('');
- try {
- const supabase = getSupabaseBrowserClient();
- const params = new URLSearchParams(window.location.search);
- const redirect = params.get('redirect');
- const callbackUrl = `${window.location.origin}/auth/callback${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
- const { error: oauthError } = await supabase.auth.signInWithOAuth({
- provider: 'google',
- options: { redirectTo: callbackUrl },
- });
- if (oauthError) setError(oauthError.message || 'Could not start Google sign-in');
- } catch (err) {
- setError(err instanceof Error ? err.message : 'Could not start Google sign-in');
- }
- }}
- className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-surface-200 rounded-lg text-sm font-medium text-surface-700 hover:bg-surface-50 hover:-translate-y-0.5 hover:shadow-md transition-all"
- >
- <GoogleIcon className="w-5 h-5" />
- {t('continueWithGoogle')}
- </button>
+        {/* ─── Input Step (tabs: Email or Phone) ─── */}
+        {step === 'input' && (
+          <div>
+            {/* Google Sign-In */}
+            <button
+              onClick={async () => {
+                setError('');
+                try {
+                  const supabase = getSupabaseBrowserClient();
+                  const params = new URLSearchParams(window.location.search);
+                  const redirect = params.get('redirect');
+                  const callbackUrl = `${window.location.origin}/auth/callback${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
+                  const { error: oauthError } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: callbackUrl },
+                  });
+                  if (oauthError) setError(oauthError.message || 'Could not start Google sign-in');
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Could not start Google sign-in');
+                }
+              }}
+              className="border-surface-200 text-surface-700 hover:bg-surface-50 flex w-full items-center justify-center gap-3 rounded-lg border bg-white px-4 py-3 text-sm font-medium transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <GoogleIcon className="h-5 w-5" />
+              {t('continueWithGoogle')}
+            </button>
 
- {/* Divider */}
- <div className="relative my-5">
- <div className="absolute inset-0 flex items-center">
- <div className="w-full border-t border-surface-200" />
- </div>
- <div className="relative flex justify-center text-xs uppercase">
- <span className="bg-[var(--color-surface)] px-3 text-surface-400">{t('or')}</span>
- </div>
- </div>
+            {/* Divider */}
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="border-surface-200 w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="text-surface-400 bg-[var(--color-surface)] px-3">{t('or')}</span>
+              </div>
+            </div>
 
- {/* Tab switcher */}
- <div className="flex bg-surface-100 rounded-lg p-1 mb-5">
- <button
- onClick={() => { setActiveTab('email'); setError(''); }}
- className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
- activeTab === 'email'
- ? 'bg-white text-surface-800 shadow-sm'
- : 'text-surface-500 hover:text-surface-700'
- }`}
- >
- <Mail className="w-4 h-4" />
- Email
- </button>
- <button
- onClick={() => { setActiveTab('phone'); setError(''); }}
- className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
- activeTab === 'phone'
- ? 'bg-white text-surface-800 shadow-sm'
- : 'text-surface-500 hover:text-surface-700'
- }`}
- >
- <Phone className="w-4 h-4" />
- Mobile
- </button>
- </div>
+            {/* Tab switcher */}
+            <div className="bg-surface-100 mb-5 flex rounded-lg p-1">
+              <button
+                onClick={() => {
+                  setActiveTab('email');
+                  setError('');
+                }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'email'
+                    ? 'text-surface-800 bg-white shadow-sm'
+                    : 'text-surface-500 hover:text-surface-700'
+                }`}
+              >
+                <Mail className="h-4 w-4" />
+                Email
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('phone');
+                  setError('');
+                }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'phone'
+                    ? 'text-surface-800 bg-white shadow-sm'
+                    : 'text-surface-500 hover:text-surface-700'
+                }`}
+              >
+                <Phone className="h-4 w-4" />
+                Mobile
+              </button>
+            </div>
 
- {/* ─── Email + Password Form ─── */}
- {activeTab === 'email' && (
- <div>
- <div className="mb-4">
- <label htmlFor="email" className="block text-sm font-medium text-surface-700 mb-1.5">
- Email Address
- </label>
- <div className="relative">
- <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
- <input
- ref={emailInputRef}
- id="email"
- type="email"
- placeholder="you@example.com"
- value={email}
- onChange={(e) => setEmail(e.target.value)}
- onKeyDown={(e) => { if (e.key === 'Enter') handleEmailLogin(); }}
- className="w-full pl-10 pr-4 py-2.5 border border-surface-200 rounded-lg text-sm text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-300 focus:border-saffron-400 transition-colors"
- />
- </div>
- </div>
+            {/* ─── Email + Password Form ─── */}
+            {activeTab === 'email' && (
+              <div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="email"
+                    className="text-surface-700 mb-1.5 block text-sm font-medium"
+                  >
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="text-surface-400 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <input
+                      ref={emailInputRef}
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleEmailLogin();
+                      }}
+                      className="border-surface-200 text-surface-800 placeholder:text-surface-400 focus:ring-saffron-300 focus:border-saffron-400 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm transition-colors focus:ring-2 focus:outline-none"
+                    />
+                  </div>
+                </div>
 
- <div className="mb-5">
- <label htmlFor="password" className="block text-sm font-medium text-surface-700 mb-1.5">
- Password
- </label>
- <div className="relative">
- <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
- <input
- id="password"
- type={showPassword ? 'text' : 'password'}
- placeholder="Enter password"
- value={password}
- onChange={(e) => setPassword(e.target.value)}
- onKeyDown={(e) => { if (e.key === 'Enter') handleEmailLogin(); }}
- className="w-full pl-10 pr-10 py-2.5 border border-surface-200 rounded-lg text-sm text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-saffron-300 focus:border-saffron-400 transition-colors"
- />
- <button
- type="button"
- onClick={() => setShowPassword(!showPassword)}
- className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600"
- >
- {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
- </button>
- </div>
- </div>
+                <div className="mb-5">
+                  <label
+                    htmlFor="password"
+                    className="text-surface-700 mb-1.5 block text-sm font-medium"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="text-surface-400 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleEmailLogin();
+                      }}
+                      className="border-surface-200 text-surface-800 placeholder:text-surface-400 focus:ring-saffron-300 focus:border-saffron-400 w-full rounded-lg border py-2.5 pr-10 pl-10 text-sm transition-colors focus:ring-2 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-surface-400 hover:text-surface-600 absolute top-1/2 right-3 -translate-y-1/2"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
 
- <button
- onClick={handleEmailLogin}
- disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
- >
- {isSubmitting ? (
- <>
- <Loader2 className="w-5 h-5 animate-spin" />
- Signing in...
- </>
- ) : (
- <>
- Sign In
- <ArrowRight className="w-5 h-5" />
- </>
- )}
- </button>
+                <button
+                  onClick={handleEmailLogin}
+                  disabled={isSubmitting}
+                  className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
 
- {/* Demo accounts — one-click login. Hidden by default; pass ?demo=1 to show. */}
- {showDemoChips && (
- <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
- <p className="text-xs font-semibold text-amber-800 mb-2">Quick Login — Demo Accounts</p>
- <div className="grid grid-cols-2 gap-2">
- {[
- { email: 'devotee@demo.com', role: 'Devotee' },
- { email: 'pandit@demo.com', role: 'Pandit' },
- { email: 'store@demo.com', role: 'Store Owner' },
- { email: 'astro@demo.com', role: 'Astrologer' },
- { email: 'wellness@demo.com', role: 'Wellness' },
- { email: 'temple@demo.com', role: 'Temple' },
- { email: 'gaushala@demo.com', role: 'Gaushala' },
- { email: 'admin@demo.com', role: 'Admin' },
- ].map((acc) => (
- <button
- key={acc.email}
- type="button"
- disabled={isSubmitting}
- onClick={async () => {
- setError('');
- setSuccessMessage('');
- setEmail(acc.email);
- setPassword('demo123');
- setIsSubmitting(true);
- const result = await signInWithCredentials(acc.email, 'demo123');
- setIsSubmitting(false);
- if (!result.success) setError(result.message);
- }}
- className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-white hover:bg-amber-100 border border-amber-200 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed group"
- >
- <span className="text-[11px] font-medium text-surface-700 truncate">{acc.role}</span>
- <span className="text-[10px] font-semibold text-saffron-600 group-hover:text-saffron-700 shrink-0">Sign in →</span>
- </button>
- ))}
- </div>
- </div>
- )}
- </div>
- )}
+                {/* Demo accounts — one-click login. Hidden by default; pass ?demo=1 to show. */}
+                {showDemoChips && (
+                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="mb-2 text-xs font-semibold text-amber-800">
+                      Quick Login — Demo Accounts
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { email: 'devotee@demo.com', role: 'Devotee' },
+                        { email: 'pandit@demo.com', role: 'Pandit' },
+                        { email: 'store@demo.com', role: 'Store Owner' },
+                        { email: 'astro@demo.com', role: 'Astrologer' },
+                        { email: 'wellness@demo.com', role: 'Wellness' },
+                        { email: 'temple@demo.com', role: 'Temple' },
+                        { email: 'gaushala@demo.com', role: 'Gaushala' },
+                        { email: 'admin@demo.com', role: 'Admin' },
+                      ].map((acc) => (
+                        <button
+                          key={acc.email}
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={async () => {
+                            setError('');
+                            setSuccessMessage('');
+                            setEmail(acc.email);
+                            setPassword('demo123');
+                            setIsSubmitting(true);
+                            const result = await signInWithCredentials(acc.email, 'demo123');
+                            setIsSubmitting(false);
+                            if (!result.success) setError(result.message);
+                          }}
+                          className="group flex items-center justify-between gap-2 rounded-md border border-amber-200 bg-white px-2.5 py-1.5 text-left transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span className="text-surface-700 truncate text-[11px] font-medium">
+                            {acc.role}
+                          </span>
+                          <span className="text-saffron-600 group-hover:text-saffron-700 shrink-0 text-[10px] font-semibold">
+                            Sign in →
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
- {/* ─── Phone + OTP Form ─── */}
- {activeTab === 'phone' && (
- <div>
- <label htmlFor="phone" className="block text-sm font-medium text-surface-700 mb-1.5">
- Mobile Number
- </label>
- <div className="flex gap-2 mb-5">
- <div className="flex items-center gap-1.5 px-3 py-2.5 bg-surface-50 border border-surface-200 rounded-lg text-surface-600 text-sm font-medium shrink-0">
- <span className="text-base"></span>
- +91
- </div>
- <input
- ref={phoneInputRef}
- id="phone"
- type="tel"
- inputMode="numeric"
- maxLength={12}
- placeholder="98765 43210"
- value={formatPhoneDisplay(phone)}
- onChange={(e) => {
- const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
- setPhone(digits);
- }}
- onKeyDown={(e) => {
- if (e.key === 'Enter') handleSendOtp();
- }}
- className="flex-1 px-4 py-2.5 border border-surface-200 rounded-lg text-surface-800 text-lg tracking-wider placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-saffron-300 focus:border-saffron-400 transition-colors"
- />
- </div>
+            {/* ─── Phone + OTP Form ─── */}
+            {activeTab === 'phone' && (
+              <div>
+                <label
+                  htmlFor="phone"
+                  className="text-surface-700 mb-1.5 block text-sm font-medium"
+                >
+                  Mobile Number
+                </label>
+                <div className="mb-5 flex gap-2">
+                  <div className="bg-surface-50 border-surface-200 text-surface-600 flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-medium">
+                    <span className="text-base"></span>
+                    +91
+                  </div>
+                  <input
+                    ref={phoneInputRef}
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={12}
+                    placeholder="98765 43210"
+                    value={formatPhoneDisplay(phone)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(digits);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSendOtp();
+                    }}
+                    className="border-surface-200 text-surface-800 placeholder:text-surface-300 focus:ring-saffron-300 focus:border-saffron-400 flex-1 rounded-lg border px-4 py-2.5 text-lg tracking-wider transition-colors focus:ring-2 focus:outline-none"
+                  />
+                </div>
 
- <button
- onClick={handleSendOtp}
- disabled={isSubmitting || phone.replace(/\D/g, '').length !== 10}
- className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
- >
- {isSubmitting ? (
- <>
- <Loader2 className="w-5 h-5 animate-spin" />
- Sending OTP...
- </>
- ) : (
- <>
- Send OTP
- <ArrowRight className="w-5 h-5" />
- </>
- )}
- </button>
- </div>
- )}
+                <button
+                  onClick={handleSendOtp}
+                  disabled={isSubmitting || phone.replace(/\D/g, '').length !== 10}
+                  className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Sending OTP...
+                    </>
+                  ) : (
+                    <>
+                      Send OTP
+                      <ArrowRight className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
 
- {/* Terms & Sign up link */}
- <div className="mt-5 space-y-3">
- <p className="text-xs text-surface-400 text-center">
- By continuing, you agree to our{' '}
- <a href="/terms" className="text-saffron-600 hover:underline">
- Terms of Service
- </a>{' '}
- and{' '}
- <a href="/privacy" className="text-saffron-600 hover:underline">
- Privacy Policy
- </a>
- </p>
+            {/* Terms & Sign up link */}
+            <div className="mt-5 space-y-3">
+              <p className="text-surface-400 text-center text-xs">
+                By continuing, you agree to our{' '}
+                <a href="/terms" className="text-saffron-600 hover:underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="/privacy" className="text-saffron-600 hover:underline">
+                  Privacy Policy
+                </a>
+              </p>
 
- <div className="text-center">
- <p className="text-sm text-surface-500">
- Don&apos;t have an account?{' '}
- <a href="/auth/signup" className="text-saffron-600 font-semibold hover:text-saffron-700 transition-colors">
- Sign Up
- </a>
- </p>
- </div>
- </div>
- </div>
- )}
- </div>
- </div>
- );
+              <div className="text-center">
+                <p className="text-surface-500 text-sm">
+                  Don&apos;t have an account?{' '}
+                  <a
+                    href="/auth/signup"
+                    className="text-saffron-600 hover:text-saffron-700 font-semibold transition-colors"
+                  >
+                    Sign Up
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
