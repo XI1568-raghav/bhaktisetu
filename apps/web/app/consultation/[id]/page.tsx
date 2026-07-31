@@ -44,7 +44,9 @@ function ConsultationRoomContent() {
   const room = params.id as string;
   const providerName = searchParams.get('provider') ?? 'Provider';
   const { session } = useAuth();
-  const [authStatus, setAuthStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'notfound' | 'error'>('checking');
+  const [authStatus, setAuthStatus] = useState<
+    'checking' | 'authorized' | 'unauthorized' | 'notfound' | 'error'
+  >('checking');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -52,10 +54,13 @@ function ConsultationRoomContent() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/consultation/by-room/${encodeURIComponent(room)}`, {
-          headers: buildAuthHeaders(session?.accessToken),
-          credentials: 'include',
-        });
+        const res = await fetch(
+          `${API_BASE_URL}/consultation/by-room/${encodeURIComponent(room)}`,
+          {
+            headers: buildAuthHeaders(session?.accessToken),
+            credentials: 'include',
+          },
+        );
         if (cancelled) return;
         if (res.status === 404) {
           setAuthStatus('notfound');
@@ -88,10 +93,10 @@ function ConsultationRoomContent() {
 
   if (!room) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
-        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
-        <h1 className="text-xl font-semibold text-surface-800 mb-2">Invalid consultation link</h1>
-        <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
+        <h1 className="text-surface-800 mb-2 text-xl font-semibold">Invalid consultation link</h1>
+        <Link href="/astrology" className="text-saffron-600 text-sm hover:underline">
           Browse astrologers →
         </Link>
       </div>
@@ -100,22 +105,23 @@ function ConsultationRoomContent() {
 
   if (authStatus === 'checking') {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
-        <Loader2 className="w-8 h-8 text-saffron-600 mb-4 animate-spin" />
-        <p className="text-sm text-surface-600">Verifying your consultation…</p>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+        <Loader2 className="text-saffron-600 mb-4 h-8 w-8 animate-spin" />
+        <p className="text-surface-600 text-sm">Verifying your consultation…</p>
       </div>
     );
   }
 
   if (authStatus === 'notfound') {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
-        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
-        <h1 className="text-xl font-semibold text-surface-800 mb-2">Consultation not found</h1>
-        <p className="text-sm text-surface-600 mb-4 max-w-sm">
-          This room isn&apos;t linked to a paid consultation. Free-trial rooms are no longer available — please book a consultation to join a call.
+      <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
+        <h1 className="text-surface-800 mb-2 text-xl font-semibold">Consultation not found</h1>
+        <p className="text-surface-600 mb-4 max-w-sm text-sm">
+          This room isn&apos;t linked to a paid consultation. Free-trial rooms are no longer
+          available — please book a consultation to join a call.
         </p>
-        <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+        <Link href="/astrology" className="text-saffron-600 text-sm hover:underline">
           Browse astrologers →
         </Link>
       </div>
@@ -124,21 +130,26 @@ function ConsultationRoomContent() {
 
   if (authStatus === 'unauthorized') {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
-        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
-        <h1 className="text-xl font-semibold text-surface-800 mb-2">You can&apos;t join this call</h1>
-        <p className="text-sm text-surface-600 mb-4 max-w-sm">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
+        <h1 className="text-surface-800 mb-2 text-xl font-semibold">
+          You can&apos;t join this call
+        </h1>
+        <p className="text-surface-600 mb-4 max-w-sm text-sm">
           {session?.accessToken
-            ? 'This consultation belongs to another user, or it hasn\'t been paid for yet.'
+            ? "This consultation belongs to another user, or it hasn't been paid for yet."
             : 'Please sign in to join your consultation.'}
         </p>
         {session?.accessToken ? (
-          <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+          <Link href="/astrology" className="text-saffron-600 text-sm hover:underline">
             Browse astrologers →
           </Link>
         ) : (
-          <Link href="/login?redirect=/consultation" className="inline-flex items-center gap-2 text-saffron-600 hover:underline text-sm">
-            <LogIn className="w-4 h-4" /> Sign in
+          <Link
+            href="/auth/login?redirect=/consultation"
+            className="text-saffron-600 inline-flex items-center gap-2 text-sm hover:underline"
+          >
+            <LogIn className="h-4 w-4" /> Sign in
           </Link>
         )}
       </div>
@@ -147,11 +158,13 @@ function ConsultationRoomContent() {
 
   if (authStatus === 'error') {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
-        <AlertCircle className="w-12 h-12 text-saffron-600 mb-4" />
-        <h1 className="text-xl font-semibold text-surface-800 mb-2">Something went wrong</h1>
-        <p className="text-sm text-surface-600 mb-4">We couldn&apos;t verify your consultation. Please try again.</p>
-        <Link href="/astrology" className="text-saffron-600 hover:underline text-sm">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+        <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
+        <h1 className="text-surface-800 mb-2 text-xl font-semibold">Something went wrong</h1>
+        <p className="text-surface-600 mb-4 text-sm">
+          We couldn&apos;t verify your consultation. Please try again.
+        </p>
+        <Link href="/astrology" className="text-saffron-600 text-sm hover:underline">
           Browse astrologers →
         </Link>
       </div>
@@ -167,45 +180,44 @@ function ConsultationRoomContent() {
     `&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ background: 'var(--color-bg)' }}>
+    <div className="flex min-h-[100dvh] flex-col" style={{ background: 'var(--color-bg)' }}>
       {/* Header */}
-      <div className="border-b border-surface-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div className="border-surface-100 border-b bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <Link
             href="/astrology"
-            className="inline-flex items-center gap-2 text-sm text-surface-600 hover:text-saffron-600"
+            className="text-surface-600 hover:text-saffron-600 inline-flex items-center gap-2 text-sm"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to astrologers
           </Link>
-          <div className="text-xs text-surface-500">
-            Consultation with{' '}
-            <span className="font-medium text-surface-700">{providerName}</span>
+          <div className="text-surface-500 text-xs">
+            Consultation with <span className="text-surface-700 font-medium">{providerName}</span>
           </div>
         </div>
       </div>
 
       {/* Jitsi iframe */}
-      <div className="flex-1 relative">
+      <div className="relative flex-1">
         {ready ? (
           <iframe
             allow="camera; microphone; fullscreen; display-capture; autoplay"
             src={jitsiUrl}
-            className="absolute inset-0 w-full h-full border-0"
+            className="absolute inset-0 h-full w-full border-0"
             title="Live consultation"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-surface-500">
+          <div className="text-surface-500 absolute inset-0 flex items-center justify-center text-sm">
             Connecting…
           </div>
         )}
       </div>
 
       {/* Privacy footer */}
-      <div className="bg-white border-t border-surface-100 px-4 py-3 text-center">
-        <p className="text-[11px] text-surface-500">
-          Powered by Jitsi Meet — open-source video. Calls are encrypted in
-          transit. No recordings are stored on Darshya servers.
+      <div className="border-surface-100 border-t bg-white px-4 py-3 text-center">
+        <p className="text-surface-500 text-[11px]">
+          Powered by Jitsi Meet — open-source video. Calls are encrypted in transit. No recordings
+          are stored on Darshya servers.
         </p>
       </div>
     </div>
