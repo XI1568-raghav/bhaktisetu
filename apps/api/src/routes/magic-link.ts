@@ -28,11 +28,22 @@ import { sendEmail, magicLinkEmail } from '../lib/email.js';
 // sign in as any user. Refuse to boot in prod without a real JWT_SECRET.
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   // eslint-disable-next-line no-console
-  console.error('[FATAL] JWT_SECRET unset in production — magic-link token forgery risk. Refusing to boot.');
+  console.error(
+    '[FATAL] JWT_SECRET unset in production — magic-link token forgery risk. Refusing to boot.',
+  );
   process.exit(1);
 }
 const JWT_SECRET = process.env.JWT_SECRET ?? 'darshya-dev-secret';
 const TOKEN_TTL_MIN = 15;
+
+// P1-1 (2026-07-17): mirror the 10/min per-IP sensitive-auth rate limit that
+// /auth/send-otp + /auth/login carry. Without this, /magic-link/request could
+// be hammered to spam magic-link emails (Resend costs money) and to enumerate
+// which emails have accounts. /verify gets the same cap as a credential-attack
+// brake, though it is already gated by HMAC signature validation.
+const sensitiveAuthRateLimit = {
+  config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+};
 
 function signToken(email: string): { token: string; expiresAt: number } {
   const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_MIN * 60;
@@ -63,16 +74,30 @@ function verifyToken(token: string): { email: string; expiresAt: number } | null
   const b = Buffer.from(expectedSig);
   if (a.length !== b.length) return null;
   if (!timingSafeEqual(a, b)) return null;
-  const [email, , expiresAtStr] = payload.split('.');
+  // P0-3 (2026-07-17): the payload is `${email}.${nonce}.${expiresAt}` and the
+  // email itself may contain dots (first.last@example.com is extremely common).
+  // The old `const [email, , expiresAtStr] = payload.split('.')` assumed exactly
+  // three segments — a dotted email produced 4+ segments, so `email` was
+  // truncated (e.g. "first.last@example") and `expiresAtStr` got the nonce,
+  // which parsed to a tiny int → always "expired" → EVERY dotted-email user
+  // saw "Invalid or expired sign-in link" forever. Email magic-link was broken
+  // for a large fraction of users in prod. Split from the RIGHT instead: the
+  // nonce (16 hex) and expiresAt (all digits) are the last two `.`-separated
+  // segments; everything before them is the email, dots and all.
+  const segs = payload.split('.');
+  if (segs.length < 3) return null;
+  const expiresAtStr = segs.pop();
+  segs.pop(); // nonce — verified only via the HMAC above, not re-checked here
+  const email = segs.join('.');
   if (!email || !expiresAtStr) return null;
   const expiresAt = parseInt(expiresAtStr, 10);
-  if (Math.floor(Date.now() / 1000) > expiresAt) return null;
+  if (!Number.isFinite(expiresAt) || Math.floor(Date.now() / 1000) > expiresAt) return null;
   return { email, expiresAt };
 }
 
 export async function magicLinkRoutes(server: FastifyInstance) {
   // ── POST /request ──────────────────────────────────────────────────────
-  server.post('/request', async (request, reply) => {
+  server.post('/request', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { email?: string };
     const email = (body.email ?? '').trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -93,7 +118,11 @@ export async function magicLinkRoutes(server: FastifyInstance) {
     if (result.skipped) {
       // No Resend key configured — return the link in the response so
       // local / demo environments can still test the flow.
-      return reply.send({ ok: true, devLink: linkUrl, info: 'Email skipped (RESEND_API_KEY not set). Use devLink to sign in.' });
+      return reply.send({
+        ok: true,
+        devLink: linkUrl,
+        info: 'Email skipped (RESEND_API_KEY not set). Use devLink to sign in.',
+      });
     }
     if (!result.ok) {
       server.log.error({ err: result.error, email }, 'magic-link email failed');
@@ -103,7 +132,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
   });
 
   // ── POST /verify ───────────────────────────────────────────────────────
-  server.post('/verify', async (request, reply) => {
+  server.post('/verify', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { token?: string };
     const token = (body.token ?? '').trim();
     const verified = verifyToken(token);
