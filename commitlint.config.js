@@ -14,6 +14,10 @@
 // (release: false) so it never triggers a version bump on its own.
 module.exports = {
   extends: ['@commitlint/config-conventional'],
+  // Ignore Git-generated merge commits ("Merge <sha> into <sha>" / "Merge branch …").
+  // These appear on PRs whose branch merged main mid-history; the body of a merge
+  // commit is the merged branch's commit messages, which are linted on their own PRs.
+  ignores: [(msg) => /^Merge\b/.test(msg)],
   rules: {
     // project-specific type, advisory (won't auto-version a release)
     'type-enum': [
