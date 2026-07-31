@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'deploys | deploy | list | logs | logs2 | cftoken | detail'
+        description: 'deploys | deploy | list | logs | logs2 | cftoken | detail | resume'
         required: false
         default: 'deploys'
       sid:
@@ -70,6 +70,22 @@ jobs:
           echo "=== GET /v1/services/$SID (raw) ==="
           curl -s -H "$A" "https://api.render.com/v1/services/$SID" \
             | jq '{name, id, type, suspended, suspenders, serviceDetails: (.serviceDetails | {url, plan, numInstances, region}), updatedAt, createdAt}'
+
+      - name: resume — POST /v1/services/$SID/resume (unsuspend after monthly free-hours reset)
+        if: ${{ github.event.inputs.mode == 'resume' }}
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          SID: ${{ github.event.inputs.sid }}
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer $RK"
+          echo "=== POST /v1/services/$SID/resume ==="
+          code=$(curl -s -o /tmp/resume.json -w "%{http_code}" -X POST -H "$A" "https://api.render.com/v1/services/$SID/resume")
+          echo "HTTP $code"
+          cat /tmp/resume.json
+          echo ""
+          echo "=== state after resume attempt ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq '{name, suspended, suspenders}'
 
       - name: logs — fetch recent service runtime logs (shows prisma migrate + server start)
         if: ${{ github.event.inputs.mode == 'logs' }}
