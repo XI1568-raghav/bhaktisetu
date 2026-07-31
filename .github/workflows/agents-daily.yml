@@ -76,13 +76,17 @@ jobs:
             # paused 2026-07: needs RESEND_API_KEY / inbound queue
             #   - onboarding-nudge        (no RESEND_API_KEY = no outbound nudge)
             #   - support-intent-triage   (no inbound queue = nothing to triage)
-            # Both burn ~150 min/mo with zero artifacts. Re-enable once
-            # RESEND_API_KEY secret is set and an inbound support queue exists.
+            #   - cold-temple-outreach    (no RESEND_API_KEY = 0 sends)
+            #   - daily-devotional-broadcast (no WHATSAPP_ACCESS_TOKEN = 0 sends)
+            #   - dormant-reactivation    (no RESEND_API_KEY = 0 sends)
+            #   - referral-nudge          (0 eligible users in funnel = 0 sends)
+            # All six burn ~300 min/mo with zero artifacts. Re-enable once
+            # RESEND_API_KEY + WHATSAPP_ACCESS_TOKEN secrets are set and the
+            # funnel has real users.
             node scripts/agents/run-all.mjs \
               broken-link weekly-digest \
               booking-quality-monitor \
-              cold-temple-outreach referral-nudge dormant-reactivation \
-              daily-devotional-broadcast funnel-drop-analyzer \
+              funnel-drop-analyzer \
               social-content-multiplexer investor-weekly-digest-v2
           else
             node scripts/agents/run-all.mjs $(echo "$AGENTS" | tr ',' ' ')
@@ -96,6 +100,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new agent artifacts to commit."
           else
+            git pull --rebase --autostash || true
             git commit -m "chore(agents): daily fleet run $(date -u +%Y-%m-%d)"
             git push
           fi
