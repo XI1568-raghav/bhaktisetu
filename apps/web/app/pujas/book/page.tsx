@@ -1212,10 +1212,15 @@ function PujaBookingInner() {
  <span className="text-lg font-bold text-saffron-600">
  ₹{Number(price).toLocaleString('en-IN')}
  </span>
+ {/* P2 (2026-08-03): trustScore is 0-100. The old `/20` shrank 98 → "4.9" but
+   a near-empty temple (score ~1) rendered as an unexplained "0.0/0.2" badge
+   that read as a bug. Show the star rating only when it's meaningful. */}
+ {temple.trustScore >= 20 && (
  <span className="flex items-center gap-1 text-xs text-surface-400">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
  {(temple.trustScore / 20).toFixed(1)}
  </span>
+ )}
  </div>
  </button>
  );
