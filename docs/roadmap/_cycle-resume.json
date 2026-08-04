@@ -1,7 +1,46 @@
 {
-  "cycleId": "C-20260803T1518",
-  "spawnPlan": [],
-  "deferrals": [],
+  "cycleId": "C-20260804T0340",
+  "spawnPlan": [
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q2-CS-001",
+        "R-Q2-CS-002"
+      ],
+      "briefing": "CS coverage gap: queue has 0 CS items (7 items are CMO/IT/Sales/CTO only). KPIs cs_macros_count, multilingual_macros_count, wa_bot_auto_resolve_pct, nps_score are all stale/404 — CS infrastructure is degraded.\n\nFocus on:\n1. R-Q2-CS-001 and R-Q2-CS-002 — verify these items exist and are in_progress (not shipped). If already shipped, report that and identify the next available CS items from docs/roadmap/_index.json.\n2. Ship CS macros for common devotee queries: booking confirmation, refund policy, reschedule request, pandit arrival ETA, puja preparation checklist. Tag each macro for hi/en at minimum; ta/te/bn/mr stubs if possible (native-speaker review is founder-blocked in R-Q2-CS-003, so ship structure + hi/en content only).\n3. Target: ≥15 macros documented in docs/cs/macros/ with variables for personalization.\n\nCONSTRAINTS: Do NOT touch R-Q1-CS-002, R-Q1-CS-006, or R-Q2-CS-003 — these are founder-blocked (U7 blocker + native speaker review + Wati Meta template approval needed). Respect free-tier: no Resend sends >100/day. Check DAG dependencies in _index.json before implementing.\n\nRevenue impact: Unresolved support tickets → churn → lost LTV. Macros reduce response time from hours to minutes, directly improving NPS and retention.",
+      "estTokens": 12000
+    },
+    {
+      "role": "cto",
+      "itemIds": [
+        "R-Q2-E-005",
+        "R-Q2-E-007"
+      ],
+      "briefing": "Engineering capacity: budget is at 0% GH Actions, 0% CF builds — full capacity available. Queue has 2 CTO items (R-Q1-E-003, R-Q1-E-010) but they're stale. Adding fresh engineering work to advance revenue-critical features.\n\nFocus on:\n1. R-Q2-E-005 and R-Q2-E-007 — verify these items exist and are in_progress in docs/roadmap/_index.json. If already shipped or blocked, report status and pick next available non-blocked engineering items.\n2. Likely scope based on Q2 engineering themes: booking flow hardening, N+1 query fixes, rate limiting, payment webhook idempotency. KPIs n_plus_1_queries_fixed, rate_limit_enforced, webhook_idempotency_active, api_p95_ms are all stale — these features need shipping.\n3. If items involve payment/booking: ensure Razorpay webhook idempotency (razorpay_live_active=0, razorpay_e2e_tested stale) and server-side priest filtering (server_side_priest_filter stale).\n\nCONSTRAINTS: Do NOT touch founder-blocked E items (R-Q1-E-001/002/008/009/011/012/014, R-Q2-E-004/009/012/015, R-Q3-E-002/003/006, R-Q4-E-003). Verify depends_on are shipped before implementing. Respect CF free tier (500 builds/mo, currently 0 used) and GH Actions (2000 min/mo, currently 0 used).\n\nRevenue impact: Payment reliability + page performance (p95) → direct booking conversion lift. N+1 fixes → faster priest listing pages → higher booking funnel throughput.",
+      "estTokens": 14000
+    },
+    {
+      "role": "cmo",
+      "itemIds": [
+        "R-Q2-M-001",
+        "R-Q2-M-002"
+      ],
+      "briefing": "Marketing/SEO capacity: KPIs pillar_pages_shipped, cluster_articles_shipped, programmatic_pages_live, gsc_verified all stale/404. Organic acquisition infrastructure is not yet measurable. Budget is fresh (0% used across all services).\n\nFocus on:\n1. R-Q2-M-001 and R-Q2-M-002 — verify these items exist and are in_progress in docs/roadmap/_index.json. If already shipped or blocked, report status and identify next available non-blocked marketing items.\n2. Likely scope based on Q2 marketing themes: pillar page creation for high-traffic deity/festival keywords (e.g., \"Ganesh Chaturthi puja\", \"Diwali Lakshmi puja\"), cluster articles linking to pillar pages, GSC verification, social account activation.\n3. If items involve content: produce draft markdown in docs/agent-reports/blog-drafts/ with frontmatter (title, description, keywords, pillar/cluster tags). Do NOT publish to production without review.\n4. If items involve GSC/social: document setup steps in docs/marketing/ and flag any founder actions needed (account credentials, verification codes).\n\nCONSTRAINTS: Do NOT touch founder-blocked M items (R-Q1-M-003/010, R-Q2-M-006/008, R-Q3-M-001/002/003/004/006/012, R-Q4-M-003). Do NOT re-spawn R-Q1-M-001 or R-Q2-M-011 — already in queue. Respect CF free tier for any preview builds.\n\nRevenue impact: Organic traffic → booking funnel. Pillar+cluster SEO strategy targets high-intent festival/deity queries with direct path to puja booking. SEO is the highest ROI channel at pre-revenue stage (zero CAC).",
+      "estTokens": 12000
+    }
+  ],
+  "deferrals": [
+    {
+      "itemId": "R-Q2-M-011",
+      "reason": "T-010 tripwire fired: Queue stale. Oldest item (Q-C-20260611T2307-R-Q2-M-011) unconsumed for 1276.6h (53.2 days). This CMO item was queued on 2026-06-11 and has not been processed since. Either the sub-agent failed silently, dependencies are unmet, or the item is strategically obsolete. Founder must triage: (1) check if R-Q2-M-011 is still relevant given 157 items shipped since June, (2) if relevant, re-queue with updated briefing after verifying depends_on, (3) if obsolete, kill and replace. This is the single biggest queue-health signal this cycle.",
+      "suggestedAction": "Review docs/agent-reports/cmo/R-Q2-M-011-* for last known state. Decide: re-queue, kill, or unblock dependencies. Also investigate why 6 other queue items (queued Aug 2-3) are also unconsumed — may indicate sub-agent execution failure."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) has been founder-blocked for 54 days. This is on the critical path of every deploy-dependent engineering item. CF budget is at 0% (0/500 builds), GH Actions at 0% (0/2000 min) — the platform choice directly impacts free-tier headroom. 54 days of indecision is blocking downstream engineering work and causing deploy friction.",
+      "suggestedAction": "Decide CF Pages. Rationale: (1) CF free tier is 500 builds/mo — currently 0% used, ample headroom; (2) CF Pages integrates with existing CF CDN/WAF/KV infra already in use; (3) Vercel would introduce a new vendor with separate free-tier limits and potential overages; (4) static allowlist is too restrictive for dynamic Next.js routes. Document decision in docs/engineering/architecture-decision-cf-pages.md and unblock R-Q1-E-001."
+    }
+  ],
   "kills": [],
   "firedTripwires": [
     {
@@ -11,10 +50,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-03T15:20:15.743Z"
+      "firedAt": "2026-08-04T03:42:00.513Z"
     }
   ],
-  "savedAt": "2026-08-03T15:25:40.473Z",
+  "savedAt": "2026-08-04T03:45:53.797Z",
   "consumed": true,
-  "consumedAt": "2026-08-03T15:25:40.474Z"
+  "consumedAt": "2026-08-04T03:52:26.899Z"
 }
