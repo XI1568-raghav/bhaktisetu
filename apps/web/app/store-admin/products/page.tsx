@@ -131,7 +131,15 @@ function StoreAdminProductsPageContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!token || !formName.trim() || !formPrice) return;
+    // P2 #218 (2026-08-03): previously a missing token silently `return`ed with
+    // no POST and no feedback — the form appeared to do nothing. Surface the
+    // reason; also fail loudly when the session token is rejected (demo/401)
+    // instead of looking like a no-op.
+    if (!formName.trim() || !formPrice) return;
+    if (!token) {
+      setError('You are not signed in. Please sign in again to add a product.');
+      return;
+    }
     setSaving(true);
     setError(null);
     const body: CreateStoreProductInput = {

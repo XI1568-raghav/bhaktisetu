@@ -349,7 +349,7 @@ function WellnessSessionsPageContent() {
        <div>
         <label className="block text-sm font-medium text-surface-700 mb-1.5">Price (INR) *</label>
         <div className="relative">
-         <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+         <IndianRupee className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
          <input
           type="number"
           value={formPrice}

@@ -112,7 +112,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  {error && <span className="block text-xs text-amber-700 mt-1">{error}</span>}
  </p>
  <Link
- href={`/onboarding/${onboardingSlug}`}
+ href={`/onboarding/view?role=${onboardingSlug}`}
  className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
  >
  Complete onboarding
@@ -158,7 +158,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  )}
  <div className="flex flex-wrap gap-2">
  <Link
- href={`/onboarding/${onboardingSlug}`}
+ href={`/onboarding/view?role=${onboardingSlug}`}
  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-surface-600 bg-surface-100 rounded-md hover:bg-surface-200"
  >
  <Pencil className="w-3 h-3" />

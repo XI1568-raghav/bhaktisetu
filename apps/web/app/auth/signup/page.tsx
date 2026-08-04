@@ -275,7 +275,11 @@ const STORAGE_KEY = 'poojly_signup_data';
 
 function saveToStorage(data: { role: UserRole; formData: FormData; step: number }) {
  try {
- localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+ // P0 #199: strip credentials from the in-progress signup draft before
+ // persisting — a saved draft must never contain the password.
+ const { password: _pw, confirmPassword: _cpw, ...safeFormData } =
+ data.formData as unknown as Record<string, unknown>;
+ localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, formData: safeFormData }));
  } catch {
  // storage unavailable
  }
@@ -424,6 +428,9 @@ export default function SignupPage() {
  const [error, setError] = useState('');
  const [fieldErrors, setFieldErrors] = useState<SignupErrors>({});
  const [signupComplete, setSignupComplete] = useState(false);
+ // P0 #195: signup returned no session (Supabase email-confirmation on) →
+ // user must verify their email before they can log in.
+ const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState(false);
 
  // Load saved state
  useEffect(() => {
@@ -526,10 +533,14 @@ export default function SignupPage() {
 
  setIsSubmitting(true);
 
- // Store role-specific profile data in localStorage
+ // P0 #199 (2026-08-03): NEVER persist the password (or full formData, which
+ // contains it) to web storage. Strip password/confirmPassword and store only
+ // the non-sensitive profile fields needed post-signup.
+ const { password: _pw, confirmPassword: _cpw, ...safeFormData } =
+ formData as unknown as Record<string, unknown>;
  const profileData = {
  role: selectedRole,
- ...formData,
+ ...safeFormData,
  signedUpAt: new Date().toISOString(),
  status: isProvider ? 'pending_approval' : 'active',
  };
@@ -550,6 +561,18 @@ export default function SignupPage() {
  if (!result.success) {
  setIsSubmitting(false);
  setError(result.message);
+ return;
+ }
+
+ // P0 #195 (2026-08-03): signup can succeed WITHOUT a session (Supabase
+ // email-confirmation enabled → session:null). Without a session the user
+ // can't log in until they confirm their email. Don't drop them on a dead
+ // "complete" screen as if they're signed in — tell them to verify email.
+ if (!result.accessToken) {
+ setIsSubmitting(false);
+ clearStorage();
+ setAwaitingEmailConfirm(true);
+ setStep(2);
  return;
  }
 
@@ -1048,6 +1071,34 @@ export default function SignupPage() {
  const renderConfirmation = () => {
  const dashboardPath = getRoleDashboardPath(selectedRole);
  const onboardingPath = isProvider ? `/onboarding/${selectedRole}` : null;
+
+ // P0 #195: signup succeeded but returned no session (email confirmation
+ // required). The account exists but the user must verify their email
+ // before they can log in — show that explicitly instead of a "you're
+ // signed in" confirmation that would strand them.
+ if (awaitingEmailConfirm) {
+ return (
+ <div className="px-6 py-8 text-center">
+ <StepIndicator current={2} total={3} />
+ <div className="w-16 h-16 mx-auto mb-4 bg-saffron-100 rounded-full flex items-center justify-center">
+ <CheckCircle2 className="w-8 h-8 text-saffron-600" />
+ </div>
+ <h2 className="text-lg font-semibold text-surface-800 mb-2">Verify your email</h2>
+ <p className="text-surface-500 mb-6 text-sm leading-relaxed">
+ We created your account and sent a confirmation link to{' '}
+ <span className="font-medium text-surface-700">{formData.email}</span>. Click the link
+ in that email to activate your account, then sign in.
+ </p>
+ <a
+ href="/auth/login"
+ className="w-full flex items-center justify-center gap-2 bg-saffron-600 hover:bg-saffron-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+ >
+ Go to Sign In
+ <ArrowRight className="w-4 h-4" />
+ </a>
+ </div>
+ );
+ }
 
  return (
  <div className="px-6 py-8 text-center">
