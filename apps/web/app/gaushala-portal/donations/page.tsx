@@ -63,7 +63,10 @@ function DonationsPageContent() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/gaushala-portal/donations?limit=500`, {
+        // P2 #221 (2026-08-03): was `?limit=500` — an unbounded fetch of every
+        // donation in one shot. Cap to a sane page size; a proper paginated UI
+        // can page further when needed.
+        const res = await fetch(`${API_BASE_URL}/gaushala-portal/donations?limit=100`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
