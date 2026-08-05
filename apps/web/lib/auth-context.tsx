@@ -70,14 +70,12 @@ export interface SignUpData {
 // ─── Demo accounts ───────────────────────────────────────────────────────────
 
 // P0 #198 (2026-08-05): 9 demo accounts (incl. admin@demo.com, password
-// 'demo123') + the demo-token generator were shipped in the PRODUCTION client
-// bundle — anyone could mint a demo session from the browser console. Gate the
-// entire demo surface behind a non-production check so it's stripped/inert in
-// prod builds. The UI chips are already gated; this kills the credentials too.
-const DEMO_ENABLED =
-  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_SHOW_DEMO === 'true';
-
-const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = DEMO_ENABLED ? {
+// 'demo123') were shipped in the PRODUCTION client bundle. To strip them in
+// prod, the map must be provably dead at compile time: Next folds
+// `process.env.NODE_ENV` to the literal 'production', so the assignment below
+// becomes `const DEMO_ACCOUNTS = {}` and Terser drops the data object as
+// unreferenced. A ternary/function keeps both branches — only this form strips.
+const _DEMO_ACCOUNTS_DATA: Record<string, { password: string; user: AuthUser }> = {
  'devotee@demo.com': {
  password: 'demo123',
  user: {
@@ -195,7 +193,20 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = DEMO
  role: 'admin',
  },
  },
-} : {};
+};
+
+// P0 #198: gate the map behind a compile-time-dead branch in production so
+// Terser drops _DEMO_ACCOUNTS_DATA as unreferenced. The gate MUST reference only
+// NODE_ENV (which Next inlines as the literal 'production', letting Terser fold
+// and drop the data). Do NOT include NEXT_PUBLIC_SHOW_DEMO here — it's read at
+// runtime (n.env), so it never folds and the data would stay bundled. Demo in
+// prod is enabled instead by the separate server/seed path, not the bundle.
+let _demoAccounts: Record<string, { password: string; user: AuthUser }> = {};
+if (process.env.NODE_ENV !== 'production') {
+  _demoAccounts = _DEMO_ACCOUNTS_DATA;
+}
+const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = _demoAccounts;
+const DEMO_ENABLED = Object.keys(DEMO_ACCOUNTS).length > 0;
 
 // The handle in the token (`demo-<handle>-token`) tells the API which seeded
 // demo user this session is for. Generic `demo-access-token-poojly` would
@@ -204,8 +215,10 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = DEMO
 function handleForEmail(email: string): string {
  // P0 #198: only resolve a demo handle when the demo surface is enabled; in
  // production this collapses to 'devotee' but is never reached because
- // DEMO_ACCOUNTS is empty and the demo branch is gated below.
+ // DEMO_ACCOUNTS is empty and the demo branch is gated below. The early return
+ // also lets Terser drop the demo-email map from the prod bundle.
  if (!DEMO_ENABLED) return 'devotee';
+ if (process.env.NODE_ENV === 'production') return 'devotee';
  const map: Record<string, string> = {
  'devotee@demo.com': 'devotee',
  'pandit@demo.com': 'pandit',
@@ -571,7 +584,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  if (demoAccount) {
  return { success: false, message: 'Incorrect password' };
  }
- return { success: false, message: 'Invalid email or password. Try a demo account: devotee@demo.com / demo123' };
+ // P0 #198: never advertise demo credentials in the login error (prod).
+ return { success: false, message: 'Invalid email or password.' };
  }
  }, [persistSession]);
 
