@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -60,29 +60,20 @@ function loadRazorpayScript(): Promise<void> {
  return razorpayScriptPromise;
 }
 
-// Saved addresses placeholder
-const SAVED_ADDRESSES = [
- {
- id: 'addr_1',
- label: 'Home',
- line1: '42, Lotus Garden Apartments',
- line2: 'MG Road, Koramangala',
- city: 'Bengaluru',
- state: 'Karnataka',
- pincode: '560095',
- isDefault: true,
- },
- {
- id: 'addr_2',
- label: 'Office',
- line1: '5th Floor, Tech Park Tower B',
- line2: 'Whitefield',
- city: 'Bengaluru',
- state: 'Karnataka',
- pincode: '560066',
- isDefault: false,
- },
-];
+// Store-owner revamp (2026-08-05): saved addresses were hardcoded fake rows —
+// every checkout shipped to a fake address. Now loaded from
+// GET /users/me/addresses; empty state links to /profile to add one. Shape
+// matches the AddressManager model.
+interface SavedAddress {
+  id: string;
+  label: string;
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
+}
 
 type PaymentMethod = 'razorpay' | 'cod';
 
@@ -91,9 +82,9 @@ function CheckoutContent() {
  const { user, session } = useAuth();
  const { items, itemCount, subtotal, deliveryFee, tax, total, clearCart } = useCart();
 
- const [selectedAddress, setSelectedAddress] = useState(
- SAVED_ADDRESSES.find((a) => a.isDefault)?.id ?? SAVED_ADDRESSES[0]?.id ?? ''
- );
+ const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+ const [addressesLoading, setAddressesLoading] = useState(true);
+ const [selectedAddress, setSelectedAddress] = useState('');
  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
  const [placing, setPlacing] = useState(false);
  const [orderPlaced, setOrderPlaced] = useState(false);
@@ -104,6 +95,26 @@ function CheckoutContent() {
  // and regenerated for each fresh attempt. crypto.randomUUID is available in
  // all evergreen browsers + secure contexts.
  const idempotencyKeyRef = useRef<string | null>(null);
+
+ // Load the devotee's real saved addresses (was hardcoded fake rows).
+ useEffect(() => {
+ if (!session?.accessToken) { setAddressesLoading(false); return; }
+ let cancelled = false;
+ fetch(`${API_BASE_URL}/users/me/addresses`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ })
+ .then((r) => (r.ok ? r.json() : { addresses: [] }))
+ .then((j) => {
+ if (cancelled) return;
+ const list = (j.addresses ?? []) as SavedAddress[];
+ setAddresses(list);
+ const def = list.find((a) => a.isDefault) ?? list[0];
+ if (def) setSelectedAddress(def.id);
+ })
+ .catch(() => undefined)
+ .finally(() => { if (!cancelled) setAddressesLoading(false); });
+ return () => { cancelled = true; };
+ }, [session?.accessToken]);
 
  if (items.length === 0 && !orderPlaced) {
  return (
@@ -171,7 +182,7 @@ function CheckoutContent() {
  : `ck-${Date.now()}-${Math.random().toString(36).slice(2)}`;
  }
  try {
- const addr = SAVED_ADDRESSES.find((a) => a.id === selectedAddress);
+ const addr = addresses.find((a) => a.id === selectedAddress);
  if (!addr) throw new Error('Select a delivery address');
  // P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header
  // retained as additive transition fallback (in-memory session — no
@@ -368,7 +379,17 @@ function CheckoutContent() {
  </h2>
 
  <div className="space-y-3">
- {SAVED_ADDRESSES.map((addr) => (
+ {addressesLoading ? (
+ <p className="text-sm text-surface-500">Loading your addresses…</p>
+ ) : addresses.length === 0 ? (
+ <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 text-sm text-surface-600">
+ <p className="mb-2">You have no saved delivery address.</p>
+ <Link href="/profile" className="inline-flex items-center gap-1 text-saffron-600 font-medium hover:text-saffron-700">
+ <Plus className="w-4 h-4" /> Add one in your profile
+ </Link>
+ </div>
+ ) : (
+ addresses.map((addr) => (
  <label
  key={addr.id}
  className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
@@ -402,12 +423,15 @@ function CheckoutContent() {
  </p>
  </div>
  </label>
- ))}
+ ))
+ )}
 
- <button className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700 font-medium pt-1">
+ {addresses.length > 0 && (
+ <Link href="/profile" className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700 font-medium pt-1">
  <Plus className="w-4 h-4" />
  Add New Address
- </button>
+ </Link>
+ )}
  </div>
  </div>
 

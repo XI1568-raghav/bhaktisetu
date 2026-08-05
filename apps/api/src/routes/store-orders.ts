@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { writeStoreOrderCommission } from '../services/store-commission.service.js';
 
 /**
  * Persisted store order endpoints. The product/SKU catalogue still lives
@@ -392,6 +393,14 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
         },
       });
+      // Store-owner revamp: write the Commission row when a COD/manual order is
+      // confirmed (the Razorpay-verify path wrote it; COD/manual leaked).
+      // Fire-and-forget + idempotent — never blocks the status flip.
+      if (body.data.status === 'CONFIRMED') {
+        void writeStoreOrderCommission(order.id).catch((err) =>
+          request.log.warn({ err }, '[store-orders] commission write failed'),
+        );
+      }
       return reply.send({ data: serializeOrder(updated) });
     }
   );
