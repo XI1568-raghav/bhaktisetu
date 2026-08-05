@@ -31,7 +31,9 @@ const SHORT_TO_API_SLUG: Record<string, string> = {
   dwarkadhish: 'dwarkadhish-dwarka',
   'vaishno-devi': 'vaishno-devi-katra',
   meenakshi: 'meenakshi-madurai',
+  'meenakshi-temple': 'meenakshi-madurai',
   rameshwaram: 'ramanathaswamy-rameshwaram',
+  'tirupati-balaji': 'tirumala-tirupati',
 };
 
 function apiSlugFor(shortSlug: string): string {
