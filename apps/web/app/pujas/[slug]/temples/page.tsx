@@ -9,8 +9,12 @@ export const revalidate = 3600;
 
 // P0 #202 (cont.): this route used `process.env.API_URL || localhost:4000` —
 // on prod (Render) API_URL is unset, so loadPuja hit localhost and every
-// /pujas/[slug]/temples page 404'd. Use the same base the rest of SSR uses.
-const API_BASE = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online').replace(/\/$/, '') + '/api/v1';
+// /pujas/[slug]/temples page 404'd. Use the same base the rest of SSR uses,
+// adding /api/v1 only when the base doesn't already end with it.
+const _pujaTemplesApiBase = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+const API_BASE = _pujaTemplesApiBase.endsWith('/api/v1')
+  ? _pujaTemplesApiBase
+  : `${_pujaTemplesApiBase.replace(/\/$/, '')}/api/v1`;
 
 interface PujaTempleOffering {
   id: string;
