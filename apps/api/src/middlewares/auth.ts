@@ -46,10 +46,15 @@ declare module 'fastify' {
  */
 function extractBearerToken(request: FastifyRequest): string | null {
   const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
   }
-  return authHeader.substring(7);
+  // P0 #200 (2026-08-05): accept the httpOnly `darshya_session` cookie as a
+  // fallback so the web can move the token out of localStorage. Bearer header
+  // takes precedence (mobile + transitional web); cookie enables the secure path.
+  const cookies = request.cookies as Record<string, string | undefined> | undefined;
+  const cookieToken = cookies?.['darshya_session'];
+  return cookieToken ?? null;
 }
 
 // Single chokepoint for the User.blocked gate. Every auth path calls this
