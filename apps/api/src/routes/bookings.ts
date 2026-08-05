@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { bookingService } from '../services/booking.service.js';
+import { cancellationService } from '../services/cancellation.service.js';
 import { paymentService } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
@@ -38,6 +39,10 @@ const createBookingSchema = z.object({
   specialInstructions: z.string().optional(),
   prasadDeliveryRequested: z.boolean().default(false),
   prasadDeliveryAddressId: z.string().uuid().optional(),
+  // Booking revamp: the devotee's chosen speed tier. Defaults to 'scheduled'
+  // (today's self-accept behaviour). instant/one_hour/senior trigger the
+  // dispatch engine on payment confirm.
+  dispatchTier: z.enum(['instant', 'one_hour', 'senior', 'scheduled']).default('scheduled'),
 });
 
 // P0 #pp-01 (2026-07-09): the old schema accepted `data: z.record(z.any())`
@@ -73,6 +78,11 @@ const updateBookingStatusDataSchema = z.discriminatedUnion('status', [
 ]);
 
 const updateBookingStatusSchema = updateBookingStatusDataSchema;
+
+const rescheduleBookingSchema = z.object({
+  newDate: z.coerce.date(),
+  newTimeSlot: z.string().max(50).optional(),
+});
 
 const cancelBookingSchema = z.object({
   reason: z.string().max(500).optional(),
@@ -334,6 +344,29 @@ export async function bookingRoutes(server: FastifyInstance) {
           body.reason
         );
 
+        // D6: devotee cancelled — tell them the cancellation registered (and a
+        // refund, if any, is being reviewed). Fire-and-forget.
+        void (async () => {
+          try {
+            const b = await prisma.pujaBooking.findUnique({
+              where: { id },
+              include: {
+                user: { select: { id: true, fullName: true, phone: true } },
+                pujaType: { select: { name: true } },
+                temple: { select: { name: true } },
+              },
+            });
+            if (b) {
+              const { notifyDevotee, buildBookingCtx } = await import(
+                '../services/booking-notify.service.js'
+              );
+              await notifyDevotee('cancelled', buildBookingCtx(b as never));
+            }
+          } catch {
+            /* notification must never break cancel */
+          }
+        })();
+
         return {
           message: 'Booking cancelled successfully',
           ...result,
@@ -361,6 +394,50 @@ export async function bookingRoutes(server: FastifyInstance) {
         return reply.status(400).send({
           error: error.message || 'Failed to cancel booking',
         });
+      }
+    }
+  );
+
+  // POST /:id/reschedule - D7: move a booking to a new date/slot. Previously
+  // zero reschedule support existed anywhere in the API or UI; cancel+rebook
+  // (with a refund round-trip) was the only path. Re-queues the assignment if
+  // a priest was attached.
+  server.post(
+    '/:id/reschedule',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const { id } = paramsWithId.parse(request.params);
+        const body = rescheduleBookingSchema.parse(request.body ?? {});
+        const userId = request.currentUser!.id;
+
+        const result = await bookingService.rescheduleBooking(
+          id,
+          userId,
+          body.newDate,
+          body.newTimeSlot
+        );
+
+        return { message: 'Booking rescheduled successfully', ...result };
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({ error: 'Validation Error', details: error.errors });
+        }
+        if (error.message?.includes('not found')) {
+          return reply.status(404).send({ error: error.message });
+        }
+        if (error.message?.includes('not authorized')) {
+          return reply.status(403).send({ error: error.message });
+        }
+        if (
+          error.message?.includes('cannot be rescheduled') ||
+          error.message?.includes('within 24 hours') ||
+          error.message?.includes('must be in the future')
+        ) {
+          return reply.status(409).send({ error: error.message });
+        }
+        server.log.error(error, 'Failed to reschedule booking');
+        return reply.status(400).send({ error: error.message || 'Failed to reschedule booking' });
       }
     }
   );
@@ -481,6 +558,46 @@ export async function bookingRoutes(server: FastifyInstance) {
         return reply.status(500).send({
           error: 'Failed to fetch video proof',
         });
+      }
+    }
+  );
+
+  // GET /:id/cancel-quote - D-policy: preview the refund for cancelling this
+  // booking right now, from its snapshotted policy. Lets the UI show "you'll
+  // get back ₹X (75%)" before the devotee confirms — the trust differentiator.
+  server.get(
+    '/:id/cancel-quote',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      try {
+        const { id } = paramsWithId.parse(request.params);
+        const userId = request.currentUser!.id;
+        const booking = await bookingService.getBookingById(id, userId);
+        const policy = await cancellationService.getPolicy(id);
+        const quote = cancellationService.computeDevoteeRefund({
+          policy,
+          scheduledDate: booking.scheduledDate,
+          pujaPriceInr: Number(booking.priceAmount),
+          totalPaidInr: Number(booking.priceAmount),
+        });
+        return {
+          bookingId: id,
+          refundFraction: quote.refundFraction,
+          refundAmountInr: quote.refundAmountInr,
+          feeAmountInr: quote.feeAmountInr,
+          tierLabel: quote.tierLabel,
+          hoursUntilSlot: quote.hoursUntilSlot,
+          refundDaysLabel: policy.refundDaysLabel,
+        };
+      } catch (error: any) {
+        if (error.message?.includes('not found')) {
+          return reply.status(404).send({ error: error.message });
+        }
+        if (error.message?.includes('not authorized')) {
+          return reply.status(403).send({ error: error.message });
+        }
+        server.log.error(error, 'Failed to compute cancel quote');
+        return reply.status(400).send({ error: error.message || 'Failed to compute quote' });
       }
     }
   );
@@ -901,6 +1018,7 @@ export async function bookingRoutes(server: FastifyInstance) {
                 id: true,
                 isVerified: true,
                 status: true,
+                commissionRate: true,
                 temples: {
                   where: { temple: { isVerified: true } },
                   orderBy: [{ isPrimary: 'desc' }, { joinedAt: 'asc' }],
@@ -975,8 +1093,14 @@ export async function bookingRoutes(server: FastifyInstance) {
           : null;
         const priceAmount = wantsUsd ? usdAmount! : basePrice;
         const currency = wantsUsd ? 'USD' : 'INR';
-        const platformCommission = priceAmount.mul(new Prisma.Decimal('0.30'));
-        const priestPayoutAmount = priceAmount.mul(new Prisma.Decimal('0.70'));
+        // Honour the pandit's own commissionRate (their share); default 80/20
+        // (booking revamp take-rate cut — see booking.service DEFAULT_PRIEST_SHARE).
+        const share =
+          offering.priest.commissionRate > 0 && offering.priest.commissionRate <= 1
+            ? offering.priest.commissionRate
+            : 0.8;
+        const priestPayoutAmount = priceAmount.mul(new Prisma.Decimal(share.toString()));
+        const platformCommission = priceAmount.mul(new Prisma.Decimal((1 - share).toString()));
 
         // 3b. Slot capacity enforcement. Skip when the priest hasn't
         // configured availableSlots — back-compat with offerings created

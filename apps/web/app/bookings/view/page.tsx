@@ -194,6 +194,14 @@ function BookingDetailContent() {
  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
  const [cancelling, setCancelling] = useState(false);
 
+ // Reschedule state (D7) — pick a new date/slot; booking re-queues if a
+ // pandit was attached. Previously there was no reschedule anywhere.
+ const [showReschedule, setShowReschedule] = useState(false);
+ const [rescheduling, setRescheduling] = useState(false);
+ const [newDate, setNewDate] = useState('');
+ const [newTime, setNewTime] = useState('');
+ const [rescheduleMsg, setRescheduleMsg] = useState<string | null>(null);
+
  // Refund state — devotee-initiated refund for paid bookings >24h before slot.
  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
  const [refunding, setRefunding] = useState(false);
@@ -259,6 +267,34 @@ function BookingDetailContent() {
  setBooking({ ...booking, status: 'cancelled' });
  setCancelling(false);
  setShowCancelConfirm(false);
+ };
+
+ // D7: submit a reschedule to POST /bookings/{id}/reschedule.
+ const handleReschedule = async () => {
+ if (!booking || !newDate) return;
+ setRescheduling(true);
+ setRescheduleMsg(null);
+ try {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/reschedule`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${session?.accessToken}`,
+ },
+ body: JSON.stringify({ newDate, ...(newTime ? { newTimeSlot: newTime } : {}) }),
+ });
+ if (res.ok) {
+ setBooking({ ...booking, scheduledDate: newDate, ...(newTime ? { scheduledTime: newTime } : {}) });
+ setRescheduleMsg('Rescheduled successfully.');
+ setShowReschedule(false);
+ } else {
+ const body = await res.json().catch(() => ({}));
+ setRescheduleMsg(body?.error ?? 'Could not reschedule. Try a date more than 24h away.');
+ }
+ } catch {
+ setRescheduleMsg('Network error. Please try again.');
+ }
+ setRescheduling(false);
  };
 
  // Devotee-initiated refund — eligibility (paid + scheduled > now+24h) is
@@ -738,6 +774,58 @@ function BookingDetailContent() {
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h3 className="mb-4 font-bold text-surface-800">Actions</h3>
  <div className="space-y-3">
+ {/* Reschedule (D7) */}
+ {(booking.status === 'booked' || booking.status === 'priest_assigned') && (
+ showReschedule ? (
+ <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+ <p className="mb-2 text-sm text-blue-800">Pick a new date (more than 24h from now):</p>
+ <input
+ type="date"
+ value={newDate}
+ onChange={(e) => setNewDate(e.target.value)}
+ min={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+ className="mb-2 w-full rounded-md border border-blue-300 px-2 py-1.5 text-sm text-surface-700"
+ />
+ <input
+ type="text"
+ value={newTime}
+ onChange={(e) => setNewTime(e.target.value)}
+ placeholder="New time slot (optional, e.g. 10:00)"
+ className="mb-2 w-full rounded-md border border-blue-300 px-2 py-1.5 text-sm text-surface-700"
+ />
+ {rescheduleMsg && <p className="mb-2 text-xs text-blue-700">{rescheduleMsg}</p>}
+ <div className="flex gap-2">
+ <button
+ onClick={handleReschedule}
+ disabled={rescheduling || !newDate}
+ className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+ >
+ {rescheduling ? 'Rescheduling…' : 'Confirm new date'}
+ </button>
+ <button
+ onClick={() => setShowReschedule(false)}
+ className="flex-1 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-600 hover:bg-surface-50"
+ >
+ Back
+ </button>
+ </div>
+ </div>
+ ) : (
+ <button
+ onClick={() => setShowReschedule(true)}
+ className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-blue-200 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+ >
+ <Calendar className="h-4 w-4" />
+ Reschedule
+ </button>
+ )
+ )}
+ {rescheduleMsg && !showReschedule && (
+ <div className="rounded-lg border border-tulsi-green-light/50 bg-tulsi-green-light/10 p-3 text-xs text-tulsi-green-dark">
+ {rescheduleMsg}
+ </div>
+ )}
+
  {isCancellable && (
  <>
  {showCancelConfirm ? (

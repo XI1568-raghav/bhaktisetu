@@ -3,6 +3,8 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { priestService } from '../services/priest.service.js';
+import { dispatchService } from '../services/dispatch.service.js';
+import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
 import { presignR2Upload, r2 } from '../lib/r2.js';
 import { BookingStatus, PayoutStatus } from '@prisma/client';
@@ -156,6 +158,92 @@ export async function priestRoutes(server: FastifyInstance) {
       const priestId = await getPriestId(request.currentUser!.id);
       const booking = await priestService.rejectBooking(id, priestId);
       return { message: 'Booking released back to the queue.', booking };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // ─── Dispatch engine routes (booking revamp 2026-08-04) ────────────────────
+  // These power the T1/T2/T3 instant/1-hour/senior tiers. The one-tap accept
+  // link in the WhatsApp/push offer hits /offers/:bookingId/accept.
+
+  // PATCH /availability — the T1 on-duty toggle + heartbeat. Body: {isOnDuty}.
+  // Sets isOnDuty and bumps lastSeenAt so the instant pool knows who's live.
+  server.patch('/availability', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const priestId = await getPriestId(request.currentUser!.id);
+      const body = z.object({ isOnDuty: z.boolean() }).parse(request.body ?? {});
+      const updated = await prisma.priest.update({
+        where: { id: priestId },
+        data: { isOnDuty: body.isOnDuty, lastSeenAt: new Date() },
+        select: { id: true, isOnDuty: true, lastSeenAt: true, tier: true },
+      });
+      return { message: body.isOnDuty ? 'You are now on duty.' : 'You are now off duty.', priest: updated };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // POST /offers/:bookingId/accept — accept a dispatch offer (T1/T2/T3).
+  server.post('/offers/:bookingId/accept', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { bookingId } = request.params as { bookingId: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      const res = await dispatchService.accept(bookingId, priestId);
+      return { message: 'Booking confirmed. You are assigned.', ...res };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // POST /offers/:bookingId/decline — decline a dispatch offer.
+  server.post('/offers/:bookingId/decline', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { bookingId } = request.params as { bookingId: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      await dispatchService.decline(bookingId, priestId);
+      return { message: 'Offer declined.' };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // GET /offers — list this priest's open (sent, unexpired) offers.
+  server.get('/offers', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const priestId = await getPriestId(request.currentUser!.id);
+      const offers = await prisma.dispatchOffer.findMany({
+        where: { priestId, state: 'sent', expiresAt: { gte: new Date() } },
+        orderBy: { sentAt: 'desc' },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingNumber: true,
+              scheduledDate: true,
+              scheduledTimeSlot: true,
+              priceAmount: true,
+              pujaType: { select: { name: true } },
+              temple: { select: { name: true, city: true } },
+            },
+          },
+        },
+      });
+      return { offers };
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // POST /bookings/:id/pandit-cancel — pandit-side cancellation. Releases the
+  // booking for re-dispatch and notifies the devotee (platform bears it).
+  server.post('/bookings/:id/pandit-cancel', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const priestId = await getPriestId(request.currentUser!.id);
+      const body = z.object({ reason: z.string().max(500).optional() }).parse(request.body ?? {});
+      const res = await cancellationService.panditCancel(id, priestId, body.reason);
+      return { message: 'Booking released. We are re-matching the devotee.', ...res };
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
     }

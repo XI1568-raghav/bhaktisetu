@@ -18,6 +18,7 @@ export interface CreateBookingInput {
   specialInstructions?: string;
   prasadDeliveryRequested: boolean;
   prasadDeliveryAddressId?: string;
+  dispatchTier?: 'instant' | 'one_hour' | 'senior' | 'scheduled';
 }
 
 export interface UserBookingsFilters {
@@ -37,6 +38,15 @@ export interface UserBookingsFilters {
 // what actually charges them at checkout.
 export const PLATFORM_FEE_INR = 51;
 export const PRASAD_DELIVERY_FEE_INR = 150;
+
+// Booking revamp (2026-08-04): platform take-rate cut from 30% to 20% to win
+// pandit supply. Research basis: Sri Mandir takes 20-25% from temples; the
+// current hardcoded 30% (with Priest.commissionRate 0.70 ignored) is both
+// uncompetitive for supply acquisition AND inconsistent. The pandit's
+// Priest.commissionRate (their share, default 0.80) is now the source of truth,
+// falling back to DEFAULT_PRIEST_SHARE when unset. Confirmed with founder.
+export const DEFAULT_PRIEST_SHARE = 0.8;
+export const DEFAULT_PLATFORM_SHARE = 0.2;
 
 function pushMessageFor(
   status: BookingStatus,
@@ -188,23 +198,40 @@ export class BookingService {
     const basePrice = offering.priceOverride ?? offering.pujaType.basePrice;
     const pujaPrice = user.isNri ? offering.pujaType.nriPrice : basePrice;
 
+    // Resolve the priest's actual share. The booking may already have a priest
+    // pinned (temple-pin / from-offering); when it does, read that priest's
+    // commissionRate so per-pandit negotiated splits are honoured. Otherwise
+    // fall back to the platform default (now 80% priest / 20% platform).
+    let priestShare = DEFAULT_PRIEST_SHARE;
+    const pinnedPriestId = offering.assignedPriestId ?? null;
+    if (pinnedPriestId) {
+      const priest = await prisma.priest.findUnique({
+        where: { id: pinnedPriestId },
+        select: { commissionRate: true },
+      });
+      if (priest && priest.commissionRate > 0 && priest.commissionRate <= 1) {
+        priestShare = priest.commissionRate;
+      }
+    }
+
     // P0 #PBO-3 (2026-07-09): collect the platform + prasad fees shown in the
     // wizard. The charged total (priceAmount) is the puja price + platform fee
     // + prasad-delivery fee (when requested). Commission + priest payout are
     // computed on the PUJA price only — the fees are platform revenue / prasad
-    // pass-through, not part of the priest's earned 70% split.
+    // pass-through, not part of the priest's earned split.
     const platformFee = new Prisma.Decimal(PLATFORM_FEE_INR);
     const prasadFee = data.prasadDeliveryRequested
       ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
       : new Prisma.Decimal(0);
     const priceAmount = new Prisma.Decimal(pujaPrice.toString()).add(platformFee).add(prasadFee);
 
-    // Platform commission 30% of the PUJA price, priest payout 70%.
-    const platformCommission = new Prisma.Decimal(pujaPrice.toString()).mul(
-      new Prisma.Decimal('0.30'),
-    );
+    // Split on the PUJA price using the priest's actual share (default 80/20 —
+    // see DEFAULT_PRIEST_SHARE). Platform keeps the remainder.
     const priestPayoutAmount = new Prisma.Decimal(pujaPrice.toString()).mul(
-      new Prisma.Decimal('0.70'),
+      new Prisma.Decimal(priestShare.toString()),
+    );
+    const platformCommission = new Prisma.Decimal(pujaPrice.toString()).mul(
+      new Prisma.Decimal((1 - priestShare).toString()),
     );
 
     // 5. Generate booking number (retry on collision)
@@ -257,6 +284,7 @@ export class BookingService {
         status: 'pending_payment',
         prasadDeliveryRequested: data.prasadDeliveryRequested,
         prasadDeliveryAddressId: data.prasadDeliveryAddressId ?? null,
+        dispatchTier: data.dispatchTier ?? 'scheduled',
       },
       select: {
         id: true,
@@ -471,6 +499,79 @@ export class BookingService {
       requiresRefund,
       capturedPaymentId: requiresRefund ? booking.payments[0]!.id : null,
     };
+  }
+
+  /**
+   * D7: Reschedule a booking to a new date (and optional new time slot).
+   * Previously there was NO reschedule anywhere — grep for 'reschedul' across
+   * apps/api returned zero matches; cancel+rebook was the only path, which both
+   * loses the booking and forces a refund round-trip. Competitors (SmartPuja,
+   * Aastha, Mangalnath) all offer reschedule precisely because it cuts
+   * cancellations. Allowed from confirmed/priest_assigned, up to 24h before the
+   * CURRENT scheduled slot. When a priest is already assigned we reset to
+   * `confirmed` + clear priestId so the new slot re-enters the assignment queue
+   * (the old priest may not be free at the new time).
+   */
+  async rescheduleBooking(
+    bookingId: string,
+    userId: string,
+    newDate: Date,
+    newTimeSlot?: string,
+  ) {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        priestId: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+      },
+    });
+
+    if (!booking) throw new Error('Booking not found.');
+    if (booking.userId !== userId) {
+      throw new Error('You are not authorized to reschedule this booking.');
+    }
+    if (booking.status !== 'confirmed' && booking.status !== 'priest_assigned') {
+      throw new Error(
+        `Booking cannot be rescheduled in its current status "${booking.status}".`
+      );
+    }
+
+    // 24h notice window against the CURRENT slot (matches the cancel window).
+    const hoursUntilCurrent =
+      (new Date(booking.scheduledDate).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilCurrent < 24) {
+      throw new Error('Rescheduling is not allowed within 24 hours of the scheduled puja time.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (newDate < today) {
+      throw new Error('New date must be in the future.');
+    }
+
+    const hadPriest = !!booking.priestId;
+    const updated = await prisma.pujaBooking.update({
+      where: { id: bookingId },
+      data: {
+        scheduledDate: newDate,
+        ...(newTimeSlot ? { scheduledTimeSlot: newTimeSlot } : {}),
+        // Re-queue if a priest was attached — they may not be free at the new time.
+        ...(hadPriest ? { priestId: null, status: 'confirmed' } : {}),
+      },
+      select: {
+        id: true,
+        bookingNumber: true,
+        status: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+      },
+    });
+
+    return { ...updated, requeuedForAssignment: hadPriest };
   }
 
   /**

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
  Calendar,
@@ -143,7 +143,38 @@ function isCompleted(booking: BookingListItem): boolean {
 
 function BookingsContent() {
  const { session } = useAuth();
+ const queryClient = useQueryClient();
  const [activeTab, setActiveTab] = useState<TabFilter>('all');
+ const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+ // D1 fix: the Cancel button was rendered with no onClick (dead UI). Wire it
+ // to POST /bookings/{id}/cancel, then invalidate the list so the status pill
+ // flips to Cancelled without a manual refresh.
+ async function handleCancel(bookingId: string) {
+  if (!session?.accessToken) return;
+  const ok = window.confirm('Cancel this booking? This cannot be undone.');
+  if (!ok) return;
+  setCancellingId(bookingId);
+  try {
+   const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+    method: 'POST',
+    headers: {
+     Authorization: `Bearer ${session.accessToken}`,
+     'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+   });
+   if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    window.alert(body?.error ?? `Could not cancel (HTTP ${res.status}).`);
+   }
+  } catch {
+   window.alert('Network error while cancelling. Please try again.');
+  } finally {
+   setCancellingId(null);
+   await queryClient.invalidateQueries({ queryKey: ['bookings', 'my'] });
+  }
+ }
 
  // P1-17: replaced manual useEffect + useState(loading/error/bookings) with
  // useQuery — gives cached refetch, single loading/error state, and avoids
@@ -353,9 +384,17 @@ function BookingsContent() {
  )}
 
  {canCancel && (
- <button className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100">
- <XIcon className="h-3.5 w-3.5" />
- Cancel
+ <button
+  onClick={() => handleCancel(booking.id)}
+  disabled={cancellingId === booking.id}
+  className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+ >
+  {cancellingId === booking.id ? (
+   <Loader2 className="h-3.5 w-3.5 animate-spin" />
+  ) : (
+   <XIcon className="h-3.5 w-3.5" />
+  )}
+  {cancellingId === booking.id ? 'Cancelling…' : 'Cancel'}
  </button>
  )}
  </div>
