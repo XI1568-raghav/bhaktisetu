@@ -69,7 +69,15 @@ export interface SignUpData {
 
 // ─── Demo accounts ───────────────────────────────────────────────────────────
 
-const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
+// P0 #198 (2026-08-05): 9 demo accounts (incl. admin@demo.com, password
+// 'demo123') + the demo-token generator were shipped in the PRODUCTION client
+// bundle — anyone could mint a demo session from the browser console. Gate the
+// entire demo surface behind a non-production check so it's stripped/inert in
+// prod builds. The UI chips are already gated; this kills the credentials too.
+const DEMO_ENABLED =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_SHOW_DEMO === 'true';
+
+const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = DEMO_ENABLED ? {
  'devotee@demo.com': {
  password: 'demo123',
  user: {
@@ -187,13 +195,17 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
  role: 'admin',
  },
  },
-};
+} : {};
 
 // The handle in the token (`demo-<handle>-token`) tells the API which seeded
 // demo user this session is for. Generic `demo-access-token-poojly` would
 // always resolve to the devotee — so role-specific surfaces (priest inbox,
 // astrologer consultations) would show the WRONG side's data.
 function handleForEmail(email: string): string {
+ // P0 #198: only resolve a demo handle when the demo surface is enabled; in
+ // production this collapses to 'devotee' but is never reached because
+ // DEMO_ACCOUNTS is empty and the demo branch is gated below.
+ if (!DEMO_ENABLED) return 'devotee';
  const map: Record<string, string> = {
  'devotee@demo.com': 'devotee',
  'pandit@demo.com': 'pandit',
@@ -218,8 +230,9 @@ function makeDemoSession(email = 'devotee@demo.com'): AuthSession {
  };
 }
 
-// Default demo user (for legacy demoSignIn)
-const DEMO_USER: AuthUser = DEMO_ACCOUNTS['devotee@demo.com']!.user;
+// Default demo user (for legacy demoSignIn). Empty in production — demoSignIn
+// is gated below and will no-op rather than mint an admin-shaped session.
+const DEMO_USER: AuthUser | null = DEMO_ENABLED ? DEMO_ACCOUNTS['devotee@demo.com']!.user : null;
 
 // ─── Role redirect map ────────────────────────────────────────────────────────
 
@@ -643,8 +656,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  /**
  * Demo sign-in — instantly logs in with the default devotee demo user.
+ * P0 #198: no-op in production (DEMO_USER is null) so it can never mint a
+ * demo session from the shipped bundle.
  */
  const demoSignIn = useCallback(() => {
+ if (!DEMO_ENABLED || !DEMO_USER) return;
  const demoSession = makeDemoSession(DEMO_USER.email ?? 'devotee@demo.com');
  setSession(demoSession);
  setUser(DEMO_USER);
