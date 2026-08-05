@@ -107,10 +107,10 @@ function canonicalTempleSlug(slug: string): string {
 }
 
 async function getApiTemple(slug: string): Promise<TempleDetail | null> {
-  // Only fall back to the generic shell when the API has NO such temple;
-  // previously this returned a non-null fallback on any error, which both
-  // masked 404s and prevented `notFound()` from ever firing. `getTempleBySlug`
-  // throws on a non-OK response, so treat throw/empty as "no temple".
+  // `getTempleBySlug` throws on a non-OK response, so a throw OR null means
+  // "API has no such temple". Previously this ALWAYS returned the non-null
+  // `apiFallback` shell on error, which masked 404s AND — worse — prevented
+  // `notFound()` from firing for genuinely-missing temples.
   try {
     const temple = await getTempleBySlug(slug);
     return temple ?? null;
@@ -200,6 +200,9 @@ export default async function TempleDetailPage({
  const rich = getTempleDetail(slug);
  const apiTemple = (await getApiTemple(slug)) ?? (await getApiTemple(rawSlug));
 
+ // P0 #202 (cont.): only 404 when NEITHER the rich map NOR the API has the
+ // temple. If the API has it but there's no rich entry, fall through to the
+ // simple layout below (200, real content) rather than 404ing a working page.
  if (!rich && !apiTemple) notFound();
 
  // JSON-LD LocalBusiness/PlaceOfWorship schema for Google rich snippets.
