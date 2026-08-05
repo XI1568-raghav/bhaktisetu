@@ -11,7 +11,7 @@ overrides:
   minimatch: ^10.2.3
   path-to-regexp: ^8.4.0
   esbuild: ^0.25.0
-  cookie: ^0.7.0
+  cookie: ^2.0.1
   ajv: ^8.18.0
   smol-toml: ^1.6.1
   srvx: ^0.11.13
@@ -4753,10 +4753,6 @@ packages:
   cookie-signature@1.2.2:
     resolution: {integrity: sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==}
     engines: {node: '>=6.6.0'}
-
-  cookie@0.7.2:
-    resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
-    engines: {node: '>= 0.6'}
 
   cookie@2.0.1:
     resolution: {integrity: sha512-yuToqVvRrj6pfDXREyQAAv8SkAEk/8GS3jQRTiUMm66TVtBYmqQeoEjL2Lmq8Rpo6271vH76InTChTitEAm65w==}
@@ -11079,7 +11075,7 @@ snapshots:
 
   '@fastify/cookie@11.1.2':
     dependencies:
-      cookie: 0.7.2
+      cookie: 2.0.1
       fastify-plugin: 6.0.0
 
   '@fastify/cors@11.2.0':
@@ -14407,8 +14403,6 @@ snapshots:
 
   cookie-signature@1.2.2: {}
 
-  cookie@0.7.2: {}
-
   cookie@2.0.1: {}
 
   core-js-compat@3.49.0:
@@ -15362,7 +15356,7 @@ snapshots:
       body-parser: 2.3.0
       content-disposition: 1.1.0
       content-type: 1.0.5
-      cookie: 0.7.2
+      cookie: 2.0.1
       cookie-signature: 1.2.2
       debug: 4.4.3
       depd: 2.0.0
@@ -16525,7 +16519,7 @@ snapshots:
 
   light-my-request@6.6.0:
     dependencies:
-      cookie: 0.7.2
+      cookie: 2.0.1
       process-warning: 4.0.1
       set-cookie-parser: 2.7.2
 
