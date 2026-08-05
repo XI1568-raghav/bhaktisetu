@@ -63,7 +63,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function TemplePujasPage({ params }: Params) {
-  const { slug: rawSlug } = await params;
+  const { slug } = await params;
+  const rawSlug = slug;
   // P0 #202 (cont.): the sitemap advertises /temples/<short-slug>/pujas for the
   // curated short slugs (kashi-vishwanath, somnath, etc.) but the API only
   // carries the `<name>-<city>` form, so getTempleBySlug(short) 404'd. Resolve
