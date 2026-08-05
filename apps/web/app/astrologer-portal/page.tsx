@@ -52,6 +52,34 @@ export default function AstrologerDashboard() {
  const [kycReason, setKycReason] = useState<string | null>(null);
  const [api, setApi] = useState<ApiAstroDashboard | null>(null);
 
+ // Go-online presence toggle (astrologer revamp 2026-08-05). The portal had
+ // NO online/offline switch — devotees couldn't see who's available. POSTs to
+ // /astrologer-portal/online; presence decays after a 15-min heartbeat.
+ const [online, setOnline] = useState(false);
+ const [onlineSaving, setOnlineSaving] = useState(false);
+ useEffect(() => {
+  if (!session?.accessToken) return;
+  fetch(`${API_BASE_URL}/astrologer-portal/online`, {
+   headers: { Authorization: `Bearer ${session.accessToken}` },
+  })
+   .then((r) => (r.ok ? r.json() : null))
+   .then((j) => { if (j) setOnline(!!j.online); })
+   .catch(() => undefined);
+ }, [session?.accessToken]);
+ async function toggleOnline(next: boolean) {
+  if (!session?.accessToken) return;
+  setOnlineSaving(true);
+  try {
+   const r = await fetch(`${API_BASE_URL}/astrologer-portal/online`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
+    body: JSON.stringify({ online: next }),
+   });
+   if (r.ok) setOnline(next);
+  } catch { /* keep prior */ }
+  setOnlineSaving(false);
+ }
+
  useEffect(() => {
   // P0 #AP-07 (2026-07-09): do NOT skip the API for demo sessions. The old
   // `startsWith('demo-')` early-return left a demo astrologer on hardcoded
@@ -120,6 +148,29 @@ export default function AstrologerDashboard() {
  <p className="text-surface-500">Your astrology practice at a glance.</p>
  <KycStatusBadge state={kycState} reason={kycReason} />
  </div>
+ </div>
+
+ {/* Go-online presence toggle (revamp: devotees see who's online to consult) */}
+ <div className={`flex items-center justify-between rounded-xl border p-4 ${online ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
+ <div>
+ <p className="font-semibold text-surface-800">
+ {online ? 'You are ONLINE' : 'Go online to take consultations'}
+ </p>
+ <p className="text-xs text-surface-500">
+ {online
+ ? 'Devotees can see you and book a consultation now.'
+ : 'Turn on to appear as available to devotees (chat/call).'}
+ </p>
+ </div>
+ <button
+ onClick={() => toggleOnline(!online)}
+ disabled={onlineSaving}
+ className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${online ? 'bg-tulsi-green' : 'bg-surface-300'}`}
+ aria-pressed={online}
+ aria-label="Toggle online status"
+ >
+ <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${online ? 'translate-x-6' : 'translate-x-1'}`} />
+ </button>
  </div>
 
  <MyProviderProfileCard role="ASTROLOGER" onboardingSlug="astrologer" publicListingType="astrologer" />

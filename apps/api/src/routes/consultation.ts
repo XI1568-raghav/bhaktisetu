@@ -1,4 +1,9 @@
 import { FastifyInstance } from 'fastify';
+import {
+  ASTROLOGER_PLATFORM_RATE,
+  notifyAstrologerNewConsult,
+  notifyDevoteeConsultConfirmed,
+} from '../services/astrologer.service.js';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
@@ -373,6 +378,23 @@ export async function consultationRoutes(server: FastifyInstance) {
       consultationId,
     );
 
+    // Astrologer revamp (2026-08-05): ping the astrologer that a paid consult
+    // just landed (there was NO astrologer notification before — they only saw
+    // it by refreshing the portal). Fire-and-forget.
+    void notifyAstrologerNewConsult({
+      astrologerRef: row.astrologer_id,
+      devoteeName: null,
+      minutes: row.minutes ?? 0,
+      amountInr: Number(row.amount_inr ?? 0),
+      consultationId,
+    }).catch(() => undefined);
+    void notifyDevoteeConsultConfirmed({
+      devoteeUserId: userId,
+      astrologerName: row.astrologer_name ?? 'Your astrologer',
+      minutes: row.minutes ?? 0,
+      consultationId,
+    }).catch(() => undefined);
+
     // P0 #AP-06 (2026-07-09): write a Commission ledger row so the astrologer's
     // earnings are reconcilable. The booking stores astrologer_id as a TEXT
     // (mock id / slug today, real AstrologerProfile.id once profiles are live),
@@ -394,14 +416,17 @@ export async function consultationRoutes(server: FastifyInstance) {
           : await prisma.astrologerProfile.findFirst({ where: { displayName: row.astrologer_name }, select: { id: true, userId: true } });
         if (!profile?.userId) return; // mock astrologer — no real provider to credit
         const total = Number(row.amount_inr);
-        const COMMISSION_RATE = 0.3; // platform takes 30%, astrologer keeps 70%
-        const commissionAmount = Math.round(total * COMMISSION_RATE * 100) / 100;
+        // Astrologer revamp (2026-08-05): align with the priest take-rate cut —
+        // platform 20% / astrologer 80% (was 30/70). Research: AstroTalk takes
+        // 50%, so even 30% was supply-competitive; 20% + demand is the win.
+        // ASTROLOGER_PLATFORM_RATE is the single source of truth.
+        const commissionAmount = Math.round(total * ASTROLOGER_PLATFORM_RATE * 100) / 100;
         await prisma.commission.create({
           data: {
             bookingId: row.id,
             providerId: profile.userId,
             amount: commissionAmount,
-            percentage: COMMISSION_RATE,
+            percentage: ASTROLOGER_PLATFORM_RATE,
             status: 'PENDING',
           },
         });
