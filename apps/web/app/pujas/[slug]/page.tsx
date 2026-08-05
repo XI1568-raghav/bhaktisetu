@@ -218,7 +218,10 @@ function getDefaultFallback(slug: string): PujaDetail {
  };
 }
 
-const API_BASE = process.env.API_URL || 'http://localhost:4000/api/v1';
+// P0 #202 (cont.): same API_URL-vs-localhost bug as the /temples subroute —
+// prod has no API_URL so this hit localhost and the page broke. Use the shared
+// SSR base (falls back to the prod API).
+const API_BASE = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online').replace(/\/$/, '') + '/api/v1';
 
 async function getPujaBySlug(slug: string): Promise<PujaDetail> {
  try {
