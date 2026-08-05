@@ -2,6 +2,11 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import {
+  setAstrologerOnline,
+  getAstrologerPresence,
+  ASTROLOGER_SHARE,
+} from '../services/astrologer.service.js';
 
 const profileUpdateSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
@@ -196,5 +201,87 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       data: { availability: parsed.data.availability as object },
     });
     return reply.send({ availability: profile.availability });
+  });
+
+  // ─── POST /online — the astrologer's go-online/offline presence toggle ──────
+  // Astrologer revamp (2026-08-05): the portal had NO live presence toggle —
+  // devotees couldn't tell who was online, and the booking flow couldn't gate
+  // on it. This is the Uber/AstroTalk "go online" switch. Presence is in-memory
+  // (15-min heartbeat decay); a future migration can persist isOnline.
+  server.post('/online', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('ASTROLOGER')) {
+      return reply.code(403).send({ error: 'ASTROLOGER role required' });
+    }
+    const body = z
+      .object({
+        online: z.boolean(),
+        chat: z.boolean().optional(),
+        call: z.boolean().optional(),
+      })
+      .parse(request.body ?? {});
+    const presence = setAstrologerOnline(userId, body.online, { chat: body.chat, call: body.call });
+    return reply.send({
+      ok: true,
+      online: presence.online,
+      mode: presence.mode,
+      message: presence.online ? 'You are now online.' : 'You are now offline.',
+    });
+  });
+
+  // ─── GET /online — read the caller's current presence ───────────────────────
+  server.get('/online', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const presence = getAstrologerPresence(userId);
+    return reply.send({ online: presence.online, mode: presence.mode });
+  });
+
+  // ─── GET /earnings — the astrologer's OWN earnings (fixes the dead /admin/me)
+  // Before: the Earnings page called /admin/commissions?providerId=me, an
+  // admin-only route that 403'd every real astrologer — the page was dead.
+  // This returns the caller's commission rows + derived payout (their 80%
+  // share) so the portal Earnings panel actually works.
+  server.get('/earnings', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('ASTROLOGER')) {
+      return reply.code(403).send({ error: 'ASTROLOGER role required' });
+    }
+    const rows = await prisma.commission.findMany({
+      where: { providerId: userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    const data = rows.map((c) => {
+      const platformAmount = Number(c.amount);
+      // Commission.amount is the PLATFORM cut; the astrologer's earning is the
+      // remainder of the gross. gross = platform / platformRate.
+      const rate = Number(c.percentage) || 0.2;
+      const gross = rate > 0 ? platformAmount / rate : 0;
+      const astrologerAmount = Math.round((gross - platformAmount) * 100) / 100;
+      return {
+        id: c.id,
+        bookingId: c.bookingId,
+        status: c.status,
+        createdAt: c.createdAt,
+        grossAmountInr: Math.round(gross * 100) / 100,
+        platformCutInr: platformAmount,
+        earningsInr: astrologerAmount,
+        astrologerShare: ASTROLOGER_SHARE,
+      };
+    });
+    const totalEarnings = data.reduce((s, r) => s + r.earningsInr, 0);
+    const pending = data.filter((r) => r.status === 'PENDING').reduce((s, r) => s + r.earningsInr, 0);
+    const paid = data.filter((r) => r.status === 'PAID').reduce((s, r) => s + r.earningsInr, 0);
+    return reply.send({
+      data,
+      summary: {
+        totalEarningsInr: Math.round(totalEarnings * 100) / 100,
+        pendingInr: Math.round(pending * 100) / 100,
+        paidInr: Math.round(paid * 100) / 100,
+        astrologerShare: ASTROLOGER_SHARE,
+      },
+    });
   });
 }
