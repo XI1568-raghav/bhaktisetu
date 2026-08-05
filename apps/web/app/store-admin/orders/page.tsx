@@ -185,11 +185,14 @@ export default function StoreAdminOrdersPage() {
    typed: string;
  } | null>(null);
 
- // Note prompt for forward transitions.
+ // Note prompt for forward transitions. Tracking number captured when marking
+ // SHIPPED (backend trackingNumber field existed but the UI never collected it,
+ // so customers never got a tracking ref).
  const [notePromptState, setNotePromptState] = useState<{
    order: Order;
    nextStatus: OrderStatus;
    note: string;
+   trackingNumber?: string;
  } | null>(null);
 
  const pushToast = useCallback((kind: ToastMsg['kind'], text: string) => {
@@ -231,7 +234,7 @@ export default function StoreAdminOrdersPage() {
    fetchOrders();
  }, [fetchOrders]);
 
- async function commitStatusChange(order: Order, nextStatus: OrderStatus, note: string) {
+ async function commitStatusChange(order: Order, nextStatus: OrderStatus, note: string, trackingNumber?: string) {
    if (!session?.accessToken) return;
    setActionLoading(order.id);
    try {
@@ -241,7 +244,11 @@ export default function StoreAdminOrdersPage() {
          'Content-Type': 'application/json',
          Authorization: `Bearer ${session.accessToken}`,
        },
-       body: JSON.stringify({ status: nextStatus, note: note || undefined }),
+       body: JSON.stringify({
+         status: nextStatus,
+         note: note || undefined,
+         ...(trackingNumber ? { trackingNumber } : {}),
+       }),
      });
      if (!res.ok) {
        const err = await res.json().catch(() => ({}));
@@ -540,6 +547,22 @@ export default function StoreAdminOrdersPage() {
            className="w-full mt-1 px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
            placeholder="e.g. Packed and handed to courier"
          />
+         {notePromptState.nextStatus === 'SHIPPED' && (
+           <>
+             <label className="text-xs font-medium text-surface-500 mt-3 block">
+               Tracking number (courier AWB)
+             </label>
+             <input
+               type="text"
+               value={notePromptState.trackingNumber ?? ''}
+               onChange={(e) =>
+                 setNotePromptState({ ...notePromptState, trackingNumber: e.target.value })
+               }
+               className="w-full mt-1 px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
+               placeholder="e.g. SR123456789IN"
+             />
+           </>
+         )}
          <div className="flex justify-end gap-2 mt-4">
            <button
              type="button"
@@ -553,7 +576,7 @@ export default function StoreAdminOrdersPage() {
              onClick={() => {
                const s = notePromptState;
                setNotePromptState(null);
-               commitStatusChange(s.order, s.nextStatus, s.note);
+               commitStatusChange(s.order, s.nextStatus, s.note, s.trackingNumber);
              }}
              className="px-4 py-2 rounded-lg text-sm font-medium bg-saffron-600 text-white hover:bg-saffron-700"
            >
