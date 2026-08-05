@@ -93,7 +93,19 @@ export default async function TemplesPage() {
  try {
  const result = await getTemples({ limit: 50 });
  totalFromApi = Math.max(result.pagination.total, richCards.length);
- const apiBySlug = new Map(result.data.map((t) => [t.slug, t]));
+ // P2 #217 (2026-08-03): the API seeds temples with `<name>-<city>` slugs while
+ // the rich-detail map uses short slugs. Matching by exact slug meant every
+ // long-slug API temple failed to match its rich twin and got APPENDED as a
+ // duplicate → the browser showed "Showing 41 of 22 temples". Normalize the API
+ // slug to its short form before matching so duplicates merge instead of append.
+ const canon = (slug: string): string => {
+ const parts = slug.split('-');
+ const candidates = [slug];
+ while (parts.length > 1) { parts.pop(); candidates.push(parts.join('-')); }
+ for (const c of candidates) if (TEMPLE_DETAILS[c]) return c;
+ return slug;
+ };
+ const apiBySlug = new Map(result.data.map((t) => [canon(t.slug), t]));
  // Merge API image into rich-detail cards; otherwise rich card keeps imageUrl: null and falls to deity.
  const mergedRich = richCards.map((card) => {
   const apiMatch = apiBySlug.get(card.slug);
@@ -102,7 +114,7 @@ export default async function TemplesPage() {
  });
  const existingSlugs = new Set(richCards.map((t) => t.slug));
  const extraApi = result.data
- .filter((t) => !existingSlugs.has(t.slug))
+ .filter((t) => !existingSlugs.has(canon(t.slug)))
  .map(apiToCard);
  merged = [...mergedRich, ...extraApi];
  } catch {

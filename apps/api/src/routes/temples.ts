@@ -30,6 +30,10 @@ export async function templeRoutes(server: FastifyInstance) {
         limit: Math.min(Number(limit) || 20, 100),
       });
 
+      // P2 #221 (2026-08-03): catalog list reads were served with no Cache-Control
+      // (cf-cache-status: DYNAMIC) so every temples/pujas read hit the Render
+      // free-tier origin. Public, mostly-static catalog data is safe to edge-cache.
+      reply.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=300');
       return result;
     } catch (error) {
       server.log.error(error, 'Failed to list temples');

@@ -368,8 +368,10 @@ export default async function HomePage() {
  </span>
  </div>
  <div className="absolute bottom-4 left-4 right-4">
- <h3 className="text-lg sm:text-xl font-semibold text-white">Sri Harmandir Sahib</h3>
- <p className="text-xs text-white/80 mt-0.5">Live Darshan • Amritsar, Punjab</p>
+ {/* P2 #217 (2026-08-03): image is Mahakaleshwar (Ujjain) but the caption read
+   "Sri Harmandir Sahib / Amritsar" — wrong temple. Match the image. */}
+ <h3 className="text-lg sm:text-xl font-semibold text-white">Mahakaleshwar Jyotirlinga</h3>
+ <p className="text-xs text-white/80 mt-0.5">Live Darshan • Ujjain, Madhya Pradesh</p>
  </div>
  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
  <div className="w-16 h-16 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:bg-white/40 group-hover:scale-110">
