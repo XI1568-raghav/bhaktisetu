@@ -53,6 +53,8 @@ type ApiWellnessDashboard = {
   totalStudents: number;
   totalEarningsInr: number;
   monthEarningsInr: number;
+  instructorShare?: number;
+  platformRate?: number;
  };
  upcomingSessions: ApiWellnessSession[];
  recentSessions: unknown[];
@@ -133,6 +135,11 @@ export default function WellnessDashboard() {
  thisMonth={liveStats?.monthEarningsInr ?? 0}
  pending={null}
  />
+ {liveStats?.instructorShare != null && (
+ <p className="text-xs text-surface-500 -mt-2">
+ You keep {Math.round(liveStats.instructorShare * 100)}% of every enrollment (platform {Math.round((liveStats.platformRate ?? 0.2) * 100)}%).
+ </p>
+ )}
 
  {/* Stats */}
  <div className="grid grid-cols-2 gap-4">
