@@ -320,12 +320,13 @@ export default async function StorePage() {
  ))}
  </div>
 
- {/* Load more */}
+ {/* Load more — the full catalog is already fetched (listProducts limit=100),
+     so a pagination button had nothing to load (dead CTA). Replace with an
+     honest catalog-count note + CTA to a category browse instead. */}
  <div className="text-center mt-10">
- <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-saffron-200 text-saffron-600 font-medium rounded-lg hover:bg-saffron-50 transition-colors">
- Load More Products
- <ArrowRight className="w-4 h-4" />
- </button>
+ <p className="text-sm text-surface-500">
+ Showing all {products.length} products in this collection.
+ </p>
  </div>
  </div>
  </div>
