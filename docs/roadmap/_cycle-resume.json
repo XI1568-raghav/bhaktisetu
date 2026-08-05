@@ -1,41 +1,7 @@
 {
-  "cycleId": "C-20260804T1441",
-  "spawnPlan": [
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q2-CS-001"
-      ],
-      "briefing": "CS COVERAGE GAP: Queue has zero CS items — this is the first CS spawn in recent cycles. KPIs show multilingual_macros_count, cs_macros_count, wa_support_active, wa_bot_auto_resolve_pct all stale with \"no manual value\" — CS infrastructure is undocumented.\n\nFocus on:\n1) Check docs/roadmap/_index.json for R-Q2-CS-001 spec, dependencies, and acceptance criteria. If already shipped, find next unblocked CS item and work on that instead.\n2) Ship multilingual CS response macros for hi/en at minimum (ta/te/bn/mr blocked on R-Q2-CS-003 founder review). Target: 15-20 macros covering top support queries (booking confirmation, refund status, priest reschedule, payment failure, festival timing).\n3) Document macros in docs/cs/macros/ with trigger phrases and response templates.\n4) If WhatsApp support automation is in scope, draft Wati macro templates for auto-reply on common queries.\n\nPriority: P0 macros that reduce median support response time. Report shipped artifacts in docs/agent-reports/cs/R-Q2-CS-001-report.md. NEVER fabricate data — if dependencies aren't met, document the gap and ship what's possible.",
-      "estTokens": 8000
-    },
-    {
-      "role": "cto",
-      "itemIds": [
-        "R-Q1-E-004",
-        "R-Q1-E-005"
-      ],
-      "briefing": "CRITICAL INFRASTRUCTURE FIXES: Three severe KPI signals require immediate attention:\n- razorpay_live_active = 0 (payment not live — REVENUE BLOCKER)\n- cron_auth_token_set = 0 (security gap — unauthenticated cron endpoints)\n- ALL observability KPIs returning HTTP 404 (metrics endpoints broken — flying blind)\n\nFocus on:\n1) Check docs/roadmap/_index.json for R-Q1-E-004 and R-Q1-E-005 specs. If either is already shipped, pivot to the next unblocked engineering item that addresses the critical signals above.\n2) OBSERVABILITY: Investigate why all KPI endpoints return 404. Likely missing /metrics or /api/v1/metrics route, or the metrics collector isn't deployed. Check apps/api/src/routes/ for metrics endpoint. Ship a minimal /api/v1/metrics endpoint returning JSON for the top 10 KPIs.\n3) CRON AUTH: Set CRON_AUTH_TOKEN in Render env and enforce Bearer token check in cron route middleware. Currently cron_auth_token_set=0 means anyone can trigger cron jobs.\n4) RAZORPAY: If R-Q1-E-004/005 relate to payments, prioritize Razorpay live key integration. razorpay_live_active=0 means no revenue can flow.\n\nConstraints: NEVER violate free-tier (CF 500 builds/mo, GH 2000 min/mo, Render 750h/mo). NEVER use mock data in production paths. Report shipped artifacts in docs/agent-reports/engineering/. If items are already shipped, update status and document what was found.",
-      "estTokens": 12000
-    }
-  ],
-  "deferrals": [
-    {
-      "itemId": "R-Q2-M-011",
-      "reason": "T-010 QUEUE STALE TRIPWIRE FIRED: Queue oldest item 1287.6h (53+ days) unconsumed. 9 items queued since June 11 — NONE have been consumed by Claude Code agents. The queue worker/processor appears non-functional. Without fixing this, every new spawn this cycle will also stall indefinitely. This is the single highest-priority system issue. ALL KPIs are also returning HTTP 404 — observability is broken, compounding the diagnosis problem.",
-      "suggestedAction": "1) Check Render bg-worker status — is the queue consumer process running? 2) Review Render logs for queue worker errors or Claude Code API auth failures. 3) Verify ANTHROPIC_API_KEY is valid and has credits. 4) Manually process R-Q2-M-011 (oldest queue item, cmo role) to unblock. 5) Fix KPI endpoint 404s — likely missing /metrics routes or observability stack not deployed. 6) Set CRON_AUTH_TOKEN in Render env (currently 0/unset — security gap)."
-    },
-    {
-      "itemId": "R-Q1-E-001",
-      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked 54 days. This single decision blocks at least 5 downstream engineering items: R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014. 54 days of engineering velocity lost across the critical path. This is the highest-leverage unblock in the entire backlog — one decision unblocks 5+ items.",
-      "suggestedAction": "Review docs/engineering/R-Q1-E-001-handoff.md for decision matrix. Key constraints: CF free-tier 500 builds/mo, GH Actions 2000 min/mo, Render 750h/mo. Recommendation: Cloudflare Pages (aligns with free-tier, CDN global, unlimited bandwidth on free plan). Document decision in docs/architecture/hosting-decision.md and unblock all 5 downstream items."
-    },
-    {
-      "itemId": "R-Q1-S-013",
-      "reason": "GOOGLE_PLACES_API_KEY missing in Render env — blocked 54 days. Supply verification pipeline (temple/pandit onboarding) is completely stalled because the Places API integration can't function without the key. This is a 5-minute fix that unblocks an entire supply workflow. 54 days of supply onboarding lost for want of one environment variable.",
-      "suggestedAction": "1) Go to Google Cloud Console → APIs & Services → Credentials → Create API key with Places API enabled. 2) Add GOOGLE_PLACES_API_KEY to Render environment variables (Dashboard → Service → Environment). 3) Redeploy or restart the API service. 4) Verify supply verification endpoint returns 200 with real place data. 5) Mark R-Q1-S-013 as unblocked in roadmap. See docs/supply/R-Q1-S-013-handoff.md for full context."
-    }
-  ],
+  "cycleId": "C-20260805T0335",
+  "spawnPlan": [],
+  "deferrals": [],
   "kills": [],
   "firedTripwires": [
     {
@@ -45,10 +11,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-04T14:42:50.689Z"
+      "firedAt": "2026-08-05T03:36:45.625Z"
     }
   ],
-  "savedAt": "2026-08-04T14:47:26.529Z",
+  "savedAt": "2026-08-05T03:41:42.248Z",
   "consumed": true,
-  "consumedAt": "2026-08-04T14:50:31.034Z"
+  "consumedAt": "2026-08-05T03:41:42.249Z"
 }
