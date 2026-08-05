@@ -15,6 +15,7 @@ import {
  ArrowLeft,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
+import AddressManager from '../../components/profile/AddressManager';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
 
@@ -490,6 +491,9 @@ function ProfileContent() {
  )}
  </div>
  </div>
+
+ {/* Delivery Addresses (devotee revamp 2026-08-05: backend existed, no UI) */}
+ <AddressManager />
 
  {/* Save button */}
  <div className="flex items-center justify-end gap-4">
