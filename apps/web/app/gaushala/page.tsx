@@ -27,6 +27,18 @@ export const metadata: Metadata = {
 
 /* ── Hardcoded data (matches API) ─────────────────────────────────────────────── */
 
+// P1 #214 (2026-08-03): the detail route `/gaushala/[id]` renders ADOPTABLE-COW
+// records keyed `cow_*`. There is no `gs_*` detail page — so the "Explore
+// Gaushala" cards below linked to `/gaushala/gs_001|002|003`, all 404. Map each
+// verified gaushala to one of its adoptable cows (which has a working detail
+// page that also shows the gaushala's info) until a real `/gaushala/[gsId]`
+// route exists.
+const gaushalaToAdoptableCow: Record<string, string> = {
+ gs_001: "cow_001", // Shri Krishna Gaushala → Lakshmi
+ gs_002: "cow_005", // Kamdhenu Gaushala → Kamala
+ gs_003: "cow_010", // Gokul Gaushala → Surabhi
+};
+
 const gaushalas = [
  {
  id: "gs_001",
@@ -420,7 +432,7 @@ export default function GaushalaPage() {
  </div>
  </div>
  <Link
- href={`/gaushala/${gs.id}`}
+ href={`/gaushala/${gaushalaToAdoptableCow[gs.id] ?? gs.id}`}
  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-saffron-50 text-saffron-700 font-medium rounded-lg hover:bg-saffron-100 transition-colors text-sm"
  >
  Explore Gaushala

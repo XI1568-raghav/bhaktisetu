@@ -42,11 +42,30 @@ const FALLBACK_PUJA_SLUGS = [
   'navaratri-puja',
 ];
 
+// P0 #202 (2026-08-03): the API seeds temples with `<name>-<city>` slugs
+// (e.g. `kashi-vishwanath-varanasi`) but `/temples/[slug]` resolves the curated
+// short slug (`kashi-vishwanath`). The sitemap was advertising the long API
+// slugs → 19/20 temple URLs 404'd. Normalize to the short slug the route
+// renders so every advertised URL returns 200.
+function toCanonicalTempleSlug(slug: string): string {
+  const parts = slug.split('-');
+  const candidates = [slug];
+  while (parts.length > 1) {
+    parts.pop();
+    candidates.push(parts.join('-'));
+  }
+  for (const c of candidates) {
+    if ((FALLBACK_TEMPLE_SLUGS as readonly string[]).includes(c)) return c;
+  }
+  return slug;
+}
+
 async function safeTempleSlugs(): Promise<string[]> {
   try {
     const res = await getTemples({ limit: 100 });
-    const slugs = res.data.map((t) => t.slug).filter(Boolean);
-    return slugs.length > 0 ? slugs : FALLBACK_TEMPLE_SLUGS;
+    const slugs = res.data.map((t) => t.slug).filter(Boolean).map(toCanonicalTempleSlug);
+    const unique = Array.from(new Set(slugs));
+    return unique.length > 0 ? unique : FALLBACK_TEMPLE_SLUGS;
   } catch {
     return FALLBACK_TEMPLE_SLUGS;
   }

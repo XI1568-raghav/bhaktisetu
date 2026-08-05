@@ -59,27 +59,46 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchConvs = useCallback(async () => {
-    if (!token) return;
+  // P2 #220 (2026-08-03): track consecutive auth failures and STOP polling on
+  // a 401 (bad/expired token) instead of hammering the API every 3s forever.
+  const authFailCount = useRef(0);
+
+  const fetchConvs = useCallback(async (): Promise<boolean> => {
+    if (!token) return false;
     try {
       const res = await fetch(`${API_BASE_URL}/conversations?role=${role}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return;
+      if (res.status === 401 || res.status === 403) {
+        authFailCount.current += 1;
+        return false; // signal: stop polling
+      }
+      if (!res.ok) return true; // transient — keep polling
+      authFailCount.current = 0;
       const data = await res.json();
       setConversations(data.conversations ?? []);
+      return true;
     } finally {
       setLoading(false);
     }
   }, [token, role]);
 
   useEffect(() => {
+    authFailCount.current = 0;
     fetchConvs();
     // Phase D P1 #1: visibility-pause — poll only when tab visible.
+    // P2 #220: also stop after repeated auth failures (bad token) — no point
+    // polling an endpoint that will never authorize this session.
     let i: ReturnType<typeof setInterval> | null = null;
     const start = (): void => {
       if (i !== null) return;
-      i = setInterval(fetchConvs, POLL_INTERVAL_MS);
+      i = setInterval(async () => {
+        if (authFailCount.current >= 3) {
+          stop();
+          return;
+        }
+        await fetchConvs();
+      }, POLL_INTERVAL_MS);
     };
     const stop = (): void => {
       if (i !== null) {
@@ -88,7 +107,7 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
       }
     };
     const onVisibility = (): void => {
-      if (document.visibilityState === 'visible') start();
+      if (document.visibilityState === 'visible' && authFailCount.current < 3) start();
       else stop();
     };
     onVisibility();

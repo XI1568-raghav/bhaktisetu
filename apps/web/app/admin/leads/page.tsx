@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Upload, X, FileText } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { friendlyApiError } from '../../../lib/friendly-error';
 
 type LeadRole = 'TEMPLE' | 'PRIEST' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA';
 type LeadStatus = 'NEW' | 'QUEUED' | 'EMAILED' | 'REPLIED' | 'CONVERTED' | 'BOUNCED' | 'UNSUBSCRIBED';
@@ -130,7 +131,8 @@ export default function AdminLeadsPage() {
         setLeads(data.data);
         setTotal(data.total);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load leads');
+        // P1 #208: friendly copy instead of raw "401 Unauthorized".
+        if (!cancelled) setError(friendlyApiError(err).message);
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -362,7 +362,7 @@ function DashboardContent() {
  Get ad-free darshan, premium content, and discounts on pujas.
  </p>
  <a
- href="/subscriptions"
+ href="/pricing"
  className="inline-flex items-center gap-2 bg-white text-saffron-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-saffron-50 transition-colors"
  >
  View Plans <ArrowRight className="w-4 h-4" />

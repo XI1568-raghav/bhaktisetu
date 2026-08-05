@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Star, EyeOff, Loader2, RefreshCw, Filter } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { friendlyApiError } from '../../../lib/friendly-error';
 
 interface AdminRating {
   id: string;
@@ -51,8 +52,8 @@ export default function AdminRatingsPage() {
       setRows((json.data ?? []) as AdminRating[]);
       setTotal(Number(json.total) || 0);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to load ratings';
-      setError(msg);
+      // P1 #208: map raw "API 401" style errors to friendly copy.
+      setError(friendlyApiError(e).message);
       setRows([]);
     } finally {
       setLoading(false);
