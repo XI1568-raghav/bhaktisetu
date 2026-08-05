@@ -41,6 +41,11 @@ const createSessionSchema = z.object({
   durationMinutes: z.number().int().positive().max(600),
   capacity: z.number().int().positive().max(10000),
   priceInr: z.number().nonnegative(),
+  // Wellness revamp: free daily satsang / donation-model sessions are the
+  // top-of-funnel per research (Isha/AoL satsang are free/donation). isFree
+  // marks a session free so the public catalog can show a "Free" badge and the
+  // enroll flow can skip payment.
+  isFree: z.boolean().optional(),
 });
 
 // Instructor edit — every field optional. scheduledAt may push into past for
@@ -140,6 +145,8 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           .send({ error: 'Invalid request body', details: parsed.error.flatten() });
       }
       const instructorId = request.currentUser!.id;
+      // Free satsang sessions are forced to price 0 (donation-model top-of-funnel).
+      const isFree = parsed.data.isFree ?? false;
       const session = await prisma.wellnessSession.create({
         data: {
           instructorId,
@@ -149,7 +156,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           scheduledAt: new Date(parsed.data.scheduledAt),
           durationMinutes: parsed.data.durationMinutes,
           capacity: parsed.data.capacity,
-          priceInr: parsed.data.priceInr,
+          priceInr: isFree ? 0 : parsed.data.priceInr,
         },
       });
       return reply.code(201).send({ data: serializeSession(session) });
@@ -315,6 +322,36 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
 
       const priceInr = Number(session.priceInr);
       const amountPaise = Math.round(priceInr * 100);
+
+      // Wellness revamp: FREE sessions (daily satsang top-of-funnel) enroll
+      // instantly as PAID — no Razorpay order, no payment step. This is the
+      // research-backed funnel (Isha/AoL free satsang → paid courses).
+      if (priceInr <= 0) {
+        if (!existing) {
+          const held = await prisma.wellnessEnrollment.count({
+            where: { sessionId: session.id, status: { in: ['PAID', 'PENDING_PAYMENT'] } },
+          });
+          if (held >= session.capacity) {
+            return reply.code(409).send({ error: 'Session is full' });
+          }
+        }
+        const freeEnrollment = existing
+          ? await prisma.wellnessEnrollment.update({
+              where: { id: existing.id },
+              data: { status: 'PAID' },
+            })
+          : await prisma.wellnessEnrollment.create({
+              data: { sessionId: session.id, userId, status: 'PAID' },
+            });
+        return reply.code(201).send({
+          data: {
+            enrollmentId: freeEnrollment.id,
+            free: true,
+            amount: 0,
+            currency: 'INR',
+          },
+        });
+      }
 
       let razorpayOrderId: string;
       if (razorpay && amountPaise > 0) {

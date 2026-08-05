@@ -138,3 +138,21 @@ export async function deleteWellnessSession(
   });
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete session'));
 }
+
+// Wellness revamp (2026-08-05): the /sessions/:id/room endpoint existed but the
+// portal had NO way to call it — the live-class room URL was unreachable except
+// by curl. This wires it so an instructor can set their Jitsi room from the UI.
+export async function setWellnessSessionRoom(
+  token: string | undefined,
+  id: string,
+  roomUrl: string,
+): Promise<WellnessSession> {
+  const res = await fetch(`${API_BASE_URL}/wellness/sessions/${id}/room`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify({ roomUrl }),
+  });
+  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to set room URL'));
+  const body = (await res.json()) as { data: WellnessSession };
+  return body.data;
+}

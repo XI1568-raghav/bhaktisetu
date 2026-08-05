@@ -90,8 +90,16 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
       }),
     ]);
 
-    const totalEarnings = paidEnrollments.reduce((sum, e) => sum + Number(e.session.priceInr), 0);
-    const monthEarnings = monthEnrollments.reduce((sum, e) => sum + Number(e.session.priceInr), 0);
+    // Wellness revamp: the dashboard previously showed GROSS (sum of full
+    // priceInr), but the instructor's earnings are their (1 - platformRate)
+    // share — the same number the Commission ledger writes. Showing gross
+    // overstated what they'd actually be paid. Compute the instructor share.
+    const platformRate = Number(process.env.WELLNESS_PLATFORM_COMMISSION ?? '0.20');
+    const share = 1 - (Number.isFinite(platformRate) ? platformRate : 0.2);
+    const grossTotal = paidEnrollments.reduce((sum, e) => sum + Number(e.session.priceInr), 0);
+    const grossMonth = monthEnrollments.reduce((sum, e) => sum + Number(e.session.priceInr), 0);
+    const totalEarnings = Math.round(grossTotal * share * 100) / 100;
+    const monthEarnings = Math.round(grossMonth * share * 100) / 100;
     const uniqueStudents = new Set(paidEnrollments.map((e) => e.userId)).size;
 
     return reply.send({
@@ -103,6 +111,8 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
         totalStudents: uniqueStudents,
         totalEarningsInr: totalEarnings,
         monthEarningsInr: monthEarnings,
+        instructorShare: share,
+        platformRate,
       },
       upcomingSessions: upcomingSessions.map((s) => ({
         id: s.id,
