@@ -1,6 +1,8 @@
 import { Prisma, BookingStatus, PayoutStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { BookingService } from './booking.service.js';
+import { notifyUser } from '../routes/notifications.js';
+import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -279,8 +281,22 @@ export class PriestService {
       include: {
         temple: { select: { id: true, name: true } },
         pujaType: { select: { id: true, name: true } },
+        user: { select: { id: true, fullName: true, phone: true } },
+        priest: { select: { displayName: true } },
       },
     });
+
+    // D6: notify the devotee their pandit is confirmed. Push + WhatsApp are
+    // both fire-and-forget — a notification failure must never fail the accept.
+    // Optional-chained: tests mock update() without the user include.
+    if (updated.user?.id) {
+      void notifyUser(updated.user.id, {
+        title: 'Pandit confirmed',
+        body: `${updated.priest?.displayName ?? 'Your pandit'} will perform your ${updated.pujaType.name}.`,
+        url: `/bookings/${updated.id}`,
+      }).catch(() => undefined);
+      void notifyDevotee('assigned', buildBookingCtx(updated as never)).catch(() => undefined);
+    }
 
     return updated;
   }
@@ -331,8 +347,19 @@ export class PriestService {
       include: {
         temple: { select: { id: true, name: true } },
         pujaType: { select: { id: true, name: true } },
+        user: { select: { id: true, fullName: true, phone: true } },
       },
     });
+
+    // D6: tell the devotee we're re-matching them (transparency beats silence).
+    if (updated.user?.id) {
+      void notifyUser(updated.user.id, {
+        title: 'Re-assigning your pandit',
+        body: `Your ${updated.pujaType.name} booking is being matched to another pandit. We'll confirm shortly.`,
+        url: `/bookings/${updated.id}`,
+      }).catch(() => undefined);
+      void notifyDevotee('reassigned', buildBookingCtx(updated as never)).catch(() => undefined);
+    }
 
     return updated;
   }

@@ -105,6 +105,25 @@ export default function PriestDashboard() {
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
  const [kycReason, setKycReason] = useState<string | null>(null);
 
+ // T1 instant-pool on-duty toggle (booking revamp). When on, the pandit is a
+ // candidate for instant dispatch offers. PATCH /priest/availability bumps
+ // lastSeenAt (the heartbeat) so the pool knows they're live.
+ const [onDuty, setOnDuty] = useState(false);
+ const [dutySaving, setDutySaving] = useState(false);
+ async function toggleDuty(next: boolean) {
+ if (!session?.accessToken) return;
+ setDutySaving(true);
+ try {
+ const res = await fetch(`${API_BASE_URL}/priest/availability`, {
+ method: 'PATCH',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
+ body: JSON.stringify({ isOnDuty: next }),
+ });
+ if (res.ok) setOnDuty(next);
+ } catch { /* keep prior state */ }
+ setDutySaving(false);
+ }
+
  useEffect(() => {
  async function fetchDashboard() {
  const displayName = user?.fullName || user?.email?.split('@')[0] || 'Pandit';
@@ -187,6 +206,29 @@ export default function PriestDashboard() {
  <p className="text-surface-500">Here is your dashboard overview for today.</p>
  <KycStatusBadge state={kycState} reason={kycReason} />
  </div>
+ </div>
+
+ {/* T1 instant-pool on-duty toggle */}
+ <div className={`flex items-center justify-between rounded-xl border p-4 ${onDuty ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
+ <div>
+ <p className="font-semibold text-surface-800">
+ {onDuty ? 'You are ON DUTY' : 'Go on duty for instant bookings'}
+ </p>
+ <p className="text-xs text-surface-500">
+ {onDuty
+ ? 'You will receive instant puja requests near you. Respond within a minute.'
+ : 'Turn on to receive instant puja requests near you (Uber-style dispatch).'}
+ </p>
+ </div>
+ <button
+ onClick={() => toggleDuty(!onDuty)}
+ disabled={dutySaving}
+ className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${onDuty ? 'bg-tulsi-green' : 'bg-surface-300'}`}
+ aria-pressed={onDuty}
+ aria-label="Toggle on-duty"
+ >
+ <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${onDuty ? 'translate-x-6' : 'translate-x-1'}`} />
+ </button>
  </div>
 
  <MyProviderProfileCard role="PANDIT" onboardingSlug="priest" publicListingType="pandit" />

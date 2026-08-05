@@ -15,6 +15,7 @@ import {
  Inbox,
  ArrowRight,
  Users,
+ XCircle,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
@@ -181,6 +182,7 @@ function PriestBookingsInner() {
  start: 'in_progress',
  complete: 'completed',
  video: 'video_uploaded',
+ reject: 'confirmed',
  };
  setBookings((prev) =>
  prev.map((b) =>
@@ -200,7 +202,11 @@ function PriestBookingsInner() {
 
  switch (booking.status) {
  case 'confirmed':
+ // D3 fix: API had PATCH /priest/bookings/:id/reject but no UI ever rendered
+ // a Reject button — a pandit who couldn't fulfil had no escape valve, so the
+ // booking sat stuck. Now offer Accept + Decline side by side.
  return (
+ <div className="flex items-center gap-2">
  <button
  onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'accept'); }}
  disabled={!!actionLoading}
@@ -209,9 +215,19 @@ function PriestBookingsInner() {
  {isLoading('accept') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
  Accept
  </button>
+ <button
+ onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'reject'); }}
+ disabled={!!actionLoading}
+ className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+ >
+ {isLoading('reject') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+ Decline
+ </button>
+ </div>
  );
  case 'priest_assigned':
  return (
+ <div className="flex items-center gap-2">
  <button
  onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'start'); }}
  disabled={!!actionLoading}
@@ -220,6 +236,16 @@ function PriestBookingsInner() {
  {isLoading('start') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
  Start Puja
  </button>
+ <button
+ onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'reject'); }}
+ disabled={!!actionLoading}
+ title="Release this booking back to the queue"
+ className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+ >
+ {isLoading('reject') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+ Release
+ </button>
+ </div>
  );
  case 'in_progress':
  return (

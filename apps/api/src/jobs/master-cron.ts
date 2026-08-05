@@ -8,6 +8,8 @@ import { runAartiNotify, type AartiNotifyResult } from './aarti-notify.js';
 import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.js';
 import { prewarmDailyHoroscopes } from '../lib/astrology.js';
 import { processAutoRefunds } from '../services/refund.service.js';
+import { bookingService } from '../services/booking.service.js';
+import { dispatchService } from '../services/dispatch.service.js';
 import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
 import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepResult } from '../lib/webhook-idempotency.js';
 import { runDailyPanchangCompute } from './daily-panchang-compute-cron.js';
@@ -82,6 +84,8 @@ export interface DailyOpsResult {
   weeklyDigest: WeeklyDigestResult & { gated?: boolean };
   horoscopes: { generated: number; date: string; skipped?: boolean; reason?: string };
   refunds: RefundCronResult;
+  staleBookingEscalation: { escalated: number; scanned: number; skipped?: boolean; reason?: string };
+  dispatchSweep: { expired: number; rebroadcast: number; escalated: number; skipped?: boolean; reason?: string };
   backup: BackupResult;
   webhookReplaySweep: WebhookSweepResult;
   consultationExpire: ConsultationExpireResult;
@@ -324,6 +328,8 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       weeklyDigest: { sent: 0, skipped: 0, failed: 0, gated: true, reason: 'outreachOnly' },
       horoscopes: { generated: 0, date: new Date().toISOString().slice(0, 10), skipped: true, reason: 'outreachOnly' },
       refunds: { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'outreachOnly' },
+      staleBookingEscalation: { escalated: 0, scanned: 0, skipped: true, reason: 'outreachOnly' },
+      dispatchSweep: { expired: 0, rebroadcast: 0, escalated: 0, skipped: true, reason: 'outreachOnly' },
       backup: { ok: true, skipped: true, reason: 'outreachOnly' },
       webhookReplaySweep: { deleted: 0, skipped: true, reason: 'outreachOnly' },
       consultationExpire: { expired: 0, skipped: true, reason: 'outreachOnly' },
@@ -341,6 +347,8 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const weeklyDigest = await tickWeeklyDigest();
   const horoscopes = await tickHoroscopePrewarm();
   const refunds = await tickAutoRefunds();
+  const staleBookingEscalation = await tickStaleBookingEscalation();
+  const dispatchSweep = await tickDispatchSweep();
   const backup = await tickWeeklyBackup();
   const webhookReplaySweep = await tickWebhookReplaySweep();
   const consultationExpire = await tickConsultationExpire();
@@ -357,11 +365,60 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     weeklyDigest,
     horoscopes,
     refunds,
+    staleBookingEscalation,
+    dispatchSweep,
     backup,
     webhookReplaySweep,
     consultationExpire,
     ranAt: new Date().toISOString(),
   };
+}
+
+// Dispatch engine sweep: expire sent offers past their window, rebroadcast or
+// escalate unassigned instant/1-hour/senior bookings. This is the timeout
+// handler that makes a pandit going silent auto-reassign instead of stranding
+// the devotee.
+async function tickDispatchSweep(): Promise<{
+  expired: number;
+  rebroadcast: number;
+  escalated: number;
+  skipped?: boolean;
+  reason?: string;
+}> {
+  try {
+    return await dispatchService.sweepExpiredOffers();
+  } catch (err) {
+    return {
+      expired: 0,
+      rebroadcast: 0,
+      escalated: 0,
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+// D4 fix: bookingService.escalateStaleBookings(72h) existed but had NO caller —
+// stale `priest_assigned` bookings (pandit never uploaded video, 72h past the
+// scheduled date) just rotted. Wire it into the daily ops tick so abandoned
+// bookings actually get force-cancelled for refund review.
+async function tickStaleBookingEscalation(): Promise<{
+  escalated: number;
+  scanned: number;
+  skipped?: boolean;
+  reason?: string;
+}> {
+  try {
+    const r = await bookingService.escalateStaleBookings(72);
+    return { escalated: r.escalated.length, scanned: r.scanned };
+  } catch (err) {
+    return {
+      escalated: 0,
+      scanned: 0,
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 async function tickWeeklyBackup(): Promise<BackupResult> {

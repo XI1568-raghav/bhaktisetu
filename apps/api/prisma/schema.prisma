@@ -58,6 +58,28 @@ enum PriestStatus {
   suspended
 }
 
+enum PriestTier {
+  instant_pool
+  verified
+  senior
+  standard
+}
+
+enum DispatchTier {
+  instant
+  one_hour
+  senior
+  scheduled
+}
+
+enum OfferState {
+  sent
+  accepted
+  declined
+  expired
+  superseded
+}
+
 enum PujaCategory {
   daily
   special_occasion
@@ -303,6 +325,15 @@ model Priest {
   avatarUrl          String?                  @map("avatar_url")
   commissionRate     Float                    @default(0.70) @map("commission_rate")
   status             PriestStatus             @default(active)
+  tier                 PriestTier             @default(standard)
+  isOnDuty             Boolean                @default(false) @map("is_on_duty")
+  lastSeenAt           DateTime?              @map("last_seen_at")
+  lat                  Float?
+  lng                  Float?
+  city                 String?
+  serviceRadiusKm      Int                    @default(15) @map("service_radius_km")
+  acceptanceRate       Float                  @default(1.0) @map("acceptance_rate")
+  responseSlaSec       Int                    @default(60) @map("response_sla_sec")
   createdAt          DateTime                 @default(now()) @map("created_at")
   updatedAt          DateTime                 @updatedAt @map("updated_at")
 
@@ -312,6 +343,7 @@ model Priest {
   payouts              PriestPayout[]
   offerings            PriestPujaOffering[]
   assignedTemplePujas  TemplePujaOffering[] @relation("AssignedTemplePujas")
+  dispatchOffers       DispatchOffer[]
 
   @@map("priests")
 }
@@ -447,6 +479,11 @@ model PujaBooking {
   reviewText              String?       @map("review_text")
   cancelledAt             DateTime?     @map("cancelled_at")
   cancellationReason      String?       @map("cancellation_reason")
+  dispatchTier            DispatchTier  @default(scheduled) @map("dispatch_tier")
+  offerExpiresAt          DateTime?     @map("offer_expires_at")
+  assignedVia             String?       @map("assigned_via")
+  rescheduleCount         Int           @default(0) @map("reschedule_count")
+  cancelPolicyJson        Json?         @map("cancel_policy_json")
   createdAt               DateTime      @default(now()) @map("created_at")
   updatedAt               DateTime      @updatedAt @map("updated_at")
 
@@ -459,6 +496,7 @@ model PujaBooking {
   prasadAddress      UserAddress?        @relation(fields: [prasadDeliveryAddressId], references: [id])
   payments           Payment[]
   priestPayouts      PriestPayout[]
+  dispatchOffers     DispatchOffer[]
 
   @@index([userId])
   @@index([templeId])
@@ -466,7 +504,27 @@ model PujaBooking {
   @@index([scheduledDate])
   @@index([templeId, scheduledDate, status])
   @@index([priestPujaOfferingId])
+  @@index([dispatchTier, status])
   @@map("puja_bookings")
+}
+
+model DispatchOffer {
+  id          String     @id @default(uuid()) @db.Uuid
+  bookingId   String     @map("booking_id") @db.Uuid
+  priestId    String     @map("priest_id") @db.Uuid
+  state       OfferState @default(sent)
+  sentAt      DateTime   @default(now()) @map("sent_at")
+  respondedAt DateTime?  @map("responded_at")
+  expiresAt   DateTime   @map("expires_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  booking PujaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  priest  Priest      @relation(fields: [priestId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, state])
+  @@index([priestId, state])
+  @@index([state, expiresAt])
+  @@map("dispatch_offers")
 }
 
 model Payment {
