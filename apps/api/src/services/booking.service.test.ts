@@ -115,10 +115,11 @@ describe('BookingService.createBooking', () => {
     const data = prismaMock.pujaBooking.create.mock.calls[0]![0] as any;
     // base 500 + platform 51 = 551
     expect(Number(data.data.priceAmount)).toBe(551);
-    // commission 30% of PUJA price (500) = 150, not of the total
-    expect(Number(data.data.platformCommission)).toBe(150);
-    // priest payout 70% of PUJA price (500) = 350
-    expect(Number(data.data.priestPayout)).toBe(350);
+    // Take-rate revamp (2026-08-04): platform 20% of PUJA price (500) = 100,
+    // not of the total. (Was 30% = 150 before the supply-acquisition cut.)
+    expect(Number(data.data.platformCommission)).toBeCloseTo(100, 6);
+    // priest payout 80% of PUJA price (500) = 400 (was 70% = 350)
+    expect(Number(data.data.priestPayout)).toBeCloseTo(400, 6);
   });
 
   it('charges base + platform fee + prasad fee when prasad requested', async () => {
@@ -146,9 +147,9 @@ describe('BookingService.createBooking', () => {
     const data = prismaMock.pujaBooking.create.mock.calls[0]![0] as any;
     // base 500 + platform 51 + prasad 150 = 701
     expect(Number(data.data.priceAmount)).toBe(701);
-    // commission still 30% of PUJA price (500) = 150 — fees not in the split
-    expect(Number(data.data.platformCommission)).toBe(150);
-    expect(Number(data.data.priestPayout)).toBe(350);
+    // commission still 20% of PUJA price (500) = 100 — fees not in the split
+    expect(Number(data.data.platformCommission)).toBeCloseTo(100, 6);
+    expect(Number(data.data.priestPayout)).toBeCloseTo(400, 6);
   });
 
   it('throws if offering not found', async () => {
