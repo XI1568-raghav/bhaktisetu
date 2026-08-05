@@ -39,6 +39,10 @@ const createBookingSchema = z.object({
   specialInstructions: z.string().optional(),
   prasadDeliveryRequested: z.boolean().default(false),
   prasadDeliveryAddressId: z.string().uuid().optional(),
+  // Booking revamp: the devotee's chosen speed tier. Defaults to 'scheduled'
+  // (today's self-accept behaviour). instant/one_hour/senior trigger the
+  // dispatch engine on payment confirm.
+  dispatchTier: z.enum(['instant', 'one_hour', 'senior', 'scheduled']).default('scheduled'),
 });
 
 // P0 #pp-01 (2026-07-09): the old schema accepted `data: z.record(z.any())`

@@ -18,6 +18,7 @@ export interface CreateBookingInput {
   specialInstructions?: string;
   prasadDeliveryRequested: boolean;
   prasadDeliveryAddressId?: string;
+  dispatchTier?: 'instant' | 'one_hour' | 'senior' | 'scheduled';
 }
 
 export interface UserBookingsFilters {
@@ -283,6 +284,7 @@ export class BookingService {
         status: 'pending_payment',
         prasadDeliveryRequested: data.prasadDeliveryRequested,
         prasadDeliveryAddressId: data.prasadDeliveryAddressId ?? null,
+        dispatchTier: data.dispatchTier ?? 'scheduled',
       },
       select: {
         id: true,
