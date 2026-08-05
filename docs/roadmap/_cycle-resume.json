@@ -1,7 +1,25 @@
 {
-  "cycleId": "C-20260805T0335",
-  "spawnPlan": [],
-  "deferrals": [],
+  "cycleId": "C-20260805T1435",
+  "spawnPlan": [
+    {}
+  ],
+  "deferrals": [
+    {
+      "itemId": "R-Q2-M-011",
+      "reason": "T-010 tripwire fired: Queue oldest item > 72h unconsumed. R-Q2-M-011 has been in queue 1311.5h (~55 days, since June 11). Other 11 queue items were added Aug 2-4 and are only 1-3 days old, so the queue consumer mechanism works for recent items — R-Q2-M-011 specifically is stuck. Either the item is obsolete, blocked by missing dependencies, or its artifacts are incomplete/unprocessable. Triage immediately.",
+      "suggestedAction": "Review R-Q2-M-011 in docs/roadmap/_index.json and its agent-report artifacts. Three options: (1) KILL if strategically obsolete after 55 days, (2) ESCALATE if a hidden dependency is blocking — identify and unblock, (3) REQUEUE with fresh artifacts if the original output was malformed. Also verify queue consumer health for the 11 newer items added Aug 2-4 to ensure they don't go stale too."
+    },
+    {
+      "itemId": "R-Q1-S-013",
+      "reason": "GOOGLE_PLACES_API_KEY missing in Render env. This is a 5-minute configuration fix that has been open 55 days. Agent artifacts already shipped per docs/supply/R-Q1-S-013-handoff.md. The only remaining step is adding one environment variable to Render. This blocks temple/supply discovery features that depend on Google Places data.",
+      "suggestedAction": "Add GOOGLE_PLACES_API_KEY to Render environment variables. Obtain key from Google Cloud Console (enable Places API, create API key, restrict to Places API + your domains). This takes <5 minutes and unblocks an entire supply discovery pipeline. Do this TODAY — 55 days for a 5-minute fix is unacceptable."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision required: CF Pages vs Vercel vs static allowlist. Open 55 days. This blocks multiple downstream engineering items that depend on the deployment architecture decision. Free-tier constraints (CF 500 builds/mo, Vercel bandwidth limits) make this decision critical for sustaining the 0% budget posture. Every day without a decision creates technical debt and blocks dependent items from being scoped.",
+      "suggestedAction": "Review the comparison and decide within 48h. Key factors: (1) Free tier limits — CF Pages: 500 builds/mo (currently 0% used), Vercel: 100GB bandwidth + serverless function limits; (2) India latency — CF has PoPs in India; (3) Next.js compatibility — both work but Vercel has native integration; (4) Lock-in risk. Recommendation: CF Pages for static/edge deployment given free-tier constraints and India latency. Document decision in docs/architecture/deployment-decision.md and update affected roadmap items' depends_on."
+    }
+  ],
   "kills": [],
   "firedTripwires": [
     {
@@ -11,10 +29,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-05T03:36:45.625Z"
+      "firedAt": "2026-08-05T14:36:35.086Z"
     }
   ],
-  "savedAt": "2026-08-05T03:41:42.248Z",
+  "savedAt": "2026-08-05T14:45:38.854Z",
   "consumed": true,
-  "consumedAt": "2026-08-05T03:41:42.249Z"
+  "consumedAt": "2026-08-05T14:45:38.856Z"
 }
