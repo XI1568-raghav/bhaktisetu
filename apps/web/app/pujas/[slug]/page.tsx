@@ -228,13 +228,30 @@ const API_BASE = _pujaApiBase.endsWith('/api/v1')
   ? _pujaApiBase
   : `${_pujaApiBase.replace(/\/$/, '')}/api/v1`;
 
+// P0 #202 (cont.): the api returns `images` as a plain string[] of URLs, but the
+ // page types it as `{ url, alt }[]` and renders `images[0].url` / `<Image>`.
+ // Normalize the api payload at the boundary so downstream code always sees
+ // the object shape — a string entry becomes `{ url: entry, alt: name }`.
+ function normalizePuja(puja: PujaDetail): PujaDetail {
+  if (!puja) return puja;
+  const imgs = Array.isArray(puja.images) ? puja.images : [];
+  const normalized = imgs
+    .map((i) => {
+      if (typeof i === 'string') return { url: i, alt: puja.name ?? 'puja' };
+      if (i && typeof i === 'object' && 'url' in i) return i;
+      return null;
+    })
+    .filter(Boolean) as { url: string; alt: string }[];
+  return { ...puja, images: normalized };
+ }
+
 async function getPujaBySlug(slug: string): Promise<PujaDetail> {
  try {
  const res = await fetch(`${API_BASE}/pujas/types/${slug}`, {
  next: { revalidate: 300, tags: [`puja-${slug}`] },
  });
  if (!res.ok) throw new Error('API error');
- return res.json();
+ return normalizePuja(await res.json());
  } catch {
  return fallbackPujas[slug] || getDefaultFallback(slug);
  }
