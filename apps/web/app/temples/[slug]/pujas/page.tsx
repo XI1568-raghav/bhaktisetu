@@ -18,6 +18,26 @@ function fmtINR(s: string): string {
   return Number.isFinite(n) ? `₹${n.toLocaleString('en-IN')}` : s;
 }
 
+// P0 #202 (cont.): map a curated short temple slug to the API's `<name>-<city>`
+// form. The API seeds temples with a city suffix the short slug lacks. We only
+// need a deterministic candidate to TRY (the api call is the source of truth);
+// if neither the short nor the long form resolves, the caller 404s.
+const SHORT_TO_API_SLUG: Record<string, string> = {
+  'kashi-vishwanath': 'kashi-vishwanath-varanasi',
+  somnath: 'somnath-gujarat',
+  siddhivinayak: 'siddhivinayak-mumbai',
+  akshardham: 'akshardham-delhi',
+  badrinath: 'badrinath-uttarakhand',
+  dwarkadhish: 'dwarkadhish-dwarka',
+  'vaishno-devi': 'vaishno-devi-katra',
+  meenakshi: 'meenakshi-madurai',
+  rameshwaram: 'ramanathaswamy-rameshwaram',
+};
+
+function apiSlugFor(shortSlug: string): string {
+  return SHORT_TO_API_SLUG[shortSlug] ?? shortSlug;
+}
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   try {
@@ -43,8 +63,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function TemplePujasPage({ params }: Params) {
-  const { slug } = await params;
-  const temple = await getTempleBySlug(slug).catch(() => null);
+  const { slug: rawSlug } = await params;
+  // P0 #202 (cont.): the sitemap advertises /temples/<short-slug>/pujas for the
+  // curated short slugs (kashi-vishwanath, somnath, etc.) but the API only
+  // carries the `<name>-<city>` form, so getTempleBySlug(short) 404'd. Resolve
+  // the short slug to its API slug before fetching.
+  const temple =
+    (await getTempleBySlug(rawSlug).catch(() => null)) ??
+    (await getTempleBySlug(apiSlugFor(rawSlug)).catch(() => null));
   if (!temple) notFound();
 
   const offerings = (temple.pujaOfferings || []).filter((o) => o.isActive);
