@@ -48,15 +48,19 @@ interface PujaDetail {
  nameLocal: string | null;
  slug: string;
  description: string;
- longDescription: string;
+ // P0 #202: the api does NOT return longDescription/benefits/samagriList (they
+ // are null). Make them optional + add the api's actual samagriItems so the
+ // render can guard instead of crashing on undefined.
+ longDescription?: string;
  category: string;
  deity: string;
  durationMinutes: number;
  basePrice: string;
  nriPrice: string;
  samagriIncluded: boolean;
- samagriList: string[];
- benefits: string[];
+ samagriList?: string[];
+ samagriItems?: string[];
+ benefits?: string[];
  images: { url: string; alt: string }[];
  isActive: boolean;
  temples: PujaTempleOffering[];
@@ -516,7 +520,7 @@ export default async function PujaDetailPage({
  About This Puja
  </h2>
  <div className="prose prose-stone max-w-none">
- {puja.longDescription.split('\n\n').map((para, i) => (
+ {(puja.longDescription || puja.description || '').split('\n\n').map((para, i) => (
  <p key={i} className="mb-4 leading-relaxed text-surface-600">
  {para}
  </p>
@@ -525,14 +529,14 @@ export default async function PujaDetailPage({
  </div>
 
  {/* Benefits */}
- {puja.benefits.length > 0 && (
+ {(puja.benefits?.length ?? 0) > 0 && (
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
  <CheckCircle2 className="h-5 w-5 text-tulsi-green" />
  Benefits
  </h2>
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
- {puja.benefits.map((benefit, i) => (
+ {(puja.benefits ?? []).map((benefit, i) => (
  <div
  key={i}
  className="flex items-start gap-2.5 rounded-lg bg-green-50/50 p-3"
@@ -546,7 +550,7 @@ export default async function PujaDetailPage({
  )}
 
  {/* Samagri List */}
- {puja.samagriIncluded && puja.samagriList.length > 0 && (
+ {puja.samagriIncluded && (puja.samagriList ?? puja.samagriItems ?? []).length > 0 && (
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
  <Package className="h-5 w-5 text-saffron-500" />
@@ -556,7 +560,7 @@ export default async function PujaDetailPage({
  All puja materials are arranged by the temple. No need to send anything separately.
  </p>
  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
- {puja.samagriList.map((item, i) => (
+ {(puja.samagriList ?? puja.samagriItems ?? []).map((item, i) => (
  <div
  key={i}
  className="flex items-center gap-2 rounded-lg border border-surface-100 bg-amber-50/40 px-3 py-2"
