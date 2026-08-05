@@ -87,12 +87,36 @@ const apiFallback: TempleDetail = {
  darshanStream: [],
 };
 
+// P0 #202 (2026-08-03): sitemap + API seed temples with `<name>-<city>` slugs
+// (e.g. `kashi-vishwanath-varanasi`) but the curated rich-detail map keys on the
+// short slug (`kashi-vishwanath`). A request for the long slug found no rich
+// match, and `getApiTemple` always returned the non-null `apiFallback` object —
+// so the page 200'd with a generic "Temple" shell instead of resolving. Map the
+// long API slug back to its rich short slug so every sitemap URL renders real
+// content instead of an empty shell.
+function canonicalTempleSlug(slug: string): string {
+  const rich = getTempleDetail(slug);
+  if (rich) return slug;
+  const parts = slug.split('-');
+  while (parts.length > 1) {
+    parts.pop();
+    const candidate = parts.join('-');
+    if (getTempleDetail(candidate)) return candidate;
+  }
+  return slug;
+}
+
 async function getApiTemple(slug: string): Promise<TempleDetail | null> {
- try {
- return await getTempleBySlug(slug);
- } catch {
- return { ...apiFallback, slug, name: slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) };
- }
+  // Only fall back to the generic shell when the API has NO such temple;
+  // previously this returned a non-null fallback on any error, which both
+  // masked 404s and prevented `notFound()` from ever firing. `getTempleBySlug`
+  // throws on a non-OK response, so treat throw/empty as "no temple".
+  try {
+    const temple = await getTempleBySlug(slug);
+    return temple ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -169,9 +193,12 @@ export default async function TempleDetailPage({
 }: {
  params: Promise<{ slug: string }>;
 }) {
- const { slug } = await params;
+ const { slug: rawSlug } = await params;
+ // P0 #202: resolve a long `<name>-<city>` API slug to its rich short slug so
+ // sitemap URLs render the curated detail instead of an empty shell.
+ const slug = canonicalTempleSlug(rawSlug);
  const rich = getTempleDetail(slug);
- const apiTemple = await getApiTemple(slug);
+ const apiTemple = (await getApiTemple(slug)) ?? (await getApiTemple(rawSlug));
 
  if (!rich && !apiTemple) notFound();
 

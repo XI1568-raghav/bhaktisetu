@@ -596,28 +596,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  userId: newUser.id,
  };
  } catch {
- // Demo fallback — create local session
- const demoSession = makeDemoSession(data.email);
- const newUser: AuthUser = {
- id: `user-${Date.now()}`,
- phone: data.phone ? `+91${data.phone.replace(/\D/g, '')}` : '',
- fullName: data.fullName,
- email: data.email,
- avatarUrl: null,
- preferredLanguage: 'hi',
- subscriptionTier: 'free',
- role: data.role,
- };
-
- setSession(demoSession);
- setUser(newUser);
- persistSession(demoSession, newUser);
-
+ // P0 #195 (2026-08-03): the API is unreachable — do NOT silently mint a fake
+ // demo session for a REAL signup. That fabricated a session the prod API
+ // rejects (401 on every call) and told the user their account was created
+ // when it was not. Fail loudly so the user can retry; demo sessions are for
+ // the explicit demo accounts only.
  return {
- success: true,
- message: 'Account created successfully (demo mode)',
- accessToken: demoSession.accessToken,
- userId: newUser.id,
+ success: false,
+ message: 'Could not reach the server to create your account. Please check your connection and try again.',
  };
  }
  }, [persistSession]);

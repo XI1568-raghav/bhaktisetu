@@ -21,6 +21,8 @@ export async function pujaRoutes(server: FastifyInstance) {
         limit: Math.min(Number(limit) || 20, 100),
       });
 
+      // P2 #221: edge-cache the public puja catalog list (was DYNAMIC → origin hit).
+      reply.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=300');
       return result;
     } catch (error) {
       server.log.error(error, 'Failed to list puja types');
