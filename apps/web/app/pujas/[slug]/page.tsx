@@ -220,8 +220,13 @@ function getDefaultFallback(slug: string): PujaDetail {
 
 // P0 #202 (cont.): same API_URL-vs-localhost bug as the /temples subroute —
 // prod has no API_URL so this hit localhost and the page broke. Use the shared
-// SSR base (falls back to the prod API).
-const API_BASE = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online').replace(/\/$/, '') + '/api/v1';
+// SSR base (falls back to the prod API). Add the /api/v1 suffix ONLY when the
+// base doesn't already end with it (NEXT_PUBLIC_API_URL on prod is the bare
+// origin, but local .env.local already includes /api/v1 — double suffix = 404).
+const _pujaApiBase = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+const API_BASE = _pujaApiBase.endsWith('/api/v1')
+  ? _pujaApiBase
+  : `${_pujaApiBase.replace(/\/$/, '')}/api/v1`;
 
 async function getPujaBySlug(slug: string): Promise<PujaDetail> {
  try {
@@ -247,7 +252,14 @@ export async function generateMetadata({
  const title = `${puja.name} — Book Online | Darshya`;
  const description = `Book ${puja.name} online at verified temples. ${puja.description.slice(0, 140)}`;
 
- const firstPujaImage = puja.images && puja.images.length > 0 ? puja.images[0]?.url : undefined;
+ // P0 #202 (cont.): the api returns `images` as a string[] of URLs, but the
+ // page previously read `images[0].url` (object shape) → undefined → Next
+ // <Image src={undefined}> crashed the page to a 500. Handle both shapes.
+ const img0 = Array.isArray(puja.images) && puja.images.length > 0 ? puja.images[0] : undefined;
+ const firstPujaImage =
+   typeof img0 === 'string'
+     ? img0
+     : (img0 as { url?: string } | undefined)?.url;
  const pujaCatalogImage = getPujaImage(slug);
  const deitySlug = (puja.deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-');
  // Dynamic branded card — always available, reflects live title + price.
@@ -301,7 +313,10 @@ export default async function PujaDetailPage({
  name: puja.name,
  description: puja.description,
  category: puja.category,
- image: puja.images.length > 0 ? puja.images.map((i) => i.url) : undefined,
+ image:
+   Array.isArray(puja.images) && puja.images.length > 0
+     ? puja.images.map((i) => (typeof i === 'string' ? i : (i as { url?: string })?.url)).filter(Boolean)
+     : undefined,
  brand: {
  '@type': 'Organization',
  name: 'Darshya',
