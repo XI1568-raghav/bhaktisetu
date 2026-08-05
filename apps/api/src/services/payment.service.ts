@@ -257,6 +257,34 @@ async function fireAndForgetPostConfirmSideEffects(
   void sendPujaBookingInvoice(bookingId);
   // Fire-and-forget — referral reward MUST NOT fail booking confirmation.
   void tryRewardReferralForBooking(userId, bookingId);
+  // Booking revamp: snapshot the cancellation policy + notify the devotee +
+  // kick off dispatch if this booking requested a speed tier (T1/T2/T3). All
+  // fire-and-forget — none of these may roll back a captured payment.
+  void (async () => {
+    try {
+      const { cancellationService } = await import('./cancellation.service.js');
+      const { notifyDevotee, buildBookingCtx } = await import('./booking-notify.service.js');
+      const { dispatchService } = await import('./dispatch.service.js');
+      await cancellationService.snapshotPolicy(bookingId);
+      const b = await prisma.pujaBooking.findUnique({
+        where: { id: bookingId },
+        include: {
+          pujaType: { select: { name: true } },
+          temple: { select: { name: true } },
+          user: { select: { id: true, fullName: true, phone: true } },
+        },
+      });
+      if (b) {
+        await notifyDevotee('confirmed', buildBookingCtx(b as never));
+        const tier = (b as { dispatchTier?: string }).dispatchTier;
+        if (tier && tier !== 'scheduled') {
+          await dispatchService.broadcast(bookingId, tier as 'instant' | 'one_hour' | 'senior');
+        }
+      }
+    } catch (err) {
+      console.warn('[payment.service] post-confirm dispatch/notify failed:', err);
+    }
+  })();
 }
 
 // P0 #S-04 (2026-07-09): write a Commission row for a confirmed store order.

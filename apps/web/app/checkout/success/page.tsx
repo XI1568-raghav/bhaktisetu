@@ -57,7 +57,7 @@ export default async function CheckoutSuccessPage({
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <Link
-              href="/profile/bookings"
+              href="/bookings"
               className="flex-1 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white font-semibold py-3 px-4"
             >
               View my bookings
