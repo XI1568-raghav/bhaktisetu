@@ -14,6 +14,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
+import fastifyCookie from '@fastify/cookie';
 import { registerAuthDecorators, authenticateUser, requireRole } from './middlewares/auth.js';
 import { ensureSchemaInvariants } from './lib/ensure-schema.js';
 import { templeRoutes } from './routes/temples.js';
@@ -141,6 +142,11 @@ async function bootstrap() {
     },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
+
+  // P0 #200 (2026-08-05): register @fastify/cookie so the API can set + read the
+  // httpOnly `darshya_session` cookie. This is the foundation for moving auth
+  // tokens out of localStorage (XSS-theft risk) into a JS-inaccessible cookie.
+  await server.register(fastifyCookie);
   // CORS: production requires CORS_ORIGIN to be set explicitly. Local dev
   // falls back to localhost-only — no LAN IPs, no wildcards. The previous
   // default included a LAN address (192.168.x.x) which leaked into the
