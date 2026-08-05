@@ -22,6 +22,7 @@ import {
  createWellnessSession,
  updateWellnessSession,
  deleteWellnessSession,
+ setWellnessSessionRoom,
  type WellnessSession,
  type WellnessSessionType,
  type WellnessSessionStatus,
@@ -111,6 +112,12 @@ function WellnessSessionsPageContent() {
  const [formPrice, setFormPrice] = useState('');
  const [formCapacity, setFormCapacity] = useState('');
  const [formStatus, setFormStatus] = useState<WellnessSessionStatus>('SCHEDULED');
+
+ // Room-URL editor state (revamp: the /sessions/:id/room endpoint existed but
+ // there was NO UI to set the Jitsi room — the live class was undeliverable).
+ const [roomEditId, setRoomEditId] = useState<string | null>(null);
+ const [roomUrlInput, setRoomUrlInput] = useState('');
+ const [roomSaving, setRoomSaving] = useState(false);
 
  const load = useCallback(async () => {
   if (!token) return;
@@ -234,6 +241,26 @@ function WellnessSessionsPageContent() {
    setError(err instanceof Error ? err.message : 'Status update failed');
   } finally {
    setBusyId(null);
+  }
+ }
+
+ // Save the live-class room URL (Jitsi). Generates a sane default if blank.
+ async function handleSaveRoom(s: WellnessSession) {
+  if (!token) return;
+  setRoomSaving(true);
+  setError(null);
+  try {
+   const url =
+    roomUrlInput.trim() ||
+    `https://meet.jit.si/darshya-wellness-${s.id.slice(0, 12)}`;
+   const updated = await setWellnessSessionRoom(token, s.id, url);
+   setSessions((arr) => arr.map((x) => (x.id === s.id ? updated : x)));
+   setRoomEditId(null);
+   setRoomUrlInput('');
+  } catch (err) {
+   setError(err instanceof Error ? err.message : 'Could not save room URL');
+  } finally {
+   setRoomSaving(false);
   }
  }
 
@@ -470,6 +497,43 @@ function WellnessSessionsPageContent() {
            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{s.durationMinutes} min</span>
            <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{s.enrolled ?? 0}/{s.capacity}</span>
            <span className="flex items-center gap-1"><IndianRupee className="w-3.5 h-3.5" />{formatCurrency(price)}</span>
+          </div>
+          {/* Live-room status + editor (revamp) */}
+          <div className="mt-2">
+           {roomEditId === s.id ? (
+            <div className="flex items-center gap-2">
+             <input
+              type="text"
+              value={roomUrlInput}
+              onChange={(e) => setRoomUrlInput(e.target.value)}
+              placeholder="https://meet.jit.si/your-room"
+              className="flex-1 px-3 py-1.5 text-xs border border-surface-200 rounded-lg"
+             />
+             <button
+              onClick={() => void handleSaveRoom(s)}
+              disabled={roomSaving}
+              className="px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+             >
+              {roomSaving ? 'Saving…' : 'Save room'}
+             </button>
+             <button
+              onClick={() => { setRoomEditId(null); setRoomUrlInput(''); }}
+              className="px-2 py-1.5 text-xs text-surface-500 hover:bg-surface-100 rounded-lg"
+             >
+              Cancel
+             </button>
+            </div>
+           ) : (
+            <button
+             onClick={() => { setRoomEditId(s.id); setRoomUrlInput((s as { roomUrl?: string }).roomUrl ?? ''); }}
+             className={`text-xs font-medium inline-flex items-center gap-1 ${
+              (s as { roomUrl?: string }).roomUrl ? 'text-tulsi-green' : 'text-amber-600'
+             }`}
+            >
+             <CalendarDays className="w-3 h-3" />
+             {(s as { roomUrl?: string }).roomUrl ? 'Room link set — edit' : '+ Set live-class room link'}
+            </button>
+           )}
           </div>
          </div>
          <div className="flex items-center gap-2 shrink-0">
