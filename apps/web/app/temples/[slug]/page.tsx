@@ -1,4 +1,9 @@
-export const dynamicParams = false;
+// P0 #202 (cont.): `dynamicParams = false` meant ONLY the slugs returned by
+// generateStaticParams (rich-detail short slugs) ever rendered — every
+// api-seeded `<name>-<city>` slug (tirumala-tirupati, iskcon-bangalore, etc.)
+// 404'd at the routing layer BEFORE the page's api-fallback logic could run.
+// Allow dynamic params so api-seeded slugs resolve on-demand (SSR + revalidate).
+export const dynamicParams = true;
 export const revalidate = 3600;
 import type { Metadata } from 'next';
 import Link from 'next/link';
