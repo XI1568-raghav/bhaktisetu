@@ -68,6 +68,10 @@ function TemplePujasPageContent() {
   const [formNriPrice, setFormNriPrice] = useState('');
   const [formPriestId, setFormPriestId] = useState('');
   const [formMaxBookings, setFormMaxBookings] = useState('1');
+  // Temple revamp: the API accepted availableSlots (the daily time slots a
+  // devotee can book) but the form never collected them — every offering was
+  // created with an empty slot list, so nothing was bookable. Add a slot editor.
+  const [formSlots, setFormSlots] = useState('');
 
   const pujaTypeById = useMemo(() => {
     const m = new Map<string, PujaTypeSummary>();
@@ -112,6 +116,7 @@ function TemplePujasPageContent() {
     setFormNriPrice('');
     setFormPriestId('');
     setFormMaxBookings('1');
+    setFormSlots('');
     setEditingId(null);
     setShowForm(false);
   }
@@ -122,6 +127,11 @@ function TemplePujasPageContent() {
     setFormNriPrice(p.nriPrice ?? '');
     setFormPriestId(p.assignedPriestId ?? '');
     setFormMaxBookings(String(p.maxBookingsPerSlot));
+    // Pre-fill the slot editor from the offering's existing availableSlots.
+    const slots = Array.isArray(p.availableSlots)
+      ? p.availableSlots.map((s) => (typeof s === 'string' ? s : (s as { time?: string })?.time ?? '')).filter(Boolean).join(', ')
+      : '';
+    setFormSlots(slots);
     setEditingId(p.id);
     setShowForm(true);
   }
@@ -137,6 +147,12 @@ function TemplePujasPageContent() {
       nriPrice: formNriPrice ? Number(formNriPrice) : null,
       assignedPriestId: formPriestId || null,
       maxBookingsPerSlot: Number(formMaxBookings) || 1,
+      // Parse the comma/space-separated slot editor into the availableSlots
+      // string array the booking slot-picker consumes (e.g. "06:00, 10:00").
+      availableSlots: formSlots
+        .split(/[\s,]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
     };
     try {
       if (editingId) {
@@ -333,6 +349,21 @@ function TemplePujasPageContent() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-surface-700 mb-1.5">
+                Available Time Slots
+              </label>
+              <input
+                type="text"
+                value={formSlots}
+                onChange={(e) => setFormSlots(e.target.value)}
+                className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                placeholder="e.g. 06:00, 10:00, 18:00"
+              />
+              <p className="text-xs text-surface-400 mt-1">
+                Comma-separated daily slots devotees can book (24h). Leave blank to use the puja's default slots.
+              </p>
             </div>
             <div className="flex items-center gap-3 pt-2">
               <button

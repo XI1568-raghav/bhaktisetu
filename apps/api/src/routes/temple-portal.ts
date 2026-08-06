@@ -433,6 +433,59 @@ export async function templePortalRoutes(server: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
+  // ─── GET /bookings — ALL puja bookings for the manager's temple ─────────────
+  // Temple revamp (2026-08-05): managers previously saw only the dashboard's
+  // 10 most recent bookings — no list/filter. This is the full booking view so
+  // a temple manager can run their seva calendar (the single biggest gap vs
+  // temple ERPs like 3ioSetu/Sankalpa which center the booking roster).
+  server.get('/bookings', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    if (!templeId) return reply.send({ bookings: [] });
+    const { status, dateFrom, dateTo, limit } = request.query as {
+      status?: string; dateFrom?: string; dateTo?: string; limit?: string;
+    };
+    const where: Record<string, unknown> = { templeId };
+    if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.scheduledDate = {};
+      if (dateFrom) (where.scheduledDate as Record<string, unknown>).gte = new Date(dateFrom);
+      if (dateTo) (where.scheduledDate as Record<string, unknown>).lte = new Date(dateTo);
+    }
+    const bookings = await prisma.pujaBooking.findMany({
+      where: where as never,
+      orderBy: [{ scheduledDate: 'desc' }, { createdAt: 'desc' }],
+      take: Math.min(Number(limit) || 100, 500),
+      include: {
+        pujaType: { select: { name: true, category: true } },
+        priest: { select: { displayName: true } },
+        user: { select: { fullName: true, email: true } },
+      },
+    });
+    return reply.send({
+      bookings: bookings.map((b) => ({
+        id: b.id,
+        bookingNumber: b.bookingNumber,
+        status: b.status,
+        scheduledDate: b.scheduledDate,
+        scheduledTimeSlot: b.scheduledTimeSlot,
+        priceAmount: b.priceAmount.toString(),
+        pujaName: b.pujaType.name,
+        pujaCategory: b.pujaType.category,
+        priestName: b.priest?.displayName ?? null,
+        devoteeName: b.user.fullName,
+        devoteeEmail: b.user.email,
+        dispatchTier: b.dispatchTier,
+        assignedVia: b.assignedVia,
+        createdAt: b.createdAt,
+      })),
+      total: bookings.length,
+    });
+  });
+
   // ─── CRUD /darshan ──────────────────────────────────────────────────────────
 
   function serializeDarshan(s: {
