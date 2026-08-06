@@ -26,6 +26,8 @@ export interface DonationFormProps {
   causeKind?: 'temple' | 'gaushala';
   defaultAmounts?: number[];
   className?: string;
+  /** Pre-select a donation amount (e.g. from a gau-seva plan link). */
+  planAmount?: number;
 }
 
 interface CreateOrderResponse {
@@ -114,13 +116,14 @@ export default function DonationForm({
   causeKind = 'gaushala',
   defaultAmounts,
   className,
+  planAmount,
 }: DonationFormProps) {
   const { user, session, isAuthenticated } = useAuth();
 
   const presets = defaultAmounts && defaultAmounts.length > 0 ? defaultAmounts : DEFAULT_AMOUNTS;
 
-  // Form state
-  const [amount, setAmount] = useState<string>(String(presets[2] ?? 1100));
+  // Form state — a planAmount (from a gau-seva plan link) pre-selects that amount.
+  const [amount, setAmount] = useState<string>(String(planAmount ?? presets[2] ?? 1100));
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
   const [donorPhone, setDonorPhone] = useState('');

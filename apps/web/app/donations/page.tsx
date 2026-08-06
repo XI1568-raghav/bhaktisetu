@@ -56,12 +56,23 @@ const gaushalaCauses = [
 export default async function DonationsLandingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ causeId?: string; causeKind?: string; causeName?: string }>;
+  searchParams: Promise<{ causeId?: string; causeKind?: string; causeName?: string; planId?: string }>;
 }) {
   const sp = await searchParams;
   const t = await getTranslations('donations');
   const tCommon = await getTranslations('common');
   const tTerms = await getTranslations('terms');
+
+  // Gau-seva plan amounts (match the gaushala adoption plan grid). When a
+  // cow detail page deep-links with ?planId=, prefill the donation amount so
+  // the devotee pays the plan's real price.
+  const PLAN_AMOUNTS: Record<string, number> = {
+    plan_daily: 51,
+    plan_monthly: 3000,
+    plan_annual: 30000,
+    plan_lifetime: 225000,
+  };
+  const planAmount = sp.planId ? PLAN_AMOUNTS[sp.planId] : undefined;
 
   // If the URL points at a specific cause (deep-linked from a temple or
   // gaushala detail page), render the form directly.
@@ -86,6 +97,7 @@ export default async function DonationsLandingPage({
             causeId={sp.causeId}
             causeName={sp.causeName}
             causeKind={causeKind}
+            planAmount={planAmount}
           />
         </div>
       </div>
