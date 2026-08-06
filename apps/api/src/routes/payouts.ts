@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
+import { payoutRequestRoutes } from './payout-requests.js';
 
 /**
  * Pandit-side payout LIST surface — mirror of /consultation/astrologer/mine.
@@ -92,4 +93,11 @@ export async function payoutsRoutes(server: FastifyInstance) {
       });
     },
   );
+
+  // Cross-cutting Phase 2: unified provider payout self-serve endpoints.
+  // Registered here under /api/v1/payouts so all roles share one payout surface:
+  //   GET  /api/v1/payouts/balance
+  //   POST /api/v1/payouts/request
+  //   GET  /api/v1/payouts/my
+  await payoutRequestRoutes(server);
 }
