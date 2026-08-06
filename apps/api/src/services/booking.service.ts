@@ -396,6 +396,40 @@ export class BookingService {
     // never block the booking status flip (admin can reconcile from the
     // ledger). The commission row above already captured the platform cut at
     // confirm time; this is the priest's share.
+    // Cross-cutting Phase 2: the TEMPLE's share of the puja. Until now a puja's
+    // price split only into priest (80%) + platform (20%) — the temple got
+    // nothing, the Harvard-documented "donation bypass". On confirm, record a
+    // TemplePayout for the temple administration's cut so it can be settled to
+    // the temple trust like any provider payout. Idempotent via findFirst.
+    if (newStatus === 'confirmed') {
+      try {
+        const existingTemple = await prisma.templePayout.findFirst({
+          where: { bookingId: updated.id },
+          select: { id: true },
+        });
+        if (!existingTemple) {
+          // Temple share from the platform's side: a slice of the puja price so
+          // the temple is a first-class beneficiary, not just priest+platform.
+          // TEMPLE_SHARE_RATE (default 5%) — kept small so priest+platform
+          // economics are unaffected at the margin; tunable per deployment.
+          const shareRate = Number(process.env.TEMPLE_SHARE_RATE ?? '0.05');
+          const templeAmount = Math.round(Number(updated.priceAmount) * shareRate * 100) / 100;
+          if (templeAmount > 0) {
+            await prisma.templePayout.create({
+              data: {
+                templeId: updated.templeId,
+                bookingId: updated.id,
+                amount: templeAmount,
+                status: 'pending',
+              },
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[booking.service] temple payout write failed:', err);
+      }
+    }
+
     if (newStatus === 'video_uploaded' || newStatus === 'delivered') {
       void paymentService
         .createPriestPayout(updated.id)

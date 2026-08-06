@@ -307,6 +307,41 @@ export async function templePortalRoutes(server: FastifyInstance) {
     });
   });
 
+  // ─── GET /payouts — the temple's share of puja revenue (TemplePayout) ──────
+  // Cross-cutting Phase 2: temple managers previously saw an empty stub (the
+  // CommissionsPanel queried by providerId=user.id, but no Commission is ever
+  // keyed to a temple). This surfaces the temple's actual payout rows.
+  server.get('/payouts', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    if (!templeId) return reply.send({ payouts: [], total: 0, pendingInr: 0, paidInr: 0 });
+    const rows = await prisma.templePayout.findMany({
+      where: { templeId },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    const pending = rows.filter((r) => r.status === 'pending').reduce((s, r) => s + Number(r.amount), 0);
+    const paid = rows.filter((r) => r.status === 'completed').reduce((s, r) => s + Number(r.amount), 0);
+    return reply.send({
+      payouts: rows.map((r) => ({
+        id: r.id,
+        bookingId: r.bookingId,
+        amount: r.amount.toString(),
+        status: r.status,
+        reference: r.reference,
+        processedAt: r.processedAt,
+        createdAt: r.createdAt,
+      })),
+      total: rows.length,
+      pendingInr: Math.round(pending * 100) / 100,
+      paidInr: Math.round(paid * 100) / 100,
+    });
+  });
+
+
   // ─── CRUD /pujas ────────────────────────────────────────────────────────────
   // Temple manager-authored offerings against the templeId resolved from
   // their TempleProfile. All writes 403 if the user has no matched temple
