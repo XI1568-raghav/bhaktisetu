@@ -8,6 +8,8 @@ import { runAartiNotify, type AartiNotifyResult } from './aarti-notify.js';
 import { maybeRunWeeklyDigest, type WeeklyDigestResult } from './weekly-digest.js';
 import { prewarmDailyHoroscopes } from '../lib/astrology.js';
 import { processAutoRefunds } from '../services/refund.service.js';
+import { sendPush } from '../lib/web-push.js';
+import { panchangService } from '../services/panchang.service.js';
 import { bookingService } from '../services/booking.service.js';
 import { dispatchService } from '../services/dispatch.service.js';
 import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
@@ -207,20 +209,42 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
   if (!force && !isFiveAmIstWindow(now)) {
     return { sent: 0, skipped: true, reason: 'outside 5am IST window' };
   }
-  // Fan-out target: users opted-in to daily panchang notifications. Until
-  // push subscriptions land in Prisma we no-op cleanly.
-  type SubModel = { findMany: (args: { take: number }) => Promise<unknown[]> };
-  const prismaWithFutureModels = prisma as unknown as {
-    pushSubscription?: SubModel;
-    panchangSubscription?: SubModel;
-  };
-  const subModel = prismaWithFutureModels.pushSubscription ?? prismaWithFutureModels.panchangSubscription;
-  if (!subModel) return { sent: 0, skipped: true, reason: 'no push subscription model' };
+  // Cross-cutting Phase 2: real daily-panchang push. Push subs are now
+  // persisted in the push_subscriptions table (were in-memory, lost on restart
+  // — which is why this used to no-op with "no push subscription model").
+  // Fan out today's panchang to every opted-in subscriber.
   try {
-    const subs = await subModel.findMany({ take: 1000 });
-    return { sent: subs.length };
-  } catch {
-    return { sent: 0, skipped: true };
+    const panchang = await panchangService.getToday();
+    if (!panchang) return { sent: 0, skipped: true, reason: 'no panchang data for today' };
+    const p = panchang as { tithi?: string; nakshatra?: string; festivals?: string[] };
+    const title = "Today's Panchang";
+    const body = [
+      p.tithi,
+      p.nakshatra,
+      p.festivals && p.festivals.length ? `· ${p.festivals.join(', ')}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    const subs = await prisma.pushSubscription.findMany({
+      where: { panchangOptIn: true },
+      take: 5000,
+    });
+    let sent = 0;
+    let expired = 0;
+    for (const s of subs) {
+      const res = await sendPush(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        { title, body, url: '/panchang' },
+      );
+      if (res.ok) sent++;
+      if (res.expired) {
+        expired++;
+        await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => undefined);
+      }
+    }
+    return { sent, skipped: false, reason: expired > 0 ? `pruned ${expired} expired` : undefined };
+  } catch (err) {
+    return { sent: 0, skipped: true, reason: err instanceof Error ? err.message : String(err) };
   }
 }
 

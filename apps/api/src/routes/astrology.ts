@@ -12,6 +12,7 @@ import {
   SIGNS,
 } from '../lib/astrology.js';
 import { prisma } from '../lib/prisma.js';
+import { getAstrologerPresence } from '../services/astrologer.service.js';
 
 // Pagination clamp shared across astrologer list + reviews. Without an
 // upper bound, anyone hitting GET /astrologers?limit=99999 forces a full
@@ -91,6 +92,55 @@ export async function astrologyRoutes(server: FastifyInstance) {
   server.get('/specializations', async (request, reply) => {
     const specializations = astrologyService.getSpecializations();
     return { specializations };
+  });
+
+  // ─── GET /astrologers/live ─── REAL onboarded astrologers (cross-cutting P2)
+  // The /astrologers directory reads a 15-row in-memory mock fixture; genuinely
+  // onboarded astrologers (AstrologerProfile, approved) never surface in the
+  // devotee funnel. This endpoint serves the REAL directory — approved profiles
+  // with a live online badge fed by the go-online presence toggle. Phase 2 of
+  // the full directory swap (booking binding) is tracked in the plan doc.
+  server.get('/astrologers/live', async (request, reply) => {
+    const { language, specialization, online } = request.query as {
+      language?: string;
+      specialization?: string;
+      online?: string;
+    };
+    const profiles = await prisma.astrologerProfile.findMany({
+      where: { approved: true },
+      orderBy: [{ rating: 'desc' }, { totalConsultations: 'desc' }],
+      take: 100,
+    });
+    let rows = profiles.map((p) => {
+      const presence = getAstrologerPresence(p.userId);
+      return {
+        id: p.id,
+        userId: p.userId,
+        name: p.displayName,
+        specializations: p.specialties,
+        languages: p.languages,
+        experienceYears: p.experience,
+        rating: p.rating,
+        consultationCount: p.totalConsultations,
+        perMinuteRate: Number(p.pricePerMinute),
+        isOnline: presence.online,
+        mode: presence.mode,
+        bio: p.bio,
+        verified: p.approved,
+      };
+    });
+    if (language) {
+      rows = rows.filter((a) => a.languages.some((l) => l.toLowerCase() === language.toLowerCase()));
+    }
+    if (specialization) {
+      rows = rows.filter((a) => a.specializations.some((s) => s.toLowerCase() === specialization.toLowerCase()));
+    }
+    if (online === 'true') {
+      rows = rows.filter((a) => a.isOnline);
+    }
+    // Online-first ordering.
+    rows.sort((a, b) => Number(b.isOnline) - Number(a.isOnline) || b.rating - a.rating);
+    return { astrologers: rows, total: rows.length, source: 'live' };
   });
 
   // ─── POST /consult/start ───────────────────────────────────────────────────

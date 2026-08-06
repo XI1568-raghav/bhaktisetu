@@ -33,6 +33,7 @@ import { gaushalaVolunteersRoutes } from './routes/gaushala-volunteers.js';
 import { userRoutes } from './routes/users.js';
 import { readingProgressRoutes } from './routes/reading-progress.js';
 import { digestRoutes } from './routes/digest.js';
+import { recurringRoutes } from './routes/recurring.js';
 import { authRoutes } from './routes/auth.js';
 import { subscriptionRoutes } from './routes/subscriptions.js';
 import { priestRoutes } from './routes/priest.js';
@@ -334,6 +335,7 @@ async function bootstrap() {
   await server.register(userRoutes, { prefix: '/api/v1/users' });
   await server.register(readingProgressRoutes, { prefix: '/api/v1/me/reading-progress' });
   await server.register(digestRoutes, { prefix: '/api/v1/digest' });
+  await server.register(recurringRoutes, { prefix: '/api/v1/recurring' });
   await server.register(templeRoutes, { prefix: '/api/v1/temples' });
   await server.register(pujaRoutes, { prefix: '/api/v1/pujas' });
   await server.register(bookingRoutes, { prefix: '/api/v1/bookings' });

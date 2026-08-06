@@ -40,8 +40,27 @@ export async function notificationRoutes(server: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid subscription payload' });
     }
     const userId = request.currentUser!.id;
+
+    // Cross-cutting Phase 2: PERSIST the subscription (was in-memory only, lost
+    // on restart — which is why the daily panchang blast had no audience).
+    // Upsert on endpoint so re-subscribing the same browser is idempotent.
+    try {
+      await prisma.pushSubscription.upsert({
+        where: { endpoint: sub.endpoint },
+        create: {
+          userId,
+          endpoint: sub.endpoint,
+          p256dh: sub.keys.p256dh,
+          auth: sub.keys.auth,
+        },
+        update: { userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+      });
+    } catch (err) {
+      // Best-effort: fall back to in-memory so push still works pre-migration.
+      request.log.warn({ err }, 'pushSubscription persist failed; in-memory only');
+    }
+
     const existing = subsByUser.get(userId) ?? [];
-    // Replace any existing entry for the same endpoint
     const filtered = existing.filter((s) => s.endpoint !== sub.endpoint);
     filtered.push({ ...sub, createdAt: Date.now() });
     subsByUser.set(userId, filtered);
@@ -54,6 +73,9 @@ export async function notificationRoutes(server: FastifyInstance) {
       return reply.code(400).send({ error: 'endpoint required' });
     }
     const userId = request.currentUser!.id;
+    try {
+      await prisma.pushSubscription.deleteMany({ where: { endpoint: body.endpoint } });
+    } catch { /* best-effort */ }
     const existing = subsByUser.get(userId) ?? [];
     const filtered = existing.filter((s) => s.endpoint !== body.endpoint);
     subsByUser.set(userId, filtered);
@@ -194,9 +216,30 @@ export async function notifyUser(
   userId: string,
   payload: { title: string; body: string; url?: string },
 ): Promise<number> {
-  const subs = subsByUser.get(userId);
-  if (!subs?.length) return 0;
+  // Cross-cutting Phase 2: read persisted subscriptions from the DB (the source
+  // of truth now), falling back to the in-memory map for any not-yet-persisted
+  // subs in the same process. This is what makes push survive a restart.
+  let subs: StoredSub[] = subsByUser.get(userId) ?? [];
+  try {
+    const rows = await prisma.pushSubscription.findMany({ where: { userId } });
+    const fromDb: StoredSub[] = rows.map((r) => ({
+      endpoint: r.endpoint,
+      keys: { p256dh: r.p256dh, auth: r.auth },
+      createdAt: r.createdAt.getTime(),
+    }));
+    // Merge DB subs with any in-memory-only subs (dedupe by endpoint).
+    const seen = new Set(fromDb.map((s) => s.endpoint));
+    subs = [...fromDb, ...subs.filter((s) => !seen.has(s.endpoint))];
+  } catch {
+    // DB unavailable — use in-memory only.
+  }
+  if (!subs.length) return 0;
   const results = await Promise.all(subs.map((s) => sendPush(s, payload)));
+  // Drop expired endpoints from BOTH stores.
+  const expired = subs.filter((_, i) => results[i]?.expired);
+  for (const e of expired) {
+    await prisma.pushSubscription.deleteMany({ where: { endpoint: e.endpoint } }).catch(() => undefined);
+  }
   const stillValid = subs.filter((_, i) => !results[i]?.expired);
   if (stillValid.length !== subs.length) subsByUser.set(userId, stillValid);
   return results.filter((r) => r.ok).length;

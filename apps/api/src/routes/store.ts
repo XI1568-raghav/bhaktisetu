@@ -4,6 +4,46 @@ import { storeService } from '../services/store.service.js';
 import { prisma } from '../lib/prisma.js';
 
 export async function storeRoutes(server: FastifyInstance) {
+  // ─── GET /products/live ─── REAL store-owner products (cross-cutting P2) ───
+  // The public /store catalog reads a hardcoded seed array; store-owner
+  // products (store_products table) never surface publicly. This endpoint
+  // serves the REAL owner catalog — active products mapped to the card shape.
+  // Phase 2 of full unification (PDP route + buy-flow polish) is in the plan.
+  server.get('/products/live', async (request, reply) => {
+    const { category, q, limit } = request.query as {
+      category?: string;
+      q?: string;
+      limit?: string;
+    };
+    const rows = await prisma.storeProduct.findMany({
+      where: {
+        isActive: true,
+        stock: { gt: 0 },
+        ...(category ? { category: { equals: category, mode: 'insensitive' as const } } : {}),
+        ...(q ? { name: { contains: q, mode: 'insensitive' as const } } : {}),
+      },
+      include: { storeProfile: { select: { storeName: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Number(limit) || 100, 200),
+    });
+    const products = rows.map((p) => ({
+      id: p.id,
+      handle: p.id, // PDP by id until a slug/handle column is added
+      title: p.name,
+      description: p.description,
+      price: Number(p.price),
+      compareAtPrice: null, // owner products have no compare-at price yet
+      category: p.category ?? 'General',
+      imageUrl: p.imageUrl,
+      stock: p.stock,
+      sku: p.sku,
+      storeName: p.storeProfile.storeName,
+      source: 'live',
+    }));
+    reply.header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=120');
+    return { products, total: products.length, source: 'live' };
+  });
+
   // ─── GET /products ──────────────────────────────────────────────────────────
 
   server.get('/products', async (request, reply) => {
