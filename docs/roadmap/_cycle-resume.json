@@ -1,40 +1,54 @@
 {
-  "cycleId": "C-20260806T0342",
+  "cycleId": "C-20260806T1436",
   "spawnPlan": [
     {
       "role": "cto",
       "itemIds": [
-        "R-Q1-E-006",
-        "R-Q1-E-007"
+        "R-Q2-E-013"
       ],
-      "briefing": "CRITICAL OBSERVABILITY CRISIS: Nearly ALL KPI endpoints return HTTP 404/500 — funnel_events_wired, ab_flags_active, wedding_muhurat_lookups, voice_pandit_sessions_daily, mau_total, retention_d30_pct, api_p95_ms, nps_score all broken. The only live KPIs are max_contact_count_bumped=3, razorpay_live_active=0, uptime_monitors_active=4, cron_auth_token_set=0. No data-driven decisions are possible until metrics are fixed.\n\nPRIORITY FOCUS for items R-Q1-E-006 and R-Q1-E-007:\n1. Read each item's spec in docs/roadmap/ and implement per the acceptance criteria\n2. If either item relates to metrics/observability/analytics — prioritize it above all else\n3. Wire PostHog analytics (posthog_web_active is stale — check apps/web/app/layout.tsx and apps/web/components/Analytics.tsx for posthog.init or PostHogProvider)\n4. Fix metrics API endpoints so KPIs can be queried (the 404s suggest routes don't exist)\n5. Set up Sentry DSN for error tracking (sentry_dsn_active is stale)\n6. Do NOT violate free-tier: CF 500 builds/mo, GH 2000 min/mo, Resend 100/day\n7. Do NOT attempt founder-blocked items (R-Q1-E-001, E-002, E-008, E-009, E-011, E-012, E-014 — these need founder decisions)\n\nAlso note: cron_auth_token_set=0 is a SECURITY RISK — if either item touches cron endpoints, ensure CRON_AUTH_TOKEN env var is checked and enforced. Razorpay is not live (0) — do not attempt payment integration that requires founder-provided API keys.\n\nCheck DAG dependencies before implementing. Ship code changes as PRs. Document any blockers in docs/engineering/<itemId>-handoff.md.",
-      "estTokens": 18000
+      "briefing": "Engineering item R-Q2-E-013. CRITICAL CONTEXT: All observability KPIs are broken (404/TBD errors across api_p95_ms, pages_cdn_cached, pages_with_csp_nonce, etc.). razorpay_live_active=0. cron_auth_token_set=0. webhook_idempotency_active, rate_limit_enforced, n_plus_1_queries_fixed, job_queue_active all have no values. Sentry DSN status unknown. Focus on shipping this engineering item to improve infra reliability, security, or performance. Verify DAG dependencies are met before starting — do NOT work on items whose depends_on aren't verified shipped. Stay within free-tier: GH 2000min/mo (currently 0% used), CF 500 builds/mo (0% used), Render 750h/mo. Write handoff doc to docs/engineering/R-Q2-E-013-handoff.md if blocked or after shipping.",
+      "estTokens": 15000
     },
     {
       "role": "cmo",
       "itemIds": [
-        "R-Q1-M-002",
-        "R-Q1-M-005"
+        "R-Q1-M-004"
       ],
-      "briefing": "ORGANIC ACQUISITION FOCUS: Paid channels (NRI ads, WhatsApp Meta) are not yet live and several marketing items are founder-blocked (R-Q1-M-003, M-010, R-Q2-M-006, M-008, R-Q3-M-001 through M-012). Focus on what CAN be shipped by agents.\n\nPRIORITY FOCUS for items R-Q1-M-002 and R-Q1-M-005:\n1. Read each item's spec in docs/roadmap/ and implement per acceptance criteria\n2. SEO infrastructure: GSC verification (gsc_verified stale), pillar pages (pillar_pages_shipped stale), cluster articles (cluster_articles_shipped stale), programmatic SEO pages (programmatic_pages_live stale)\n3. Social media accounts activation (social_accounts_active stale) — set up Twitter/X, Instagram, YouTube accounts if not done\n4. Content production: blog drafts, deity-of-day cluster articles, festival content calendar\n5. Do NOT attempt founder-blocked marketing items — those need founder decisions (Meta WhatsApp template approval, NRI ad budgets, press pitches)\n6. Do NOT re-spawn items already in queue (R-Q1-M-001, R-Q2-M-001, R-Q2-M-002, R-Q2-M-011 are queued)\n7. Respect free-tier: no paid ads, no paid tools. Use free tiers of GSC, social platforms, Canva.\n\nKey KPIs to target: pillar_pages_shipped ≥3, cluster_articles_shipped ≥10, programmatic_pages_live, gsc_verified=true, social_accounts_active ≥3.\n\nShip content as markdown files in docs/agent-reports/blog-drafts/ or appropriate content directories. Document any blockers.",
-      "estTokens": 14000
+      "briefing": "Marketing item R-Q1-M-004. CRITICAL CONTEXT: All marketing KPIs are stale (404 errors) — gsc_verified, social_accounts_active, social_posts_scheduled, press_pitches_sent, founder_tweets_posted, reddit_comments_posted all have no manual values. pillar_pages_shipped and cluster_articles_shipped metrics are broken (TBD). R-Q1-M-003 (U8, 57d) and R-Q1-M-010 (U7, 57d) are founder-blocked. Focus on shipping SEO/content/social/distribution work that can operate WITHOUT founder unblocks — e.g., blog drafts, SEO meta tags, schema markup, pillar page content. Check dependencies first. Write handoff doc to docs/marketing/R-Q1-M-004-handoff.md if blocked or after shipping.",
+      "estTokens": 12000
     },
     {
       "role": "sales",
       "itemIds": [
-        "R-Q1-S-001",
-        "R-Q1-S-002"
+        "R-Q1-SA-003"
       ],
-      "briefing": "SUPPLY PIPELINE BUILDING: Several critical sales/supply items are founder-blocked — R-Q1-SA-001 (founder must WhatsApp 5 priests), R-Q1-SA-006, R-Q1-S-008 (founder must dial T1 gaushala prospects), R-Q1-S-013 (Google Places API key missing in Render). Do NOT attempt these. Focus on supply infrastructure that agents CAN build.\n\nPRIORITY FOCUS for items R-Q1-S-001 and R-Q1-S-002:\n1. Read each item's spec in docs/roadmap/ and implement per acceptance criteria\n2. Build supply pipeline infrastructure: priest/temple/astrologer verification checklists, onboarding kits, outreach templates\n3. Temple verification data: compile verified temple lists for Tier 1 cities (Varanasi, Bengaluru, Mumbai) — use public data, do NOT require Google Places API (that key is missing, founder-blocked)\n4. Build structured handoff docs for founder follow-up on items that need human outreach\n5. Supply KYC templates, contract templates, rate card structures\n6. Do NOT attempt founder-blocked supply items or items already in queue (R-Q2-SA-002 is queued)\n7. Respect free-tier: no paid tools, no API keys that cost money\n\nKey KPIs to target: verified_temples_count_varanasi, verified_temples_count_bengaluru, verified_temples_count_mumbai — build the data infrastructure even if actual verification calls need founder/sales-ops.\n\nShip artifacts as structured docs in docs/supply/ or docs/agent-reports/sales/. Document any blockers in handoff format.",
-      "estTokens": 14000
+      "briefing": "Sales/supply item R-Q1-SA-003. CRITICAL CONTEXT: 10+ sales items are founder-blocked for 57 days — R-Q1-SA-001 (founder must WhatsApp 5 priests), R-Q1-SA-006 (blocked true), R-Q1-S-008 (founder must dial gaushala prospects), R-Q1-S-013 (GOOGLE_PLACES_API_KEY missing in Render env). Focus on supply-side work that CAN advance via agent without founder action: outreach kit preparation, temple data enrichment from public sources, B2B LOI template drafting, pipeline documentation, prospect list building. Work around the GOOGLE_PLACES_API_KEY block by using alternative data sources. Check dependencies first. Write handoff doc to docs/sales/R-Q1-SA-003-handoff.md if blocked or after shipping.",
+      "estTokens": 10000
     },
-    {}
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q1-CS-003"
+      ],
+      "briefing": "CS item R-Q1-CS-003. CRITICAL CONTEXT: multilingual_macros_count, cs_macros_count, cs_macros_documented, wa_support_active all stale/none. R-Q1-CS-002 (U7, 57d), R-Q1-CS-006 (U7, 56d), R-Q2-CS-003 (native-speaker review + Wati Meta template approval, 57d) are all founder-blocked. Focus on shipping support infrastructure that DOESN'T require native-speaker review or Wati Meta approval: English macro templates, help article drafts, churn detection logic, NPS survey infrastructure, auto-acknowledge flows. Check dependencies first. Write handoff doc to docs/cs/R-Q1-CS-003-handoff.md if blocked or after shipping.",
+      "estTokens": 10000
+    }
   ],
   "deferrals": [
     {
       "itemId": "R-Q2-M-011",
-      "reason": "T-010 QUEUE STALE TRIPWIRE FIRED: Queue oldest item is 1324.6h (55+ days) unconsumed. The queue consumer process appears non-functional — likely the Render bg-worker is not running or the consumer script is broken. All 12 queued items (R-Q2-M-011, R-Q1-M-001, R-Q1-IT-001, R-Q1-IT-004, R-Q2-SA-002, R-Q1-E-003, R-Q1-E-010, R-Q2-M-001, R-Q2-M-002, R-Q2-CS-001, R-Q1-E-004, R-Q1-E-005) have been sitting unconsumed since June 11 – Aug 4. Additionally: razorpay_live_active=0 (revenue blocked), cron_auth_token_set=0 (security risk), and ALL KPI endpoints return 404/500 (observability broken). The system is essentially stalled. Founder must: (1) verify Render bg-worker is deployed and running, (2) check queue consumer process logs, (3) triage all 12 queued items — re-queue if still relevant, kill if obsolete, (4) set CRON_AUTH_TOKEN and RAZORPAY_LIVE_KEY in Render env vars, (5) deploy/fix metrics API endpoints.",
-      "suggestedAction": "(1) Check Render dashboard for bg-worker service status and restart if stopped. (2) Review queue consumer logs for errors. (3) Set missing env vars: CRON_AUTH_TOKEN, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET. (4) Deploy metrics API endpoints or fix routing. (5) Triage 12 stale queue items — kill obsolete, re-queue relevant."
+      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item >72h unconsumed (actual: 1335.5h / ~55 days). R-Q2-M-011 has been in queue since 2026-06-11 with zero consumption. Queue depth is 15 across CTO(6), CMO(5), IT(2), Sales(1), CS(1) — none have shipped. This indicates a systemic pipeline dysfunction: agents are spawning work but output isn't being merged/deployed. Founder must triage: (1) Are these queue items orphaned (agent spawned but PR never opened)? (2) Are CI/CD pipelines broken preventing merges? (3) Should stale queue items be re-evaluated or killed? Without queue drainage, spawning new items compounds the problem.",
+      "suggestedAction": "Review docs/agent-reports/ for the 15 queued items. For each: check if a PR exists, if CI passed, if merge is blocked. Either merge, re-spawn, or kill each item. Priority: R-Q2-M-011 (oldest, 55 days), then R-Q1-E-003 through R-Q1-E-007 (CTO engineering batch)."
+    },
+    {
+      "itemId": "R-Q1-F-003",
+      "reason": "CRITICAL REVENUE BLOCKER: razorpay_live_active KPI = 0 (confirmed live, not stale). Item blocked by U1 for 57 days. This is the #1 existential risk — zero payment processing means zero revenue from bookings. Every day of delay = lost revenue from any users reaching checkout. This has been blocked since ~June 10 and it's now August 6.",
+      "suggestedAction": "Complete U1 unblock immediately: verify Razorpay test mode, run E2E payment test, flip to live mode. If U1 requires KYC/docs, prioritize submission today. Coordinate with R-Q1-F-004 (U2, also 57 days blocked) which likely depends on this."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "ARCHITECTURE DECISION REQUIRED (56 days blocked): CF Pages vs Vercel vs static allowlist. This is a foundational infrastructure decision that blocks multiple downstream engineering items (R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014 are all blocked). The decision tree is stalling 6+ engineering items. Free-tier budget constraints (CF 500 builds/mo, GH 2000min/mo) should factor into the decision.",
+      "suggestedAction": "Make decision this week. Recommended: CF Pages (aligns with existing CF free-tier, 500 builds/mo sufficient at current volume, zero egress cost). Document decision in docs/engineering/architecture-decision-cf-pages.md. Unblock downstream items once decided."
     }
   ],
   "kills": [],
@@ -46,10 +60,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-06T03:43:38.348Z"
+      "firedAt": "2026-08-06T14:38:29.517Z"
     }
   ],
-  "savedAt": "2026-08-06T03:48:12.891Z",
+  "savedAt": "2026-08-06T14:41:09.138Z",
   "consumed": true,
-  "consumedAt": "2026-08-06T03:54:20.533Z"
+  "consumedAt": "2026-08-06T14:44:31.878Z"
 }
