@@ -61,6 +61,32 @@ function safeCapture(event: string, props: Record<string, string | number | bool
 
 // ─── Types ──────────────────────────────────────────────────────
 
+interface MuhuratWindow {
+ from: string;
+ to: string;
+ label: string;
+}
+interface PujaMuhuratDay {
+ date: string;
+ grade: 'shubh' | 'neutral' | 'avoid';
+ score: number;
+ windows: MuhuratWindow[];
+ rahuKaal: string;
+ flags: string[];
+}
+
+// Puja slugs that map to a classical muhurat ruleset. Everything else keeps a
+// muhurat-blind picker (no fabricated auspiciousness).
+const PUJA_TYPE_BY_SLUG: Record<string, 'GRIHA_PRAVESH' | 'SATYANARAYAN'> = {
+ 'griha-pravesh': 'GRIHA_PRAVESH',
+ 'griha-pravesh-puja': 'GRIHA_PRAVESH',
+ 'griha-pravesam': 'GRIHA_PRAVESH',
+ 'satyanarayan': 'SATYANARAYAN',
+ 'satyanarayan-puja': 'SATYANARAYAN',
+ 'satyanarayan-katha': 'SATYANARAYAN',
+ 'satyanarayana-puja': 'SATYANARAYAN',
+};
+
 interface TempleOption {
  id: string;
  templeName: string;
@@ -334,6 +360,12 @@ function PujaBookingInner() {
  // PBO-7: honest slot-load failure flag (no mock availability fallback).
  const [slotsError, setSlotsError] = useState(false);
 
+ // Muhurat guidance (per-puja shubh-window layer). Populated only for puja
+ // types with a classical scoring ruleset (Griha Pravesh + Satyanarayan); the
+ // rest of the catalog keeps a muhurat-blind picker. Drives green shubh badges,
+ // disabled avoid-days, and the day's bookable-window hint chips.
+ const [muhuratDays, setMuhuratDays] = useState<PujaMuhuratDay[]>([]);
+
  // Step 2
  const [devotees, setDevotees] = useState<Devotee[]>([
  { id: generateId(), name: '', gotra: '', nakshatra: '' },
@@ -490,6 +522,49 @@ function PujaBookingInner() {
  fetchSlots();
  setSelectedSlot('');
  }, [selectedTemple, selectedDate]);
+
+ // ─── Fetch per-puja muhurat guidance (shubh-window layer) ──────
+ useEffect(() => {
+ if (!puja) return;
+ const pujaType = PUJA_TYPE_BY_SLUG[puja.slug];
+ if (!pujaType) {
+ setMuhuratDays([]);
+ return;
+ }
+ let cancelled = false;
+ (async () => {
+ try {
+ const res = await fetch(
+ `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${pujaType}&days=60`,
+ );
+ if (!res.ok) throw new Error('muhurat unavailable');
+ const data = await res.json();
+ if (!cancelled) setMuhuratDays(data.results ?? []);
+ } catch {
+ // Muhurat guidance is advisory — never block the picker on it.
+ if (!cancelled) setMuhuratDays([]);
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, [puja]);
+
+ const muhuratMarkers = useMemo(() => {
+ const m: Record<string, 'shubh' | 'neutral' | 'avoid'> = {};
+ for (const d of muhuratDays) m[d.date] = d.grade;
+ return m;
+ }, [muhuratDays]);
+
+ const avoidDates = useMemo(
+ () => new Set(muhuratDays.filter((d) => d.grade === 'avoid').map((d) => d.date)),
+ [muhuratDays],
+ );
+
+ const selectedDayMuhurat = useMemo(
+ () => muhuratDays.find((d) => d.date === selectedDate),
+ [muhuratDays, selectedDate],
+ );
 
  // ─── Validation ─────────────────────────────────────────────
 
@@ -1244,9 +1319,42 @@ function PujaBookingInner() {
  min={getTomorrow()}
  max={getMaxDate()}
  onChange={(v) => setSelectedDate(v)}
+ dateMarkers={muhuratMarkers}
+ disabledDates={avoidDates}
  />
  {selectedDate && (
  <p className="mt-2 text-sm text-surface-500">{formatDate(selectedDate)}</p>
+ )}
+ {selectedDayMuhurat && selectedDayMuhurat.windows.length > 0 && (
+ <div className="mt-3 rounded-lg border border-green-100 bg-green-50/60 p-3">
+ <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-green-800">
+ <Sparkles className="h-3.5 w-3.5 text-green-600" />
+ Shubh muhurat windows
+ {selectedDayMuhurat.grade === 'shubh' && (
+ <span className="ml-1 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+ Shubh
+ </span>
+ )}
+ </p>
+ <div className="flex flex-wrap gap-1.5">
+ {selectedDayMuhurat.windows.map((w) => (
+ <span
+ key={`${w.from}-${w.to}`}
+ className="rounded-full border border-green-200 bg-white px-2.5 py-1 text-xs font-medium text-green-800"
+ >
+ {w.from}–{w.to}
+ </span>
+ ))}
+ </div>
+ <p className="mt-2 text-[11px] text-surface-500">
+ Rahu Kaal {selectedDayMuhurat.rahuKaal} avoided.
+ </p>
+ </div>
+ )}
+ {muhuratDays.length > 0 && !selectedDayMuhurat && (
+ <p className="mt-3 text-xs text-surface-500">
+ Green dates are shubh muhurat for this puja.
+ </p>
  )}
  </div>
 
