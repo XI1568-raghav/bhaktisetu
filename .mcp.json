@@ -3,12 +3,19 @@
   "mcpServers": {
     "postgres": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "${env:SUPABASE_READONLY_URL}"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${env:SUPABASE_READONLY_URL}"
+      ],
       "comment": "Read-only access to Supabase Postgres prod DB via claude_readonly role. Loads only when SUPABASE_READONLY_URL is exported. Falls back unused if env missing — no boot crash. See docs/engineering/R-Q1-E-014-sentry-postgres-mcp-handoff.md."
     },
     "sentry": {
       "command": "npx",
-      "args": ["-y", "@sentry/mcp-server"],
+      "args": [
+        "-y",
+        "@sentry/mcp-server"
+      ],
       "env": {
         "SENTRY_AUTH_TOKEN": "${env:SENTRY_AUTH_TOKEN}",
         "SENTRY_ORG": "${env:SENTRY_ORG}",
@@ -18,11 +25,21 @@
     },
     "darshya": {
       "command": "node",
-      "args": ["apps/darshya-mcp/dist/index.js"],
+      "args": [
+        "apps/darshya-mcp/dist/index.js"
+      ],
       "env": {
         "DIRECT_URL": "${env:SUPABASE_READONLY_URL}"
       },
       "comment": "Darshya in-house MCP server — 6 read-only tools (funnel_today, kpi_snapshot, agent_reports, agent_report_read, prod_health, recent_commits). Runs the built stdio server. DIRECT_URL mapped from the Supabase readonly role URL. Read-only enforced by guard.ts + safeResolve. Requires `pnpm --filter @darshya/mcp build` first (or pnpm mcp:smoke)."
+    },
+    "graft": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@nanonets/graft",
+        "mcp"
+      ]
     }
   }
 }
