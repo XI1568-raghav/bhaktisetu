@@ -747,6 +747,24 @@ enum CommissionStatus {
   PAID
 }
 
+// Provider payouts (unified across all roles) — cross-cutting Phase 2 (2026-08-06)
+enum PayoutRequestStatus {
+  pending
+  processing
+  completed
+  failed
+  rejected
+}
+
+enum ProviderRole {
+  PANDIT
+  ASTROLOGER
+  WELLNESS_INSTRUCTOR
+  STORE_OWNER
+  TEMPLE_MANAGER
+  GAUSHALA_MANAGER
+}
+
 enum TransactionType {
   BOOKING
   SUBSCRIPTION
@@ -996,6 +1014,9 @@ model Commission {
   bookingId             String?          @map("booking_id")
   storeOrderId          String?          @map("store_order_id")
   wellnessEnrollmentId  String?          @map("wellness_enrollment_id")
+  // Cross-cutting Phase 2: link a Commission row to the PayoutRequest that
+  // settled it. Nullable so legacy/unpaid rows stay NULL until requested.
+  payoutRequestId       String?          @map("payout_request_id") @db.Uuid
   providerId            String           @map("provider_id") @db.Uuid
   amount                Decimal          @db.Decimal(10, 2)
   percentage            Decimal          @db.Decimal(5, 4)
@@ -1003,11 +1024,42 @@ model Commission {
   paidAt                DateTime?        @map("paid_at")
   createdAt             DateTime         @default(now()) @map("created_at")
 
+  payoutRequest         PayoutRequest?   @relation(fields: [payoutRequestId], references: [id], onDelete: SetNull)
+
   @@index([providerId])
   @@index([status])
   @@index([storeOrderId])
   @@index([wellnessEnrollmentId])
+  @@index([payoutRequestId])
   @@map("commissions")
+}
+
+// A provider's request to withdraw their unpaid Commission balance. The
+// marketplace pays out the provider's share (PriestPayout is the priest-only
+// predecessor; this is the unified cross-role model). Lifecycle: provider
+// requests → admin processes (bank/UPI transfer) → completed (Commissions
+// linked + marked PAID). Rejected/failed releases the commissions back to
+// PENDING so the balance isn't lost.
+model PayoutRequest {
+  id              String              @id @default(uuid()) @db.Uuid
+  providerId      String              @map("provider_id") @db.Uuid
+  role            ProviderRole
+  amount          Decimal             @db.Decimal(10, 2)
+  status          PayoutRequestStatus @default(pending)
+  method          String              @default("upi") @map("method") // upi | bank
+  reference       String?             @map("reference") // UPI txn id / bank ref / Razorpay payout id
+  requestedAt     DateTime            @default(now()) @map("requested_at")
+  processedAt     DateTime?           @map("processed_at")
+  processedBy     String?             @map("processed_by") @db.Uuid // admin user id
+  failureReason   String?             @map("failure_reason")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  commissions     Commission[]
+
+  @@index([providerId, status])
+  @@index([status])
+  @@map("payout_requests")
 }
 
 model Transaction {
