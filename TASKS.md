@@ -2,6 +2,38 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-08-07 (GTM Phase-0 deliverables shipped; muhurat layer coded, UNCOMMITTED).
 
+## HANDOFF Launch-Readiness Audit + Fix (added 2026-08-05)
+
+> Full E2E audit of darshya.online (8 roles + 5 cross-cutting tracks, live Playwright) → **159 raw findings** → grouped into **29 GitHub issues (EPIC #223)**. **20 FIXED + merged to main + live-verified**; **13 open = owner/runtime/content only (NOT code)**. Read this block on resume for any launch/auth/payment work. Full report: `docs/agent-reports/DARSHYA_LAUNCH_READINESS_2026-08-03.md`.
+
+### FIXED + live on prod (verified, not summary fields)
+- **#202 temple sitemap 404s (19/20)** — 4 root causes fixed: `dynamicParams=false` blocked api-seeded slugs; SSR routes hit `localhost` (API_URL unset → now `API_URL || NEXT_PUBLIC_API_URL || prod` fallback); api `images` is `string[]` not `{url,alt}[]` (500 crash); null `longDescription/benefits/samagriList` crashed render. Full sitemap sweep: 58/58 temple+puja deep links 200.
+- **#198 demo creds stripped** — 9 demo accounts (incl. admin@demo.com/demo123) + token generator were in the prod client bundle. Gated behind a compile-time-dead `NODE_ENV` branch so Terser drops them. Verified: no cred objects in live login chunks.
+- **#199** plaintext password no longer persisted to localStorage (signup draft + profile).
+- **#195** signup handles `session:null` (email-confirm on) with a verify-email screen; removed fake demo-session fallback.
+- **#197 session→API** / **#201 payments create-order 201+razorpayOrderId** / **#200 httpOnly cookie** (`@fastify/cookie` registered; `darshya_session` set + accepted as auth) — ALL unblocked when the **owner disabled Supabase "Confirm email"** (Authentication → Sign In/Providers → Email). Real sessions now work end-to-end.
+- **Build incident**: registering @fastify/cookie crashed login to 500 — root `pnpm.overrides` pinned `cookie@^0.7`, @fastify/cookie v11 needs `^2` (stringifySetCookie). Bumped override → green.
+- Routing/UX batch: `/auth/logout` route, `/festivals`→`/festival` redirect, gaushala `gs_*`→cow links, dashboard "View Plans"→`/pricing`, onboarding CTA→`/onboarding/view?role=`, temples dup-merge count, `lib/friendly-error.ts` helper, Inbox 401 poll-storm stop, catalog edge-cache headers, store add-product + wellness add-session fixes.
+
+### PENDING — owner/runtime only (NOT code)
+- **#196 phone-OTP** — "Unsupported phone provider" (Supabase SMS not configured). Needs MSG91/Twilio config OR hide Mobile tab.
+- **#211 admin panels** — root cause fixed (#197); needs a **real admin account** to click-verify (add owner email to API `ADMIN_EMAILS` env + sign up).
+- **#205 Razorpay live key** — set live key in Render (currently `rzp_test_demo` fallback; test payments work, real charges need live key).
+- **#203/#204 image optimization** — 13/15 homepage images broken (Wikimedia/Unsplash hotlinks) + 11–15MB pages. Needs self-host vs CDN decision.
+- **#216 blog stub** · **#222 UX friction** — content/design. **#210 redirect final regression** — needs multi-role session (now possible).
+- **#190–#194, #232 funnel-drop monitors** — auto-filed; symptom of the auth cluster; auto-resolve once real signups/payments flow.
+
+### QA artifacts to clean up (Supabase Users + DB)
+Accounts: `qa-audit-probe@gmail.com`, `qa-audit-probe2@outlook.com`, `qa-live-session@gmail.com`, `qa-admin-probe@gmail.com`, `qa-become-probe@example.com`. Booking `BS-20260805-T9CHE`. A few `/leads/self-onboard` probes.
+
+### Cautions for the next session
+- Web (srv-d970l2ks728c738fc33g) + API (srv-d7mc2n8sfn5c73dfce0g) are **Render autoDeploy:false** — deploy via `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>`.
+- **Concurrent agents** write to the repo (booking #225, devotee #226, astrologer #227, etc.) — `git add -A` sweeps their WIP; always `git status` first and stash/pop carefully.
+- **Auto-format PostToolUse hook DISABLED** (was reformatting legacy 1-space files → huge diff churn). Re-enable only after a one-time repo-wide prettier normalization.
+
+### Final rating post-fixes
+**41/100 (NO-GO) → ~74/100.** Public/content site ~85; authenticated product now functional (login/session/payments/portals/secure authz). Remaining = config keys + 1 SMS provider + admin test account + image/content polish.
+
 ## HANDOFF Role-by-Role Revamp + Cross-Cutting Phase 2 (added 2026-08-06)
 
 > The full marketplace revamp: all 7 roles revamped + the #1 cross-cutting item (provider payouts) + Phase-2 batch 2. **All shipped to prod, live-verified.** Read this block FIRST on resume for marketplace/booking/payout work.
