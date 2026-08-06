@@ -1,6 +1,62 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-06-10 (ARE Phases 0-5 ALL SHIPPED local, ready to push).
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-08-07 (GTM Phase-0 deliverables shipped; muhurat layer coded, UNCOMMITTED).
+
+## HANDOFF Graft code-graph (added 2026-08-06)
+
+> The repo is indexed by **Graft** (NanoNets `@nanonets/graft@0.8.2`) — a code knowledge graph (nodes = files/symbols, edges = calls/imports) so the agent starts oriented instead of grepping from cold. Structural graph is tree-sitter (deterministic, **$0, no LLM key**). Use graft **before** Grep/Read for find/understand/trace/scope.
+
+- **Wiring (committed):** PR **#234** (`chore/graft-code-graph`, commit `3350de45`) — `.mcp.json` (6 tools: `find_code`/`file_api`/`trace_calls`/`find_all`/`repo_map`/`check_freshness`), `.claude/settings.json` statusline + 5 hooks, `.claude/skills/graft/SKILL.md`, `.claude/helpers/graft-*.cjs`, `.gitignore` (`/graft/` anchored + shareable `.claude` re-included), `.ignore` (graph cards stay greppable). **Action: merge PR #234.**
+- **Windows fix (load-bearing):** hook/statusline commands use `$CLAUDE_PROJECT_DIR`, NOT the `${CLAUDE_PROJECT_DIR:-.}` form `graft init` emits — the `:-` default-expansion literal-corrupts under Git-Bash on win32. If you re-run `graft init`, re-apply this strip.
+- **Graph (local, gitignored — NOT committed):** `graft/` = **7,132 nodes / 14,365 edges / 1,437 cards** (tsx/ts/py). Deep (LLM) layer via local Blackbox proxy `http://127.0.0.1:8787/v1` + model `blackboxai/moonshotai/kimi-k3` (`GRAFT_PROVIDER=openai GRAFT_BASE_URL=… GRAFT_API_KEY=proxy GRAFT_MODEL=… graft build --deep -j 6`). Built 2026-08-06; ~955 concept nodes computed; per-symbol summary tail resumed to fill remaining pending. **Rebuild any time:** `graft build` (structural) / `--deep` (LLM, optional). Graph auto-refreshes structurally before each query.
+- **Pending:** (1) merge PR #234; (2) restart Claude Code to load the graft MCP server; (3) `graft build --deep` re-run fills any remaining per-symbol summaries (cached, cheap).
+- **Detail:** `docs/engineering/graft-code-graph-2026-08-06.md`.
+
+## HANDOFF GTM — Pandit-Booking Marketplace Phase 0 (2026-08-07)
+
+> Plan/research: `E:\NewClaude\darshya-gtm-master-plan.md` + `C:\Users\DELL\.claude\projects\E--NewClaude\darshya-gtm\` (18 reports) + `E:\NewClaude\darshya-gtm-execution-split.md`.
+> Started: 2026-08-06 (research). Status: **Phase-0 "I own" items ALL SHIPPED. Founder-gated items + commit pending.**
+> Read FIRST on resume: this block + `E:\NewClaude\darshya-gtm-execution-split.md`. Deliverables at `E:\NewClaude\deliverables\` (outside repo — do not commit those .md files; only the apps/api code).
+
+### Session outcome (2026-08-07)
+
+Resumed from the 2026-08-06 GTM research + execution split. Executed all six Phase-0 "I own" items.
+
+**6 deliverables → `E:\NewClaude\deliverables\`:**
+1. `supply-lead-jd-and-pitch.md` — JD + comp table (≤₹60k/mo) + 2-min verbal pitch + WhatsApp pitch + 10-Q interview scorecard (pass gates Q1/Q2/Q5/Q8 ≥4, total ≥38/50) + 30-60-90 metrics.
+2. `temple-sabha-partnership-kit.md` — print one-pager + plain-English MoU (non-exclusive, no-poach, ₹5–10k sponsorship, 30-day exit) + meeting playbook (small temples first per Sri Mandir lesson).
+3. `pandit-vetting-rubric.md` — 100-pt instrument: shastra test (Atharvashirsha/Purusha Suktam, 10-step Satyanarayan vidhi, 5-element sankalp), language tags (Hindi/Maithil/Bengali), reference-call script, 8-point attestation. Pass ≥70 / shadow 55–69 / reject <55. 4 instant-reject conditions.
+4. `launch-catalog-2sku-pricing.md` — GP ₹3,499/₹6,999/₹8,499 · SN ₹2,099/₹4,199/₹5,199; kit COGS ~₹650/~₹480; margins 43–59%; ₹501-shagun bundle ₹10,697; policies incl. "pandit by muhurat or free + ₹501". Founder sign-off line at bottom.
+5. `whatsapp-booking-flow.md` — v1 no-app product: 8 templates (T1–T8), F1–F10 script, dispatcher SOP, opt-in hygiene, weekly metrics gating automation. Founder-gated: BSP + Razorpay need legal entity/PG.
+6. `muhurat-data-layer.md` — build doc for the code below.
+
+**Code (UNCOMMITTED — pending founder review):**
+- `apps/api/src/lib/puja-muhurat.ts` — per-puja-type scoring (GP + Satyanarayan), grade shubh/neutral/avoid, bookable windows with Rahukaal subtracted (grey-out), eclipse-season proxy. Built on `lib/muhurat.ts` astronomy (no dup).
+- `apps/api/src/services/panchang.service.ts` — added `getPujaMuhurats()` + `CITY_TIMES.Gurugram` row (was missing; silent Delhi fallback).
+- `apps/api/src/routes/panchang.ts` — `GET /panchang/puja-muhurat?pujaType=&from=&days=&city=` (registered before `/muhurat` + `/:date`).
+- Tests: `src/lib/puja-muhurat.test.ts` (9) + `src/lib/puja-muhurat.integration.test.ts` (4). **31/31 green** (13 new + 18 existing panchang/muhurat). `tsc --noEmit` clean.
+
+### Verify cheatsheet
+```
+cd apps/api
+npx vitest run src/lib/puja-muhurat.test.ts src/lib/puja-muhurat.integration.test.ts  # 13/13
+npx tsc --noEmit                                                                       # clean
+curl "http://localhost:4000/panchang/puja-muhurat?pujaType=SATYANARAYAN&days=30"       # needs API up
+```
+
+### PENDING (next session, in order)
+1. **Founder decision: commit the muhurat layer** → branch + PR (`git checkout -b feat/puja-muhurat-layer`), then merge.
+2. **Web wiring** — `apps/web/app/pujas/book/page.tsx` `DateInput` is muhurat-blind; fetch `/panchang/puja-muhurat?pujaType=…` → badge shubh days green, disable `avoid` days, render `windows[]` as slot chips, grey `rahuKaal`. Also wire WhatsApp flow F2 ("I need muhurat help") to the same endpoint.
+3. **Known gap**: no Adhik Maas/Shraadh (lunar masa not computed) — mitigated by eclipse proxy + month notes + pandit confirms final muhurat. Multi-city persistence blocked by `DailyPanchang.date @unique` (schema change only if persisting per-city).
+4. **Razorpay/PhonePe sandbox** — not started; gates on founder's PG account (founder-owned in split).
+
+### Founder-gated (unchanged — only he can do)
+- Confirm launch micro-zone + approve ~₹3–5L budget.
+- Legal entity / Razorpay PG / GST for the marketplace (gates escrow + WhatsApp BSP + sandbox).
+- Recruit Supply Lead #1 (JD ready at `deliverables/supply-lead-jd-and-pitch.md`).
+- In-person temple/sabha meetings (carry kit ready at `deliverables/temple-sabha-partnership-kit.md`).
+
+---
 
 ## HANDOFF ARE — Autonomous Roadmap Engine (Sub-project 1 of 5)
 
