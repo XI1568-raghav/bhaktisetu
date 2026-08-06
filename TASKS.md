@@ -2,6 +2,51 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-08-07 (GTM Phase-0 deliverables shipped; muhurat layer coded, UNCOMMITTED).
 
+## HANDOFF Role-by-Role Revamp + Cross-Cutting Phase 2 (added 2026-08-06)
+
+> The full marketplace revamp: all 7 roles revamped + the #1 cross-cutting item (provider payouts) + Phase-2 batch 2. **All shipped to prod, live-verified.** Read this block FIRST on resume for marketplace/booking/payout work.
+
+### What's DONE (live on prod, deployed + verified — not summary fields)
+
+**7 role PRs (all merged → deployed → live):**
+- **#225 Pandit booking** — tiered dispatch engine (T1 instant/T2 1-hr/T3 senior/T4 scheduled), cancellation policy (refund ladder 100/75/50/25/0 beating SmartPuja/Harivara), 7 dead things fixed (dead Cancel btn, broken /profile/bookings link, missing Reject btn, escalation cron wired, notify on accept/reject, reschedule endpoint+UI), WhatsApp booking notifications (booking-notify.service). Migration `20260805000000_booking_dispatch_engine` applied.
+- **#226 Devotee** — killed 4 hardcoded mock dashboard widgets → live DevoteeTodaySection (Today Panchang / rashi Horoscope / Continue Reading / real Orders); digest unsubscribe loop closed (was 404 + never recorded); AddressManager on /profile.
+- **#227 Astrologer** — take rate 30%→20% (80% to astrologer, best-in-India vs AstroTalk 50%); go-online toggle (/astrologer-portal/online); fixed dead Earnings page (was 403 from admin-only route); consult notifications.
+- **#228 Store owner** — COD+manual commission leak fixed (store-commission.service); real checkout addresses (was fake Koramangala/Whitefield); tracking-number input on SHIPPED; dead Load-More removed.
+- **#229 Wellness** — live-room editor (was curl-only, classes undeliverable); free-satsang enroll (price-0 instant PAID); instructor-share earnings (was gross).
+- **#230 Gau Seva** — wired dead adoption CTAs into real /donations flow with planId prefill (₹51/₹3,000/₹30,000/₹2,25,000) + 80G.
+- **#231 Temple manager** — availableSlots editor (offerings were unbookable — form never collected slots); GET /temple-portal/bookings + Bookings page.
+
+**Cross-cutting (the deep items):**
+- **#233 Provider payouts (ALL roles)** — unified `PayoutRequest` lifecycle over Commission ledger. Only priests had payouts before; astrologer/wellness/store/temple/gaushala sat PENDING forever. `payout.service.ts` + `GET/POST /payouts/balance|request|my` + admin process. `/payouts` web page. Migration `20260806000000_provider_payout_requests` applied. **Take-rate doctrine: uniform 20% platform / 80% provider across all roles.**
+- **#235 Phase-2 batch 2** — Temple revenue share (TemplePayout, default 5% `TEMPLE_SHARE_RATE`, closes Harvard donation-bypass); Panchang push revival (PushSubscription persisted table — was in-memory, blast no-opped); recurring subscriptions (recurring.service + /recurring/plans|subscribe|my, all ≤₹15,000 UPI-Autopay no-PIN); live directories (`/astrology/astrologers/live` = 3 real astrologers, `/store/products/live`). Migration `20260806010000_temple_payouts_push_subs` applied.
+
+### Deploy/migrate procedure (the proven pattern)
+1. PR → CI green → `gh pr merge <n> --squash`.
+2. Deploy: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main`. **API sid = `srv-d7mc2n8sfn5c73dfce0g`, web sid = `srv-d970l2ks728c738fc33g`.**
+3. **Migration does NOT auto-apply on deploy.** Apply manually: `cd apps/api`, load `.env.production` DIRECT_URL, run `npx prisma migrate deploy`. If a phantom ledger row blocks it (migration recorded but not applied), `prisma migrate resolve --rolled-back <name>` then `migrate deploy` again. Verify tables via information_schema.
+4. **Redeploy API after migration** so it boots against the new schema (client regen).
+5. Verify live: curl prod endpoint (401 = live/auth-gated, not 404); web page 200.
+
+### PENDING (Phase 2 — the "make it fully real" deep builds, in priority order)
+1. **Razorpay Subscriptions mandate + webhooks** — turn recurring intent into actual charges (activate on `subscription.authenticated`, charge on `.charged`, T+3 dunning, ≥24h RBI pre-debit notify, `.halted` recovery). recurring_subscriptions table exists (intent layer live).
+2. **Astrologer booking-flow swap** — bind booking to real AstrologerProfile (slug↔UUID map, astrologer-resolver.ts exists but unwired). `/live` directory is read-only; booking still uses mock fixture.
+3. **Store PDP + buy-flow** for owner products (`/store/[id]` page + cart wiring).
+4. **TemplePriest roster management** — add/remove/list priests (still seed-only).
+5. **RazorpayX/Cashfree payout rails** — real money transfer on admin process (currently manual); penny-drop bank verify + PAN; TDS decision (194-O 0.1% vs 194J 10% — CA call).
+6. **Weekly settlement cron** — auto-create PayoutRequests (guaranteed payout day).
+
+### Founder-gated (only he can do)
+- **WhatsApp booking templates** (`docs/company/whatsapp-templates-booking-2026-08-04.md`) — create + approve 11 templates in Meta Manager; booking-notify no-ops until then.
+- **E2E_DEMO_EMAIL/PASSWORD** — seed a demo devotee (rashi + booking + reading progress) so the authed-tier E2E (booking-tiers.spec.ts) runs green instead of skipping.
+- **RazorpayX/Cashfree account + CA** for the payout money rails + TDS.
+
+### Key reports (full research + numbers)
+- Per-role plans: `docs/company/{pandit-booking,devotee-role,astrologer-role,store-owner-role,wellness-instructor-role,gau-seva,temple-manager-role}-revamp-plan-2026-08-*.md`
+- Consolidated: `docs/company/role-revamp-consolidated-report-2026-08-05.md`
+- Payouts: `docs/company/provider-payouts-phase2-plan-2026-08-06.md`
+- Batch-2: `docs/company/cross-cutting-phase2-batch2-2026-08-06.md`
+
 ## HANDOFF Graft code-graph (added 2026-08-06)
 
 > The repo is indexed by **Graft** (NanoNets `@nanonets/graft@0.8.2`) — a code knowledge graph (nodes = files/symbols, edges = calls/imports) so the agent starts oriented instead of grepping from cold. Structural graph is tree-sitter (deterministic, **$0, no LLM key**). Use graft **before** Grep/Read for find/understand/trace/scope.
