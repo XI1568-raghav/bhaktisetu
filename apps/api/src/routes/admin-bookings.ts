@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { processRefund } from '../services/refund.service.js';
+import { listPayoutRequests, processPayout } from '../services/payout.service.js';
 
 // Admin bookings + payouts + refunds ops dashboards.
 //
@@ -186,6 +187,44 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
     } catch (err) {
       request.log.warn({ err }, 'admin payouts pending failed');
       return { groups: [], schemaNote: 'aggregation failed; see server logs' };
+    }
+  });
+
+  // ─── GET /admin/bookings/payout-requests — list payout requests (admin) ──────
+  server.get('/payout-requests', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { status } = request.query as { status?: string };
+    const requests = await listPayoutRequests(status);
+    return reply.send({ requests });
+  });
+
+  // ─── POST /admin/bookings/payout-requests/:id/process — settle/release ────────
+  // Cross-cutting Phase 2: admin records the real transfer (UPI/bank/Razorpay
+  // Route) via reference; completing marks the linked Commissions PAID. Reject
+  // /fail releases the balance back to PENDING so the provider doesn't lose it.
+  const processPayoutSchema = z.object({
+    action: z.enum(['complete', 'reject', 'fail']),
+    reference: z.string().max(200).optional(),
+    failureReason: z.string().max(500).optional(),
+  });
+  server.post('/payout-requests/:id/process', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = processPayoutSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    try {
+      const updated = await processPayout(
+        id,
+        parsed.data.action,
+        request.currentUser!.id,
+        parsed.data.reference,
+        parsed.data.failureReason,
+      );
+      return reply.send({ ok: true, payout: { id: updated.id, status: updated.status } });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to process payout';
+      if (msg.includes('not found')) return reply.code(404).send({ error: msg });
+      return reply.code(400).send({ error: msg });
     }
   });
 
