@@ -520,9 +520,13 @@ export default async function CowDetailPage({
  </p>
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
  {adoptionPlans.map((plan) => (
- <button
+ // Gau-seva revamp: plan buttons were dead <button> with no onClick. Point
+ // each to the donations flow with the planId prefilled so the devotee pays
+ // the real plan amount (Razorpay + 80G receipt), not a dead click.
+ <Link
  key={plan.id}
- className={`relative p-3 rounded-xl border text-left transition-all hover:shadow-md ${
+ href={`/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}&planId=${encodeURIComponent(plan.id)}`}
+ className={`relative p-3 rounded-xl border text-left transition-all hover:shadow-md block ${
  plan.popular
  ? "border-emerald-400 bg-white ring-1 ring-emerald-200"
  : "border-surface-200 bg-white hover:border-emerald-300"
@@ -542,7 +546,7 @@ export default async function CowDetailPage({
  <p className="text-[11px] text-surface-400 mt-0.5">
  {plan.description}
  </p>
- </button>
+ </Link>
  ))}
  </div>
  <Link
