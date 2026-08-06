@@ -206,6 +206,7 @@ model User {
   ratingsGiven    ServiceRating[]    @relation("DevoteeRatings")
   ratingsReceived ServiceRating[]    @relation("ProviderRatings")
   donations       Donation[]
+  pushSubscriptions PushSubscription[]
 
   // Support tickets
   supportTickets         SupportTicket[]        @relation("SupportTicketUser")
@@ -299,6 +300,7 @@ model Temple {
   bookings      PujaBooking[]
   darshanStream LiveDarshanStream[]
   donations     Donation[]
+  templePayouts TemplePayout[]
 
   @@index([slug])
   @@index([city])
@@ -496,6 +498,7 @@ model PujaBooking {
   prasadAddress      UserAddress?        @relation(fields: [prasadDeliveryAddressId], references: [id])
   payments           Payment[]
   priestPayouts      PriestPayout[]
+  templePayouts      TemplePayout[]
   dispatchOffers     DispatchOffer[]
 
   @@index([userId])
@@ -525,6 +528,53 @@ model DispatchOffer {
   @@index([priestId, state])
   @@index([state, expiresAt])
   @@map("dispatch_offers")
+}
+
+// The temple administration's share of a puja booking (cross-cutting Phase 2,
+// 2026-08-06). Before this, a puja's price split only into priest (80%) +
+// platform (20%) — the TEMPLE got nothing, which is the Harvard-documented
+// "donation bypass" grievance: platforms pay the priest directly and cut out
+// the temple administration. TemplePayout records the temple's cut per booking
+// so it can be settled to the temple trust like any provider payout.
+model TemplePayout {
+  id          String               @id @default(uuid()) @db.Uuid
+  templeId    String               @map("temple_id") @db.Uuid
+  bookingId   String               @map("booking_id") @db.Uuid
+  amount      Decimal              @db.Decimal(10, 2)
+  status      ProviderPayoutStatus @default(pending)
+  reference   String?
+  processedAt DateTime?            @map("processed_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  temple  Temple      @relation(fields: [templeId], references: [id])
+  booking PujaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([templeId, status])
+  @@index([status])
+  @@map("temple_payouts")
+}
+
+// A devotee's web-push subscription, persisted (cross-cutting Phase 2). Before
+// this, push subs lived in an in-memory Map lost on every restart — so the
+// daily panchang blast (master-cron tickPanchangBlast) no-opped with "no push
+// subscription model". Persisting them enables the daily panchang + streak
+// push that drives the devotional daily-open habit.
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  // Opt-in to the daily panchang push (5am IST). Default true on subscribe so
+  // the panchang blast has an audience; the devotee can opt out.
+  panchangOptIn Boolean @default(true) @map("panchang_opt_in")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([panchangOptIn])
+  @@map("push_subscriptions")
 }
 
 model Payment {
@@ -763,6 +813,13 @@ enum ProviderRole {
   STORE_OWNER
   TEMPLE_MANAGER
   GAUSHALA_MANAGER
+}
+
+enum ProviderPayoutStatus {
+  pending
+  processing
+  completed
+  failed
 }
 
 enum TransactionType {
