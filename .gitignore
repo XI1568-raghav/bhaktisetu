@@ -23,6 +23,19 @@ out/
 # Claude session junk (cmd-log, per-app .claude/)
 .claude/cmd-log.jsonl
 **/.claude/
+# ...but keep the shareable Claude Code wiring (skills, settings, hooks, graft)
+!.claude/
+!.claude/settings.json
+!.claude/skills/
+!.claude/skills/**
+!.claude/helpers/
+!.claude/helpers/**
+# ...but always drop per-session/runtime clutter even where .claude is re-included
+.claude/format-log.jsonl
+.claude/test-result.json
+.claude/vitest-result.json
+.claude/plans/
+.claude/worktrees/
 
 # OS
 .DS_Store
@@ -61,3 +74,7 @@ apps/web/pitch-captures/
 # Pitch reel intermediate artifacts (regenerable via stitch-pitch-video-v2.sh)
 apps/web/scripts/build/
 .worktrees/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+# anchored to repo root so it does NOT also match .claude/skills/graft/ (that skill is committed)
+/graft/
