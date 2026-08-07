@@ -831,7 +831,12 @@ export class PaymentService {
     signature: string
   ): Promise<WebhookResult> {
     // 1. Verify webhook signature
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET!;
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      // Fail CLOSED with the signature message so the route returns 400 (never
+      // 200-swallow). An unset secret must reject, not "process" the event.
+      throw new Error('Webhook signature verification failed.');
+    }
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(JSON.stringify(payload))
@@ -857,7 +862,12 @@ export class PaymentService {
     payload: Record<string, any>,
     signature: string
   ): Promise<WebhookResult> {
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET!;
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      // Fail CLOSED: no configured secret → reject with the signature message
+      // so the route returns 400, never a 200 "Internal processing error".
+      throw new Error('Webhook signature verification failed.');
+    }
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(rawBody)
