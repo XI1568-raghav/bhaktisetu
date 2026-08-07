@@ -225,9 +225,25 @@ export async function consultationRoutes(server: FastifyInstance) {
     const { astrologerId, minutes, scheduledAt } = parsed.data;
     const userId = request.currentUser!.id;
 
-    // Trust the in-memory astrology service as source-of-truth for rate +
-    // identity. Client cannot inject a fake rate this way.
-    const astrologer = astrologyService.getAstrologerById(astrologerId);
+    // Resolve the astrologer for rate + identity (server-side, so the client
+    // cannot inject a fake rate). A UUID means a REAL onboarded
+    // AstrologerProfile (from /astrologers/live) — resolve against the DB and
+    // verify it's approved. A legacy slug falls back to the in-memory
+    // directory until the full directory swap lands.
+    let astrologer: { name: string; perMinuteRate: number; userId?: string } | null = null;
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(astrologerId)) {
+      const p = await prisma.astrologerProfile.findUnique({ where: { id: astrologerId } });
+      if (p && p.approved) {
+        astrologer = {
+          name: p.displayName,
+          perMinuteRate: Number(p.pricePerMinute),
+          userId: p.userId,
+        };
+      }
+    } else {
+      const a = astrologyService.getAstrologerById(astrologerId);
+      if (a) astrologer = { name: a.name, perMinuteRate: Number(a.perMinuteRate) };
+    }
     if (!astrologer) {
       return reply.code(404).send({ error: 'Astrologer not found.' });
     }
