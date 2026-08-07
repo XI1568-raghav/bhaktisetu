@@ -181,6 +181,18 @@ export async function paymentRoutes(server: FastifyInstance) {
     },
   );
 
+  // GET /config - Publishable Razorpay key for the client checkout modal.
+  // Returns ONLY the KEY_ID (public, safe to expose — Razorpay's checkout.js
+  // requires it in the browser). The KEY_SECRET is never sent. Lets the web
+  // client read the same key the API uses (single source of truth) instead of
+  // a separately-baked NEXT_PUBLIC_RAZORPAY_KEY_ID build arg that can drift.
+  server.get('/config', async (_request, reply) => {
+    return reply.send({
+      keyId: process.env.RAZORPAY_KEY_ID || null,
+      isDemo: !process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID === 'rzp_test_demo',
+    });
+  });
+
   // POST /webhook - Razorpay webhook handler (no auth — uses webhook signature).
   //
   // Two verification modes coexist behind RAZORPAY_VERIFY_RAW:
