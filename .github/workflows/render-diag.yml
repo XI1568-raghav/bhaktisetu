@@ -100,6 +100,20 @@ jobs:
           raw=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/logs?limit=100")
           echo "$raw" | jq -r '.[]? // empty' 2>/dev/null | tail -80 || echo "$raw" | tail -80
 
+      - name: deployEvents — read-only build transcript of last deploy (NO trigger)
+        if: ${{ github.event.inputs.mode == 'deployEvents' }}
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          SID: ${{ github.event.inputs.sid }}
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer $RK"
+          DEP=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=1" | jq -r '.[0].deploy.id // .[0].id')
+          echo "=== last deploy: $DEP — build events mentioning public/static/standalone/copy ==="
+          curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$DEP/events?limit=300" \
+            | jq -r '.. | .message? // .details? // empty' 2>/dev/null \
+            | grep -iE "public|static|standalone|cp -r|test -d|server\.js|FATAL|Step [0-9]+/|RUN pnpm|error" | tail -60
+
       - name: deploys — read-only recent deploy history (NO trigger, zero build cost)
         if: ${{ github.event.inputs.mode == 'deploys' }}
         env:
