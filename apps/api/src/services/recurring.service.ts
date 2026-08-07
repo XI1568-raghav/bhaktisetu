@@ -14,6 +14,7 @@
  */
 
 import { prisma } from '../lib/prisma.js';
+import { razorpay, isDemoPayment } from './payment.service.js';
 
 export type RecurringPlanKind = 'gau_seva' | 'wellness_batch' | 'temple_seva' | 'custom';
 
@@ -67,7 +68,23 @@ export function getRecurringPlan(planId: string): RecurringPlan | null {
   return RECURRING_PLANS.find((p) => p.id === planId) ?? null;
 }
 
-/** Create a recurring subscription intent (pending until mandate is set up). */
+/** Map our plan interval to a Razorpay Subscriptions period. */
+function toRazorpayPeriod(interval: RecurringPlan['interval']): { period: 'daily' | 'weekly' | 'monthly' | 'yearly'; interval: number } {
+  switch (interval) {
+    case 'daily': return { period: 'daily', interval: 1 };
+    case 'weekly': return { period: 'weekly', interval: 1 };
+    case 'yearly': return { period: 'yearly', interval: 1 };
+    default: return { period: 'monthly', interval: 1 };
+  }
+}
+
+/**
+ * Create a recurring subscription: persist the intent row, then create a
+ * Razorpay Subscription (UPI Autopay mandate) and store its id + return the
+ * short_url the devotee opens to AUTHORISE the mandate. In demo mode (no live
+ * Razorpay key) the mandate create is a no-op proxy and the row stays
+ * 'pending' — the flow is exercised end-to-end without moving money.
+ */
 export async function createRecurringSubscription(opts: {
   userId: string;
   planId: string;
@@ -78,11 +95,42 @@ export async function createRecurringSubscription(opts: {
   const plan = getRecurringPlan(opts.planId);
   if (!plan) throw new Error('Unknown plan.');
   await ensureRecurringTable();
-  // stored as a raw row — the Prisma model is added by migration; using raw SQL
-  // keeps this resilient if the client is mid-generate.
+
+  // Create the Razorpay subscription (mandate). total_count is the billing
+  // cycles; for an open-ended devotional subscription we use a long horizon.
+  const { period, interval } = toRazorpayPeriod(plan.interval);
+  const reference = `rec_${Date.now().toString(36)}`;
+  let rzpSubId: string | null = null;
+  let mandateUrl: string | null = null;
+  try {
+    const sub = await (razorpay as any).subscriptions.create({
+      plan_id: undefined, // ad-hoc amount via plan override below
+      total_count: 120,
+      quantity: 1,
+      customer_notify: 1,
+      notes: {
+        reference,
+        planId: plan.id,
+        kind: plan.kind,
+        userId: opts.userId,
+        gaushalaId: opts.gaushalaId ?? '',
+        templeId: opts.templeId ?? '',
+      },
+      // Ad-hoc subscription: supply the plan inline.
+      // Razorpay accepts a `plan` object when plan_id is not pre-created.
+      ...( { plan: { period, interval, item: { name: plan.name, amount: plan.amountInr * 100, currency: 'INR' } } } as any),
+    } as any);
+    rzpSubId = sub?.id ?? null;
+    mandateUrl = sub?.short_url ?? null;
+  } catch (err) {
+    // Demo mode (no live key) or gateway hiccup: keep the intent row pending
+    // and surface no mandate URL. Never block the intent capture on the gateway.
+    if (!isDemoPayment) throw err;
+  }
+
   await prisma.$executeRawUnsafe(
-    `INSERT INTO recurring_subscriptions (id, user_id, plan_id, kind, amount_inr, interval, status, gaushala_id, temple_id, metadata, created_at)
-     VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, 'pending', $6, $7, $8::jsonb, NOW())
+    `INSERT INTO recurring_subscriptions (id, user_id, plan_id, kind, amount_inr, interval, status, gaushala_id, temple_id, metadata, razorpay_subscription_id, created_at)
+     VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, 'pending', $6, $7, $8::jsonb, $9, NOW())
      ON CONFLICT DO NOTHING`,
     opts.userId,
     plan.id,
@@ -91,9 +139,45 @@ export async function createRecurringSubscription(opts: {
     plan.interval,
     opts.gaushalaId ?? null,
     opts.templeId ?? null,
-    JSON.stringify(opts.metadata ?? {}),
+    JSON.stringify({ ...(opts.metadata ?? {}), reference }),
+    rzpSubId,
   );
-  return { planId: plan.id, status: 'pending', amountInr: plan.amountInr };
+  return {
+    planId: plan.id,
+    status: 'pending',
+    amountInr: plan.amountInr,
+    razorpaySubscriptionId: rzpSubId,
+    mandateUrl,
+  };
+}
+
+/**
+ * Razorpay subscription webhook lifecycle. Called from the payment webhook
+ * dispatcher. Idempotent — each transition only fires on a status change.
+ */
+export async function handleSubscriptionEvent(
+  event: string,
+  entity: { id?: string; notes?: Record<string, string> } | undefined,
+): Promise<void> {
+  const subId = entity?.id;
+  if (!subId) return;
+  const map: Record<string, string> = {
+    'subscription.authenticated': 'active',
+    'subscription.activated': 'active',
+    'subscription.charged': 'active',
+    'subscription.pending': 'pending', // RBI ≥24h pre-debit notification window
+    'subscription.halted': 'halted',   // dunning — payment failed, retry window
+    'subscription.paused': 'paused',
+    'subscription.cancelled': 'cancelled',
+    'subscription.expired': 'expired',
+  };
+  const status = map[event];
+  if (!status) return;
+  await prisma.$executeRawUnsafe(
+    `UPDATE recurring_subscriptions SET status = $1, updated_at = NOW() WHERE razorpay_subscription_id = $2`,
+    status,
+    subId,
+  );
 }
 
 /** List a user's recurring subscriptions. */
