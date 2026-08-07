@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { panchangService } from '../services/panchang.service.js';
+import { PujaMuhuratQuerySchema } from '../lib/puja-muhurat.js';
 
 export async function panchangRoutes(server: FastifyInstance) {
   // GET /today - Get today's panchang details
@@ -90,6 +91,23 @@ export async function panchangRoutes(server: FastifyInstance) {
     } catch (error) {
       server.log.error(error, 'Failed to fetch muhurat');
       return reply.status(500).send({ error: 'Failed to fetch muhurat data' });
+    }
+  });
+
+  // GET /puja-muhurat - Top shubh days + bookable windows for a puja type.
+  // Registered BEFORE /:date so 'puja-muhurat' is not parsed as a date param.
+  server.get('/puja-muhurat', async (request, reply) => {
+    const parsed = PujaMuhuratQuerySchema.safeParse(request.query ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const { pujaType, from, days, city } = parsed.data;
+    try {
+      const results = await panchangService.getPujaMuhurats(pujaType, from, days, city);
+      return { pujaType, city, from: from ?? new Date().toISOString().split('T')[0], days, results };
+    } catch (error) {
+      server.log.error(error, 'Failed to compute puja muhurats');
+      return reply.status(500).send({ error: 'Failed to compute puja muhurats' });
     }
   });
 

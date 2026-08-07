@@ -11,6 +11,10 @@ interface DateInputProps {
   label?: string;
   required?: boolean;
   className?: string;
+  /** Optional per-date muhurat marker: iso (YYYY-MM-DD) → grade. */
+  dateMarkers?: Record<string, 'shubh' | 'neutral' | 'avoid'>;
+  /** Optional set of dates that cannot be selected (e.g. avoid days). */
+  disabledDates?: Set<string>;
 }
 
 /**
@@ -84,6 +88,8 @@ export function DateInput({
   label,
   required,
   className,
+  dateMarkers,
+  disabledDates,
 }: DateInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [display, setDisplay] = useState(value ? formatForDisplay(value) : '');
@@ -262,24 +268,35 @@ export function DateInput({
               const iso = toIso(viewYear, viewMonth, day);
               const isSelected = iso === selectedIso;
               const isToday = iso === todayIso;
-              const isDisabled = !isInRange(iso, min, max);
+              const isAvoid = disabledDates?.has(iso) ?? false;
+              const isDisabled = !isInRange(iso, min, max) || isAvoid;
+              const marker = dateMarkers?.[iso];
               return (
                 <button
                   key={day}
                   type="button"
                   disabled={isDisabled}
                   onClick={() => selectDate(day)}
+                  title={marker === 'shubh' ? 'Shubh muhurat' : marker === 'avoid' ? 'Avoid' : undefined}
                   className={`
-                    aspect-square flex items-center justify-center text-sm rounded-lg transition-colors
+                    relative aspect-square flex items-center justify-center text-sm rounded-lg transition-colors
                     ${isSelected
                       ? 'bg-saffron-600 text-white font-semibold'
+                      : isAvoid
+                      ? 'text-surface-400 line-through'
+                      : marker === 'shubh'
+                      ? 'bg-green-50 text-green-700 font-semibold ring-1 ring-green-300'
                       : isToday
                       ? 'bg-saffron-100 text-saffron-700 font-semibold'
                       : 'text-surface-700 hover:bg-saffron-50'}
-                    ${isDisabled ? 'opacity-30 cursor-not-allowed hover:bg-transparent' : ''}
+                    ${isDisabled && !isAvoid ? 'opacity-30 cursor-not-allowed hover:bg-transparent' : ''}
+                    ${isAvoid ? 'cursor-not-allowed opacity-40' : ''}
                   `}
                 >
                   {day}
+                  {marker === 'shubh' && !isSelected && (
+                    <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-green-500" />
+                  )}
                 </button>
               );
             })}
