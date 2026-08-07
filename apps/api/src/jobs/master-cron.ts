@@ -16,6 +16,7 @@ import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
 import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepResult } from '../lib/webhook-idempotency.js';
 import { runDailyPanchangCompute } from './daily-panchang-compute-cron.js';
 import { tickConsultationExpire, type ConsultationExpireResult } from './consultation-expire.js';
+import { runWeeklySettlement } from '../services/payout.service.js';
 
 interface RefundCronResult {
   processed: number;
@@ -91,6 +92,15 @@ export interface DailyOpsResult {
   backup: BackupResult;
   webhookReplaySweep: WebhookSweepResult;
   consultationExpire: ConsultationExpireResult;
+  weeklySettlement: {
+    providersScanned: number;
+    requestsCreated: number;
+    skippedBalance: number;
+    skippedKyc: number;
+    errors: number;
+    skipped?: boolean;
+    reason?: string;
+  };
   ranAt: string;
 }
 
@@ -357,6 +367,15 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       backup: { ok: true, skipped: true, reason: 'outreachOnly' },
       webhookReplaySweep: { deleted: 0, skipped: true, reason: 'outreachOnly' },
       consultationExpire: { expired: 0, skipped: true, reason: 'outreachOnly' },
+      weeklySettlement: {
+        providersScanned: 0,
+        requestsCreated: 0,
+        skippedBalance: 0,
+        skippedKyc: 0,
+        errors: 0,
+        skipped: true,
+        reason: 'outreachOnly',
+      },
       ranAt: new Date().toISOString(),
     };
   }
@@ -376,6 +395,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const backup = await tickWeeklyBackup();
   const webhookReplaySweep = await tickWebhookReplaySweep();
   const consultationExpire = await tickConsultationExpire();
+  const weeklySettlement = await tickWeeklySettlement();
   return {
     outreach,
     waitlist,
@@ -394,8 +414,50 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     backup,
     webhookReplaySweep,
     consultationExpire,
+    weeklySettlement,
     ranAt: new Date().toISOString(),
   };
+}
+
+// Weekly settlement sweep (Phase-2 "guaranteed payout day"). Auto-creates a
+// PayoutRequest for every provider with a verified-KYC, ≥floor, non-in-flight
+// balance, so providers get paid on a predictable weekly cadence instead of
+// only when they remember to self-serve. Runs Monday 00:00 IST (the payout
+// day). Best-effort: a failure never blocks the rest of the daily ops.
+async function tickWeeklySettlement(): Promise<{
+  providersScanned: number;
+  requestsCreated: number;
+  skippedBalance: number;
+  skippedKyc: number;
+  errors: number;
+  skipped?: boolean;
+  reason?: string;
+}> {
+  // 0=Sun … 6=Sat. Monday = payout day.
+  if (new Date().getDay() !== 1) {
+    return {
+      providersScanned: 0,
+      requestsCreated: 0,
+      skippedBalance: 0,
+      skippedKyc: 0,
+      errors: 0,
+      skipped: true,
+      reason: 'not-monday',
+    };
+  }
+  try {
+    return await runWeeklySettlement();
+  } catch (err) {
+    return {
+      providersScanned: 0,
+      requestsCreated: 0,
+      skippedBalance: 0,
+      skippedKyc: 0,
+      errors: 1,
+      skipped: true,
+      reason: (err as Error)?.message ?? 'unknown',
+    };
+  }
 }
 
 // Dispatch engine sweep: expire sent offers past their window, rebroadcast or
