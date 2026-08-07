@@ -6,6 +6,12 @@ import {
   sunLongitudeSidereal,
   nakshatraFromLongitude,
 } from '../lib/muhurat.js';
+import {
+  findPujaMuhurats,
+  type DayInputs,
+  type PujaMuhuratDay,
+  type PujaType,
+} from '../lib/puja-muhurat.js';
 
 // ─── Dynamic Panchang Computation ──────────────────────────────────────────────
 // Sidereal Lahiri-ayanamsa math via shared helpers in lib/muhurat. Matches
@@ -61,6 +67,17 @@ const CITY_TIMES: Record<string, Record<number, { sunrise: string; sunset: strin
     7: { sunrise: '05:30', sunset: '19:14' }, 8: { sunrise: '05:45', sunset: '18:55' },
     9: { sunrise: '05:58', sunset: '18:24' }, 10: { sunrise: '06:12', sunset: '17:50' },
     11: { sunrise: '06:33', sunset: '17:26' }, 12: { sunrise: '06:57', sunset: '17:22' },
+  },
+  // Gurugram (launch city) — Delhi-derived, ±2 min. Westerly longitude nudges
+  // sunrise/sunset a touch later than Delhi. Replace with computed ephemeris if
+  // this layer ever drives minute-precision claims.
+  Gurugram: {
+    1: { sunrise: '07:12', sunset: '17:35' }, 2: { sunrise: '06:55', sunset: '18:02' },
+    3: { sunrise: '06:24', sunset: '18:24' }, 4: { sunrise: '05:54', sunset: '18:45' },
+    5: { sunrise: '05:30', sunset: '19:06' }, 6: { sunrise: '05:24', sunset: '19:18' },
+    7: { sunrise: '05:32', sunset: '19:16' }, 8: { sunrise: '05:47', sunset: '18:57' },
+    9: { sunrise: '06:00', sunset: '18:26' }, 10: { sunrise: '06:14', sunset: '17:52' },
+    11: { sunrise: '06:35', sunset: '17:28' }, 12: { sunrise: '06:59', sunset: '17:24' },
   },
   Mumbai: {
     1: { sunrise: '07:05', sunset: '18:11' }, 2: { sunrise: '06:57', sunset: '18:30' },
@@ -692,6 +709,46 @@ export class PanchangService {
 
     allEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return allEntries;
+  }
+
+  /**
+   * Top-N shubh days for a puja type across a ≤92-day horizon. Pure-compute
+   * path (computePanchang fills every date), so no DB dependency; cached with
+   * the standard panchang TTL. Powers the booking date picker's shubh-window
+   * highlighting + Rahukaal grey-out.
+   */
+  async getPujaMuhurats(
+    pujaType: PujaType,
+    from?: string,
+    days = 30,
+    city = 'Gurugram',
+  ): Promise<PujaMuhuratDay[]> {
+    const horizon = Math.min(Math.max(Math.floor(days) || 30, 1), 92);
+    const startDate = from && !isNaN(Date.parse(from)) ? from : new Date().toISOString().split('T')[0]!;
+
+    const cacheKey = `puja-muhurat:${pujaType}:${startDate}:${horizon}:${city.toLowerCase()}`;
+    return cached(cacheKey, CACHE_TTL.PANCHANG_DAY, async () => {
+      const inputs: DayInputs[] = [];
+      const start = new Date(`${startDate}T00:00:00.000Z`);
+      for (let i = 0; i < horizon; i++) {
+        const d = new Date(start.getTime() + i * 24 * 3600 * 1000);
+        const p = computePanchang(d, city);
+        const dateStr = d.toISOString().split('T')[0]!;
+        // tithiName → 1..30 (index in TITHIS + 1); nakshatra is title-case already.
+        const tithiNumber = TITHIS.indexOf(p.tithi) + 1;
+        inputs.push({
+          date: dateStr,
+          dayOfWeek: d.getUTCDay(),
+          tithiNumber: tithiNumber > 0 ? tithiNumber : 1,
+          nakshatra: p.nakshatra,
+          month: d.getUTCMonth() + 1,
+          sunrise: p.sunrise,
+          sunset: p.sunset,
+          rahuKaal: p.rahuKaal,
+        });
+      }
+      return findPujaMuhurats(pujaType, inputs, 5);
+    });
   }
 }
 
