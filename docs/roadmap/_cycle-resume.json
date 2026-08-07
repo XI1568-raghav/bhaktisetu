@@ -1,56 +1,7 @@
 {
-  "cycleId": "C-20260806T1436",
-  "spawnPlan": [
-    {
-      "role": "cto",
-      "itemIds": [
-        "R-Q2-E-013"
-      ],
-      "briefing": "Engineering item R-Q2-E-013. CRITICAL CONTEXT: All observability KPIs are broken (404/TBD errors across api_p95_ms, pages_cdn_cached, pages_with_csp_nonce, etc.). razorpay_live_active=0. cron_auth_token_set=0. webhook_idempotency_active, rate_limit_enforced, n_plus_1_queries_fixed, job_queue_active all have no values. Sentry DSN status unknown. Focus on shipping this engineering item to improve infra reliability, security, or performance. Verify DAG dependencies are met before starting — do NOT work on items whose depends_on aren't verified shipped. Stay within free-tier: GH 2000min/mo (currently 0% used), CF 500 builds/mo (0% used), Render 750h/mo. Write handoff doc to docs/engineering/R-Q2-E-013-handoff.md if blocked or after shipping.",
-      "estTokens": 15000
-    },
-    {
-      "role": "cmo",
-      "itemIds": [
-        "R-Q1-M-004"
-      ],
-      "briefing": "Marketing item R-Q1-M-004. CRITICAL CONTEXT: All marketing KPIs are stale (404 errors) — gsc_verified, social_accounts_active, social_posts_scheduled, press_pitches_sent, founder_tweets_posted, reddit_comments_posted all have no manual values. pillar_pages_shipped and cluster_articles_shipped metrics are broken (TBD). R-Q1-M-003 (U8, 57d) and R-Q1-M-010 (U7, 57d) are founder-blocked. Focus on shipping SEO/content/social/distribution work that can operate WITHOUT founder unblocks — e.g., blog drafts, SEO meta tags, schema markup, pillar page content. Check dependencies first. Write handoff doc to docs/marketing/R-Q1-M-004-handoff.md if blocked or after shipping.",
-      "estTokens": 12000
-    },
-    {
-      "role": "sales",
-      "itemIds": [
-        "R-Q1-SA-003"
-      ],
-      "briefing": "Sales/supply item R-Q1-SA-003. CRITICAL CONTEXT: 10+ sales items are founder-blocked for 57 days — R-Q1-SA-001 (founder must WhatsApp 5 priests), R-Q1-SA-006 (blocked true), R-Q1-S-008 (founder must dial gaushala prospects), R-Q1-S-013 (GOOGLE_PLACES_API_KEY missing in Render env). Focus on supply-side work that CAN advance via agent without founder action: outreach kit preparation, temple data enrichment from public sources, B2B LOI template drafting, pipeline documentation, prospect list building. Work around the GOOGLE_PLACES_API_KEY block by using alternative data sources. Check dependencies first. Write handoff doc to docs/sales/R-Q1-SA-003-handoff.md if blocked or after shipping.",
-      "estTokens": 10000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q1-CS-003"
-      ],
-      "briefing": "CS item R-Q1-CS-003. CRITICAL CONTEXT: multilingual_macros_count, cs_macros_count, cs_macros_documented, wa_support_active all stale/none. R-Q1-CS-002 (U7, 57d), R-Q1-CS-006 (U7, 56d), R-Q2-CS-003 (native-speaker review + Wati Meta template approval, 57d) are all founder-blocked. Focus on shipping support infrastructure that DOESN'T require native-speaker review or Wati Meta approval: English macro templates, help article drafts, churn detection logic, NPS survey infrastructure, auto-acknowledge flows. Check dependencies first. Write handoff doc to docs/cs/R-Q1-CS-003-handoff.md if blocked or after shipping.",
-      "estTokens": 10000
-    }
-  ],
-  "deferrals": [
-    {
-      "itemId": "R-Q2-M-011",
-      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item >72h unconsumed (actual: 1335.5h / ~55 days). R-Q2-M-011 has been in queue since 2026-06-11 with zero consumption. Queue depth is 15 across CTO(6), CMO(5), IT(2), Sales(1), CS(1) — none have shipped. This indicates a systemic pipeline dysfunction: agents are spawning work but output isn't being merged/deployed. Founder must triage: (1) Are these queue items orphaned (agent spawned but PR never opened)? (2) Are CI/CD pipelines broken preventing merges? (3) Should stale queue items be re-evaluated or killed? Without queue drainage, spawning new items compounds the problem.",
-      "suggestedAction": "Review docs/agent-reports/ for the 15 queued items. For each: check if a PR exists, if CI passed, if merge is blocked. Either merge, re-spawn, or kill each item. Priority: R-Q2-M-011 (oldest, 55 days), then R-Q1-E-003 through R-Q1-E-007 (CTO engineering batch)."
-    },
-    {
-      "itemId": "R-Q1-F-003",
-      "reason": "CRITICAL REVENUE BLOCKER: razorpay_live_active KPI = 0 (confirmed live, not stale). Item blocked by U1 for 57 days. This is the #1 existential risk — zero payment processing means zero revenue from bookings. Every day of delay = lost revenue from any users reaching checkout. This has been blocked since ~June 10 and it's now August 6.",
-      "suggestedAction": "Complete U1 unblock immediately: verify Razorpay test mode, run E2E payment test, flip to live mode. If U1 requires KYC/docs, prioritize submission today. Coordinate with R-Q1-F-004 (U2, also 57 days blocked) which likely depends on this."
-    },
-    {
-      "itemId": "R-Q1-E-001",
-      "reason": "ARCHITECTURE DECISION REQUIRED (56 days blocked): CF Pages vs Vercel vs static allowlist. This is a foundational infrastructure decision that blocks multiple downstream engineering items (R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014 are all blocked). The decision tree is stalling 6+ engineering items. Free-tier budget constraints (CF 500 builds/mo, GH 2000min/mo) should factor into the decision.",
-      "suggestedAction": "Make decision this week. Recommended: CF Pages (aligns with existing CF free-tier, 500 builds/mo sufficient at current volume, zero egress cost). Document decision in docs/engineering/architecture-decision-cf-pages.md. Unblock downstream items once decided."
-    }
-  ],
+  "cycleId": "C-20260807T0317",
+  "spawnPlan": [],
+  "deferrals": [],
   "kills": [],
   "firedTripwires": [
     {
@@ -60,10 +11,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-06T14:38:29.517Z"
+      "firedAt": "2026-08-07T03:18:42.822Z"
     }
   ],
-  "savedAt": "2026-08-06T14:41:09.138Z",
+  "savedAt": "2026-08-07T03:23:16.885Z",
   "consumed": true,
-  "consumedAt": "2026-08-06T14:44:31.878Z"
+  "consumedAt": "2026-08-07T03:23:16.886Z"
 }
