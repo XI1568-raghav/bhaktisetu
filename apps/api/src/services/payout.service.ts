@@ -27,6 +27,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
+import type { ProviderRole } from '@prisma/client';
 
 export type ProviderRoleKey =
   | 'PANDIT'
@@ -37,6 +38,12 @@ export type ProviderRoleKey =
   | 'GAUSHALA_MANAGER';
 
 const MIN_PAYOUT_INR = 1; // no meaningful floor; provider can withdraw any positive balance
+
+// Weekly settlement floor — below this the balance rolls to next week rather
+// than creating a trivial PayoutRequest. Self-serve requestPayout has no floor
+// (a provider can always pull any positive balance); this floor only gates the
+// automatic weekly batch so we don't spam ₹1 settlement rows.
+export const WEEKLY_SETTLE_MIN_INR = 100;
 
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
@@ -93,14 +100,23 @@ export async function getKycStatus(providerId: string): Promise<{
  * Create a payout request for the provider's full available balance. Atomic:
  * create the request + link its commissions in one transaction so a crash
  * can't leave a request pointing at no commissions (or double-spend a balance).
+ * Internal callers (weekly settlement) may skip the KYC gate via `opts.skipKyc`
+ * after they've already applied their own verified-KYC filter.
  */
-export async function requestPayout(providerId: string, role: ProviderRoleKey, method = 'upi') {
+export async function requestPayout(
+  providerId: string,
+  role: ProviderRoleKey,
+  method = 'upi',
+  opts: { skipKyc?: boolean } = {},
+) {
   const kyc = await getKycStatus(providerId);
-  if (!kyc.hasBank) {
-    throw new Error('Add your bank/UPI details in KYC before requesting a payout.');
-  }
-  if (!kyc.verified) {
-    throw new Error('Your KYC is pending verification. Payouts unlock once an admin verifies it.');
+  if (!opts.skipKyc) {
+    if (!kyc.hasBank) {
+      throw new Error('Add your bank/UPI details in KYC before requesting a payout.');
+    }
+    if (!kyc.verified) {
+      throw new Error('Your KYC is pending verification. Payouts unlock once an admin verifies it.');
+    }
   }
 
   const balance = await getPayoutBalance(providerId);
@@ -198,6 +214,66 @@ export async function processPayout(
 }
 
 /** List a provider's own payout requests. */
+/**
+ * Weekly settlement sweep (Phase-2 "guaranteed payout day"). For every provider
+ * with a withdrawable balance ≥ the weekly floor, verified KYC, and no in-flight
+ * request, auto-create a PayoutRequest so providers are paid on a predictable
+ * weekly cadence (research anchor: Amazon/Flipkart/UC T+7) instead of only when
+ * they remember to self-serve. Best-effort per provider — one failure (e.g. an
+ * unverified KYC) never blocks the rest.
+ */
+export async function runWeeklySettlement(): Promise<{
+  providersScanned: number;
+  requestsCreated: number;
+  skippedBalance: number;
+  skippedKyc: number;
+  errors: number;
+}> {
+  // Distinct providers holding any PENDING, unlinked commission.
+  const providers = await prisma.commission.findMany({
+    where: { status: 'PENDING', payoutRequestId: null },
+    select: { providerId: true },
+    distinct: ['providerId'],
+  });
+
+  let requestsCreated = 0;
+  let skippedBalance = 0;
+  let skippedKyc = 0;
+  let errors = 0;
+
+  for (const { providerId } of providers) {
+    try {
+      const balance = await getPayoutBalance(providerId);
+      if (balance.availableInr < WEEKLY_SETTLE_MIN_INR) {
+        skippedBalance++;
+        continue;
+      }
+      const kyc = await getKycStatus(providerId);
+      if (!kyc.verified || !kyc.hasBank) {
+        skippedKyc++;
+        continue;
+      }
+      // requestPayout is atomic + no-ops when there's already an in-flight
+      // request (balance.availableInr would be 0 in that case). KYC already
+      // filtered above, so skip the duplicate gate.
+      await requestPayout(providerId, 'PANDIT' as ProviderRole, 'upi', { skipKyc: true });
+      requestsCreated++;
+    } catch (err) {
+      errors++;
+      // swallow — a single bad provider must not abort the sweep
+      console.warn('[weekly-settlement] provider', providerId, 'failed:', (err as Error)?.message);
+    }
+  }
+
+  return {
+    providersScanned: providers.length,
+    requestsCreated,
+    skippedBalance,
+    skippedKyc,
+    errors,
+  };
+}
+
 export async function listMyPayouts(providerId: string) {
   return prisma.payoutRequest.findMany({
     where: { providerId },
