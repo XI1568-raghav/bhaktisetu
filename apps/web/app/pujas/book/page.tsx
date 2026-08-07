@@ -331,6 +331,30 @@ const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
  });
 };
 
+// Resolve the publishable Razorpay key. Prefer the API's /payments/config so
+// the client always uses the SAME key the server creates orders with (single
+// source of truth — avoids a stale NEXT_PUBLIC_RAZORPAY_KEY_ID build arg
+// drifting from the server's RAZORPAY_KEY_ID). Falls back to the build-time
+// env var, then the demo placeholder. KEY_SECRET never touches the browser.
+let razorpayKeyPromise: Promise<string> | null = null;
+const getRazorpayKey = (): Promise<string> => {
+ if (!razorpayKeyPromise) {
+ razorpayKeyPromise = (async () => {
+ try {
+ const res = await fetch(`${API_BASE_URL}/payments/config`);
+ if (res.ok) {
+ const j = (await res.json()) as { keyId?: string | null };
+ if (j.keyId) return j.keyId;
+ }
+ } catch {
+ // fall through to env
+ }
+ return process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_demo';
+ })();
+ }
+ return razorpayKeyPromise;
+};
+
 // ─── Component ──────────────────────────────────────────────────
 
 function PujaBookingInner() {
@@ -725,8 +749,9 @@ function PujaBookingInner() {
  return;
  }
 
+ const razorpayKey = await getRazorpayKey();
  const options = {
- key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_demo',
+ key: razorpayKey,
  amount,
  currency: 'INR',
  name: 'Darshya',
