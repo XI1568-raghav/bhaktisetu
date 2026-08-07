@@ -110,9 +110,18 @@ jobs:
           A="Authorization: Bearer $RK"
           DEP=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=1" | jq -r '.[0].deploy.id // .[0].id')
           echo "=== last deploy: $DEP — build events mentioning public/static/standalone/copy ==="
+<<<<<<< Updated upstream
           curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$DEP/events?limit=300" \
             | jq -r '.. | .message? // .details? // empty' 2>/dev/null \
             | grep -iE "public|static|standalone|cp -r|test -d|server\.js|FATAL|Step [0-9]+/|RUN pnpm|error" | tail -60
+=======
+          RAW=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$DEP/events?limit=300")
+          echo "--- raw events shape (first entry) ---"
+          echo "$RAW" | jq -c '.[0]' 2>/dev/null || echo "$RAW" | head -c 600
+          echo "--- matching build lines ---"
+          { echo "$RAW" | jq -r '.. | strings' 2>/dev/null || echo "$RAW"; } \
+            | grep -iE "public|static|standalone|cp -r|test -d|server\.js|FATAL|copy" | tail -80 || true
+>>>>>>> Stashed changes
 
       - name: deploys — read-only recent deploy history (NO trigger, zero build cost)
         if: ${{ github.event.inputs.mode == 'deploys' }}
