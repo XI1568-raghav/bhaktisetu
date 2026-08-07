@@ -59,8 +59,37 @@ export async function astrologyRoutes(server: FastifyInstance) {
 
   server.get('/astrologers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    // R-Q1-E-010: accept either legacy slug ("astro_002") or future UUID.
-    // Dual-lookup keeps the route forward-compatible with DB-backed migration.
+    // A UUID means the caller is pointing at a REAL onboarded AstrologerProfile
+    // (sourced from /astrologers/live). Resolve it against the DB so the detail
+    // page + booking flow serve the real astrologer, not the mock fixture.
+    // Non-UUID (legacy slug like "astro_002") falls through to the in-memory
+    // directory for backward-compat until the directory swap completes.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      const p = await prisma.astrologerProfile.findUnique({ where: { id } });
+      if (!p || !p.approved) {
+        return reply.code(404).send({ error: 'Astrologer not found.' });
+      }
+      const presence = getAstrologerPresence(p.userId);
+      return {
+        astrologer: {
+          id: p.id,
+          userId: p.userId,
+          name: p.displayName,
+          specializations: p.specialties,
+          languages: p.languages,
+          experienceYears: p.experience,
+          rating: p.rating,
+          consultationCount: p.totalConsultations,
+          perMinuteRate: Number(p.pricePerMinute),
+          isOnline: presence.online,
+          mode: presence.mode,
+          bio: p.bio,
+          verified: p.approved,
+          source: 'live',
+        },
+      };
+    }
+    // R-Q1-E-010: legacy slug dual-lookup (in-memory directory).
     const astrologer = astrologyService.getAstrologerByIdOrSlug(id);
 
     if (!astrologer) {
