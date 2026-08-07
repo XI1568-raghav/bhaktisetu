@@ -468,6 +468,78 @@ export async function templePortalRoutes(server: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
+  // ─── GET /priests — list the manager's temple priest roster ────────────────
+  server.get('/priests', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    if (!templeId) return reply.send({ priests: [] });
+    const rows = await prisma.templePriest.findMany({
+      where: { templeId },
+      include: { priest: { select: { id: true, displayName: true, userId: true } } },
+      orderBy: [{ isPrimary: 'desc' }, { joinedAt: 'asc' }],
+    });
+    return reply.send({
+      priests: rows.map((r) => ({
+        id: r.id,
+        priestId: r.priestId,
+        displayName: r.priest.displayName,
+        isPrimary: r.isPrimary,
+        joinedAt: r.joinedAt.toISOString(),
+      })),
+    });
+  });
+
+  // ─── POST /priests — add a priest to the roster (by Priest id) ─────────────
+  server.post('/priests', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const parsed = z
+      .object({ priestId: z.string().uuid(), isPrimary: z.boolean().optional() })
+      .safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const priest = await prisma.priest.findUnique({ where: { id: parsed.data.priestId } });
+    if (!priest) return reply.code(404).send({ error: 'Priest not found' });
+    try {
+      const row = await prisma.templePriest.create({
+        data: { templeId, priestId: parsed.data.priestId, isPrimary: parsed.data.isPrimary ?? false },
+      });
+      return reply.code(201).send({ id: row.id, ok: true });
+    } catch (err) {
+      const e = err as { code?: string };
+      if (e.code === 'P2002') {
+        return reply.code(409).send({ error: 'This priest is already on your roster.' });
+      }
+      throw err;
+    }
+  });
+
+  // ─── DELETE /priests/:id — remove a roster row (ownership-scoped) ──────────
+  server.delete('/priests/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const { id } = request.params as { id: string };
+    const existing = await prisma.templePriest.findUnique({ where: { id } });
+    if (!existing) return reply.code(404).send({ error: 'Roster entry not found' });
+    if (existing.templeId !== templeId) {
+      return reply.code(403).send({ error: 'You do not own this roster entry.' });
+    }
+    await prisma.templePriest.delete({ where: { id } });
+    return reply.send({ ok: true });
+  });
+
   // ─── GET /bookings — ALL puja bookings for the manager's temple ─────────────
   // Temple revamp (2026-08-05): managers previously saw only the dashboard's
   // 10 most recent bookings — no list/filter. This is the full booking view so
