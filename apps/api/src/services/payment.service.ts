@@ -9,6 +9,7 @@ import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
 // the booking webhook path never reaches them; these helpers let
 // processWebhookEvent resolve + finalize a donation when no Payment matches.
 import { findDonationByOrderId, finalizeDonationReceipt } from '../routes/donations.js';
+import { handleSubscriptionEvent } from './recurring.service.js';
 
 /**
  * Send a puja-booking tax invoice to the devotee. Best-effort: any failure
@@ -388,6 +389,12 @@ const razorpay = isDemoPayment
       },
     }) as unknown as Razorpay)
   : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+
+// Exported for the recurring-subscription mandate flow (razorpay.subscriptions
+// .create) so that feature shares the single demo/live client instead of
+// re-instantiating with its own env parsing. Demo-mode proxy returns synthetic
+// ids for any method, so mandate creation is a safe no-op there.
+export { razorpay, isDemoPayment };
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -998,9 +1005,17 @@ export class PaymentService {
         return { handled: true, event };
       }
 
-      default:
+      default: {
+        // Recurring devotional subscriptions (UPI Autopay mandate lifecycle).
+        // subscription.* events carry the subscription entity, not a payment.
+        if (event.startsWith('subscription.')) {
+          const subEntity = payload.payload?.subscription?.entity;
+          await handleSubscriptionEvent(event, subEntity);
+          return { handled: true, event };
+        }
         // Unhandled event type — acknowledge but don't process
         return { handled: false, event };
+      }
     }
 
     return { handled: false, event };
