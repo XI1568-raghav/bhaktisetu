@@ -1,8 +1,29 @@
 {
-  "cycleId": "C-20260807T1341",
+  "cycleId": "C-20260808T0223",
   "spawnPlan": [],
-  "deferrals": [],
-  "kills": [],
+  "deferrals": [
+    {
+      "itemId": "T-010",
+      "reason": "T-010 tripwire fired: queue oldest item 1371.3h (57.1 days) unconsumed. 19 items in queue, last cycle spawned 0. Sub-agent execution mechanism is broken — items are being queued but never consumed/completed. This is a system-level failure, not a budget issue (GH 0%, CF 0%, Render 0%). Queue breakdown by role: cmo 6, cto 7, it 2, sales 2, cs 2.",
+      "suggestedAction": "1) Investigate queue worker/bg-job health on Render — is the consumer process running? Check Render logs for sub-agent spawn errors. 2) Kill or re-queue all items older than 30 days (R-Q2-M-011 at 57d is being killed this cycle as precedent). 3) Once queue drains to <5 items and <72h oldest, orchestrator will resume normal 2-4 spawn cadence. 4) Consider a manual queue flush + re-queue of only strategically-relevant items from Q3 roadmap."
+    },
+    {
+      "itemId": "R-Q1-E-001",
+      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked 58 days. This is the single highest-leverage founder decision — it blocks R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014 and all downstream deployment/CSP/CDN work. 58 days for an architecture decision is the root cause of the engineering bottleneck.",
+      "suggestedAction": "Choose Cloudflare Pages (aligns with free-tier budget: 500 builds/mo, zero egress). Document decision in docs/architecture/deployment.md. This immediately unblocks 5+ engineering items. Alternative (Vercel) costs $20/mo and conflicts with free-tier constraint. Static allowlist is a subset of CF Pages approach. Decision should take <30 min."
+    },
+    {
+      "itemId": "R-Q1-S-013",
+      "reason": "GOOGLE_PLACES_API_KEY missing in Render env, blocked 58 days. This is a 5-minute env var configuration task that has been open for nearly 2 months. Supply-side temple/ghoshala discovery depends on Google Places API. Every day this is blocked, supply verification in new cities stalls.",
+      "suggestedAction": "Option A (preferred): Generate Google Places API key in Google Cloud Console, add to Render env vars as GOOGLE_PLACES_API_KEY. 5-minute fix. Option B: If Google Places is no longer the chosen approach, kill this item and update docs/supply/ to reflect alternative (e.g., manual temple entry, OpenStreetMap). Either way, 58 days of indecision on a config change is unacceptable."
+    }
+  ],
+  "kills": [
+    {
+      "itemId": "R-Q2-M-011",
+      "reason": "Q2 CMO item queued since 2026-06-11 (57.1 days ago) — oldest stale queue item. Q2 ended June 30; we are now in Q3 (Aug 8). Sub-agent assigned to this item never completed (queue stale per T-010 tripwire). The 7-week gap between this item (June 11) and the next-oldest queued CMO item (Aug 2) confirms this specific sub-agent failed silently. Item is strategically obsolete for Q2 scope. Killing to begin draining stale queue per T-010 triage. If the underlying marketing work (likely SEO/content/pillar-page related given Q2 CMO scope) is still relevant, founder should re-create as Q3 item with fresh context after queue is healthy."
+    }
+  ],
   "firedTripwires": [
     {
       "id": "T-010",
@@ -11,10 +32,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-07T13:43:08.190Z"
+      "firedAt": "2026-08-08T02:24:44.569Z"
     }
   ],
-  "savedAt": "2026-08-07T13:49:16.834Z",
+  "savedAt": "2026-08-08T02:28:37.620Z",
   "consumed": true,
-  "consumedAt": "2026-08-07T13:49:16.835Z"
+  "consumedAt": "2026-08-08T02:28:37.621Z"
 }
