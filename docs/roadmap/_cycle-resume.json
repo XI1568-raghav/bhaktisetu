@@ -1,29 +1,52 @@
 {
-  "cycleId": "C-20260808T0223",
-  "spawnPlan": [],
+  "cycleId": "C-20260808T1314",
+  "spawnPlan": [
+    {
+      "role": "cto",
+      "itemIds": [
+        "R-Q2-E-001"
+      ],
+      "briefing": "CONTEXT: Razorpay live=0 (payment gateway NOT active — revenue blocked). Cron auth token NOT set (security gap). KPI observability broken. Queue is stale (19 items, 57 days unconsumed — T-010 fired). Budget: GH 0%, CF 0% — full capacity available.\n\nTASK FOR R-Q2-E-001: Verify this item is in_progress and NOT already shipped. Check DAG dependencies (depends_on) — do NOT proceed if dependencies unmet. Focus on revenue-enabling engineering work: payment integration (Razorpay/Stripe), security fixes (cron auth, JTI rotation, email session expiry), or performance (N+1 queries, rate limiting). \n\nCONSTRAINTS: NO mock/fallback data. NO silent fallbacks. Produce real, deployable code or structured handoff. If item requires founder decision (architecture, env vars), ship a structured handoff doc in docs/engineering/R-Q2-E-001-handoff.md with: (1) what was attempted, (2) what blocks shipping, (3) exact env var or decision needed, (4) estimated revenue impact. Verify free-tier compliance (CF builds, GH Actions minutes).",
+      "estTokens": 18000
+    },
+    {
+      "role": "cmo",
+      "itemIds": [
+        "R-Q2-M-003"
+      ],
+      "briefing": "CONTEXT: Marketing KPIs are all broken (pillar_pages_shipped=TBD, cluster_articles_shipped=TBD, social_posts_scheduled=\"no manual value\", gsc_verified=\"no manual value\", press_pitches_sent=\"no manual value\"). Content/distribution pipeline is unmeasured. Queue has 6 CMO items already but queue is STALE (T-010 fired, 57 days unconsumed). Budget fully available.\n\nTASK FOR R-Q2-M-003: Verify this item is in_progress and NOT shipped. Check DAG dependencies. Focus on demand generation: SEO content (pillar pages, cluster articles), social media scheduling docs, GSC verification checklist, or press pitch templates. Produce real artifacts (markdown drafts, scheduling docs, pitch templates) committed to docs/agent-reports/marketing/ or docs/agent-reports/blog-drafts/. \n\nCONSTRAINTS: NO fabricated metrics. If item needs founder social account access (GSC, Twitter, Reddit), ship handoff doc with exact steps. Verify item not duplicate of queued items (R-Q1-M-001, R-Q1-M-002, R-Q1-M-004, R-Q2-M-001, R-Q2-M-002, R-Q2-M-011). If duplicate or already shipped, report immediately and do NOT re-spawn.",
+      "estTokens": 15000
+    },
+    {
+      "role": "sales",
+      "itemIds": [
+        "R-Q2-SA-001"
+      ],
+      "briefing": "CONTEXT: Supply-side pipeline has critical founder blockers: R-Q1-SA-001 (founder must WhatsApp 5 priests, 59d blocked), R-Q1-S-008 (founder must dial gaushala prospects, 59d blocked), R-Q1-S-013 (GOOGLE_PLACES_API_KEY missing, 58d blocked). Queue has 2 sales items (R-Q2-SA-002, R-Q1-SA-003) but queue is STALE (T-010 fired). razorpay_live=0 means no payment capture for supply onboarding.\n\nTASK FOR R-Q2-SA-001: Verify item is in_progress and NOT shipped. Check DAG dependencies. Focus on supply-side artifacts that DON'T require founder action: prospect lists (pandit/temple/astrologer/gaushala), outreach kits, LOI templates, KYC checklists, onboarding flows. Produce structured handoff docs in docs/supply/ or docs/agent-reports/sales/.\n\nCONSTRAINTS: DO NOT attempt to make phone calls, send WhatsApp messages, or contact prospects (founder-only actions). Agent ships DOCUMENTS and STRUCTURED HANDOFFS only. If item requires founder outreach, clearly document what founder must do. Verify item not duplicate of queued R-Q2-SA-002 or R-Q1-SA-003. If already shipped, report immediately.",
+      "estTokens": 15000
+    },
+    {
+      "role": "cs",
+      "itemIds": [
+        "R-Q2-CS-002"
+      ],
+      "briefing": "CONTEXT: CS KPIs broken: nps_score=404, multilingual_macros_count=Permission denied (SQL file not accessible), cs_macros_count=TBD, wa_support_active=\"no manual value\", wa_bot_auto_resolve_pct=\"no manual value\". Founder-blocked CS items: R-Q1-CS-002 (U7, 59d), R-Q1-CS-006 (U7, 58d), R-Q2-CS-003 (native-speaker review + Wati Meta template, 59d). Queue has 2 CS items (R-Q2-CS-001, R-Q1-CS-003) but queue STALE.\n\nTASK FOR R-Q2-CS-002: Verify item is in_progress and NOT shipped. Check DAG dependencies. Focus on support infrastructure that agents CAN build: CS macro templates (Hindi/English/Tamil/Telugu/Bengali/Marathi), churn prevention playbooks, NPS survey templates, WA support auto-reply flows, help article drafts. Produce artifacts in docs/agent-reports/cs/ or docs/support/.\n\nCONSTRAINTS: DO NOT attempt to configure Wati/Meta WhatsApp templates (founder action — R-Q2-CS-003 is blocked on this). DO NOT attempt native-speaker review (founder action). Agent ships TEMPLATES and PLAYBOOKS only. If item needs Wati API access or Meta approval, document exact requirements in handoff. Verify not duplicate of queued R-Q2-CS-001 or R-Q1-CS-003.",
+      "estTokens": 12000
+    }
+  ],
   "deferrals": [
     {
-      "itemId": "T-010",
-      "reason": "T-010 tripwire fired: queue oldest item 1371.3h (57.1 days) unconsumed. 19 items in queue, last cycle spawned 0. Sub-agent execution mechanism is broken — items are being queued but never consumed/completed. This is a system-level failure, not a budget issue (GH 0%, CF 0%, Render 0%). Queue breakdown by role: cmo 6, cto 7, it 2, sales 2, cs 2.",
-      "suggestedAction": "1) Investigate queue worker/bg-job health on Render — is the consumer process running? Check Render logs for sub-agent spawn errors. 2) Kill or re-queue all items older than 30 days (R-Q2-M-011 at 57d is being killed this cycle as precedent). 3) Once queue drains to <5 items and <72h oldest, orchestrator will resume normal 2-4 spawn cadence. 4) Consider a manual queue flush + re-queue of only strategically-relevant items from Q3 roadmap."
-    },
-    {
-      "itemId": "R-Q1-E-001",
-      "reason": "Architecture decision (CF Pages vs Vercel vs static allowlist) blocked 58 days. This is the single highest-leverage founder decision — it blocks R-Q1-E-008, R-Q1-E-009, R-Q1-E-011, R-Q1-E-012, R-Q1-E-014 and all downstream deployment/CSP/CDN work. 58 days for an architecture decision is the root cause of the engineering bottleneck.",
-      "suggestedAction": "Choose Cloudflare Pages (aligns with free-tier budget: 500 builds/mo, zero egress). Document decision in docs/architecture/deployment.md. This immediately unblocks 5+ engineering items. Alternative (Vercel) costs $20/mo and conflicts with free-tier constraint. Static allowlist is a subset of CF Pages approach. Decision should take <30 min."
-    },
-    {
-      "itemId": "R-Q1-S-013",
-      "reason": "GOOGLE_PLACES_API_KEY missing in Render env, blocked 58 days. This is a 5-minute env var configuration task that has been open for nearly 2 months. Supply-side temple/ghoshala discovery depends on Google Places API. Every day this is blocked, supply verification in new cities stalls.",
-      "suggestedAction": "Option A (preferred): Generate Google Places API key in Google Cloud Console, add to Render env vars as GOOGLE_PLACES_API_KEY. 5-minute fix. Option B: If Google Places is no longer the chosen approach, kill this item and update docs/supply/ to reflect alternative (e.g., manual temple entry, OpenStreetMap). Either way, 58 days of indecision on a config change is unacceptable."
-    }
-  ],
-  "kills": [
-    {
       "itemId": "R-Q2-M-011",
-      "reason": "Q2 CMO item queued since 2026-06-11 (57.1 days ago) — oldest stale queue item. Q2 ended June 30; we are now in Q3 (Aug 8). Sub-agent assigned to this item never completed (queue stale per T-010 tripwire). The 7-week gap between this item (June 11) and the next-oldest queued CMO item (Aug 2) confirms this specific sub-agent failed silently. Item is strategically obsolete for Q2 scope. Killing to begin draining stale queue per T-010 triage. If the underlying marketing work (likely SEO/content/pillar-page related given Q2 CMO scope) is still relevant, founder should re-create as Q3 item with fresh context after queue is healthy."
+      "reason": "T-010 TRIPWIRE FIRED: Queue oldest item >72h unconsumed (currently 1382h/~57 days). Queue depth=19, last cycle spawned=0, queue is not being drained. R-Q2-M-011 (Q-C-20260611T2307) is the oldest entry. Sub-agents are producing artifacts but items are not shipping. The entire queue pipeline is stalled. Root cause likely: (1) queue consumer/worker not running, (2) ship verification step broken, or (3) agent artifacts not being committed/merged. This is a systemic platform issue, not an item-level issue. Founder must triage the queue processing pipeline itself.",
+      "suggestedAction": "Investigate why queue items are not being consumed/shipped. Check: (1) queue worker process on Render, (2) ship-verification CI/CD, (3) whether agent artifacts from prior cycles were committed to repo. Consider draining queue by manually shipping the 19 items if their artifacts exist. The queue must reach depth ≤5 before new spawns will be productive."
+    },
+    {
+      "itemId": "R-Q1-IT-005",
+      "reason": "KPI OBSERVABILITY CRISIS: 90%+ of KPI metrics return errors — HTTP 404 (metrics endpoints don't exist), \"TBD-populate-before-orchestrator-go-live\" (metric commands never configured), or \"no manual value\" (never set). The orchestrator cannot measure revenue impact of ANY work because the measurement pipeline is broken. Critical examples: api_p95_ms=404, mau_total=404, nps_score=404, all city_active_users=404, i18n_coverage_pct=TBD, pages_with_csp_nonce=TBD. Only 3 KPIs are live (max_contact_count_bumped=3, razorpay_live_active=0, uptime_monitors_active=4, cron_auth_token_set=0). Also: cron_auth_token_set=0 is a SECURITY GAP. Without observability, all sub-agent work is unmeasurable. This blocks the feedback loop entirely.",
+      "suggestedAction": "(1) Set CRON_AUTH_TOKEN in Render env (security fix, 5 min). (2) Configure KPI metric commands — replace all \"TBD-populate-before-orchestrator-go-live\" placeholders with actual shell commands. (3) Deploy missing metrics API endpoints (the 404s). (4) Set initial manual values for \"no manual value\" KPIs. Without this, no revenue-impact/hour ratio can be computed."
     }
   ],
+  "kills": [],
   "firedTripwires": [
     {
       "id": "T-010",
@@ -32,10 +55,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-08T02:24:44.569Z"
+      "firedAt": "2026-08-08T13:15:45.183Z"
     }
   ],
-  "savedAt": "2026-08-08T02:28:37.620Z",
+  "savedAt": "2026-08-08T13:20:33.431Z",
   "consumed": true,
-  "consumedAt": "2026-08-08T02:28:37.621Z"
+  "consumedAt": "2026-08-08T13:25:07.997Z"
 }
