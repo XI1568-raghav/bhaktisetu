@@ -1,0 +1,38 @@
+# apps\web\app\onboarding\view\page.tsx
+
+- projectOnboardingData · function · L41-L108 — function projectOnboardingData(role: string, d: Record<string, unknown>): Record<string, unknown>
+- num · function · L42-L42 — num = (v: unknown, fallback = 0)
+- arr · function · L43-L43 — arr = (v: unknown): string[]
+- str · function · L44-L44 — str = (v: unknown): string | null
+- OnboardingRole · type · L112-L112 — type OnboardingRole = 'priest' | 'store_owner' | 'astrologer' | 'wellness_instructor' | 'gaushala_manager' | 'temple_manager';
+- StepConfig · interface · L114-L117 — interface StepConfig
+- ProductItem · interface · L119-L124 — interface ProductItem
+- getStorageKey · function · L170-L172 — function getStorageKey(role: string): string
+- saveOnboardingData · function · L174-L180 — function saveOnboardingData(role: string, data: Record<string, unknown>)
+- loadOnboardingData · function · L182-L190 — function loadOnboardingData(role: string): Record<string, unknown>
+- ProgressBar · function · L194-L235 — function ProgressBar({ current, total }: { current: number; total: number })
+- FormInput · function · L237-L290 — function FormInput({ id, label, type = 'text', placeholder, value, onChange, icon: Icon, optional, multiline, }: { id: string; label: string; type?: string; placeholder: string; value: string; onChange: (val: string) => void; icon?: typeof User; optional?: boolean; multiline?: boolean; })
+- ChipSelect · function · L292-L324 — function ChipSelect({ options, selected, onChange, }: { options: string[]; selected: string[]; onChange: (val: string[]) => void; })
+- FileUploadPlaceholder · function · L326-L337 — function FileUploadPlaceholder({ label }: { label: string })
+- SummaryRow · function · L339-L348 — function SummaryRow({ label, value }: { label: string; value: string | string[] })
+- AvailabilityGrid · function · L360-L399 — function AvailabilityGrid({ selected, onChange, }: { selected: string[]; onChange: (val: string[]) => void; })
+- toggle · function · L367-L373 — toggle = (slot: string)
+- DaysSelector · function · L401-L440 — function DaysSelector({ selected, onChange, }: { selected: string[]; onChange: (val: string[]) => void; })
+- toggle · function · L408-L414 — toggle = (day: string)
+- OnboardingInner · function · L463-L1166 — function OnboardingInner()
+- getString · function · L518-L518 — getString = (key: string): string
+- getArray · function · L519-L519 — getArray = (key: string): string[]
+- getProducts · function · L520-L520 — getProducts = (): ProductItem[]
+- goNext · function · L522-L524 — goNext = ()
+- goBack · function · L525-L527 — goBack = ()
+- handleSubmit · function · L529-L576 — handleSubmit = async ()
+- renderPriestStep · function · L636-L700 — renderPriestStep = ()
+- renderStoreStep · function · L702-L848 — renderStoreStep = ()
+- addProduct · function · L705-L707 — addProduct = ()
+- removeProduct · function · L708-L710 — removeProduct = (idx: number)
+- updateProduct · function · L711-L718 — updateProduct = (idx: number, field: keyof ProductItem, value: string)
+- renderAstrologerStep · function · L850-L901 — renderAstrologerStep = ()
+- renderWellnessStep · function · L903-L971 — renderWellnessStep = ()
+- renderGaushalaTempleStep · function · L973-L1057 — renderGaushalaTempleStep = ()
+- renderCurrentStep · function · L1059-L1075 — renderCurrentStep = ()
+- OnboardingPage · function · L1168-L1174 — function OnboardingPage()

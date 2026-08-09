@@ -1,0 +1,28 @@
+# apps\remotion-pitch\src\DarshyaPitch.tsx
+
+- sec · function · L23-L23 — sec = (s: number)
+- Aspect · type · L25-L25 — type Aspect = 'landscape' | 'portrait';
+- shotStart · function · L76-L76 — shotStart = (i: number)
+- ShotProps · type · L78-L78 — type ShotProps = { durationFrames: number; aspect: Aspect };
+- Shot1 · function · L83-L151 — Shot1: React.FC<ShotProps> = ({ durationFrames })
+- Shot2 · function · L154-L209 — Shot2: React.FC<ShotProps> = ({ durationFrames })
+- Shot3 · function · L212-L214 — Shot3: React.FC<ShotProps> = ({ durationFrames })
+- Shot4 · function · L215-L218 — Shot4: React.FC<ShotProps> = ({ durationFrames })
+- Shot5 · function · L221-L223 — Shot5: React.FC<ShotProps> = ({ durationFrames })
+- Shot6 · function · L226-L228 — Shot6: React.FC<ShotProps> = ({ durationFrames })
+- Shot7 · function · L229-L249 — Shot7: React.FC<ShotProps> = ({ durationFrames })
+- Shot8 · function · L252-L254 — Shot8: React.FC<ShotProps> = ({ durationFrames })
+- Shot9 · function · L255-L257 — Shot9: React.FC<ShotProps> = ({ durationFrames })
+- Shot10 · function · L260-L262 — Shot10: React.FC<ShotProps> = ({ durationFrames })
+- Shot11 · function · L263-L265 — Shot11: React.FC<ShotProps> = ({ durationFrames })
+- Shot12 · function · L268-L270 — Shot12: React.FC<ShotProps> = ({ durationFrames })
+- Shot13 · function · L273-L312 — Shot13: React.FC<ShotProps> = ({ durationFrames })
+- Shot14 · function · L315-L333 — Shot14: React.FC<ShotProps> = ({ durationFrames })
+- Shot15 · function · L336-L338 — Shot15: React.FC<ShotProps> = ({ durationFrames })
+- Shot16 · function · L341-L363 — Shot16: React.FC<ShotProps> = ({ durationFrames })
+- Shot17 · function · L366-L368 — Shot17: React.FC<ShotProps> = ({ durationFrames })
+- Shot18 · function · L371-L387 — Shot18: React.FC<ShotProps> = ({ durationFrames })
+- Shot19 · function · L390-L417 — Shot19: React.FC<ShotProps> = ({ durationFrames })
+- Shot20 · function · L420-L422 — Shot20: React.FC<ShotProps> = ({ durationFrames })
+- Shot21 · function · L423-L444 — Shot21: React.FC<ShotProps> = ({ durationFrames })
+- DarshyaPitch · function · L470-L579 — DarshyaPitch: React.FC<{ aspect?: Aspect }> = ({ aspect = 'landscape' })

@@ -1,0 +1,21 @@
+# apps\web\lib\admin-api.ts
+
+- BackendRole · type · L4-L12 — Enumerates the backend (Prisma) role values so admin pages can type-check role data coming from the API.
+- UiRole · type · L14-L22 — Enumerates the lowercase UI role strings used by admin pages, paired with BackendRole via mapping tables.
+- BackendUser · type · L46-L55 — Shapes the user record returned by the admin users endpoint, including roles, status, and subscription tier.
+- UsersResponse · type · L57-L62 — Shapes the paginated user list response (users plus total/page/limit) from the admin users endpoint.
+- RevenueResponse · type · L64-L82 — Shapes the admin revenue report: commission and subscription totals, pending payouts, and per-plan revenue breakdowns.
+- DashboardResponse · type · L84-L98 — Shapes the admin dashboard summary: user counts by role, revenue, pending approvals, subscriptions, and recent transactions.
+- authHeaders · function · L100-L102 — Builds the Authorization bearer header when a token is present so admin requests authenticate.
+- describeFailure · function · L107-L115 — Extracts the API's error/message field from a failed response so thrown errors surface real diagnostics instead of bare HTTP status codes.
+- getUsers · function · L117-L134 — Fetches the paginated admin user list, forwarding limit/page/role/search filters as query parameters.
+- PendingApprovalsResponse · type · L136-L146 — Shapes the pending-approvals list: each approval's user, role, profile name, city, and submission date.
+- getPendingApprovals · function · L148-L158 — Fetches the list of provider applications awaiting admin approval.
+- patchUser · function · L160-L176 — Sends admin moderation updates (approve, block, or change roles) for a specific user to the backend.
+- getDashboard · function · L178-L186 — Fetches the aggregate admin dashboard metrics (users, revenue, approvals, subscriptions, transactions).
+- getRevenue · function · L188-L196 — Fetches the admin revenue breakdown of commissions, subscriptions, and pending payouts.
+- ReportsResponse · type · L198-L217 — Shapes the admin analytics report: user growth, booking stats, popular pujas/services, and geographic distribution.
+- getReports · function · L219-L227 — Fetches the generated admin analytics report for growth, bookings, and popularity metrics.
+- escapeCsvCell · function · L231-L238 — Escapes a single CSV cell by quoting values containing commas, quotes, or newlines so exported files parse correctly.
+- rowsToCsv · function · L240-L250 — Serializes an array of row objects into CSV text with a header row, using explicit columns or the first row's keys.
+- downloadCsv · function · L252-L263 — Triggers a browser download of CSV content by creating a blob URL and clicking a temporary anchor element.

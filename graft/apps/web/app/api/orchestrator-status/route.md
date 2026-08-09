@@ -1,0 +1,28 @@
+# apps\web\app\api\orchestrator-status\route.ts
+
+- WorkflowRun · interface · L18-L27 — interface WorkflowRun
+- Commit · interface · L29-L34 — interface Commit
+- QueueEntry · interface · L36-L40 — interface QueueEntry
+- PlannedItem · interface · L42-L49 — interface PlannedItem
+- ShippedItem · interface · L51-L58 — interface ShippedItem
+- InProgressItem · interface · L60-L66 — interface InProgressItem
+- QueueItem · interface · L68-L73 — interface QueueItem
+- FiredTripwire · interface · L75-L78 — interface FiredTripwire
+- OrchestratorStatusResponse · type · L80-L96 — type OrchestratorStatusResponse = | { ok: true; runs: NormalizedRun[]; commits: NormalizedCommit[]; queueCount: number; queueItems: QueueItem[]; plannedTop: PlannedItem[]; shippedRecent: ShippedItem[]; inProgress: InProgressItem[]; tripwiresFired: FiredTripwire[]; tripwiresCount: number; nextCronAt: string; fetchedAt: string; rateLimit: { remaining: number | null; reset: number | null }; } | { ok: false; error: string };
+- NormalizedRun · interface · L98-L107 — interface NormalizedRun
+- NormalizedCommit · interface · L109-L115 — interface NormalizedCommit
+- gh · function · L117-L126 — function gh(headers: HeadersInit = {}): HeadersInit
+- fetchRuns · function · L128-L140 — async function fetchRuns(): Promise<{ runs: WorkflowRun[]; remaining: number | null; reset: number | null }>
+- fetchCommits · function · L142-L149 — async function fetchCommits(): Promise<Commit[]>
+- fetchQueueDir · function · L151-L175 — async function fetchQueueDir(): Promise<{ count: number; items: QueueItem[] }>
+- IndexItem · interface · L177-L189 — interface IndexItem
+- fetchIndex · function · L191-L209 — async function fetchIndex(): Promise<IndexItem[]>
+- rankPlanned · function · L211-L230 — function rankPlanned(items: IndexItem[]): PlannedItem[]
+- quarterRank · function · L213-L213 — quarterRank = (q: string): number
+- selectShippedRecent · function · L232-L257 — function selectShippedRecent(items: IndexItem[]): ShippedItem[]
+- selectInProgress · function · L259-L270 — function selectInProgress(items: IndexItem[]): InProgressItem[]
+- fetchTripwires · function · L272-L283 — async function fetchTripwires(): Promise<{ count: number; fired: FiredTripwire[] }>
+- nextCronAt · function · L286-L300 — function nextCronAt(now: Date): string
+- normalizeRun · function · L302-L316 — function normalizeRun(r: WorkflowRun): NormalizedRun
+- normalizeCommit · function · L318-L326 — function normalizeCommit(c: Commit): NormalizedCommit
+- GET · function · L328-L378 — async function GET(): Promise<Response>

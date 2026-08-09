@@ -1,0 +1,32 @@
+# apps\web\app\pujas\book\page.tsx
+
+- safeCapture · function · L49-L60 — Fire-and-forget PostHog wrapper that drops undefined props and swallows every error so analytics can never break the checkout flow.
+- TempleOption · interface · L64-L75 — Describes one temple offering the puja, including per-temple price override, bookable time slots, and trust/verification badges shown during temple selection.
+- PujaInfo · interface · L77-L88 — Catalog model for a bookable puja type — domestic and NRI pricing, duration, samagri inclusion, and the list of temples where it can be performed.
+- Devotee · interface · L90-L95 — Captures each person the puja is performed for, including gotra and nakshatra required for the sankalp ritual.
+- SlotAvailability · interface · L97-L102 — Per-slot capacity view (remaining vs total) for a chosen date so sold-out slots can be shown honestly.
+- getFallbackPuja · function · L122-L226 — Builds hardcoded demo puja catalog data (fixed prices, three temples) for a slug — retained for preview/demo but no longer substituted on fetch failure after PBO-7.
+- generateId · function · L230-L232 — Generates a short random client-side key used to identify devotee rows in the list.
+- getTomorrow · function · L234-L238 — Returns tomorrow as the default/earliest bookable date, enforcing that same-day pujas cannot be booked.
+- getMaxDate · function · L240-L244 — Caps the booking calendar at 30 days in the future.
+- formatDate · function · L246-L254 — Renders an ISO date string as a long Indian-English date for display in the wizard and confirmation.
+- getSlotPeriod · function · L256-L261 — Buckets a slot's start hour into morning/afternoon/evening so the slot picker can group times under period headings.
+- getSlotPeriodIcon · function · L263-L274 — Maps a slot period to its sun-phase icon (sunrise/sun/sunset) for the grouped slot picker.
+- generateBookingNumber · function · L276-L281 — Formats a human-readable booking reference (BS-<date>-<random>) shown on the confirmation screen.
+- RazorpayInstance · type · L287-L290 — Minimal structural type for the Razorpay checkout object loaded from Razorpay's CDN script.
+- RazorpayConstructor · type · L291-L291 — Constructor signature for the Razorpay checkout class attached to window by checkout.js.
+- RazorpayWindow · type · L292-L292 — Window type augmented with the optional Razorpay global so the loader can read it type-safely.
+- loadRazorpay · function · L294-L306 — Lazily injects Razorpay's checkout.js script and resolves the constructor, reusing the already-loaded global when present.
+- PujaBookingInner · function · L310-L2081 — The booking wizard component that orchestrates catalog loading, slot availability, per-step validation, devotee management, AI sankalp generation, and the INR/USD payment flows.
+- fetchPuja · function · L407-L421 — Loads the puja catalog entry by slug and, on any failure, sets an honest retry-able error state instead of substituting fabricated mock data.
+- fetchSlots · function · L467-L489 — Loads real remaining-capacity for the chosen temple and date, and on failure clears slots and flags an error rather than fabricating availability (PBO-7).
+- addDevotee · function · L551-L555 — Appends a blank devotee row, enforcing a maximum of five devotees per booking.
+- removeDevotee · function · L557-L561 — Removes a devotee row while guaranteeing at least one devotee always remains on the booking.
+- updateDevotee · function · L563-L565 — Immutably updates a single field of a single devotee entry.
+- handlePayment · function · L569-L740 — Runs the INR Razorpay flow: blocks duplicate order creation with a synchronous in-flight ref (PBO-16), creates the booking order server-side, opens checkout, and confirms the booking on success.
+- handleStripePayment · function · L748-L842 — Runs the USD Stripe flow for NRI payers — creates a checkout session server-side at the puja's nriPrice and redirects the user to Stripe.
+- generateAiSankalp · function · L845-L890 — Calls the AI sankalp endpoint to generate a Sanskrit ritual vow with transliteration and English/Hindi translations from the entered devotee details.
+- useAiSankalp · function · L892-L898 — Copies the generated AI sankalp text into the booking's sankalp field.
+- handleDemoPayment · function · L901-L923 — Simulates a successful booking end-to-end without charging a gateway, for demo/preview environments.
+- SummaryRow · function · L2085-L2092 — Presentational label/value row used in the price breakdown and review summaries.
+- PujaBookingPage · function · L2094-L2100 — Default page export that wraps the wizard in Suspense so useSearchParams works under Next.js prerendering.

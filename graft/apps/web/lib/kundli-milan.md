@@ -1,0 +1,27 @@
+# apps\web\lib\kundli-milan.ts
+
+- NakshatraSlug · type · L11-L11 — type NakshatraSlug = string;
+- RashiName · type · L12-L14 — type RashiName = | 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+- primaryRashi · function · L25-L28 — function primaryRashi(nak: Nakshatra): RashiName
+- rashiIndex · function · L30-L32 — function rashiIndex(r: RashiName): number
+- Varna · type · L36-L36 — type Varna = 'Brahmin' | 'Kshatriya' | 'Vaishya' | 'Shudra';
+- scoreVarna · function · L45-L50 — function scoreVarna(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- Vashya · type · L54-L54 — type Vashya = 'Chatushpada' | 'Manava' | 'Jalachara' | 'Vanachara' | 'Keeta';
+- scoreVashya · function · L64-L78 — function scoreVashya(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- taraCount · function · L85-L88 — function taraCount(fromIdx: number, toIdx: number): number
+- scoreTara · function · L89-L99 — function scoreTara(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- Yoni · type · L103-L105 — type Yoni = | 'Horse' | 'Elephant' | 'Sheep' | 'Serpent' | 'Dog' | 'Cat' | 'Rat' | 'Cow' | 'Buffalo' | 'Tiger' | 'Deer' | 'Monkey' | 'Mongoose' | 'Lion';
+- yoniScore · function · L129-L135 — function yoniScore(my: Yoni, fy: Yoni): number
+- scoreYoni · function · L136-L141 — function scoreYoni(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- Planet · type · L145-L145 — type Planet = 'Sun' | 'Moon' | 'Mars' | 'Mercury' | 'Jupiter' | 'Venus' | 'Saturn';
+- Relation · type · L169-L169 — type Relation = 'friend' | 'enemy' | 'neutral';
+- relation · function · L170-L175 — function relation(a: Planet, b: Planet): Relation
+- scoreGrahaMaitri · function · L176-L187 — function scoreGrahaMaitri(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- scoreGana · function · L191-L200 — function scoreGana(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- scoreBhakoot · function · L204-L213 — function scoreBhakoot(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- Nadi · type · L217-L217 — type Nadi = 'Aadi' | 'Madhya' | 'Antya';
+- scoreNadi · function · L229-L234 — function scoreNadi(maleNak: Nakshatra, femaleNak: Nakshatra): number
+- GunaScore · type · L237-L242 — type GunaScore = { name: string; max: number; score: number; desc: string; };
+- MilanReport · type · L244-L256 — type MilanReport = { male: { slug: string; name: string; sanskrit: string; rashi: RashiName }; female: { slug: string; name: string; sanskrit: string; rashi: RashiName }; gunas: GunaScore[]; total: number; maxTotal: number; verdict: string; verdictLevel: 'excellent' | 'good' | 'acceptable' | 'caution' | 'avoid'; hasNadiDosh: boolean; hasBhakootDosh: boolean; hasGanaDosh: boolean; manglikNote?: string; };
+- computeMilan · function · L258-L328 — function computeMilan(maleNakSlug: string, femaleNakSlug: string, opts?: { maleManglik?: boolean; femaleManglik?: boolean }): MilanReport | null
+- allNakshatraOptions · function · L330-L332 — function allNakshatraOptions(): Array<{ slug: string; label: string }>
