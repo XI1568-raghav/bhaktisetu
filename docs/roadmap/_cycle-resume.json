@@ -1,41 +1,7 @@
 {
-  "cycleId": "C-20260810T0236",
-  "spawnPlan": [
-    {
-      "role": "cto",
-      "itemIds": [
-        "R-Q2-E-002",
-        "R-Q2-E-003"
-      ],
-      "briefing": "CRITICAL ENGINEERING ITEMS — Q2 cycle.\n\n**Live system signals requiring attention:**\n- cron_auth_token_set=0 → cron endpoints are UNPROTECTED. Anyone who discovers the cron URL can trigger jobs. This is an active security vulnerability.\n- Almost ALL KPI metrics return HTTP 404 or \"no manual value\" → observability/metrics endpoints are not deployed or not wired. We are flying blind — cannot measure funnel events, conversion, MAU, retention, API p95, or any product metric.\n- razorpay_live_active=0 → founder-blocked (R-Q1-F-003 deferred this cycle). Do NOT attempt to fix Razorpay — that requires founder KYC action.\n- 7 CTO items + 2 cto-agent items already in queue (R-Q1-E-003, E-004, E-005, E-006, E-007, E-010, R-Q2-E-001, R-Q2-E-013). Do NOT duplicate any of these.\n\n**For R-Q2-E-002 and R-Q2-E-003:**\n1. Check depends_on in docs/roadmap/_index.json — do NOT implement if dependencies aren't verified shipped.\n2. Implement the items as specified in the roadmap.\n3. Write handoff docs to docs/engineering/R-Q2-E-002-handoff.md and R-Q2-E-003-handoff.md.\n4. Ship code changes via PR to main branch.\n\n**Priorities if items have flexibility:**\n- API security: rate limiting, cron auth token, webhook idempotency\n- Observability: fix metrics endpoints returning 404, wire PostHog/Sentry, restore KPI dashboard\n\n**Budget guardrails (NEVER violate):**\n- Cloudflare: 500 builds/month max\n- GitHub Actions: 2000 minutes/month max\n- Render: 750 hours/month max\n- Do NOT spin up paid services without explicit approval.\n\n**Quality bar:** All code must pass existing lint/test. Write tests for new endpoints. Document env vars needed.",
-      "estTokens": 12000
-    },
-    {
-      "role": "cmo",
-      "itemIds": [
-        "R-Q2-M-005",
-        "R-Q2-M-007"
-      ],
-      "briefing": "MARKETING/CONTENT ITEMS — Q2 cycle.\n\n**Current marketing state (from KPIs):**\n- social_accounts_active = no manual value → social media accounts may not be set up\n- gsc_verified = no manual value → Google Search Console not verified\n- pillar_pages_shipped = no manual value → no SEO pillar pages live\n- press_pitches_sent = no manual value → no PR outreach\n- social_posts_scheduled = no manual value → no content calendar\n- founder_tweets_posted = no manual value → no founder thought leadership\n- reddit_comments_posted = no manual value → no community engagement\n\n**Already in queue (DO NOT duplicate):**\nR-Q1-M-001, R-Q1-M-002, R-Q1-M-004, R-Q2-M-001, R-Q2-M-002, R-Q2-M-003, R-Q2-M-004, R-Q2-M-011 (8 CMO items)\n\n**Founder-blocked (DO NOT attempt):**\nR-Q1-M-003 (U8), R-Q1-M-010 (U7), R-Q2-M-006 (U2), R-Q2-M-008 (U7)\n\n**For R-Q2-M-005 and R-Q2-M-007:**\n1. Check depends_on in roadmap — verify dependencies are shipped.\n2. Implement items as specified.\n3. Write artifacts to docs/agent-reports/marketing/R-Q2-M-005-*.md and R-Q2-M-007-*.md.\n4. If items involve content creation, write actual draft content (not just outlines).\n5. If items involve tool setup (GSC, social scheduling), document step-by-step setup instructions for founder.\n\n**Revenue-impact/hour ranking:**\n- GSC verification → enables search performance tracking → high ROI\n- Pillar pages with schema.org markup → SEO organic traffic → highest long-term ROI\n- Social account setup + scheduling → distribution channel → medium ROI\n- Press pitch templates → low immediate ROI but high ceiling\n\nFocus on what can ship WITHOUT founder action. If an item requires founder to log into a platform, ship the template/instructions and defer the login step.",
-      "estTokens": 8000
-    },
-    {
-      "role": "cs",
-      "itemIds": [
-        "R-Q1-CS-001",
-        "R-Q1-CS-004"
-      ],
-      "briefing": "CUSTOMER SUPPORT ITEMS — Q1 cycle.\n\n**Current CS state:**\n- wa_support_active = no manual value → WhatsApp support may not be set up\n- cs_macros_count = no manual value → no documented support macros\n- cs_macros_documented = no manual value\n- multilingual_macros_count = permission denied (SQL file not executable)\n- multilingual_macros_shipped = no manual value\n- user_interviews_completed = no manual value\n- nps_score = HTTP 404 (not measured)\n- founder_inbox_auto_ack_pct = no manual value\n\n**Already in queue (DO NOT duplicate):**\nR-Q1-CS-003, R-Q2-CS-001, R-Q2-CS-002 (3 CS items)\n\n**Founder-blocked (DO NOT attempt):**\nR-Q1-CS-002 (U7), R-Q1-CS-006 (U7), R-Q2-CS-003 (native-speaker review ta/te/bn/mr + Wati Meta template approval)\n\n**For R-Q1-CS-001 and R-Q1-CS-004:**\n1. Check depends_on in roadmap — verify dependencies shipped.\n2. Implement items as specified.\n3. Write artifacts to docs/agent-reports/cs/ with full macro text, trigger conditions, and escalation rules.\n4. For multilingual macros: ship English versions first. Native-speaker review for ta/te/bn/mr is founder-blocked (R-Q2-CS-003) — do NOT attempt translation review.\n\n**Priorities:**\n- English support macros for top 10 query types (booking help, refund, reschedule, pandit availability, pricing, puja types, location coverage, NRI logistics, WhatsApp opt-in, account issues)\n- Help center articles (SEO-indexed, reduces support load)\n- WhatsApp auto-acknowledge flow (reduces founder inbox burden)\n- Escalation runbook (when to involve founder vs auto-resolve)\n\n**Quality bar:** Macros must be empathetic, culturally appropriate for Hindu devotional context, and include relevant Sanskrit/Hindi terms where appropriate. Test for tone.",
-      "estTokens": 6000
-    }
-  ],
-  "deferrals": [
-    {
-      "itemId": "R-Q2-M-011",
-      "reason": "T-010 TRIPWIRE FIRED: Queue stale at 1419.5h (59.1 days). R-Q2-M-011 is the oldest unconsumed queue item (Q-C-20260611T2307). 26 queue items are not being consumed by agent workers — this is a platform/infra issue, not an item-level problem. The queue has been stale for nearly 2 months while budget shows 0% usage this month, suggesting agent execution pipeline may be broken or queue consumption worker is not running. Queue breakdown: cmo=8, cto/cto-agent=9, sales=4, it=2, cs=2, cpo=1. Root cause investigation needed.",
-      "suggestedAction": "(1) Check if Render bg-worker / queue consumer is running. (2) Investigate why lastCycle spawned 3 items 13h ago but queue depth didn't decrease. (3) Bulk-triage all 26 queue items: re-queue if still relevant, kill if obsolete, mark shipped if artifacts exist. (4) Verify GH Actions agent runner is operational. (5) Consider clearing queue items older than 30 days as stale."
-    }
-  ],
+  "cycleId": "C-20260810T1346",
+  "spawnPlan": [],
+  "deferrals": [],
   "kills": [],
   "firedTripwires": [
     {
@@ -45,10 +11,10 @@
       "action": "defer_to_founder",
       "deferMessage": "Queue oldest item > 72h unconsumed. Triage.",
       "weight": 1,
-      "firedAt": "2026-08-10T02:37:47.872Z"
+      "firedAt": "2026-08-10T13:48:29.464Z"
     }
   ],
-  "savedAt": "2026-08-10T02:44:30.349Z",
+  "savedAt": "2026-08-10T13:54:38.865Z",
   "consumed": true,
-  "consumedAt": "2026-08-10T02:56:05.179Z"
+  "consumedAt": "2026-08-10T13:54:38.866Z"
 }
