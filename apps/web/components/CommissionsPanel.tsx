@@ -98,12 +98,16 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  }, [items, filter]);
 
  const summary = useMemo(() => {
+ // `amount` arrives from the API as a STRING (admin.ts stringifies the Decimal)
+ // while the type says number, so `sum + c.amount` was concatenating digits —
+ // two rows of 800 and 1200 rendered as "08001200". Coerce explicitly.
+ const value = (c: Commission) => Number(c.netAmount ?? c.amount ?? 0) || 0;
  const totalEarned = items
  .filter((c) => c.status === 'paid')
- .reduce((sum, c) => sum + (c.netAmount ?? c.amount ?? 0), 0);
+ .reduce((sum, c) => sum + value(c), 0);
  const pending = items
  .filter((c) => c.status === 'pending' || c.status === 'processing')
- .reduce((sum, c) => sum + (c.netAmount ?? c.amount ?? 0), 0);
+ .reduce((sum, c) => sum + value(c), 0);
  const lastPaid = items
  .filter((c) => c.status === 'paid')
  .sort((a, b) => (b.processedAt ?? '').localeCompare(a.processedAt ?? ''))[0];
@@ -197,7 +201,11 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <th className="text-left px-4 py-3 font-semibold">Booking</th>
  {mode === 'admin' && <th className="text-left px-4 py-3 font-semibold">Provider</th>}
  <th className="text-right px-4 py-3 font-semibold">Gross</th>
- <th className="text-right px-4 py-3 font-semibold">Commission</th>
+ {/* `Commission.amount` is the PROVIDER's earning, not the platform's
+     deduction — see apps/api/src/lib/commission-math.ts. This column was
+     labelled "Commission" and rendered as a negative, so a Rs 1,000 booking
+     showed the provider "-Rs 800". */}
+ <th className="text-right px-4 py-3 font-semibold">Provider earning</th>
  <th className="text-right px-4 py-3 font-semibold">Net</th>
  <th className="text-left px-4 py-3 font-semibold">Status</th>
  <th className="text-left px-4 py-3 font-semibold">Date</th>
@@ -226,8 +234,8 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <td className="px-4 py-3 text-right text-sm text-surface-700">
  {formatINR(c.grossAmount)}
  </td>
- <td className="px-4 py-3 text-right text-sm text-amber-700">
- -{formatINR(c.amount)}
+ <td className="px-4 py-3 text-right text-sm text-emerald-700">
+ {formatINR(c.amount)}
  </td>
  <td className="px-4 py-3 text-right text-sm font-semibold text-surface-900">
  {formatINR(c.netAmount ?? null)}

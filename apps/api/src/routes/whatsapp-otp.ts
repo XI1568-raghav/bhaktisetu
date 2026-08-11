@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { createEmailSession } from '../lib/email-session.js';
 import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
 
 // P1-1 (2026-07-17): mirror the 10/min per-IP sensitive-auth rate limit that
@@ -134,7 +135,8 @@ export async function whatsappOtpRoutes(server: FastifyInstance) {
       });
     }
 
-    const sessionToken = `email-${user.id}-${crypto.randomBytes(16).toString('hex')}`;
+    // Persist the email_sessions row (A-005) so the fail-closed auth middleware accepts this token.
+    const { token: sessionToken } = await createEmailSession(user.id);
     return reply.send({
       ok: true,
       session: { accessToken: sessionToken, tokenType: 'Bearer' },

@@ -12,6 +12,8 @@ vi.mock('../lib/prisma.js', () => ({
         fullName: 'Devotee',
       })),
     },
+    // createEmailSession() persists the session row (A-005). Stub the raw INSERT.
+    $executeRawUnsafe: vi.fn(async () => 1),
   },
 }));
 

@@ -1,0 +1,30 @@
+# apps\web\lib\api.ts
+
+- resolveApiBase · function · L11-L17 — function resolveApiBase(): string
+- FetchOptions · interface · L21-L25 — interface FetchOptions
+- serverFetch · function · L27-L56 — async function serverFetch<T>( path: string, options: FetchOptions = {}, ): Promise<T>
+- normalizePaginated · function · L65-L83 — function normalizePaginated(payload: unknown): unknown
+- TempleImage · type · L89-L89 — type TempleImage = string | { url: string; alt?: string; type?: string };
+- TempleListItem · interface · L91-L111 — interface TempleListItem
+- TempleDetail · interface · L113-L153 — interface TempleDetail extends TempleListItem
+- PaginatedResponse · interface · L155-L163 — interface PaginatedResponse<T>
+- TempleReview · interface · L165-L172 — interface TempleReview
+- getTemples · function · L174-L198 — async function getTemples(params?: { page?: number; limit?: number; city?: string; state?: string; tradition?: string; deity?: string; search?: string; liveDarshan?: boolean; }): Promise<PaginatedResponse<TempleListItem>>
+- getTempleBySlug · function · L200-L207 — async function getTempleBySlug(slug: string): Promise<TempleDetail>
+- getTempleReviews · function · L209-L217 — async function getTempleReviews( templeId: string, page = 1, ): Promise<PaginatedResponse<TempleReview>>
+- PujaType · interface · L221-L235 — interface PujaType
+- getPujaTypes · function · L237-L256 — async function getPujaTypes(params?: { category?: string; deity?: string; search?: string; page?: number; limit?: number; }): Promise<PaginatedResponse<PujaType>>
+- ContentItem · interface · L260-L278 — interface ContentItem
+- getContent · function · L280-L299 — async function getContent(params?: { type?: string; deity?: string; language?: string; page?: number; limit?: number; }): Promise<PaginatedResponse<ContentItem>>
+- getContentBySlugApi · function · L305-L311 — async function getContentBySlugApi(slug: string): Promise<ContentItem>
+- getDailyContent · function · L313-L320 — async function getDailyContent(): Promise<{ aarti: ContentItem | null; mantra: ContentItem | null; chalisa: ContentItem | null; article: ContentItem | null; }>
+- Panchang · interface · L324-L338 — interface Panchang
+- getTodayPanchang · function · L340-L355 — async function getTodayPanchang(): Promise<Panchang>
+- getUpcomingFestivals · function · L357-L361 — async function getUpcomingFestivals(): Promise<{ festivals: { date: string; name: string }[]; }>
+- DarshanStream · interface · L365-L388 — interface DarshanStream
+- UpcomingDarshanNote · interface · L390-L394 — interface UpcomingDarshanNote
+- getLiveDarshan · function · L396-L398 — async function getLiveDarshan(): Promise<{ streams: DarshanStream[]; upcoming?: UpcomingDarshanNote[] }>
+- getScheduledDarshan · function · L400-L402 — async function getScheduledDarshan(): Promise<{ streams: DarshanStream[] }>
+- ProviderListingType · type · L406-L406 — type ProviderListingType = 'pandit' | 'store' | 'astrologer' | 'wellness' | 'gaushala' | 'temple';
+- ApprovedProvider · interface · L408-L437 — interface ApprovedProvider
+- getApprovedProviders · function · L439-L482 — async function getApprovedProviders( type: ProviderListingType, params?: { city?: string; specialty?: string; sort?: string; page?: number; limit?: number }, ): Promise<{ providers: ApprovedProvider[]; total: number; page: number; limit: number }>

@@ -75,6 +75,11 @@ describe('authenticateUser — blocked-user gate (P0 #6)', () => {
   });
 
   it('blocks email-session-token user when dbUser.blocked=true', async () => {
+    // A valid, non-revoked, non-expired email_sessions row must exist for the
+    // token to be honored (A-005 fail-closed); the block gate then applies.
+    prismaMock.$queryRawUnsafe.mockResolvedValue([
+      { revoked_at: null, expires_at: new Date(Date.now() + 60 * 60 * 1000) },
+    ]);
     prismaMock.user.findUnique.mockResolvedValue({
       id: '11111111-1111-1111-1111-111111111111',
       email: 'mail@user.com',
@@ -179,5 +184,83 @@ describe("requireRole('priest') — must require an active Priest row", () => {
     const reply = makeReply();
     await priestGuard(reqWith(['PANDIT', 'DEVOTEE'], 'demo-pandit'), reply);
     expect(reply.statusCode).toBe(403);
+  });
+});
+
+// ── A-005 regression lock: forged email- token must NOT authenticate ──
+// Before the 2026-08-10 fix, the email- branch fell through to "allow" when no
+// email_sessions row existed — and no code ever wrote that table — so
+// `email-<anyKnownUserId>-<any 32 hex>` authenticated as that user (incl. admin).
+// These tests pin the fail-closed behavior shut. Kept as a self-contained
+// top-level describe (with explicit mock resets) so its findUnique/queryRaw
+// stubs cannot bleed into the order-sensitive blocked-user-gate tests above.
+describe('A-005 — email- token forgery is rejected (fail-closed)', () => {
+  const FORGED =
+    'Bearer email-11111111-1111-1111-1111-111111111111-' + 'a'.repeat(32);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NODE_ENV = 'production'; // no NODE_ENV gate on this branch — prove it holds in prod
+    prismaMock.user.findUnique.mockReset();
+    prismaMock.$queryRawUnsafe.mockReset();
+  });
+
+  it('rejects a well-formed email- token with NO session row (the forgery vector)', async () => {
+    prismaMock.$queryRawUnsafe.mockResolvedValue([]); // table empty → forged
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      email: 'victim@user.com',
+      blocked: false,
+    });
+
+    const req = makeReq(FORGED);
+    const reply = makeReply();
+    await authenticateUser(req, reply);
+
+    expect(reply.statusCode).toBe(401);
+    expect(req.currentUser).toBeUndefined();
+    // The user lookup must never even be reached for a rowless token.
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects an email- token whose session row is revoked', async () => {
+    prismaMock.$queryRawUnsafe.mockResolvedValue([
+      { revoked_at: new Date(), expires_at: new Date(Date.now() + 60_000) },
+    ]);
+    const req = makeReq(FORGED);
+    const reply = makeReply();
+    await authenticateUser(req, reply);
+    expect(reply.statusCode).toBe(401);
+    expect(req.currentUser).toBeUndefined();
+  });
+
+  it('rejects an email- token whose session row is expired', async () => {
+    prismaMock.$queryRawUnsafe.mockResolvedValue([
+      { revoked_at: null, expires_at: new Date(Date.now() - 60_000) },
+    ]);
+    const req = makeReq(FORGED);
+    const reply = makeReply();
+    await authenticateUser(req, reply);
+    expect(reply.statusCode).toBe(401);
+    expect(req.currentUser).toBeUndefined();
+  });
+
+  it('accepts an email- token backed by a valid, unexpired, non-revoked row', async () => {
+    prismaMock.$queryRawUnsafe.mockResolvedValue([
+      { revoked_at: null, expires_at: new Date(Date.now() + 60 * 60 * 1000) },
+    ]);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      email: 'real@user.com',
+      blocked: false,
+    });
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([]);
+
+    const req = makeReq(FORGED);
+    const reply = makeReply();
+    await authenticateUser(req, reply);
+
+    expect(reply.statusCode).toBe(200);
+    expect(req.currentUser?.id).toBe('11111111-1111-1111-1111-111111111111');
   });
 });

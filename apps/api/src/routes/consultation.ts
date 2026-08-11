@@ -436,12 +436,19 @@ export async function consultationRoutes(server: FastifyInstance) {
         // platform 20% / astrologer 80% (was 30/70). Research: AstroTalk takes
         // 50%, so even 30% was supply-competitive; 20% + demand is the win.
         // ASTROLOGER_PLATFORM_RATE is the single source of truth.
-        const commissionAmount = Math.round(total * ASTROLOGER_PLATFORM_RATE * 100) / 100;
+        // Commission.amount is the PROVIDER's earning — it is what
+        // payout.service.getPayoutBalance pays out (see lib/commission-math.ts).
+        // This wrote the PLATFORM's 20% into it while keying on a real User.id,
+        // so every astrologer's withdrawable balance was 20% of gross instead of
+        // 80% — a live 75% underpayment through the unified payout rail and the
+        // weekly settlement cron. Found by adversarial review 2026-08-11.
+        const platformCut = Math.round(total * ASTROLOGER_PLATFORM_RATE * 100) / 100;
+        const astrologerEarning = Math.round((total - platformCut) * 100) / 100;
         await prisma.commission.create({
           data: {
             bookingId: row.id,
             providerId: profile.userId,
-            amount: commissionAmount,
+            amount: astrologerEarning,
             percentage: ASTROLOGER_PLATFORM_RATE,
             status: 'PENDING',
           },

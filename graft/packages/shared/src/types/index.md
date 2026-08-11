@@ -1,0 +1,35 @@
+# packages\shared\src\types\index.ts
+
+- BookingStatus · enum · L7-L16 — Enumerates the lifecycle states of a puja booking from pending through completion, cancellation, refund, or failure.
+- ContentType · enum · L18-L26 — Enumerates the kinds of devotional content (articles, videos, mantras, aartis, etc.) the platform can publish.
+- PaymentStatus · enum · L28-L35 — Enumerates payment lifecycle states including authorization, capture, failure, and full or partial refunds.
+- PaymentMethod · enum · L37-L43 — Enumerates supported payment rails such as UPI, card, net banking, wallet, and international payments.
+- PayoutStatus · enum · L45-L50 — Enumerates the states of a priest payout from pending through processing to completed or failed.
+- SubscriptionTier · enum · L52-L57 — Enumerates the subscription plans (free, devotee, premium, family) that gate premium features.
+- SubscriptionStatus · enum · L59-L64 — Enumerates whether a user subscription is active, expired, cancelled, or paused.
+- Tradition · enum · L66-L76 — Enumerates Hindu and related religious traditions (Shaiva, Vaishnava, Shakta, Buddhist, Jain, Sikh, etc.) used to categorize temples, priests, pujas, and content.
+- StreamStatus · enum · L78-L83 — Enumerates live darshan stream states: scheduled, live, ended, or offline.
+- UserAddress · interface · L87-L100 — Describes a saved user address with a default flag, used for prasad delivery and profile management.
+- User · interface · L102-L120 — Describes a platform user including identity, contact details, astrological attributes (gotra, nakshatra, rashi), tradition, NRI status, and subscription tier.
+- TemplePriest · interface · L124-L131 — Associates a priest with a temple, marking head-priest status and assignment date.
+- Temple · interface · L133-L164 — Describes a temple with location, deity, tradition, timings, verification/featured flags, ratings, priests, puja offerings, and live darshan availability.
+- Priest · interface · L168-L188 — Describes a priest profile with specializations, languages, experience, ratings, online availability, verification, and payout details (bank account / UPI).
+- PujaType · interface · L192-L209 — Describes a catalog puja type with category, deity, tradition, duration, benefits, and required samagri.
+- TemplePujaOffering · interface · L211-L229 — Describes a specific temple's offering of a puja type, including INR/USD/NRI pricing, online vs in-person availability, devotee caps, and bookable days and time slots.
+- PujaBooking · interface · L233-L269 — Describes a puja booking with scheduling, devotee details, pricing/currency, prasad delivery, livestream/recording/certificate artifacts, and linked payment and review.
+- BookingReview · interface · L271-L283 — Describes a verified user review and rating tied to a completed booking, temple, and optionally a priest.
+- Payment · interface · L287-L304 — Describes a payment record with Razorpay/Stripe gateway references, amount, currency, status, method, and refund details.
+- PriestPayout · interface · L306-L321 — Describes a payout to a priest for a booking, with amount, method (bank transfer or UPI), status, and transaction reference.
+- ContentItem · interface · L325-L348 — Describes a devotional content item with type, media, language, tags, premium gating, and engagement counters.
+- DailyPanchang · interface · L352-L383 — Describes the daily Hindu almanac (tithi, nakshatra, yoga, karana, auspicious/inauspicious timings, festivals) for a given date and location.
+- LiveDarshanStream · interface · L387-L405 — Describes a temple live darshan stream with scheduling, viewer count, recording availability, and premium gating.
+- Subscription · interface · L409-L425 — Describes a user subscription with tier, status, pricing, gateway subscription IDs, current period, and entitled features.
+- ApiResponse · interface · L429-L434 — Standard success envelope wrapping API payloads with a success flag, optional message, and timestamp.
+- PaginatedResponse · interface · L436-L449 — Standard paginated API envelope carrying a list plus page metadata such as totals and next/previous flags.
+- ApiError · interface · L451-L460 — Standard error envelope with machine-readable code, message, per-field validation details, and HTTP status code.
+- ValidationError · interface · L462-L466 — Describes a single field-level validation failure with field name, message, and error code.
+- PaginationParams · interface · L470-L475 — Base query parameters for paginated list endpoints: page, page size, sort field, and sort order.
+- TempleSearchParams · interface · L477-L488 — Search filters for temples, including text query, location, tradition, deity, live darshan, and geo-radius search.
+- PujaSearchParams · interface · L490-L499 — Search filters for puja offerings, including category, tradition, deity, temple, price range, and online availability.
+- BookingFilterParams · interface · L501-L506 — Filters for listing bookings by status, date range, and temple.
+- ContentFilterParams · interface · L508-L515 — Filters for browsing content by type, tradition, deity, language, tag, and premium flag.

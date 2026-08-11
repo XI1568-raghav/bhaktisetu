@@ -46,7 +46,7 @@ const SUPPORT_SYSTEM_PROMPT = `You are Asha, Darshya's AI customer support assis
 
 **Cancellation:** Free up to 24 hrs before scheduled time. Refunds in 3-5 business days.
 
-**Payments:** Razorpay (domestic INR), Stripe (NRI/international USD). NRI users pay ~9-10x for pujas (supports temple priests).
+**Payments:** Razorpay only, INR only — for domestic and international devotees alike. (The Stripe/USD rail was removed 2026-08-11; do not tell users they can pay in USD.)
 
 **Video proof:** Every puja booking gets video proof from the priest before payout.
 
@@ -148,7 +148,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
     // Trust/security questions — must appear before the "payment failed" entry
     // so a benign "Is payment secure?" doesn't get routed to escalation.
     keywords: ['payment secure', 'is it safe', 'safe to pay', 'payment safe', 'is payment secure', 'secure payment'],
-    message: 'Yes — payments go through Razorpay (India) or Stripe (international), both PCI-DSS Level 1. We never store card details. All pandits are Aadhaar-verified.',
+    message: 'Yes — payments go through Razorpay, which is PCI-DSS Level 1 certified. We never store card details. All pandits are Aadhaar-verified.',
   },
   {
     keywords: ['payment failed', 'payment didn\'t', 'payment didnt', 'razorpay failed', 'card declined', 'money deducted'],
@@ -190,7 +190,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['how much', 'puja cost', 'pooja cost', 'price of puja', 'rate'],
-    message: 'Pujas start at ₹501, home pujas from ₹1,100, marriage from ₹11,000, yatra from ₹15,000, wellness from ₹299, astrology from ₹15/min. NRI pricing in USD.',
+    message: 'Pujas start at ₹501, home pujas from ₹1,100, marriage from ₹11,000, yatra from ₹15,000, wellness from ₹299, astrology from ₹15/min. All prices in INR.',
     actions: [{ label: 'Browse Pujas', href: '/pujas' }],
   },
   {
@@ -209,7 +209,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['nri', 'abroad', 'from usa', 'from uk', 'international user', 'outside india'],
-    message: 'Absolutely. NRI devotees can book every puja, darshan, yatra and store item from 40+ countries. Pay in USD via Stripe. Prasad ships worldwide in 7–14 days.',
+    message: 'Absolutely. NRI devotees can book every puja, darshan, yatra and store item from 40+ countries. Payment is in INR through Razorpay, which accepts international cards. Prasad ships worldwide in 7–14 days.',
     actions: [
       { label: 'Browse Pujas', href: '/pujas' },
       { label: 'NRI Gifting', href: '/nri' },

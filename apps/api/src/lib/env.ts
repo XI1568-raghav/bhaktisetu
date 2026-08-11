@@ -42,8 +42,8 @@ const envSchema = z.object({
   RAZORPAY_KEY_ID: z.string().min(1).optional(),
   RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
-  STRIPE_SECRET_KEY: z.string().min(1).optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  // STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET removed 2026-08-11 with the
+  // Stripe rail. Razorpay is the only gateway.
 
   // ── Auth ────────────────────────────────────────────────────────────────
   // JWT_SECRET is required in production (enforced below). Dev gets a fallback.

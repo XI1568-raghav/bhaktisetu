@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { processRefund } from '../services/refund.service.js';
@@ -32,13 +33,50 @@ const rejectBodySchema = z.object({
   reason: z.string().min(1).max(500),
 });
 
+// RV-22 (2026-08-10): the pending-payouts summary scanned the whole booking
+// table, the whole completed-payout table, and re-ran an identical unfiltered
+// commission scan once per non-priest role. Every scan is now bounded by this
+// window (newest first) and the commission fetch happens exactly once.
+// `limit` lets an operator widen it for a big settlement run.
+const PAYOUT_SCAN_DEFAULT = 500;
+const PAYOUT_SCAN_MAX = 2000;
+const PAYOUT_SCAN_MIN = 50;
+
+const payoutScanQuerySchema = z.object({
+  limit: z.string().optional(),
+});
+
+function resolveScanLimit(raw: string | undefined): number {
+  const n = Number(raw ?? '');
+  if (!Number.isFinite(n) || n <= 0) return PAYOUT_SCAN_DEFAULT;
+  return Math.min(PAYOUT_SCAN_MAX, Math.max(PAYOUT_SCAN_MIN, Math.floor(n)));
+}
+
 // PRIEST/WELLNESS = 25% commission, ASTROLOGER = 30%, GAUSHALA = 0%.
+// NOTE: these predate the uniform 20%/80% take-rate doctrine and are therefore
+// inconsistent with booking.service.DEFAULT_PRIEST_SHARE. Left as-is on purpose
+// — this endpoint only RENDERS a summary (settlement runs through
+// payout.service.processPayout), and correcting the number changes what an
+// admin believes a provider is owed, which is an owner decision, not a
+// pagination fix.
 function payoutMultiplier(role: string): number {
   if (role === 'PRIEST' || role === 'WELLNESS_INSTRUCTOR') return 0.75;
   if (role === 'ASTROLOGER') return 0.7;
   if (role === 'GAUSHALA_MANAGER') return 1.0;
   return 0.75;
 }
+
+/** Money aggregation stays in Decimal — a float sum over thousands of rows drifts. */
+function multiplyMoney(amount: Prisma.Decimal | number | string, multiplier: number): Prisma.Decimal {
+  return new Prisma.Decimal(amount.toString()).mul(new Prisma.Decimal(multiplier.toString()));
+}
+
+export const __testing = {
+  resolveScanLimit,
+  PAYOUT_SCAN_DEFAULT,
+  PAYOUT_SCAN_MAX,
+  PAYOUT_SCAN_MIN,
+};
 
 export async function adminBookingsRoutes(server: FastifyInstance) {
   const adminPreHandlers = [authenticateUser, requireRole('admin')];
@@ -88,6 +126,12 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       bookingsCount: number;
       totalPayout: number;
     }> = [];
+    const parsedQuery = payoutScanQuerySchema.safeParse(request.query ?? {});
+    const scanLimit = resolveScanLimit(parsedQuery.success ? parsedQuery.data.limit : undefined);
+    // True when a scan hit its window and older rows were not considered — the
+    // summary is then a partial view and the admin must be told, not left to
+    // read an under-count as "nothing left to pay".
+    let truncated = false;
 
     try {
       // Paid bookings — status is 'completed', 'video_uploaded', or 'delivered'.
@@ -99,23 +143,32 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       const priestBookings = await prisma.pujaBooking.findMany({
         where: { status: { in: paidStatuses as unknown as never }, priestId: { not: null } },
         select: { id: true, priestId: true, priceAmount: true },
+        orderBy: { createdAt: 'desc' },
+        take: scanLimit,
       });
+      if (priestBookings.length >= scanLimit) truncated = true;
       let alreadyPaidIds = new Set<string>();
       try {
+        // Bounded by construction: only the bookings in this window can be
+        // marked as already paid, so there is no reason to read the whole
+        // PriestPayout table — and NO `take` belongs here. A truncated
+        // already-paid set would under-detect settled bookings and re-surface
+        // them as pending, which is the one failure mode that can make an
+        // admin pay a pandit twice.
         const paid = await prisma.priestPayout.findMany({
-          where: { status: 'completed' },
+          where: { status: 'completed', bookingId: { in: priestBookings.map((b) => b.id) } },
           select: { bookingId: true },
         });
         alreadyPaidIds = new Set(paid.map((p) => p.bookingId));
       } catch (err) {
         request.log.warn({ err }, 'priest payout lookup failed');
       }
-      const byPriest = new Map<string, { count: number; total: number }>();
+      const byPriest = new Map<string, { count: number; total: Prisma.Decimal }>();
       for (const b of priestBookings) {
         if (alreadyPaidIds.has(b.id) || !b.priestId) continue;
-        const cur = byPriest.get(b.priestId) ?? { count: 0, total: 0 };
+        const cur = byPriest.get(b.priestId) ?? { count: 0, total: new Prisma.Decimal(0) };
         cur.count += 1;
-        cur.total += Number(b.priceAmount) * payoutMultiplier('PRIEST');
+        cur.total = cur.total.add(multiplyMoney(b.priceAmount, payoutMultiplier('PRIEST')));
         byPriest.set(b.priestId, cur);
       }
       if (byPriest.size > 0) {
@@ -131,7 +184,7 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
             providerName: p.user?.fullName ?? 'Unknown priest',
             role: 'PRIEST',
             bookingsCount: agg.count,
-            totalPayout: Math.round(agg.total * 100) / 100,
+            totalPayout: agg.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
           });
         }
       }
@@ -141,29 +194,47 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       // by the assigned priestId — but bookings only carry priestId, not
       // astrologerId/etc. Until the schema grows a generic providerId we
       // can only report totals per role from CommissionEarning if present.
+      // RV-22: the identical PENDING-commission scan used to run once PER ROLE
+      // (three serial full-table reads of the same rows). Fetch it once; the
+      // per-role difference is only the multiplier applied below.
+      let pendingEarnings: Array<{ providerId: string; amount: Prisma.Decimal }> = [];
+      try {
+        pendingEarnings = await prisma.commission.findMany({
+          where: { status: 'PENDING' },
+          select: { providerId: true, amount: true },
+          orderBy: { createdAt: 'desc' },
+          take: scanLimit,
+        });
+        if (pendingEarnings.length >= scanLimit) truncated = true;
+      } catch (err) {
+        request.log.warn({ err }, 'pending commission fetch failed (model missing?)');
+      }
+
       for (const role of roles.filter((r) => r !== 'PRIEST')) {
         try {
-          const earnings = await prisma.commission.findMany({
-            where: { status: 'PENDING' },
-            select: { providerId: true, amount: true },
-          });
-          const byProvider = new Map<string, { count: number; total: number }>();
-          for (const e of earnings) {
-            const cur = byProvider.get(e.providerId) ?? { count: 0, total: 0 };
+          const byProvider = new Map<string, { count: number; total: Prisma.Decimal }>();
+          for (const e of pendingEarnings) {
+            const cur = byProvider.get(e.providerId) ?? { count: 0, total: new Prisma.Decimal(0) };
             cur.count += 1;
-            cur.total += Number(e.amount) * payoutMultiplier(role);
+            // `Commission.amount` is ALREADY the provider's net earning
+            // (lib/commission-math.ts), so applying payoutMultiplier here
+            // discounted it a second time — 0.80 x 0.70 = 56% of gross reported
+            // as owed. Found by adversarial review 2026-08-11.
+            cur.total = cur.total.add(new Prisma.Decimal(e.amount));
             byProvider.set(e.providerId, cur);
           }
           if (byProvider.size === 0) continue;
           const assignments = await prisma.userRoleAssignment.findMany({
             where: { userId: { in: Array.from(byProvider.keys()) }, role: role as never },
             select: { userId: true },
+            take: scanLimit,
           });
           const userIds = assignments.map((a) => a.userId);
           if (userIds.length === 0) continue;
           const users = await prisma.user.findMany({
             where: { id: { in: userIds } },
             select: { id: true, fullName: true },
+            take: scanLimit,
           });
           const userById = new Map(users.map((u) => [u.id, u.fullName] as const));
           for (const a of assignments) {
@@ -174,7 +245,7 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
               providerName: userById.get(a.userId) ?? 'Unknown',
               role,
               bookingsCount: agg.count,
-              totalPayout: Math.round(agg.total * 100) / 100,
+              totalPayout: agg.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
             });
           }
         } catch (err) {
@@ -183,10 +254,25 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       }
 
       groups.sort((a, b) => b.totalPayout - a.totalPayout);
-      return { groups, schemaNote: 'payoutPaidAt column missing on Booking; PRIEST uses PriestPayout sidecar, others approximate via CommissionEarning.' };
+      return {
+        ok: true,
+        groups,
+        scanLimit,
+        truncated,
+        schemaNote: 'payoutPaidAt column missing on Booking; PRIEST uses PriestPayout sidecar, others approximate via CommissionEarning.',
+      };
     } catch (err) {
+      // RV-22: the failure branch used to be indistinguishable from a genuinely
+      // empty payout queue, so a broken query read as "nothing to settle". Keep
+      // the 200 (the dashboard renders around it) but say so explicitly.
       request.log.warn({ err }, 'admin payouts pending failed');
-      return { groups: [], schemaNote: 'aggregation failed; see server logs' };
+      return {
+        ok: false,
+        groups: [],
+        scanLimit,
+        truncated: false,
+        schemaNote: 'aggregation failed; see server logs',
+      };
     }
   });
 

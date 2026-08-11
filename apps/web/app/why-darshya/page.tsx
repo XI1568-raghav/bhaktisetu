@@ -75,7 +75,7 @@ const ROWS: Row[] = [
     sriMandir: '✗',
     utsav: '✗',
     astrosage: '✗',
-    detail: 'Sponsor cow feed/medical with photo updates. NRI users see USD equivalents.',
+    detail: 'Sponsor cow feed/medical with photo updates. Book from anywhere; billed in INR.',
   },
   {
     feature: 'Free Vedic content (shlokas, aarti, chalisa, mantras)',
@@ -107,7 +107,7 @@ const ROWS: Row[] = [
     sriMandir: '✗',
     utsav: '✗',
     astrosage: '✗',
-    detail: 'You pay in USD, recipient in India gets booking number + video proof via WhatsApp + name in sankalp.',
+    detail: 'You book from abroad, recipient in India gets booking number + video proof via WhatsApp + name in sankalp.',
   },
   {
     feature: 'Cancellation up to 24h before',

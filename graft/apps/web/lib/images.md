@@ -1,0 +1,32 @@
+# apps\web\lib\images.ts
+
+- qualityFor · function · L20-L26 — Chooses the Unsplash JPEG quality tier from the requested dimensions so large heroes stay crisp while small thumbnails are compressed harder to save bandwidth.
+- u · function · L28-L31 — Builds a cropped, auto-formatted Unsplash CDN URL at the requested dimensions with the quality tier computed for that size.
+- uWide · function · L33-L35 — Shortcut for a 1600x700 wide-hero Unsplash URL.
+- uSquare · function · L37-L39 — Shortcut for a square-cropped Unsplash URL (default 400px) used for cards and avatars.
+- uPortrait · function · L41-L43 — Shortcut for a 600x900 portrait-cropped Unsplash URL used for deity depictions.
+- wiki · function · L49-L51 — Marks a URL as a stable, CDN-cached Wikimedia Commons asset by passing it through unchanged.
+- snapToLadder · function · L57-L63 — Rounds a requested width UP to the next Wikimedia-allowed thumbnail step, because Commons has rejected arbitrary thumb widths with HTTP 400 since 2024.
+- wikiThumb · function · L76-L88 — Rewrites any Wikimedia Commons URL (original or existing thumb) into a sized thumbnail URL, turning 5-15 MB originals into 50-300 KB images and appending .png for SVGs per Commons rules.
+- wikiResize · function · L94-L96 — Backward-compatible alias that resizes an existing Commons thumb URL by delegating to wikiThumb.
+- resizeImage · function · L101-L120 — Re-scales an existing image URL to a named preset (hero/card/thumb/avatar), routing Wikimedia URLs through the thumb ladder and rewriting w/h/q params on Unsplash URLs.
+- ImageCategory · type · L518-L518 — Union of the top-level IMAGES category names, enabling type-safe category lookups.
+- TempleSlug · type · L520-L520 — Union of all registered temple slugs so temple image lookups are compile-time checked.
+- DeityKey · type · L521-L521 — Union of all registered deity keys for type-safe deity image access.
+- PujaSlug · type · L522-L522 — Union of all registered puja slugs for type-safe puja image access.
+- StoreProductSlug · type · L523-L523 — Union of all registered store product slugs for type-safe product image access.
+- GaushalaKey · type · L524-L524 — Union of all registered gaushala (cow shelter) keys for type-safe image access.
+- ContentKey · type · L525-L525 — Union of all registered content (blog/article) keys for type-safe image access.
+- HeroKey · type · L526-L526 — Union of all registered page-hero keys for type-safe hero image access.
+- FestivalKey · type · L527-L527 — Union of all registered festival keys for type-safe festival image access.
+- getImage · function · L535-L563 — Generic lookup that resolves a category/key pair (and optional size) to a URL, applying the right resizer and falling back to a default so unknown keys never produce a broken image.
+- getTempleHero · function · L565-L568 — Returns the full-width hero photo for a temple slug, with a fallback so temple pages always render a banner.
+- getTempleThumbnail · function · L570-L573 — Returns the small card thumbnail for a temple slug, with a fallback for unregistered slugs.
+- getTempleGallery · function · L575-L578 — Returns the gallery photo list for a temple slug, defaulting to an empty or fallback set when the temple is unknown.
+- getDeityImage · function · L580-L585 — Returns a deity's depiction in portrait or square crop depending on where it will be displayed.
+- getPujaImage · function · L587-L590 — Returns the representative photo for a puja slug, with a fallback for unregistered pujas.
+- getProductImage · function · L592-L594 — Returns the store product photo for a product slug, with a fallback so listings never show a broken image.
+- getHeroImage · function · L596-L599 — Returns the page-level hero banner image for a named page, with a default when the page has no specific hero.
+- getAstrologerImage · function · L601-L604 — Picks a deterministic astrologer profile photo by gender and index so the same astrologer always gets the same stock portrait.
+- getFestivalImage · function · L606-L609 — Returns the representative photo for a festival slug, with a fallback for unregistered festivals.
+- getContentImage · function · L611-L616 — Returns a content (blog/article) image in full or thumbnail variant depending on display context.

@@ -1,0 +1,29 @@
+# apps\api\src\services\payment.service.ts
+
+- sendPujaBookingInvoice · function · L18-L54 — async function sendPujaBookingInvoice(bookingId: string): Promise<void>
+- tryRewardReferralForBooking · function · L72-L127 — async function tryRewardReferralForBooking(refereeUserId: string, bookingId: string): Promise<void>
+- sendStoreOrderInvoice · function · L134-L180 — async function sendStoreOrderInvoice(storeOrderId: string): Promise<void>
+- Item · type · L141-L141 — type Item = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
+- Addr · type · L142-L145 — type Addr = { fullName?: string; line1?: string; line2?: string; city?: string; state?: string; pincode?: string; country?: string; };
+- TxClient · type · L198-L198 — type TxClient = Prisma.TransactionClient | typeof prisma;
+- writePujaCommissionOnConfirm · function · L200-L236 — async function writePujaCommissionOnConfirm( bookingId: string, tx: TxClient = prisma, ): Promise<void>
+- fireAndForgetPostConfirmSideEffects · function · L253-L288 — async function fireAndForgetPostConfirmSideEffects( bookingId: string, userId: string, ): Promise<void>
+- writeStoreOrderCommissionOnConfirm · function · L298-L355 — async function writeStoreOrderCommissionOnConfirm( storeOrderId: string, tx: TxClient = prisma, ): Promise<void>
+- CreateOrderResult · interface · L394-L400 — interface CreateOrderResult
+- VerifyPaymentResult · interface · L402-L406 — interface VerifyPaymentResult
+- WebhookResult · interface · L408-L411 — interface WebhookResult
+- RefundResult · interface · L413-L419 — interface RefundResult
+- PaymentService · class · L423-L1478 — class PaymentService
+- createRazorpayOrder · method · L428-L520 — async createRazorpayOrder( bookingId: string, userId: string ): Promise<CreateOrderResult>
+- verifyPayment · method · L526-L611 — async verifyPayment( razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string, userId?: string, callerRoles?: string[] ): Promise<VerifyPaymentResult>
+- createStoreOrderRazorpay · method · L619-L705 — async createStoreOrderRazorpay( storeOrderId: string, userId: string, ): Promise<CreateOrderResult>
+- verifyStoreOrderPayment · method · L714-L816 — async verifyStoreOrderPayment( razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string, userId: string, ): Promise<{ verified: true; storeOrderId: string; orderNumber: string }>
+- handleWebhook · method · L822-L840 — async handleWebhook( payload: Record<string, any>, signature: string ): Promise<WebhookResult>
+- handleWebhookRaw · method · L848-L870 — async handleWebhookRaw( rawBody: string, payload: Record<string, any>, signature: string ): Promise<WebhookResult>
+- processWebhookEvent · method · L876-L1007 — private async processWebhookEvent( payload: Record<string, any> ): Promise<WebhookResult>
+- processRefund · method · L1012-L1080 — async processRefund(bookingId: string, adminId?: string): Promise<RefundResult>
+- createPriestPayout · method · L1086-L1161 — async createPriestPayout(bookingId: string)
+- markPayoutPaid · method · L1169-L1197 — async markPayoutPaid(payoutId: string)
+- createStripeOrder · method · L1210-L1323 — async createStripeOrder( bookingId: string, userId: string, options?: { usdAmountOverride?: number }, ): Promise<{ orderId: string; paymentIntentId: string; clientSecret: string | null; amount: number; currency: 'USD'; paymentId: string; publishableKey: string; demo: boolean; }>
+- handleStripeWebhook · method · L1335-L1448 — async handleStripeWebhook( rawBody: string | Buffer, signature: string, ): Promise<WebhookResult>
+- getPaymentByBookingId · method · L1453-L1477 — async getPaymentByBookingId(bookingId: string)

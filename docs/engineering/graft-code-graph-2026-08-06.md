@@ -25,10 +25,10 @@ The repo is indexed by **Graft** (NanoNets [`@nanonets/graft@0.8.2`](https://git
 `graft/` is a local cache (like `node_modules`), gitignored via anchored `/graft/`. It is **not** in the PR; each machine builds its own.
 
 - **Structural (free, no key):** `graft build` — wiring graph + per-file cards.
-- **Deep (LLM, optional):** adds concept nodes + per-symbol summary/crux. Run via the local Blackbox proxy with kimi-k3:
+- **Deep (LLM, optional):** adds concept nodes + per-symbol summary/crux. Run via the local Blackbox proxy with z-ai/glm-5.2:
   ```powershell
   $env:GRAFT_PROVIDER="openai"; $env:GRAFT_BASE_URL="http://127.0.0.1:8787/v1"
-  $env:GRAFT_API_KEY="proxy"; $env:GRAFT_MODEL="blackboxai/moonshotai/kimi-k3"
+  $env:GRAFT_API_KEY="proxy"; $env:GRAFT_MODEL="z-ai/glm-5.2"
   graft build --deep -j 6
   ```
   Cached by content hash — re-runs only touch changed files. Built 2026-08-06; ~955 concept nodes computed; per-symbol summary tail resumed for the remaining pending. One transient proxy connection error occurred on `apps/web/app/error.tsx` (re-run fills it).

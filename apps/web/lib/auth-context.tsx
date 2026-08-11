@@ -19,7 +19,12 @@ export type UserRole = 'devotee' | 'priest' | 'store_owner' | 'astrologer' | 'we
 function toApiRole(role: UserRole): string {
  return role === 'priest' ? 'pandit' : role;
 }
-function fromApiRole(role: string | undefined | null): UserRole {
+// A-011 (2026-08-10): exported. The Google OAuth callback persisted the raw
+// API role, so a pandit was stored as `pandit` — a value no web-side role
+// check (`getRoleDashboardPath`, `AuthGuard.allowedRoles`) knows about, which
+// silently degrades to the devotee dashboard. EVERY path that persists a user
+// must run the API role through this.
+export function fromApiRole(role: string | undefined | null): UserRole {
  if (role === 'pandit') return 'priest';
  return (role as UserRole) || 'devotee';
 }
@@ -289,7 +294,12 @@ export function getRoleLabel(role: UserRole): string {
 
 function setCookie(name: string, value: string, days: number = 7) {
  const expires = new Date(Date.now() + days * 864e5).toUTCString();
- document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+ // A-007 (2026-08-10): Secure on https so the cookie can never be set or sent
+ // over a plaintext hop. Deliberately omitted on http://localhost — some
+ // browsers drop Secure cookies there, which would break local dev sign-in.
+ const secure =
+   typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+ document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax${secure}`;
 }
 
 function getCookie(name: string): string | null {
@@ -308,6 +318,61 @@ const STORAGE_KEYS = {
  USER: 'poojly_user',
 } as const;
 
+/**
+ * Single writer for the browser-side auth stores. Exported so /auth/callback
+ * (Google OAuth) persists through exactly this path instead of its own copy —
+ * the duplicated copy is what produced A-011.
+ *
+ * A-007 (2026-08-10): the access + refresh tokens now live in ONE JS-readable
+ * store, not two. `poojly_session` used to be written to BOTH localStorage and
+ * a `path=/` cookie, and the cookie copy meant the browser attached both
+ * tokens to every same-origin request (page navigations, RSC payloads, static
+ * assets) — so they landed in the Next server's request logs and the CDN edge
+ * on top of being readable by any injected script. Nothing reads that cookie:
+ * middleware.ts gates on `poojly_user` only, and every other in-app reader
+ * (org pages, AartiOptIn, NotificationPrompt) reads localStorage. It is now
+ * written ONLY when localStorage is unavailable (Safari private mode et al),
+ * which is the one case where loadSession's cookie fallback is the sole way a
+ * session survives a reload — and a stale cookie from an older build is
+ * actively cleared whenever localStorage works.
+ *
+ * NOTE: this only shrinks the blast radius. Full remediation needs the API to
+ * accept the httpOnly `darshya_refresh` cookie on POST /auth/refresh (its Zod
+ * schema currently REQUIRES `refreshToken` in the body), after which the web
+ * can stop persisting tokens in JS-readable storage at all.
+ */
+export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | null) {
+  if (!sess || !usr) {
+    removeCookie(STORAGE_KEYS.SESSION);
+    removeCookie(STORAGE_KEYS.USER);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.SESSION);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+    } catch {
+      // localStorage may be unavailable
+    }
+    return;
+  }
+
+  // The user cookie stays — middleware.ts gates portal paths on its presence.
+  // It carries profile fields only, never a token.
+  setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
+
+  let localStorageOk = true;
+  try {
+    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
+  } catch {
+    localStorageOk = false;
+  }
+
+  if (localStorageOk) {
+    removeCookie(STORAGE_KEYS.SESSION);
+  } else {
+    setCookie(STORAGE_KEYS.SESSION, JSON.stringify(sess), 7);
+  }
+}
+
 // ─── Context ───────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -320,22 +385,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const [isLoading, setIsLoading] = useState(true);
 
  /**
- * Persists session data to cookies (for SSR) and localStorage (for client hydration).
+ * Persists session data via the shared writer (see persistAuthStorage) and
+ * keeps the analytics identity in sync.
  */
  const persistSession = useCallback((sess: AuthSession | null, usr: AuthUser | null) => {
+ persistAuthStorage(sess, usr);
  if (sess && usr) {
- setCookie(STORAGE_KEYS.SESSION, JSON.stringify(sess), 7);
- setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
- // TODO P1#4: remove once all reads migrated — backend HttpOnly
- // `darshya_session` cookie + in-memory session state will be the
- // only auth surfaces. localStorage write is kept transitionally so
- // existing reads (e.g. shipped legacy bundles) don't break mid-rollout.
- try {
- localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
- localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
- } catch {
- // localStorage may be unavailable
- }
  // Pillar Analytics — identify PostHog user on session persistence (was never called).
  try {
    if (typeof window !== 'undefined' && window.posthog?.identify) {
@@ -348,15 +403,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  } catch {
    /* posthog not loaded — skip */
  }
- } else {
- removeCookie(STORAGE_KEYS.SESSION);
- removeCookie(STORAGE_KEYS.USER);
- try {
- localStorage.removeItem(STORAGE_KEYS.SESSION);
- localStorage.removeItem(STORAGE_KEYS.USER);
- } catch {
- // localStorage may be unavailable
- }
  }
  }, []);
 
@@ -368,6 +414,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  try {
  let storedSession: AuthSession | null = null;
  let storedUser: AuthUser | null = null;
+ let fromLocalStorage = false;
 
  // Try localStorage first, fall back to cookies
  try {
@@ -375,6 +422,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const userStr = localStorage.getItem(STORAGE_KEYS.USER);
  if (sessStr) storedSession = JSON.parse(sessStr);
  if (userStr) storedUser = JSON.parse(userStr);
+ fromLocalStorage = !!(storedSession && storedUser);
  } catch {
  const sessCookie = getCookie(STORAGE_KEYS.SESSION);
  const userCookie = getCookie(STORAGE_KEYS.USER);
@@ -387,9 +435,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  return;
  }
 
- // Ensure role field exists (backwards compat)
- if (!storedUser.role) {
- storedUser.role = 'devotee';
+ // A-007 (2026-08-10): localStorage answered, so the token cookie an older
+ // build wrote is pure extra exposure — drop it instead of waiting out its
+ // 7-day expiry. Only safe on this branch: when localStorage is unavailable
+ // the cookie is the ONLY copy of the session.
+ if (fromLocalStorage) {
+ removeCookie(STORAGE_KEYS.SESSION);
+ }
+
+ // A-011 (2026-08-10): re-translate on every load, not just when the field is
+ // missing. A user persisted before the /auth/callback fix carries the raw API
+ // role (`pandit`), which survived every reload and permanently bounced that
+ // pandit off /priest. fromApiRole is idempotent, so this also covers the
+ // already-correct values and the legacy no-role case.
+ const normalizedRole = fromApiRole(storedUser.role);
+ const roleWasStale = normalizedRole !== storedUser.role;
+ storedUser.role = normalizedRole;
+ if (roleWasStale) {
+ persistSession(storedSession, storedUser);
+ }
+
+ // A-003 (2026-08-10): the portal gate in middleware.ts is the `poojly_user`
+ // cookie, but /auth/verify (magic link) writes only localStorage. Re-sync the
+ // cookie from the session we just loaded so a valid session is never bounced
+ // back to /auth/login by the newly gated /temple-portal and /payouts. Written
+ // only when absent, so this can't extend an expiring cookie on every mount.
+ if (fromLocalStorage && !getCookie(STORAGE_KEYS.USER)) {
+ setCookie(STORAGE_KEYS.USER, JSON.stringify(storedUser), 7);
  }
 
  // Check if this is a demo session — skip token refresh

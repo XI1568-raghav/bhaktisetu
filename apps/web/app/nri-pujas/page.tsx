@@ -59,14 +59,14 @@ const popularTempleCities = [
 const faqs: Array<{ q: string; a: string }> = [
   {
     q: 'Can I book a puja from outside India?',
-    a: 'Yes. Darshya accepts USD, GBP, CAD, AUD, EUR, SGD and AED on every puja listing. Pay with international cards via Stripe. Booking confirmation arrives by email and WhatsApp within minutes.',
+    a: 'Yes. You can book every puja listing from abroad using an international card. Billing is in Indian Rupees through Razorpay, so your bank applies its own conversion rate. Booking confirmation arrives by email and WhatsApp within minutes.',
   },
   {
     q: 'Will I receive video proof of my puja?',
     a: 'Video proof is mandatory on every booking. The verified pandit uploads a 3-7 minute clip showing the sankalp (your name + gotra), the ritual, and the prasad. You receive a WhatsApp link within 24 hours of completion. Pandit payout is gated on this upload.',
   },
   {
-    q: 'How does dual-currency pricing work?',
+    q: 'How does pricing work from abroad?',
     a: 'Domestic prices are shown in INR. NRI prices are priced separately to cover international payment processing, currency conversion, dedicated WhatsApp coordination and priority slot allocation. The full NRI price is shown in your local currency at checkout — no hidden conversion markups.',
   },
   {
@@ -112,8 +112,8 @@ const steps = [
   },
   {
     n: 3,
-    title: 'Pay in your currency',
-    body: 'Stripe accepts USD, GBP, CAD, AUD, EUR, SGD, AED. Apple Pay and Google Pay supported. Booking confirmed instantly with reference number BS-YYYYMMDD-XXXXX.',
+    title: 'Book with an international card',
+    body: 'Razorpay accepts international cards, UPI, and net banking, billed in INR. Booking confirmed instantly with reference number BS-YYYYMMDD-XXXXX.',
   },
   {
     n: 4,
@@ -213,7 +213,7 @@ export default function NRIPujasPillarPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-surface-700">
             The complete NRI guide to booking authentic Hindu pujas with verified pandits, video
-            proof on WhatsApp, dual-currency checkout and 80G tax receipts. Trusted by the Indian
+            proof on WhatsApp, international-card checkout and 80G tax receipts. Trusted by the Indian
             diaspora across 60+ countries.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">

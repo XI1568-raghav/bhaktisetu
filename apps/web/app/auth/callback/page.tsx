@@ -5,17 +5,13 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
-
-const STORAGE_KEYS = {
- SESSION: 'poojly_session',
- USER: 'poojly_user',
-} as const;
-
-function setCookie(name: string, value: string, days = 7) {
- const expires = new Date(Date.now() + days * 864e5).toUTCString();
- document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-}
+import {
+ getRoleDashboardPath,
+ fromApiRole,
+ persistAuthStorage,
+ type AuthSession,
+ type AuthUser,
+} from '../../../lib/auth-context';
 
 export default function AuthCallbackPage() {
  const [status, setStatus] = useState<'working' | 'error'>('working');
@@ -61,16 +57,15 @@ export default function AuthCallbackPage() {
  return;
  }
 
- const persistedSession = data.session;
- const persistedUser = { ...data.user, role: (data.user.role as UserRole) || 'devotee' };
- try {
- localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(persistedSession));
- localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(persistedUser));
- } catch {
- // localStorage unavailable — fall back to cookies only
- }
- setCookie(STORAGE_KEYS.SESSION, JSON.stringify(persistedSession));
- setCookie(STORAGE_KEYS.USER, JSON.stringify(persistedUser));
+ const persistedSession: AuthSession = data.session;
+ // A-011 (2026-08-10): this path used to persist the API role VERBATIM while
+ // every other login path ran it through fromApiRole. The API says `pandit`,
+ // the web routes on `priest` — so a Google-signed-in pandit was stored as
+ // `pandit`, landed on /dashboard (getRoleDashboardPath has no `pandit` case)
+ // and was bounced off /priest by AuthGuard on every reload.
+ const persistedUser: AuthUser = { ...data.user, role: fromApiRole(data.user.role) };
+ // A-007: one writer for both stores — see persistAuthStorage.
+ persistAuthStorage(persistedSession, persistedUser);
 
  const params = new URLSearchParams(window.location.search);
  const rawRedirect = params.get('redirect');

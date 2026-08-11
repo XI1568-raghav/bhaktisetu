@@ -39,16 +39,37 @@ RUN pnpm run prebuild && pnpm run build
 
 # Next standalone emits a self-contained server.js at .next/standalone/apps/web
 # but does NOT copy static assets or /public — both must be placed next to it
-# or the server serves 404s for JS/CSS/images. Each copy is its own RUN with an
-# explicit existence guard, so a partial standalone (missing static, or an empty
-# public/) fails the BUILD loudly here instead of shipping a 404-serving image
-# that only fails at runtime on Render.
-RUN test -d .next/static \
- && cp -r .next/static .next/standalone/apps/web/.next/static \
- && test -d public \
- && cp -r public .next/standalone/apps/web/public \
- && test -f .next/standalone/apps/web/server.js \
- || (echo "FATAL: standalone output incomplete — missing .next/static, public/, or server.js" && exit 1)
+# or the server serves 404s for JS/CSS/images.
+#
+# A-001 (fixed 2026-08-10): the previous form was
+#     cp -r public .next/standalone/apps/web/public
+# `cp -r SRC DEST` copies SRC *into* DEST when DEST already exists. Next's
+# standalone output already contains a `public/` directory, so every asset
+# landed at `public/public/*` — i.e. the whole directory was served one level
+# deep. Proven live on prod: `/sw.js` -> 404 while `/public/sw.js` -> 200.
+# `.next/static` was unaffected only because that destination does NOT
+# pre-exist, which is why JS chunks worked and favicon/manifest/sw/og did not.
+#
+# Consequences while broken: the service worker never registered (offline page
+# and web-push both dead), the PWA manifest 404'd (no install prompt), and every
+# OG/social preview image was missing.
+#
+# `cp -a SRC/. DEST/` copies the CONTENTS of SRC into DEST and is correct
+# whether or not DEST exists, so this cannot silently re-nest. mkdir -p makes
+# the destination explicit. The post-copy assertion checks a known sentinel file
+# at its FINAL served path, so a regression fails the BUILD instead of shipping
+# a 404-serving image again.
+RUN set -eux; \
+    test -d .next/static; \
+    test -d public; \
+    test -f public/manifest.json; \
+    mkdir -p .next/standalone/apps/web/.next/static .next/standalone/apps/web/public; \
+    cp -a .next/static/. .next/standalone/apps/web/.next/static/; \
+    cp -a public/. .next/standalone/apps/web/public/; \
+    test -f .next/standalone/apps/web/server.js; \
+    test -f .next/standalone/apps/web/public/manifest.json; \
+    test -f .next/standalone/apps/web/public/sw.js; \
+    test ! -e .next/standalone/apps/web/public/public
 
 # Runtime: Render injects PORT (the standalone server binds to it) AND sets
 # HOSTNAME to the pod's hostname (e.g. srv-...-hibernate-...). Next.js

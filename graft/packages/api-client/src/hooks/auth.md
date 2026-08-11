@@ -1,0 +1,23 @@
+# packages\api-client\src\hooks\auth.ts
+
+- UserRole · type · L16-L24 — type UserRole = | "devotee" | "priest" | "store_owner" | "astrologer" | "wellness_instructor" | "gaushala_manager" | "temple_manager" | "admin";
+- AuthSession · interface · L26-L31 — interface AuthSession
+- AuthUser · interface · L33-L43 — interface AuthUser
+- SendOtpRequest · interface · L45-L47 — interface SendOtpRequest
+- SendOtpResponse · interface · L49-L53 — interface SendOtpResponse
+- VerifyOtpRequest · interface · L55-L58 — interface VerifyOtpRequest
+- VerifyOtpResponse · interface · L60-L65 — interface VerifyOtpResponse
+- LoginRequest · interface · L67-L70 — interface LoginRequest
+- LoginResponse · interface · L72-L75 — interface LoginResponse
+- SignupRequest · interface · L77-L84 — interface SignupRequest
+- SignupResponse · interface · L86-L90 — interface SignupResponse
+- RefreshRequest · interface · L92-L94 — interface RefreshRequest
+- RefreshResponse · interface · L96-L99 — interface RefreshResponse
+- MeResponse · interface · L101-L104 — interface MeResponse
+- useSignInWithOtp · function · L120-L128 — function useSignInWithOtp( options?: UseMutationOptions<SendOtpResponse, Error, SendOtpRequest> )
+- useVerifyOtp · function · L130-L138 — function useVerifyOtp( options?: UseMutationOptions<VerifyOtpResponse, Error, VerifyOtpRequest> )
+- useSignInWithCredentials · function · L140-L148 — function useSignInWithCredentials( options?: UseMutationOptions<LoginResponse, Error, LoginRequest> )
+- useSignUp · function · L150-L158 — function useSignUp( options?: UseMutationOptions<SignupResponse, Error, SignupRequest> )
+- useLogout · function · L160-L168 — function useLogout( options?: UseMutationOptions<{ success: boolean; message: string }, Error, { accessToken: string }> )
+- useRefreshToken · function · L170-L178 — function useRefreshToken( options?: UseMutationOptions<RefreshResponse, Error, RefreshRequest> )
+- useMe · function · L180-L190 — function useMe( enabled = true, options?: Omit<UseQueryOptions<MeResponse>, "queryKey" | "queryFn"> )

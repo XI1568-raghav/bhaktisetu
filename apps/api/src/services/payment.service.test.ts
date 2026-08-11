@@ -1,8 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import crypto from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
+
+// RV-12: the whole finding is "the wrong AMOUNT reaches the gateway", so the
+// refund tests must assert on the paise figure actually sent. The demo proxy
+// baked into payment.service ignores its arguments, so we stand in a real
+// (mocked) Razorpay class and drive the tests with a non-demo key. Tests that
+// keep RAZORPAY_KEY_ID='rzp_test_demo' never construct it.
+const { razorpayRefundMock, razorpayOrderCreateMock } = vi.hoisted(() => ({
+  razorpayRefundMock: vi.fn(),
+  razorpayOrderCreateMock: vi.fn(),
+}));
+
+vi.mock('razorpay', () => ({
+  default: class MockRazorpay {
+    payments = { refund: razorpayRefundMock, fetch: vi.fn() };
+    orders = { create: razorpayOrderCreateMock };
+  },
+}));
 
 const ORIG_ENV = { ...process.env };
 
@@ -89,6 +107,87 @@ describe('PaymentService.verifyPayment', () => {
     );
   });
 
+  // ── RV-04 / S2C-15 (2026-08-11) ─────────────────────────────────────────
+  //
+  // This is the PRIMARY commission writer — production confirms via this path
+  // (and the webhook), not via a status PATCH — and it had no test coverage of
+  // the row it writes at all. Both fields were wrong in opposite directions and
+  // had to move together: fixing the key alone would have connected every
+  // pandit to a row carrying the platform's 20%, i.e. a live 75% underpayment
+  // in place of an inert orphan.
+  describe('RV-04 — the commission row it writes on confirm', () => {
+    // verifyPayment ends with `void fireAndForgetPostConfirmSideEffects(...)`,
+    // whose dynamic imports keep issuing prisma calls after the awaited call
+    // resolves. These tests mock the booking fully enough that the chain gets
+    // far enough to pollute the NEXT test's spy counts, so drain it here.
+    const settleSideEffects = () => new Promise((r) => setTimeout(r, 25));
+
+    function confirmingPayment() {
+      prismaMock.payment.findFirst.mockResolvedValue({
+        id: 'pmt-1',
+        booking: { id: 'bk-1', bookingNumber: 'BS-X', status: 'pending_payment' },
+      });
+      prismaMock.payment.update.mockResolvedValue({});
+      prismaMock.pujaBooking.update.mockResolvedValue({});
+      // ₹1,100 puja + ₹51 platform fee: pandit 80% = ₹880, platform 20% = ₹220.
+      prismaMock.pujaBooking.findUnique.mockResolvedValue({
+        id: 'bk-1',
+        templeId: 't-1',
+        priceAmount: new Prisma.Decimal(1151),
+        priestPayout: new Prisma.Decimal(880),
+        platformCommission: new Prisma.Decimal(220),
+        priestId: 'pr-1',
+        priest: { userId: 'user-pandit-1' },
+      });
+      prismaMock.commission.findFirst.mockResolvedValue(null);
+      prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
+    }
+
+    it("keys on the pandit's User.id and carries the pandit's 80%", async () => {
+      const service = await loadService();
+      const sig = hmacHex('test_secret_key', 'order_x|pay_x');
+      confirmingPayment();
+
+      await service.verifyPayment('order_x', 'pay_x', sig);
+
+      const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+      // Was `booking.priestId` — a Priest.id, which matches no payout read.
+      expect(data.providerId).toBe('user-pandit-1');
+      expect(data.providerId).not.toBe('pr-1');
+      // Was `booking.platformCommission` (₹220) in the field the payout engine
+      // reads as the provider's net earning.
+      expect(data.amount.toString()).toBe('880');
+      // `percentage` is the PLATFORM's take rate, never the provider's share —
+      // one column, one meaning (lib/commission-math.ts). Reading it as the
+      // provider's share is what inverted /astrologer-portal/earnings.
+      expect(data.percentage.toNumber()).toBeCloseTo((1151 - 880) / 1151, 12);
+      expect(data.status).toBe('PENDING');
+
+      await settleSideEffects();
+    });
+
+    it('writes nothing when the pandit has no linked user (no new orphans)', async () => {
+      const service = await loadService();
+      const sig = hmacHex('test_secret_key', 'order_x|pay_x');
+      confirmingPayment();
+      prismaMock.pujaBooking.findUnique.mockResolvedValue({
+        id: 'bk-1',
+        templeId: 't-1',
+        priceAmount: new Prisma.Decimal(1151),
+        priestPayout: new Prisma.Decimal(880),
+        platformCommission: new Prisma.Decimal(220),
+        priestId: 'pr-1',
+        priest: null,
+      });
+
+      await service.verifyPayment('order_x', 'pay_x', sig);
+
+      expect(prismaMock.commission.create).not.toHaveBeenCalled();
+
+      await settleSideEffects();
+    });
+  });
+
   it('does not re-confirm an already-confirmed booking', async () => {
     const service = await loadService();
     const sig = hmacHex('test_secret_key', 'order_x|pay_x');
@@ -97,6 +196,10 @@ describe('PaymentService.verifyPayment', () => {
       booking: { id: 'bk-1', bookingNumber: 'BS-X', status: 'confirmed' },
     });
     prismaMock.payment.update.mockResolvedValue({});
+    // The preceding confirm tests end with fire-and-forget side-effects whose
+    // async continuations can still land here. Clear immediately before the
+    // act so this assertion measures only this call.
+    prismaMock.pujaBooking.update.mockClear();
 
     await service.verifyPayment('order_x', 'pay_x', sig);
 
@@ -177,6 +280,8 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
         displayName: 'Test Priest',
       });
       prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+      // No Commission row for this booking -> the legacy rail owns it.
+      prismaMock.commission.findFirst.mockResolvedValue(null);
       prismaMock.priestPayout.create.mockResolvedValue({
         id: 'po-1',
         priestId: 'priest-1',
@@ -186,9 +291,32 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
       });
 
       const out = await service.createPriestPayout('bk-1');
-      expect(out.id).toBe('po-1');
+      expect('id' in out && out.id).toBe('po-1');
     }
   );
+
+  // The double-pay rail, found by adversarial review 2026-08-11: repairing the
+  // Commission key (RV-04) made the unified /payouts rail live for the same
+  // money PriestPayout already carried, with nothing cross-checking them.
+  it('does NOT mint a PriestPayout when the unified Commission ledger owns the booking', async () => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...baseBooking,
+      status: 'video_uploaded',
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      aadhaarVerified: true,
+      displayName: 'Test Priest',
+    });
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+    prismaMock.commission.findFirst.mockResolvedValue({ id: 'c-1' });
+
+    const out = await service.createPriestPayout('bk-1');
+
+    expect('skipped' in out && out.skipped).toBe(true);
+    // The whole point: no second payable row for money rail A already owns.
+    expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
 
   it('refuses payout when priest.aadhaarVerified=false (business rule #4)', async () => {
     const service = await loadService();
@@ -219,6 +347,290 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
       /Assigned priest not found/
     );
     expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PaymentService.processRefund — RV-12 partial refunds + cancellation ladder', () => {
+  // RV-12 (2026-08-10): the admin refund endpoint had NO amount parameter and
+  // always refunded 100% of the captured amount. On a Rs 1,100 booking
+  // cancelled 12h before the slot the snapshotted ladder awards 50% (Rs 550);
+  // the retained Rs 550 is pandit compensation, so a blanket 100% refund paid
+  // it out of the pandit's pocket. These lock the amount that reaches Razorpay.
+
+  // 2026-09-01 is a DATE column value (UTC midnight); '18:00' is IST, so the
+  // real slot instant is 2026-09-01T12:30:00Z.
+  const SLOT_DATE = new Date('2026-09-01');
+  const SLOT = '18:00';
+
+  function makePayment(over: Record<string, unknown> = {}) {
+    return {
+      id: 'pmt-1',
+      amount: new Prisma.Decimal('1100.00'),
+      refundAmount: null as Prisma.Decimal | null,
+      status: 'captured',
+      gatewayPaymentId: 'pay_abc123',
+      metadata: { orderId: 'order_abc' },
+      ...over,
+    };
+  }
+
+  function makeBooking(over: Record<string, unknown> = {}, payment = makePayment()) {
+    return {
+      id: 'bk-1',
+      bookingNumber: 'BS-20260901-AAAAA',
+      scheduledDate: SLOT_DATE,
+      scheduledTimeSlot: SLOT,
+      priceAmount: new Prisma.Decimal('1100.00'),
+      status: 'cancelled',
+      cancelledAt: null as Date | null,
+      cancellationReason: null as string | null,
+      payments: [payment],
+      ...over,
+    };
+  }
+
+  /** Arrange: booking lookup, then cancellationService.getPolicy's own lookup. */
+  function arrange(booking: unknown, cancelPolicyJson: unknown = null) {
+    prismaMock.pujaBooking.findUnique
+      .mockResolvedValueOnce(booking)
+      .mockResolvedValueOnce({ cancelPolicyJson });
+    prismaMock.payment.update.mockResolvedValue({});
+    prismaMock.pujaBooking.update.mockResolvedValue({});
+  }
+
+  async function loadLiveService() {
+    // Non-demo key so the mocked Razorpay class is constructed instead of the
+    // argument-ignoring demo proxy.
+    process.env.RAZORPAY_KEY_ID = 'rzp_live_unit_test';
+    process.env.RAZORPAY_KEY_SECRET = 'secret_unit_test';
+    vi.resetModules();
+    const mod = await import('./payment.service.js');
+    return new mod.PaymentService();
+  }
+
+  beforeEach(() => {
+    // vi.clearAllMocks() does NOT drain a mockResolvedValueOnce queue. Tests
+    // here enqueue two values but consume only one when the ladder is skipped,
+    // so without an explicit reset the leftover poisons the next test.
+    prismaMock.pujaBooking.findUnique.mockReset();
+    razorpayRefundMock.mockReset();
+    razorpayRefundMock.mockResolvedValue({ id: 'rfnd_test_1' });
+  });
+
+  it('applies the 50% tier (12h out) instead of refunding 100%', async () => {
+    const service = await loadLiveService();
+    arrange(
+      makeBooking({
+        // 2026-09-01T00:30:00Z = 12h before the 12:30Z slot instant.
+        cancelledAt: new Date('2026-09-01T00:30:00Z'),
+        cancellationReason: '[refund-requested] changed my mind',
+      })
+    );
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+
+    expect(out.amount).toBe(550);
+    expect(out.status).toBe('partially_refunded');
+    expect(out.refundFraction).toBe(0.5);
+    // The load-bearing assertion: 55000 paise, NOT the old 110000.
+    expect(razorpayRefundMock).toHaveBeenCalledWith(
+      'pay_abc123',
+      expect.objectContaining({ amount: 55000 })
+    );
+  });
+
+  it('applies the 75% tier (36h out)', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking({ cancelledAt: new Date('2026-08-31T00:30:00Z') }));
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+
+    expect(out.amount).toBe(825);
+    expect(out.refundFraction).toBe(0.75);
+    expect(razorpayRefundMock).toHaveBeenCalledWith(
+      'pay_abc123',
+      expect.objectContaining({ amount: 82500 })
+    );
+  });
+
+  it('applies the 100% tier (72h out) and flips the booking to refunded', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking({ cancelledAt: new Date('2026-08-29T12:30:00Z') }));
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+
+    expect(out.amount).toBe(1100);
+    expect(out.status).toBe('refunded');
+    expect(razorpayRefundMock).toHaveBeenCalledWith(
+      'pay_abc123',
+      expect.objectContaining({ amount: 110000 })
+    );
+    expect(prismaMock.pujaBooking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bk-1' },
+        data: expect.objectContaining({ status: 'refunded' }),
+      })
+    );
+  });
+
+  it('honours an explicit partial amount and marks the payment partially_refunded', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking());
+
+    const out = await service.processRefund('bk-1', 'admin-1', { amountInr: 250 });
+
+    expect(out.amount).toBe(250);
+    expect(out.status).toBe('partially_refunded');
+    expect(out.tierLabel).toBeUndefined();
+    expect(razorpayRefundMock).toHaveBeenCalledWith(
+      'pay_abc123',
+      expect.objectContaining({ amount: 25000 })
+    );
+    expect(prismaMock.payment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'pmt-1' },
+        data: expect.objectContaining({ status: 'partially_refunded' }),
+      })
+    );
+  });
+
+  it('does NOT flip the booking to refunded on a partial, and clears the refund-requested marker', async () => {
+    // Otherwise processAutoRefunds (which selects on that marker and accepts a
+    // partially_refunded payment) would refund the same booking again an hour later.
+    const service = await loadLiveService();
+    arrange(
+      makeBooking({
+        cancelledAt: new Date('2026-09-01T00:30:00Z'),
+        cancellationReason: '[refund-requested] changed my mind',
+      })
+    );
+
+    await service.processRefund('bk-1', 'admin-1');
+
+    const bookingPatch = prismaMock.pujaBooking.update.mock.calls[0]![0].data as Record<
+      string,
+      unknown
+    >;
+    expect(bookingPatch.status).toBeUndefined();
+    expect(String(bookingPatch.cancellationReason)).toMatch(/^\[partially-refunded 550\.00\]/);
+    expect(String(bookingPatch.cancellationReason)).not.toMatch(/^\[refund-requested\]/);
+  });
+
+  it('fullRefund:true bypasses the ladder (pandit-fault path)', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking({ cancelledAt: new Date('2026-09-01T00:30:00Z') }));
+
+    const out = await service.processRefund('bk-1', 'admin-1', { fullRefund: true });
+
+    expect(out.amount).toBe(1100);
+    expect(out.status).toBe('refunded');
+    expect(out.tierLabel).toBeUndefined();
+  });
+
+  it('clamps an over-large explicit amount to what is still refundable', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking());
+
+    const out = await service.processRefund('bk-1', 'admin-1', { amountInr: 99999 });
+
+    expect(out.amount).toBe(1100);
+    expect(out.status).toBe('refunded');
+    expect(razorpayRefundMock).toHaveBeenCalledWith(
+      'pay_abc123',
+      expect.objectContaining({ amount: 110000 })
+    );
+  });
+
+  it('tops up an already partially-refunded payment by the remaining balance only', async () => {
+    const service = await loadLiveService();
+    const payment = makePayment({
+      status: 'partially_refunded',
+      refundAmount: new Prisma.Decimal('550.00'),
+    });
+    arrange(makeBooking({}, payment), null);
+
+    const out = await service.processRefund('bk-1', 'admin-1', { amountInr: 900 });
+
+    // Only Rs 550 remains refundable — the top-up is clamped and completes the refund.
+    expect(out.amount).toBe(550);
+    expect(out.status).toBe('refunded');
+    const paymentPatch = prismaMock.payment.update.mock.calls[0]![0].data as Record<
+      string,
+      unknown
+    >;
+    expect(String(paymentPatch.refundAmount)).toBe('1100');
+  });
+
+  it('refuses a second refund once the payment is fully refunded', async () => {
+    const service = await loadLiveService();
+    const payment = makePayment({
+      status: 'partially_refunded',
+      refundAmount: new Prisma.Decimal('1100.00'),
+    });
+    arrange(makeBooking({}, payment));
+
+    await expect(service.processRefund('bk-1', 'admin-1')).rejects.toThrow(
+      /already been fully refunded/
+    );
+    expect(razorpayRefundMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-positive explicit amount', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking());
+
+    await expect(
+      service.processRefund('bk-1', 'admin-1', { amountInr: 0 })
+    ).rejects.toThrow(/positive number of rupees/);
+    expect(razorpayRefundMock).not.toHaveBeenCalled();
+  });
+
+  it('honours a snapshotted policy that differs from the current default', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking({ cancelledAt: new Date('2026-09-01T00:30:00Z') }), {
+      tiers: [{ minHoursBefore: 0, refundFraction: 0.1, label: 'legacy 10%' }],
+      panditCancelRefundFraction: 1,
+      noShowRefundFraction: 0,
+      cancellationFeeToPriestFraction: 1,
+      refundDaysLabel: '5-7 business days',
+    });
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+
+    expect(out.amount).toBe(110);
+    expect(out.tierLabel).toBe('legacy 10%');
+  });
+
+  it('refuses to apply the ladder to a booking that was never cancelled', async () => {
+    // hoursUntilSlot is negative on a delivered puja, so every tier fails and
+    // cancellation.service's "?? last tier" fallback would silently hand back
+    // 25%. The admin must name an amount (or fullRefund) instead.
+    const service = await loadLiveService();
+    arrange(makeBooking({ status: 'delivered', cancelledAt: null }));
+
+    await expect(service.processRefund('bk-1', 'admin-1')).rejects.toThrow(
+      /has not been cancelled/
+    );
+    expect(razorpayRefundMock).not.toHaveBeenCalled();
+  });
+
+  it('still refunds a never-cancelled booking when the admin is explicit', async () => {
+    const service = await loadLiveService();
+    arrange(makeBooking({ status: 'delivered', cancelledAt: null }));
+
+    const out = await service.processRefund('bk-1', 'admin-1', { fullRefund: true });
+
+    expect(out.amount).toBe(1100);
+    expect(out.status).toBe('refunded');
+  });
+
+  it('still refuses when the booking has no refundable payment', async () => {
+    const service = await loadLiveService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValueOnce(makeBooking({ payments: [] }));
+
+    await expect(service.processRefund('bk-1', 'admin-1')).rejects.toThrow(
+      /No captured payment found/
+    );
   });
 });
 

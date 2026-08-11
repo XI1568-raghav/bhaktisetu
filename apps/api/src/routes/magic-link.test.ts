@@ -15,6 +15,8 @@ vi.mock('../lib/prisma.js', () => ({
     userRoleAssignment: {
       create: vi.fn(async () => ({})),
     },
+    // createEmailSession() persists the session row (A-005). Stub the raw INSERT.
+    $executeRawUnsafe: vi.fn(async () => 1),
   },
 }));
 
