@@ -245,7 +245,13 @@ export interface PujaBooking {
   priest?: Priest;
   status: BookingStatus;
   scheduledDate: string;
-  scheduledTime?: string;
+  // Wire name is `scheduledTimeSlot` — a free-form IST slot label ("09:00 AM"),
+  // NOT a time component of scheduledDate (which is a DATE at midnight). This
+  // was declared as `scheduledTime` and the API never returned that field, so
+  // every consumer silently got undefined and fell back to comparing
+  // scheduledDate alone, i.e. midnight. Combine the two only via
+  // apps/api/src/lib/slot-time.ts — it is the one correct way to do it.
+  scheduledTimeSlot?: string;
   isOnline: boolean;
   devoteeNames: string[];
   gotras: string[];
@@ -253,7 +259,10 @@ export interface PujaBooking {
   specialInstructions?: string;
   totalAmountInr: number;
   totalAmountUsd: number;
-  currency: "INR" | "USD";
+  // INR-only. Razorpay is the sole gateway and every write path in the API
+  // hardcodes 'INR'; a "USD" member here advertised a settlement rail that does
+  // not exist and is how an INR amount ends up labelled as dollars (RV-01).
+  currency: "INR";
   prasadDeliveryAddress?: UserAddress;
   prasadDeliveryRequested: boolean;
   videoRecordingUrl?: string;
@@ -290,9 +299,8 @@ export interface Payment {
   userId: string;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
-  stripePaymentIntentId?: string;
   amount: number;
-  currency: "INR" | "USD";
+  currency: "INR";
   status: PaymentStatus;
   method?: PaymentMethod;
   receiptUrl?: string;
@@ -310,7 +318,7 @@ export interface PriestPayout {
   bookingId: string;
   booking?: PujaBooking;
   amount: number;
-  currency: "INR" | "USD";
+  currency: "INR";
   status: PayoutStatus;
   payoutMethod: "BANK_TRANSFER" | "UPI";
   transactionRef?: string;
@@ -413,9 +421,8 @@ export interface Subscription {
   status: SubscriptionStatus;
   priceInr: number;
   priceUsd: number;
-  currency: "INR" | "USD";
+  currency: "INR";
   razorpaySubscriptionId?: string;
-  stripeSubscriptionId?: string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
   cancelledAt?: string;

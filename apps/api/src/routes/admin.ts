@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
+import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
+import { resolveProviderRole } from '../services/payout.service.js';
 import type { Prisma } from '@prisma/client';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
@@ -458,7 +460,15 @@ export async function adminRoutes(server: FastifyInstance) {
   // ─── GET /commissions — paginated commission ledger ─────────────────────────
 
   const commissionQuerySchema = z.object({
-    status: z.enum(['PENDING', 'PAID']).optional(),
+    // batch9-review (2026-08-11): REVERSED was missing. Migration
+    // 20260810000000 added it to CommissionStatus and refund.service writes it,
+    // so `?status=REVERSED` 400'd and an admin could not isolate the reversed
+    // rows after a refund — on a Rs 5,000 refunded booking the priest's reversed
+    // Rs 4,000 and the temple's Rs 250 were scattered through an unfiltered list
+    // with no way to see them as a class. (They were always RETURNED: `where.
+    // status` is only set when a status is supplied. They just couldn't be
+    // filtered FOR.)
+    status: z.enum(['PENDING', 'PAID', 'REVERSED']).optional(),
     from: z.string().datetime().optional(),
     to: z.string().datetime().optional(),
     providerId: z.string().uuid().optional(),
@@ -489,14 +499,114 @@ export async function adminRoutes(server: FastifyInstance) {
         orderBy: { createdAt: 'desc' },
         skip,
         take: pageSize,
+        // The transfer that settled this row: reference + processedAt live on
+        // the PayoutRequest, not the Commission. One join, not a second query.
+        include: {
+          payoutRequest: { select: { reference: true, processedAt: true } },
+        },
       }),
       prisma.commission.count({ where }),
     ]);
-    const data = rows.map((c) => ({
-      ...c,
-      amount: c.amount.toString(),
-      percentage: c.percentage.toString(),
-    }));
+
+    // batch9-review (2026-08-11): this endpoint returned the raw Commission row
+    // and nothing else, so the admin ledger rendered Gross '—', Net '—',
+    // Reference '—', and the provider and booking as raw UUIDs — unusable for
+    // reconciliation. On a Rs 1,100 puja an admin saw "provider earning
+    // Rs 880" with no way to confirm the 20/80 split or even tell WHICH
+    // provider the row belonged to before authorising a transfer, and every
+    // store-order / wellness commission (bookingId null) showed a blank cell.
+    // `percentage` was fetched, stringified, and then never sent to any UI
+    // field, so the take rate was invisible too.
+    //
+    // Everything derived here goes through lib/commission-math.ts — the whole
+    // point of that module is that no reader re-invents `gross = amount /
+    // (1 - percentage)` inline and gets a different answer.
+    const providerIds = Array.from(new Set(rows.map((r) => r.providerId)));
+    const bookingIds = rows.map((r) => r.bookingId).filter((id): id is string => !!id);
+    const storeOrderIds = rows.map((r) => r.storeOrderId).filter((id): id is string => !!id);
+    const enrollmentIds = rows
+      .map((r) => r.wellnessEnrollmentId)
+      .filter((id): id is string => !!id);
+
+    // Each lookup is one batched IN over the current page — bounded by pageSize
+    // (max 200), never a per-row query.
+    const [providers, assignments, bookings, storeOrders, enrollments] = await Promise.all([
+      providerIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: providerIds } },
+            select: { id: true, fullName: true },
+          })
+        : Promise.resolve([]),
+      providerIds.length
+        ? prisma.userRoleAssignment.findMany({
+            where: { userId: { in: providerIds } },
+            select: { userId: true, role: true, isPrimary: true },
+          })
+        : Promise.resolve([]),
+      bookingIds.length
+        ? prisma.pujaBooking.findMany({
+            where: { id: { in: bookingIds } },
+            select: { id: true, bookingNumber: true, pujaType: { select: { name: true } } },
+          })
+        : Promise.resolve([]),
+      storeOrderIds.length
+        ? prisma.storeOrder.findMany({
+            where: { id: { in: storeOrderIds } },
+            select: { id: true, orderNumber: true },
+          })
+        : Promise.resolve([]),
+      enrollmentIds.length
+        ? prisma.wellnessEnrollment.findMany({
+            where: { id: { in: enrollmentIds } },
+            select: { id: true, session: { select: { title: true } } },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const providerName = new Map(providers.map((p) => [p.id, p.fullName] as const));
+    const heldRoles = new Map<string, Array<{ role: string; isPrimary: boolean }>>();
+    for (const a of assignments) {
+      const list = heldRoles.get(a.userId) ?? [];
+      list.push({ role: a.role as string, isPrimary: a.isPrimary });
+      heldRoles.set(a.userId, list);
+    }
+    const bookingById = new Map(bookings.map((b) => [b.id, b] as const));
+    const orderById = new Map(storeOrders.map((o) => [o.id, o] as const));
+    const enrollmentById = new Map(enrollments.map((e) => [e.id, e] as const));
+
+    const data = rows.map((c) => {
+      const held = heldRoles.get(c.providerId) ?? [];
+      // Same precedence the payout engine stamps on a PayoutRequest, so a
+      // dual-role provider is named identically in the ledger and the queue.
+      const role =
+        resolveProviderRole(held.filter((h) => h.isPrimary).map((h) => h.role)) ??
+        resolveProviderRole(held.map((h) => h.role));
+      const booking = c.bookingId ? bookingById.get(c.bookingId) : undefined;
+      const order = c.storeOrderId ? orderById.get(c.storeOrderId) : undefined;
+      const enrollment = c.wellnessEnrollmentId
+        ? enrollmentById.get(c.wellnessEnrollmentId)
+        : undefined;
+      const { payoutRequest, ...row } = c;
+      return {
+        ...row,
+        // `amount` IS the provider's earning (commission-math.ts). Gross and the
+        // platform's cut are derived from it and the take rate — never the other
+        // way round, and never inline.
+        amount: c.amount.toString(),
+        percentage: c.percentage.toString(),
+        grossAmount: commissionGross(c.amount, c.percentage).toString(),
+        platformCut: commissionPlatformCut(c.amount, c.percentage).toString(),
+        // Decimal, not `Number(percentage) * 100` — a 5% rate float-multiplies
+        // to 5.000000000000001 and renders as that in the take-rate column.
+        ratePercent: c.percentage.mul(100).toDecimalPlaces(2).toNumber(),
+        providerName: providerName.get(c.providerId) ?? null,
+        providerRole: role,
+        bookingNumber: booking?.bookingNumber ?? order?.orderNumber ?? null,
+        itemName: booking?.pujaType?.name ?? enrollment?.session?.title ?? (order ? 'Store order' : null),
+        payoutReference: payoutRequest?.reference ?? null,
+        processedAt: c.paidAt ?? payoutRequest?.processedAt ?? null,
+      };
+    });
     return { data, page, pageSize, total };
   });
 

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { Prisma } from '@prisma/client';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
 
@@ -298,6 +300,33 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
   // The double-pay rail, found by adversarial review 2026-08-11: repairing the
   // Commission key (RV-04) made the unified /payouts rail live for the same
   // money PriestPayout already carried, with nothing cross-checking them.
+  // A reschedule detaches the pandit and REVERSES his commission. That voided
+  // row must not block the replacement pandit: if the guard matched it, he
+  // would be paid by neither rail (the unified rail has nothing live for him).
+  it('ignores a REVERSED commission — a voided row must not strand the next pandit', async () => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...baseBooking,
+      status: 'video_uploaded',
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      aadhaarVerified: true,
+      displayName: 'Replacement Priest',
+    });
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+    // The guard filters REVERSED out in SQL, so the query returns nothing.
+    prismaMock.commission.findFirst.mockResolvedValue(null);
+    prismaMock.priestPayout.create.mockResolvedValue({ id: 'po-2', amount: 350 });
+
+    const out = await service.createPriestPayout('bk-1');
+
+    expect('id' in out && out.id).toBe('po-2');
+    // Bind to the actual predicate — this is the half of the pair that makes
+    // reversing (rather than deleting) safe in booking.service.
+    const where = (prismaMock.commission.findFirst.mock.calls[0]![0] as any).where;
+    expect(where.status).toEqual({ not: 'REVERSED' });
+  });
+
   it('does NOT mint a PriestPayout when the unified Commission ledger owns the booking', async () => {
     const service = await loadService();
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
@@ -347,6 +376,47 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
       /Assigned priest not found/
     );
     expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PaymentService — no cross-rail Commission writer (markPayoutPaid stays deleted)', () => {
+  // The mutual-exclusion guard tested above protects the WRITE path: a booking
+  // the Commission ledger owns never gets a second payable PriestPayout row.
+  // `markPayoutPaid` was the hole in it — a callerless method that completed a
+  // PriestPayout and flipped the first Commission matching the same bookingId
+  // to PAID with no `status`/`payoutRequestId` predicate. Because
+  // refund.service scopes its REVERSED write to `payoutRequestId: null`, it was
+  // the only code path in the repo that could put a non-PENDING row inside an
+  // OPEN PayoutRequest, which permanently strands that request: processPayout's
+  // completion guard throws, reject unlinks the rows, and the already-PAID one
+  // drops out of getPayoutBalance with the provider's money on it.
+  //
+  // These two assertions are the lock. Reintroducing the method fails the
+  // first; reintroducing the ledger write under any other name fails the
+  // second. A test that only drove the surviving methods would pass with the
+  // bug back, so it has to bind to the absence itself.
+
+  it('exposes no markPayoutPaid on the service surface', async () => {
+    const service = await loadService();
+    expect((service as unknown as Record<string, unknown>).markPayoutPaid).toBeUndefined();
+    expect(Object.getOwnPropertyNames(Object.getPrototypeOf(service))).not.toContain(
+      'markPayoutPaid'
+    );
+  });
+
+  it('never mutates an existing Commission row — it only mints PENDING ones', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('./payment.service.ts', import.meta.url)),
+      'utf8'
+    );
+    // Strip comments so the tombstone explaining the removal cannot satisfy
+    // (or trip) the match.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+    expect(code).not.toMatch(/commission\s*\.\s*(update|updateMany|upsert|delete|deleteMany)\b/);
+    // Commission lifecycle after minting belongs to payout.service (PAID) and
+    // refund.service (REVERSED). This service creates and reads, nothing else.
+    expect(code).toMatch(/commission\s*\.\s*create\b/);
   });
 });
 

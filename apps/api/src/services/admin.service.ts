@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@prisma/client';
+import { Prisma, type BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { commissionPlatformCut } from '../lib/commission-math.js';
 import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
@@ -435,7 +435,34 @@ export class AdminService {
 
   async getRevenue(): Promise<RevenueBreakdown> {
     try {
-      const [commissions, subscriptions] = await Promise.all([
+      // These figures are the founder's revenue dashboard (web /admin/revenue,
+      // the mobile admin screen and the CSV exports), so they must be TOTALS.
+      //
+      // They used to be computed from `findMany({ take: 50 })` — the 50 most
+      // recent rows — and reported as the platform-wide total. That is right
+      // only until the 51st commission exists, after which the dashboard
+      // silently under-reports revenue by an amount that grows with the
+      // business. A founder deciding whether to spend on acquisition would be
+      // reading a number that gets more wrong the better things go.
+      //
+      // Grouping by `percentage` makes the platform cut exactly derivable
+      // without loading the table: within a rate bucket
+      //     platformCut = sum(amount) * rate / (1 - rate)
+      // which is commission-math's identity applied once per DISTINCT RATE
+      // rather than once per row. There are a handful of rates (0.20 today), so
+      // this is bounded and exact rather than sampled.
+      const [paidByRate, pendingAgg, recentCommissions, subscriptions] = await Promise.all([
+        prisma.commission.groupBy({
+          by: ['percentage'],
+          where: { status: 'PAID' },
+          _sum: { amount: true },
+        }),
+        prisma.commission.aggregate({
+          where: { status: 'PENDING' },
+          _sum: { amount: true },
+        }),
+        // The "Recent commissions" table only — deliberately bounded, and NOT
+        // the basis of any total above.
         prisma.commission.findMany({ orderBy: { createdAt: 'desc' }, take: 50 }),
         prisma.marketplaceSubscription.findMany({ where: { status: 'ACTIVE' } }),
       ]);
@@ -444,15 +471,14 @@ export class AdminService {
       // (lib/commission-math.ts). Summing it into "Commissions Earned" reported
       // provider payouts as platform revenue — a ~4x overstatement on a 20/80
       // split. The platform's share is derived from the stored take rate.
-      const totalCommissions = commissions
-        .filter((c) => c.status === 'PAID')
-        .reduce((sum, c) => sum + commissionPlatformCut(c.amount, c.percentage).toNumber(), 0);
+      const totalCommissions = paidByRate.reduce((sum, bucket) => {
+        const providerTotal = bucket._sum.amount ?? new Prisma.Decimal(0);
+        return sum + commissionPlatformCut(providerTotal, bucket.percentage).toNumber();
+      }, 0);
 
       // Pending payouts genuinely IS what providers are owed, so this one keeps
       // summing `amount` — it was the under-reported figure before.
-      const pendingPayouts = commissions
-        .filter((c) => c.status === 'PENDING')
-        .reduce((sum, c) => sum + Number(c.amount), 0);
+      const pendingPayouts = Number(pendingAgg._sum.amount ?? 0);
 
       const totalSubscriptions = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
 
@@ -478,7 +504,7 @@ export class AdminService {
         totalCommissions,
         totalSubscriptions,
         pendingPayouts,
-        commissions: commissions.map((c) => ({
+        commissions: recentCommissions.map((c) => ({
           id: c.id,
           bookingId: c.bookingId,
           storeOrderId: c.storeOrderId,
@@ -489,34 +515,16 @@ export class AdminService {
         })),
         subscriptionRevenue: Array.from(subGroups.values()),
       };
-    } catch {
-      return {
-        totalCommissions: 45000,
-        totalSubscriptions: 15000,
-        pendingPayouts: 8000,
-        commissions: [
-          {
-            id: 'com-001',
-            bookingId: 'bk-001',
-            providerId: 'user-002',
-            amount: 630,
-            status: 'PAID',
-            createdAt: '2026-04-10T10:00:00Z',
-          },
-          {
-            id: 'com-002',
-            bookingId: 'bk-002',
-            providerId: 'user-002',
-            amount: 420,
-            status: 'PENDING',
-            createdAt: '2026-04-12T10:00:00Z',
-          },
-        ],
-        subscriptionRevenue: [
-          { plan: 'BASIC', role: 'PANDIT', count: 5, totalAmount: 4995 },
-          { plan: 'PRO', role: 'ASTROLOGER', count: 3, totalAmount: 8997 },
-        ],
-      };
+    } catch (err) {
+      // NEVER fabricate revenue. This used to answer a hardcoded Rs 45,000 /
+      // Rs 15,000 / Rs 8,000 with invented commission rows on ANY DB error, so
+      // the founder's revenue dashboard showed a confident, entirely fictional
+      // number whenever the database was unreachable — and the mobile admin
+      // screen's error banner could never fire, because the call always
+      // "succeeded". Fail loud, exactly as getUsers already does after the same
+      // mistake with MOCK_USERS.
+      console.error('[admin.service.getRevenue] DB failure', err);
+      throw err;
     }
   }
 

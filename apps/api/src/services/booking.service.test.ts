@@ -14,12 +14,32 @@ const priestPujaOfferingMock = { findUnique: vi.fn() };
 (prismaMock as any).templePayout = templePayoutMock;
 (prismaMock as any).priestPujaOffering = priestPujaOfferingMock;
 
+// S3-08 / S3-10 (2026-08-11): three more members the shared mock predates.
+//  - payment.count      — the confirm gate ("no captured payment, no confirm")
+//  - commission.updateMany — reschedule REVERSES the detached pandit's earning
+//  - dispatchOffer.updateMany — reschedule supersedes the old offers
+// Attached here, never in lib/__mocks__/prisma.ts: that file is shared by every
+// suite, and vitest gives this file its own module registry so nothing leaks.
+const paymentCountMock = vi.fn();
+const dispatchOfferMock = { updateMany: vi.fn() };
+(prismaMock as any).payment.count = paymentCountMock;
+// NOTE: unlike the others here, commission.updateMany ALREADY exists on the
+// shared mock and other suites depend on its return value — alias it, never
+// reassign it (doing so returned undefined and broke 26 unrelated tests).
+const commissionUpdateManyMock = (prismaMock as any).commission.updateMany;
+(prismaMock as any).dispatchOffer = dispatchOfferMock;
+
 // Mock the prisma module before importing the service
 vi.mock('../lib/prisma.js', () => ({
   prisma: prismaMock,
 }));
 
-import { BookingService, writeTemplePayoutOnConfirm } from './booking.service.js';
+import {
+  BookingService,
+  writeTemplePayoutOnConfirm,
+  UNPAID_HOLD_MINUTES,
+  MAX_RESCHEDULES,
+} from './booking.service.js';
 
 let service: BookingService;
 
@@ -247,11 +267,16 @@ describe('BookingService.createBooking', () => {
     expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
   });
 
-  // This test used to assert `currency === 'USD'` — it ENCODED the RV-01
-  // residual found on 2026-08-11: nriPrice is an INR column, and that currency
-  // string flowed straight into razorpay.orders.create, asking the gateway for
-  // $10,000 on a Rs 10,000 booking. NRI users pay the NRI *price*, in INR.
-  it('uses the NRI price for NRI users — and still bills in INR', async () => {
+  // ── S3-09 (2026-08-11): displayed price === charged price ─────────────────
+  //
+  // This test previously asserted the OPPOSITE (`priceAmount > 1100` for an NRI
+  // user), encoding the defect: createBooking swapped in PujaType.nriPrice for
+  // anyone whose self-settable `isNri` flag was true, while the web wizard
+  // quoted `priceOverride ?? basePrice` and never rendered an NRI figure at all.
+  // Fixture base 500 / nri 5000: the page said Rs 551, the Razorpay order asked
+  // for Rs 5,051. Same class as the RV-01 P0, and the /from-offering path had
+  // already refused to create it.
+  it('charges an NRI user the QUOTED base price, not the hidden nriPrice', async () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
     prismaMock.pujaBooking.count.mockResolvedValue(0);
     prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: true });
@@ -260,7 +285,7 @@ describe('BookingService.createBooking', () => {
       id: 'booking-1',
       bookingNumber: 'BS-20261225-ABC12',
       status: 'pending_payment',
-      priceAmount: 5000,
+      priceAmount: 551,
       currency: 'INR',
       scheduledDate: new Date('2026-12-25'),
       scheduledTimeSlot: '10:00',
@@ -271,12 +296,67 @@ describe('BookingService.createBooking', () => {
 
     expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
     const createCall = prismaMock.pujaBooking.create.mock.calls[0]![0];
-    // The NRI price IS applied...
-    expect(Number(createCall.data.priceAmount)).toBeGreaterThan(1100);
-    // ...but the currency is INR. Razorpay is the only rail and INR the only
-    // currency; a 'USD' here is an ~83x overcharge at the gateway.
+    // base 500 + platform fee 51 — exactly what a domestic user is charged and
+    // exactly what the wizard showed. The nriPrice (5000) is nowhere near it.
+    expect(Number(createCall.data.priceAmount)).toBe(551);
+    expect(Number(createCall.data.priceAmount)).not.toBe(5051);
+    // The split is on the QUOTED puja price too, so the pandit is not paid a
+    // share of a number the devotee never agreed to.
+    expect(Number(createCall.data.priestPayout)).toBe(400);
+    // Razorpay is the only rail and INR the only currency; a 'USD' here is the
+    // ~83x overcharge at the gateway that RV-01 closed.
     expect(createCall.data.currency).toBe('INR');
     expect(result.currency).toBe('INR');
+  });
+
+  // ── S3-07 (2026-08-11): the platform multiplier is Decimal, not float ─────
+  it('derives the platform commission by Decimal subtraction, not (1 - share)', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.pujaBooking.create.mockResolvedValue({ id: 'booking-1', status: 'pending_payment' });
+
+    await service.createBooking(validInput);
+
+    const data = (prismaMock.pujaBooking.create.mock.calls[0]![0] as any).data;
+    // `new Prisma.Decimal((1 - 0.8).toString())` is literally
+    // 0.19999999999999996, which yields '99.99999999999998' on a 500 puja.
+    // Decimal(10,2) would round it away on write, which is exactly why this has
+    // to be asserted on the un-rounded value.
+    expect(data.platformCommission.toString()).toBe('100');
+    expect(data.priestPayout.toString()).toBe('400');
+  });
+
+  // ── S3-04 (2026-08-11): unpaid holds expire ───────────────────────────────
+  //
+  // Every capacity predicate was `status notIn [cancelled, refunded]` with no
+  // age bound and there is no expiry job for puja bookings, so a
+  // `pending_payment` row held its slot forever. /create-order creates the
+  // booking BEFORE the Razorpay order, so every abandoned checkout burned a
+  // slot permanently — and an attacker could hold a competitor pandit's whole
+  // calendar for free (maxBookingsPerSlot defaults to 1 on priest offerings).
+  it('excludes unpaid holds older than the TTL from the capacity count', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.pujaBooking.create.mockResolvedValue({ id: 'booking-1', status: 'pending_payment' });
+
+    const before = Date.now();
+    await service.createBooking(validInput);
+
+    const where = (prismaMock.pujaBooking.count.mock.calls[0]![0] as any).where;
+    // Live rows still count...
+    expect(where.AND[0]).toEqual({ status: { notIn: ['cancelled', 'refunded'] } });
+    // ...but an abandoned pending_payment row older than the hold does not.
+    const stale = where.AND[1].NOT;
+    expect(stale.status).toBe('pending_payment');
+    const cutoffMs = (stale.createdAt.lt as Date).getTime();
+    expect(cutoffMs).toBeLessThanOrEqual(before - UNPAID_HOLD_MINUTES * 60_000 + 5_000);
+    expect(cutoffMs).toBeGreaterThan(before - UNPAID_HOLD_MINUTES * 60_000 - 60_000);
+    // The old shape put `status` at the top level with no age bound at all.
+    expect(where.status).toBeUndefined();
   });
 
   it('validates prasad delivery address belongs to user', async () => {
@@ -412,6 +492,9 @@ describe('BookingService.updateBookingStatus', () => {
   });
 
   it('allows valid transition from pending_payment to confirmed', async () => {
+    // S3-08: `confirmed` now requires a captured payment (see the P0 block
+    // below) — this is the PAID booking, the one that must still work.
+    paymentCountMock.mockResolvedValue(1);
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'booking-1',
       status: 'pending_payment',
@@ -513,6 +596,108 @@ describe('BookingService.updateBookingStatus', () => {
     expect(updateCall.data).not.toHaveProperty('id');
   });
 
+  // S3-03 (2026-08-11): `videoUploadedAt` is server-stamped evidence. It sat in
+  // the route's VIDEO_PROOF_FIELDS whitelist and was absent from this denylist,
+  // and the route's video-proof gate only inspects the URL — so the booking
+  // OWNER could rewrite the proof timestamp on a booking that already carried
+  // genuine proof. GET /bookings/:id/video then served the forged value,
+  // destroying the artefact that settles a chargeback on a Rs 10,000 puja.
+  it('strips a client-supplied videoUploadedAt (forged video-proof timestamp)', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'video_uploaded',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'delivered',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
+    });
+
+    await service.updateBookingStatus('booking-1', 'delivered' as any, {
+      videoUploadedAt: '2020-01-01T00:00:00.000Z',
+    } as any);
+
+    const updateCall = prismaMock.pujaBooking.update.mock.calls[0]![0]!;
+    expect(updateCall.data).not.toHaveProperty('videoUploadedAt');
+    expect(updateCall.data.status).toBe('delivered');
+  });
+
+  // ── P0 S3-08 (2026-08-11): no captured payment, no confirm ────────────────
+  //
+  // PATCH /bookings/:id authorizes the booking OWNER for every transition, and
+  // `confirmed` is where this method MINTS the Commission row that
+  // payout.service pays a provider from. So a devotee could book a Rs 10,000
+  // puja via /bookings/from-offering (which pins priestId at create), never
+  // pay, PATCH {"status":"confirmed"}, and mint Rs 8,000 of withdrawable
+  // balance for a colluding pandit — unbounded, and free.
+
+  function unpaidConfirmMocks() {
+    paymentCountMock.mockResolvedValue(0);
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'pending_payment',
+      templeId: 't-1',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'confirmed',
+      templeId: 't-1',
+      priestId: 'pr-1',
+      priceAmount: new Prisma.Decimal(10000),
+      platformCommission: new Prisma.Decimal(2000),
+      priestPayout: new Prisma.Decimal(8000),
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' });
+    prismaMock.commission.findFirst.mockResolvedValue(null);
+    prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
+    templePayoutMock.findFirst.mockResolvedValue(null);
+    templePayoutMock.create.mockResolvedValue({ id: 'tp-1' });
+  }
+
+  it('refuses to confirm a booking with no captured payment', async () => {
+    unpaidConfirmMocks();
+
+    await expect(service.updateBookingStatus('booking-1', 'confirmed' as any)).rejects.toThrow(
+      'no captured payment',
+    );
+    expect(paymentCountMock).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1', status: 'captured' },
+    });
+  });
+
+  it('mints NO Commission and NO TemplePayout on an unpaid confirm', async () => {
+    unpaidConfirmMocks();
+
+    await expect(
+      service.updateBookingStatus('booking-1', 'confirmed' as any),
+    ).rejects.toThrow();
+
+    // The self-payout mint: Commission.amount IS what getPayoutBalance pays.
+    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(templePayoutMock.create).not.toHaveBeenCalled();
+  });
+
+  it('throws INSIDE the transaction so the unpaid booking never becomes confirmed', async () => {
+    unpaidConfirmMocks();
+
+    await expect(
+      service.updateBookingStatus('booking-1', 'confirmed' as any),
+    ).rejects.toThrow();
+
+    // The status flip itself is issued, but it is issued inside the same
+    // $transaction the throw aborts — so it rolls back. Asserting the throw
+    // escapes the transaction callback is the binding part: catching it inside
+    // would leave the booking `confirmed` and unpaid.
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+  });
+
   // P0 #pp-02 (2026-07-09): transitioning a booking to video_uploaded (or
   // delivered) must mint a PriestPayout row — otherwise the priest Earnings +
   // Payouts dashboards are permanently ₹0. createPriestPayout is fire-and-
@@ -602,6 +787,8 @@ describe('BookingService.updateBookingStatus', () => {
   // ── RV-14 (2026-08-10): confirm + ledger writes must be one transaction ────
 
   function confirmMocks() {
+    // S3-08: a real confirm always has a captured Payment behind it.
+    paymentCountMock.mockResolvedValue(1);
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'booking-1',
       status: 'pending_payment',
@@ -1034,10 +1221,12 @@ describe('BookingService.rescheduleBooking', () => {
     scheduledTimeSlot: '10:00',
     templePujaOfferingId: 'offering-1',
     priestPujaOfferingId: null,
+    rescheduleCount: 0,
   };
 
   const templeOffering = {
     id: 'offering-1',
+    isActive: true,
     availableSlots: ['10:00', '14:00', '18:00'],
     maxBookingsPerSlot: 5,
   };
@@ -1046,6 +1235,10 @@ describe('BookingService.rescheduleBooking', () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue({ ...bookingRow, ...overrides });
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(templeOffering);
     prismaMock.pujaBooking.count.mockResolvedValue(0);
+    // S3-10: the detach path reads and voids the pandit's unclaimed earning.
+    prismaMock.commission.findFirst.mockResolvedValue(null);
+    commissionUpdateManyMock.mockResolvedValue({ count: 1 });
+    dispatchOfferMock.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.pujaBooking.update.mockResolvedValue({
       id: 'booking-1',
       bookingNumber: 'BS-20261225-ABC12',
@@ -1149,7 +1342,10 @@ describe('BookingService.rescheduleBooking', () => {
     expect(where.id).toEqual({ not: 'booking-1' });
     expect(where.templePujaOfferingId).toBe('offering-1');
     expect(where.scheduledTimeSlot).toBe('14:00');
-    expect(where.status).toEqual({ notIn: ['cancelled', 'refunded'] });
+    // S3-04: the occupancy predicate moved into AND so an expired unpaid hold
+    // stops counting. The live-status half must still be there.
+    expect(where.AND[0]).toEqual({ status: { notIn: ['cancelled', 'refunded'] } });
+    expect(where.AND[1].NOT.status).toBe('pending_payment');
   });
 
   // The past-date trap: once scheduledDate is behind, cancel, reschedule AND
@@ -1192,6 +1388,7 @@ describe('BookingService.rescheduleBooking', () => {
     happyMocks({ priestPujaOfferingId: 'priest-offering-9' });
     priestPujaOfferingMock.findUnique.mockResolvedValue({
       id: 'priest-offering-9',
+      isActive: true,
       availableSlots: [{ time: '07:00', label: 'Morning' }],
       maxBookingsPerSlot: 1,
     });
@@ -1209,6 +1406,7 @@ describe('BookingService.rescheduleBooking', () => {
     happyMocks({ priestPujaOfferingId: 'priest-offering-9' });
     priestPujaOfferingMock.findUnique.mockResolvedValue({
       id: 'priest-offering-9',
+      isActive: true,
       availableSlots: [{ time: '07:00', label: 'Morning' }],
       maxBookingsPerSlot: 1,
     });
@@ -1270,6 +1468,144 @@ describe('BookingService.rescheduleBooking', () => {
     expect(result.requeuedForAssignment).toBe(false);
     const data = (prismaMock.pujaBooking.update.mock.calls[0]![0] as any).data;
     expect(data).not.toHaveProperty('scheduledTimeSlot');
+  });
+
+  // ── S3-10 (2026-08-11): the earning must move with the work ───────────────
+  //
+  // Detaching the pandit left his Commission row untouched. The row is minted
+  // at `confirmed` keyed to the pandit on record at that instant, and
+  // createPriestPayout refuses to pay the replacement while ANY commission owns
+  // the booking — so Pandit A withdrew Rs 8,000 for a puja Pandit B performed
+  // for Rs 0. The admin reassign path in routes/bookings.ts exists to prevent
+  // exactly this; the devotee-facing reschedule button had none of it.
+
+  it('voids the detached pandit’s unclaimed commission when re-queueing', async () => {
+    happyMocks({ status: 'priest_assigned', priestId: 'pr-1' });
+
+    await service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00');
+
+    // REVERSE, never delete — a money ledger keeps its history. This is safe
+    // only because createPriestPayout's mutual-exclusion guard now ignores
+    // REVERSED rows (payment.service), so the pandit who actually performs is
+    // still payable by the legacy rail. If that guard ever stops filtering on
+    // status, this reversal strands him — the two are a pair.
+    expect(commissionUpdateManyMock).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1', status: 'PENDING', payoutRequestId: null },
+      data: { status: 'REVERSED' },
+    });
+    // The row must survive as an audit record.
+    expect((prismaMock as any).commission.deleteMany ?? { mock: { calls: [] } }).toBeDefined();
+  });
+
+  it('refuses the reschedule when the pandit’s earning is already settled', async () => {
+    happyMocks({ status: 'priest_assigned', priestId: 'pr-1' });
+    prismaMock.commission.findFirst.mockResolvedValue({ id: 'c-paid' });
+
+    await expect(
+      service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00'),
+    ).rejects.toThrow('already been paid out');
+    // Refused, not half-applied: nothing is reversed and the booking does not move.
+    expect(commissionUpdateManyMock).not.toHaveBeenCalled();
+    expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
+  });
+
+  it('supersedes the old dispatch offers and clears assignedVia on re-queue', async () => {
+    happyMocks({ status: 'priest_assigned', priestId: 'pr-1' });
+
+    await service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00');
+
+    const offerCall = dispatchOfferMock.updateMany.mock.calls[0]![0] as any;
+    expect(offerCall.where).toEqual({ bookingId: 'booking-1', state: 'sent' });
+    expect(offerCall.data.state).toBe('superseded');
+
+    const data = (prismaMock.pujaBooking.update.mock.calls[0]![0] as any).data;
+    expect(data.assignedVia).toBeNull();
+    // dispatch.accept nulls offerExpiresAt on assignment and sweepExpiredOffers
+    // only sees `offerExpiresAt < now`, so leaving it null made
+    // `requeuedForAssignment: true` a lie — nobody would ever be re-offered it.
+    expect(data.offerExpiresAt).toBeInstanceOf(Date);
+    expect((data.offerExpiresAt as Date).getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('leaves the ledger alone when no pandit was attached', async () => {
+    happyMocks();
+
+    await service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00');
+
+    expect(commissionUpdateManyMock).not.toHaveBeenCalled();
+    expect(dispatchOfferMock.updateMany).not.toHaveBeenCalled();
+  });
+
+  // ── S3-06a: an inactive offering is a conscious refusal, not an oversight ──
+  it('refuses to move a booking onto a deactivated offering', async () => {
+    happyMocks();
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue({
+      ...templeOffering,
+      isActive: false,
+    });
+
+    await expect(
+      service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00'),
+    ).rejects.toThrow('no longer offered');
+    expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
+  });
+
+  // ── S3-06b: the target date is normalised to UTC midnight ─────────────────
+  //
+  // The route parses `newDate` with `z.coerce.date()`, which accepts
+  // '2026-09-15T10:30:00+05:30'. A Date carrying a time component made the
+  // capacity query match ZERO existing rows (so it passed trivially) and wrote
+  // a row every availability reader misses, because they all query UTC
+  // midnight — one reschedule silently overselling a 5-capacity slot to 6.
+  it('normalises a non-midnight target date to UTC midnight', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-08-11T10:00:00Z'));
+      happyMocks({ scheduledDate: new Date('2026-08-20T00:00:00Z') });
+
+      await service.rescheduleBooking(
+        'booking-1',
+        'user-1',
+        new Date('2026-09-15T10:30:00Z'),
+        '14:00',
+      );
+
+      const countWhere = prismaMock.pujaBooking.count.mock.calls[0]![0]!.where as any;
+      expect((countWhere.scheduledDate as Date).toISOString()).toBe('2026-09-15T00:00:00.000Z');
+
+      const data = (prismaMock.pujaBooking.update.mock.calls[0]![0] as any).data;
+      expect((data.scheduledDate as Date).toISOString()).toBe('2026-09-15T00:00:00.000Z');
+
+      // The advisory-lock key is derived from the same normalised date, so two
+      // racers on the same calendar day take the same lock.
+      const [, key] = prismaMock.$queryRawUnsafe.mock.calls[0]!;
+      expect(key).toBe('puja-slot:offering-1:2026-09-15:14:00');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // ── S3-25: reschedules are bounded and counted ────────────────────────────
+  it('increments rescheduleCount on every move', async () => {
+    happyMocks();
+
+    await service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00');
+
+    const data = (prismaMock.pujaBooking.update.mock.calls[0]![0] as any).data;
+    expect(data.rescheduleCount).toEqual({ increment: 1 });
+  });
+
+  it('refuses once the reschedule limit is reached', async () => {
+    happyMocks({ rescheduleCount: MAX_RESCHEDULES });
+
+    await expect(
+      service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00'),
+    ).rejects.toThrow('cannot be rescheduled again');
+    expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
+    // The message carries "cannot be rescheduled" so the route maps it to 409.
+    await expect(
+      service.rescheduleBooking('booking-1', 'user-1', utcDay(10), '14:00'),
+    ).rejects.toThrow(/cannot be rescheduled/);
   });
 });
 
@@ -1546,6 +1882,40 @@ describe('BookingService.submitReview', () => {
     // priest.findUnique + priest.update are no longer called for the aggregate.
     expect(prismaMock.priest.update).not.toHaveBeenCalled();
   });
+
+  // S3-22 (2026-08-11): `Priest.ratingAvg` is a Prisma Float = Postgres `double
+  // precision`, and Postgres has no `round(double precision, integer)` — only
+  // `round(dp)` and `round(numeric, int)`, with float8→numeric assignment-only
+  // and therefore not eligible in function resolution. Without the cast EVERY
+  // review on a booking with an assigned pandit raised `function round(double
+  // precision, integer) does not exist`, AFTER the booking's own rating had
+  // already committed as a separate statement: the devotee saw "Failed to
+  // submit review" on a review that was saved, and the retry got "already been
+  // submitted". Pandit ratingAvg never left 0, and dispatch.selectCandidates
+  // ranks on that column. The harness mocks $executeRawUnsafe and so cannot
+  // execute the statement — asserting the cast is in the SQL text is the only
+  // binding available at this level.
+  it('casts the running average to numeric before ROUND (float8 has no 2-arg round)', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      userId: 'user-1',
+      status: 'delivered',
+      priestId: 'priest-1',
+      rating: null,
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({ id: 'booking-1', rating: 5 });
+    prismaMock.$executeRawUnsafe.mockResolvedValue(1);
+
+    await service.submitReview('booking-1', 'user-1', 5);
+
+    const [sql] = prismaMock.$executeRawUnsafe.mock.calls[0]! as [string];
+    const normalized = sql.replace(/\s+/g, ' ');
+    expect(normalized).toContain(
+      'ROUND((((rating_avg * rating_count) + $1::numeric) / (rating_count + 1))::numeric, 2)',
+    );
+    // The exact broken shape: ROUND(<float8 expression>, 2).
+    expect(normalized).not.toContain('/ (rating_count + 1), 2)');
+  });
 });
 
 // ─── checkSlotAvailability ───────────────────────────────────────────────────
@@ -1619,37 +1989,199 @@ describe('BookingService.checkSlotAvailability', () => {
     expect(result.slots[0]!.available).toBe(false);
     expect(result.slots[0]!.remaining).toBe(0);
   });
+
+  // ── S3-18 (2026-08-11): availableSlots holds BOTH shapes ─────────────────
+  //
+  // This method did `(offering.availableSlots as string[])` — a cast, not a
+  // conversion. temple-portal accepts `z.array(z.unknown())` and priest.ts
+  // documents `{ time, label }` objects, so the moment a manager saved object
+  // slots the Map lookup (object key vs the groupBy's string key) never matched:
+  // every slot reported 0 booked / full capacity forever, and `time` serialised
+  // as an object. Devotees were shown 5/5 free on a slot that was full, then hit
+  // the hard "No availability" error at createBooking.
+  it('handles object-shaped {time,label} slots, not just bare strings', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue({
+      id: 'offering-1',
+      isActive: true,
+      availableSlots: [
+        { time: '10:00', label: 'Morning' },
+        { time: '14:00', label: 'Afternoon' },
+      ],
+      maxBookingsPerSlot: 5,
+      temple: { name: 'Test Temple', slug: 'test-temple' },
+      pujaType: { name: 'Test Puja', slug: 'test-puja', durationMinutes: 60 },
+    });
+    prismaMock.pujaBooking.groupBy.mockResolvedValue([
+      { scheduledTimeSlot: '10:00', _count: { id: 5 } },
+    ]);
+
+    const result = await service.checkSlotAvailability('temple-1', 'puja-1', '2026-12-25');
+
+    // `time` is the renderable string, not '[object Object]'.
+    expect(result.slots.map((s: any) => s.time)).toEqual(['10:00', '14:00']);
+    // The full slot is reported FULL. Under the cast it read 0 booked / 5 free.
+    const slot10 = result.slots.find((s: any) => s.time === '10:00')!;
+    expect(slot10.booked).toBe(5);
+    expect(slot10.available).toBe(false);
+  });
+
+  // S3-04: the availability endpoint and the capacity check must use the SAME
+  // occupancy predicate, or the page shows a slot the create path rejects.
+  it('ignores expired unpaid holds when counting booked slots', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue({
+      id: 'offering-1',
+      isActive: true,
+      availableSlots: ['10:00'],
+      maxBookingsPerSlot: 5,
+      temple: { name: 'Test Temple', slug: 'test-temple' },
+      pujaType: { name: 'Test Puja', slug: 'test-puja', durationMinutes: 60 },
+    });
+    prismaMock.pujaBooking.groupBy.mockResolvedValue([]);
+
+    await service.checkSlotAvailability('temple-1', 'puja-1', '2026-12-25');
+
+    const where = (prismaMock.pujaBooking.groupBy.mock.calls[0]![0] as any).where;
+    expect(where.AND[0]).toEqual({ status: { notIn: ['cancelled', 'refunded'] } });
+    expect(where.AND[1].NOT.status).toBe('pending_payment');
+    expect(where.AND[1].NOT.createdAt.lt).toBeInstanceOf(Date);
+  });
 });
 
 // ─── escalateStaleBookings (SLA, issue #179) ────────────────────────────────
 
 describe('BookingService.escalateStaleBookings', () => {
-  it('flags priest_assigned bookings past 72h with no videoProof for refund review (cancelled)', async () => {
-    const stale = {
+  /** The post-transition row updateBookingStatus returns for a cancel. */
+  function cancelUpdateRow() {
+    return {
       id: 'booking-stale-1',
-      scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
-      priestId: 'priest-1',
+      status: 'cancelled',
+      pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
+      temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
+      user: { id: 'u-1' },
+      priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
     };
-    prismaMock.pujaBooking.findMany.mockResolvedValue([stale] as any);
-    prismaMock.pujaBooking.update.mockResolvedValue({ ...stale, status: 'cancelled' } as any);
+  }
+
+  function staleMocks(rows: any[]) {
+    prismaMock.pujaBooking.findMany.mockResolvedValue(rows as any);
+    // escalateStaleBookings now routes through updateBookingStatus, which
+    // re-reads the booking to validate the transition.
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-stale-1',
+      status: 'priest_assigned',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue(cancelUpdateRow() as any);
+  }
+
+  it('flags priest_assigned bookings past 72h with no videoProof for refund review (cancelled)', async () => {
+    staleMocks([
+      {
+        id: 'booking-stale-1',
+        scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
+        scheduledTimeSlot: '10:00',
+        priestId: 'priest-1',
+      },
+    ]);
 
     const out = await service.escalateStaleBookings(72);
 
     expect(out.escalated).toContain('booking-stale-1');
     expect(out.scanned).toBe(1);
-    expect(prismaMock.pujaBooking.update).toHaveBeenCalledWith({
-      where: { id: 'booking-stale-1' },
-      data: { status: 'cancelled' },
-    });
+  });
+
+  // ── S3-12 (2026-08-11) ────────────────────────────────────────────────────
+  //
+  // The old body was a bare `pujaBooking.update({ data: { status:
+  // 'cancelled' } })`: no cancelledAt, no cancellationReason, and no push,
+  // because it bypassed updateBookingStatus entirely. The exact scenario this
+  // method exists for — devotee paid Rs 10,000, pandit never uploaded proof,
+  // 72h past the slot — ended with the booking silently flipped to `cancelled`
+  // and the devotee neither told nor placed in any queue an admin sorts by.
+  it('stamps cancelledAt and an explicit pandit-fault reason', async () => {
+    staleMocks([
+      {
+        id: 'booking-stale-1',
+        scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
+        scheduledTimeSlot: '10:00',
+        priestId: 'priest-1',
+      },
+    ]);
+
+    await service.escalateStaleBookings(72);
+
+    const data = (prismaMock.pujaBooking.update.mock.calls[0]![0] as any).data;
+    expect(data.status).toBe('cancelled');
+    expect(data.cancelledAt).toBeInstanceOf(Date);
+    expect(data.cancellationReason).toMatch(/SLA escalation/);
+    expect(data.cancellationReason).toMatch(/full refund/);
+    expect(String(data.cancellationReason).length).toBeLessThanOrEqual(500);
+  });
+
+  // Deliberate, and the opposite of what the finding first prescribed. Writing
+  // REFUND_REQUESTED_MARKER hands the row to refund.service.processAutoRefunds,
+  // which applies the DEVOTEE ladder — and that ladder matches no tier for a
+  // slot 72h in the PAST, so it falls through to the last one: 25%. This is a
+  // PANDIT-fault cancellation, which policy defines as 100% of everything paid.
+  // Marking it would auto-refund 25% within the hour and flip the booking to
+  // `refunded`, removing it from GET /admin/bookings/refunds/pending — turning
+  // "devotee is owed Rs 10,000 and an admin can see it" into "devotee silently
+  // got Rs 2,500 and has no claim left". refund.service must learn to branch on
+  // pandit fault before this path may mark rows for the cron.
+  it('does NOT write the auto-refund marker (25% devotee ladder would under-refund)', async () => {
+    staleMocks([
+      {
+        id: 'booking-stale-1',
+        scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
+        scheduledTimeSlot: '10:00',
+        priestId: 'priest-1',
+      },
+    ]);
+
+    await service.escalateStaleBookings(72);
+
+    const data = (prismaMock.pujaBooking.update.mock.calls[0]![0] as any).data;
+    expect(data.cancellationReason).not.toContain('[refund-requested]');
+  });
+
+  // lib/slot-time.ts is the only correct way to compare a booking date+slot.
+  // The DB filter is deliberately a day looser than the real test, because the
+  // true instant sits between -5h30m and +18h30m of the stored midnight.
+  it('measures staleness from the slot INSTANT, not the midnight DATE column', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-08-11T10:00:00Z'));
+      staleMocks([
+        {
+          // 2026-08-08 23:00 IST = 2026-08-08T17:30Z -> 64.5h before now.
+          // The DATE alone (2026-08-08T00:00Z) is 82h back and would wrongly
+          // escalate a booking that is not yet 72h stale.
+          id: 'booking-stale-1',
+          scheduledDate: new Date('2026-08-08T00:00:00Z'),
+          scheduledTimeSlot: '23:00',
+          priestId: 'priest-1',
+        },
+      ]);
+
+      const out = await service.escalateStaleBookings(72);
+
+      expect(out.escalated).toEqual([]);
+      expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
+      // It WAS scanned — the widened DB filter fetched it; the JS test rejected it.
+      expect(out.scanned).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('queries only priest_assigned + null videoProof + scheduled before cutoff', async () => {
     prismaMock.pujaBooking.findMany.mockResolvedValue([] as any);
     const out = await service.escalateStaleBookings(72);
-    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where;
-    expect(where.status).toBe('priest_assigned');
-    expect(where.videoProofUrl).toBeNull();
-    expect(where.scheduledDate.lt).toBeInstanceOf(Date);
+    const call = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!;
+    expect(call.where.status).toBe('priest_assigned');
+    expect(call.where.videoProofUrl).toBeNull();
+    expect(call.where.scheduledDate.lt).toBeInstanceOf(Date);
+    // The slot string is needed to resolve the real instant.
+    expect((call.select as any).scheduledTimeSlot).toBe(true);
     expect(out.escalated).toEqual([]);
     expect(out.scanned).toBe(0);
   });
@@ -1659,5 +2191,35 @@ describe('BookingService.escalateStaleBookings', () => {
     const out = await service.escalateStaleBookings(72);
     expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
     expect(out).toEqual({ escalated: [], scanned: 0 });
+  });
+
+  it('keeps sweeping when one booking cannot be escalated', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([
+      {
+        id: 'booking-stale-1',
+        scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
+        scheduledTimeSlot: '10:00',
+        priestId: 'priest-1',
+      },
+      {
+        id: 'booking-stale-2',
+        scheduledDate: new Date(Date.now() - 90 * 24 * 3600 * 1000),
+        scheduledTimeSlot: '10:00',
+        priestId: 'priest-2',
+      },
+    ] as any);
+    // First booking has already been moved on by an admin (invalid transition);
+    // the second is still priest_assigned.
+    prismaMock.pujaBooking.findUnique
+      .mockResolvedValueOnce({ id: 'booking-stale-1', status: 'refunded' })
+      .mockResolvedValue({ id: 'booking-stale-2', status: 'priest_assigned' });
+    prismaMock.pujaBooking.update.mockResolvedValue(cancelUpdateRow() as any);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const out = await service.escalateStaleBookings(72);
+
+    expect(out.escalated).toEqual(['booking-stale-2']);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

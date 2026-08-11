@@ -20,6 +20,10 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { DateInput } from '../../../components/ui/DateInput';
 
+// Server constant (apps/api/src/services/booking.service.ts PLATFORM_FEE_INR).
+// Kept in sync by hand, as the temple wizard already does.
+const PLATFORM_FEE_INR = 51;
+
 // ─── Razorpay loader ───────────────────────────────────────────
 // Lifted verbatim from /pujas/[slug]/book — keep the two flows
 // using identical loader semantics so a future migration to a
@@ -181,6 +185,16 @@ function OfferingCheckoutInner() {
   }, [fetchOffering]);
 
   const priceInr = offering ? parseFloat(offering.basePrice) : 0;
+
+  // "Displayed price MUST equal charged price" — the rule RV-01 was about.
+  // POST /bookings/from-offering charges basePrice + PLATFORM_FEE_INR (+ the
+  // prasad fee when requested, which this page does not offer), so quoting
+  // basePrice alone on the pay button understated the Razorpay sheet by Rs 51.
+  // Mirrors PLATFORM_FEE in apps/web/app/pujas/book/page.tsx, which is the
+  // temple wizard's copy of the same server constant
+  // (booking.service.PLATFORM_FEE_INR — the single source of truth).
+  const platformFeeInr = PLATFORM_FEE_INR;
+  const totalPayableInr = priceInr + platformFeeInr;
   const canPay =
     !!offering &&
     !!priest &&
@@ -569,6 +583,23 @@ function OfferingCheckoutInner() {
             pulled Stripe Elements into the puja-checkout bundle. Razorpay is
             the only rail on this path. */}
 
+        {/* The breakdown the API actually charges. Without this the Rs 51 fee
+            appears for the first time on the Razorpay sheet. */}
+        <div className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm">
+          <div className="flex items-center justify-between py-1">
+            <span className="text-surface-600">Puja</span>
+            <span className="text-surface-800">&#8377;{priceInr.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="flex items-center justify-between py-1">
+            <span className="text-surface-600">Platform fee</span>
+            <span className="text-surface-800">&#8377;{platformFeeInr.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2 font-semibold">
+            <span className="text-surface-800">Total</span>
+            <span className="text-surface-900">&#8377;{totalPayableInr.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+
         <button
           type="button"
           disabled={!canPay}
@@ -583,7 +614,7 @@ function OfferingCheckoutInner() {
           ) : (
             <>
               <CreditCard className="w-4 h-4" />
-              Pay &#8377;{priceInr.toLocaleString('en-IN')} with Razorpay
+              Pay &#8377;{totalPayableInr.toLocaleString('en-IN')} with Razorpay
             </>
           )}
         </button>

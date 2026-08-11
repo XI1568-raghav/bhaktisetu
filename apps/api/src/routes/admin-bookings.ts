@@ -4,7 +4,11 @@ import { Prisma } from '@prisma/client';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { processRefund } from '../services/refund.service.js';
-import { listPayoutRequests, processPayout } from '../services/payout.service.js';
+import {
+  listPayoutRequests,
+  processPayout,
+  resolveProviderRole,
+} from '../services/payout.service.js';
 
 // Admin bookings + payouts + refunds ops dashboards.
 //
@@ -118,7 +122,10 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
 
   // ─── GET /admin/bookings/payouts/pending ──────────────────────────────────
   server.get('/payouts/pending', { preHandler: adminPreHandlers }, async (request) => {
-    const roles = ['PRIEST', 'ASTROLOGER', 'WELLNESS_INSTRUCTOR', 'GAUSHALA_MANAGER'];
+    // No hardcoded role list any more: PRIEST is the legacy booking-backed rail
+    // below, and every other role is whatever the Commission ledger says a
+    // provider is owed, labelled by payout precedence. The old list omitted
+    // STORE_OWNER and TEMPLE_MANAGER entirely.
     const groups: Array<{
       providerId: string;
       providerName: string;
@@ -163,6 +170,29 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       } catch (err) {
         request.log.warn({ err }, 'priest payout lookup failed');
       }
+      // batch9-review (2026-08-11): a booking the Commission ledger owns is not
+      // the legacy rail's to pay. payment.service.createPriestPayout now REFUSES
+      // when a Commission already exists for the booking (the mutual-exclusion
+      // guard that stops a double transfer), so a rail-A-settled booking never
+      // gets a PriestPayout row and could never enter `alreadyPaidIds` above —
+      // it was reported as an outstanding priest payout FOREVER. On a Rs 5,000
+      // booking whose Rs 4,000 commission was already paid through
+      // /payout-requests, this endpoint kept showing Rs 3,750 owed to the same
+      // pandit, and an admin working the list paid Rs 7,750 on Rs 5,000 of
+      // revenue. The write path was guarded; this read path was not.
+      //
+      // Deliberately NOT inside the try above: if we cannot tell which bookings
+      // the ledger owns, the honest answer is the outer catch's `ok: false`, not
+      // a confident over-report of what is owed.
+      if (priestBookings.length > 0) {
+        const ledgerOwned = await prisma.commission.findMany({
+          where: { bookingId: { in: priestBookings.map((b) => b.id) } },
+          select: { bookingId: true },
+        });
+        for (const c of ledgerOwned) {
+          if (c.bookingId) alreadyPaidIds.add(c.bookingId);
+        }
+      }
       const byPriest = new Map<string, { count: number; total: Prisma.Decimal }>();
       for (const b of priestBookings) {
         if (alreadyPaidIds.has(b.id) || !b.priestId) continue;
@@ -189,18 +219,28 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         }
       }
 
-      // ASTROLOGER / WELLNESS_INSTRUCTOR / GAUSHALA_MANAGER:
-      // No payout sidecar table. We fall back to summing all paid bookings
-      // by the assigned priestId — but bookings only carry priestId, not
-      // astrologerId/etc. Until the schema grows a generic providerId we
-      // can only report totals per role from CommissionEarning if present.
+      // Every non-PRIEST role settles off the Commission ledger — there is no
+      // payout sidecar table for them, and bookings only carry priestId, so the
+      // ledger IS the record of what they are owed.
       // RV-22: the identical PENDING-commission scan used to run once PER ROLE
-      // (three serial full-table reads of the same rows). Fetch it once; the
-      // per-role difference is only the multiplier applied below.
+      // (three serial full-table reads of the same rows). Fetch it once.
+      //
+      // batch9-review (2026-08-11): `payoutRequestId: null` was missing, so a
+      // commission already claimed by an OPEN PayoutRequest was reported as owed
+      // here at the same time as it sat in the admin payout queue — commissions
+      // stay PENDING while linked (processPayout only flips them to PAID on
+      // completion). An astrologer's Rs 9,000 showed as owed in this summary AND
+      // as a pending request; an admin who settled from the summary by UPI and
+      // then completed the request transferred Rs 18,000 on Rs 11,250 of
+      // revenue. Same double-transfer class the processPayout completion guard
+      // prevents, reappearing at the read layer where no guard exists. This
+      // summary now reports only balance that no request has claimed; the
+      // in-flight figure belongs to the payout queue (and getPayoutBalance
+      // already reports it as pendingInr).
       let pendingEarnings: Array<{ providerId: string; amount: Prisma.Decimal }> = [];
       try {
         pendingEarnings = await prisma.commission.findMany({
-          where: { status: 'PENDING' },
+          where: { status: 'PENDING', payoutRequestId: null },
           select: { providerId: true, amount: true },
           orderBy: { createdAt: 'desc' },
           take: scanLimit,
@@ -210,7 +250,22 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.warn({ err }, 'pending commission fetch failed (model missing?)');
       }
 
-      for (const role of roles.filter((r) => r !== 'PRIEST')) {
+      // batch9-review (2026-08-11): this used to loop the role list and push one
+      // group per ROLE the provider holds, each carrying the SAME full total —
+      // the loop filtered which providers appeared, never which commissions
+      // belonged to that role. A provider holding ASTROLOGER +
+      // WELLNESS_INSTRUCTOR with Rs 9,000 pending appeared twice at Rs 9,000, so
+      // the dashboard's "Total owed" read Rs 18,000 against a real Rs 9,000 and
+      // an admin settling row-by-row paid twice. Cross-role providers are
+      // exactly the population the unified payout rail (#233) exists to serve.
+      //
+      // One group per provider now, labelled with the SAME precedence the payout
+      // engine stamps onto a PayoutRequest (payout.service
+      // resolveProviderRoleForUser), so this summary and the payout queue never
+      // disagree about a provider's role. It also stops silently dropping
+      // STORE_OWNER and TEMPLE_MANAGER, which the hardcoded role list above
+      // never queried — their pending commissions appeared nowhere at all.
+      if (pendingEarnings.length > 0) {
         try {
           const byProvider = new Map<string, { count: number; total: Prisma.Decimal }>();
           for (const e of pendingEarnings) {
@@ -223,33 +278,56 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
             cur.total = cur.total.add(new Prisma.Decimal(e.amount));
             byProvider.set(e.providerId, cur);
           }
-          if (byProvider.size === 0) continue;
-          const assignments = await prisma.userRoleAssignment.findMany({
-            where: { userId: { in: Array.from(byProvider.keys()) }, role: role as never },
-            select: { userId: true },
-            take: scanLimit,
-          });
-          const userIds = assignments.map((a) => a.userId);
-          if (userIds.length === 0) continue;
-          const users = await prisma.user.findMany({
-            where: { id: { in: userIds } },
-            select: { id: true, fullName: true },
-            take: scanLimit,
-          });
-          const userById = new Map(users.map((u) => [u.id, u.fullName] as const));
+          const providerIds = Array.from(byProvider.keys());
+          // Both lookups are bounded by an IN list built from the already-bounded
+          // commission window, so no `take` belongs here — a truncated join would
+          // drop providers who ARE owed money out of the only screen that shows it.
+          const [assignments, users] = await Promise.all([
+            prisma.userRoleAssignment.findMany({
+              where: { userId: { in: providerIds } },
+              select: { userId: true, role: true, isPrimary: true },
+            }),
+            prisma.user.findMany({
+              where: { id: { in: providerIds } },
+              select: { id: true, fullName: true },
+            }),
+          ]);
+          const rolesByUser = new Map<string, Array<{ role: string; isPrimary: boolean }>>();
           for (const a of assignments) {
-            const agg = byProvider.get(a.userId);
+            const list = rolesByUser.get(a.userId) ?? [];
+            list.push({ role: a.role as string, isPrimary: a.isPrimary });
+            rolesByUser.set(a.userId, list);
+          }
+          const userById = new Map(users.map((u) => [u.id, u.fullName] as const));
+          for (const providerId of providerIds) {
+            const agg = byProvider.get(providerId);
             if (!agg) continue;
+            const held = rolesByUser.get(providerId) ?? [];
+            // Primary assignment wins, then declared precedence — identical to
+            // resolveProviderRoleForUser, which is what stamps PayoutRequest.role.
+            const role =
+              resolveProviderRole(held.filter((h) => h.isPrimary).map((h) => h.role)) ??
+              resolveProviderRole(held.map((h) => h.role));
+            if (!role) {
+              // A commission with no payout-capable role assignment is a data
+              // fault, but the money is still owed. Reporting it as UNKNOWN gets
+              // it investigated; dropping it silently is how a balance goes
+              // unsettled forever.
+              request.log.warn(
+                { providerId },
+                'pending commissions for a provider with no payout role assignment',
+              );
+            }
             groups.push({
-              providerId: a.userId,
-              providerName: userById.get(a.userId) ?? 'Unknown',
-              role,
+              providerId,
+              providerName: userById.get(providerId) ?? 'Unknown',
+              role: role ?? 'UNKNOWN',
               bookingsCount: agg.count,
               totalPayout: agg.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
             });
           }
         } catch (err) {
-          request.log.warn({ err, role }, 'payout aggregation skipped (model missing)');
+          request.log.warn({ err }, 'commission payout aggregation skipped (model missing)');
         }
       }
 
@@ -259,7 +337,8 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         groups,
         scanLimit,
         truncated,
-        schemaNote: 'payoutPaidAt column missing on Booking; PRIEST uses PriestPayout sidecar, others approximate via CommissionEarning.',
+        schemaNote:
+          'payoutPaidAt column missing on Booking; PRIEST uses the PriestPayout sidecar plus the Commission ledger, every other role uses the ledger alone. Balance already claimed by an open payout request is excluded here — settle it from the payout queue.',
       };
     } catch (err) {
       // RV-22: the failure branch used to be indistinguishable from a genuinely
@@ -277,9 +356,25 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
   });
 
   // ─── GET /admin/bookings/payout-requests — list payout requests (admin) ──────
+  //
+  // batch9-review (2026-08-11): the status filter went straight from the query
+  // string into Prisma with no schema and no try/catch, so `?status=Pending`
+  // (wrong case, a typo, or the 'reversed' that migration 20260810000000 added
+  // to ProviderPayoutStatus but NOT to PayoutRequestStatus) threw
+  // PrismaClientValidationError out of an unhandled handler and 500'd the whole
+  // admin payout queue. Validate at the boundary — a bad filter is the caller's
+  // mistake and deserves a 400 that names the legal values, not an engine crash.
+  // An absent/empty status is the "All" filter.
+  const payoutRequestQuerySchema = z.object({
+    status: z.enum(['pending', 'processing', 'completed', 'failed', 'rejected']).optional(),
+  });
   server.get('/payout-requests', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { status } = request.query as { status?: string };
-    const requests = await listPayoutRequests(status);
+    const raw = (request.query ?? {}) as { status?: string };
+    const parsed = payoutRequestQuerySchema.safeParse(raw.status ? raw : {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
+    }
+    const requests = await listPayoutRequests(parsed.data.status);
     return reply.send({ requests });
   });
 

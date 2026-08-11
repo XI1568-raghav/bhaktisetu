@@ -229,6 +229,14 @@ describe('AdminService.getDashboard', () => {
 
 describe('AdminService.getRevenue', () => {
   it('aggregates paid + pending commissions and groups subs by plan/role', async () => {
+    // Totals come from groupBy/aggregate, NOT from the recent-rows findMany.
+    // They used to be summed from `take: 50`, so the founder's revenue number
+    // silently under-reported from the 51st commission onward.
+    prismaMock.commission.groupBy.mockResolvedValue([
+      // Rs 1,000 of provider earnings at a 20% take rate => Rs 250 platform cut.
+      { percentage: 0.2, _sum: { amount: 1000 } },
+    ]);
+    prismaMock.commission.aggregate.mockResolvedValue({ _sum: { amount: 500 } });
     prismaMock.commission.findMany.mockResolvedValue([
       {
         id: 'c1',
@@ -273,9 +281,14 @@ describe('AdminService.getRevenue', () => {
     expect(basicPandit?.totalAmount).toBe(1998);
   });
 
-  it('falls back to demo numbers on error', async () => {
-    prismaMock.commission.findMany.mockRejectedValue(new Error());
-    const out = await service.getRevenue();
-    expect(out.totalCommissions).toBeGreaterThan(0);
+  // Was: "falls back to demo numbers on error". It did — a hardcoded Rs 45,000
+  // of revenue with invented commission rows, on ANY DB failure. The founder's
+  // revenue dashboard showed a confident fiction whenever the database was
+  // unreachable, and the mobile admin error banner could never fire because the
+  // call always "succeeded". Fabricated money must never be indistinguishable
+  // from real money.
+  it('THROWS on a DB failure instead of fabricating revenue', async () => {
+    prismaMock.commission.groupBy.mockRejectedValue(new Error('db down'));
+    await expect(service.getRevenue()).rejects.toThrow('db down');
   });
 });

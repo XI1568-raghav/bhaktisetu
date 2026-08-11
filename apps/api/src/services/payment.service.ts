@@ -1376,11 +1376,10 @@ export class PaymentService {
     // Before RV-04 these could not collide: the Commission row was keyed on a
     // Priest.id that no payout read ever matched, so it was inert and rail B
     // was the only one that paid. Repairing that key made BOTH rails live and
-    // payable for the same money, with nothing cross-checking them —
-    // `markPayoutPaid` (the one function that ever linked them) has no callers.
-    // On a Rs 5,000 booking the platform would transfer Rs 4,000 through
-    // /payouts AND Rs 4,000 through /admin/bookings: Rs 8,000 out on Rs 5,000
-    // of revenue.
+    // payable for the same money, with nothing cross-checking them. On a
+    // Rs 5,000 booking the platform would transfer Rs 4,000 through /payouts
+    // AND Rs 4,000 through /admin/bookings: Rs 8,000 out on Rs 5,000 of
+    // revenue.
     //
     // The unified rail wins where it exists — it is the documented direction
     // and the only one that pays every role. Rail B stays for the bookings
@@ -1389,7 +1388,13 @@ export class PaymentService {
     // dispatch-assigned (T1-T3) bookings never get one and would otherwise be
     // paid by nothing at all.
     const unifiedLedgerRow = await prisma.commission.findFirst({
-      where: { bookingId },
+      // A REVERSED row is a void earning that no provider owns any more — it
+      // exists only as an audit record (a reschedule detaches the pandit and
+      // reverses his commission). It must NOT hold the booking hostage: if it
+      // did, the replacement pandit would be paid by neither rail, since the
+      // unified rail has nothing live for him and this guard would block the
+      // legacy one. Only a LIVE commission means "rail A owns this booking".
+      where: { bookingId, status: { not: 'REVERSED' } },
       select: { id: true },
     });
     if (unifiedLedgerRow) {
@@ -1421,41 +1426,28 @@ export class PaymentService {
     return payout;
   }
 
-  /**
-   * Mark a PriestPayout as completed and flip the matching Commission row
-   * to PAID. Called from the admin "release payout" flow once the bank
-   * transfer has been initiated. Both writes happen in a single
-   * transaction so the ledger stays consistent.
-   */
-  async markPayoutPaid(payoutId: string) {
-    return prisma.$transaction(async (tx) => {
-      const payout = await tx.priestPayout.findUnique({
-        where: { id: payoutId },
-        select: { id: true, status: true, bookingId: true },
-      });
-      if (!payout) {
-        throw new Error('Payout not found.');
-      }
-      if (payout.status === 'completed') {
-        return payout;
-      }
-      const updated = await tx.priestPayout.update({
-        where: { id: payout.id },
-        data: { status: 'completed', processedAt: new Date() },
-      });
-      const commission = await tx.commission.findFirst({
-        where: { bookingId: payout.bookingId },
-        select: { id: true },
-      });
-      if (commission) {
-        await tx.commission.update({
-          where: { id: commission.id },
-          data: { status: 'PAID', paidAt: new Date() },
-        });
-      }
-      return updated;
-    });
-  }
+  // markPayoutPaid — REMOVED 2026-08-11. It completed a PriestPayout (rail B)
+  // and, in the same transaction, flipped the FIRST Commission row matching
+  // that booking (rail A) to PAID — no `status` predicate, no
+  // `payoutRequestId` predicate. It never had a caller in its life.
+  //
+  // Deleted rather than guarded because it was the LAST way to write across
+  // the two rails, and the guard above now makes them mutually exclusive by
+  // construction: a PriestPayout and a Commission can only share a booking on
+  // pre-guard legacy data, which is exactly the data a cross-rail write
+  // corrupts. refund.service scopes its REVERSED write to
+  // `payoutRequestId: null`, so this was also the only code path able to put a
+  // non-PENDING row inside an OPEN PayoutRequest. Wired to an admin "release
+  // payout" button it would strand one: flipping c1 to PAID while c1 is still
+  // linked to pr-1 makes payout.service.processPayout's completion guard throw
+  // "1 of 2 commissions on this payout request are no longer PENDING" forever,
+  // and the only exit — reject — unlinks both rows, at which point the PAID one
+  // drops out of getPayoutBalance and the provider's Rs 4,000 is simply gone.
+  //
+  // Consequence worth keeping true: this service now MINTS commission rows
+  // (both writers create them PENDING) and never mutates an existing one's
+  // status. Commission lifecycle belongs to payout.service and refund.service.
+  // See the prototype-surface lock in payment.service.test.ts.
 
   // createStripeOrder — REMOVED 2026-08-11 with the Stripe rail (owner
   // directive). It opened a USD PaymentIntent for NRI puja bookings priced off
