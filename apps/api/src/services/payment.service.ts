@@ -2,10 +2,10 @@ import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
-import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
 // the booking webhook path never reaches them; these helpers let
 // processWebhookEvent resolve + finalize a donation when no Payment matches.
@@ -199,6 +199,36 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
  */
 type TxClient = Prisma.TransactionClient | typeof prisma;
 
+/**
+ * RV-04 / S2C-15 (fixed 2026-08-11, owner-approved).
+ *
+ * A `Commission` row is what the payout engine pays a provider from:
+ * `getPayoutBalance` sums `Commission.amount` for `providerId`. This writer got
+ * BOTH of its fields wrong, in opposite directions:
+ *
+ *  1. `providerId: booking.priestId` wrote a **Priest.id**, while every read
+ *     passes a **User.id** (`routes/payout-requests.ts` uses
+ *     `request.currentUser!.id`). The rows were therefore orphaned — they
+ *     matched no provider's balance, which is the only reason nobody was
+ *     mispaid: pandits saw ₹0 rather than the wrong number.
+ *  2. `amount: booking.platformCommission` wrote the **platform's 20% cut**
+ *     into the field the payout engine treats as the **provider's earning**.
+ *     `PujaBooking.priestPayout` — the pandit's 80%, computed and persisted at
+ *     booking creation — is the correct value.
+ *
+ * Both halves had to change together, and that is why this sat open: repairing
+ * the key alone would have connected every pandit to a row carrying the
+ * platform's share, turning a visible ₹0 into a silent 75% underpayment
+ * (₹1,100 puja → ₹220 paid where ₹880 is owed).
+ *
+ * The identical pair of defects was mirrored in booking.service's own confirm
+ * writer and is fixed in the same change — a single writer moving alone would
+ * desync the ledger.
+ *
+ * Existing orphaned rows are deliberately left as they are (owner decision): no
+ * backfill, so this creates no retroactive payable. They stay unmatched and
+ * inert exactly as before.
+ */
 async function writePujaCommissionOnConfirm(
   bookingId: string,
   tx: TxClient = prisma,
@@ -208,11 +238,17 @@ async function writePujaCommissionOnConfirm(
     select: {
       id: true,
       priceAmount: true,
-      platformCommission: true,
+      priestPayout: true,
       priestId: true,
+      priest: { select: { userId: true } },
     },
   });
   if (!booking || !booking.priestId) return;
+  // No linked User → no payable provider. Writing the row anyway is what
+  // produced the orphans this fix exists to stop creating.
+  const providerUserId = booking.priest?.userId;
+  if (!providerUserId) return;
+
   const existing = await tx.commission.findFirst({
     where: { bookingId: booking.id },
     select: { id: true },
@@ -221,16 +257,19 @@ async function writePujaCommissionOnConfirm(
   // Decimal.js arithmetic — never coerce money to JS Number for the
   // ledger. percentage column is Decimal(5,4); it gets rounded by the
   // DB driver but the *input* must already be exact rational division.
+  //
+  // Column conventions are fixed in lib/commission-math.ts: `amount` is the
+  // PROVIDER's earning, `percentage` is the PLATFORM's take rate. An earlier
+  // pass of this fix wrote the provider's share into `percentage` too, which
+  // silently inverted /astrologer-portal/earnings — one column, one meaning.
   const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
-  const commission = new Prisma.Decimal(booking.platformCommission as Prisma.Decimal);
-  const percentage = price.gt(0)
-    ? commission.div(price)
-    : new Prisma.Decimal(0);
+  const providerEarning = new Prisma.Decimal(booking.priestPayout as Prisma.Decimal);
+  const percentage = platformRateOf(price.sub(providerEarning), price);
   await tx.commission.create({
     data: {
       bookingId: booking.id,
-      providerId: booking.priestId,
-      amount: commission,
+      providerId: providerUserId,
+      amount: providerEarning,
       percentage,
       status: 'PENDING',
     },
@@ -239,7 +278,8 @@ async function writePujaCommissionOnConfirm(
 
 // P0 #PBO-12 (2026-07-09): single post-confirm side-effect block. The client
 // verify path ran commission + invoice + referral reward, but BOTH webhook
-// paths (Razorpay payment.captured + Stripe payment_intent.succeeded) ran only
+// paths (Razorpay payment.captured, and the since-removed Stripe
+// payment_intent.succeeded) ran only
 // commission + invoice — referral reward was skipped, so in production (which
 // confirms via webhook, not client-verify) referees were never credited. This
 // helper is the one place all three confirmation paths call so the side-effects
@@ -1325,6 +1365,41 @@ export class PaymentService {
       );
     }
 
+    // ── The two payout rails must never both own the same booking ──────────
+    //
+    // Found by adversarial review 2026-08-11, and created by the RV-04 fix
+    // earlier the same day. Two independent rails carry the pandit's 80%:
+    //
+    //   A. Commission -> PayoutRequest  (the unified rail, #233; all roles)
+    //   B. PriestPayout                 (the legacy pandit-only rail, here)
+    //
+    // Before RV-04 these could not collide: the Commission row was keyed on a
+    // Priest.id that no payout read ever matched, so it was inert and rail B
+    // was the only one that paid. Repairing that key made BOTH rails live and
+    // payable for the same money, with nothing cross-checking them —
+    // `markPayoutPaid` (the one function that ever linked them) has no callers.
+    // On a Rs 5,000 booking the platform would transfer Rs 4,000 through
+    // /payouts AND Rs 4,000 through /admin/bookings: Rs 8,000 out on Rs 5,000
+    // of revenue.
+    //
+    // The unified rail wins where it exists — it is the documented direction
+    // and the only one that pays every role. Rail B stays for the bookings
+    // rail A structurally cannot reach: a Commission is only minted when a
+    // priest is already on the booking at `confirmed`, so temple-path and
+    // dispatch-assigned (T1-T3) bookings never get one and would otherwise be
+    // paid by nothing at all.
+    const unifiedLedgerRow = await prisma.commission.findFirst({
+      where: { bookingId },
+      select: { id: true },
+    });
+    if (unifiedLedgerRow) {
+      return {
+        skipped: true as const,
+        reason: 'commission-ledger-owns-this-booking' as const,
+        commissionId: unifiedLedgerRow.id,
+      };
+    }
+
     const payout = await prisma.priestPayout.create({
       data: {
         priestId: booking.priestId,
@@ -1382,260 +1457,19 @@ export class PaymentService {
     });
   }
 
-  /**
-   * Create a Stripe PaymentIntent for an NRI booking, billed in USD.
-   *
-   * Pricing source: PujaType.nriPrice (USD-denominated). The booking row
-   * itself stores `priceAmount` in INR for accounting consistency, so the
-   * USD amount is computed fresh here from nriPrice and stored on the
-   * Payment row + metadata for reconciliation.
-   *
-   * Demo mode (no STRIPE_SECRET_KEY): returns a synthetic pi_demo_* id +
-   * client_secret so the web checkout flow stays exercisable.
-   */
-  async createStripeOrder(
-    bookingId: string,
-    userId: string,
-    options?: { usdAmountOverride?: number },
-  ): Promise<{
-    orderId: string;
-    paymentIntentId: string;
-    clientSecret: string | null;
-    amount: number;
-    currency: 'USD';
-    paymentId: string;
-    publishableKey: string;
-    demo: boolean;
-  }> {
-    const booking = await prisma.pujaBooking.findUnique({
-      where: { id: bookingId },
-      select: {
-        id: true,
-        bookingNumber: true,
-        userId: true,
-        status: true,
-        pujaType: { select: { nriPrice: true } },
-      },
-    });
+  // createStripeOrder — REMOVED 2026-08-11 with the Stripe rail (owner
+  // directive). It opened a USD PaymentIntent for NRI puja bookings priced off
+  // PujaType.nriPrice. Its route (POST /bookings/create-stripe-order) went in
+  // Batch 1 with RV-01; this removes the service method behind it so no caller
+  // can resurrect a USD charge path. Razorpay + INR only.
 
-    if (!booking) {
-      throw new Error('Booking not found.');
-    }
-    if (booking.userId !== userId) {
-      throw new Error('You are not authorized to pay for this booking.');
-    }
-    if (booking.status !== 'pending_payment') {
-      throw new Error(
-        `Payment can only be initiated for bookings in "pending_payment" status. Current: "${booking.status}".`,
-      );
-    }
-
-    // Allow priest-offering bookings to pass an explicit USD amount
-    // (basePrice * 9 per rule #2) since they don't go through PujaType.
-    // For temple-anchored bookings the override is omitted and we fall
-    // back to the PujaType.nriPrice column.
-    const usdAmount = options?.usdAmountOverride ?? Number(booking.pujaType.nriPrice);
-    if (!usdAmount || usdAmount <= 0) {
-      throw new Error('Puja does not have a valid NRI (USD) price configured.');
-    }
-
-    // Re-use existing initiated/authorized Stripe payment if present,
-    // mirroring the Razorpay path for idempotency under retries.
-    const existing = await prisma.payment.findFirst({
-      where: {
-        bookingId: booking.id,
-        paymentGateway: 'stripe',
-        status: { in: ['initiated', 'authorized'] },
-      },
-      select: { id: true, gatewayOrderId: true, metadata: true },
-    });
-
-    const stripe = await getStripe();
-    const amountInCents = Math.round(usdAmount * 100);
-
-    if (existing && existing.gatewayOrderId) {
-      const meta = (existing.metadata as Record<string, any> | null) ?? {};
-      return {
-        orderId: existing.gatewayOrderId,
-        paymentIntentId: existing.gatewayOrderId,
-        clientSecret: typeof meta.clientSecret === 'string' ? meta.clientSecret : null,
-        amount: amountInCents,
-        currency: 'USD',
-        paymentId: existing.id,
-        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
-        demo: isStripeDemoMode,
-      };
-    }
-
-    const intent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: 'usd',
-      metadata: {
-        bookingId: booking.id,
-        bookingNumber: booking.bookingNumber,
-        userId,
-      },
-      automatic_payment_methods: { enabled: true },
-    });
-
-    const payment = await prisma.payment.create({
-      data: {
-        userId,
-        bookingId: booking.id,
-        amount: usdAmount,
-        currency: 'USD',
-        paymentGateway: 'stripe',
-        gatewayOrderId: intent.id,
-        status: 'initiated',
-        metadata: {
-          stripePaymentIntentId: intent.id,
-          clientSecret: intent.client_secret,
-          receipt: booking.bookingNumber,
-        },
-      },
-      select: { id: true },
-    });
-
-    return {
-      orderId: intent.id,
-      paymentIntentId: intent.id,
-      clientSecret: intent.client_secret,
-      amount: amountInCents,
-      currency: 'USD',
-      paymentId: payment.id,
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
-      demo: isStripeDemoMode,
-    };
-  }
-
-  /**
-   * Verify a Stripe webhook payload + dispatch downstream effects. Mirror
-   * of handleWebhookRaw — HMAC over the literal bytes Stripe sent, using
-   * the SDK's constructEvent helper which is timing-safe internally.
-   *
-   * Handled events:
-   *   payment_intent.succeeded -> mark Payment captured + booking confirmed
-   *   payment_intent.payment_failed -> mark Payment failed
-   *   charge.refunded -> mark Payment refunded / partially_refunded
-   */
-  async handleStripeWebhook(
-    rawBody: string | Buffer,
-    signature: string,
-  ): Promise<WebhookResult> {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      throw new Error('STRIPE_WEBHOOK_SECRET is not configured.');
-    }
-
-    const stripe = await getStripe();
-    let event: { type: string; data: { object: Record<string, any> } };
-    try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    } catch {
-      throw new Error('Webhook signature verification failed.');
-    }
-
-    switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const intent = event.data.object;
-        const payment = await prisma.payment.findFirst({
-          where: { gatewayOrderId: intent.id, paymentGateway: 'stripe' },
-          // PBO-12: include userId so applyPostConfirmSideEffects can credit
-          // the referral reward on the webhook path.
-          include: { booking: { select: { id: true, status: true, userId: true } } },
-        });
-        if (payment) {
-          const shouldConfirm =
-            !!payment.booking && payment.booking.status === 'pending_payment';
-          // P1-12: capture + confirm + commission ledger write in ONE
-          // transaction. Previously two separate updates + a post-commit
-          // commission write that swallowed failures.
-          await prisma.$transaction(async (tx) => {
-            await tx.payment.update({
-              where: { id: payment.id },
-              data: {
-                status: 'captured',
-                gatewayPaymentId: intent.id,
-                method: typeof intent.payment_method_types?.[0] === 'string'
-                  ? intent.payment_method_types[0]
-                  : 'card',
-              },
-            });
-            if (shouldConfirm) {
-              await tx.pujaBooking.update({
-                where: { id: payment.booking!.id },
-                data: { status: 'confirmed' },
-              });
-              // P1-12: commission ledger row inside the tx.
-              await writePujaCommissionOnConfirm(payment.booking!.id, tx);
-        // RV-03: the temple's 5% share, in the SAME transaction as the
-        // commission that earned it. Without this call temples receive Rs 0.00
-        // on every paid booking — the writer exists but nothing reaches it.
-        await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
-            }
-          });
-
-          // PBO-12: post-commit fire-and-forget side-effects (invoice email +
-          // referral reward). Prod confirms via webhook, so the referee credit
-          // MUST run here. Network calls — never inside the tx.
-          if (shouldConfirm) {
-            await fireAndForgetPostConfirmSideEffects(
-              payment.booking!.id,
-              payment.booking!.userId,
-            );
-          }
-        }
-        return { handled: true, event: event.type };
-      }
-
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object;
-        const payment = await prisma.payment.findFirst({
-          where: { gatewayOrderId: intent.id, paymentGateway: 'stripe' },
-        });
-        if (payment) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'failed',
-              gatewayPaymentId: intent.id,
-              metadata: {
-                ...((payment.metadata as Record<string, any>) ?? {}),
-                failureReason: intent.last_payment_error?.message,
-                failureCode: intent.last_payment_error?.code,
-              },
-            },
-          });
-        }
-        return { handled: true, event: event.type };
-      }
-
-      case 'charge.refunded': {
-        const charge = event.data.object;
-        const intentId = charge.payment_intent as string | undefined;
-        if (!intentId) return { handled: false, event: event.type };
-        const payment = await prisma.payment.findFirst({
-          where: { gatewayOrderId: intentId, paymentGateway: 'stripe' },
-        });
-        if (payment) {
-          const refundedCents = Number(charge.amount_refunded ?? 0);
-          const refundedUsd = refundedCents / 100;
-          const fullyRefunded = refundedUsd >= Number(payment.amount);
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              refundAmount: refundedUsd,
-              status: fullyRefunded ? 'refunded' : 'partially_refunded',
-            },
-          });
-        }
-        return { handled: true, event: event.type };
-      }
-
-      default:
-        return { handled: false, event: event.type };
-    }
-  }
+  // handleStripeWebhook — REMOVED 2026-08-11 with the Stripe rail. It verified
+  // Stripe's HMAC over the raw bytes and handled payment_intent.succeeded /
+  // .payment_failed / charge.refunded. With no Stripe charge path left there is
+  // nothing to receive: any inbound event would reference a Payment row this
+  // platform can no longer create. Its route (POST /payments/webhook/stripe) is
+  // removed in the same change — an unauthenticated endpoint that outlives its
+  // sender is attack surface, not a safety net.
 
   /**
    * Get the payment record(s) for a specific booking.

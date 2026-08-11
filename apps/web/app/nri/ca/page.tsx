@@ -114,7 +114,7 @@ const founderFaqs = [
   },
   {
     q: 'Is checkout in CAD?',
-    a: 'Stripe CAD rail goes live once founder activates Canada in the Stripe dashboard. Until then this page renders correctly and captures emails; payments flow through USD pricing as a fallback (clearly labeled).',
+    a: 'A native CAD rail is on the roadmap. Today Canadian cards are accepted through Razorpay and billed in INR, so your bank applies its own conversion rate and any foreign-transaction fee.',
   },
   {
     q: 'Are these temples real?',
@@ -122,7 +122,7 @@ const founderFaqs = [
   },
   {
     q: 'What about Canadian tax?',
-    a: 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. 80G is India-tax-deductible only. The NRI Premium subscription is a service (not a donation) — applicable GST/HST is auto-handled by Stripe.',
+    a: 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. 80G is India-tax-deductible only. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.',
   },
   {
     q: 'What languages?',
@@ -130,7 +130,7 @@ const founderFaqs = [
   },
   {
     q: 'When does this go live for payments?',
-    a: 'Canada launch is gated on founder activating Stripe CAD rail (activation gate U2). This page goes live first to seed organic discovery + Toronto/Vancouver SEO. Payments unlock once Stripe Canada KYC completes.',
+    a: 'A native CAD rail is an open activation gate (U2). This page goes live first to seed organic discovery + Toronto/Vancouver SEO; in the meantime Canadian cards can already book, billed in INR.',
   },
 ];
 
@@ -250,7 +250,7 @@ export default function CanadaNriLanding() {
             Be first when CAD checkout goes live
           </h2>
           <p className="text-surface-700 mb-6 max-w-xl mx-auto">
-            Join the Canada waitlist. We email Toronto, Vancouver, and Brampton subscribers first when Stripe CAD rail activates.
+            Join the Canada waitlist. We email Toronto, Vancouver, and Brampton subscribers first when CAD pricing goes live.
           </p>
           <Link
             href="/nri"

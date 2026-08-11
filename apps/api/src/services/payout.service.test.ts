@@ -13,7 +13,9 @@ const { prismaMock } = vi.hoisted(() => {
       findUnique: vi.fn(),
       update: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
     },
+    userRoleAssignment: { findMany: vi.fn() },
     user: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
@@ -29,6 +31,8 @@ import {
   getKycStatus,
   requestPayout,
   processPayout,
+  runWeeklySettlement,
+  resolveProviderRoleForUser,
   PAYOUT_CONCURRENT_REQUEST_ERROR,
 } from './payout.service.js';
 
@@ -41,7 +45,9 @@ const payoutRequest = prismaMock.payoutRequest as {
   findUnique: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
   findMany: ReturnType<typeof vi.fn>;
+  count: ReturnType<typeof vi.fn>;
 };
+const userRoleAssignment = (prismaMock.userRoleAssignment as { findMany: ReturnType<typeof vi.fn> });
 const $queryRawUnsafe = prismaMock.$queryRawUnsafe as ReturnType<typeof vi.fn>;
 const $transaction = prismaMock.$transaction as ReturnType<typeof vi.fn>;
 
@@ -341,17 +347,106 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
   });
 });
 
+// ─── batch5-review: weekly settlement sweep ────────────────────────────────────
+
+describe('payout.service — runWeeklySettlement', () => {
+  // commission.findMany serves four different queries here; dispatch on args so
+  // each one answers what the code actually asked for.
+  function wireLedger(opts: { providerId: string; unlinkedInr: string }) {
+    commission.findMany.mockImplementation(async (args: any) => {
+      if (args?.distinct) return [{ providerId: opts.providerId }];
+      const where = args?.where ?? {};
+      if (where.status === 'PENDING' && where.payoutRequestId === null) {
+        // Selected with {id, amount} inside requestPayout's transaction, and
+        // with {amount} by getPayoutBalance — one row satisfies both.
+        return [{ id: 'c-1', amount: new Prisma.Decimal(opts.unlinkedInr), status: 'PENDING' }];
+      }
+      return []; // PAID rows and in-flight rows
+    });
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+  }
+
+  it('skips a provider who already has a request awaiting an admin', async () => {
+    wireLedger({ providerId: 'prov-astro', unlinkedInr: '9000.00' });
+    payoutRequest.count.mockResolvedValue(1); // last week's is still pending
+
+    const out = await runWeeklySettlement();
+
+    expect(out.skippedInFlight).toBe(1);
+    expect(out.requestsCreated).toBe(0);
+    // The whole point: no second indistinguishable row in the admin queue.
+    expect(payoutRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('stamps the provider’s real role, not PANDIT', async () => {
+    wireLedger({ providerId: 'prov-astro', unlinkedInr: '9000.00' });
+    payoutRequest.count.mockResolvedValue(0);
+    userRoleAssignment.findMany.mockResolvedValue([{ role: 'ASTROLOGER' }]);
+    payoutRequest.create.mockResolvedValue({ id: 'pr-new', providerId: 'prov-astro', amount: new Prisma.Decimal('9000.00') });
+    commission.updateMany.mockResolvedValue({ count: 1 });
+    $transaction.mockImplementation(async (fn: any) => fn({ commission, payoutRequest }));
+
+    const out = await runWeeklySettlement();
+
+    expect(out.requestsCreated).toBe(1);
+    expect(payoutRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ role: 'ASTROLOGER' }) }),
+    );
+  });
+
+  it('skips — rather than mislabels — a provider with no payout-capable role', async () => {
+    wireLedger({ providerId: 'prov-orphan', unlinkedInr: '9000.00' });
+    payoutRequest.count.mockResolvedValue(0);
+    userRoleAssignment.findMany.mockResolvedValue([{ role: 'DEVOTEE' }]);
+
+    const out = await runWeeklySettlement();
+
+    expect(out.skippedRole).toBe(1);
+    expect(out.requestsCreated).toBe(0);
+    expect(payoutRequest.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('payout.service — resolveProviderRoleForUser', () => {
+  it('prefers the primary role (queried isPrimary-first) and maps it to a ProviderRole', async () => {
+    userRoleAssignment.findMany.mockResolvedValue([{ role: 'STORE_OWNER' }, { role: 'PANDIT' }]);
+    await expect(resolveProviderRoleForUser('u-1')).resolves.toBe('STORE_OWNER');
+    expect(userRoleAssignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: [{ isPrimary: 'desc' }, { role: 'asc' }] }),
+    );
+  });
+
+  it('skips non-provider roles rather than returning them', async () => {
+    userRoleAssignment.findMany.mockResolvedValue([{ role: 'DEVOTEE' }, { role: 'ASTROLOGER' }]);
+    await expect(resolveProviderRoleForUser('u-1')).resolves.toBe('ASTROLOGER');
+  });
+
+  it('returns null when the user holds no payout-capable role', async () => {
+    userRoleAssignment.findMany.mockResolvedValue([{ role: 'DEVOTEE' }, { role: 'ADMIN' }]);
+    await expect(resolveProviderRoleForUser('u-1')).resolves.toBeNull();
+  });
+});
+
 describe('payout.service — processPayout', () => {
+  // The linked set a healthy pr-1 owns: two PENDING commissions summing to the
+  // request's own amount of 350.
+  const HEALTHY_LINKED = [
+    { amount: new Prisma.Decimal('200.00'), status: 'PENDING' },
+    { amount: new Prisma.Decimal('150.00'), status: 'PENDING' },
+  ];
+
   it('complete marks commissions PAID + sets reference', async () => {
-    payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'pending', amount: 350, providerId: 'prov-1' });
-    payoutRequest.update.mockResolvedValue({ id: 'pr-1', status: 'completed', amount: 350, providerId: 'prov-1' });
+    payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'pending', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+    payoutRequest.update.mockResolvedValue({ id: 'pr-1', status: 'completed', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+    commission.findMany.mockResolvedValue(HEALTHY_LINKED);
     $transaction.mockImplementation(async (fn) => fn({ payoutRequest, commission }));
 
     const out = await processPayout('pr-1', 'complete', 'admin-1', 'UTR123');
     expect(out.status).toBe('completed');
     expect(commission.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { payoutRequestId: 'pr-1' },
+        // Scoped to PENDING so a REVERSED row can never be resurrected to PAID.
+        where: { payoutRequestId: 'pr-1', status: 'PENDING' },
         data: expect.objectContaining({ status: 'PAID' }),
       }),
     );
@@ -378,5 +473,66 @@ describe('payout.service — processPayout', () => {
     const out = await processPayout('pr-1', 'complete', 'admin-1');
     expect(out.status).toBe('completed');
     expect(payoutRequest.update).not.toHaveBeenCalled();
+  });
+
+  // batch5-review: RV-06 closed the CREATION side of the hollow-request
+  // problem. These lock the completion side — the half the write-up claimed but
+  // never implemented.
+  describe('completion guard (hollow-request vector)', () => {
+    beforeEach(() => {
+      $transaction.mockImplementation(async (fn: any) => fn({ payoutRequest, commission }));
+    });
+
+    for (const status of ['rejected', 'failed'] as const) {
+      it(`refuses to complete a ${status} request — its commissions are back in the balance`, async () => {
+        payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status, amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+        commission.findMany.mockResolvedValue([]);
+
+        await expect(processPayout('pr-1', 'complete', 'admin-1', 'UTR123')).rejects.toThrow(
+          /Cannot complete a payout request in "(rejected|failed)" status/,
+        );
+        expect(payoutRequest.update).not.toHaveBeenCalled();
+        expect(commission.updateMany).not.toHaveBeenCalled();
+      });
+    }
+
+    it('refuses a request that owns no commissions (nothing to pay)', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'pending', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+      commission.findMany.mockResolvedValue([]);
+
+      await expect(processPayout('pr-1', 'complete', 'admin-1')).rejects.toThrow(/owns no commissions/);
+      expect(payoutRequest.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses when the linked commissions no longer sum to the request amount', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'pending', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+      // One row was claimed elsewhere — paying 350 would over-transfer by 150.
+      commission.findMany.mockResolvedValue([{ amount: new Prisma.Decimal('200.00'), status: 'PENDING' }]);
+
+      await expect(processPayout('pr-1', 'complete', 'admin-1')).rejects.toThrow(
+        /₹350.00 does not match its linked commissions \(₹200.00\)/,
+      );
+      expect(payoutRequest.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses when a linked commission is no longer PENDING', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'pending', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+      commission.findMany.mockResolvedValue([
+        { amount: new Prisma.Decimal('200.00'), status: 'PENDING' },
+        // RV-02 reversal, or an already-settled row.
+        { amount: new Prisma.Decimal('150.00'), status: 'REVERSED' },
+      ]);
+
+      await expect(processPayout('pr-1', 'complete', 'admin-1')).rejects.toThrow(/no longer PENDING/);
+      expect(payoutRequest.update).not.toHaveBeenCalled();
+    });
+
+    it('still allows reject on an already-rejected request (release stays idempotent)', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'rejected', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+      payoutRequest.update.mockResolvedValue({ id: 'pr-1', status: 'rejected', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+
+      const out = await processPayout('pr-1', 'reject', 'admin-1', undefined, 'retry');
+      expect(out.status).toBe('rejected');
+    });
   });
 });

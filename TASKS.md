@@ -8,9 +8,22 @@
 > This entry is only a pointer so a compacted/fresh session finds it. Do not duplicate detail here.
 
 **Engagement:** full E2E audit of every role + fix pass. 58 findings tracked in `AUDIT.md` §12.
-**State 2026-08-10:** **50 of 58 fixed** (all 4 P0s; every P3 done). 4 open + 1 owner-gated — all recorded in `AUDIT.md`, none blocking.
-**Nothing committed, nothing deployed** (owner batching the push).
-**Baseline that must not regress:** API `tsc` clean · web `tsc` clean · **1059/1059 API tests, 84 files**.
+**State 2026-08-11:** **57 of 58 fixed** (the one left, M-002, is deploy-only). Owner decisions applied:
+RV-04/S2C-15 without backfill · Supabase reset-email flow for A-002 · **Stripe removed entirely**.
+**Then an adversarial review of the fixes found 14 more defects — all fixed.** Two were P0s in live money
+paths: the RV-04 fix had made a **second payout rail live for money the legacy rail already paid**, and RV-01
+was **still live on the temple booking path** (`currency: 'USD'` on an INR amount → Razorpay asked for $10,000
+on a Rs 10,000 booking). Detail: `docs/audit/batch8-review-findings.md`.
+**Baseline that must not regress:** API `tsc` clean · web `tsc` clean · mobile `tsc` clean ·
+**1066/1066 API tests (83 files)** · **265/265 web tests (35 files)**.
+**Owner/config actions still open** (the reset flow is dead until the first two are done): Supabase Redirect
+URLs, Supabase Auth SMTP, delete the stale Stripe webhook endpoint. See `docs/audit/RESUME.md`.
+
+**Two load-bearing invariants introduced — do not break:**
+1. `Commission.amount` = the PROVIDER's earning, `Commission.percentage` = the PLATFORM's take rate. One
+   column, one meaning; derive everything else via `apps/api/src/lib/commission-math.ts`.
+2. The two payout rails must stay mutually exclusive — `createPriestPayout` refuses when a `Commission`
+   already owns the booking. Removing that guard double-pays every pandit.
 
 **Durable artefacts (all in-repo — nothing lives only in chat):**
 | File | What |
@@ -21,13 +34,14 @@
 | `docs/audit/stage2-reverify-worklist.json` | Machine-readable re-verify list |
 | `docs/audit/batch5-agent-fixes.md` | Batch-5 agent fix reports + cross-file/owner items |
 | `docs/audit/batch5-review.md` | Adversarial review of Batch 5 — **found 4 blocking issues tests missed** |
+| `docs/audit/batch8-review-findings.md` | Adversarial review of the 2026-08-11 fixes — **14 defects incl. 2 money P0s** |
 | `docs/audit/batch6-agent-fixes.md` | Batch-6 agent fix reports (25 findings) |
 | `docs/audit/open-worklist.json` | Open findings with file:line, for agent partitioning |
 
 **The four P0s (all fixed, none deployed):** A-001 `public/` served one level deep (Dockerfile `cp -r` nesting; proven live) · A-005 auth bypass (forge `email-<uuid>-<hex>` → any account incl. admin) · RV-01 NRI billed rupees as dollars (83.5×) · S2C-01 NRI checkout dead-end.
 
 **Load-bearing decisions made during this engagement:**
-- **Stripe REMOVED** entirely (owner directive; PayPal-via-Razorpay replaces it). Razorpay is the only gateway, INR the only currency. Never reintroduce Stripe/USD. `gift-puja.ts`, `subscriptions.ts`, `/webhook/stripe` + ~20 legal pages still reference it — content pass owed.
+- **Stripe REMOVED** entirely (owner directive; PayPal-via-Razorpay replaces it). Razorpay is the only gateway, INR the only currency. Never reintroduce Stripe/USD. **Done 2026-08-11**: the rail is gone from `gift-puja.ts`, `subscriptions.ts` and `/webhook/stripe`; `lib/stripe.ts` and the orphaned `lib/pricing.ts` (which held the `83.5` constant behind RV-01) are deleted; npm deps, CSP origins and the legal/marketing content pass are all done.
 - **`lib/slot-time.ts`** is the ONLY correct way to compare a booking date+slot. `scheduledDate` is a DATE (midnight); the time is in `scheduledTimeSlot` (IST).
 - **Migrations `20260810000000` + `20260810000100`** are written but NOT applied — additive enum values + a `priestId` index. Deliberately split so an `ALTER TYPE` failure cannot block the index (the failure class that cost this repo 2 months).
 

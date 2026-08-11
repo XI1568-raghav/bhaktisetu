@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { StripeClientSecretCheckout } from '../../../components/StripeClientSecretCheckout';
 import { DateInput } from '../../../components/ui/DateInput';
 
 // ─── Razorpay loader ───────────────────────────────────────────
@@ -119,7 +118,6 @@ function OfferingCheckoutInner() {
   const [paymentError, setPaymentError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingNumber, setBookingNumber] = useState('');
-  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
 
   // The INR/USD toggle was removed 2026-08-10 with the Stripe rail. It defaulted
   // to USD for ANY browser outside Asia/Kolkata and displayed `basePrice * 9` as
@@ -565,25 +563,11 @@ function OfferingCheckoutInner() {
           </div>
         )}
 
-        {stripeClientSecret && (
-          <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-            <p className="mb-3 text-xs uppercase tracking-wide text-surface-500">
-              Secure card payment — {bookingNumber}
-            </p>
-            <StripeClientSecretCheckout
-              clientSecret={stripeClientSecret}
-              bookingNumber={bookingNumber}
-              returnUrl={typeof window !== 'undefined' ? `${window.location.origin}/checkout/success?bk=${encodeURIComponent(bookingNumber)}` : '/'}
-              onMailtoFallback={(bk) => {
-                const subject = encodeURIComponent(`Stripe payment link needed — ${bk}`);
-                const body = encodeURIComponent(
-                  `Hi Darshya team,\n\nMy booking ${bk} was created but embedded Stripe Elements could not load. Please send me a secure payment link.\n\nThank you.`,
-                );
-                window.location.href = `mailto:support@darshya.online?subject=${subject}&body=${body}`;
-              }}
-            />
-          </div>
-        )}
+        {/* The embedded Stripe Elements card block lived here. Batch 1 removed
+            handleStripePayment (the only caller of setStripeClientSecret), so
+            this branch had been permanently unreachable — dead UI that still
+            pulled Stripe Elements into the puja-checkout bundle. Razorpay is
+            the only rail on this path. */}
 
         <button
           type="button"

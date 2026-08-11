@@ -247,7 +247,11 @@ describe('BookingService.createBooking', () => {
     expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
   });
 
-  it('uses NRI price for NRI users', async () => {
+  // This test used to assert `currency === 'USD'` — it ENCODED the RV-01
+  // residual found on 2026-08-11: nriPrice is an INR column, and that currency
+  // string flowed straight into razorpay.orders.create, asking the gateway for
+  // $10,000 on a Rs 10,000 booking. NRI users pay the NRI *price*, in INR.
+  it('uses the NRI price for NRI users — and still bills in INR', async () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
     prismaMock.pujaBooking.count.mockResolvedValue(0);
     prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: true });
@@ -257,7 +261,7 @@ describe('BookingService.createBooking', () => {
       bookingNumber: 'BS-20261225-ABC12',
       status: 'pending_payment',
       priceAmount: 5000,
-      currency: 'USD',
+      currency: 'INR',
       scheduledDate: new Date('2026-12-25'),
       scheduledTimeSlot: '10:00',
       createdAt: new Date(),
@@ -265,10 +269,14 @@ describe('BookingService.createBooking', () => {
 
     const result = await service.createBooking(validInput);
 
-    expect(result.currency).toBe('USD');
     expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
     const createCall = prismaMock.pujaBooking.create.mock.calls[0]![0];
-    expect(createCall.data.currency).toBe('USD');
+    // The NRI price IS applied...
+    expect(Number(createCall.data.priceAmount)).toBeGreaterThan(1100);
+    // ...but the currency is INR. Razorpay is the only rail and INR the only
+    // currency; a 'USD' here is an ~83x overcharge at the gateway.
+    expect(createCall.data.currency).toBe('INR');
+    expect(result.currency).toBe('INR');
   });
 
   it('validates prasad delivery address belongs to user', async () => {
@@ -608,11 +616,15 @@ describe('BookingService.updateBookingStatus', () => {
       priestId: 'pr-1',
       priceAmount: new Prisma.Decimal(1151),
       platformCommission: new Prisma.Decimal(220),
+      priestPayout: new Prisma.Decimal(880),
       pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
       temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
       user: { id: 'u-1' },
       priest: { id: 'pr-1', displayName: 'Pandit Joshi' },
     });
+    // RV-04: the Priest → User hop the commission writer now makes. 'pr-1' is a
+    // Priest.id; 'user-pandit-1' is what every payout read passes.
+    prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' });
     prismaMock.commission.findFirst.mockResolvedValue(null);
     prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
     templePayoutMock.findFirst.mockResolvedValue(null);
@@ -638,9 +650,53 @@ describe('BookingService.updateBookingStatus', () => {
     const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
     expect(data.amount).toBeInstanceOf(Prisma.Decimal);
     expect(data.percentage).toBeInstanceOf(Prisma.Decimal);
-    // 220 / 1151 — Decimal division, not Number/Number.
-    expect(data.percentage.toNumber()).toBeCloseTo(220 / 1151, 12);
+    // `amount` is the provider's earning; `percentage` is the PLATFORM's take
+    // rate. One column, one meaning — see lib/commission-math.ts.
+    expect(data.percentage.toNumber()).toBeCloseTo((1151 - 880) / 1151, 12);
     expect(data.status).toBe('PENDING');
+  });
+
+  // ── RV-04 / S2C-15 (2026-08-11) ───────────────────────────────────────────
+  //
+  // The Commission row is what the payout engine pays a provider from. This
+  // writer had both fields wrong in opposite directions, and the two had to be
+  // fixed together: repairing only the key would have connected every pandit to
+  // a row carrying the platform's 20%, turning an inert orphan into a live 75%
+  // underpayment.
+
+  it('RV-04: keys the commission on the pandit User.id, not the Priest.id', async () => {
+    confirmMocks();
+
+    await service.updateBookingStatus('booking-1', 'confirmed' as any);
+
+    const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+    expect(data.providerId).toBe('user-pandit-1');
+    // The old value. A Priest.id here matches no payout read, which is exactly
+    // why the historical rows are orphaned rather than mispaid.
+    expect(data.providerId).not.toBe('pr-1');
+  });
+
+  it("RV-04: writes the pandit's 80% earning, not the platform's 20% cut", async () => {
+    confirmMocks();
+
+    await service.updateBookingStatus('booking-1', 'confirmed' as any);
+
+    const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+    expect(data.amount.toString()).toBe('880');
+    // ₹880 owed vs ₹220 written = the 75% underpayment the paired fix avoids.
+    expect(data.amount.toString()).not.toBe('220');
+  });
+
+  it('RV-04: writes no commission at all when the pandit has no linked user', async () => {
+    confirmMocks();
+    prismaMock.priest.findUnique.mockResolvedValue(null);
+
+    await service.updateBookingStatus('booking-1', 'confirmed' as any);
+
+    // Writing it anyway is what produced the orphan rows in the first place.
+    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    // The temple share is independent and must still run.
+    expect(templePayoutMock.create).toHaveBeenCalledTimes(1);
   });
 
   it('PROPAGATES a commission write failure instead of swallowing it', async () => {

@@ -1,5 +1,6 @@
 import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { platformRateOf } from '../lib/commission-math.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // RV-03: imported for this module's OWN use — a bare `export … from` re-export
@@ -212,7 +213,10 @@ export interface SlotAvailability {
 
 // ─── Valid state transitions ────────────────────────────────────────────────────
 
-const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
+// Exported for tests only. RV-17 was a mismatch between this table and
+// routes/bookings.ts's PRIEST_REASSIGNABLE_STATUSES that no test could catch,
+// because no test could see both. Now one can.
+export const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   pending_payment: ['confirmed', 'cancelled'],
   confirmed: ['priest_assigned', 'cancelled', 'refunded'],
   priest_assigned: ['in_progress', 'cancelled', 'refunded'],
@@ -226,6 +230,20 @@ const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
 
 // Statuses that allow cancellation by the user
 const CANCELLABLE_STATUSES: BookingStatus[] = ['pending_payment', 'confirmed', 'priest_assigned'];
+
+/**
+ * The relation shape `updateBookingStatus` returns, and therefore the shape
+ * `PATCH /bookings/:id` answers with. Exported because routes/bookings.ts has a
+ * second path to that same response (RV-17: a pure pandit reassignment, which
+ * moves no status and so never calls this service) and the two must not drift
+ * into returning differently-shaped bookings for the same endpoint.
+ */
+export const BOOKING_STATUS_RESPONSE_INCLUDE = {
+  temple: { select: { id: true, name: true, slug: true } },
+  pujaType: { select: { id: true, name: true, slug: true } },
+  priest: { select: { id: true, displayName: true } },
+  user: { select: { id: true } },
+} satisfies Prisma.PujaBookingInclude;
 
 // ─── BookingService ─────────────────────────────────────────────────────────────
 
@@ -428,7 +446,14 @@ export class BookingService {
           sankalpDetails: data.sankalpDetails ?? null,
           specialInstructions: data.specialInstructions ?? null,
           priceAmount,
-          currency: user.isNri ? 'USD' : 'INR',
+          // RV-01 residual (found 2026-08-11 by adversarial review): this said
+          // `user.isNri ? 'USD' : 'INR'` while priceAmount is INR throughout —
+          // nriPrice is an INR column (schema.prisma: "9-10x INR"). The value
+          // flowed straight into razorpay.orders.create as the order currency,
+          // so an NRI's Rs 10,000 booking asked Razorpay for $10,000: the exact
+          // ~83x overcharge Batch 1 closed on the /from-offering path and
+          // missed here. isNri is self-settable via PATCH /users/me.
+          currency: 'INR',
           platformCommission,
           priestPayout: priestPayoutAmount,
           status: 'pending_payment',
@@ -515,12 +540,7 @@ export class BookingService {
       const row = await tx.pujaBooking.update({
         where: { id: bookingId },
         data: updateData,
-        include: {
-          temple: { select: { id: true, name: true, slug: true } },
-          pujaType: { select: { id: true, name: true, slug: true } },
-          priest: { select: { id: true, displayName: true } },
-          user: { select: { id: true } },
-        },
+        include: BOOKING_STATUS_RESPONSE_INCLUDE,
       });
 
       if (newStatus === 'confirmed') {
@@ -536,25 +556,39 @@ export class BookingService {
           // input must be exact rational division, not float (matches
           // payment.service's writer).
           //
-          // RV-04: `providerId: row.priestId` writes a Priest.id where every
-          // payout read passes a User.id, and `amount` carries the PLATFORM's
-          // cut into the field the payout engine reads as the PROVIDER's net
-          // share. Both defects are mirrored verbatim from
-          // payment.service.writePujaCommissionOnConfirm and are deliberately
-          // left untouched here: changing one writer without the other would
-          // desync the ledger. They must be fixed in the same change.
-          const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
-          const commission = new Prisma.Decimal(row.platformCommission as Prisma.Decimal);
-          const percentage = price.gt(0) ? commission.div(price) : new Prisma.Decimal(0);
-          await tx.commission.create({
-            data: {
-              bookingId: row.id,
-              providerId: row.priestId,
-              amount: commission,
-              percentage,
-              status: 'PENDING',
-            },
+          // RV-04 (fixed 2026-08-11, owner-approved): this writer used to store
+          // `providerId: row.priestId` (a Priest.id, where every payout read
+          // passes a User.id) and `amount: row.platformCommission` (the
+          // PLATFORM's 20%, in the field the payout engine reads as the
+          // PROVIDER's net earning). Both are fixed here in the same change as
+          // payment.service.writePujaCommissionOnConfirm — see the full
+          // rationale there. Moving one writer without the other would desync
+          // the ledger, and fixing the key alone would turn an inert orphan row
+          // into a live 75% underpayment.
+          //
+          // The Priest → User hop is a separate read rather than an addition to
+          // BOOKING_STATUS_RESPONSE_INCLUDE, so the PATCH response shape does
+          // not start carrying the pandit's user id.
+          const priestUser = await tx.priest.findUnique({
+            where: { id: row.priestId },
+            select: { userId: true },
           });
+          if (priestUser?.userId) {
+            // amount = provider's earning, percentage = PLATFORM's rate.
+            // See lib/commission-math.ts — one column, one meaning.
+            const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
+            const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
+            const percentage = platformRateOf(price.sub(providerEarning), price);
+            await tx.commission.create({
+              data: {
+                bookingId: row.id,
+                providerId: priestUser.userId,
+                amount: providerEarning,
+                percentage,
+                status: 'PENDING',
+              },
+            });
+          }
         }
 
         // RV-03: the temple's 5% share, in the same transaction as the confirm.

@@ -1,7 +1,6 @@
 import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
-import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -17,8 +16,9 @@ interface PlanDefinition {
   // Optional explicit duration (overrides interval-based math). Used by
   // short-window plans like the AI astro single-session pass (1 day).
   durationDays?: number;
-  // Optional USD price for international (NRI) checkout via Stripe. When
-  // present, the plan is eligible for createStripeAnnualSubscription (AR).
+  // Optional USD price, retained for display and for the future
+  // PayPal-via-Razorpay international rail. Nothing charges against it today —
+  // the Stripe checkout that did was removed 2026-08-11.
   priceUsd?: number;
   features: string[];
   popular: boolean;
@@ -216,7 +216,8 @@ const PLANS: PlanDefinition[] = [
     popular: true,
   },
   // ─── NRI Premium yearly tier (Layer AR) ──────────────────────────────────
-  // Annual subscription billed in USD via Stripe ($60/yr ≈ ₹5000). Maps to
+  // Annual subscription, ₹5000/yr (~$60). Billed in INR via Razorpay; the USD
+  // Stripe checkout was removed 2026-08-11. Maps to
   // ENTERPRISE so isPremium() can branch off the marketplace plan code
   // without inventing a new enum value.
   {
@@ -453,108 +454,16 @@ export class SubscriptionService {
     return { subscriptionId, shortUrl, status, skipped: isDemo, reason: isDemo ? 'demo-mode' : undefined };
   }
 
-  // ─── Stripe Annual Subscription (Layer AR — NRI Premium) ────────────────────
-  // ₹5000/yr (~$60) billed in USD via Stripe Checkout. Unlike the Razorpay
-  // monthly subscription which uses the Subscriptions API + saved plan ID,
-  // the annual NRI tier uses a Checkout Session in `subscription` mode with
-  // an inline price_data block — no pre-created Stripe Plan needed, so the
-  // demo path stays env-gated.
-
-  async createStripeAnnualSubscription(args: {
-    userId: string;
-    planId: string;
-  }): Promise<{
-    sessionId: string;
-    url: string | null;
-    status: string;
-    skipped?: boolean;
-    reason?: string;
-  }> {
-    const plan = PLANS.find((p) => p.id === args.planId);
-    if (!plan) throw new Error(`Plan not found: ${args.planId}`);
-    if (!plan.priceUsd || plan.priceUsd <= 0) {
-      throw new Error(`Plan ${args.planId} has no USD price configured for Stripe`);
-    }
-    if (plan.interval !== 'year') {
-      throw new Error(`Plan ${args.planId} is not an annual plan`);
-    }
-
-    const usdAmountCents = Math.round(plan.priceUsd * 100);
-    const successBase = process.env.WEB_APP_URL || 'https://darshya.online';
-    const primaryRole: string = plan.roles[0] ?? 'DEVOTEE';
-
-    if (isStripeDemoMode) {
-      // Demo mode: instantly grant the subscription locally so the flow
-      // stays exercisable without a Stripe key.
-      try {
-        await this.subscribe(args.userId, args.planId, primaryRole);
-      } catch {
-        // ignore
-      }
-      return {
-        sessionId: `cs_demo_${Date.now()}`,
-        url: null,
-        status: 'demo_completed',
-        skipped: true,
-        reason: 'demo-mode',
-      };
-    }
-
-    const stripe = await getStripe();
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: 'usd',
-            unit_amount: usdAmountCents,
-            recurring: { interval: 'year' },
-            product_data: {
-              name: plan.name,
-              description: 'Darshya NRI Premium — annual',
-            },
-          },
-        },
-      ],
-      success_url: `${successBase}/account/subscriptions?nri=success`,
-      cancel_url: `${successBase}/upgrade?nri=cancelled`,
-      metadata: {
-        darshyaUserId: args.userId,
-        darshyaPlanId: args.planId,
-        role: primaryRole,
-        kind: 'stripe_annual_nri',
-      },
-    });
-
-    try {
-      await prisma.transaction.create({
-        data: {
-          userId: args.userId,
-          type: 'SUBSCRIPTION',
-          amount: plan.price,
-          status: 'PENDING',
-          metadata: {
-            kind: 'stripe_annual_nri',
-            stripeSessionId: session.id,
-            planId: args.planId,
-            role: primaryRole,
-            url: session.url,
-            priceUsd: plan.priceUsd,
-          },
-        },
-      });
-    } catch {
-      // mock fallback — fine
-    }
-
-    return {
-      sessionId: session.id,
-      url: session.url,
-      status: 'created',
-    };
-  }
+  // createStripeAnnualSubscription — REMOVED 2026-08-11 with the Stripe rail
+  // (owner directive). It opened a USD Stripe Checkout Session in subscription
+  // mode for the NRI annual tier. Deleted rather than gated: Razorpay is the
+  // only gateway and INR the only currency, and a dormant USD checkout is
+  // exactly the kind of path a later edit re-enables by accident (RV-01). The
+  // Razorpay monthly/annual subscription above is the sole rail; international
+  // buyers return with PayPal-via-Razorpay.
+  //
+  // Plan.priceUsd is retained on the PLANS table for display and for that
+  // future rail — nothing charges against it today.
 
   /**
    * Check if a user has an active premium subscription (NRI Premium tier).

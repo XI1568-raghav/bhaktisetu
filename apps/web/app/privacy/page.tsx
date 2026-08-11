@@ -85,8 +85,8 @@ export default function PrivacyPage() {
  </li>
  <li>
  <strong>Payment Information:</strong> Processed securely through
- Razorpay (domestic) and Stripe (international). We do not store
- your full card number, CVV, or bank credentials on our servers.
+ Razorpay, for domestic and international payments alike. We do not
+ store your full card number, CVV, or bank credentials on our servers.
  </li>
  <li>
  <strong>Communication Data:</strong> Messages sent through our
@@ -162,11 +162,7 @@ export default function PrivacyPage() {
  INR transactions. Receives card/UPI/banking data directly; we
  do not store full card numbers or CVV.
  </li>
- <li>
- <strong>Stripe (Payments — International):</strong> Processes
- NRI transactions in USD under PCI DSS Level 1.
- </li>
- <li>
+  <li>
  <strong>Supabase (Database & Auth):</strong> Stores account
  records, bookings, and content metadata in EU-region Postgres
  with row-level security policies.

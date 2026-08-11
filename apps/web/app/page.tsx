@@ -270,7 +270,7 @@ export default async function HomePage() {
  </div>
  </section>
 
- {/* ═══ TRUST STRIP — verified, video-proof, 80G, NRI dual-currency ═══ */}
+ {/* ═══ TRUST STRIP — verified, video-proof, 80G, NRI-friendly ═══ */}
  <section aria-label="Trust signals" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -278,7 +278,7 @@ export default async function HomePage() {
  { icon: Shield, title: 'Verified Temples', desc: 'Manager-signed, on-site audit', accent: 'var(--color-primary)' },
  { icon: Video, title: 'Video Proof', desc: 'Every puja recorded + shared', accent: '#059669' },
  { icon: CheckCircle, title: '80G Receipts', desc: 'Tax-deductible donations', accent: '#059669' },
- { icon: Heart, title: 'NRI Dual-Currency', desc: 'INR · USD · GBP · AUD · CAD', accent: 'var(--color-primary)' },
+ { icon: Heart, title: 'NRI Friendly', desc: 'Book from 40+ countries', accent: 'var(--color-primary)' },
  ].map((t, i) => (
  <div key={t.title} data-reveal="cascade" data-delay={String(i + 1)} className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <t.icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: t.accent }} />

@@ -58,7 +58,7 @@ const faqs = [
  {
  question: "What payment methods do you accept?",
  answer:
- "We accept UPI, credit/debit cards, net banking, and wallets via Razorpay. For international providers, Stripe is available with USD billing.",
+ "We accept UPI, credit/debit cards, net banking, and wallets via Razorpay. International cards are accepted too — billing is in INR.",
  },
  {
  question: "Do devotees need to pay?",

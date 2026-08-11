@@ -277,69 +277,13 @@ export async function paymentRoutes(server: FastifyInstance) {
     }
   );
 
-  // POST /webhook/stripe - Stripe webhook handler (no auth — uses
-  // stripe-signature header verified via STRIPE_WEBHOOK_SECRET).
-  //
-  // Always verifies HMAC over the raw bytes Stripe sent (Stripe SDK's
-  // constructEvent does this internally with timing-safe compare). We
-  // never accept a re-serialised JSON path because Stripe's signing
-  // payload is byte-exact.
-  server.post(
-    '/webhook/stripe',
-    { config: { rawBody: true } },
-    async (request, reply) => {
-      try {
-        const signature = request.headers['stripe-signature'] as string | undefined;
-        if (!signature) {
-          return reply.status(400).send({
-            error: 'Missing stripe-signature header.',
-          });
-        }
-        const rawBody = (request as unknown as { rawBody?: string }).rawBody;
-        if (!rawBody) {
-          server.log.error('Stripe webhook requires fastify-raw-body — rawBody missing for this route');
-          return reply.status(500).send({ error: 'Webhook configuration error' });
-        }
-
-        // Idempotency (TD16): Stripe gives event.id natively (evt_*). We
-        // parse rawBody for the id before signature verification — using the
-        // id as a cache key is safe even if forged because a hit just makes
-        // us skip processing, which is the correct response to a forgery too.
-        // If parsing fails, fall through; signature check below will still
-        // reject invalid bodies.
-        try {
-          const parsed = JSON.parse(rawBody) as { id?: unknown };
-          const stripeEventId = typeof parsed.id === 'string' ? parsed.id : '';
-          if (stripeEventId) {
-            const dedupe = await checkAndRecord('stripe', stripeEventId);
-            if (dedupe.alreadyProcessed) {
-              server.log.info({ eventId: stripeEventId }, 'Stripe webhook duplicate — skipping');
-              return reply.status(200).send({ handled: true, duplicate: true });
-            }
-          }
-        } catch (idemErr) {
-          server.log.warn({ err: idemErr }, 'Stripe idempotency check failed — falling through');
-        }
-
-        const result = await paymentService.handleStripeWebhook(rawBody, signature);
-        return reply.status(200).send(result);
-      } catch (error: any) {
-        if (error.message?.includes('signature verification failed')) {
-          server.log.warn('Stripe webhook signature verification failed');
-          return reply.status(400).send({
-            error: 'Webhook signature verification failed.',
-          });
-        }
-        server.log.error(error, 'Failed to process Stripe webhook');
-        // Return 200 so Stripe doesn't retry-storm us on internal errors
-        // unrelated to signature validity. Mirrors Razorpay handler.
-        return reply.status(200).send({
-          handled: false,
-          error: 'Internal processing error',
-        });
-      }
-    },
-  );
+  // POST /webhook/stripe — REMOVED 2026-08-11 with the Stripe rail (owner
+  // directive). With no Stripe charge path left in the platform, an
+  // unauthenticated endpoint that no sender addresses is attack surface rather
+  // than a safety net: it parsed an attacker-controllable raw body and wrote to
+  // the webhook idempotency store before any signature was verified. Razorpay's
+  // handler above is the only webhook. See services/payment.service.ts for the
+  // handler that backed this route.
 
   // GET /:id - Get payment details for a booking
   server.get(

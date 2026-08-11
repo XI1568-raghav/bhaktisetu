@@ -107,6 +107,87 @@ describe('PaymentService.verifyPayment', () => {
     );
   });
 
+  // ── RV-04 / S2C-15 (2026-08-11) ─────────────────────────────────────────
+  //
+  // This is the PRIMARY commission writer — production confirms via this path
+  // (and the webhook), not via a status PATCH — and it had no test coverage of
+  // the row it writes at all. Both fields were wrong in opposite directions and
+  // had to move together: fixing the key alone would have connected every
+  // pandit to a row carrying the platform's 20%, i.e. a live 75% underpayment
+  // in place of an inert orphan.
+  describe('RV-04 — the commission row it writes on confirm', () => {
+    // verifyPayment ends with `void fireAndForgetPostConfirmSideEffects(...)`,
+    // whose dynamic imports keep issuing prisma calls after the awaited call
+    // resolves. These tests mock the booking fully enough that the chain gets
+    // far enough to pollute the NEXT test's spy counts, so drain it here.
+    const settleSideEffects = () => new Promise((r) => setTimeout(r, 25));
+
+    function confirmingPayment() {
+      prismaMock.payment.findFirst.mockResolvedValue({
+        id: 'pmt-1',
+        booking: { id: 'bk-1', bookingNumber: 'BS-X', status: 'pending_payment' },
+      });
+      prismaMock.payment.update.mockResolvedValue({});
+      prismaMock.pujaBooking.update.mockResolvedValue({});
+      // ₹1,100 puja + ₹51 platform fee: pandit 80% = ₹880, platform 20% = ₹220.
+      prismaMock.pujaBooking.findUnique.mockResolvedValue({
+        id: 'bk-1',
+        templeId: 't-1',
+        priceAmount: new Prisma.Decimal(1151),
+        priestPayout: new Prisma.Decimal(880),
+        platformCommission: new Prisma.Decimal(220),
+        priestId: 'pr-1',
+        priest: { userId: 'user-pandit-1' },
+      });
+      prismaMock.commission.findFirst.mockResolvedValue(null);
+      prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
+    }
+
+    it("keys on the pandit's User.id and carries the pandit's 80%", async () => {
+      const service = await loadService();
+      const sig = hmacHex('test_secret_key', 'order_x|pay_x');
+      confirmingPayment();
+
+      await service.verifyPayment('order_x', 'pay_x', sig);
+
+      const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+      // Was `booking.priestId` — a Priest.id, which matches no payout read.
+      expect(data.providerId).toBe('user-pandit-1');
+      expect(data.providerId).not.toBe('pr-1');
+      // Was `booking.platformCommission` (₹220) in the field the payout engine
+      // reads as the provider's net earning.
+      expect(data.amount.toString()).toBe('880');
+      // `percentage` is the PLATFORM's take rate, never the provider's share —
+      // one column, one meaning (lib/commission-math.ts). Reading it as the
+      // provider's share is what inverted /astrologer-portal/earnings.
+      expect(data.percentage.toNumber()).toBeCloseTo((1151 - 880) / 1151, 12);
+      expect(data.status).toBe('PENDING');
+
+      await settleSideEffects();
+    });
+
+    it('writes nothing when the pandit has no linked user (no new orphans)', async () => {
+      const service = await loadService();
+      const sig = hmacHex('test_secret_key', 'order_x|pay_x');
+      confirmingPayment();
+      prismaMock.pujaBooking.findUnique.mockResolvedValue({
+        id: 'bk-1',
+        templeId: 't-1',
+        priceAmount: new Prisma.Decimal(1151),
+        priestPayout: new Prisma.Decimal(880),
+        platformCommission: new Prisma.Decimal(220),
+        priestId: 'pr-1',
+        priest: null,
+      });
+
+      await service.verifyPayment('order_x', 'pay_x', sig);
+
+      expect(prismaMock.commission.create).not.toHaveBeenCalled();
+
+      await settleSideEffects();
+    });
+  });
+
   it('does not re-confirm an already-confirmed booking', async () => {
     const service = await loadService();
     const sig = hmacHex('test_secret_key', 'order_x|pay_x');
@@ -115,6 +196,10 @@ describe('PaymentService.verifyPayment', () => {
       booking: { id: 'bk-1', bookingNumber: 'BS-X', status: 'confirmed' },
     });
     prismaMock.payment.update.mockResolvedValue({});
+    // The preceding confirm tests end with fire-and-forget side-effects whose
+    // async continuations can still land here. Clear immediately before the
+    // act so this assertion measures only this call.
+    prismaMock.pujaBooking.update.mockClear();
 
     await service.verifyPayment('order_x', 'pay_x', sig);
 
@@ -195,6 +280,8 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
         displayName: 'Test Priest',
       });
       prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+      // No Commission row for this booking -> the legacy rail owns it.
+      prismaMock.commission.findFirst.mockResolvedValue(null);
       prismaMock.priestPayout.create.mockResolvedValue({
         id: 'po-1',
         priestId: 'priest-1',
@@ -204,9 +291,32 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
       });
 
       const out = await service.createPriestPayout('bk-1');
-      expect(out.id).toBe('po-1');
+      expect('id' in out && out.id).toBe('po-1');
     }
   );
+
+  // The double-pay rail, found by adversarial review 2026-08-11: repairing the
+  // Commission key (RV-04) made the unified /payouts rail live for the same
+  // money PriestPayout already carried, with nothing cross-checking them.
+  it('does NOT mint a PriestPayout when the unified Commission ledger owns the booking', async () => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...baseBooking,
+      status: 'video_uploaded',
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      aadhaarVerified: true,
+      displayName: 'Test Priest',
+    });
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+    prismaMock.commission.findFirst.mockResolvedValue({ id: 'c-1' });
+
+    const out = await service.createPriestPayout('bk-1');
+
+    expect('skipped' in out && out.skipped).toBe(true);
+    // The whole point: no second payable row for money rail A already owns.
+    expect(prismaMock.priestPayout.create).not.toHaveBeenCalled();
+  });
 
   it('refuses payout when priest.aadhaarVerified=false (business rule #4)', async () => {
     const service = await loadService();

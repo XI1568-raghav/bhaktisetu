@@ -1,7 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
-import { bookingService } from '../services/booking.service.js';
+import {
+  bookingService,
+  BOOKING_STATUS_RESPONSE_INCLUDE,
+} from '../services/booking.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { paymentService } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
@@ -214,6 +217,99 @@ function checkPriestReassignable(currentStatus: BookingStatus): GateResult {
       `Cannot reassign the pandit on a booking in "${currentStatus}" status — ` +
       'the puja has already been performed or settled. Cancel and rebook instead.',
   };
+}
+
+/**
+ * RV-17, second pass (2026-08-11): the reassignment above committed and then
+ * the request died on the status flip below, so the endpoint answered
+ * `409 Invalid status transition` on a write it had already applied.
+ *
+ * Every variant of the PATCH schema requires a `status`, and VALID_TRANSITIONS
+ * (booking.service.ts) has no self-edges — `confirmed -> confirmed` is not a
+ * legal transition. The only way to express "swap the pandit, leave the booking
+ * where it is" was therefore to echo the current status back, which reached
+ * updateBookingStatus and threw. That is the dominant case, not an edge one:
+ * dispatch.service escalates T4 to an admin so the admin can put a different
+ * pandit on a booking that is *staying* confirmed/priest_assigned.
+ *
+ * A status PATCH that does not move the status is a no-op, not an illegal
+ * transition, so the transition step is skipped rather than validated. Scoped
+ * deliberately: only when a reassignment actually happened (so the request did
+ * something) and no `data` rides along (so nothing is silently dropped). A
+ * same-status PATCH that carries neither still falls through to the service and
+ * still 409s — that shape is unchanged, since it genuinely asks for nothing.
+ */
+function isPureReassignment(input: {
+  currentStatus: BookingStatus;
+  requestedStatus: BookingStatus;
+  reassignmentApplied: boolean;
+  hasData: boolean;
+}): boolean {
+  return (
+    input.reassignmentApplied &&
+    input.requestedStatus === input.currentStatus &&
+    !input.hasData
+  );
+}
+
+/**
+ * Tell everyone an admin reassignment affects (2026-08-11).
+ *
+ * Adversarial review found the reassignment landing silently: the devotee's app
+ * still named the old pandit (who might still turn up), the new pandit only
+ * discovered the job by opening the portal, and the old one was never told they
+ * had lost it. Every other assignment path already notifies — priest.service on
+ * accept/release, dispatch.service on match — so this closes the one path that
+ * did not.
+ *
+ * Fire-and-forget by contract: a notification failure must never undo a
+ * committed reassignment.
+ */
+async function notifyReassignment(args: {
+  booking: { id: string; priestId: string | null };
+  previousPriestId: string | null;
+}): Promise<void> {
+  const { booking, previousPriestId } = args;
+
+  const full = await prisma.pujaBooking.findUnique({
+    where: { id: booking.id },
+    include: {
+      user: { select: { id: true, fullName: true, phone: true, email: true } },
+      pujaType: { select: { name: true } },
+      temple: { select: { name: true } },
+      priest: { select: { displayName: true } },
+    },
+  });
+  if (!full) return;
+
+  const { notifyDevotee, buildBookingCtx } = await import(
+    '../services/booking-notify.service.js'
+  );
+  const { notifyUser } = await import('../routes/notifications.js');
+
+  await notifyDevotee('assigned', buildBookingCtx(full as never)).catch(() => undefined);
+
+  const priestIds = [booking.priestId, previousPriestId].filter(
+    (p): p is string => !!p && p !== undefined,
+  );
+  if (!priestIds.length) return;
+
+  const priests = await prisma.priest.findMany({
+    where: { id: { in: priestIds } },
+    select: { id: true, userId: true },
+  });
+
+  for (const p of priests) {
+    if (!p.userId) continue;
+    const isNew = p.id === booking.priestId;
+    await notifyUser(p.userId, {
+      title: isNew ? 'New puja assigned to you' : 'A puja was reassigned',
+      body: isNew
+        ? `You have been assigned booking ${full.bookingNumber}. Check the details in your portal.`
+        : `Booking ${full.bookingNumber} has been reassigned to another pandit by the Darshya team.`,
+      url: isNew ? '/priest/bookings' : '/priest',
+    }).catch(() => undefined);
+  }
 }
 
 /**
@@ -531,6 +627,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         // illegal the caller gets a 409 with the reassignment already applied —
         // recoverable, because retrying with a legal status is then a no-op for
         // this block (priestId already equals the target).
+        let reassigned: Prisma.PujaBookingGetPayload<{
+          include: typeof BOOKING_STATUS_RESPONSE_INCLUDE;
+        }> | null = null;
+
         if (isAdmin && body.priestId && body.priestId !== booking.priestId) {
           const reassignGate = checkPriestReassignable(booking.status as BookingStatus);
           if (!reassignGate.ok) {
@@ -554,7 +654,7 @@ export async function bookingRoutes(server: FastifyInstance) {
           }
 
           const newPriestId = body.priestId;
-          await prisma.$transaction(async (tx) => {
+          reassigned = await prisma.$transaction(async (tx) => {
             await lockPriestSlot(
               tx,
               priestSlotKey(newPriestId, booking.scheduledDate, booking.scheduledTimeSlot),
@@ -577,17 +677,104 @@ export async function bookingRoutes(server: FastifyInstance) {
                 `That pandit already has booking ${conflict.bookingNumber} at this date and time slot.`,
               );
             }
-            await tx.pujaBooking.update({
+
+            // ── Move the earning with the work ────────────────────────────
+            //
+            // Found by adversarial review 2026-08-11. The Commission row is
+            // minted at `confirmed` keyed to the pandit on record at that
+            // instant, and its writer is idempotent on bookingId — so a
+            // reassignment left the OLD pandit holding the whole 80% for a puja
+            // the NEW pandit performs. On a Rs 5,000 booking: A can withdraw
+            // Rs 4,000 for work he never did, and B, who did it, sees Rs 0.
+            //
+            // Only rows that are still unclaimed may move. A commission that is
+            // already PAID or linked to a PayoutRequest represents money that
+            // has left, or is mid-transfer — silently re-pointing it would
+            // corrupt a live payout request (and trip processPayout's own
+            // sum assertion). Those need a finance decision, so the
+            // reassignment is refused instead of half-applied.
+            const settled = await tx.commission.findFirst({
+              where: {
+                bookingId: id,
+                OR: [{ status: { not: 'PENDING' } }, { payoutRequestId: { not: null } }],
+              },
+              select: { id: true, status: true },
+            });
+            if (settled) {
+              throw new SlotConflictError(
+                'This booking’s pandit earning has already been paid out or is inside a ' +
+                  'payout request, so the pandit cannot be changed. Reverse the payout first.',
+              );
+            }
+
+            const newPriestUser = await tx.priest.findUnique({
+              where: { id: newPriestId },
+              select: { userId: true },
+            });
+            if (newPriestUser?.userId) {
+              await tx.commission.updateMany({
+                where: { bookingId: id, status: 'PENDING', payoutRequestId: null },
+                data: { providerId: newPriestUser.userId },
+              });
+            }
+
+            return tx.pujaBooking.update({
               where: { id },
               data: { priestId: newPriestId },
+              include: BOOKING_STATUS_RESPONSE_INCLUDE,
             });
           });
+        }
+
+        // RV-17 second pass: a reassignment that moves no status is complete
+        // here. Falling through would ask the state machine for a self-edge it
+        // does not have and 409 on work already committed.
+        //
+        // The predicate is "the booking now carries the requested pandit", not
+        // "we wrote it on THIS call" — otherwise an identical retry (the admin
+        // UI resending after a timed-out but committed request) finds
+        // priestId already equal, skips the block, and gets the very
+        // `409 Invalid status transition` this fix exists to remove. Idempotent
+        // now: the same request twice gives the same 200.
+        const suppliedData = body.data as Record<string, any> | undefined;
+        const targetPandit = body.priestId;
+        const panditAlreadyTarget =
+          isAdmin && !!targetPandit && (reassigned?.priestId ?? booking.priestId) === targetPandit;
+
+        if (
+          panditAlreadyTarget &&
+          isPureReassignment({
+            currentStatus: booking.status as BookingStatus,
+            requestedStatus: body.status as BookingStatus,
+            reassignmentApplied: true,
+            hasData: !!suppliedData && Object.keys(suppliedData).length > 0,
+          })
+        ) {
+          if (reassigned) {
+            // Real change — tell the people it affects. Every other assignment
+            // path notifies (priest.service accept/release, dispatch.service),
+            // and a silent swap means the devotee's app still names the old
+            // pandit, who may still turn up, while the new one only finds out
+            // by opening the portal.
+            void notifyReassignment({
+              booking: reassigned,
+              previousPriestId: booking.priestId,
+            }).catch(() => undefined);
+            return { booking: reassigned };
+          }
+          // Retry of an already-applied reassignment: re-read so the response
+          // shape matches the first call exactly.
+          const current = await prisma.pujaBooking.findUnique({
+            where: { id },
+            include: BOOKING_STATUS_RESPONSE_INCLUDE,
+          });
+          if (current) return { booking: current };
         }
 
         const updated = await bookingService.updateBookingStatus(
           id,
           body.status as BookingStatus,
-          body.data as Record<string, any> | undefined,
+          suppliedData,
         );
 
         return { booking: updated };
@@ -1147,8 +1334,13 @@ export async function bookingRoutes(server: FastifyInstance) {
   // priestPujaOfferingId FK (migration 20260520020000) so the priest portal
   // + admin can read it back without parsing JSON markers.
   //
-  // NRI flow (rule #2): if user.isNri is true (or country override sent),
-  // bill in USD via Stripe at basePrice * 9. Otherwise INR via Razorpay.
+  // Pricing: INR via Razorpay for everyone. The NRI branch that used to sit
+  // here — "bill in USD via Stripe at basePrice * 9" — was RV-01, the P0 that
+  // charged NRI devotees 83.5× by applying a price-level multiplier as if it
+  // were an FX rate. It is deleted, not disabled (Batch 1, 2026-08-10): Stripe
+  // is not a rail on this path and USD is not a currency here. The accurate
+  // note lives with the pricing block below; this comment is kept only to stop
+  // the deleted behaviour being re-implemented from a stale instruction.
   //
   // Slot capacity (S2C-13, corrected 2026-08-10): if offering.availableSlots
   // is set, the scheduledTime must match one of the slots. INDEPENDENTLY of
@@ -1623,6 +1815,7 @@ export async function bookingRoutes(server: FastifyInstance) {
 export const __testing = {
   checkVideoProofGate,
   checkPriestReassignable,
+  isPureReassignment,
   priestSlotKey,
   SlotConflictError,
   updateBookingStatusSchema,

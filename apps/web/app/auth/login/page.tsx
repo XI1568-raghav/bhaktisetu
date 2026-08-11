@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useTranslations } from '../../../lib/t';
 import {
   Flame,
@@ -516,12 +517,23 @@ export default function LoginPage() {
                 </div>
 
                 <div className="mb-5">
-                  <label
-                    htmlFor="password"
-                    className="text-surface-700 mb-1.5 block text-sm font-medium"
-                  >
-                    Password
-                  </label>
+                  <div className="mb-1.5 flex items-baseline justify-between">
+                    <label
+                      htmlFor="password"
+                      className="text-surface-700 block text-sm font-medium"
+                    >
+                      Password
+                    </label>
+                    {/* A-002: the only entry point to password recovery. Without
+                        it the reset pages exist but are unreachable, which is
+                        the state the whole product was in until 2026-08-11. */}
+                    <Link
+                      href="/auth/forgot-password"
+                      className="text-saffron-700 hover:text-saffron-800 text-xs font-medium"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <Lock className="text-surface-400 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <input

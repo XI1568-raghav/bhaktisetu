@@ -2,23 +2,32 @@
 
 > Single entry point for continuing the Darshya full-audit + fix engagement after a `/clear` or new session.
 > Everything below is reconstructable from files in this repo — **nothing needed lives only in chat.**
-> Last updated: 2026-08-10.
+> Last updated: 2026-08-11.
 
 ## One-paragraph state
 
-Full E2E audit of darshya.online (all roles) + fix pass. **58 findings; 50 fixed** (P0 4/4, P1 18, P2 17, P3 11/11).
-Remaining: **2 open** (A-002 product call, M-002 deploy-only) · **1 partial** (RV-17) · **2 owner-gated** (S2C-15 + its duplicate RV-04) · 3 verified-healthy.
-All 4 P0s fixed. **Nothing committed, nothing deployed** — owner is batching the push. Baseline that must
-not regress: **API `tsc` clean · web `tsc` clean · 1059/1059 API tests across 84 files** (started at 893).
+Full E2E audit of darshya.online (all roles) + fix pass. **58 original findings, 56 fixed**, plus **14 further
+defects found on 2026-08-11 by an adversarial review of the fixes themselves — all fixed.** Remaining open:
+**1** (M-002, deploy-only, not a code defect). Stripe is now removed from the platform entirely (owner
+directive) and a password-reset flow exists (A-002). Baseline that must not regress:
+**API `tsc` clean · web `tsc` clean · mobile `tsc` clean · packages/api-client `tsc` clean ·
+1066/1066 API tests across 83 files · 265/265 web tests across 35 files.**
 
-## First 3 commands on resume
+**The single most important lesson of 2026-08-11:** the RV-04 commission fix was correct in isolation and
+*created a P0 in integration* — repairing the ledger key made a second payout rail live for money the legacy
+rail already paid. Type-checking and 1,059 passing tests caught none of it, because `packages/api-client`
+types the commissions payload as `unknown[]`. **Money-model changes must be reviewed across every reader in
+every app, not just the writer.**
+
+## First 4 commands on resume
 
 ```bash
 cd /e/NewClaude/bhaktisetu/apps/api && npx tsc --noEmit && npx vitest run --exclude '**/scripts/leads/**' 2>&1 | tail -3
-cd ../web && npx tsc --noEmit
-cd /e/NewClaude/bhaktisetu && git status --porcelain | wc -l   # expect ~66 uncommitted (intended)
+cd ../web && npx tsc --noEmit && npx vitest run 2>&1 | tail -3
+cd ../mobile && npx tsc --noEmit
+cd /e/NewClaude/bhaktisetu && git log --oneline -3
 ```
-If tests ≠ 1059 pass or tsc ≠ clean, something regressed since 2026-08-10 — read the fix log in AUDIT.md before proceeding.
+If API tests ≠ 1066 or web ≠ 265 or tsc ≠ clean, something regressed since 2026-08-11 — read the fix log in AUDIT.md first.
 
 ## Where everything is
 
@@ -32,18 +41,43 @@ If tests ≠ 1059 pass or tsc ≠ clean, something regressed since 2026-08-10 �
 | `docs/audit/open-worklist.json` | Machine-readable open findings w/ file:line |
 | `TASKS.md` top block | Pointer for a fresh/compacted session |
 
-## The 5 things still to do (none blocks the owner)
+## What is left
 
-1. **RV-17** (P1, code) — `routes/bookings.ts`: admin priest reassignment COMMITS then returns `409 Invalid status transition` on 3 of 4 statuses. Fix: align the reassign path's allowed-status set with `VALID_TRANSITIONS`.
-2. **RV-04 / S2C-15** (P1, **OWNER-GATED**) — `payment.service.ts:232` Commission writes the platform's 20% into the provider's field AND keys on `Priest.id` where reads pass `User.id`. Nobody mispaid (rows orphaned). **Both halves must change in ONE commit** or every pandit gets underpaid 75%. Backfill optional (analysis in AUDIT.md).
-3. **A-002** (P1) — no password-reset path. Product decision: Supabase reset email vs magic-link only.
-4. **M-002** — muhurat layer built but undeployed; resolves on deploy, not a code defect.
-5. **4 non-blocking review concerns** in `batch5-review.md`: processPayout can complete a rejected request; runWeeklySettlement duplicate-request suppression; getPayoutBalance float-sum (cosmetic); runWeeklySettlement hardcodes 'PANDIT' role.
+**Code: nothing.** Every finding from the original 58 except M-002 is fixed, and every defect the
+2026-08-11 adversarial review raised is fixed.
+
+- **M-002** — muhurat layer is built and wired (`apps/web/app/pujas/book/page.tsx:655` calls
+  `/panchang/puja-muhurat`); it resolves on deploy. Verified, not a code defect.
+
+**Owner/config actions, outside the repo — the password-reset flow does not work until both are done:**
+
+1. **Supabase Redirect URLs** — add `https://darshya.online/auth/reset-password` and
+   `http://localhost:3000/auth/reset-password` under Authentication → URL Configuration. Supabase
+   *silently* substitutes `SITE_URL` for a non-allow-listed `redirectTo`, so the email would land on
+   the homepage and the reset page would never be reached.
+2. **Supabase Auth SMTP** — the built-in mailer is capped at **2 emails/hour project-wide**. Point it at
+   Resend and raise the limit, or reset emails effectively never arrive and two requests deny auth email
+   to every user for an hour.
+3. **Stripe dashboard** — delete the webhook endpoint pointing at `/payments/webhook/stripe`; that route
+   no longer exists and Stripe will retry a 404 for days.
+4. **Before deploy, confirm the historical-Stripe row count** (expected 0 — no live Stripe key was ever
+   set on Render):
+   `SELECT count(*) FROM payments WHERE payment_gateway='stripe' AND status IN ('captured','partially_refunded');`
 
 ## Hard constraints — do not violate
 
 - **Deploy = Render, NOT Cloudflare.** No `runtime='edge'`, no `next-on-pages`.
-- **Stripe REMOVED.** Razorpay only, INR only. Never reintroduce Stripe/USD. (Content pass owed: `gift-puja.ts`, `subscriptions.ts`, `/webhook/stripe`, ~20 legal pages still name Stripe.)
+- **Stripe REMOVED — completely, 2026-08-11.** Razorpay only, INR only. The rail is gone from gift-puja,
+  subscriptions and the webhook; `lib/stripe.ts` and the orphaned `apps/api/src/lib/pricing.ts` (which held
+  the `83.5` constant behind RV-01) are deleted, the npm deps are dropped, and the legal/marketing content
+  pass is done. Never reintroduce Stripe or USD billing.
+- **Commission ledger — one column, one meaning** (`apps/api/src/lib/commission-math.ts`):
+  `amount` = the **provider's** earning (what `getPayoutBalance` pays out), `percentage` = the **platform's**
+  take rate. Three of five writers used to disagree; every dashboard built on top was wrong by a different
+  factor. Derive gross/platform-cut through that module — never back-solve inline.
+- **Two payout rails exist and must stay mutually exclusive.** `Commission → PayoutRequest` is the unified
+  rail (all roles); `PriestPayout` is the legacy pandit-only one. `createPriestPayout` refuses when a
+  Commission already owns the booking. Removing that guard double-pays every pandit.
 - **Money is `Prisma.Decimal`** — never JS float arithmetic.
 - **`lib/slot-time.ts`** is the ONLY correct way to compare a booking date+slot. `scheduledDate` is a DATE (midnight); time is in `scheduledTimeSlot` (IST).
 - **2 migrations written, NOT applied:** `20260810000000` (enum values REVERSED/reversed) + `20260810000100` (priestId index). Split on purpose — `ALTER TYPE ADD VALUE` in a Prisma tx is the failure class that once blocked 22 migrations.

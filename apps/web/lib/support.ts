@@ -273,7 +273,7 @@ export const SAMPLE_ADMIN_TICKETS: Ticket[] = [
  id: 'm1',
  author: 'user',
  authorName: 'Sanjay Gupta',
- body: 'Cancelled a puja booking on 12 April (order D7720). Stripe says refund initiated but nothing in my card statement. This is urgent — charge was $2,140.',
+ body: 'Cancelled a puja booking on 12 April (order D7720). Refund shows as initiated but nothing in my card statement. This is urgent — charge was ₹2,140.',
  createdAt: daysAgo(1),
  },
  ],
@@ -714,7 +714,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Bookings & Payments',
  question: 'What payment methods are accepted?',
  answer:
- 'For India: UPI, net banking, all major cards, wallets (Paytm, PhonePe, GPay). For international users: Visa, Mastercard, Amex via Stripe. No cash-on-delivery for bookings.',
+ 'For India: UPI, net banking, all major cards, wallets (Paytm, PhonePe, GPay). International Visa, Mastercard and Amex cards are accepted too, billed in INR. No cash-on-delivery for bookings.',
  },
  {
  id: 'bp-4',
@@ -878,7 +878,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Account & Security',
  question: 'Is my payment info safe?',
  answer:
- 'Yes — we never store card details. All payments go through Razorpay (India) or Stripe (international), both PCI-DSS Level 1 certified. We only store the last 4 digits for your reference.',
+ 'Yes — we never store card details. All payments go through Razorpay, which is PCI-DSS Level 1 certified. We only store the last 4 digits for your reference.',
  },
  {
  id: 'as-3',

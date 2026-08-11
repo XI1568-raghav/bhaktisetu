@@ -26,17 +26,23 @@
 
 ### ▶ RESUME HERE (for `claude --continue` / `--resume`)
 
-**STATE 2026-08-10 (FINAL for this session): 50 of 58 findings fixed** — all 4 P0s, all P3s. 2 open + 1 partial (RV-17) + 2 owner-gated (S2C-15 and its duplicate RV-04) + 3 verified-healthy. **Nothing committed, nothing deployed.** API tsc clean · web tsc clean · **1059/1059 API tests, 84 files** (started 893).
-API `tsc` clean · web `tsc` clean · **1059/1059 API tests across 84 files**.
+**STATE 2026-08-11: 57 of 58 original findings fixed** (the one remaining, M-002, is deploy-only and not a
+code defect), **plus 14 further defects found by an adversarial review of the fixes themselves — all fixed.**
+Owner decisions taken this session: apply RV-04/S2C-15 without backfill, ship a Supabase reset-email flow for
+A-002, and remove Stripe from the platform entirely.
 
-**Next actions, in order:**
-1. **RV-17** (P1, pure code) — `routes/bookings.ts`: admin priest reassignment COMMITS, then answers `409 Invalid status transition` on 3 of the 4 statuses it declares reassignable. Align the reassign path's allowed-status set with `VALID_TRANSITIONS`, or do the reassignment inside the transition it validates.
-2. **S2C-15 / RV-04** (**the only owner-gated item**) — `payment.service.ts:232`. Backfill question is RESOLVED: nobody was mispaid, because the rows are orphaned (`providerId` holds a `Priest.id` while every read passes a `User.id`, so they never matched). Both halves — the key **and** the amount direction — must change in ONE commit; fixing the key alone starts underpaying every pandit by 75%.
-3. **A-002** — no password-reset path anywhere. Product call: Supabase reset email vs magic-link-only.
-4. **Stripe content pass** — the booking path is clean, but `gift-puja.ts`, `subscriptions.ts` and `/webhook/stripe` still reference Stripe, and ~20 legal/marketing pages still name it as a processor. Those pages are now factually wrong.
-5. **4 non-blocking payout concerns** from `docs/audit/batch5-review.md` — processPayout can complete a rejected request; weekly settlement no longer dedupes; `getPayoutBalance` float-sums for display; `runWeeklySettlement` hardcodes `'PANDIT'`.
+**Verification baseline:** API `tsc` clean · web `tsc` clean · mobile `tsc` clean · `packages/api-client` `tsc`
+clean · **1066/1066 API tests across 83 files** · **265/265 web tests across 35 files**.
 
-**Standing:** nothing is committed or deployed (66 changed files on `feat/recurring-razorpay-planid`). Two migrations are written but NOT applied. On deploy, smoke-test `/sw.js` → 200 (A-001) and a forged `email-` token → 401 (A-005).
+**Read `docs/audit/batch8-review-findings.md` before touching the commission ledger or the payout rails.**
+
+**Nothing is left to do in code.** What remains is four owner/config actions listed in
+[`docs/audit/RESUME.md`](docs/audit/RESUME.md) — two of them (Supabase Redirect URLs, Supabase Auth SMTP) are
+hard prerequisites for the new password-reset flow to work at all.
+
+**Standing:** two migrations are written but NOT applied (`20260810000000` enum values, then
+`20260810000100` index — in that order). On deploy, smoke-test `/sw.js` → 200 (A-001) and a forged `email-`
+token → 401 (A-005).
 
 ---
 
@@ -153,35 +159,82 @@ That is real evidence of integration health, but it is **not** the independent a
 
 **Verified:** API `tsc` clean · web `tsc` clean · **1059/1059 tests across 84 files** (was 893 at the start of the fix work).
 
+### ✅ Batch 8 — owner decisions applied, then an adversarial review of the fixes (2026-08-11)
+
+Three owner decisions were taken and executed: **apply RV-04/S2C-15 without a backfill**, **ship a Supabase
+reset-email flow for A-002**, and **remove Stripe from the platform entirely**.
+
+- **RV-17 (closed).** The reassignment committed and then died on the status flip, because every PATCH variant
+  requires a `status` and `VALID_TRANSITIONS` has no self-edges — so "swap the pandit, keep the status", the
+  actual T4-escalation case, was inexpressible. A same-status reassignment is now a no-op rather than an
+  illegal transition. The regression test imports the real `VALID_TRANSITIONS`, which is precisely the
+  cross-file invariant whose absence let the first RV-17 pass ship broken.
+- **4 payout concerns from `batch5-review.md` (closed).** `processPayout` refuses to complete anything that is
+  not pending/processing and asserts the linked set is non-empty, all PENDING, and sums to the request amount;
+  the weekly sweep skips providers with an in-flight request and stamps each provider's real role instead of
+  hardcoding `'PANDIT'`; `getPayoutBalance` sums as `Decimal`; the admin list exposes linked-commission
+  count and total so a hollow request is visible before an admin transfers against it.
+- **RV-04 / S2C-15 (closed).** Both writers now key on the pandit's `User.id` and carry the pandit's 80%.
+- **A-002 (closed).** `/auth/forgot-password` + `/auth/reset-password` + the entry point on the login page.
+  Verified that this app has **no password column of its own** — `POST /auth/login` calls
+  `supabase.auth.signInWithPassword`, so Supabase Auth is the single source of truth and `updateUser` changes
+  exactly the secret login checks. Two Supabase console settings gate it working at all — see `RESUME.md`.
+- **Stripe (removed).** Gift-puja's order/verify pair, `/subscriptions/create-stripe-annual`,
+  `/payments/webhook/stripe`, `createStripeOrder`, `handleStripeWebhook`, `lib/stripe.ts`, the orphaned
+  `lib/pricing.ts` (which held the `83.5` constant behind RV-01), the web Stripe Elements component, the npm
+  deps, the CSP origins, and the full legal/marketing content pass.
+
+**Then five adversarial reviewers were run against all of the above, and found 14 more defects — including a
+P0 that the RV-04 fix had itself created.** Full detail:
+[`docs/audit/batch8-review-findings.md`](docs/audit/batch8-review-findings.md). All 14 are fixed. The short
+version: repairing the Commission key made a **second payout rail live for money the legacy rail already
+paid** (₹8,000 out on a ₹5,000 booking), and `tsc` plus 1,059 passing tests saw none of it because
+`packages/api-client` types that payload as `unknown[]`.
+
+Also caught in that review and fixed: **RV-01 was still live on the temple booking path** —
+`booking.service.ts` set `currency: 'USD'` on an INR amount, so Razorpay was asked for $10,000 on a ₹10,000
+NRI booking. A test *encoded* that behaviour by asserting `currency === 'USD'`.
+
+**Verified:** API `tsc` clean · web `tsc` clean · mobile `tsc` clean · `packages/api-client` `tsc` clean ·
+**1066/1066 API tests (83 files)** · **265/265 web tests (35 files)**.
+
 ---
 
-## ⚠️ Remaining work — nothing here is blocked on the owner except S2C-15
+## ⚠️ Remaining work
 
-These are recorded so a later session can act without asking. Owner review welcome but not required to proceed.
+**Code: none.** RV-17, RV-04/S2C-15, A-002 and all four `batch5-review.md` payout concerns were closed in
+Batch 8, along with the 14 defects the Batch-8 adversarial review raised.
 
-| ID | What | Where |
+| ID | What | State |
 |---|---|---|
-| **RV-17** | Priest reassignment commits then answers `409 Invalid status transition` on 3 of the 4 statuses it declares reassignable. Fix: align the reassign path's allowed-status set with `VALID_TRANSITIONS`, or perform the reassignment inside the same transition it validates. | `routes/bookings.ts` |
-| **RV-04 / S2C-15** | **OWNER-GATED.** Commission writes the platform's 20% into the provider's field *and* keys on `Priest.id` where reads pass `User.id`. Nobody has been mispaid (the rows are orphaned, never matched) — see the resolved backfill analysis above. **Both halves must change in one commit**; fixing the key alone starts underpaying every pandit by 75%. | `payment.service.ts:232` |
-| **A-002** | No password-reset path anywhere. Product decision (Supabase reset email vs magic-link-only). | `apps/web` auth |
-| **M-002** | Muhurat layer is built but undeployed — not a code defect. Resolves on deploy. | — |
+| **M-002** | Muhurat layer built AND wired (`apps/web/app/pujas/book/page.tsx:655` calls `/panchang/puja-muhurat`) — undeployed only. | Not a code defect; resolves on deploy |
 
-### Non-blocking review concerns worth doing (from `batch5-review.md`)
+**Owner/config actions outside the repo** (the reset flow does not work until the first two are done) are
+listed in [`docs/audit/RESUME.md`](docs/audit/RESUME.md): Supabase Redirect URLs, Supabase Auth SMTP, deleting
+the stale Stripe webhook endpoint, and a pre-deploy count of historical Stripe payment rows.
 
-- `processPayout` can still complete a **rejected/failed** PayoutRequest whose commissions were unlinked — the hollow-request vector is closed on creation but not completion. Add a status + linked-set assertion before flipping to completed.
-- `runWeeklySettlement` no longer suppresses duplicate weekly requests (the old suppression was a side effect of the RV-05 bug). Skip providers with an in-flight request.
-- `getPayoutBalance` still float-sums money for display, in the same function RV-05 rewrote. Cosmetic today (all values are `Decimal(10,2)` and rounded), but it contradicts the project's own money rule.
-- `runWeeklySettlement` hardcodes `'PANDIT'` as the role for every provider it settles.
+Known-and-accepted residue is recorded at the end of
+[`docs/audit/batch8-review-findings.md`](docs/audit/batch8-review-findings.md) — chiefly that the Commission
+ledger is permanently mixed because the owner chose no backfill, and that
+`apps/web/app/settings/earnings/page.tsx` is still entirely mock data behind a real URL.
 
-## Final results (2026-08-10)
+## Final results (2026-08-11)
 
-**50 / 58 findings fixed** over 7 incremental batches, each integration-verified.
-Fixed by severity: **P0 4/4 · P1 18 · P2 17 · P3 11**.
+**57 / 58 original findings fixed** over 8 incremental batches, each integration-verified. The one remaining,
+M-002, is deploy-only and not a code defect.
+Fixed by severity: **P0 4/4 · P1 20 · P2 18 · P3 11**.
 Plus 3 verified-healthy (no defect), 6 refuted, 4 duplicates.
 
-**Verification baseline (must not regress):** `apps/api` `tsc --noEmit` clean · `apps/web` `tsc --noEmit` clean · **1059/1059 API tests across 84 files** (up from 893 at the start; ~166 tests added by the fixes).
+**Plus 14 further defects** found on 2026-08-11 by an adversarial review of the fixes themselves — including
+two P0s in live money paths (a double-pay rail created by the RV-04 fix, and an ~83x NRI overcharge still live
+on the temple booking path) and a shared-browser account-takeover in the new reset flow. All 14 fixed. See
+[`docs/audit/batch8-review-findings.md`](docs/audit/batch8-review-findings.md).
 
-**Nothing is committed or deployed** — the owner is batching the push. 66 files changed on branch `feat/recurring-razorpay-planid`.
+**Verification baseline (must not regress):** `apps/api` `tsc` clean · `apps/web` `tsc` clean · `apps/mobile`
+`tsc` clean · `packages/api-client` `tsc` clean · **1066/1066 API tests across 83 files** · **265/265 web
+tests across 35 files**. (The API file/test count moved from 84/1059 because `lib/pricing.test.ts` was deleted
+with the dead USD-conversion module it covered, and the Stripe-specific tests went with their rails; ~30 new
+tests were added by the Batch-8 fixes.)
 
 ### Fix batches
 

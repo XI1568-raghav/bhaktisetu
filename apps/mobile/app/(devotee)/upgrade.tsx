@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCreateStripeAnnual, useIsPremium } from '@poojly/api-client';
+import { useCreateAnnualSubscription, useIsPremium } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -23,13 +23,13 @@ const BENEFITS = [
   { icon: 'planet', text: 'Premium kundli + monthly horoscope reports' },
   { icon: 'gift', text: 'Free shipping on Darshya store orders' },
   { icon: 'people', text: 'Priority concierge for yatra & weddings' },
-  { icon: 'document-text', text: 'NRI tax-friendly invoices in USD/EUR' },
+  { icon: 'document-text', text: 'GST invoices for every booking and order' },
 ] as const;
 
 export default function UpgradeScreen() {
   const { user } = useAuth();
   const premiumQuery = useIsPremium();
-  const createCheckout = useCreateStripeAnnual();
+  const createCheckout = useCreateAnnualSubscription();
   const isPremium = premiumQuery.data?.isPremium === true;
   const [refreshing, setRefreshing] = useState(false);
 
@@ -48,17 +48,25 @@ export default function UpgradeScreen() {
       return;
     }
     try {
+      // Razorpay returns a hosted short URL for the subscription mandate.
+      // (Was a Stripe Checkout session URL until that rail was removed on
+      // 2026-08-11. Mobile ships as its own binary and does not redeploy with
+      // the API, so the old endpoint would have 404'd for every installed
+      // client the moment the API went out.)
       const res = await createCheckout.mutateAsync();
-      const url = res?.url;
+      const url = res?.subscription?.shortUrl ?? res?.subscription?.url ?? undefined;
       if (url) {
         const supported = await Linking.canOpenURL(url);
         if (supported) {
           await Linking.openURL(url);
         } else {
-          Alert.alert('Cannot open Stripe', 'Open the link in your browser:\n' + url);
+          Alert.alert('Cannot open checkout', 'Open the link in your browser:\n' + url);
         }
       } else {
-        Alert.alert('Checkout unavailable', 'Stripe checkout could not be created. Try again later.');
+        // No URL means the plan was granted server-side rather than needing a
+        // mandate — reflect the new state instead of claiming failure.
+        await premiumQuery.refetch();
+        Alert.alert('Upgrade complete', 'Your Premium benefits are now active.');
       }
     } catch (err) {
       const m = err instanceof Error ? err.message : 'Could not start upgrade.';
@@ -90,10 +98,10 @@ export default function UpgradeScreen() {
             Annual plan for NRIs. Pay once, stay close to home.
           </Text>
           <View style={styles.priceRow}>
-            <Text style={styles.priceMain}>$49</Text>
+            <Text style={styles.priceMain}>₹5,000</Text>
             <Text style={styles.priceUnit}>/year</Text>
           </View>
-          <Text style={styles.priceCompare}>≈ ₹4,100 • Save 30% vs monthly</Text>
+          <Text style={styles.priceCompare}>Billed in INR • international cards accepted</Text>
         </View>
 
         <View style={styles.benefits}>
@@ -127,15 +135,15 @@ export default function UpgradeScreen() {
             ) : (
               <>
                 <Ionicons name="card" size={20} color={colors.white} />
-                <Text style={styles.ctaText}>Upgrade with Stripe — $49/yr</Text>
+                <Text style={styles.ctaText}>Upgrade — ₹5,000/yr</Text>
               </>
             )}
           </TouchableOpacity>
         )}
 
         <Text style={styles.fineprint}>
-          Stripe handles your payment securely. Cancel anytime from the web account
-          page. Currency auto-detected for non-INR cards.
+          Payments are handled securely by Razorpay and billed in INR;
+          international cards are accepted. Cancel anytime from the web account page.
         </Text>
       </ScrollView>
     </SafeAreaView>

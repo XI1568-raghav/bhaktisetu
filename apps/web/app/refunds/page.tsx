@@ -206,7 +206,7 @@ export default function RefundsPage() {
  <strong>Net Banking:</strong> 5&ndash;10 business days.
  </li>
  <li>
- <strong>International Cards (Stripe):</strong> 7&ndash;14
+ <strong>International Cards:</strong> 7&ndash;14
  business days, depending on your bank.
  </li>
  <li>

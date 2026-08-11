@@ -216,7 +216,11 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
           for (const e of pendingEarnings) {
             const cur = byProvider.get(e.providerId) ?? { count: 0, total: new Prisma.Decimal(0) };
             cur.count += 1;
-            cur.total = cur.total.add(multiplyMoney(e.amount, payoutMultiplier(role)));
+            // `Commission.amount` is ALREADY the provider's net earning
+            // (lib/commission-math.ts), so applying payoutMultiplier here
+            // discounted it a second time — 0.80 x 0.70 = 56% of gross reported
+            // as owed. Found by adversarial review 2026-08-11.
+            cur.total = cur.total.add(new Prisma.Decimal(e.amount));
             byProvider.set(e.providerId, cur);
           }
           if (byProvider.size === 0) continue;

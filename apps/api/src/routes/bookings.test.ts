@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { __testing } from './bookings.js';
+import { VALID_TRANSITIONS } from '../services/booking.service.js';
 
 const {
   checkVideoProofGate,
   checkPriestReassignable,
+  isPureReassignment,
   priestSlotKey,
   updateBookingStatusSchema,
   normalizePriestSlots,
   evaluatePriestSlot,
+  PRIEST_REASSIGNABLE_STATUSES,
 } = __testing;
 
 // Coverage note: the route harness in apps/api/src/routes is pure-function/Zod
@@ -162,6 +165,75 @@ describe('RV-17 — admin priest reassignment window', () => {
       priestId: '11111111-1111-1111-1111-111111111111',
     });
     expect(parsed.success).toBe(true);
+  });
+});
+
+// ─── RV-17 second pass — the reassign gate vs the real state machine ───────────
+//
+// The first RV-17 fix passed every test above and still answered
+// `409 Invalid status transition` on the write it had just committed: the gate
+// and the state machine lived in different files and no test compared them.
+// These tests import the real VALID_TRANSITIONS so that mismatch cannot recur.
+
+describe('RV-17 — pure reassignment does not need a state-machine self-edge', () => {
+  const REASSIGN_ONLY = { hasData: false, reassignmentApplied: true };
+
+  it('the state machine has no self-edges — the precondition that broke it', () => {
+    // If a future change adds `confirmed -> confirmed`, the short-circuit below
+    // becomes redundant rather than wrong; this test documents which it is.
+    for (const [from, to] of Object.entries(VALID_TRANSITIONS)) {
+      expect(to).not.toContain(from);
+    }
+  });
+
+  it('every reassignable status can be reassigned without moving status', () => {
+    for (const status of PRIEST_REASSIGNABLE_STATUSES) {
+      // The T4-escalation request: same status, new pandit.
+      expect(checkPriestReassignable(status).ok).toBe(true);
+      expect(
+        isPureReassignment({
+          currentStatus: status,
+          requestedStatus: status,
+          ...REASSIGN_ONLY,
+        }),
+      ).toBe(true);
+      // ...and it must not be routed into the state machine, which would throw.
+      expect(VALID_TRANSITIONS[status]).not.toContain(status);
+    }
+  });
+
+  it('a reassignment that also advances the status still goes through the state machine', () => {
+    expect(
+      isPureReassignment({
+        currentStatus: 'confirmed',
+        requestedStatus: 'priest_assigned',
+        ...REASSIGN_ONLY,
+      }),
+    ).toBe(false);
+    // and that transition is a legal one, so it succeeds there
+    expect(VALID_TRANSITIONS.confirmed).toContain('priest_assigned');
+  });
+
+  it('a same-status PATCH with no reassignment is untouched (still an illegal transition)', () => {
+    expect(
+      isPureReassignment({
+        currentStatus: 'confirmed',
+        requestedStatus: 'confirmed',
+        reassignmentApplied: false,
+        hasData: false,
+      }),
+    ).toBe(false);
+  });
+
+  it('never swallows a data payload — it falls through rather than dropping the write', () => {
+    expect(
+      isPureReassignment({
+        currentStatus: 'video_uploaded',
+        requestedStatus: 'video_uploaded',
+        reassignmentApplied: true,
+        hasData: true,
+      }),
+    ).toBe(false);
   });
 });
 

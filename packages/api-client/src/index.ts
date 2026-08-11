@@ -154,7 +154,7 @@ export {
   useYatra,
   useFindMuhurats,
   useCreateWeddingInquiry,
-  useCreateStripeAnnual,
+  useCreateAnnualSubscription,
   useIsPremium,
 } from "./hooks/wave-5.js";
 export type {
