@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "model": "openai:blackboxai/moonshotai/kimi-k3",
+  "model": "openai:z-ai/glm-5.2",
   "repoDigest": "ae32ac0bed30d084b485c3a71abc7dd59535060afa86ea77cc4f54ac628608fd",
   "files": [
     {
