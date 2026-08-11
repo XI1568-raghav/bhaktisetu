@@ -93,23 +93,83 @@ function makeDemoSession(email: string) {
   };
 }
 
+// A-014 / A-015 (2026-08-10): `ADMIN_EMAILS` is the platform admin allow-list.
+// The API authorization gate already honours it (middlewares/auth.ts:304,400),
+// but the *login* role resolver below did not — so an owner who is admin only
+// via `ADMIN_EMAILS` was returned `role:'devotee'` and the web AuthGuard
+// bounced them straight off /admin even though every /admin API call would
+// have passed. Reading the same env here is also the first-admin bootstrap
+// (A-015): admin-ness comes from server-side config the operator sets on
+// Render, never from anything a client can post, so there is no self-grant
+// path. Kept in sync with the middleware parsing (trim + lowercase); the
+// extra Boolean filter stops an unset/empty `ADMIN_EMAILS` from producing a
+// stray '' entry that a blank email could match.
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const allowList = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return allowList.includes(email.toLowerCase());
+}
+
 // Resolve a user's primary role from user_role_assignments and return it
 // in the web-facing lowercase form (`pandit`, `store_owner`, ...). Falls
 // back to 'devotee' when no assignment exists. Centralised so /me,
 // /login, /verify-otp, and Google sync all surface the same answer —
 // without this, the web layer kept treating new providers as devotees
 // because the response carried no role field.
-async function getPrimaryRoleForUser(userId: string): Promise<string> {
+export async function getPrimaryRoleForUser(userId: string, email?: string | null): Promise<string> {
+  // A-014: the allow-list outranks the role table — an operator-listed admin
+  // must land on /admin regardless of what role rows the account also carries.
+  if (isAdminEmail(email)) return 'admin';
   try {
     const assignments = await prisma.userRoleAssignment.findMany({
       where: { userId },
       orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
     });
-    const first = assignments[0];
-    if (!first) return 'devotee';
-    return first.role.toLowerCase();
+    if (assignments.length === 0) return 'devotee';
+    // A-010 backstop: exactly one row should be primary, but if a demote ever
+    // half-applies we'd have two and the older DEVOTEE row would win the
+    // `createdAt asc` tiebreak — re-locking the provider out of their portal.
+    // Among equally-primary rows, prefer the non-DEVOTEE one.
+    const primaries = assignments.filter((a) => a.isPrimary);
+    const pool = primaries.length > 0 ? primaries : assignments;
+    const chosen = pool.find((a) => a.role !== 'DEVOTEE') ?? pool[0]!;
+    return chosen.role.toLowerCase();
   } catch {
-    return 'devotee';
+    // A-014: a role-table outage must not silently demote a configured admin.
+    return isAdminEmail(email) ? 'admin' : 'devotee';
+  }
+}
+
+// A-009 (2026-08-10): seed the refresh-token JTI ledger at ISSUANCE.
+// /refresh only ever inserted the *rotated* token's JTI, so the original
+// refresh token minted at login/verify-otp/signup had no ledger row: replaying
+// it produced no `used_at` hit, and the family-wide revoke backstop therefore
+// never covered the one token an attacker is most likely to have stolen.
+// Best-effort by design — a ledger write failure must not block a successful
+// login, it only degrades replay detection back to Supabase's native rotation.
+async function seedRefreshTokenJti(
+  request: import('fastify').FastifyRequest,
+  refreshToken: string | null | undefined,
+  userId: string | null | undefined,
+): Promise<void> {
+  if (!refreshToken || !userId) return;
+  try {
+    const { createHash } = await import('node:crypto');
+    const jti = createHash('sha256').update(refreshToken).digest('hex');
+    // 30-day TTL — same horizon /refresh uses for rotated tokens.
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO refresh_token_jtis (jti, user_id, expires_at) VALUES ($1, $2::uuid, $3::timestamptz)
+       ON CONFLICT (jti) DO NOTHING`,
+      jti,
+      userId,
+      expiresAt.toISOString(),
+    );
+  } catch (err) {
+    request.log.warn({ err }, 'JTI seed at issuance failed — original refresh token not covered by replay backstop');
   }
 }
 
@@ -338,7 +398,12 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const role = await getPrimaryRoleForUser(dbUser.id);
+    const role = await getPrimaryRoleForUser(dbUser.id, dbUser.email);
+
+    // A-009: cover this freshly-minted refresh token with the replay ledger.
+    // Keyed on the Supabase auth user id, matching what /refresh and /logout
+    // write — a phone-first user's Prisma id differs from their Supabase id.
+    await seedRefreshTokenJti(request, session.refresh_token, supabaseUser?.id);
 
     return reply.code(200).send({
       success: true,
@@ -373,7 +438,9 @@ export async function authRoutes(server: FastifyInstance) {
    * every success and invalidates the prior one server-side (configured via
    * GoTrue REFRESH_TOKEN_ROTATION_ENABLED, default ON for Supabase Cloud).
    * Replaying a used refresh_token returns an error and the family is revoked.
-   * No custom JTI ledger needed — Sprint 3 P1 item closed without code change.
+   * The local JTI ledger below is a defence-in-depth backstop on top of that —
+   * A-009 (2026-08-10) closed the hole where only ROTATED tokens were seeded,
+   * leaving the login-issued token outside the family-revoke net.
    */
   server.post('/refresh', async (request, reply) => {
     const parseResult = refreshSchema.safeParse(request.body);
@@ -448,7 +515,11 @@ export async function authRoutes(server: FastifyInstance) {
       const userId = data.session.user.id;
       // 30-day TTL for new JTI (Supabase default refresh token lifetime).
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      if (knownUserId) {
+      // A-009 (2026-08-10): only burn the presented JTI when Supabase actually
+      // rotated. Inside GoTrue's reuse-interval a retry can return the SAME
+      // refresh token; burning it there would make the very next legitimate
+      // refresh look like a replay and family-revoke every session the user has.
+      if (knownUserId && newJti !== jti) {
         await prisma.$executeRawUnsafe(
           `UPDATE refresh_token_jtis SET used_at = now() WHERE jti = $1 AND used_at IS NULL`,
           jti,
@@ -588,7 +659,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const role = await getPrimaryRoleForUser(user.id);
+    const role = await getPrimaryRoleForUser(user.id, user.email);
 
     return reply.code(200).send({
       success: true,
@@ -688,7 +759,10 @@ export async function authRoutes(server: FastifyInstance) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
       }
 
-      const role = await getPrimaryRoleForUser(user.id);
+      const role = await getPrimaryRoleForUser(user.id, user.email);
+
+      // A-009: seed the replay ledger for the refresh token we are about to hand out.
+      await seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id);
 
       setAuthCookies(reply, authData.session.access_token, authData.session.refresh_token);
       return reply.send({
@@ -874,6 +948,23 @@ export async function authRoutes(server: FastifyInstance) {
         return u;
       });
 
+      // A-009: seed the replay ledger for the session signup hands back. With
+      // Supabase email-confirm ON there is no session yet — that user's first
+      // token is minted by /login, which seeds it there.
+      if (authData.session) {
+        await seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id);
+      }
+
+      // A-015 (2026-08-10): first-admin bootstrap. `admin` is not in the signup
+      // role enum, so nobody can self-grant it — but an operator who put this
+      // address in `ADMIN_EMAILS` IS an admin the moment the account exists,
+      // and /login + /me + the API gate all already say so. The signup response
+      // has to agree, otherwise the web stores role:'devotee' from this very
+      // response and drops the brand-new admin on /dashboard, which is exactly
+      // the "#211 remedy doesn't work" symptom A-014 describes.
+      const effectiveRole = isAdminEmail(emailLower) ? 'admin' : role;
+      const needsApproval = effectiveRole !== 'devotee' && effectiveRole !== 'admin';
+
       return reply.code(201).send({
         session: authData.session
           ? {
@@ -886,12 +977,12 @@ export async function authRoutes(server: FastifyInstance) {
           id: user.id,
           email: user.email,
           fullName: user.fullName,
-          role,
-          status: role === 'devotee' ? 'active' : 'pending_approval',
+          role: effectiveRole,
+          status: needsApproval ? 'pending_approval' : 'active',
         },
-        message: role === 'devotee'
-          ? 'Account created successfully'
-          : 'Account created. Your profile is pending approval.',
+        message: needsApproval
+          ? 'Account created. Your profile is pending approval.'
+          : 'Account created successfully',
       });
     } catch (err: any) {
       request.log.error({ err: err?.message, code: err?.code, email: emailLower }, 'Signup failed');
@@ -912,9 +1003,17 @@ export async function authRoutes(server: FastifyInstance) {
       // URL, never issue demo sessions in production.
       const supabaseConfigured = !!process.env.SUPABASE_URL && process.env.SUPABASE_URL !== 'https://demo.supabase.co';
       if (supabaseConfigured || process.env.NODE_ENV === 'production') {
+        // A-008 (2026-08-10): /signup is unauthenticated, so echoing err.message
+        // handed anonymous callers raw Prisma/Supabase text — table and column
+        // names, constraint names, connection strings in some driver errors.
+        // Prod gets a generic line; the real message is already in the
+        // request.log.error above, which is where triage should read it.
+        const isProd = process.env.NODE_ENV === 'production';
         return reply.code(500).send({
           error: 'SignupFailed',
-          message: err?.message || 'Could not create account. Please try again.',
+          message: isProd
+            ? 'Could not create account. Please try again.'
+            : err?.message || 'Could not create account. Please try again.',
         });
       }
 
@@ -1020,7 +1119,11 @@ export async function authRoutes(server: FastifyInstance) {
         include: { subscription: { where: { status: 'active' }, take: 1 } },
       });
 
-      const role = await getPrimaryRoleForUser(dbUser.id);
+      const role = await getPrimaryRoleForUser(dbUser.id, dbUser.email);
+
+      // A-009: the Google refresh token reaches our /refresh endpoint like any
+      // other, so it needs a ledger row to fall under the family-revoke net.
+      await seedRefreshTokenJti(request, refreshToken, supaUser.id);
 
       return reply.send({
         session: {

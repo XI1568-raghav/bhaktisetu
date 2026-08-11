@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import {
   setAstrologerOnline,
@@ -248,26 +250,44 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     if (!roles.includes('ASTROLOGER')) {
       return reply.code(403).send({ error: 'ASTROLOGER role required' });
     }
-    const rows = await prisma.commission.findMany({
+    const allRows = await prisma.commission.findMany({
       where: { providerId: userId },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    // Commission has no source discriminator, and every provider role is keyed
+    // by User.id — so once the puja writers were corrected to use User.id
+    // (RV-04), a dual-role user's PUJA commissions started matching this query
+    // and rendering as consultation earnings. Exclude anything whose bookingId
+    // is a PujaBooking; what remains is this astrologer's consultations.
+    const candidateIds = allRows
+      .map((c) => c.bookingId)
+      .filter((id): id is string => !!id);
+    const pujaRows = candidateIds.length
+      ? await prisma.pujaBooking.findMany({
+          where: { id: { in: candidateIds } },
+          select: { id: true },
+        })
+      : [];
+    const pujaIds = new Set(pujaRows.map((p) => p.id));
+    const rows = allRows.filter((c) => !c.bookingId || !pujaIds.has(c.bookingId));
     const data = rows.map((c) => {
-      const platformAmount = Number(c.amount);
-      // Commission.amount is the PLATFORM cut; the astrologer's earning is the
-      // remainder of the gross. gross = platform / platformRate.
-      const rate = Number(c.percentage) || 0.2;
-      const gross = rate > 0 ? platformAmount / rate : 0;
-      const astrologerAmount = Math.round((gross - platformAmount) * 100) / 100;
+      // `amount` IS the provider's earning and `percentage` IS the platform's
+      // rate — see lib/commission-math.ts. This used to read `amount` as the
+      // platform cut and back-solve gross from it, which inverted every figure
+      // on this page the moment the puja writers were corrected. Derived
+      // figures now come from the shared helpers so no two readers disagree.
+      const earnings = new Prisma.Decimal(c.amount);
+      const gross = commissionGross(c.amount, c.percentage);
+      const platformCut = commissionPlatformCut(c.amount, c.percentage);
       return {
         id: c.id,
         bookingId: c.bookingId,
         status: c.status,
         createdAt: c.createdAt,
-        grossAmountInr: Math.round(gross * 100) / 100,
-        platformCutInr: platformAmount,
-        earningsInr: astrologerAmount,
+        grossAmountInr: gross.toNumber(),
+        platformCutInr: platformCut.toNumber(),
+        earningsInr: earnings.toNumber(),
         astrologerShare: ASTROLOGER_SHARE,
       };
     });

@@ -483,7 +483,7 @@ export const CIRCUITS: PilgrimageCircuit[] = [
     spiritualSignificance: 'Per Skanda Purana — completing Sapta Puri yatra in a single lifetime grants moksha at the time of death. Particularly potent when concluded at Kashi or Dwarka. Each city has specific puja and ritual programs that compound karmic dissolution.',
     practicalTips: [
       'Senior citizens: take 21+ days w/ rest days between cities; book Bhaktisetu wheelchair-accessible packages',
-      'NRI families: 80G receipts + live-stream coordination + dual-currency pricing available',
+      'NRI families: 80G receipts + live-stream coordination + booking from abroad',
       'Photography permitted in outer areas of all 7 temples; restricted in inner sanctums',
       'Each city has specific puja calendars — coordinate w/ Bhaktisetu pandit-network for optimum scheduling',
       'Combine with Char Dham OR Dwadasha Jyotirlinga circuits for extended pilgrimage',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useTranslations } from '../../../lib/t';
 import {
   Flame,
@@ -98,12 +99,23 @@ export default function LoginPage() {
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // A-012: set by handleVerifyOtp before the auth state settles, so the single
+  // redirect effect below can send a brand-new account to /profile. A ref, not
+  // state, so reading it can't reintroduce a stale closure.
+  const isNewAccountRef = useRef(false);
 
-  // Redirect if already authenticated
+  // A-012 (2026-08-10): SINGLE owner of post-login navigation. handleVerifyOtp
+  // used to redirect directly as well, computing the target from a `user` it
+  // had closed over BEFORE the OTP succeeded (its deps omitted `user`, so on a
+  // fresh login that value was null → every returning non-devotee raced toward
+  // /dashboard). This effect reads the fresh user from context; every login
+  // path (email, OTP, already-signed-in) now lands here and nowhere else.
   useEffect(() => {
     if (isAuthenticated && user) {
       const params = new URLSearchParams(window.location.search);
-      const redirect = safeRedirect(params.get('redirect'), getRoleDashboardPath(user.role));
+      const redirect = isNewAccountRef.current
+        ? '/profile'
+        : safeRedirect(params.get('redirect'), getRoleDashboardPath(user.role));
       window.location.href = redirect;
     }
   }, [isAuthenticated, user]);
@@ -239,11 +251,12 @@ export default function LoginPage() {
     setIsSubmitting(false);
 
     if (result.success) {
-      const params = new URLSearchParams(window.location.search);
-      const redirect = result.isNewUser
-        ? '/profile'
-        : safeRedirect(params.get('redirect'), getRoleDashboardPath(user?.role ?? 'devotee'));
-      window.location.href = redirect;
+      // A-012: record the intent only — the [isAuthenticated, user] effect owns
+      // the navigation. verifyOtp's setSession/setUser are already scheduled at
+      // this point but React commits them after this continuation runs, so the
+      // ref is always set before the effect reads it. Redirecting here too was
+      // a second, racing navigation computed from a stale `user`.
+      isNewAccountRef.current = !!result.isNewUser;
     } else {
       setError(result.message);
       setOtp(['', '', '', '', '', '']);
@@ -251,13 +264,18 @@ export default function LoginPage() {
     }
   }, [otp, phone, verifyOtp]);
 
-  // Auto-submit when all 6 digits are entered
+  // Auto-submit when all 6 digits are entered.
+  // A-012: `!isAuthenticated` stops a second, doomed verify of the same
+  // (now consumed) OTP. On success the digits stay in state and isSubmitting
+  // flips back to false in the very commit that authenticates the user, so
+  // without this guard the effect re-fires while the redirect is still in
+  // flight and flashes a bogus "Verification failed".
   useEffect(() => {
     const otpString = otp.join('');
-    if (otpString.length === 6 && step === 'otp' && !isSubmitting) {
+    if (otpString.length === 6 && step === 'otp' && !isSubmitting && !isAuthenticated) {
       handleVerifyOtp();
     }
-  }, [otp, step, isSubmitting, handleVerifyOtp]);
+  }, [otp, step, isSubmitting, isAuthenticated, handleVerifyOtp]);
 
   const handleResendOtp = async () => {
     if (resendCountdown > 0) return;
@@ -499,12 +517,23 @@ export default function LoginPage() {
                 </div>
 
                 <div className="mb-5">
-                  <label
-                    htmlFor="password"
-                    className="text-surface-700 mb-1.5 block text-sm font-medium"
-                  >
-                    Password
-                  </label>
+                  <div className="mb-1.5 flex items-baseline justify-between">
+                    <label
+                      htmlFor="password"
+                      className="text-surface-700 block text-sm font-medium"
+                    >
+                      Password
+                    </label>
+                    {/* A-002: the only entry point to password recovery. Without
+                        it the reset pages exist but are unreachable, which is
+                        the state the whole product was in until 2026-08-11. */}
+                    <Link
+                      href="/auth/forgot-password"
+                      className="text-saffron-700 hover:text-saffron-800 text-xs font-medium"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <Lock className="text-surface-400 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <input

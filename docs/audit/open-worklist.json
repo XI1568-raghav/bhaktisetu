@@ -1,0 +1,409 @@
+[
+  {
+    "id": "A-002",
+    "sev": "P1",
+    "issue": "No password-reset path exists anywhere",
+    "cause": "no `/auth/forgot-password` route; no link on login",
+    "status": "CONFIRMED — awaiting approval",
+    "file": "(unknown)"
+  },
+  {
+    "id": "A-003",
+    "sev": "P1",
+    "issue": "Portal auth gating is inconsistent: some server-gated (307), some client-only (200 + Loading shell)",
+    "cause": "middleware covers only some portals",
+    "status": "CONFIRMED — downgraded, no data leak (see below)",
+    "file": "(unknown)"
+  },
+  {
+    "id": "A-007",
+    "sev": "P2",
+    "issue": "httpOnly cookie is cosmetic — both access + refresh tokens live in JS-readable localStorage (`poojly_session`)",
+    "cause": "`auth-context.tsx:334`; #200 achieved none of its XSS goal",
+    "status": "CONFIRMED",
+    "file": "auth-context.ts",
+    "line": null
+  },
+  {
+    "id": "A-008",
+    "sev": "P3",
+    "issue": "Raw internal Prisma/Supabase error text returned to unauthenticated clients in prod",
+    "cause": "`routes/auth.ts:916` echoes `err.message`",
+    "status": "CONFIRMED",
+    "file": "routes/auth.ts",
+    "line": 916
+  },
+  {
+    "id": "A-009",
+    "sev": "P3",
+    "issue": "JTI replay-revoke ledger not seeded at login — the initial (most-stolen) refresh token is unprotected",
+    "cause": "`routes/auth.ts:457` only inserts the rotated JTI",
+    "status": "CONFIRMED (dormant behind Supabase rotation)",
+    "file": "routes/auth.ts",
+    "line": 457
+  },
+  {
+    "id": "A-010",
+    "sev": "P1",
+    "issue": "Devotee→provider onboarding writes `isPrimary:false` → user permanently resolves as devotee, locked out of their provider portal",
+    "cause": "`onboarding.service.ts:58/213` + `auth.ts:104` resolver",
+    "status": "CONFIRMED — maps to #210",
+    "file": "onboarding.service.ts",
+    "line": 58
+  },
+  {
+    "id": "A-011",
+    "sev": "P2",
+    "issue": "Google callback stores untranslated `pandit` role → pandit lands on devotee dashboard, bounced off `/priest` permanently",
+    "cause": "`auth/callback/page.tsx:65` skips `fromApiRole`",
+    "status": "CONFIRMED — maps to #210",
+    "file": "auth/callback/page.ts",
+    "line": null
+  },
+  {
+    "id": "A-012",
+    "sev": "P3",
+    "issue": "Two competing post-login redirects + stale-closure `user` → wrong landing page",
+    "cause": "`login/page.tsx:245` stale closure vs `:104` effect",
+    "status": "CONFIRMED (final URL race NEEDS_RUNTIME); OTP itself dead in prod (#196)",
+    "file": "login/page.ts",
+    "line": null
+  },
+  {
+    "id": "A-013",
+    "sev": "P3",
+    "issue": "Omitted from middleware portal matcher → no server session gate (shell-flash vs clean 307)",
+    "cause": "`middleware.ts:24` list missing `/temple-portal`",
+    "status": "CONFIRMED — maps to #210",
+    "file": "middleware.ts",
+    "line": 24
+  },
+  {
+    "id": "A-014",
+    "sev": "P1",
+    "issue": "Documented remedy is WRONG: `ADMIN_EMAILS` grants the API gate but NOT the web login role, so an `ADMIN_EMAILS`-only admin is bounced off `/admin`",
+    "cause": "`routes/auth.ts:104` `getPrimaryRoleForUser` ignores `ADMIN_EMAILS`",
+    "status": "CONFIRMED (re-traced)",
+    "file": "routes/auth.ts",
+    "line": 104
+  },
+  {
+    "id": "A-015",
+    "sev": "P2",
+    "issue": "No code path grants the first ADMIN role — signup can't, `PATCH /admin/users` needs an existing admin; only prod-disabled demo seed or manual DB write",
+    "cause": "`auth.ts:68/785`; `admin.ts:216`",
+    "status": "CONFIRMED (re-traced)",
+    "file": "auth.ts",
+    "line": 68
+  },
+  {
+    "id": "M-001",
+    "sev": "P3",
+    "issue": "Renders \"Could not load puja details — check your connection\", blaming the network when no puja was specified",
+    "cause": "page requires `?slug=`; bare + `?puja=` both hit the catalog-error branch",
+    "status": "CONFIRMED live",
+    "file": "(unknown)"
+  },
+  {
+    "id": "M-002",
+    "sev": "P2",
+    "issue": "Muhurat layer still NOT wired to the booking date picker — page makes zero panchang/muhurat calls",
+    "cause": "`GET /panchang/puja-muhurat` exists but is never called by the booking page",
+    "status": "CONFIRMED live (known-pending, now evidenced)",
+    "file": "(unknown)"
+  },
+  {
+    "id": "M-003",
+    "sev": "P2",
+    "issue": "React hydration error #418 on every booking page load",
+    "cause": "mismatch between SSR and client render",
+    "status": "CONFIRMED live — root cause not yet traced",
+    "file": "(unknown)"
+  },
+  {
+    "id": "M-004",
+    "sev": "P1",
+    "issue": "Service worker registration fails in-browser (`/sw.js` 404) — live proof of A-001's impact",
+    "cause": "consequence of A-001 Dockerfile nesting",
+    "status": "CONFIRMED live",
+    "file": "(unknown)"
+  },
+  {
+    "id": "S2C-02",
+    "sev": "P1",
+    "issue": "\"View Details\" + \"Watch Video\" 404 — `/bookings/[id]` route does not exist",
+    "cause": "`bookings/page.tsx:369`",
+    "status": "CONFIRMED",
+    "file": "bookings/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-03",
+    "sev": "P1",
+    "issue": "Fabricates a completed booking (fake priest, fake ₹1,301, fake video URL) whenever the API call fails",
+    "cause": "`bookings/view/page.tsx:227`",
+    "status": "CONFIRMED",
+    "file": "bookings/view/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-04",
+    "sev": "P2",
+    "issue": "Cancel + review swallow API failures and display success unconditionally",
+    "cause": "`bookings/view/page.tsx:264`",
+    "status": "CONFIRMED",
+    "file": "bookings/view/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-05",
+    "sev": "P3",
+    "issue": "Invents a `BS-YYYYMMDD-XXXXX` booking number when the server returns none",
+    "cause": "`pujas/book/page.tsx:800`",
+    "status": "CONFIRMED",
+    "file": "pujas/book/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-06",
+    "sev": "P2",
+    "issue": "Renders a fabricated ₹751 product page for ANY slug, including ones the API 404s",
+    "cause": "`pujas/[slug]/page.tsx:260`",
+    "status": "CONFIRMED",
+    "file": "/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-07",
+    "sev": "P3",
+    "issue": "`getTomorrow()`/`getMaxDate()` compute the window in UTC → IST users 00:00–05:29 can book same-day",
+    "cause": "`pujas/book/page.tsx:260`",
+    "status": "CONFIRMED",
+    "file": "pujas/book/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-08",
+    "sev": "P2",
+    "issue": "Razorpay key silently falls back to placeholder `rzp_test_demo` on a live payment page",
+    "cause": "`pujas/book/page.tsx:352`",
+    "status": "CONFIRMED",
+    "file": "pujas/book/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-10",
+    "sev": "P3",
+    "issue": "`/dashboard/bookings` 404s from two post-purchase CTAs",
+    "cause": "`dashboard/page.tsx:223`",
+    "status": "CONFIRMED",
+    "file": "dashboard/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-11",
+    "sev": "P2",
+    "issue": "Dead-ends silently when a puja has no temple offerings; renders inactive offerings as bookable",
+    "cause": "`pujas/book/page.tsx:1281`",
+    "status": "CONFIRMED",
+    "file": "pujas/book/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-12",
+    "sev": "P3",
+    "issue": "Catalogue search box is dead UI — no state, no handler, no form",
+    "cause": "`pujas/page.tsx:337`",
+    "status": "CONFIRMED",
+    "file": "pujas/page.ts",
+    "line": null
+  },
+  {
+    "id": "S2C-15",
+    "sev": "P1",
+    "issue": "Puja `Commission` writes the platform's 20% into the field the payout engine treats as the provider's share — and `providerId` is a `Priest.id` where reads pass a `User.id`, so today the balance is ₹0.00",
+    "cause": "`payment.service.ts:232` (both defects in one statement)",
+    "status": "⏳ OWNER CALL — data migration",
+    "file": "payment.service.ts",
+    "line": 232
+  },
+  {
+    "id": "S2C-13",
+    "sev": "P1",
+    "issue": "Assigns a priest with NO double-booking guard and skips slot capacity entirely when `availableSlots` is unset — critical (b)",
+    "cause": "`api/routes/bookings.ts:1191`",
+    "status": "CONFIRMED",
+    "file": "api/routes/bookings.ts",
+    "line": 1191
+  },
+  {
+    "id": "RV-02",
+    "sev": "P1",
+    "issue": "Refund writes no compensating ledger entry — provider Commission and TemplePayout stay PENDING and fully withdrawable on a refunded booking",
+    "cause": "`apps/api/src/services/refund.service.ts:236`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/refund.service.ts",
+    "line": 236,
+    "note": "Distinct from S2C-14 (that is about the refund AMOUNT being 100% instead of the ladder; this is the provider-side ledger never being unwound). Commission rows are minted at CONFIRM time (payment.service.ts:228-236 inside the capture tx, booking.service.ts:375-383 on the status flip), i.e. strictly before any cancellation is possible, and nothing downgrades, deletes or reverses them. requestPayout "
+  },
+  {
+    "id": "RV-03",
+    "sev": "P1",
+    "issue": "Temple 5% share (TEMPLE_SHARE_RATE) is never written on any real money path — TemplePayout is unreachable for every paid booking",
+    "cause": "`apps/api/src/services/booking.service.ts:404`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 404,
+    "note": "'Unreachable' needs one correction that makes it WORSE, not better: the write IS reachable via exactly one route — PATCH /bookings/:id with {status:'confirmed'} on a booking still in pending_payment (allowed by the Zod union bookings.ts:66 and by VALID_TRANSITIONS `pending_payment: ['confirmed','cancelled']`). That is a booking where no payment was captured. So the only TemplePayout rows the syste"
+  },
+  {
+    "id": "RV-04",
+    "sev": "P1",
+    "issue": "Puja Commission row stores the platform's 20% cut in the field the payout engine treats as the provider's 80% net share",
+    "cause": "`apps/api/src/services/payment.service.ts:232`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 232,
+    "note": "P0-LATENT, filed as P1 because no wrong money can move today. Both halves must be remediated in ONE change — fixing either alone leaves a defect, and fixing the key alone actively creates the Rs 220-for-Rs 880 underpayment. Third writer of the same wrong shape lives at booking.service.ts:375-383 (`amount: updated.platformCommission`, `providerId: updated.priestId`) and must be fixed in the same co"
+  },
+  {
+    "id": "RV-05",
+    "sev": "P1",
+    "issue": "getPayoutBalance subtracts in-flight commissions from a set that already excludes them — provider is short-paid and their commissions are still marked PAID",
+    "cause": "`apps/api/src/services/payout.service.ts:73`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/payout.service.ts",
+    "line": 73,
+    "note": "Two independent verifiers reached this identically and I confirmed it from source. Author intent is visible in the stale comment at L256-258 ('balance.availableInr would be 0 in that case'), and the unit test ENCODES the mistake — payout.service.test.ts:56 mocks the third findMany with the comment 'in-flight (part of the 350)' and asserts availableInr === 250, which only passes because three indep"
+  },
+  {
+    "id": "RV-06",
+    "sev": "P1",
+    "issue": "requestPayout reads the balance outside its transaction with no uniqueness or in-flight guard — concurrent calls mint two PayoutRequests for one balance",
+    "cause": "`apps/api/src/services/payout.service.ts:122`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/payout.service.ts",
+    "line": 122,
+    "note": "Under READ COMMITTED the second updateMany blocks on the first transaction's row locks, then re-evaluates its predicate via EvalPlanQual: payoutRequestId is no longer NULL, the rows drop out, 0 rows updated — no error, no serialization failure, silent success. Reachability is ordinary: POST /payouts/request has no idempotency key and falls under the global 100-req/min per-user limit (server.ts:203"
+  },
+  {
+    "id": "RV-08",
+    "sev": "P1",
+    "issue": "Video proof never enforced — PATCH /bookings/:id walks completed -> video_uploaded -> delivered with videoProofUrl null, and mints the priest payout on the",
+    "cause": "`apps/api/src/routes/bookings.ts:75`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 75,
+    "note": "Direct violation of immutable business rule 1. The SAFE path exists but is bypassable: booking.service.ts:773-807 uploadVideoProof requires priest ownership + status 'completed' and writes videoProofUrl + status atomically — but PATCH /api/v1/bookings/:id reaches the same state machine without it. Route authz (bookings.ts:283-292) admits owner, admin OR assigned priest, and only the priestId reass"
+  },
+  {
+    "id": "RV-09",
+    "sev": "P1",
+    "issue": "Rule 6 unenforced on the temple-anchored path — an unverified temple (isVerified false, status pending_review) is listed, detail-served, bookable end-to-en",
+    "cause": "`apps/api/src/services/booking.service.ts:142`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 142,
+    "note": "The full live chain is ungated on both reads and writes: POST /api/v1/temple-portal/pujas (temple-portal.ts:389-414) lets a TEMPLE_MANAGER create an offering defaulting to isActive: true with no check on the temple's isVerified or status, and the binding it uses (resolveManagerTempleId, :109-120) is an FK-less `prisma.temple.findFirst({ where: { name: profile.templeName } })` NAME match. That offe"
+  },
+  {
+    "id": "RV-10",
+    "sev": "P1",
+    "issue": "Reschedule performs NO validation of the new date or slot — not the availableSlots whitelist, not maxBookingsPerSlot capacity, not futurity (a booking can",
+    "cause": "`apps/api/src/services/booking.service.ts:591`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 591,
+    "note": "MERGED FINDING — two candidates cited the same statement (:591 and :595); the slot/capacity limbs are identical and the past-date limb is unique, so they are one defect with three limbs. Mechanics of the past-date trap: newDate from z.coerce.date() on 'YYYY-MM-DD' is UTC midnight while `today` is LOCAL midnight, so today is accepted and the thrown message is factually wrong about its own behaviour"
+  },
+  {
+    "id": "RV-12",
+    "sev": "P2",
+    "issue": "Admin refund endpoint POST /api/v1/payments/:id/refund is structurally incapable of a partial refund — always 100% of the captured amount",
+    "cause": "`apps/api/src/services/payment.service.ts:1065`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 1065,
+    "note": "NOT a duplicate of S2C-14 — verified on five axes: different function (PaymentService method vs standalone export), different Razorpay client (SDK razorpay.payments.refund vs raw fetch at refund.service.ts:78), different HTTP route, different idempotency semantics, and different CAPABILITY. The capability difference makes this strictly worse in one respect: refund.service.processRefund CAN do a la"
+  },
+  {
+    "id": "RV-14",
+    "sev": "P2",
+    "issue": "Second Commission writer in booking.service runs outside any transaction, swallows its own failure, and races the payment-path writer with no unique constr",
+    "cause": "`apps/api/src/services/booking.service.ts:365`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 365,
+    "note": "Verified claim by claim. Duplicate writer: TRUE — reachable via PATCH /bookings/:id (routes/bookings.ts:303), and pending_payment -> confirmed is a legal edge in VALID_TRANSITIONS. Post-transaction: TRUE — updateBookingStatus opens no transaction at all, so the P1-12 remediation was never applied here. Swallowed errors: TRUE. Float math: OVERSTATED and corrected DOWN — `amount` passes updated.plat"
+  },
+  {
+    "id": "RV-15",
+    "sev": "P2",
+    "issue": "Slot capacity is a count-then-create TOCTOU with no lock, no transaction, and no DB constraint — concurrent bookings oversell the slot",
+    "cause": "`apps/api/src/services/booking.service.ts:173`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 173,
+    "note": "Every sub-claim verified, and the window is bigger than a micro-TOCTOU: between the count (:173) and the create (:268) sit 2-4 sequential DB round-trips — user lookup (:189), optional pinned-priest lookup (:208), the booking-number collision check (:241, up to 5 round-trips) and an optional address lookup (:255) — roughly 15-100ms on Supabase pooled Postgres. No downstream backstop: maxBookingsPer"
+  },
+  {
+    "id": "RV-17",
+    "sev": "P2",
+    "issue": "Admin priest reassignment via PATCH /bookings/:id is silently discarded and returns 200 with the OLD priest",
+    "cause": "`apps/api/src/routes/bookings.ts:303`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 303,
+    "note": "Fail-closed on the write, which is why severity is corrected DOWN to P2. TWO independent mechanisms discard the field: the route never forwards it, and even a smuggled data:{priestId} cannot reach the update (for priest_assigned, `data` is EMPTY_DATA = z.object({}).strict() so it 400s at parse, and the FORBIDDEN_DATA_KEYS denylist at booking.service.ts:333-343 contains priestId anyway). Adversaria"
+  },
+  {
+    "id": "RV-18",
+    "sev": "P2",
+    "issue": "bookingConfirmationEmail is dead code — the only booking email that ships is a tax invoice with no scheduled date/time, and push + WhatsApp are both no-ops",
+    "cause": "`apps/api/src/lib/email.ts:94`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/lib/email.ts",
+    "line": 94,
+    "note": "CONFLICT SETTLED between two finders. An email IS dispatched on a successful booking in correctly-configured prod — all three confirm paths call fireAndForgetPostConfirmSideEffects (payment.service.ts:254), which at :258 fires sendPujaBookingInvoice — so 'no booking confirmation email is ever sent' is REFUTED as literally worded. BUT the confirmation is distinct from the invoice, and the confirmat"
+  },
+  {
+    "id": "RV-19",
+    "sev": "P2",
+    "issue": "'refund' notification event is dead — a processed refund is announced on email only, and never at all to a phone-only devotee",
+    "cause": "`apps/api/src/services/booking-notify.service.ts:52`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/services/booking-notify.service.ts",
+    "line": 52,
+    "note": "Confirmed, plus one gate the finder missed: the email is gated TWICE, not once — a phone-OTP devotee with a null email receives nothing on any channel when their money is returned, even in a fully-configured prod. No notifyUser call exists in refund.service.ts, no webhook-side refund notification, no push. Critically, the two halves of the cancel->refund flow use DISJOINT channels with non-overlap"
+  },
+  {
+    "id": "RV-20",
+    "sev": "P2",
+    "issue": "puja_bookings.priest_id is unindexed and is the sole predicate of the entire pandit portal",
+    "cause": "`apps/api/prisma/schema.prisma:504`",
+    "status": "CONFIRMED",
+    "file": "apps/api/prisma/schema.prisma",
+    "line": 504,
+    "note": "Prisma does not create FK indexes on PostgreSQL (that is MySQL-only), so priest_id has no covering index and each of those queries is a sequential scan. GET /priest/dashboard fires four per load and GET /priest/bookings two more — the pandit portal home screen is six seq scans. The sharpest edge is dispatch.service.ts:233, where the scan runs INSIDE the acceptOffer transaction, holding the tx open"
+  },
+  {
+    "id": "RV-21",
+    "sev": "P3",
+    "issue": "demo-pay hardcodes a 30/70 split — and the same 70/30 is the PRODUCTION default via Priest.commissionRate",
+    "cause": "`apps/api/src/routes/demo-pay.ts:127`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/routes/demo-pay.ts",
+    "line": 127,
+    "note": "Severity corrected DOWN to P3 for the demo route itself: the demo booking is written straight to status 'priest_assigned' (demo-pay.ts:146) and VALID_TRANSITIONS allows priest_assigned -> in_progress | cancelled | refunded only, so 'confirmed' is unreachable and NO Commission row is ever produced for a demo booking. The stale split lands only in booking.priestPayout, which createPriestPayout later"
+  },
+  {
+    "id": "RV-22",
+    "sev": "P3",
+    "issue": "Admin pending-payouts summary runs three paginationless findMany calls, one of them re-executed per role",
+    "cause": "`apps/api/src/routes/admin-bookings.ts:99`",
+    "status": "CONFIRMED",
+    "file": "apps/api/src/routes/admin-bookings.ts",
+    "line": 99,
+    "note": "P3 because the route is admin-gated (authenticateUser + requireRole('admin')), so this is one operator at very low QPS, not devotee traffic. At 10k bookings the :99 query returns ~6-7k rows of three columns, ~1-2 MB of Prisma heap. THE ESCALATION-CRON HALF OF THE CLAIM IS OVERSTATED: escalateStaleBookings self-drains, because every row it selects is immediately transitioned to cancelled at booking"
+  }
+]

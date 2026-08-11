@@ -150,9 +150,8 @@ export default function TermsPage() {
  may occur.
  </li>
  <li>
- All prices are displayed in INR for domestic users and USD
- for international users. Prices include applicable taxes
- unless stated otherwise.
+ All prices are displayed in Indian Rupees (INR). Prices include
+ applicable taxes unless stated otherwise.
  </li>
  <li>
  Orders are confirmed upon successful payment processing.
@@ -169,18 +168,14 @@ export default function TermsPage() {
  <TermsSection title="7. Payments">
  <ul>
  <li>
- Domestic payments are processed through Razorpay.
- International payments are processed through Stripe.
+ All payments, domestic and international, are processed through
+ Razorpay and billed in Indian Rupees (INR).
  </li>
  <li>
  Accepted payment methods include UPI, debit cards, credit
- cards, net banking, and digital wallets (domestic) and
- credit/debit cards (international).
- </li>
- <li>
- All transactions are in Indian Rupees (INR) for domestic
- users. International users are charged in USD at the
- applicable rate.
+ cards, net banking, and digital wallets. International cards
+ are accepted and billed in INR; your bank applies its own
+ conversion rate and any foreign-transaction fee.
  </li>
  <li>
  Platform commission rates by service category:

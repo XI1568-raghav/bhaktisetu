@@ -97,6 +97,8 @@ export interface DailyOpsResult {
     requestsCreated: number;
     skippedBalance: number;
     skippedKyc: number;
+    skippedInFlight: number;
+    skippedRole: number;
     errors: number;
     skipped?: boolean;
     reason?: string;
@@ -372,6 +374,8 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
         requestsCreated: 0,
         skippedBalance: 0,
         skippedKyc: 0,
+        skippedInFlight: 0,
+        skippedRole: 0,
         errors: 0,
         skipped: true,
         reason: 'outreachOnly',
@@ -429,6 +433,8 @@ async function tickWeeklySettlement(): Promise<{
   requestsCreated: number;
   skippedBalance: number;
   skippedKyc: number;
+  skippedInFlight: number;
+  skippedRole: number;
   errors: number;
   skipped?: boolean;
   reason?: string;
@@ -440,6 +446,8 @@ async function tickWeeklySettlement(): Promise<{
       requestsCreated: 0,
       skippedBalance: 0,
       skippedKyc: 0,
+      skippedInFlight: 0,
+      skippedRole: 0,
       errors: 0,
       skipped: true,
       reason: 'not-monday',
@@ -453,6 +461,8 @@ async function tickWeeklySettlement(): Promise<{
       requestsCreated: 0,
       skippedBalance: 0,
       skippedKyc: 0,
+      skippedInFlight: 0,
+      skippedRole: 0,
       errors: 1,
       skipped: true,
       reason: (err as Error)?.message ?? 'unknown',

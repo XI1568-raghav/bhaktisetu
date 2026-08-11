@@ -452,7 +452,7 @@ function ProfileContent() {
  <div>
  <p className="font-medium text-surface-700">I am an NRI</p>
  <p className="text-sm text-surface-500">
- NRI users get pricing in USD and international shipping options.
+ NRI users get international shipping options; billing is in INR.
  </p>
  </div>
  <button

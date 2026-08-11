@@ -11,7 +11,6 @@ const FLAGS = [
   { id: 'video_proof_required', label: 'Video Proof Required', description: 'Mandatory for puja payouts' },
   { id: 'nri_pricing', label: 'NRI Pricing Live', description: '9-10x markup for NRI users' },
   { id: 'razorpay', label: 'Razorpay Domestic', description: 'Indian payment gateway' },
-  { id: 'stripe', label: 'Stripe International', description: 'NRI / international gateway' },
   { id: 'ai_jyotish', label: 'AI Jyotish Beta', description: 'Claude-powered astrology Q&A' },
   { id: 'auto_approve', label: 'Auto-approve Devotees', description: 'New devotee accounts skip review' },
 ];

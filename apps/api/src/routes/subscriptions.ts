@@ -182,29 +182,11 @@ export async function subscriptionRoutes(server: FastifyInstance) {
     }
   });
 
-  // ─── POST /create-stripe-annual — Stripe NRI annual checkout (Layer AR) ────
-
-  const stripeAnnualSchema = z.object({
-    planId: z.string().min(1),
-  });
-
-  server.post('/create-stripe-annual', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const parsed = stripeAnnualSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: 'Invalid request body', details: parsed.error.flatten() });
-    }
-    const userId = request.currentUser!.id;
-    try {
-      const result = await subscriptionService.createStripeAnnualSubscription({
-        userId,
-        planId: parsed.data.planId,
-      });
-      return { subscription: result };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create Stripe subscription';
-      return reply.code(400).send({ error: message });
-    }
-  });
+  // POST /create-stripe-annual — REMOVED 2026-08-11 with the Stripe rail
+  // (owner directive). It was the NRI annual plan billed in USD via Stripe
+  // Checkout. Razorpay is the only gateway and INR the only currency; the
+  // Razorpay annual path above (`POST /create-order`) is the sole subscription
+  // rail until PayPal-via-Razorpay lands for international buyers.
 
   // ─── GET /is-premium — Premium gate check (AR) ─────────────────────────────
 

@@ -8,7 +8,7 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: 'Gift a puja to your family in India | Darshya',
   description:
-    'NRIs — send a Vedic puja to your parents or relatives in India. Pay in USD/GBP/AUD, recipient gets WhatsApp confirmation + video proof from the temple.',
+    'NRIs — send a Vedic puja to your parents or relatives in India. Recipient gets WhatsApp confirmation + video proof from the temple.',
   keywords: [
     'gift puja india',
     'send puja to parents',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gift a puja to your family in India',
     description:
-      'Pay in your currency. Recipient gets WhatsApp + video. Performed at the temple of your choice.',
+      'Recipient gets WhatsApp + video. Performed at the temple of your choice.',
     type: 'website',
     url: 'https://darshya.online/gift',
     images: ['/og/default.png'],
@@ -40,13 +40,13 @@ const STEPS = [
   },
   {
     n: '3',
-    title: 'Pay securely in USD',
-    body: 'Stripe-secured checkout. If automatic flow is unavailable our team replies within 4 hours with a payment link in your currency.',
+    title: 'We reply with a quote',
+    body: 'Our team replies within 4 hours with pandit and date options, the final amount, and a secure payment link.',
   },
   {
     n: '4',
     title: 'Recipient gets WhatsApp + video',
-    body: 'Recipient gets a WhatsApp confirmation on payment (when configured) or a manual call from our coordinator. Full video arrives within 24h of the puja.',
+    body: 'Recipient gets a WhatsApp confirmation once the puja is scheduled, or a call from our coordinator. Full video arrives within 24h of the puja.',
   },
 ];
 
@@ -54,7 +54,7 @@ const TRUST = [
   { icon: ShieldCheck, label: 'Verified temples', body: 'Every puja performed by a verified pandit at a real temple.' },
   { icon: Video, label: 'Video proof mandatory', body: 'Full recording of the ceremony — no exceptions.' },
   { icon: MessageCircle, label: 'WhatsApp updates', body: 'Recipient notified before, during, and after the puja.' },
-  { icon: Globe, label: 'NRI-friendly pricing', body: 'Pay in your currency. Receipts in USD for tax purposes.' },
+  { icon: Globe, label: 'NRI-friendly', body: 'Book from anywhere in the world. Billing is in INR; international cards are accepted.' },
 ];
 
 export default function GiftPujaPage() {
@@ -70,7 +70,7 @@ export default function GiftPujaPage() {
             Gift a puja to your family in India
           </h1>
           <p className="mt-4 text-base md:text-lg text-surface-600 max-w-2xl mx-auto">
-            Pay in your currency. Your parents or relatives in India receive a WhatsApp confirmation and a full video of the ceremony — within 24 hours of completion.
+            Your parents or relatives in India receive a WhatsApp confirmation and a full video of the ceremony — within 24 hours of completion.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 text-sm text-surface-500">
             <Heart className="h-4 w-4 text-rose-500 fill-rose-500" />

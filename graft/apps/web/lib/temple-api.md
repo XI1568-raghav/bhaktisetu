@@ -1,0 +1,28 @@
+# apps\web\lib\temple-api.ts
+
+- TempleDonation · interface · L9-L18 — Forward-compatible shape for temple donations, which the backend does not yet serve (donations are currently gaushala-only), so the UI can be built before the migration lands.
+- authHeaders · function · L22-L24 — Builds the optional Bearer Authorization header so endpoints can be called with or without a logged-in temple user.
+- describeFailure · function · L26-L34 — Turns a failed HTTP response into a useful error message by extracting the server's message/error detail and appending the status code, degrading gracefully when the body isn't JSON.
+- getMyDonations · function · L38-L47 — Fetches the current temple's donation list from the temple-portal endpoint, returning an empty array when the payload is absent.
+- TemplePujaOffering · interface · L52-L62 — Shape of a temple's puja offering record, with prices kept as strings because Prisma Decimals serialize to JSON strings.
+- CreateTemplePujaInput · interface · L64-L72 — Input contract for registering a new puja offering at a temple, including optional price overrides, priest assignment, and slot capacity.
+- UpdateTemplePujaInput · type · L74-L74 — Partial variant of the create input so any subset of offering fields can be patched.
+- listTemplePujas · function · L76-L83 — Loads all puja offerings configured by the temple for its management list view.
+- createTemplePuja · function · L85-L97 — Posts a new puja offering to the temple portal and returns the created record.
+- updateTemplePuja · function · L99-L112 — Patches an existing temple puja offering and returns the updated record.
+- deleteTemplePuja · function · L114-L123 — Removes a puja offering from the temple's catalog.
+- DarshanStreamStatus · type · L127-L127 — Read-model lifecycle states a darshan stream can be in as reported by the server.
+- DarshanStreamStatusPatch · type · L128-L128 — Allowed status transitions a temple admin may push to a stream (note 'ended' is writable but not a stored read state).
+- DarshanStreamProvider · type · L129-L129 — Supported streaming backends for darshan broadcasts: YouTube, AWS IVS, or an external RTMP source.
+- DarshanStream · interface · L131-L151 — Full darshan livestream record including playback details, scheduling, viewer metrics, premium gating, and provider-specific metadata.
+- CreateDarshanStreamInput · interface · L153-L166 — Input contract for creating a darshan stream, requiring stream key and playback URL with optional scheduling, premium, and provider metadata.
+- UpdateDarshanStreamInput · type · L168-L168 — Partial variant of the stream create input for patching arbitrary stream fields.
+- listDarshanStreams · function · L170-L177 — Loads the temple's darshan livestreams for the admin stream list.
+- createDarshanStream · function · L179-L191 — Registers a new darshan livestream and returns the created stream record.
+- updateDarshanStream · function · L193-L206 — Patches an existing darshan stream's metadata and returns the updated record.
+- deleteDarshanStream · function · L208-L217 — Deletes a darshan livestream from the temple portal.
+- setDarshanStreamStatus · function · L219-L232 — Drives the livestream lifecycle by pushing a status transition (scheduled/live/ended) to the dedicated status endpoint.
+- PublicPriestSummary · interface · L236-L248 — Public priest profile summary used to populate the priest-assignment dropdown in temple portal forms.
+- listPublicPriests · function · L250-L255 — Fetches public priest summaries for form dropdowns, silently returning an empty list when the request fails so forms still render.
+- PujaTypeSummary · interface · L257-L263 — Minimal puja type descriptor (slug, name, deity, category) for populating the offering-type dropdown.
+- listPujaTypes · function · L265-L274 — Fetches puja types for dropdowns, tolerating multiple backend response envelope shapes and failing soft to an empty list.

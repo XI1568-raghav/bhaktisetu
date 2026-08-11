@@ -1,0 +1,21 @@
+# apps\api\src\lib\muhurat.ts
+
+- Nakshatra · type · L17-L17 — type Nakshatra = (typeof NAKSHATRA_NAMES)[number];
+- Rashi · type · L23-L23 — type Rashi = (typeof RASHI_NAMES)[number];
+- MuhuratInput · type · L95-L95 — type MuhuratInput = z.infer<typeof MuhuratInputSchema>;
+- julianDay · function · L103-L118 — function julianDay(date: Date): number
+- deg · function · L120-L124 — function deg(x: number): number
+- moonLongitudeSidereal · function · L128-L151 — function moonLongitudeSidereal(jd: number): number
+- sunLongitudeSidereal · function · L153-L165 — function sunLongitudeSidereal(jd: number): number
+- nakshatraFromLongitude · function · L167-L170 — function nakshatraFromLongitude(lon: number): { index: number; name: Nakshatra }
+- rashiFromLongitude · function · L172-L175 — function rashiFromLongitude(lon: number): { index: number; name: Rashi }
+- tithiNumber · function · L177-L180 — function tithiNumber(jd: number): number
+- deriveBirthNakshatra · function · L184-L190 — function deriveBirthNakshatra(dob: string, tob: string): Nakshatra
+- deriveBirthRashi · function · L192-L196 — function deriveBirthRashi(dob: string, tob: string): Rashi
+- chandrashtamaRashi · function · L199-L202 — function chandrashtamaRashi(birthRashi: Rashi): Rashi
+- MuhuratCandidate · interface · L206-L216 — interface MuhuratCandidate
+- abhijitWindow · function · L222-L224 — function abhijitWindow(): { from: string; to: string }
+- dayScore · function · L226-L305 — function dayScore(date: Date, brideRashi: Rashi, groomRashi: Rashi): MuhuratCandidate
+- mangalikFlag · function · L310-L318 — function mangalikFlag(brideRashi: Rashi, groomRashi: Rashi): { brideMangalik: boolean; groomMangalik: boolean }
+- MuhuratResponse · interface · L320-L325 — interface MuhuratResponse
+- findWeddingMuhurats · function · L327-L348 — function findWeddingMuhurats(input: MuhuratInput, topN = 10): MuhuratResponse

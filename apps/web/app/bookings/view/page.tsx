@@ -40,94 +40,167 @@ interface BookingDevotee {
  nakshatra: string | null;
 }
 
-interface PriceBreakdown {
- pujaFee: number;
- platformFee: number;
- prasadDelivery: number;
- total: number;
-}
-
-interface PrasadTracking {
- trackingId: string;
- status: 'preparing' | 'shipped' | 'in_transit' | 'delivered';
- expectedDate: string;
- carrier: string;
-}
+type DetailStatus = BookingStatus | 'pending_payment' | 'cancelled' | 'refunded';
 
 interface BookingDetail {
  id: string;
  bookingNumber: string;
- status: BookingStatus | 'cancelled';
+ status: DetailStatus;
  templeName: string;
  templeSlug: string;
  templeCity: string;
  templeState: string;
  pujaName: string;
  pujaSlug: string;
- deity: string;
  scheduledDate: string;
  scheduledTime: string;
  durationMinutes: number;
  devotees: BookingDevotee[];
  sankalp: string | null;
  specialInstructions: string | null;
- priceBreakdown: PriceBreakdown;
+ amount: number;
+ amountPaid: number;
+ amountRefunded: number;
  priestName: string | null;
  videoUrl: string | null;
  prasadDelivery: boolean;
- prasadTracking: PrasadTracking | null;
+ prasadTrackingId: string | null;
  timestamps: Partial<Record<BookingStatus, string>>;
  review: { rating: number; text: string } | null;
- createdAt: string;
 }
 
-// ─── Fallback data ──────────────────────────────────────────────
+// ─── API → UI mapping ──────────────────────────────────────────
+// S2C-03 (2026-08-10): GET /bookings/:id returns the raw Prisma record —
+// nested temple/pujaType/priest, Decimal money as strings, devotees in a
+// `devoteeNames` JSON column, and the API's own status vocabulary
+// ('confirmed' where this UI says 'booked'). The old code assigned that
+// object straight to a flat BookingDetail, so every field read back
+// undefined and the render threw; the page only ever "worked" via the
+// fabricated fallback below it. Normalize at the boundary instead, and
+// never synthesize a value the API did not send.
 
-const fallbackBooking: BookingDetail = {
- id: '1',
- bookingNumber: 'BS-20260410-34521',
- status: 'video_uploaded',
- templeName: 'Shri Kashi Vishwanath Temple',
- templeSlug: 'kashi-vishwanath',
- templeCity: 'Varanasi',
- templeState: 'Uttar Pradesh',
- pujaName: 'Rudrabhishek Puja',
- pujaSlug: 'rudrabhishek',
- deity: 'Lord Shiva',
- scheduledDate: '2026-04-12',
- scheduledTime: '09:00',
- durationMinutes: 120,
- devotees: [
- { name: 'Rajesh Kumar Sharma', gotra: 'Kashyap', nakshatra: 'Rohini' },
- { name: 'Priya Sharma', gotra: 'Kashyap', nakshatra: 'Ashwini' },
- ],
- sankalp: 'For the good health and prosperity of our family.',
- specialInstructions: null,
- priceBreakdown: {
- pujaFee: 1100,
- platformFee: 51,
- prasadDelivery: 150,
- total: 1301,
- },
- priestName: 'Pandit Ramesh Shastri',
- videoUrl: 'https://example.com/video/rudrabhishek-20260412.mp4',
- prasadDelivery: true,
- prasadTracking: {
- trackingId: 'BSPR-20260412-001',
- status: 'in_transit',
- expectedDate: '2026-04-16',
- carrier: 'India Post Speed Post',
- },
- timestamps: {
- booked: '2026-04-10T10:30:00Z',
- priest_assigned: '2026-04-10T14:15:00Z',
- in_progress: '2026-04-12T08:55:00Z',
- completed: '2026-04-12T10:58:00Z',
- video_uploaded: '2026-04-12T12:30:00Z',
- },
- review: null,
- createdAt: '2026-04-10T10:30:00Z',
+interface ApiBookingDetail {
+ id: string;
+ bookingNumber: string;
+ status: string;
+ scheduledDate: string;
+ scheduledTimeSlot?: string | null;
+ devoteeNames?: unknown;
+ sankalpDetails?: string | null;
+ specialInstructions?: string | null;
+ priceAmount?: string | number | null;
+ videoProofUrl?: string | null;
+ videoUploadedAt?: string | null;
+ prasadDeliveryRequested?: boolean | null;
+ prasadTrackingId?: string | null;
+ rating?: number | null;
+ reviewText?: string | null;
+ createdAt?: string | null;
+ temple?: { name?: string; slug?: string; city?: string; state?: string } | null;
+ pujaType?: { name?: string; slug?: string; durationMinutes?: number } | null;
+ priest?: { displayName?: string } | null;
+ payments?: Array<{
+  status?: string;
+  amount?: string | number | null;
+  refundAmount?: string | number | null;
+ }> | null;
+}
+
+const API_STATUS_TO_UI: Record<string, DetailStatus> = {
+ pending_payment: 'pending_payment',
+ confirmed: 'booked',
+ priest_assigned: 'priest_assigned',
+ in_progress: 'in_progress',
+ completed: 'completed',
+ video_uploaded: 'video_uploaded',
+ delivered: 'delivered',
+ cancelled: 'cancelled',
+ refunded: 'refunded',
 };
+
+// Money arrives as a Prisma Decimal serialized to a string. Parse once, here.
+function toAmount(v: string | number | null | undefined): number {
+ const n = typeof v === 'string' ? Number(v) : (v ?? 0);
+ return Number.isFinite(n) ? Number(n) : 0;
+}
+
+function mapDevotees(raw: unknown): BookingDevotee[] {
+ if (!Array.isArray(raw)) return [];
+ return raw
+  .filter((d): d is Record<string, unknown> => !!d && typeof d === 'object')
+  .map((d) => ({
+   name: typeof d.name === 'string' ? d.name : '',
+   gotra: typeof d.gotra === 'string' && d.gotra ? d.gotra : null,
+   nakshatra: typeof d.nakshatra === 'string' && d.nakshatra ? d.nakshatra : null,
+  }))
+  .filter((d) => d.name.length > 0);
+}
+
+function mapBookingDetail(b: ApiBookingDetail): BookingDetail {
+ // scheduledDate is a DATE column serialized as an ISO datetime — keep the
+ // date part only, because formatDate() appends its own 'T00:00:00'.
+ const dateOnly =
+  typeof b.scheduledDate === 'string' && b.scheduledDate.includes('T')
+   ? b.scheduledDate.slice(0, 10)
+   : (b.scheduledDate ?? '');
+
+ const payments = Array.isArray(b.payments) ? b.payments : [];
+ // A payment that reached the gateway's capture is money the devotee actually
+ // parted with; 'refunded'/'partially_refunded' were captured first.
+ const amountPaid = payments
+  .filter((p) => p.status === 'captured' || p.status === 'refunded' || p.status === 'partially_refunded')
+  .reduce((sum, p) => sum + toAmount(p.amount), 0);
+ const amountRefunded = payments.reduce((sum, p) => sum + toAmount(p.refundAmount), 0);
+
+ const timestamps: Partial<Record<BookingStatus, string>> = {};
+ if (b.createdAt) timestamps.booked = b.createdAt;
+ if (b.videoUploadedAt) timestamps.video_uploaded = b.videoUploadedAt;
+
+ return {
+  id: b.id,
+  bookingNumber: b.bookingNumber,
+  // An unmapped status (a future API enum value) is passed through as-is: the
+  // badge renders it verbatim and every action gate below fails closed, which
+  // beats guessing a state the server never claimed.
+  status: API_STATUS_TO_UI[b.status] ?? (b.status as DetailStatus),
+  templeName: b.temple?.name ?? 'Temple',
+  templeSlug: b.temple?.slug ?? '',
+  templeCity: b.temple?.city ?? '',
+  templeState: b.temple?.state ?? '',
+  pujaName: b.pujaType?.name ?? 'Puja',
+  pujaSlug: b.pujaType?.slug ?? '',
+  scheduledDate: dateOnly,
+  scheduledTime: b.scheduledTimeSlot ?? '',
+  durationMinutes: b.pujaType?.durationMinutes ?? 0,
+  devotees: mapDevotees(b.devoteeNames),
+  sankalp: b.sankalpDetails ?? null,
+  specialInstructions: b.specialInstructions ?? null,
+  amount: toAmount(b.priceAmount),
+  amountPaid,
+  amountRefunded,
+  priestName: b.priest?.displayName ?? null,
+  videoUrl: b.videoProofUrl ?? null,
+  prasadDelivery: !!b.prasadDeliveryRequested,
+  prasadTrackingId: b.prasadTrackingId ?? null,
+  timestamps,
+  review:
+   typeof b.rating === 'number' && b.rating > 0
+    ? { rating: b.rating, text: b.reviewText ?? '' }
+    : null,
+ };
+}
+
+// Statuses BookingStatusTracker knows how to draw. pending_payment/cancelled/
+// refunded are not steps on that rail, so the tracker is hidden for them
+// instead of rendering every step as "not reached".
+const TRACKED_STATUSES: BookingStatus[] = [
+ 'booked',
+ 'priest_assigned',
+ 'in_progress',
+ 'completed',
+ 'video_uploaded',
+ 'delivered',
+];
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -141,10 +214,14 @@ function formatDate(dateStr: string): string {
  });
 }
 
+// scheduledTimeSlot is free-form (the API's lib/slot-time.ts documents both
+// '18:00' and 'Evening (6:00 PM)' in live data). The old split(':') turned a
+// labelled slot into "12:NaN AM"; an unparseable slot now shows verbatim.
 function formatTime(time: string): string {
- const parts = time.split(':').map(Number);
- const h = parts[0] ?? 0;
- const m = parts[1] ?? 0;
+ const m24 = /^\s*([01]?\d|2[0-3]):([0-5]\d)/.exec(time);
+ if (!m24) return time.trim();
+ const h = Number(m24[1]);
+ const m = Number(m24[2]);
  const ampm = h >= 12 ? 'PM' : 'AM';
  const h12 = h % 12 || 12;
  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
@@ -152,6 +229,7 @@ function formatTime(time: string): string {
 
 function getStatusBadge(status: BookingDetail['status']) {
  const map: Record<string, { label: string; color: string; bg: string }> = {
+ pending_payment: { label: 'Payment Pending', color: 'text-amber-700', bg: 'bg-amber-100' },
  booked: { label: 'Booked', color: 'text-ganga-blue', bg: 'bg-ganga-blue-light/30' },
  priest_assigned: { label: 'Priest Assigned', color: 'text-saffron-600', bg: 'bg-saffron-100' },
  in_progress: { label: 'In Progress', color: 'text-amber-600', bg: 'bg-amber-100' },
@@ -159,18 +237,9 @@ function getStatusBadge(status: BookingDetail['status']) {
  video_uploaded: { label: 'Video Ready', color: 'text-purple-600', bg: 'bg-purple-100' },
  delivered: { label: 'Delivered', color: 'text-tulsi-green-dark', bg: 'bg-tulsi-green-light/30' },
  cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
+ refunded: { label: 'Refunded', color: 'text-red-600', bg: 'bg-red-100' },
  };
  return map[status] || { label: status, color: 'text-surface-600', bg: 'bg-surface-100' };
-}
-
-function getPrasadStatusLabel(status: PrasadTracking['status']) {
- const map: Record<string, string> = {
- preparing: 'Being Prepared',
- shipped: 'Shipped',
- in_transit: 'In Transit',
- delivered: 'Delivered',
- };
- return map[status] || status;
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -182,6 +251,9 @@ function BookingDetailContent() {
 
  const [booking, setBooking] = useState<BookingDetail | null>(null);
  const [loading, setLoading] = useState(true);
+ // S2C-03: why the fetch failed, so the page can say so instead of inventing
+ // a booking. null + no error = "not found"; null + error = "could not load".
+ const [loadError, setLoadError] = useState<string | null>(null);
 
  // Review state
  const [reviewRating, setReviewRating] = useState(0);
@@ -189,9 +261,13 @@ function BookingDetailContent() {
  const [reviewText, setReviewText] = useState('');
  const [submittingReview, setSubmittingReview] = useState(false);
  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+ // S2C-04: a rejected review must say so instead of rendering as saved.
+ const [reviewError, setReviewError] = useState<string | null>(null);
 
  // Cancel state
  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+ // RV-16: surfaces a failed cancel instead of silently rendering success.
+ const [cancelMsg, setCancelMsg] = useState<string | null>(null);
  const [cancelling, setCancelling] = useState(false);
 
  // Reschedule state (D7) — pick a new date/slot; booking re-queues if a
@@ -209,64 +285,147 @@ function BookingDetailContent() {
  const [refundRequested, setRefundRequested] = useState(false);
  const [refundError, setRefundError] = useState<string | null>(null);
 
+ // S2C-03 (2026-08-10): every failure path used to fall back to a hardcoded
+ // "completed" booking — a temple, a priest, a video-proof URL and a ₹1,301
+ // price breakdown that belonged to nobody. A devotee whose token had expired,
+ // or who opened someone else's booking id (403), was shown fabricated payment
+ // data for a puja that may never have happened. The fallback is gone: a
+ // failed load now reports the failure and renders nothing else.
  useEffect(() => {
+ let cancelled = false;
+
  async function fetchBooking() {
+ if (!bookingId) {
+ if (!cancelled) {
+ setBooking(null);
+ setLoadError('No booking was specified.');
+ setLoading(false);
+ }
+ return;
+ }
  try {
  const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
  headers: {
- Authorization: `Bearer ${session?.accessToken}`,
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
  },
  });
- if (res.ok) {
- const data = await res.json();
- setBooking(data.booking || data);
- } else {
- throw new Error('API unavailable');
+ if (!res.ok) {
+ const body = (await res.json().catch(() => ({}))) as { error?: string };
+ // 401 takes precedence over the server's own wording ("Unauthorized"
+ // tells a devotee nothing); for everything else prefer the API message.
+ throw new Error(
+ res.status === 401
+ ? 'Your session has expired. Please sign in again to view this booking.'
+ : (body?.error ??
+ (res.status === 404
+ ? 'We could not find this booking.'
+ : res.status === 403
+ ? 'This booking belongs to another account.'
+ : `Could not load this booking (HTTP ${res.status}).`)),
+ );
  }
- } catch {
- setBooking({ ...fallbackBooking, id: bookingId });
+ const data = (await res.json()) as { booking?: ApiBookingDetail } & ApiBookingDetail;
+ const raw = data.booking ?? data;
+ if (!raw?.id) {
+ throw new Error('The server returned an unrecognised booking.');
+ }
+ if (!cancelled) {
+ setBooking(mapBookingDetail(raw));
+ setLoadError(null);
+ }
+ } catch (err) {
+ if (!cancelled) {
+ setBooking(null);
+ setLoadError(
+ err instanceof Error && err.message
+ ? err.message
+ : 'Could not reach the server. Please check your connection and try again.',
+ );
+ }
  } finally {
- setLoading(false);
+ if (!cancelled) setLoading(false);
  }
  }
+
  fetchBooking();
+ return () => {
+ cancelled = true;
+ };
  }, [bookingId, session]);
 
+ // S2C-04 (2026-08-10): this awaited the POST, discarded the response, swallowed
+ // network errors as "Demo mode - still show success", and then flipped
+ // reviewSubmitted unconditionally. A 409 ("review already submitted"), a 403,
+ // or an offline device all rendered the devotee's review back to them as if it
+ // had been saved — it never reached the priest's rating. Mirrors the res.ok
+ // handling handleCancelBooking already uses.
  const handleSubmitReview = async () => {
  if (reviewRating === 0 || !booking) return;
  setSubmittingReview(true);
+ setReviewError(null);
  try {
- await fetch(`${API_BASE_URL}/bookings/${bookingId}/review`, {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/review`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',
- Authorization: `Bearer ${session?.accessToken}`,
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
  },
  body: JSON.stringify({ rating: reviewRating, text: reviewText }),
  });
- } catch {
- // Demo mode - still show success
+ if (!res.ok) {
+ const body = (await res.json().catch(() => ({}))) as { error?: string };
+ setReviewError(
+ body?.error ?? `Could not submit your review (HTTP ${res.status}). Please try again.`,
+ );
+ setSubmittingReview(false);
+ return; // leave the form up with the rating intact
  }
  setReviewSubmitted(true);
+ } catch {
+ setReviewError(
+ 'Could not reach the server. Your review has NOT been saved — please try again.',
+ );
+ }
  setSubmittingReview(false);
  };
 
+ // RV-16 (2026-08-10): this used to discard the response entirely and flip the
+ // UI to 'cancelled' unconditionally — so a 409 ("within 24 hours") or a 403
+ // rendered as a green "Cancelled" badge plus "if you were charged, a refund
+ // will be processed". The devotee believed they had cancelled and been
+ // refunded while the booking was still live and their money untouched; the
+ // pandit still turns up. The sibling handleReschedule below already checks
+ // res.ok — this now matches it.
  const handleCancelBooking = async () => {
  if (!booking) return;
  setCancelling(true);
+ setCancelMsg(null);
  try {
- await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
  method: 'POST',
  headers: {
  Authorization: `Bearer ${session?.accessToken}`,
  },
  });
- } catch {
- // Demo mode
+ if (!res.ok) {
+ const body = await res.json().catch(() => ({}) as { error?: string });
+ setCancelMsg(
+ body?.error ||
+ (res.status === 409
+ ? 'This booking can no longer be cancelled (within 24 hours of the scheduled time).'
+ : `Could not cancel this booking (${res.status}). Please contact support@darshya.online.`),
+ );
+ setCancelling(false);
+ return; // leave status untouched — the booking is still live
  }
  setBooking({ ...booking, status: 'cancelled' });
- setCancelling(false);
  setShowCancelConfirm(false);
+ } catch {
+ setCancelMsg(
+ 'Could not reach the server. Your booking has NOT been cancelled — please check your connection and try again.',
+ );
+ }
+ setCancelling(false);
  };
 
  // D7: submit a reschedule to POST /bookings/{id}/reschedule.
@@ -337,31 +496,46 @@ function BookingDetailContent() {
  );
  }
 
+ // S2C-03: the honest failure state. Nothing about the booking is rendered,
+ // because nothing about it is known.
  if (!booking) {
  return (
- <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
- <div className="text-center">
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50 px-4">
+ <div className="max-w-md text-center">
  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-surface-300" />
- <h2 className="mb-2 text-xl font-bold text-surface-700">Booking Not Found</h2>
- <p className="mb-4 text-surface-500">We could not find this booking.</p>
+ <h2 className="mb-2 text-xl font-bold text-surface-700">
+ We could not load this booking
+ </h2>
+ <p className="mb-6 text-sm text-surface-500">
+ {loadError ?? 'We could not find this booking.'}
+ </p>
+ <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
  <Link
  href="/bookings"
  className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
  >
  View All Bookings
  </Link>
+ <a
+ href="mailto:support@darshya.online"
+ className="inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-6 py-3 font-medium text-surface-600 hover:bg-surface-50"
+ >
+ <Headphones className="h-4 w-4" />
+ Contact Support
+ </a>
+ </div>
  </div>
  </div>
  );
  }
 
  const statusBadge = getStatusBadge(booking.status);
+ // Allowlist mirroring the API's CANCELLABLE_STATUSES (pending_payment,
+ // confirmed, priest_assigned) — a denylist let 'refunded' show a Cancel button.
  const isCancellable =
- booking.status !== 'cancelled' &&
- booking.status !== 'completed' &&
- booking.status !== 'video_uploaded' &&
- booking.status !== 'delivered' &&
- booking.status !== 'in_progress';
+ booking.status === 'pending_payment' ||
+ booking.status === 'booked' ||
+ booking.status === 'priest_assigned';
  // Refund only when booking is paid (i.e. past pending_payment & not yet
  // performed) AND scheduled date+time is more than 24h away.
  const scheduledMs = (() => {
@@ -381,6 +555,9 @@ function BookingDetailContent() {
  (booking.status === 'delivered' ||
  booking.status === 'video_uploaded' ||
  booking.status === 'completed');
+ // Hoisted so the <a href> below narrows to string without relying on
+ // property-path narrowing inside JSX.
+ const videoUrl = booking.videoUrl;
 
  return (
  <div className="min-h-[100dvh] bg-surface-50">
@@ -430,7 +607,7 @@ function BookingDetailContent() {
  </div>
 
  {/* Status Tracker */}
- {booking.status !== 'cancelled' && (
+ {TRACKED_STATUSES.includes(booking.status as BookingStatus) && (
  <div className="mb-8 rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-6 text-lg font-bold text-surface-800">Booking Progress</h2>
  <BookingStatusTracker
@@ -440,15 +617,33 @@ function BookingDetailContent() {
  </div>
  )}
 
+ {booking.status === 'pending_payment' && (
+ <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
+ <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+ <div>
+ <h3 className="font-semibold text-amber-800">Payment Pending</h3>
+ <p className="text-sm text-amber-700">
+ This booking is not confirmed yet — we have not received your payment.
+ </p>
+ </div>
+ </div>
+ )}
+
  {/* Cancelled banner */}
- {booking.status === 'cancelled' && (
+ {(booking.status === 'cancelled' || booking.status === 'refunded') && (
  <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5">
  <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
  <div>
- <h3 className="font-semibold text-red-800">Booking Cancelled</h3>
+ <h3 className="font-semibold text-red-800">
+ {booking.status === 'refunded' ? 'Booking Refunded' : 'Booking Cancelled'}
+ </h3>
+ {/* S2C-03: only state a refund when the payment record shows one. */}
  <p className="text-sm text-red-600">
- This booking has been cancelled. If you were charged, a refund will be processed
- within 5-7 business days.
+ {booking.amountRefunded > 0
+ ? `This booking has been cancelled. ₹${booking.amountRefunded.toLocaleString('en-IN')} has been refunded and will reach your account within 5-7 business days.`
+ : booking.amountPaid > 0
+ ? 'This booking has been cancelled. Any refund due will be processed within 5-7 business days — contact support if you do not see it.'
+ : 'This booking has been cancelled. No payment was taken for it.'}
  </p>
  </div>
  </div>
@@ -467,14 +662,19 @@ function BookingDetailContent() {
  <DetailRow icon={Flame} label="Puja" value={booking.pujaName} />
  <DetailRow icon={MapPin} label="Temple">
  <div>
+ {/* Only link when the API sent a slug — `/temples/` is a 404. */}
+ {booking.templeSlug ? (
  <Link
  href={`/temples/${booking.templeSlug}`}
  className="font-medium text-saffron-600 hover:underline"
  >
  {booking.templeName}
  </Link>
+ ) : (
+ <span className="font-medium text-surface-700">{booking.templeName}</span>
+ )}
  <p className="text-xs text-surface-400">
- {booking.templeCity}, {booking.templeState}
+ {[booking.templeCity, booking.templeState].filter(Boolean).join(', ')}
  </p>
  </div>
  </DetailRow>
@@ -486,7 +686,11 @@ function BookingDetailContent() {
  <DetailRow
  icon={Clock}
  label="Time"
- value={`${formatTime(booking.scheduledTime)} (${booking.durationMinutes} min)`}
+ value={
+ booking.durationMinutes > 0
+ ? `${formatTime(booking.scheduledTime)} (${booking.durationMinutes} min)`
+ : formatTime(booking.scheduledTime)
+ }
  />
  {booking.priestName && (
  <DetailRow icon={Users} label="Priest" value={booking.priestName} />
@@ -518,6 +722,11 @@ function BookingDetailContent() {
  </div>
  </div>
  ))}
+ {booking.devotees.length === 0 && (
+ <p className="text-sm text-surface-500">
+ No devotee names were recorded on this booking.
+ </p>
+ )}
  </div>
  {booking.sankalp && (
  <div className="mt-4 rounded-lg border border-saffron-100 bg-saffron-50/50 p-3">
@@ -534,15 +743,21 @@ function BookingDetailContent() {
  </div>
 
  {/* Video Proof Section */}
- {booking.videoUrl && (
+ {videoUrl && (
  <div id="video" className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
  <Video className="h-5 w-5 text-purple-500" />
  Your Puja Video Proof
  </h2>
+ {/* S2C-03: videoUrl is now the real videoProofUrl, so the play surface
+     and the download button open it instead of being inert decoration. */}
  <div className="overflow-hidden rounded-xl bg-surface-800">
- {/* Video player placeholder */}
- <div className="relative flex aspect-video items-center justify-center">
+ <a
+ href={videoUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="relative flex aspect-video items-center justify-center"
+ >
  <div className="text-center">
  <div className="mx-auto mb-3 flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30">
  <Play className="ml-1 h-8 w-8 text-white" />
@@ -552,76 +767,49 @@ function BookingDetailContent() {
  <div className="absolute left-4 top-4 rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white">
  Video Proof
  </div>
- </div>
+ </a>
  </div>
  <div className="mt-3 flex items-center justify-between">
  <p className="text-sm text-surface-500">
  Recorded on {formatDate(booking.scheduledDate)}
  </p>
- <button className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-100">
+ <a
+ href={videoUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-100"
+ >
  <Download className="h-3.5 w-3.5" />
  Download Video
- </button>
+ </a>
  </div>
  </div>
  )}
 
- {/* Prasad Tracking */}
- {booking.prasadDelivery && booking.prasadTracking && (
+ {/* Prasad Delivery — S2C-03: the only prasad fact the API records is
+     `prasadTrackingId`. Carrier, courier status and an expected-delivery
+     date were invented by the old fallback; they are not shown because
+     nothing in the system knows them. */}
+ {booking.prasadDelivery && (
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
  <Package className="h-5 w-5 text-saffron-500" />
  Prasad Delivery
  </h2>
  <div className="rounded-xl border border-saffron-100 bg-saffron-50/50 p-4">
- <div className="grid gap-3 sm:grid-cols-2">
+ {booking.prasadTrackingId ? (
  <div>
  <p className="text-xs font-medium text-surface-500">Tracking ID</p>
  <p className="font-mono text-sm font-medium text-surface-700">
- {booking.prasadTracking.trackingId}
+ {booking.prasadTrackingId}
  </p>
  </div>
- <div>
- <p className="text-xs font-medium text-surface-500">Status</p>
- <p className="text-sm font-semibold text-saffron-600">
- {getPrasadStatusLabel(booking.prasadTracking.status)}
+ ) : (
+ <p className="text-sm text-surface-600">
+ Prasad delivery is included in this booking. Your tracking ID will appear
+ here once the parcel is dispatched.
  </p>
- </div>
- <div>
- <p className="text-xs font-medium text-surface-500">Carrier</p>
- <p className="text-sm text-surface-700">{booking.prasadTracking.carrier}</p>
- </div>
- <div>
- <p className="text-xs font-medium text-surface-500">Expected Delivery</p>
- <p className="text-sm text-surface-700">
- {formatDate(booking.prasadTracking.expectedDate)}
- </p>
- </div>
- </div>
-
- {/* Simple tracking visual */}
- <div className="mt-4 flex items-center gap-1">
- {['preparing', 'shipped', 'in_transit', 'delivered'].map((step, i) => {
- const steps = ['preparing', 'shipped', 'in_transit', 'delivered'];
- const currentIdx = steps.indexOf(booking.prasadTracking!.status);
- const isComplete = i <= currentIdx;
- return (
- <div key={step} className="flex flex-1 items-center gap-1">
- <div
- className={`h-2 flex-1 rounded-full ${
- isComplete ? 'bg-saffron-500' : 'bg-surface-200'
- }`}
- />
- </div>
- );
- })}
- </div>
- <div className="mt-1 flex justify-between text-[10px] text-surface-400">
- <span>Preparing</span>
- <span>Shipped</span>
- <span>In Transit</span>
- <span>Delivered</span>
- </div>
+ )}
  </div>
  </div>
  )}
@@ -699,6 +887,12 @@ function BookingDetailContent() {
  'Submit Review'
  )}
  </button>
+ {/* S2C-04: a rejected review must say so — it used to render as saved. */}
+ {reviewError && (
+ <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+ {reviewError}
+ </p>
+ )}
  </div>
  )}
 
@@ -732,38 +926,38 @@ function BookingDetailContent() {
 
  {/* Right Column - Sidebar */}
  <div className="space-y-6">
- {/* Price Breakdown */}
+ {/* Payment — S2C-03: the old "Puja Fee / Platform Fee / Prasad Delivery"
+     split came entirely from the fallback constant. The booking record
+     carries one devotee-facing figure (`priceAmount`); the 20/80 split is
+     internal and is not a line item the devotee was charged. Show the real
+     amount, what the gateway actually captured, and any refund. */}
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h3 className="mb-4 flex items-center gap-2 font-bold text-surface-800">
  <IndianRupee className="h-5 w-5 text-saffron-500" />
- Price Breakdown
+ Payment
  </h3>
  <div className="space-y-3">
  <div className="flex justify-between text-sm">
- <span className="text-surface-600">Puja Fee</span>
+ <span className="text-surface-600">Puja Amount</span>
  <span className="font-medium text-surface-700">
- ₹{booking.priceBreakdown.pujaFee.toLocaleString('en-IN')}
+ ₹{booking.amount.toLocaleString('en-IN')}
  </span>
  </div>
+ {booking.amountRefunded > 0 && (
  <div className="flex justify-between text-sm">
- <span className="text-surface-600">Platform Fee</span>
- <span className="font-medium text-surface-700">
- ₹{booking.priceBreakdown.platformFee}
- </span>
- </div>
- {booking.priceBreakdown.prasadDelivery > 0 && (
- <div className="flex justify-between text-sm">
- <span className="text-surface-600">Prasad Delivery</span>
- <span className="font-medium text-surface-700">
- ₹{booking.priceBreakdown.prasadDelivery}
+ <span className="text-surface-600">Refunded</span>
+ <span className="font-medium text-tulsi-green">
+ −₹{booking.amountRefunded.toLocaleString('en-IN')}
  </span>
  </div>
  )}
  <div className="border-t border-surface-100 pt-3">
  <div className="flex justify-between">
- <span className="font-bold text-surface-800">Total Paid</span>
+ <span className="font-bold text-surface-800">
+ {booking.amountPaid > 0 ? 'Total Paid' : 'Amount Due'}
+ </span>
  <span className="text-xl font-bold text-saffron-600">
- ₹{booking.priceBreakdown.total.toLocaleString('en-IN')}
+ ₹{(booking.amountPaid > 0 ? booking.amountPaid : booking.amount).toLocaleString('en-IN')}
  </span>
  </div>
  </div>
@@ -830,9 +1024,11 @@ function BookingDetailContent() {
  <>
  {showCancelConfirm ? (
  <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+ {/* S2C-03: don't promise a refund on a booking nothing was paid for. */}
  <p className="mb-3 text-sm text-red-700">
- Are you sure you want to cancel this booking? Refund will be processed
- within 5-7 business days.
+ {booking.amountPaid > 0
+ ? 'Are you sure you want to cancel this booking? Any refund due under the cancellation policy will be processed within 5-7 business days.'
+ : 'Are you sure you want to cancel this booking?'}
  </p>
  <div className="flex gap-2">
  <button
@@ -858,6 +1054,12 @@ function BookingDetailContent() {
  <XCircle className="h-4 w-4" />
  Cancel Booking
  </button>
+ )}
+ {/* RV-16: a rejected cancel must say so — previously it rendered as success. */}
+ {cancelMsg && (
+ <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+ {cancelMsg}
+ </p>
  )}
  </>
  )}
@@ -920,7 +1122,7 @@ function BookingDetailContent() {
  </Link>
 
  <Link
- href={`/pujas/${booking.pujaSlug}`}
+ href={booking.pujaSlug ? `/pujas/${booking.pujaSlug}` : '/pujas'}
  className="flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-saffron-700"
  >
  <Flame className="h-4 w-4" />

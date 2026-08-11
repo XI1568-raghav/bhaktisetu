@@ -1,5 +1,6 @@
 import type { BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { commissionPlatformCut } from '../lib/commission-math.js';
 import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -439,10 +440,16 @@ export class AdminService {
         prisma.marketplaceSubscription.findMany({ where: { status: 'ACTIVE' } }),
       ]);
 
+      // `Commission.amount` is the PROVIDER's earning, not the platform's cut
+      // (lib/commission-math.ts). Summing it into "Commissions Earned" reported
+      // provider payouts as platform revenue — a ~4x overstatement on a 20/80
+      // split. The platform's share is derived from the stored take rate.
       const totalCommissions = commissions
         .filter((c) => c.status === 'PAID')
-        .reduce((sum, c) => sum + Number(c.amount), 0);
+        .reduce((sum, c) => sum + commissionPlatformCut(c.amount, c.percentage).toNumber(), 0);
 
+      // Pending payouts genuinely IS what providers are owed, so this one keeps
+      // summing `amount` — it was the under-reported figure before.
       const pendingPayouts = commissions
         .filter((c) => c.status === 'PENDING')
         .reduce((sum, c) => sum + Number(c.amount), 0);

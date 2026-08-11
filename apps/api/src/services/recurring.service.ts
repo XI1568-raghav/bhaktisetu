@@ -96,32 +96,63 @@ export async function createRecurringSubscription(opts: {
   if (!plan) throw new Error('Unknown plan.');
   await ensureRecurringTable();
 
-  // Create the Razorpay subscription (mandate). total_count is the billing
-  // cycles; for an open-ended devotional subscription we use a long horizon.
+  // Razorpay Subscriptions requires a PRE-CREATED Plan (plan_id) — the node SDK
+  // does not accept an inline `plan` object on subscriptions.create. We look up
+  // the plan id from env (RAZORPAY_PLAN_RECURRING_<PLAN_ID>). If unset, fall
+  // back to the raw REST API with an inline plan (the REST endpoint accepts an
+  // inline plan; if it 404s, Subscriptions isn't enabled on the account).
   const { period, interval } = toRazorpayPeriod(plan.interval);
   const reference = `rec_${Date.now().toString(36)}`;
+  const envKey = `RAZORPAY_PLAN_RECURRING_${plan.id.toUpperCase()}`;
+  const rzpPlanId = process.env[envKey] || '';
   let rzpSubId: string | null = null;
   let mandateUrl: string | null = null;
   try {
-    const sub = await (razorpay as any).subscriptions.create({
-      plan_id: undefined, // ad-hoc amount via plan override below
-      total_count: 120,
-      quantity: 1,
-      customer_notify: 1,
-      notes: {
-        reference,
-        planId: plan.id,
-        kind: plan.kind,
-        userId: opts.userId,
-        gaushalaId: opts.gaushalaId ?? '',
-        templeId: opts.templeId ?? '',
-      },
-      // Ad-hoc subscription: supply the plan inline.
-      // Razorpay accepts a `plan` object when plan_id is not pre-created.
-      ...( { plan: { period, interval, item: { name: plan.name, amount: plan.amountInr * 100, currency: 'INR' } } } as any),
-    } as any);
-    rzpSubId = sub?.id ?? null;
-    mandateUrl = sub?.short_url ?? null;
+    if (rzpPlanId) {
+      // Preferred: pre-created plan (matches the proven subscription.service pattern).
+      const sub = await (razorpay as any).subscriptions.create({
+        plan_id: rzpPlanId,
+        total_count: 120,
+        quantity: 1,
+        customer_notify: 1,
+        notes: {
+          reference,
+          planId: plan.id,
+          kind: plan.kind,
+          userId: opts.userId,
+          gaushalaId: opts.gaushalaId ?? '',
+          templeId: opts.templeId ?? '',
+        },
+      });
+      rzpSubId = sub?.id ?? null;
+      mandateUrl = sub?.short_url ?? null;
+    } else {
+      // Fallback: raw REST with an inline plan object (SDK requires plan_id).
+      const keyId = process.env.RAZORPAY_KEY_ID || '';
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+      const res = await fetch('https://api.razorpay.com/v1/subscriptions', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64'),
+        },
+        body: JSON.stringify({
+          plan: { period, interval, item: { name: plan.name, amount: plan.amountInr * 100, currency: 'INR' } },
+          total_count: 120,
+          quantity: 1,
+          customer_notify: 1,
+          notes: { reference, planId: plan.id, kind: plan.kind, userId: opts.userId },
+        }),
+      });
+      if (res.ok) {
+        const sub = (await res.json()) as { id?: string; short_url?: string };
+        rzpSubId = sub.id ?? null;
+        mandateUrl = sub.short_url ?? null;
+      } else if (!isDemoPayment) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Razorpay subscription create failed (${res.status}): ${txt.slice(0, 160)}`);
+      }
+    }
   } catch (err) {
     // Demo mode (no live key) or gateway hiccup: keep the intent row pending
     // and surface no mandate URL. Never block the intent capture on the gateway.

@@ -82,8 +82,8 @@ export default function PrivacyV2Page() {
  sankalp (intent), temple selection, video proof links.
  </li>
  <li>
- <strong>Payment data:</strong> handled by Razorpay (India), Stripe (NRI/EU/US/UK/CA/AU),
- PayU and other processors. We do not store card numbers.
+ <strong>Payment data:</strong> handled by Razorpay, our payment processor for
+ domestic and international transactions. We do not store card numbers.
  </li>
  <li>
  <strong>Device data:</strong> IP address (anonymised after 30 days),
@@ -147,8 +147,8 @@ export default function PrivacyV2Page() {
  <PolicySection title="5. Cross-border data transfer">
  <p>
  Primary data centres are in Mumbai, India (Supabase ap-south-1). Some
- processors operate in the US (Anthropic for AI Pandit, Stripe for payments,
- Resend for transactional email) or EU (Cloudflare edge POPs).
+ processors operate in the US (Anthropic for AI Pandit, Resend for
+ transactional email) or EU (Cloudflare edge POPs).
  </p>
  <p>
  EU/UK personal data crossing to the US is protected via Standard Contractual

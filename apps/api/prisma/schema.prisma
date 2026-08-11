@@ -507,6 +507,10 @@ model PujaBooking {
   @@index([scheduledDate])
   @@index([templeId, scheduledDate, status])
   @@index([priestPujaOfferingId])
+  // RV-20 (2026-08-10): priest_id is the SOLE predicate of the entire pandit
+  // portal (my-bookings, earnings, dispatch) and was unindexed — every pandit
+  // page did a full scan of puja_bookings.
+  @@index([priestId])
   @@index([dispatchTier, status])
   @@map("puja_bookings")
 }
@@ -795,6 +799,13 @@ enum MarketplaceSubscriptionStatus {
 enum CommissionStatus {
   PENDING
   PAID
+  // RV-02 (2026-08-10): a refunded booking must be able to UNWIND the provider's
+  // earning. Before this there was no terminal state other than PAID, so a
+  // Commission minted at confirm-time stayed PENDING and fully withdrawable even
+  // after the devotee was refunded — the platform paid out on a booking that
+  // earned Rs 0. REVERSED is set by the refund path and is excluded from every
+  // payout-balance query. Additive only: no existing row changes meaning.
+  REVERSED
 }
 
 // Provider payouts (unified across all roles) — cross-cutting Phase 2 (2026-08-06)
@@ -820,6 +831,10 @@ enum ProviderPayoutStatus {
   processing
   completed
   failed
+  // RV-02 (2026-08-10): mirrors CommissionStatus.REVERSED. A refunded booking
+  // must unwind the temple's 5% share too — otherwise TemplePayout stays
+  // `pending` and payable on a booking that earned Rs 0. Additive only.
+  reversed
 }
 
 enum TransactionType {

@@ -146,41 +146,16 @@ describe('SubscriptionService — NRI Premium (Layer AR)', () => {
     expect(nri!.plan).toBe('ENTERPRISE');
   });
 
-  it('createStripeAnnualSubscription returns demo result when STRIPE key absent', async () => {
-    delete process.env.STRIPE_SECRET_KEY;
-    prismaMock.marketplaceSubscription.updateMany.mockResolvedValue({ count: 0 });
-    prismaMock.marketplaceSubscription.create.mockResolvedValue({
-      id: 'sub-nri-1',
-      userId: 'user-1',
-      plan: 'ENTERPRISE',
-      role: 'DEVOTEE',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 365 * 86400000),
-      amount: 5000,
-      status: 'ACTIVE',
-    });
-    prismaMock.transaction.create.mockResolvedValue({});
-
-    const out = await service.createStripeAnnualSubscription({
-      userId: 'user-1',
-      planId: 'nri_premium_yearly',
-    });
-
-    expect(out.skipped).toBe(true);
-    expect(out.reason).toBe('demo-mode');
-    expect(out.sessionId).toMatch(/^cs_demo_/);
-  });
-
-  it('createStripeAnnualSubscription throws on unknown plan', async () => {
-    await expect(
-      service.createStripeAnnualSubscription({ userId: 'u', planId: 'nope' })
-    ).rejects.toThrow(/Plan not found/);
-  });
-
-  it('createStripeAnnualSubscription throws on plan without USD price', async () => {
-    await expect(
-      service.createStripeAnnualSubscription({ userId: 'u', planId: 'astro_monthly' })
-    ).rejects.toThrow(/USD price/);
+  // The three createStripeAnnualSubscription tests were removed 2026-08-11 with
+  // the method itself (Stripe rail removal, owner directive). This assertion
+  // replaces them: it fails if any USD/Stripe checkout is reintroduced on the
+  // service, which is the regression that matters now.
+  it('exposes no Stripe/USD checkout path (Razorpay + INR only)', () => {
+    const surface = [
+      ...Object.getOwnPropertyNames(Object.getPrototypeOf(service)),
+      ...Object.keys(service),
+    ];
+    expect(surface.filter((k) => /stripe/i.test(k))).toEqual([]);
   });
 
   it('isPremium returns true when ENTERPRISE active', async () => {

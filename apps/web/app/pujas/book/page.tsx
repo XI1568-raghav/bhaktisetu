@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -253,20 +253,38 @@ function getFallbackPuja(slug: string): PujaInfo {
 
 // ─── Helpers ────────────────────────────────────────────────────
 
-function generateId(): string {
- return Math.random().toString(36).substring(2, 9);
+// S2C-07 (2026-08-11): the booking window is a CALENDAR window in IST — every
+// temple slot is an IST wall-clock time (scheduledTimeSlot) and the API compares
+// against an IST calendar day. The old helpers mutated a local-time Date and then
+// serialised with toISOString(), which converts to UTC *before* slicing the date:
+// for an IST user between 00:00 and 05:29 the "tomorrow" floor resolved to TODAY
+// (so the picker both defaulted to and permitted a same-day booking, and an
+// already-past early slot became reachable) and the advertised 30-day ceiling was
+// silently 29 days. Shifting the instant by the fixed IST offset and then reading
+// the UTC calendar fields yields exactly the IST calendar date. IST has no DST,
+// so a constant offset is correct year-round.
+//
+// M-003 (2026-08-11): these are also read once per mount now (see
+// bookingWindowMin/Max) rather than on every render. A clock read during render
+// is non-deterministic between the SSR pass and the first client pass whenever
+// the two straddle a date boundary — the hazard class behind React hydration
+// error #418. (Measured: at 02:00 IST the old helpers returned min=TODAY and a
+// 29-day span; the new ones return min=tomorrow and the full 30-day span, and
+// the result no longer depends on the runtime's timezone at all.)
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function istDatePlusDays(days: number, now: Date = new Date()): string {
+ const shifted = new Date(now.getTime() + IST_OFFSET_MS + days * DAY_MS);
+ return shifted.toISOString().split('T')[0] as string;
 }
 
 function getTomorrow(): string {
- const d = new Date();
- d.setDate(d.getDate() + 1);
- return d.toISOString().split('T')[0] as string;
+ return istDatePlusDays(1);
 }
 
 function getMaxDate(): string {
- const d = new Date();
- d.setDate(d.getDate() + 30);
- return d.toISOString().split('T')[0] as string;
+ return istDatePlusDays(30);
 }
 
 function formatDate(dateStr: string): string {
@@ -299,12 +317,14 @@ function getSlotPeriodIcon(period: string) {
  }
 }
 
-function generateBookingNumber(): string {
- const now = new Date();
- const dateStr = (now.toISOString().split('T')[0] as string).replace(/-/g, '');
- const random = String(Math.floor(10000 + Math.random() * 90000));
- return `BS-${dateStr}-${random}`;
-}
+// S2C-05 (2026-08-11): generateBookingNumber() was deleted. It minted a
+// client-side `BS-YYYYMMDD-XXXXX` string that was then rendered as the headline
+// confirmation number with a Copy button whenever the server did not return one.
+// That is a fabricated financial reference: no PujaBooking row can ever match it
+// (real numbers are server-generated with a uniqueness loop over an alphanumeric
+// charset, so an all-digit suffix is provably not server-issued), and support
+// cannot reconcile a payment from it. The booking number now comes only from the
+// API — see handlePayment below.
 
 // ─── Load Razorpay ──────────────────────────────────────────────
 
@@ -331,15 +351,33 @@ const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
  });
 };
 
-// Resolve the publishable Razorpay key. Prefer the API's /payments/config so
-// the client always uses the SAME key the server creates orders with (single
-// source of truth — avoids a stale NEXT_PUBLIC_RAZORPAY_KEY_ID build arg
-// drifting from the server's RAZORPAY_KEY_ID). Falls back to the build-time
-// env var, then the demo placeholder. KEY_SECRET never touches the browser.
-let razorpayKeyPromise: Promise<string> | null = null;
-const getRazorpayKey = (): Promise<string> => {
- if (!razorpayKeyPromise) {
- razorpayKeyPromise = (async () => {
+// The literal placeholder the API ships when RAZORPAY_KEY_ID is unset. A real
+// Razorpay *test* key (rzp_test_<random>) is a valid key and is left alone —
+// only this exact sentinel means "no gateway is configured".
+const RAZORPAY_PLACEHOLDER_KEY = 'rzp_test_demo';
+const DEMO_PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_ALLOW_DEMO_PAYMENTS === 'true';
+
+// Resolve the publishable Razorpay key from the API's /payments/config, so the
+// client uses the SAME key the server minted the order with. KEY_SECRET never
+// touches the browser.
+//
+// S2C-08 (2026-08-11): this used to fall through to
+// `process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_demo'` on BOTH the catch
+// and the non-ok path, with nothing surfaced to the user. One blip opened LIVE
+// checkout with a placeholder key against a real order_id — Razorpay rejects the
+// pairing, the devotee gets an opaque gateway error, and the pending_payment
+// booking that create-order already wrote is stranded holding slot capacity.
+// Three changes: (1) never substitute a fake key — resolve to null and let the
+// caller abort loudly; (2) never memoise a failure — this promise is module
+// scoped and survives client-side navigations, so a cached null would poison
+// checkout for the whole module lifetime; (3) drop the build-time env fallback,
+// which can silently disagree with the server that minted the order (the very
+// failure this finding is about) and is redundant now that create-order returns
+// razorpayKeyId directly — see handlePayment.
+let razorpayKeyPromise: Promise<string | null> | null = null;
+const getRazorpayKey = (): Promise<string | null> => {
+ if (razorpayKeyPromise) return razorpayKeyPromise;
+ const pending = (async (): Promise<string | null> => {
  try {
  const res = await fetch(`${API_BASE_URL}/payments/config`);
  if (res.ok) {
@@ -347,19 +385,41 @@ const getRazorpayKey = (): Promise<string> => {
  if (j.keyId) return j.keyId;
  }
  } catch {
- // fall through to env
+ // no placeholder key is ever substituted — fall through to null
  }
- return process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_demo';
+ return null;
  })();
- }
- return razorpayKeyPromise;
+ razorpayKeyPromise = pending;
+ void pending.then((key) => {
+ if (!key && razorpayKeyPromise === pending) razorpayKeyPromise = null;
+ });
+ return pending;
 };
+
+// A key is usable only if it exists and is not the "no gateway configured"
+// sentinel. The sentinel is accepted only when this build is explicitly in demo
+// mode, where no real money can move.
+function isUsableRazorpayKey(key: string | null | undefined): key is string {
+ if (!key) return false;
+ if (key === RAZORPAY_PLACEHOLDER_KEY) return DEMO_PAYMENTS_ENABLED;
+ return true;
+}
 
 // ─── Component ──────────────────────────────────────────────────
 
 function PujaBookingInner() {
  const searchParams = useSearchParams();
- const slug = (searchParams.get('slug') ?? '') as string;
+ // M-001 (2026-08-11): a bare /pujas/book (or one carrying the wrong param, e.g.
+ // ?puja=) yields an empty slug. That used to be fetched as `/pujas/types/` and
+ // reported as "check your connection", blaming the network for a missing
+ // parameter. Catalogue slugs are lowercase kebab-case; anything else is a bad
+ // link, not an outage — so a malformed value is answered as "not in the
+ // catalogue" without a pointless round trip, and only the validated form is
+ // ever fetched or echoed back to the user.
+ const rawSlug = (searchParams.get('slug') ?? '').trim();
+ const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(rawSlug.toLowerCase())
+ ? rawSlug.toLowerCase()
+ : '';
  const preselectedTemple = searchParams.get('temple') || '';
  const { user, session, isAuthenticated } = useAuth();
 
@@ -370,15 +430,27 @@ function PujaBookingInner() {
  // silently substituted hardcoded mock puja data (getFallbackPuja) + fake slot
  // availability, then submitted the mock templeOfferingId — a real booking
  // against fabricated catalog data. Now we surface the failure + a retry.
- const [loadError, setLoadError] = useState(false);
+ //
+ // M-001 (2026-08-11): the flag became a kind so the three genuinely different
+ // causes stop sharing one misleading message —
+ //   'missing-slug' no puja was specified in the URL (nothing to retry)
+ //   'not-found'    the catalog answered, and has no such puja (nothing to retry)
+ //   'network'      we could not reach the catalog (retry is the right advice)
+ type LoadErrorKind = 'missing-slug' | 'not-found' | 'network';
+ const [loadError, setLoadError] = useState<LoadErrorKind | null>(null);
 
  // Wizard state
  const [currentStep, setCurrentStep] = useState(0);
 
  // Step 1
  const [selectedTempleId, setSelectedTempleId] = useState('');
- const [selectedDate, setSelectedDate] = useState(getTomorrow());
+ const [selectedDate, setSelectedDate] = useState(getTomorrow);
  const [selectedSlot, setSelectedSlot] = useState('');
+ // S2C-07: the picker floor/ceiling are read once per mount instead of on every
+ // render, so the window cannot shift under the user mid-session (and cannot
+ // disagree with the `selectedDate` default that was seeded from the same clock).
+ const bookingWindowMin = useMemo(() => getTomorrow(), []);
+ const bookingWindowMax = useMemo(() => getMaxDate(), []);
  const [slotAvailability, setSlotAvailability] = useState<SlotAvailability[]>([]);
  const [loadingSlots, setLoadingSlots] = useState(false);
  // PBO-7: honest slot-load failure flag (no mock availability fallback).
@@ -391,8 +463,18 @@ function PujaBookingInner() {
  const [muhuratDays, setMuhuratDays] = useState<PujaMuhuratDay[]>([]);
 
  // Step 2
- const [devotees, setDevotees] = useState<Devotee[]>([
- { id: generateId(), name: '', gotra: '', nakshatra: '' },
+ // M-003 (2026-08-11): devotee ids used to be Math.random() evaluated inside the
+ // useState initialiser, i.e. during render — the server pass and the first client
+ // pass produced different values on every single load. Today these ids only ever
+ // surface as React keys (never as DOM text or attributes), so this was the
+ // hydration-error-#418 hazard class rather than a proven trigger; removing it
+ // makes the component deterministic on first render either way. useId() is stable
+ // across both passes and a ref counter keeps later ids unique without touching
+ // Math.random or the clock. Ids are internal only — they are never submitted.
+ const idBase = useId();
+ const devoteeSeq = useRef(1);
+ const [devotees, setDevotees] = useState<Devotee[]>(() => [
+ { id: `${idBase}-d0`, name: '', gotra: '', nakshatra: '' },
  ]);
  const [sankalp, setSankalp] = useState('');
  const [specialInstructions, setSpecialInstructions] = useState('');
@@ -434,20 +516,9 @@ function PujaBookingInner() {
  const creatingOrderRef = useRef(false);
  const [bookingNumber, setBookingNumber] = useState('');
 
- // NRI / USD checkout toggle. Default heuristic: browser timezone outside
- // Asia/Kolkata → diaspora user, default to USD. User can flip the toggle
- // either way at the payment step. Falls back to false on SSR / errors.
- const [payInUsd, setPayInUsd] = useState(false);
- useEffect(() => {
-  try {
-   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-   if (tz && tz !== 'Asia/Kolkata' && !tz.startsWith('Asia/Calcutta')) {
-    setPayInUsd(true);
-   }
-  } catch {
-   // ignore
-  }
- }, []);
+ // The INR/USD toggle was removed 2026-08-10 with the Stripe rail: it defaulted
+ // to USD for any browser outside Asia/Kolkata and paid via a now-deleted route.
+ // Razorpay is the only gateway; NRI premium pricing returns with PayPal.
 
  // ─── Validation errors ──────────────────────────────────────
  const [errors, setErrors] = useState<Record<string, string>>({});
@@ -459,38 +530,60 @@ function PujaBookingInner() {
  // the user re-trigger the fetch without a full page reload.
  const [retryTick, setRetryTick] = useState(0);
  useEffect(() => {
+ // M-001: nothing usable to fetch. An absent param and a malformed one are
+ // different mistakes, and neither is a network problem — so neither fires
+ // `/pujas/types/` nor gets the "check your connection" screen.
+ if (!slug) {
+ setLoadError(rawSlug ? 'not-found' : 'missing-slug');
+ setLoading(false);
+ return;
+ }
  let cancelled = false;
  async function fetchPuja() {
  try {
- const res = await fetch(`${API_BASE_URL}/pujas/types/${slug}`);
+ const res = await fetch(`${API_BASE_URL}/pujas/types/${encodeURIComponent(slug)}`);
  if (res.ok) {
  const data = await res.json();
- if (!cancelled) { setPuja(data); setLoadError(false); }
+ if (!cancelled) { setPuja(data); setLoadError(null); }
  } else {
- if (!cancelled) { setLoadError(true); }
+ // M-001: a 404 is the catalog answering "no such puja" — it proves the
+ // network is fine, so never blame the connection or offer a retry.
+ if (!cancelled) { setLoadError(res.status === 404 ? 'not-found' : 'network'); }
  }
  } catch {
- if (!cancelled) { setLoadError(true); }
+ if (!cancelled) { setLoadError('network'); }
  } finally {
  if (!cancelled) { setLoading(false); }
  }
  }
  fetchPuja();
  return () => { cancelled = true; };
- }, [slug, retryTick]);
+ }, [slug, rawSlug, retryTick]);
 
  // Pre-select temple from URL param
  useEffect(() => {
  if (puja && preselectedTemple) {
- const temple = puja.temples.find((t) => t.templeSlug === preselectedTemple);
+ // S2C-11: ?temple= must not be able to preselect a deactivated offering.
+ const temple = puja.temples.find(
+ (t) => t.templeSlug === preselectedTemple && t.isActive !== false,
+ );
  if (temple) setSelectedTempleId(temple.id);
  }
  }, [puja, preselectedTemple]);
 
  // ─── Derived ────────────────────────────────────────────────
+ // S2C-11 (2026-08-11): only offerings that are actually bookable may be shown
+ // or selected. The API already filters templeOfferings on isActive, so this is
+ // defence in depth on a field the client contract declares (TempleOption.isActive)
+ // — `!== false` keeps a response that omits the flag from emptying the list.
+ const bookableTemples = useMemo(
+ () => (puja?.temples ?? []).filter((t) => t.isActive !== false),
+ [puja],
+ );
+
  const selectedTemple = useMemo(
- () => puja?.temples.find((t) => t.id === selectedTempleId) ?? null,
- [puja, selectedTempleId],
+ () => bookableTemples.find((t) => t.id === selectedTempleId) ?? null,
+ [bookableTemples, selectedTempleId],
  );
 
  const basePrice = useMemo(() => {
@@ -649,7 +742,8 @@ function PujaBookingInner() {
 
  const addDevotee = () => {
  if (devotees.length < 5) {
- setDevotees([...devotees, { id: generateId(), name: '', gotra: '', nakshatra: '' }]);
+ const id = `${idBase}-d${devoteeSeq.current++}`;
+ setDevotees([...devotees, { id, name: '', gotra: '', nakshatra: '' }]);
  }
  };
 
@@ -695,6 +789,13 @@ function PujaBookingInner() {
  let orderId: string;
  let razorpayOrderId: string;
  let amount: number;
+ // S2C-05 / S2C-08 (2026-08-11): create-order already returns the authoritative,
+ // server-generated bookingNumber and the razorpayKeyId the order was minted
+ // with. Both used to be discarded here, which forced the success screen to
+ // fabricate a booking number and forced checkout to re-fetch (and then fake)
+ // the key. Keep them.
+ let orderBookingNumber = '';
+ let orderRazorpayKeyId = '';
 
  const res = await fetch(`${API_BASE_URL}/bookings/create-order`, {
  method: 'POST',
@@ -739,6 +840,8 @@ function PujaBookingInner() {
  orderId = data.orderId;
  razorpayOrderId = data.razorpayOrderId;
  amount = data.amount;
+ orderBookingNumber = typeof data.bookingNumber === 'string' ? data.bookingNumber : '';
+ orderRazorpayKeyId = typeof data.razorpayKeyId === 'string' ? data.razorpayKeyId : '';
 
  // Step 2: Open Razorpay checkout
  const Razorpay = await loadRazorpay();
@@ -749,7 +852,26 @@ function PujaBookingInner() {
  return;
  }
 
- const razorpayKey = await getRazorpayKey();
+ // S2C-08: prefer the key create-order minted this very order with; only fall
+ // back to /payments/config (same API, same env var) when the response omitted
+ // it. If neither yields a usable key we STOP — opening checkout with the
+ // 'rzp_test_demo' placeholder against a live order_id only produces an opaque
+ // gateway error and a stranded pending_payment booking.
+ const razorpayKey = isUsableRazorpayKey(orderRazorpayKeyId)
+ ? orderRazorpayKeyId
+ : await getRazorpayKey();
+ if (!isUsableRazorpayKey(razorpayKey)) {
+ setPaymentError(
+ 'Payments are temporarily unavailable — the payment gateway is not configured, ' +
+ 'so we did not open checkout. You have NOT been charged. Please try again in a ' +
+ 'few minutes, or email support@darshya.online and we will complete this booking ' +
+ 'for you.',
+ );
+ setPaymentLoading(false);
+ creatingOrderRef.current = false;
+ return;
+ }
+
  const options = {
  key: razorpayKey,
  amount,
@@ -796,8 +918,31 @@ function PujaBookingInner() {
  return;
  }
 
+ // S2C-05 (2026-08-11): use only server-issued booking numbers. First choice
+ // is verify-payment's; if its body was truncated or unparseable, fall back to
+ // the one create-order returned for this same booking (also server-issued and
+ // collision-checked). We never synthesise one — a fabricated BS- reference
+ // matches no PujaBooking row, so support cannot reconcile the payment from it.
  const verifyData = await verifyRes.json().catch(() => null);
- const bkNum = verifyData?.bookingNumber ?? generateBookingNumber();
+ const verifiedNumber =
+ typeof verifyData?.bookingNumber === 'string' ? verifyData.bookingNumber : '';
+ const bkNum = verifiedNumber || orderBookingNumber;
+ if (!bkNum) {
+ // Payment IS captured and the booking IS confirmed server-side at this
+ // point — we simply cannot name it. Show the payment id (which support can
+ // reconcile against) rather than inventing a booking number.
+ setPaymentError(
+ `Payment received (id: ${response.razorpay_payment_id}) and your booking is confirmed, ` +
+ `but we could not read back its booking number. Please check My Bookings, or email ` +
+ `support@darshya.online with this payment ID and we'll send it within 24 hours.`,
+ );
+ setPaymentLoading(false);
+ // S2C-05: deliberately do NOT release creatingOrderRef here. The payment is
+ // already captured and the booking confirmed; re-clicking Pay would POST
+ // create-order again, and with no 'initiated' payment left to reuse the
+ // server would mint a second Razorpay order — a second charge for one puja.
+ return;
+ }
  safeCapture('payment_success', {
  bookingId: bkNum,
  amountInr: totalPrice,
@@ -839,107 +984,7 @@ function PujaBookingInner() {
  }
  };
 
- // ─── Stripe NRI / USD payment ───────────────────────────────
- //
- // Hits POST /bookings/create-stripe-order which mirrors /create-order
- // but bills in USD using PujaType.nriPrice. On success we redirect to
- // a Stripe-hosted checkout if a session URL is returned, otherwise we
- // fall back to the demo success screen (no STRIPE_SECRET_KEY).
- const handleStripePayment = async () => {
-  if (!isAuthenticated) {
-   window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-   return;
-  }
-  safeCapture('booking_started', {
-   pujaSlug: slug,
-   templeSlug: selectedTemple?.templeSlug,
-   priceUsd: nriUsdPrice,
-   currency: 'USD',
-  });
-  setPaymentLoading(true);
-  setPaymentError('');
-
-  try {
-   const res = await fetch(`${API_BASE_URL}/bookings/create-stripe-order`, {
-    method: 'POST',
-    headers: {
-     'Content-Type': 'application/json',
-     Authorization: `Bearer ${session?.accessToken}`,
-    },
-    body: JSON.stringify({
-     pujaSlug: slug,
-     templeOfferingId: selectedTempleId,
-     scheduledDate: selectedDate,
-     scheduledTime: selectedSlot,
-     devotees: devotees.map((d) => ({
-      name: d.name,
-      gotra: d.gotra || undefined,
-      nakshatra: d.nakshatra || undefined,
-     })),
-     sankalp: sankalp || undefined,
-     specialInstructions: specialInstructions || undefined,
-     prasadDelivery: wantsPrasad,
-     deliveryAddress: wantsPrasad ? address : undefined,
-     currency: 'USD',
-    }),
-   }).catch(() => null);
-
-   if (!res || !res.ok) {
-    const msg = res
-     ? `Could not create your USD order (${res.status}). Please try again or contact support@darshya.online.`
-     : 'Network error reaching the booking service. Check your connection and try again.';
-    setPaymentError(msg);
-    setPaymentLoading(false);
-    return;
-   }
-
-   const data = await res.json().catch(() => null);
-   if (!data?.orderId) {
-    setPaymentError('Booking service returned an unexpected response. Please try again.');
-    setPaymentLoading(false);
-    return;
-   }
-
-   // Demo mode: no Stripe SDK key set on server. Booking row still
-   // exists; show success screen so the flow stays exercisable in
-   // dev/preview without burning a real card.
-   if (data.demo || !data.clientSecret) {
-    const bkNum = data.bookingNumber ?? generateBookingNumber();
-    safeCapture('payment_success', {
-     bookingId: bkNum,
-     amountUsd: nriUsdPrice,
-     currency: 'USD',
-     demo: true,
-    });
-    setBookingNumber(bkNum);
-    setBookingSuccess(true);
-    setPaymentLoading(false);
-    return;
-   }
-
-   // Real Stripe — redirect to Stripe-hosted checkout. We ask the
-   // backend to create a Checkout Session URL via the same endpoint
-   // when a publishable key is configured. As a minimum-viable path
-   // we redirect to Stripe's PaymentIntent confirmation page using
-   // the client_secret if a checkout URL isn't returned.
-   if (data.checkoutUrl) {
-    window.location.href = data.checkoutUrl;
-    return;
-   }
-
-   // Fallback: no hosted checkout URL — surface a friendly message
-   // pointing the user to the email confirmation flow.
-   setPaymentError(
-    'Stripe checkout is currently unavailable on this device. Please email support@darshya.online with booking ' +
-     (data.bookingNumber ?? data.orderId) +
-     ' and we\'ll send you a secure payment link.',
-   );
-   setPaymentLoading(false);
-  } catch (err: any) {
-   setPaymentError(err.message || 'Something went wrong. Please try again.');
-   setPaymentLoading(false);
-  }
- };
+ // handleStripePayment removed 2026-08-10 — Stripe is no longer a payment rail
 
  // ─── AI Sankalp Generation ──────────────────────────────────
  const generateAiSankalp = async () => {
@@ -1002,7 +1047,7 @@ function PujaBookingInner() {
  // P0 #PBO-9 (2026-07-09): hard block unless the app is in demo mode. The
  // button is also gated in the render below, but this is the real gate — a
  // production build must never simulate a successful payment.
- if (process.env.NEXT_PUBLIC_ALLOW_DEMO_PAYMENTS !== 'true') return;
+ if (!DEMO_PAYMENTS_ENABLED) return;
  safeCapture('booking_started', {
  pujaSlug: slug,
  templeSlug: selectedTemple?.templeSlug,
@@ -1010,7 +1055,11 @@ function PujaBookingInner() {
  });
  setPaymentLoading(true);
  setTimeout(() => {
- const bkNum = generateBookingNumber();
+ // S2C-05: a simulated payment must never mint a `BS-` reference — that is the
+ // real, server-issued booking-number format, and a fake one would be
+ // indistinguishable to the devotee and unresolvable for support. The DEMO-
+ // prefix makes it obvious that no booking row exists.
+ const bkNum = `DEMO-${Date.now().toString(36).toUpperCase()}`;
  safeCapture('payment_success', {
  bookingId: bkNum,
  amountInr: totalPrice,
@@ -1035,7 +1084,55 @@ function PujaBookingInner() {
  );
  }
 
- if (loadError) {
+ // M-001 (2026-08-11): three distinct causes, three distinct screens. Only the
+ // genuine transport failure mentions the connection or offers a Retry — a
+ // missing/unknown slug is a bad link, and retrying it can only fail again.
+ if (loadError === 'missing-slug') {
+ return (
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50 px-4">
+ <div className="text-center">
+ <Flame className="mx-auto mb-4 h-12 w-12 text-surface-300" />
+ <h2 className="mb-2 text-xl font-bold text-surface-700">No puja selected</h2>
+ <p className="mb-4 max-w-sm text-surface-500">
+ This booking page needs to know which puja you want. Pick one from the catalogue
+ and we&apos;ll bring you straight back here.
+ </p>
+ <Link
+ href="/pujas"
+ className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ >
+ <Flame className="h-4 w-4" />
+ Browse all pujas
+ </Link>
+ </div>
+ </div>
+ );
+ }
+
+ if (loadError === 'not-found') {
+ return (
+ <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50 px-4">
+ <div className="text-center">
+ <Flame className="mx-auto mb-4 h-12 w-12 text-surface-300" />
+ <h2 className="mb-2 text-xl font-bold text-surface-700">We don&apos;t offer that puja</h2>
+ <p className="mb-4 max-w-sm text-surface-500">
+ {slug
+ ? `Nothing in our catalogue matches “${slug}”. The link may be out of date.`
+ : 'That link doesn’t point at a puja we offer. It may be out of date.'}
+ </p>
+ <Link
+ href="/pujas"
+ className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ >
+ <Flame className="h-4 w-4" />
+ Browse all pujas
+ </Link>
+ </div>
+ </div>
+ );
+ }
+
+ if (loadError === 'network') {
  return (
  <div className="flex min-h-[100dvh] items-center justify-center bg-saffron-50">
  <div className="text-center">
@@ -1045,7 +1142,7 @@ function PujaBookingInner() {
  <div className="flex flex-col items-center gap-3">
  <button
  type="button"
- onClick={() => { setLoading(true); setLoadError(false); setRetryTick((t) => t + 1); }}
+ onClick={() => { setLoading(true); setLoadError(null); setRetryTick((t) => t + 1); }}
  className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
  >
  Retry
@@ -1272,13 +1369,47 @@ function PujaBookingInner() {
  <MapPin className="h-5 w-5 text-saffron-500" />
  Select Temple
  </h2>
- {errors.temple && (
+ {errors.temple && bookableTemples.length > 0 && (
  <p className="mb-3 flex items-center gap-1 text-sm text-red-500">
  <AlertCircle className="h-4 w-4" /> {errors.temple}
  </p>
  )}
+ {/* S2C-11 (2026-08-11): a puja type can be live with zero bookable temple
+   offerings (none approved yet, or the last one deactivated in the temple
+   portal). This grid used to render an empty array into blank space under
+   the heading, and Continue then failed with "Please select a temple" —
+   pointing at a control with nothing in it, with no explanation and no way
+   out. Say so explicitly and offer a route back to the catalogue. */}
+ {bookableTemples.length === 0 ? (
+ <div className="rounded-xl border border-dashed border-surface-200 bg-surface-50 p-6 text-center">
+ <MapPin className="mx-auto mb-3 h-8 w-8 text-surface-300" />
+ <p className="mb-1 font-semibold text-surface-700">
+ No temple is offering this puja right now
+ </p>
+ <p className="mx-auto mb-4 max-w-sm text-sm text-surface-500">
+ We only list temples that have completed verification, and none of them
+ currently has {puja.name} open for booking. Please pick another puja, or
+ check back shortly.
+ </p>
+ <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+ <Link
+ href="/pujas"
+ className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-saffron-700"
+ >
+ <Flame className="h-4 w-4" />
+ Browse other pujas
+ </Link>
+ <Link
+ href="/temples"
+ className="text-sm text-surface-500 hover:text-saffron-600"
+ >
+ Explore temples
+ </Link>
+ </div>
+ </div>
+ ) : (
  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
- {puja.temples.map((temple) => {
+ {bookableTemples.map((temple) => {
  const isSelected = selectedTempleId === temple.id;
  const price = temple.priceOverride || puja.basePrice;
  return (
@@ -1326,8 +1457,14 @@ function PujaBookingInner() {
  );
  })}
  </div>
+ )}
  </div>
 
+ {/* S2C-11: with nothing bookable there is no date, no slot and nothing to
+   continue to — showing those controls would only lead back to the same
+   dead end. */}
+ {bookableTemples.length > 0 && (
+ <>
  {/* Date Selection */}
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
@@ -1341,8 +1478,8 @@ function PujaBookingInner() {
  )}
  <DateInput
  value={selectedDate}
- min={getTomorrow()}
- max={getMaxDate()}
+ min={bookingWindowMin}
+ max={bookingWindowMax}
  onChange={(v) => setSelectedDate(v)}
  dateMarkers={muhuratMarkers}
  disabledDates={avoidDates}
@@ -1487,6 +1624,8 @@ function PujaBookingInner() {
  <ChevronRight className="h-4 w-4" />
  </button>
  </div>
+ </>
+ )}
  </div>
  )}
 
@@ -2127,36 +2266,10 @@ function PujaBookingInner() {
  </span>
  </div>
 
- {/* INR / USD toggle — diaspora-friendly. Defaults to USD when
-   * the browser timezone is outside Asia/Kolkata. Either currency
-   * routes server-side to the correct gateway (Razorpay vs Stripe). */}
- {nriUsdPrice > 0 && (
- <div className="mb-4 flex items-center justify-between rounded-xl border border-surface-100 bg-white p-3 text-sm">
- <span className="text-surface-600">Currency</span>
- <div className="flex gap-1 rounded-lg bg-surface-100 p-1">
- <button
- onClick={() => setPayInUsd(false)}
- className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
- !payInUsd ? 'bg-white text-saffron-600 shadow-sm' : 'text-surface-500'
- }`}
- >
- INR ₹{totalPrice.toLocaleString('en-IN')}
- </button>
- <button
- onClick={() => setPayInUsd(true)}
- className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
- payInUsd ? 'bg-white text-saffron-600 shadow-sm' : 'text-surface-500'
- }`}
- >
- USD ${nriUsdPrice.toLocaleString('en-US')}
- </button>
- </div>
- </div>
- )}
 
  <div className="flex flex-col gap-3 sm:flex-row">
  <button
- onClick={payInUsd ? handleStripePayment : handlePayment}
+ onClick={handlePayment}
  disabled={paymentLoading || bookingSuccess}
  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-saffron-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-saffron-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
@@ -2164,11 +2277,6 @@ function PujaBookingInner() {
  <>
  <Loader2 className="h-5 w-5 animate-spin" />
  Processing...
- </>
- ) : payInUsd ? (
- <>
- <CreditCard className="h-5 w-5" />
- Pay ${nriUsdPrice.toLocaleString('en-US')} with Stripe
  </>
  ) : (
  <>
