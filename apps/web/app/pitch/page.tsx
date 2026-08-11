@@ -169,7 +169,7 @@ export default function PitchPage() {
             each with KYC, payouts, dashboards. Not a booking widget. A two-sided market.
           </Card>
           <Card title="80G + INR/USD priced">
-            Auto-generated 80G receipts (DR-YYYYMMDD-XXXX). Native Razorpay + Stripe. NRI pricing
+            Auto-generated 80G receipts (DR-YYYYMMDD-XXXX). Native Razorpay. NRI pricing
             9-10× domestic, configured per puja. Built for Indian + diaspora from day zero.
           </Card>
         </div>
@@ -244,7 +244,7 @@ export default function PitchPage() {
             </tr>
             <tr>
               <td>Payments</td>
-              <td>Razorpay + Stripe</td>
+              <td>Razorpay</td>
               <td>INR + 9-10× NRI pricing native</td>
             </tr>
             <tr>
@@ -266,7 +266,7 @@ export default function PitchPage() {
           <Stat value="$0" label="monthly infra burn" />
         </div>
         <p className="pitch-lead" style={{ marginTop: 32 }}>
-          Razorpay live. Stripe live. Demo accounts work end-to-end across all eight portals. Mobile
+          Razorpay live. Demo accounts work end-to-end across all eight portals. Mobile
           binary in EAS Build pipeline. The first 90 days are about real-MAU + real-GMV, not feature
           work.
         </p>

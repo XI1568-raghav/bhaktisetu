@@ -234,7 +234,11 @@ describe('AdminService.getRevenue', () => {
         id: 'c1',
         bookingId: 'b1',
         providerId: 'p1',
+        // amount = the PROVIDER's earning; percentage = the PLATFORM's rate.
+        // Rs 1,000 net at a 20% take rate means Rs 1,250 gross, Rs 250 to the
+        // platform. See lib/commission-math.ts.
         amount: 1000,
+        percentage: 0.2,
         status: 'PAID',
         createdAt: new Date(),
       },
@@ -243,6 +247,7 @@ describe('AdminService.getRevenue', () => {
         bookingId: 'b2',
         providerId: 'p1',
         amount: 500,
+        percentage: 0.2,
         status: 'PENDING',
         createdAt: new Date(),
       },
@@ -255,7 +260,10 @@ describe('AdminService.getRevenue', () => {
 
     const out = await service.getRevenue();
 
-    expect(out.totalCommissions).toBe(1000);
+    // Platform revenue is the platform's CUT, not the provider's earning.
+    // Reporting Rs 1,000 here was a ~4x overstatement of revenue.
+    expect(out.totalCommissions).toBe(250);
+    // Pending payouts genuinely is what providers are owed — unchanged.
     expect(out.pendingPayouts).toBe(500);
     expect(out.totalSubscriptions).toBe(999 + 999 + 2999);
     const basicPandit = out.subscriptionRevenue.find(

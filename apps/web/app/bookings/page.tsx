@@ -111,10 +111,14 @@ function formatDate(dateStr: string): string {
  });
 }
 
+// scheduledTimeSlot is free-form (the API's lib/slot-time.ts documents both
+// '18:00' and 'Evening (6:00 PM)' in live data). The old split(':') turned a
+// labelled slot into "12:NaN AM"; an unparseable slot now shows verbatim.
 function formatTime(time: string): string {
- const parts = time.split(':').map(Number);
- const h = parts[0] ?? 0;
- const m = parts[1] ?? 0;
+ const m24 = /^\s*([01]?\d|2[0-3]):([0-5]\d)/.exec(time);
+ if (!m24) return time.trim();
+ const h = Number(m24[1]);
+ const m = Number(m24[2]);
  const ampm = h >= 12 ? 'PM' : 'AM';
  const h12 = h % 12 || 12;
  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
@@ -364,9 +368,13 @@ function BookingsContent() {
  </div>
 
  {/* Action buttons */}
+ {/* S2C-02 (2026-08-10): both links pointed at `/bookings/{id}`, a route that
+     does not exist — every "View Details" / "Watch Video" click 404'd. The
+     detail page is the query-param route `/bookings/view?id={id}` (it reads
+     `useSearchParams().get('id')`), same shape as `/priest/bookings/view`. */}
  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-surface-50 pt-4">
  <Link
- href={`/bookings/${booking.id}`}
+ href={`/bookings/view?id=${booking.id}`}
  className="inline-flex items-center gap-1.5 rounded-lg bg-saffron-50 px-3 py-2 text-xs font-semibold text-saffron-600 transition-colors hover:bg-saffron-100"
  >
  <Eye className="h-3.5 w-3.5" />
@@ -375,7 +383,7 @@ function BookingsContent() {
 
  {booking.videoUrl && (
  <Link
- href={`/bookings/${booking.id}#video`}
+ href={`/bookings/view?id=${booking.id}#video`}
  className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 transition-colors hover:bg-purple-100"
  >
  <Video className="h-3.5 w-3.5" />

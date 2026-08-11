@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { createEmailSession } from '../lib/email-session.js';
 import { sendEmail, magicLinkEmail } from '../lib/email.js';
 
 /**
@@ -158,10 +159,10 @@ export async function magicLinkRoutes(server: FastifyInstance) {
       });
     }
 
-    // Issue a session token. We piggy-back on the existing 'demo-' prefix
-    // pattern so the auth middleware accepts it; the difference is the
-    // token here references a real DB user row instead of a synthetic id.
-    const sessionToken = `email-${user.id}-${randomBytes(16).toString('hex')}`;
+    // Issue a session token AND persist its email_sessions row (createEmailSession).
+    // The persisted row is what the auth middleware validates against — without it
+    // the (now fail-closed) middleware would reject this token. See A-005.
+    const { token: sessionToken, expiresAt: sessionExpiresAt } = await createEmailSession(user.id);
 
     return reply.send({
       ok: true,
@@ -169,7 +170,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
         accessToken: sessionToken,
         refreshToken: '',
         expiresIn: 60 * 60 * 24 * 7,
-        expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+        expiresAt: Math.floor(sessionExpiresAt.getTime() / 1000),
       },
       user: {
         id: user.id,

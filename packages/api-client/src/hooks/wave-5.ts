@@ -174,14 +174,21 @@ export function useCreateWeddingInquiry() {
   });
 }
 
-// ─── NRI premium upgrade (Stripe annual) ──────────────────────────────────
+// ─── NRI premium upgrade (annual) ─────────────────────────────────────────
+//
+// Was `useCreateStripeAnnual`, posting to /subscriptions/create-stripe-annual.
+// That route was deleted 2026-08-11 with the Stripe rail, and the mobile app
+// ships as a separate binary that does NOT redeploy with the API — so the
+// premium upgrade button would have 404'd for every installed client the moment
+// the API went out. Repointed to the surviving Razorpay path, matching what
+// apps/web/app/upgrade/page.tsx already does. INR only.
 
-export function useCreateStripeAnnual() {
+export function useCreateAnnualSubscription() {
   return useMutation({
     mutationFn: () =>
-      api.post<{ url?: string; sessionId?: string; clientSecret?: string }>(
-        "/api/v1/subscriptions/create-stripe-annual",
-        {},
+      api.post<{ subscription?: { shortUrl?: string | null; url?: string | null } }>(
+        "/api/v1/subscriptions/subscribe",
+        { planId: "nri_premium_yearly", role: "DEVOTEE" },
       ),
   });
 }

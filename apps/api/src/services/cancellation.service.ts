@@ -20,6 +20,7 @@
  */
 
 import { prisma } from '../lib/prisma.js';
+import { hoursUntilSlot } from '../lib/slot-time.js';
 import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
 
 export interface CancelPolicyTier {
@@ -94,12 +95,21 @@ export class CancellationService {
   computeDevoteeRefund(opts: {
     policy: CancelPolicy;
     scheduledDate: Date;
+    /**
+     * RV-13 (2026-08-10): the tier MUST be measured against the real slot
+     * instant. `scheduledDate` is a DATE column (midnight); the time of day is
+     * in `scheduledTimeSlot`. Measuring from midnight quoted devotees a tier
+     * lower than policy — and, for a same-day slot, a NEGATIVE hoursUntilSlot
+     * that fell through every tier. Optional so existing callers keep compiling;
+     * when omitted the old midnight behaviour is preserved.
+     */
+    scheduledTimeSlot?: string | null;
     pujaPriceInr: number;
     totalPaidInr: number;
     now?: Date;
   }): RefundComputation {
     const now = opts.now ?? new Date();
-    const hoursUntil = (opts.scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const hoursUntil = hoursUntilSlot(opts.scheduledDate, opts.scheduledTimeSlot, now);
     const tier =
       opts.policy.tiers.find((t) => hoursUntil >= t.minHoursBefore) ??
       opts.policy.tiers[opts.policy.tiers.length - 1]!;

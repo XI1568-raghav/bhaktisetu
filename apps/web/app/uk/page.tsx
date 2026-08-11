@@ -18,9 +18,9 @@ import { formatPrice, gbpFromInr } from '../../lib/pricing';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Darshya UK — Pujas, Darshan & 80G Receipts in GBP for the UK Hindu Diaspora',
+  title: 'Darshya UK — Pujas, Darshan & 80G Receipts for the UK Hindu Diaspora',
   description:
-    'Book pujas at Indian temples, watch live aarti, receive 80G receipts — paid in GBP. Built for London, Birmingham, Leicester, Manchester and the wider UK Hindu, Jain & Sikh diaspora.',
+    'Book pujas at Indian temples, watch live aarti, receive 80G receipts, with £ reference pricing. Built for London, Birmingham, Leicester, Manchester and the wider UK Hindu, Jain & Sikh diaspora.',
   alternates: {
     canonical: 'https://darshya.online/uk',
     languages: {
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Darshya UK — Pujas & Darshan in GBP',
+    title: 'Darshya UK — Pujas & Darshan for the UK Diaspora',
     description:
-      'UK NRI puja booking, live darshan and 80G receipts in GBP. London / Birmingham / Leicester.',
+      'UK NRI puja booking, live darshan and 80G receipts. London / Birmingham / Leicester.',
     url: 'https://darshya.online/uk',
     type: 'website',
     locale: 'en_GB',
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Darshya UK — Pujas in GBP',
-    description: 'UK Hindu diaspora — book pujas, watch darshan, get 80G receipts in GBP.',
+    title: 'Darshya UK — Pujas for the UK Diaspora',
+    description: 'UK Hindu diaspora — book pujas, watch darshan, get 80G receipts.',
   },
 };
 
@@ -69,8 +69,8 @@ const UK_HUBS = [
 const BENEFITS = [
   {
     icon: PoundSterling,
-    title: 'Pay in GBP via Stripe',
-    body: 'UK card, Apple Pay, Google Pay accepted. No FX surprise — see the £ price before you tap pay.',
+    title: 'Book with a UK card',
+    body: 'UK cards accepted through Razorpay. Billing is in INR today — a native GBP rail is on the roadmap.'
   },
   {
     icon: Globe2,
@@ -118,19 +118,20 @@ export default function UkLaunchPage() {
             <MapPin className="h-3.5 w-3.5" /> UK launch · London / Birmingham / Leicester
           </div>
           <h1 className="font-display text-4xl font-bold leading-tight text-surface-900 sm:text-5xl lg:text-6xl">
-            Pujas, darshan & 80G receipts — paid in GBP.
+            Pujas, darshan & 80G receipts for the UK diaspora.
           </h1>
           <p className="mt-6 max-w-3xl text-lg text-surface-700 sm:text-xl">
             Built for the UK Hindu, Jain & Sikh diaspora. Book pujas at any Indian temple, watch
-            live aarti darshan, get 80G receipts on donations — all from your UK bank card. No
-            surcharge surprises, no FX games, no "call our India office".
+            live aarti darshan, get 80G receipts on donations — all from your UK bank card.
+            Prices below are shown in £ for reference; you are charged in INR, so your bank
+            applies its own rate. No hidden surcharge, no "call our India office".
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/pujas?cc=GB"
               className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-saffron-700"
             >
-              Browse pujas in £ <ArrowRight className="h-4 w-4" />
+              Browse pujas <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/darshan"
@@ -140,8 +141,8 @@ export default function UkLaunchPage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-surface-600">
-            UK GBP rail is rolling out as Stripe NRI activation completes. Email below to get
-            notified the moment it goes live in your postcode.
+            A native GBP checkout is on the roadmap — today you can book with a UK card and be
+            billed in INR. Email below to get notified when £ pricing goes live in your postcode.
           </p>
         </div>
       </section>
@@ -154,8 +155,8 @@ export default function UkLaunchPage() {
           </h2>
           <p className="mt-3 max-w-3xl text-surface-700">
             Sri Mandir is built for India domestic. The UK Hindu diaspora needs different things:
-            GBP at checkout, GMT-aware aarti schedules, video proof your relatives in India can
-            actually watch, and support that responds in your timezone.
+            £ reference pricing, GMT-aware aarti schedules, video proof your relatives in India
+            can actually watch, and support that responds in your timezone.
           </p>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {BENEFITS.map((b) => (
@@ -249,8 +250,9 @@ export default function UkLaunchPage() {
             </table>
           </div>
           <p className="mt-4 text-xs text-surface-500">
-            Reference FX: £1 ≈ ₹105 (spot, 2026-06-15). Founder reviews quarterly. Actual
-            checkout price may differ by ±5% based on Stripe FX rate at moment of charge.
+            Reference FX: £1 ≈ ₹105 (spot, 2026-06-15). Founder reviews quarterly. You are
+            charged in INR, so the exact £ amount depends on your bank's rate and any
+            foreign-transaction fee on the day.
           </p>
         </div>
       </section>
@@ -276,9 +278,8 @@ export default function UkLaunchPage() {
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
               <span>
-                <strong>Stripe-managed payments</strong> — PCI DSS handled by Stripe, no card data
-                touches Darshya servers. Strong Customer Authentication (SCA / 3D Secure) enforced
-                per UK FCA rules.
+                <strong>Gateway-managed payments</strong> — PCI DSS handled by Razorpay, no card
+                data touches Darshya servers. 3D Secure enforced on card payments.
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -304,12 +305,12 @@ export default function UkLaunchPage() {
         <div className="mx-auto max-w-3xl text-center">
           <Sparkles className="mx-auto h-10 w-10 text-saffron-600" />
           <h2 className="mt-4 font-display text-3xl font-bold text-surface-900 sm:text-4xl">
-            Be the first to book in £
+            Be the first to know when £ checkout lands
           </h2>
           <p className="mt-3 text-surface-700">
-            UK GBP rail goes live as soon as Stripe NRI activation completes. Drop your email —
-            we'll ping you the moment it's ready in your postcode. No spam, no list-selling, single
-            launch ping.
+            Native £ checkout is on the roadmap; today UK cards are billed in INR. Drop your email
+            — we'll ping you the moment £ pricing is ready in your postcode. No spam, no
+            list-selling, single launch ping.
           </p>
           <div className="mt-8">
             <EmailCapture source="uk-landing" />
@@ -336,11 +337,15 @@ export default function UkLaunchPage() {
               name: 'United Kingdom',
             },
             availableLanguage: ['en-GB', 'hi-IN', 'gu-IN', 'ta-IN'],
+            // Billed in INR — advertising a GBP price in structured data puts
+            // a £ figure in Google's result and sends the devotee to an
+            // INR-only checkout. The £ figures on the page itself are labelled
+            // as indicative conversions, which is a different claim.
             offers: {
               '@type': 'AggregateOffer',
-              priceCurrency: 'GBP',
-              lowPrice: gbpFromInr(500),
-              highPrice: gbpFromInr(25000),
+              priceCurrency: 'INR',
+              lowPrice: 500,
+              highPrice: 25000,
               availability: 'https://schema.org/PreOrder',
             },
           }),

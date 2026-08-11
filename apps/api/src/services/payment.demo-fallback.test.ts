@@ -77,33 +77,7 @@ describe('Razorpay demo-fallback prod hard fail (P0 #7)', () => {
   });
 });
 
-describe('Stripe demo-fallback prod hard fail (P0 #7)', () => {
-  it('throws when getStripe() called in production without STRIPE_SECRET_KEY', async () => {
-    process.env.NODE_ENV = 'production';
-    delete process.env.STRIPE_SECRET_KEY;
-    delete process.env.ALLOW_DEMO_PAYMENTS;
-
-    const { getStripe } = await import('../lib/stripe.js');
-    await expect(getStripe()).rejects.toThrow(/STRIPE|demo/i);
-  });
-
-  it('returns demo stub in production when ALLOW_DEMO_PAYMENTS=true', async () => {
-    process.env.NODE_ENV = 'production';
-    delete process.env.STRIPE_SECRET_KEY;
-    process.env.ALLOW_DEMO_PAYMENTS = 'true';
-
-    const { getStripe } = await import('../lib/stripe.js');
-    const client = await getStripe();
-    expect(client.paymentIntents.create).toBeDefined();
-  });
-
-  it('returns demo stub in non-production without STRIPE_SECRET_KEY', async () => {
-    process.env.NODE_ENV = 'development';
-    delete process.env.STRIPE_SECRET_KEY;
-    delete process.env.ALLOW_DEMO_PAYMENTS;
-
-    const { getStripe } = await import('../lib/stripe.js');
-    const client = await getStripe();
-    expect(client.paymentIntents.create).toBeDefined();
-  });
-});
+// The 'Stripe demo-fallback prod hard fail (P0 #7)' block was removed
+// 2026-08-11 together with lib/stripe.ts — the Stripe rail is gone, so there
+// is no getStripe() to hard-fail. The equivalent Razorpay guard above still
+// covers the rule the P0 was about: no demo payment client in production.

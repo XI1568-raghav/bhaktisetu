@@ -52,7 +52,7 @@ export const CATEGORY_TREE: Category[] = [
       {
         label: 'Gift a Puja',
         href: '/gift',
-        description: 'Send a puja to a loved one · NRI USD/INR dual-currency.',
+        description: 'Send a puja to a loved one · book from anywhere.',
       },
       {
         label: 'Temples',

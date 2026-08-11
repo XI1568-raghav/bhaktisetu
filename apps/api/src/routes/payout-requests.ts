@@ -18,29 +18,14 @@ import {
   getKycStatus,
   requestPayout,
   listMyPayouts,
-  type ProviderRoleKey,
+  // Hoisted into the service so the weekly settlement cron resolves roles the
+  // same way this route does (it used to stamp every provider 'PANDIT').
+  resolveProviderRole,
 } from '../services/payout.service.js';
 
 const requestSchema = z.object({
   method: z.enum(['upi', 'bank']).default('upi'),
 });
-
-const PROVIDER_ROLE_MAP: Record<string, ProviderRoleKey> = {
-  PANDIT: 'PANDIT',
-  PRIEST: 'PANDIT',
-  ASTROLOGER: 'ASTROLOGER',
-  WELLNESS_INSTRUCTOR: 'WELLNESS_INSTRUCTOR',
-  STORE_OWNER: 'STORE_OWNER',
-  TEMPLE_MANAGER: 'TEMPLE_MANAGER',
-  GAUSHALA_MANAGER: 'GAUSHALA_MANAGER',
-};
-
-function resolveProviderRole(roles: string[]): ProviderRoleKey | null {
-  for (const r of roles) {
-    if (PROVIDER_ROLE_MAP[r]) return PROVIDER_ROLE_MAP[r]!;
-  }
-  return null;
-}
 
 export async function payoutRequestRoutes(server: FastifyInstance) {
   // GET /balance — withdrawable balance for the signed-in provider.

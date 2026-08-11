@@ -82,7 +82,7 @@ const comparison = [
 const faqs = [
   {
     q: 'How does billing work?',
-    a: 'Annual subscription, billed once via Stripe in USD ($60 USD, ~₹5,000 INR equivalent). Auto-renews after 365 days; cancel anytime from /account/subscriptions.',
+    a: 'Annual subscription, billed once through Razorpay in INR (₹5,000, roughly $60 USD equivalent). Auto-renews after 365 days; cancel anytime from /account/subscriptions.',
   },
   {
     q: 'Can I get a refund?',
@@ -90,7 +90,7 @@ const faqs = [
   },
   {
     q: 'What about taxes?',
-    a: 'US/UK/CA/AU residents: Stripe handles applicable sales tax automatically. The subscription itself is not tax-deductible (it is a service, not a donation). Donations made through Darshya remain 80G-eligible separately.',
+    a: 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Your card issuer may add a foreign-transaction fee. Donations made through Darshya remain 80G-eligible in India separately.',
   },
   {
     q: 'Do I need to be NRI to subscribe?',
@@ -285,7 +285,7 @@ export default function NriPremiumLanding() {
           <ul className="mt-8 grid sm:grid-cols-3 gap-3 text-sm text-saffron-100 max-w-2xl mx-auto">
             <li className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />
-              Stripe secure checkout
+              Razorpay secure checkout
             </li>
             <li className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />

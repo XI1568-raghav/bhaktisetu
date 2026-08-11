@@ -94,8 +94,12 @@ describe('webhook-idempotency', () => {
   it('different providers with the same id are independent', async () => {
     const { checkAndRecord, _resetTableEnsuredForTests } = await loadFresh();
     _resetTableEnsuredForTests();
+    // The dedupe key is (provider, eventId), not eventId alone. Razorpay is the
+    // only provider in the union since Stripe was removed (2026-08-11), so the
+    // second provider is cast — this asserts the composite key still holds for
+    // whichever gateway is added next, which is the property worth locking.
     const r1 = await checkAndRecord('razorpay', 'evt_shared');
-    const r2 = await checkAndRecord('stripe', 'evt_shared');
+    const r2 = await checkAndRecord('future_gateway' as never, 'evt_shared');
     expect(r1.alreadyProcessed).toBe(false);
     expect(r2.alreadyProcessed).toBe(false);
     expect(table.rows.length).toBe(2);
@@ -104,8 +108,8 @@ describe('webhook-idempotency', () => {
   it('different ids for the same provider are independent', async () => {
     const { checkAndRecord, _resetTableEnsuredForTests } = await loadFresh();
     _resetTableEnsuredForTests();
-    const r1 = await checkAndRecord('stripe', 'evt_one');
-    const r2 = await checkAndRecord('stripe', 'evt_two');
+    const r1 = await checkAndRecord('razorpay', 'evt_one');
+    const r2 = await checkAndRecord('razorpay', 'evt_two');
     expect(r1.alreadyProcessed).toBe(false);
     expect(r2.alreadyProcessed).toBe(false);
     expect(table.rows.length).toBe(2);

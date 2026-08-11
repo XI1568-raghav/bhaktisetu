@@ -65,7 +65,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
 2. **Pick a temple** from the verified list — every temple shows trust score, location, and pandit credentials.
 3. **Choose date & time** that fits the auspicious window for your puja (we show muhurat suggestions).
 4. **Fill sankalp** — your full name, gotra (lineage), and the intent (e.g., health, prosperity, ancestral blessing).
-5. **Pay securely** via Razorpay (India) or Stripe (NRI). Indian and dual-currency pricing both supported.
+5. **Pay securely** via Razorpay. International cards are accepted; billing is in INR.
 6. **Receive confirmation** by email and WhatsApp with your booking number (format: BS-YYYYMMDD-XXXXX).
 7. **Video proof** is uploaded within 24 hours of the ritual completing.
 
@@ -94,7 +94,7 @@ Email support@darshya.online or chat with us on WhatsApp.`,
 2. **मंदिर चुनें** सत्यापित सूची से — हर मंदिर का विश्वास स्कोर, स्थान और पंडित प्रमाण-पत्र दिखाया जाता है।
 3. **तारीख और समय** चुनें जो आपकी पूजा के शुभ मुहूर्त में हो।
 4. **संकल्प भरें** — पूरा नाम, गोत्र, और मनोकामना (जैसे स्वास्थ्य, समृद्धि, पितृ-आशीर्वाद)।
-5. **सुरक्षित भुगतान** Razorpay (भारत) या Stripe (NRI) के माध्यम से करें।
+5. **सुरक्षित भुगतान** Razorpay के माध्यम से करें।
 6. **पुष्टि प्राप्त करें** ईमेल और WhatsApp पर बुकिंग संख्या (BS-YYYYMMDD-XXXXX) के साथ।
 7. **वीडियो प्रमाण** अनुष्ठान पूरा होने के 24 घंटे के भीतर अपलोड किया जाता है।
 
@@ -124,7 +124,7 @@ support@darshya.online पर ईमेल करें या WhatsApp पर �
 2. **கோயிலை தேர்வுசெய்யவும்** சரிபார்க்கப்பட்ட பட்டியலில் இருந்து.
 3. **தேதி மற்றும் நேரத்தை** தேர்வுசெய்யவும் — முகூர்த்த ஆலோசனைகள் காட்டப்படும்.
 4. **சங்கல்பத்தை நிரப்பவும்** — முழுப் பெயர், கோத்திரம், எண்ணம் (உதா: ஆரோக்கியம், செழிப்பு).
-5. **பாதுகாப்பாக கட்டணம் செலுத்தவும்** Razorpay (இந்தியா) அல்லது Stripe (NRI) வழியாக.
+5. **பாதுகாப்பாக கட்டணம் செலுத்தவும்** Razorpay வழியாக.
 6. **உறுதியை பெறவும்** மின்னஞ்சல் மற்றும் WhatsApp மூலம் BS-YYYYMMDD-XXXXX எண்ணுடன்.
 7. **வீடியோ ஆதாரம்** சடங்கு முடிந்த 24 மணி நேரத்திற்குள் பதிவேற்றப்படும்.
 
@@ -147,7 +147,7 @@ support@darshya.online க்கு மின்னஞ்சல் அனுப�
 2. **దేవాలయాన్ని ఎంచుకోండి** ధృవీకరించబడిన జాబితా నుండి.
 3. **తేదీ & సమయాన్ని** ఎంచుకోండి — ముహూర్త సూచనలు చూపబడతాయి.
 4. **సంకల్పాన్ని పూరించండి** — పూర్తి పేరు, గోత్రం, మరియు ఉద్దేశ్యం.
-5. **సురక్షితంగా చెల్లించండి** Razorpay (భారతదేశం) లేదా Stripe (NRI) ద్వారా.
+5. **సురక్షితంగా చెల్లించండి** Razorpay ద్వారా.
 6. **నిర్ధారణను అందుకోండి** ఇమెయిల్ మరియు WhatsApp ద్వారా BS-YYYYMMDD-XXXXX నంబర్‌తో.
 7. **వీడియో రుజువు** ఆచారం పూర్తయిన 24 గంటలలోపు అప్‌లోడ్ చేయబడుతుంది.
 
@@ -170,7 +170,7 @@ support@darshya.online కి ఇమెయిల్ చేయండి లేద
 2. **মন্দির নির্বাচন করুন** যাচাইকৃত তালিকা থেকে।
 3. **তারিখ ও সময়** নির্বাচন করুন — মুহূর্ত পরামর্শ দেখানো হবে।
 4. **সংকল্প পূরণ করুন** — পুরো নাম, গোত্র, এবং অভিপ্রায়।
-5. **নিরাপদে অর্থপ্রদান করুন** Razorpay (ভারত) বা Stripe (NRI) এর মাধ্যমে।
+5. **নিরাপদে অর্থপ্রদান করুন** Razorpay এর মাধ্যমে।
 6. **নিশ্চিতকরণ পান** ইমেল এবং WhatsApp এ BS-YYYYMMDD-XXXXX নম্বর সহ।
 7. **ভিডিও প্রমাণ** আচার সম্পন্ন হওয়ার 24 ঘন্টার মধ্যে আপলোড করা হবে।
 
@@ -193,7 +193,7 @@ support@darshya.online এ ইমেল করুন বা WhatsApp এ আম�
 2. **मंदिर निवडा** सत्यापित यादीतून.
 3. **तारीख आणि वेळ** निवडा — मुहूर्त सूचना दाखवल्या जातील.
 4. **संकल्प भरा** — पूर्ण नाव, गोत्र, आणि हेतू.
-5. **सुरक्षितपणे पैसे द्या** Razorpay (भारत) किंवा Stripe (NRI) द्वारे.
+5. **सुरक्षितपणे पैसे द्या** Razorpay द्वारे.
 6. **पुष्टीकरण मिळवा** ईमेल आणि WhatsApp वर BS-YYYYMMDD-XXXXX क्रमांकासह.
 7. **व्हिडिओ पुरावा** विधी पूर्ण झाल्यानंतर 24 तासांच्या आत अपलोड केला जाईल.
 

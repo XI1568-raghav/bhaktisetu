@@ -120,15 +120,11 @@ export function productJsonLd(args: {
       availability: args.inStock === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
     });
   }
-  if (args.priceUsd != null) {
-    offers.push({
-      '@type': 'Offer',
-      price: String(args.priceUsd),
-      priceCurrency: 'USD',
-      url: args.url,
-      availability: args.inStock === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
-    });
-  }
+  // The USD Offer was removed 2026-08-11 with the Stripe rail. Structured data
+  // is worse than prose here: Google renders the price directly in search
+  // results, so a $ figure sent a devotee to an INR-only Razorpay checkout.
+  // `priceUsd` is still accepted by the signature (callers pass it) and simply
+  // no longer emits an offer.
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -232,13 +228,6 @@ export const nriPremiumServiceJsonLd = {
       url: `${SITE_URL}/nri`,
       availability: 'https://schema.org/InStock',
     },
-    {
-      '@type': 'Offer',
-      price: '60',
-      priceCurrency: 'USD',
-      url: `${SITE_URL}/nri`,
-      availability: 'https://schema.org/InStock',
-    },
   ],
 };
 
@@ -273,7 +262,7 @@ export const brandFaqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text:
-          'Yes. Every puja booking on Darshya requires the priest to upload a video recording before payout — no video, no money. Priests are Aadhaar-verified, temples are vetted before they go live, and 80G receipts use real PAN and donee 80G registration numbers. Payments process through Razorpay (domestic INR) and Stripe (NRI USD).',
+          'Yes. Every puja booking on Darshya requires the priest to upload a video recording before payout — no video, no money. Priests are Aadhaar-verified, temples are vetted before they go live, and 80G receipts use real PAN and donee 80G registration numbers. Payments process through Razorpay, billed in INR.',
       },
     },
     {
@@ -282,7 +271,7 @@ export const brandFaqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text:
-          'Darshya is the only Indian devotional app that makes priest video proof mandatory for every puja booking — not optional, not opt-out. It also offers transparent NRI pricing in USD, gaushala donations with real 80G receipts, and one unified app for puja, darshan, astrology, panchang, gaushala seva, and store. Sri Mandir focuses on puja-only; Utsav focuses on community; AstroSage focuses on jyotish.',
+          'Darshya is the only Indian devotional app that makes priest video proof mandatory for every puja booking — not optional, not opt-out. It also offers transparent NRI pricing, gaushala donations with real 80G receipts, and one unified app for puja, darshan, astrology, panchang, gaushala seva, and store. Sri Mandir focuses on puja-only; Utsav focuses on community; AstroSage focuses on jyotish.',
       },
     },
     {

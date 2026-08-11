@@ -77,7 +77,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'What payment methods do you accept?',
-        a: 'Domestic India: UPI (all apps), credit/debit cards (Visa/Mastercard/RuPay), net banking, wallets (Paytm, PhonePe, Amazon Pay). NRI users: international credit cards, PayPal, Stripe, and bank transfer for amounts above $500. We do not accept cash on delivery or cheques.',
+        a: 'Domestic India: UPI (all apps), credit/debit cards (Visa/Mastercard/RuPay), net banking, wallets (Paytm, PhonePe, Amazon Pay). NRI users: international credit cards, billed in INR. We do not accept cash on delivery or cheques.',
       },
       {
         q: 'How long do refunds take?',

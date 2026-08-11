@@ -1,0 +1,176 @@
+[
+  {
+    "title": "NRI bookings bill an INR-scaled number as USD — /from-offering multiplies an INR base price by 9 and charges it in dollars",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 1091,
+    "why": "verifier died"
+  },
+  {
+    "title": "Video proof is never enforced — a booking can reach `delivered` with videoProofUrl null",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 75,
+    "why": "verifier died"
+  },
+  {
+    "title": "Unverified temples are bookable — neither the booking path nor the default temple listing filters on isVerified",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 142,
+    "why": "verifier died"
+  },
+  {
+    "title": "Reschedule accepts an arbitrary time-slot string, bypassing the availableSlots whitelist and maxBookingsPerSlot capacity",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 595,
+    "why": "verifier died"
+  },
+  {
+    "title": "Admin priest reassignment via PATCH /bookings/:id is a silent no-op that returns 200",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 303,
+    "why": "verifier died"
+  },
+  {
+    "title": "Slot capacity is enforced by a count-then-create race with no transaction and no DB constraint — concurrent bookings oversell a slot",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 173,
+    "why": "verifier died"
+  },
+  {
+    "title": "puja_bookings has no index on priest_id or temple_puja_offering_id — both are on the booking hot path",
+    "file": "apps/api/prisma/schema.prisma",
+    "line": 504,
+    "why": "verifier died"
+  },
+  {
+    "title": "Unbounded findMany on the payouts summary and in the stale-booking escalation cron",
+    "file": "apps/api/src/routes/admin-bookings.ts",
+    "line": 99,
+    "why": "verifier died"
+  },
+  {
+    "title": "Cancel and reschedule measure the 24h window from midnight instead of the actual slot time, denying devotees up to 23 hours of their entitled window",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 503,
+    "why": "verifier died"
+  },
+  {
+    "title": "Booking-number generation is a check-then-insert race, and the /from-offering copy silently gives up after 5 collisions",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 1172,
+    "why": "verifier died"
+  },
+  {
+    "title": "Puja Commission ledger stores the platform's 20% cut in the field the payout engine pays out as the provider's 80% share",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 232,
+    "why": "verifier died"
+  },
+  {
+    "title": "Cancellation refund ladder is computed and quoted to the devotee but never applied — every refund is issued at 100%",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 1065,
+    "why": "verifier died"
+  },
+  {
+    "title": "Temple 5% share (TEMPLE_SHARE_RATE) is never written on the real money path — TemplePayout is unreachable for any paid booking",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 404,
+    "why": "verifier died"
+  },
+  {
+    "title": "getPayoutBalance double-subtracts in-flight commissions, locking providers out of newly earned balance",
+    "file": "apps/api/src/services/payout.service.ts",
+    "line": 73,
+    "why": "verifier died"
+  },
+  {
+    "title": "Priest Aadhaar payout gate (business rule 4) is bypassed by the unified #233 payout path",
+    "file": "apps/api/src/services/payout.service.ts",
+    "line": 112,
+    "why": "verifier died"
+  },
+  {
+    "title": "processRefund fires the Razorpay refund outside any transaction, allowing a second full refund after a mid-flight crash",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 1067,
+    "why": "verifier died"
+  },
+  {
+    "title": "Duplicate Commission writer in booking.service.ts still runs post-transaction with swallowed errors and float math",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 365,
+    "why": "verifier died"
+  },
+  {
+    "title": "Money handled as JS float in refund webhooks, temple share, and payout balance aggregation",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 1001,
+    "why": "verifier died"
+  },
+  {
+    "title": "Concurrent payout requests can mint two PayoutRequest rows for the same balance",
+    "file": "apps/api/src/services/payout.service.ts",
+    "line": 122,
+    "why": "verifier died"
+  },
+  {
+    "title": "demo-pay writes a stale 30/70 split that violates the uniform 20/80 take-rate doctrine",
+    "file": "apps/api/src/routes/demo-pay.ts",
+    "line": 127,
+    "why": "verifier died"
+  },
+  {
+    "title": "Refund ladder is never applied — every refund executed is 100% of the captured amount",
+    "file": "apps/api/src/services/refund.service.ts",
+    "line": 328,
+    "why": "verifier died"
+  },
+  {
+    "title": "POST /bookings/:id/cancel refunds nothing and is not even queued for refund — the web Cancel button silently keeps the customer's money",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 517,
+    "why": "verifier died"
+  },
+  {
+    "title": "Cancellation/refund writes no compensating ledger entry — the pandit's Commission stays PENDING and withdrawable on a refunded booking",
+    "file": "apps/api/src/services/refund.service.ts",
+    "line": 236,
+    "why": "verifier died"
+  },
+  {
+    "title": "Reschedule bypasses the slot whitelist and per-slot capacity, and accepts a time that has already passed today",
+    "file": "apps/api/src/services/booking.service.ts",
+    "line": 591,
+    "why": "verifier died"
+  },
+  {
+    "title": "Puja Commission rows credit the platform's 20% cut as the pandit's withdrawable balance",
+    "file": "apps/api/src/services/payment.service.ts",
+    "line": 232,
+    "why": "verifier died"
+  },
+  {
+    "title": "No booking confirmation email is ever sent; the template is dead code and the other two channels are both no-ops by default",
+    "file": "apps/api/src/lib/email.ts",
+    "line": 94,
+    "why": "verifier died"
+  },
+  {
+    "title": "cancel-quote computes the refund tier against midnight instead of the slot time, quoting devotees a worse tier than policy",
+    "file": "apps/api/src/routes/bookings.ts",
+    "line": 579,
+    "why": "verifier died"
+  },
+  {
+    "title": "Web Cancel button ignores the API response and always renders \"cancelled\", including on a 409 rejection",
+    "file": "apps/web/app/bookings/view/page.tsx",
+    "line": 258,
+    "why": "verifier died"
+  },
+  {
+    "title": "The 'refund' notification event is defined but never fired — refund notice depends entirely on Resend being configured",
+    "file": "apps/api/src/services/booking-notify.service.ts",
+    "line": 52,
+    "why": "verifier died"
+  }
+]

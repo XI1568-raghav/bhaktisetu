@@ -114,17 +114,15 @@ function UpgradeInner() {
     setError(null);
 
     try {
-      const isStripeAnnual = planId === 'nri_premium_yearly';
+      // The NRI annual plan used to branch to /subscriptions/create-stripe-annual
+      // (USD Stripe Checkout). That rail was removed 2026-08-11 — every plan now
+      // goes through Razorpay in INR.
       const isAutoRenew = planId === 'astro_monthly';
-      const endpoint = isStripeAnnual
-        ? '/subscriptions/create-stripe-annual'
-        : isAutoRenew
+      const endpoint = isAutoRenew
         ? '/subscriptions/create'
         : '/subscriptions/subscribe';
 
-      const body = isStripeAnnual
-        ? { planId }
-        : { planId, role: 'DEVOTEE' };
+      const body = { planId, role: 'DEVOTEE' };
 
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
@@ -144,16 +142,12 @@ function UpgradeInner() {
         subscription?: { shortUrl?: string | null; url?: string | null; skipped?: boolean };
       };
 
-      if (isStripeAnnual && data.subscription?.url) {
-        window.location.href = data.subscription.url;
-        return;
-      }
       if (isAutoRenew && data.subscription?.shortUrl) {
         window.location.href = data.subscription.shortUrl;
         return;
       }
 
-      router.push(isStripeAnnual ? '/account/subscriptions?nri=success' : '/ask-pandit?upgraded=1');
+      router.push('/ask-pandit?upgraded=1');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not complete upgrade');
       setBusyPlanId(null);
@@ -226,7 +220,7 @@ function UpgradeInner() {
                   )}
                   {plan.priceUsd && (
                     <div className="text-xs text-surface-500 mt-1">
-                      ${plan.priceUsd} USD billed via Stripe
+                      Billed in INR via Razorpay
                     </div>
                   )}
                 </div>

@@ -66,162 +66,6 @@ interface PujaDetail {
  temples: PujaTempleOffering[];
 }
 
-// ─── Fallback data ─────────────────────────────────────────────────
-
-const fallbackPujas: Record<string, PujaDetail> = {
- rudrabhishek: {
- id: '1',
- name: 'Rudrabhishek Puja',
- nameLocal: 'रुद्राभिषेक पूजा',
- slug: 'rudrabhishek',
- description:
- 'Sacred abhishekam of the Shiva Lingam with panchamrit — milk, honey, curd, ghee, and sugar. Includes 108 chants of Om Namah Shivaya.',
- longDescription:
- 'Rudrabhishek is one of the most powerful and sacred Vedic rituals dedicated to Lord Shiva. During this puja, the Shiva Lingam is bathed with panchamrit (a mixture of five sacred substances: milk, curd, honey, ghee, and sugar) while the priest recites the Rudram from the Yajurveda.\n\nThis ancient ritual is believed to invoke the blessings of Lord Shiva for peace, prosperity, and protection from negative energies. The puja concludes with 108 chants of Om Namah Shivaya and an aarti.\n\nRudrabhishek is especially recommended on Mondays, Maha Shivaratri, Shravan month, and Pradosh days. It is believed to remove sins, grant moksha, and fulfill the desires of devotees who perform it with sincere devotion.',
- category: 'Abhishekam',
- deity: 'Lord Shiva',
- durationMinutes: 120,
- basePrice: '1100',
- nriPrice: '5100',
- samagriIncluded: true,
- samagriList: [
- 'Milk (1 litre)',
- 'Honey',
- 'Curd',
- 'Ghee',
- 'Sugar',
- 'Ganga Jal',
- 'Bel Patra (108 leaves)',
- 'Flowers & Dhoop',
- 'Rudraksha Mala',
- 'Vibhuti',
- ],
- benefits: [
- 'Removes negative energies and doshas',
- 'Brings peace, prosperity, and good health',
- 'Grants protection from untimely events',
- 'Helps achieve moksha and spiritual growth',
- 'Especially powerful during Shravan month',
- ],
- images: [],
- isActive: true,
- temples: [
- {
- id: 'to-1',
- templeName: 'Shri Kashi Vishwanath Temple',
- templeSlug: 'kashi-vishwanath',
- templeCity: 'Varanasi',
- templeState: 'Uttar Pradesh',
- priceOverride: '1100',
- availableSlots: [
- { time: '06:00', label: 'Early Morning (6:00 AM)' },
- { time: '09:00', label: 'Morning (9:00 AM)' },
- { time: '14:00', label: 'Afternoon (2:00 PM)' },
- { time: '17:00', label: 'Evening (5:00 PM)' },
- ],
- isActive: true,
- trustScore: 98,
- isVerified: true,
- },
- {
- id: 'to-2',
- templeName: 'Trimbakeshwar Temple',
- templeSlug: 'trimbakeshwar',
- templeCity: 'Nashik',
- templeState: 'Maharashtra',
- priceOverride: '1500',
- availableSlots: [
- { time: '07:00', label: 'Morning (7:00 AM)' },
- { time: '10:00', label: 'Mid-Morning (10:00 AM)' },
- { time: '16:00', label: 'Afternoon (4:00 PM)' },
- ],
- isActive: true,
- trustScore: 96,
- isVerified: true,
- },
- {
- id: 'to-3',
- templeName: 'Somnath Temple',
- templeSlug: 'somnath',
- templeCity: 'Somnath',
- templeState: 'Gujarat',
- priceOverride: null,
- availableSlots: [
- { time: '06:30', label: 'Morning (6:30 AM)' },
- { time: '11:00', label: 'Late Morning (11:00 AM)' },
- ],
- isActive: true,
- trustScore: 97,
- isVerified: true,
- },
- ],
- },
-};
-
-// Generate a default fallback for any slug
-function getDefaultFallback(slug: string): PujaDetail {
- const name = slug
- .split('-')
- .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
- .join(' ');
- return {
- id: 'default',
- name: `${name} Puja`,
- nameLocal: null,
- slug,
- description: `Experience the sacred ${name} puja performed by verified pandits at renowned temples across India. Live streaming and prasad delivery available.`,
- longDescription: `The ${name} puja is one of the revered Vedic rituals in the Hindu tradition. Performed with devotion and proper Vedic chanting, this puja invokes divine blessings for the well-being and prosperity of the devotee and their family.\n\nOur verified pandits perform this puja with complete adherence to Vedic traditions, ensuring that every mantra is chanted correctly and every ritual is performed as prescribed in the scriptures.\n\nBook this puja through Darshya and receive live video streaming of the entire ceremony, followed by video proof and prasad delivery to your doorstep.`,
- category: 'Special Puja',
- deity: 'Lord Shiva',
- durationMinutes: 90,
- basePrice: '751',
- nriPrice: '3501',
- samagriIncluded: true,
- samagriList: ['Flowers', 'Dhoop & Diya', 'Prasad Items', 'Kumkum & Haldi', 'Coconut'],
- benefits: [
- 'Divine blessings for health and prosperity',
- 'Removal of obstacles and negative energies',
- 'Peace of mind and spiritual growth',
- 'Performed by verified Vedic pandits',
- ],
- images: [],
- isActive: true,
- temples: [
- {
- id: 'to-default-1',
- templeName: 'Shri Kashi Vishwanath Temple',
- templeSlug: 'kashi-vishwanath',
- templeCity: 'Varanasi',
- templeState: 'Uttar Pradesh',
- priceOverride: null,
- availableSlots: [
- { time: '06:00', label: 'Morning (6:00 AM)' },
- { time: '10:00', label: 'Mid-Morning (10:00 AM)' },
- { time: '16:00', label: 'Afternoon (4:00 PM)' },
- ],
- isActive: true,
- trustScore: 98,
- isVerified: true,
- },
- {
- id: 'to-default-2',
- templeName: 'Siddhivinayak Temple',
- templeSlug: 'siddhivinayak',
- templeCity: 'Mumbai',
- templeState: 'Maharashtra',
- priceOverride: null,
- availableSlots: [
- { time: '07:00', label: 'Morning (7:00 AM)' },
- { time: '11:00', label: 'Late Morning (11:00 AM)' },
- ],
- isActive: true,
- trustScore: 95,
- isVerified: true,
- },
- ],
- };
-}
-
 // P0 #202 (cont.): same API_URL-vs-localhost bug as the /temples subroute —
 // prod has no API_URL so this hit localhost and the page broke. Use the shared
 // SSR base (falls back to the prod API). Add the /api/v1 suffix ONLY when the
@@ -246,18 +90,35 @@ const API_BASE = _pujaApiBase.endsWith('/api/v1')
       return null;
     })
     .filter(Boolean) as { url: string; alt: string }[];
-  return { ...puja, images: normalized };
+  // S2C-06 (2026-08-11): the fabricated fallback used to guarantee `temples`.
+  // With it gone the api payload is the only source, so guard the array the
+  // render reduces over instead of trusting it.
+  const temples = Array.isArray(puja.temples) ? puja.temples : [];
+  return { ...puja, images: normalized, temples };
  }
 
-async function getPujaBySlug(slug: string): Promise<PujaDetail> {
+// S2C-06 (2026-08-11): this used to swallow EVERY failure — including the
+// api's explicit 404 for an unknown slug — and return a manufactured puja
+// (title-cased slug, invented ₹751 / $3,501 price, two fake isVerified
+// temples). Inventing a price on a commerce page is not an acceptable
+// degradation, and it also masked real api outages by silently repricing
+// every genuine puja. Now the three outcomes are distinguished so the page
+// can 404 an unknown slug and show an honest error when the api is down.
+type PujaLookup =
+ | { status: 'ok'; puja: PujaDetail }
+ | { status: 'not-found' }
+ | { status: 'unavailable' };
+
+async function getPujaBySlug(slug: string): Promise<PujaLookup> {
  try {
  const res = await fetch(`${API_BASE}/pujas/types/${slug}`, {
  next: { revalidate: 300, tags: [`puja-${slug}`] },
  });
- if (!res.ok) throw new Error('API error');
- return normalizePuja(await res.json());
+ if (res.status === 404) return { status: 'not-found' };
+ if (!res.ok) throw new Error(`API error ${res.status}`);
+ return { status: 'ok', puja: normalizePuja(await res.json()) };
  } catch {
- return fallbackPujas[slug] || getDefaultFallback(slug);
+ return { status: 'unavailable' };
  }
 }
 
@@ -267,7 +128,18 @@ export async function generateMetadata({
  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
  const { slug } = await params;
- const puja = await getPujaBySlug(slug);
+ const lookup = await getPujaBySlug(slug);
+
+ // S2C-06 (2026-08-11): never emit an indexable, self-canonical Product page
+ // for a slug we could not resolve — that is what turned every typo URL into
+ // a soft-404 carrying fabricated price schema.
+ if (lookup.status !== 'ok') {
+   return {
+     title: lookup.status === 'not-found' ? 'Puja not found | Darshya' : 'Puja unavailable | Darshya',
+     robots: { index: false, follow: false },
+   };
+ }
+ const puja = lookup.puja;
 
  const url = `https://darshya.online/pujas/${slug}`;
  const title = `${puja.name} — Book Online | Darshya`;
@@ -321,7 +193,16 @@ export default async function PujaDetailPage({
  params: Promise<{ slug: string }>;
 }) {
  const { slug } = await params;
- const puja = await getPujaBySlug(slug);
+ const lookup = await getPujaBySlug(slug);
+
+ if (lookup.status !== 'ok') {
+   // S2C-06 (2026-08-11): unknown slug → a real 404, not an invented product.
+   if (lookup.status === 'not-found') notFound();
+   // API unreachable → hand off to error.tsx ("Couldn't load this puja" +
+   // retry) rather than quoting a price we cannot stand behind.
+   throw new Error(`Puja catalogue unavailable for slug "${slug}"`);
+ }
+ const puja = lookup.puja;
 
  const lowestPrice = puja.temples.reduce((min, t) => {
  const p = Number(t.priceOverride || puja.basePrice);

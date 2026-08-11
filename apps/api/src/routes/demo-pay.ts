@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { ensureConversationForBooking } from '../services/conversation.service.js';
+import { DEFAULT_PRIEST_SHARE } from '../services/booking.service.js';
 
 /**
  * Demo-pay bypass — skips Razorpay entirely and runs the full
@@ -54,6 +56,33 @@ function rateLimitOk(userId: string): boolean {
   b.count += 1;
   return true;
 }
+
+/**
+ * RV-21 (2026-08-10): this route hardcoded a 30/70 split, which stopped matching
+ * the product the day the take-rate was cut to a uniform 20/80 — a demo booking
+ * showed the pandit a payout ₹110 lower per ₹1,100 than the real thing. The
+ * split now reads the same source of truth booking.service.createBooking uses:
+ * the assigned pandit's own commissionRate when it is a sane fraction (so
+ * per-pandit negotiated splits are honoured), else DEFAULT_PRIEST_SHARE.
+ *
+ * The platform half is derived as price − payout rather than
+ * price × (1 − share), because (1 - 0.8) in JS float is 0.19999999999999996 —
+ * the subtraction keeps the two halves summing back to the price exactly.
+ */
+function resolveDemoSplit(
+  priceAmount: Prisma.Decimal | number | string,
+  commissionRate: number,
+): { priestShare: number; priestPayout: Prisma.Decimal; platformCommission: Prisma.Decimal } {
+  const priestShare =
+    commissionRate > 0 && commissionRate <= 1 ? commissionRate : DEFAULT_PRIEST_SHARE;
+  const price = new Prisma.Decimal(priceAmount.toString());
+  const priestPayout = price
+    .mul(new Prisma.Decimal(priestShare.toString()))
+    .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+  return { priestShare, priestPayout, platformCommission: price.sub(priestPayout) };
+}
+
+export const __testing = { resolveDemoSplit };
 
 export async function demoPayRoutes(server: FastifyInstance) {
   server.addHook('preHandler', authenticateUser);
@@ -124,8 +153,12 @@ export async function demoPayRoutes(server: FastifyInstance) {
     const bookingNumber = `BS-${yyyy}${mm}${dd}-${rand}`;
 
     const priceAmount = offering.priceOverride ?? offering.pujaType.basePrice;
-    const platformCommission = new (await import('@prisma/client')).Prisma.Decimal(priceAmount.toString()).mul('0.30');
-    const priestPayout = new (await import('@prisma/client')).Prisma.Decimal(priceAmount.toString()).mul('0.70');
+
+    // RV-21: split via the shared helper, off the assigned pandit's own rate.
+    const { priestPayout, platformCommission } = resolveDemoSplit(
+      priceAmount,
+      priest.commissionRate,
+    );
 
     // Create booking, jump straight to priest_assigned.
     const booking = await prisma.pujaBooking.create({

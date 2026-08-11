@@ -1,0 +1,36 @@
+# apps\web\lib\vedic-astrology.ts
+
+- PlanetPosition · interface · L74-L88 — interface PlanetPosition
+- HouseInfo · interface · L90-L96 — interface HouseInfo
+- DashaPeriod · interface · L98-L105 — interface DashaPeriod
+- DoshaInfo · interface · L107-L114 — interface DoshaInfo
+- NavamsaHouse · interface · L116-L122 — interface NavamsaHouse
+- BhuktiPeriod · interface · L124-L132 — interface BhuktiPeriod
+- KundliData · interface · L134-L159 — interface KundliData
+- toJulianDay · function · L163-L174 — function toJulianDay(year: number, month: number, day: number, hour: number): number
+- getLahiriAyanamsa · function · L178-L185 — function getLahiriAyanamsa(jd: number): number
+- tropicalToSidereal · function · L189-L194 — function tropicalToSidereal(tropicalLong: number, ayanamsa: number): number
+- normalizeDeg · function · L198-L202 — function normalizeDeg(deg: number): number
+- getSunLongitude · function · L206-L220 — function getSunLongitude(jd: number): number
+- getMoonLongitude · function · L224-L251 — function getMoonLongitude(jd: number): number
+- getPlanetLongitude · function · L255-L305 — function getPlanetLongitude(planet: string, jd: number): number
+- getAscendant · function · L309-L327 — function getAscendant(jd: number, latitude: number, longitude: number): number
+- getSignIndex · function · L331-L333 — function getSignIndex(longitude: number): number
+- getDegreeInSign · function · L335-L340 — function getDegreeInSign(longitude: number): { degrees: number; minutes: number }
+- formatDegree · function · L342-L345 — function formatDegree(longitude: number): string
+- getNakshatraIndex · function · L349-L352 — function getNakshatraIndex(moonLong: number): number
+- getNakshatraPada · function · L354-L359 — function getNakshatraPada(moonLong: number): number
+- getPlanetStatus · function · L363-L402 — function getPlanetStatus(planet: string, signIndex: number): PlanetPosition['status']
+- isRetrograde · function · L406-L416 — function isRetrograde(planet: string, jd: number): boolean
+- calculateDashas · function · L420-L493 — function calculateDashas(moonLong: number, birthJD: number): DashaPeriod[]
+- jdToDate · function · L440-L458 — function jdToDate(jd: number): Date
+- formatDate · function · L495-L497 — function formatDate(d: Date): string
+- detectDoshas · function · L501-L624 — function detectDoshas(positions: PlanetPosition[], houses: HouseInfo[]): DoshaInfo[]
+- isLongBetween · function · L626-L631 — function isLongBetween(long: number, from: number, to: number): boolean
+- getOrdinalSuffix · function · L633-L638 — function getOrdinalSuffix(n: number): string
+- CityCoords · interface · L642-L646 — interface CityCoords
+- getCityCoordinates · function · L715-L729 — function getCityCoordinates(place: string): CityCoords
+- getNavamsaSignIndex · function · L736-L750 — function getNavamsaSignIndex(siderealLong: number): number
+- buildNavamsa · function · L752-L780 — function buildNavamsa( planetLongitudes: Record<string, number>, ascSid: number, ): NavamsaHouse[]
+- computeCurrentBhukti · function · L785-L813 — function computeCurrentBhukti(dashas: DashaPeriod[]): BhuktiPeriod | null
+- calculateKundli · function · L817-L960 — function calculateKundli( name: string, birthDate: string, // YYYY-MM-DD birthTime: string, // HH:MM birthPlace: string, /** Direct lat/lng/tz override — bypasses getCityCoordinates() silent New Delhi fallback. */ coordsOverride?: { lat: number; lng: number; tzOffset: number }, ): KundliData

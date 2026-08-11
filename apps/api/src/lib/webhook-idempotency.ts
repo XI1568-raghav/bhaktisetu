@@ -1,6 +1,7 @@
 import { prisma } from './prisma.js';
 
-// Webhook idempotency guard for Razorpay + Stripe (TD16).
+// Webhook idempotency guard (TD16). Razorpay is the only provider since the
+// Stripe rail was removed 2026-08-11; the union stays open for the next one.
 //
 // Both providers retry the same event 2-3 times under normal conditions
 // (network blip, slow response, ack lost). Without an idempotency check
@@ -15,7 +16,7 @@ import { prisma } from './prisma.js';
 // Storage is a raw SQL table (no Prisma migration) so this layer is
 // self-contained and can be deployed without a schema bump.
 
-export type WebhookProvider = 'razorpay' | 'stripe';
+export type WebhookProvider = 'razorpay';
 
 let tableEnsured = false;
 

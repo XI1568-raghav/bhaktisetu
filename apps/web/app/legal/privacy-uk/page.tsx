@@ -95,7 +95,7 @@ export default function PrivacyUkPage() {
  <h2>International transfers</h2>
  <p>
  Your data is processed in India (our home jurisdiction) and may be processed
- by sub-processors in the United States (Stripe, Resend, Twilio) and the EU
+ by sub-processors in the United States (Resend, Twilio) and the EU
  (PostHog). For all transfers we rely on either the UK International Data
  Transfer Agreement (IDTA), the UK Addendum to the EU Standard Contractual
  Clauses, or applicable adequacy regulations. A copy of the relevant

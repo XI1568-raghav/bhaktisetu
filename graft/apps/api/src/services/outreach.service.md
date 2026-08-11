@@ -1,0 +1,21 @@
+# apps\api\src\services\outreach.service.ts
+
+- injectTracking · function · L38-L61 — function injectTracking(html: string, logId: string): string
+- layoutEnd · function · L94-L99 — function layoutEnd(unsubUrl: string): string
+- loadTemplate · function · L103-L109 — function loadTemplate(filename: string): string
+- interpolate · function · L111-L113 — function interpolate(template: string, vars: Record<string, string>): string
+- renderEmailTemplate · function · L115-L122 — function renderEmailTemplate(filename: string, vars: Record<string, string>): string
+- SendResult · interface · L151-L156 — interface SendResult
+- LeadLike · interface · L158-L166 — interface LeadLike
+- SendEmailParams · interface · L168-L175 — interface SendEmailParams
+- resolveEmailFile · function · L181-L188 — function resolveEmailFile(templateKey: string, lang: 'hi' | 'en'): string | null
+- sendEmail · function · L190-L227 — async function sendEmail(params: SendEmailParams): Promise<SendResult>
+- normalisePhone · function · L231-L236 — function normalisePhone(input: string): string
+- loadWhatsappTemplate · function · L238-L242 — function loadWhatsappTemplate(templateKey: string): string | null
+- SendWhatsAppParams · interface · L244-L248 — interface SendWhatsAppParams
+- sendWhatsApp · function · L250-L293 — async function sendWhatsApp(params: SendWhatsAppParams): Promise<SendResult>
+- RecordOutreachParams · interface · L297-L306 — interface RecordOutreachParams
+- recordOutreach · function · L308-L322 — async function recordOutreach(params: RecordOutreachParams): Promise<{ id: string }>
+- incrementContactCount · function · L324-L332 — async function incrementContactCount(leadId: string): Promise<void>
+- firstTouchTemplateKey · function · L336-L345 — function firstTouchTemplateKey(role: Lead['role']): string
+- followupTemplateKey · function · L347-L350 — function followupTemplateKey(role: Lead['role'], days: 3 | 7 | 14): string
