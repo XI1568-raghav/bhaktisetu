@@ -289,14 +289,40 @@ async function loadPujas(): Promise<PujaCard[]> {
 
 const PAGE_SIZE = 12;
 
-export default async function PujasPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
- const allPujas = await loadPujas();
+// S2C-12 (2026-08-11): the hero search box was dead UI — no value, no onChange,
+// no name, no <form> — inside a server component, so typing and pressing Enter
+// did nothing and the box silently swallowed top-of-funnel intent. This page
+// already reads searchParams for pagination, so the fix is a plain GET form on
+// ?q= filtered server-side: no client bundle, Enter submits natively, and the
+// filtered result is a shareable URL.
+function matchesQuery(puja: PujaCard, q: string): boolean {
+ return (
+ puja.name.toLowerCase().includes(q) ||
+ puja.deity.toLowerCase().includes(q) ||
+ puja.category.toLowerCase().includes(q) ||
+ puja.temple.toLowerCase().includes(q) ||
+ puja.description.toLowerCase().includes(q)
+ );
+}
+
+export default async function PujasPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
+ const catalogue = await loadPujas();
  const sp = await searchParams;
+ const query = (sp.q ?? '').trim();
+ const normalizedQuery = query.toLowerCase();
+ const allPujas = normalizedQuery
+ ? catalogue.filter((p) => matchesQuery(p, normalizedQuery))
+ : catalogue;
  const requestedPage = Math.max(1, Math.min(Number(sp.page) || 1, 50));
  const visibleCount = Math.min(requestedPage * PAGE_SIZE, allPujas.length);
  const pujas = allPujas.slice(0, visibleCount);
  const hasMore = visibleCount < allPujas.length;
  const nextPage = requestedPage + 1;
+ // Keep the active search when paginating, otherwise "Load more" would silently
+ // drop the filter and re-show the unfiltered catalogue.
+ const nextPageHref = query
+ ? `/pujas?q=${encodeURIComponent(query)}&page=${nextPage}`
+ : `/pujas?page=${nextPage}`;
  const t = await getTranslations('pujas');
  return (
  <div className="min-h-[100dvh] bg-surface-50">
@@ -330,17 +356,26 @@ export default async function PujasPage({ searchParams }: { searchParams: Promis
  </div>
  </div>
 
- {/* Search */}
- <div className="mt-8 max-w-2xl">
+ {/* Search — S2C-12: real GET form, no client JS needed */}
+ <form action="/pujas" method="get" role="search" className="mt-8 max-w-2xl">
  <div className="relative">
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
  <input
- type="text"
+ type="search"
+ name="q"
+ defaultValue={query}
+ aria-label={t('searchPlaceholder')}
  placeholder={t('searchPlaceholder')}
  className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[var(--color-border)] bg-white text-surface-800 placeholder:text-surface-500 shadow-warm-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
  />
+ {/* Enter submits a single-input form natively; this keeps the control
+     reachable for assistive tech and mobile keyboards without changing
+     the visual design. */}
+ <button type="submit" className="sr-only">
+ Search pujas
+ </button>
  </div>
- </div>
+ </form>
  </div>
  </section>
 
@@ -488,10 +523,44 @@ export default async function PujasPage({ searchParams }: { searchParams: Promis
  {/* Results */}
  <p className="text-sm text-surface-500 mb-6">
  Showing <span className="font-semibold text-surface-600">{pujas.length}</span> of <span className="font-semibold text-surface-600">{allPujas.length}</span> pujas
+ {query && (
+ <>
+ {' '}matching <span className="font-semibold text-surface-600">&ldquo;{query}&rdquo;</span>
+ {' · '}
+ <Link href="/pujas" className="text-saffron-700 font-semibold hover:underline">
+ Clear search
+ </Link>
+ </>
+ )}
  </p>
 
  {/* Sponsored — between trending tags and the All Pujas grid */}
  <AdSlot slotId="PUJAS_BANNER" format="horizontal" label="Sponsored" className="w-full mb-6" />
+
+ {/* S2C-12: a live search needs a real zero-result state, otherwise a
+     non-matching query renders a silently blank grid — the same dead end
+     the inert box created. */}
+ {pujas.length === 0 && (
+ <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-10 text-center">
+ <Search className="w-8 h-8 text-surface-300 mx-auto mb-3" />
+ <h3 className="text-lg font-semibold text-surface-800">
+ {query ? <>No pujas match &ldquo;{query}&rdquo;</> : 'No pujas available right now'}
+ </h3>
+ <p className="text-sm text-surface-500 mt-1 max-w-md mx-auto">
+ {query
+ ? 'Try a different ritual name, deity, or category — or browse the full catalogue.'
+ : 'Please check back shortly.'}
+ </p>
+ {query && (
+ <Link
+ href="/pujas"
+ className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 transition-colors"
+ >
+ Browse all pujas
+ </Link>
+ )}
+ </div>
+ )}
 
  {/* Puja Grid */}
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -595,7 +664,7 @@ export default async function PujasPage({ searchParams }: { searchParams: Promis
  {hasMore && (
  <div className="mt-8 flex justify-center">
  <Link
- href={`/pujas?page=${nextPage}`}
+ href={nextPageHref}
  className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300 focus-visible:ring-offset-2"
  prefetch={false}
  aria-label={`Load next ${PAGE_SIZE} pujas`}

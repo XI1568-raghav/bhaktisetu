@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Prisma } from '@prisma/client';
 
 // Mock prisma before importing the service.
 const { prismaMock } = vi.hoisted(() => {
@@ -28,6 +29,7 @@ import {
   getKycStatus,
   requestPayout,
   processPayout,
+  PAYOUT_CONCURRENT_REQUEST_ERROR,
 } from './payout.service.js';
 
 const commission = prismaMock.commission as {
@@ -43,21 +45,49 @@ const payoutRequest = prismaMock.payoutRequest as {
 const $queryRawUnsafe = prismaMock.$queryRawUnsafe as ReturnType<typeof vi.fn>;
 const $transaction = prismaMock.$transaction as ReturnType<typeof vi.fn>;
 
+const VERIFIED_KYC = [{ verified: true, bank_account_number: '1234', bank_ifsc: 'HDFC0001234' }];
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe('payout.service — getPayoutBalance', () => {
-  it('sums PENDING unlinked commissions as available, PAID as paidOut, in-flight as pending', async () => {
-    // getPayoutBalance calls findMany 3x: PENDING-unlinked, PAID, in-flight.
+  // RV-05: `pending` (payoutRequestId: null) and `inFlight` (linked to a
+  // pending/processing request) are disjoint by construction, so available must
+  // be the raw pending sum. The old code returned pending - inFlight.
+  it('RV-05: available is the unlinked PENDING sum and never nets off in-flight', async () => {
+    // Audit worked example: Rs 5,000 linked to a still-pending request, Rs 9,000
+    // of newly earned commissions. Old code paid Rs 4,000 and marked all
+    // Rs 9,000 PAID, destroying Rs 5,000.
     commission.findMany
-      .mockResolvedValueOnce([{ amount: 100 }, { amount: 250 }]) // PENDING unlinked
-      .mockResolvedValueOnce([{ amount: 500 }]) // PAID
-      .mockResolvedValueOnce([{ amount: 100 }]); // in-flight (part of the 350)
+      .mockResolvedValueOnce([{ amount: 4000 }, { amount: 5000 }]) // PENDING unlinked
+      .mockResolvedValueOnce([]) // PAID
+      .mockResolvedValueOnce([{ amount: 5000 }]); // in-flight (linked, NOT in the set above)
     const b = await getPayoutBalance('prov-1');
-    expect(b.pendingInr).toBe(100); // in-flight
-    expect(b.availableInr).toBe(250); // 350 - 100 in-flight
-    expect(b.paidOutInr).toBe(500);
+    expect(b.availableInr).toBe(9000);
+    expect(b.pendingInr).toBe(5000);
+    expect(b.paidOutInr).toBe(0);
+  });
+
+  it('RV-05: stays positive when in-flight exceeds newly earned (no lockout)', async () => {
+    // Inverse case: old code returned -3,000 → web showed "-Rs 3,000", Withdraw
+    // disabled, requestPayout threw "No withdrawable balance".
+    commission.findMany
+      .mockResolvedValueOnce([{ amount: 2000 }]) // PENDING unlinked
+      .mockResolvedValueOnce([]) // PAID
+      .mockResolvedValueOnce([{ amount: 5000 }]); // in-flight
+    const b = await getPayoutBalance('prov-1');
+    expect(b.availableInr).toBe(2000);
+    expect(b.pendingInr).toBe(5000);
+  });
+
+  it('reports PAID separately as paidOut', async () => {
+    commission.findMany
+      .mockResolvedValueOnce([{ amount: 100 }, { amount: 250 }])
+      .mockResolvedValueOnce([{ amount: 500 }])
+      .mockResolvedValueOnce([]);
+    const b = await getPayoutBalance('prov-1');
+    expect(b).toEqual({ availableInr: 350, pendingInr: 0, paidOutInr: 500 });
   });
 
   it('returns zeros for a provider with no commissions', async () => {
@@ -95,9 +125,219 @@ describe('payout.service — requestPayout gating', () => {
   });
 
   it('rejects when no withdrawable balance', async () => {
-    $queryRawUnsafe.mockResolvedValue([{ verified: true, bank_account_number: '1', bank_ifsc: 'HDFC0001234' }]);
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
     commission.findMany.mockResolvedValue([]); // no commissions at all
     await expect(requestPayout('prov-1', 'PANDIT')).rejects.toThrow(/No withdrawable balance/);
+  });
+});
+
+describe('payout.service — requestPayout sizing (RV-05 / RV-06)', () => {
+  /** Wire the pre-check read (3 findMany calls) then the in-transaction read. */
+  function mockReads(opts: {
+    previewPending: Array<{ amount: number | string }>;
+    previewInFlight?: Array<{ amount: number | string }>;
+    txRows: Array<{ id: string; amount: number | string }>;
+  }) {
+    commission.findMany
+      .mockResolvedValueOnce(opts.previewPending) // getPayoutBalance: PENDING unlinked
+      .mockResolvedValueOnce([]) // getPayoutBalance: PAID
+      .mockResolvedValueOnce(opts.previewInFlight ?? []) // getPayoutBalance: in-flight
+      .mockResolvedValueOnce(opts.txRows); // inside the transaction
+    $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
+      fn({ payoutRequest, commission }),
+    );
+  }
+
+  it('RV-06: sizes the request from the rows read INSIDE the transaction, not the pre-check', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    // Pre-check saw Rs 4,000; by the time the transaction opened the provider
+    // had earned more. The request must be worth what it actually links.
+    mockReads({
+      previewPending: [{ amount: 4000 }],
+      txRows: [
+        { id: 'c1', amount: 4000 },
+        { id: 'c2', amount: 5000 },
+      ],
+    });
+    payoutRequest.create.mockImplementation(async ({ data }: { data: { amount: unknown } }) => ({
+      id: 'pr-1',
+      ...data,
+    }));
+    commission.updateMany.mockResolvedValue({ count: 2 });
+
+    const req = await requestPayout('prov-1', 'PANDIT');
+
+    const created = payoutRequest.create.mock.calls[0]![0] as { data: { amount: Prisma.Decimal } };
+    expect(created.data.amount.toString()).toBe('9000');
+    expect(String(req.amount)).toBe('9000');
+    expect(commission.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['c1', 'c2'] }, status: 'PENDING', payoutRequestId: null },
+      data: { payoutRequestId: 'pr-1' },
+    });
+  });
+
+  it('RV-06: sums money as Decimal — no float drift on the payout amount', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    mockReads({
+      previewPending: [{ amount: '16509.69' }],
+      txRows: [
+        { id: 'c1', amount: '6499.03' },
+        { id: 'c2', amount: '1625.48' },
+        { id: 'c3', amount: '8385.18' },
+      ],
+    });
+    payoutRequest.create.mockImplementation(async ({ data }: { data: { amount: unknown } }) => ({
+      id: 'pr-1',
+      ...data,
+    }));
+    commission.updateMany.mockResolvedValue({ count: 3 });
+
+    await requestPayout('prov-1', 'PANDIT');
+
+    const created = payoutRequest.create.mock.calls[0]![0] as { data: { amount: Prisma.Decimal } };
+    expect(created.data.amount.toString()).toBe('16509.69');
+    // The drift this guards against: naive float summing gives 16509.690000000002,
+    // which Prisma would round into the Decimal(10,2) column.
+    expect(6499.03 + 1625.48 + 8385.18).not.toBe(16509.69);
+  });
+
+  it('RV-06: rejects when fewer rows link than were selected (concurrent claim)', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    mockReads({
+      previewPending: [{ amount: 9000 }],
+      txRows: [
+        { id: 'c1', amount: 4000 },
+        { id: 'c2', amount: 5000 },
+      ],
+    });
+    payoutRequest.create.mockResolvedValue({ id: 'pr-1', amount: new Prisma.Decimal(9000) });
+    commission.updateMany.mockResolvedValue({ count: 1 }); // a rival tx took c2
+
+    await expect(requestPayout('prov-1', 'PANDIT')).rejects.toThrow(PAYOUT_CONCURRENT_REQUEST_ERROR);
+  });
+
+  it('RV-06: refuses when the ledger emptied between the pre-check and the transaction', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    mockReads({ previewPending: [{ amount: 9000 }], txRows: [] });
+
+    await expect(requestPayout('prov-1', 'PANDIT')).rejects.toThrow(/No withdrawable balance/);
+    expect(payoutRequest.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('payout.service — requestPayout concurrency race (RV-06)', () => {
+  type LedgerRow = {
+    id: string;
+    providerId: string;
+    amount: string;
+    status: 'PENDING' | 'PAID';
+    payoutRequestId: string | null;
+  };
+  type LedgerRequest = { id: string; providerId: string; amount: Prisma.Decimal; status: string };
+
+  /**
+   * A tiny in-memory stand-in for the Commission/PayoutRequest tables, faithful
+   * on the two points that matter: updateMany re-evaluates its predicate at
+   * write time (Postgres EvalPlanQual under READ COMMITTED), and a throwing
+   * transaction rolls back only its own writes.
+   */
+  function makeLedger(rows: LedgerRow[], gate: () => Promise<void>) {
+    const state = { commissions: rows.map((r) => ({ ...r })), requests: [] as LedgerRequest[] };
+    let seq = 0;
+
+    const select = (where: Record<string, any>) =>
+      state.commissions.filter((row) => {
+        if (where.providerId && row.providerId !== where.providerId) return false;
+        if (where.status && row.status !== where.status) return false;
+        if (where.payoutRequestId === null && row.payoutRequestId !== null) return false;
+        if (where.id?.in && !where.id.in.includes(row.id)) return false;
+        if (where.payoutRequest?.status?.in) {
+          const req = state.requests.find((q) => q.id === row.payoutRequestId);
+          if (!req || !where.payoutRequest.status.in.includes(req.status)) return false;
+        }
+        return true;
+      });
+
+    const read = async ({ where }: { where: Record<string, any> }) =>
+      select(where).map((r) => ({ id: r.id, amount: r.amount }));
+
+    const txClient = (mine: string[]) => ({
+      commission: {
+        findMany: read,
+        updateMany: async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
+          await gate(); // stand-in for blocking on the rival transaction's row locks
+          const hit = select(where);
+          hit.forEach((r) => Object.assign(r, data));
+          return { count: hit.length };
+        },
+      },
+      payoutRequest: {
+        create: async ({ data }: { data: Omit<LedgerRequest, 'id'> }) => {
+          const req = { id: `pr-${++seq}`, ...data };
+          state.requests.push(req);
+          mine.push(req.id);
+          return req;
+        },
+      },
+    });
+
+    commission.findMany.mockImplementation(read);
+    $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
+      const mine: string[] = [];
+      try {
+        return await fn(txClient(mine));
+      } catch (err) {
+        // rollback: drop this transaction's request rows + unlink its rows
+        state.requests = state.requests.filter((r) => !mine.includes(r.id));
+        state.commissions.forEach((c) => {
+          if (c.payoutRequestId && mine.includes(c.payoutRequestId)) c.payoutRequestId = null;
+        });
+        throw err;
+      }
+    });
+
+    return state;
+  }
+
+  it('two concurrent withdrawals settle ONE request for the balance, not two', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+
+    // The first updateMany to arrive blocks until we release it, letting the
+    // second caller commit in between — the exact double-click interleaving.
+    let enteredFirst!: () => void;
+    let release!: () => void;
+    const entered = new Promise<void>((res) => (enteredFirst = res));
+    const held = new Promise<void>((res) => (release = res));
+    let first = true;
+    const gate = async () => {
+      if (first) {
+        first = false;
+        enteredFirst();
+        await held;
+      }
+    };
+
+    const state = makeLedger(
+      [
+        { id: 'c1', providerId: 'prov-race', amount: '12000.00', status: 'PENDING', payoutRequestId: null },
+        { id: 'c2', providerId: 'prov-race', amount: '8000.00', status: 'PENDING', payoutRequestId: null },
+      ],
+      gate,
+    );
+
+    const slow = requestPayout('prov-race', 'STORE_OWNER'); // snapshots, then blocks
+    await entered;
+    const winner = await requestPayout('prov-race', 'STORE_OWNER'); // commits fully
+    release();
+
+    await expect(slow).rejects.toThrow(PAYOUT_CONCURRENT_REQUEST_ERROR);
+
+    expect(state.requests).toHaveLength(1);
+    expect(state.requests[0]!.id).toBe(winner.id);
+    expect(state.requests[0]!.amount.toString()).toBe('20000');
+    // Every commission is linked to the single surviving request — no hollow
+    // second request, and nothing left double-payable.
+    expect(state.commissions.every((c) => c.payoutRequestId === winner.id)).toBe(true);
   });
 });
 

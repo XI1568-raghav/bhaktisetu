@@ -1,5 +1,8 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
+import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
+import { cancellationService } from './cancellation.service.js';
 
 // Refund automation against Razorpay's REST API.
 //
@@ -233,6 +236,8 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // Atomic: Razorpay already debited; if Payment update lands but Booking
   // update fails the customer is refunded yet booking still looks active.
   // Wrap both writes so they commit together.
+  let reversedCommissions = 0;
+  let reversedTemplePayouts = 0;
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({
       where: { id: captured.id },
@@ -253,6 +258,61 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       where: { id: bookingId },
       data: bookingDataPatch,
     });
+
+    // RV-02 (2026-08-10): UNWIND THE PROVIDER LEDGER.
+    //
+    // Commission rows are minted at CONFIRM time — strictly before any refund is
+    // possible — and nothing downgraded, deleted or reversed them. So a refunded
+    // booking left the provider's earning PENDING and fully withdrawable, and the
+    // temple's 5% share pending too: on a Rs 5,000 booking refunded in full the
+    // devotee got Rs 5,000 back while Rs 1,000 stayed withdrawable to the priest
+    // and Rs 250 to the temple — ~Rs 6,250 out on a booking that earned Rs 0.
+    // Once an admin marked the payout complete the money was simply gone; the
+    // CommissionStatus enum had no reversal state at all (migration
+    // 20260810000000 adds REVERSED).
+    //
+    // Only PENDING rows are reversed. A row already linked to a settled payout
+    // (PAID, or carrying a payoutRequestId) is deliberately left alone — that
+    // money has left the building and clawing it back is a manual finance
+    // decision, not something a refund handler should do silently. Those surface
+    // in the reconciliation warning below.
+    //
+    // Partial refunds reverse proportionally is NOT attempted here: the ladder
+    // fractions are applied to the devotee side, and splitting a provider's
+    // earning mid-flight needs a policy decision. For a partial refund we leave
+    // the ledger untouched and flag it, rather than guess.
+    if (refundType === 'full') {
+      const reversed = await tx.commission.updateMany({
+        where: { bookingId, status: 'PENDING', payoutRequestId: null },
+        data: { status: 'REVERSED' },
+      });
+      const alreadySettled = await tx.commission.count({
+        where: { bookingId, OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }] },
+      });
+      if (alreadySettled > 0) {
+        // Cannot be undone automatically — the provider has been (or is being) paid.
+        await tx.pujaBooking.update({
+          where: { id: bookingId },
+          data: {
+            cancellationReason:
+              `[refunded][ledger-manual-review ${alreadySettled}] ${reason}`.slice(0, 500),
+          },
+        });
+      }
+      reversedCommissions = reversed.count;
+
+      // Temple share follows the same rule — pending only.
+      try {
+        const t = await tx.templePayout.updateMany({
+          where: { bookingId, status: 'pending' },
+          data: { status: 'reversed' },
+        });
+        reversedTemplePayouts = t.count;
+      } catch {
+        // TemplePayout may not carry a 'reversed' status in older deployments —
+        // never let ledger bookkeeping fail a refund that Razorpay already made.
+      }
+    }
   });
 
   // Best-effort success email — never block on send failure.
@@ -284,7 +344,8 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
 }
 
 // Marker prefix used by request-refund and consumed by processAutoRefunds.
-const REFUND_REQUESTED_MARKER = '[refund-requested]';
+// Shared with the producer (booking.service.cancelBooking) — see lib/refund-marker.ts.
+// Re-exported below on `refundService` for existing callers.
 
 /**
  * Auto-process REFUND_REQUESTED bookings older than 1 hour. Wired into
@@ -303,7 +364,14 @@ export async function processAutoRefunds(): Promise<{
     return { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'razorpay env unset' };
   }
   const cutoff = new Date(Date.now() - 60 * 60 * 1000);
-  let candidates: Array<{ id: string; cancellationReason: string | null }>;
+  let candidates: Array<{
+    id: string;
+    cancellationReason: string | null;
+    scheduledDate: Date;
+    scheduledTimeSlot: string | null;
+    priceAmount: Prisma.Decimal;
+    cancelledAt: Date | null;
+  }>;
   try {
     candidates = await prisma.pujaBooking.findMany({
       where: {
@@ -311,7 +379,15 @@ export async function processAutoRefunds(): Promise<{
         cancellationReason: { startsWith: REFUND_REQUESTED_MARKER },
         cancelledAt: { lt: cutoff },
       },
-      select: { id: true, cancellationReason: true },
+      // S2C-14: the ladder needs the slot + price + when the devotee cancelled.
+      select: {
+        id: true,
+        cancellationReason: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+        priceAmount: true,
+        cancelledAt: true,
+      },
       take: 50,
     });
   } catch {
@@ -322,10 +398,30 @@ export async function processAutoRefunds(): Promise<{
   for (const c of candidates) {
     const reason = (c.cancellationReason ?? '').replace(REFUND_REQUESTED_MARKER, '').trim() || 'Auto refund (cancellation request)';
     try {
+      // S2C-14 (2026-08-10): this used to hardcode `refundType: 'full'`, so EVERY
+      // auto-processed refund paid 100% while the 100/75/50/25/0 ladder was
+      // computed for display only. A devotee cancelling 30h out is owed 75% and
+      // was refunded 100% — Rs 275 over-refunded per Rs 1,100 booking,
+      // automatically, with no admin in the loop.
+      //
+      // The tier is measured at the moment the devotee CANCELLED (cancelledAt),
+      // not now — this cron runs at least an hour later, and billing them for
+      // our own queue latency would push them down a tier.
+      const policy = await cancellationService.getPolicy(c.id);
+      const quote = cancellationService.computeDevoteeRefund({
+        policy,
+        scheduledDate: c.scheduledDate,
+        scheduledTimeSlot: c.scheduledTimeSlot,
+        pujaPriceInr: Number(c.priceAmount),
+        totalPaidInr: Number(c.priceAmount),
+        now: c.cancelledAt ?? undefined,
+      });
+      const isFull = quote.refundFraction >= 1;
       const r = await processRefund({
         bookingId: c.id,
-        reason,
-        refundType: 'full',
+        reason: `${reason} [${quote.tierLabel}]`.slice(0, 250),
+        refundType: isFull ? 'full' : 'partial',
+        ...(isFull ? {} : { amountInr: quote.refundAmountInr }),
         initiatedBy: 'cron',
       });
       if (r.ok) succeeded += 1;

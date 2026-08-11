@@ -189,6 +189,124 @@ describe('OnboardingService.upsertProviderProfile', () => {
   });
 });
 
+// A-010 — devotee→provider onboarding used to leave the new role
+// isPrimary:false, so getPrimaryRoleForUser kept resolving 'devotee' and the
+// web AuthGuard bounced the provider off their own portal permanently.
+describe('OnboardingService — A-010 primary-role promotion', () => {
+  function roleUpsertFor(role: string) {
+    return prismaMock.userRoleAssignment.upsert.mock.calls
+      .map((c) => c[0])
+      .find((c: any) => c.where.userId_role.role === role);
+  }
+
+  it('upsertProviderProfile promotes the provider role to primary', async () => {
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'user-p', role: 'DEVOTEE', isPrimary: true },
+    ]);
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+    prismaMock.panditProfile.upsert.mockResolvedValue({});
+    prismaMock.priest.upsert.mockResolvedValue({});
+    prismaMock.user.findUnique.mockResolvedValue({ fullName: 'Pandit A' });
+    prismaMock.panditProfile.findUnique.mockResolvedValue({ id: 'pp-9' });
+
+    await service.upsertProviderProfile('user-p', 'PANDIT', { experience: 3 });
+
+    const pandit = roleUpsertFor('PANDIT');
+    expect(pandit.update.isPrimary).toBe(true);
+    expect(pandit.create.isPrimary).toBe(true);
+  });
+
+  it('upsertProviderProfile demotes the previously-primary devotee row', async () => {
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'user-d', role: 'DEVOTEE', isPrimary: true },
+    ]);
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+    prismaMock.storeProfile.upsert.mockResolvedValue({});
+    prismaMock.storeProfile.findUnique.mockResolvedValue({ id: 'sp-9' });
+
+    await service.upsertProviderProfile('user-d', 'STORE_OWNER', { storeName: 'X' });
+
+    const devotee = roleUpsertFor('DEVOTEE');
+    expect(devotee).toBeDefined();
+    expect(devotee.update.isPrimary).toBe(false);
+    // Demote must land before the promote, so the one-primary invariant never
+    // passes through a state with two primaries.
+    const roles = prismaMock.userRoleAssignment.upsert.mock.calls.map(
+      (c) => (c[0] as any).where.userId_role.role,
+    );
+    expect(roles.indexOf('DEVOTEE')).toBeLessThan(roles.indexOf('STORE_OWNER'));
+  });
+
+  it('leaves already-non-primary rows alone', async () => {
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'user-n', role: 'DEVOTEE', isPrimary: false },
+      { userId: 'user-n', role: 'ASTROLOGER', isPrimary: false },
+    ]);
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+    prismaMock.astrologerProfile.upsert.mockResolvedValue({});
+    prismaMock.astrologerProfile.findUnique.mockResolvedValue({ id: 'ap-9' });
+
+    await service.upsertProviderProfile('user-n', 'ASTROLOGER', {});
+
+    expect(roleUpsertFor('DEVOTEE')).toBeUndefined();
+    expect(roleUpsertFor('ASTROLOGER').update.isPrimary).toBe(true);
+  });
+
+  it('submitForApproval promotes the wizard role once all steps are done', async () => {
+    prismaMock.onboardingStep.findMany.mockResolvedValue([
+      { step: 1, completed: true, data: {} },
+      { step: 2, completed: true, data: {} },
+      { step: 3, completed: true, data: {} },
+      { step: 4, completed: true, data: {} },
+      { step: 5, completed: true, data: {} },
+    ]);
+    prismaMock.templeProfile.upsert.mockResolvedValue({});
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'user-t', role: 'DEVOTEE', isPrimary: true },
+      { userId: 'user-t', role: 'TEMPLE_MANAGER', isPrimary: false },
+    ]);
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+
+    const out = await service.submitForApproval('user-t', 'TEMPLE_MANAGER');
+
+    expect(out.submitted).toBe(true);
+    expect(roleUpsertFor('TEMPLE_MANAGER').update.isPrimary).toBe(true);
+    expect(roleUpsertFor('DEVOTEE').update.isPrimary).toBe(false);
+  });
+
+  it('runs demote+promote inside one transaction', async () => {
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'user-tx', role: 'DEVOTEE', isPrimary: true },
+    ]);
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+    prismaMock.gaushalaProfile.upsert.mockResolvedValue({});
+    prismaMock.gaushalaProfile.findUnique.mockResolvedValue({ id: 'gp-9' });
+
+    await service.upsertProviderProfile('user-tx', 'GAUSHALA_MANAGER', {});
+
+    // A committed demote without its promote would leave the account with NO
+    // primary row — the same portal lockout wearing a different hat.
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.userRoleAssignment.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it('startOnboarding does NOT promote — opening the wizard is not a commitment', async () => {
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+    prismaMock.onboardingStep.upsert.mockResolvedValue({});
+    prismaMock.onboardingStep.findMany.mockResolvedValue([
+      { step: 1, completed: false, data: null },
+      { step: 2, completed: false, data: null },
+      { step: 3, completed: false, data: null },
+      { step: 4, completed: false, data: null },
+      { step: 5, completed: false, data: null },
+    ]);
+
+    await service.startOnboarding('user-w', 'WELLNESS_INSTRUCTOR');
+
+    expect(roleUpsertFor('WELLNESS_INSTRUCTOR').create.isPrimary).toBe(false);
+  });
+});
+
 describe('OnboardingService.getProviderProfile', () => {
   it('routes PANDIT to panditProfile', async () => {
     prismaMock.panditProfile.findUnique.mockResolvedValue({ id: 'pp-1' });

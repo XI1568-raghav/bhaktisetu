@@ -91,6 +91,32 @@ export function magicLinkEmail(linkUrl: string): { subject: string; html: string
   };
 }
 
+/**
+ * Escape untrusted text before interpolating it into an HTML template.
+ * Only applied to the templates touched since RV-18; the older ones above
+ * predate this helper and are left as-is deliberately (changing them is a
+ * separate, wider change).
+ */
+function esc(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * RV-18 (2026-08-10): this template was DEAD CODE — it had exactly one
+ * reference in the repo, its own definition. The only email a paying devotee
+ * received was the tax invoice (payment.service.sendPujaBookingInvoice), whose
+ * `puja_booking` PDF variant renders createdAt as the INVOICE date and carries
+ * no scheduledDate / scheduledTimeSlot field at all. Net effect: a devotee who
+ * had just paid was never told, in writing, WHEN their puja would happen.
+ *
+ * This is now wired through booking-notify.service.sendBookingConfirmationEmail,
+ * which the 'confirmed' devotee notification fires. `priestName` was added
+ * because the assigned pandit is the other thing devotees ask support about.
+ */
 export function bookingConfirmationEmail(params: {
   devoteeName: string;
   pujaName: string;
@@ -99,22 +125,29 @@ export function bookingConfirmationEmail(params: {
   scheduledTimeSlot: string;
   bookingNumber: string;
   amount: string;
+  priestName?: string | null;
 }): { subject: string; html: string; text: string } {
-  const { devoteeName, pujaName, templeName, scheduledDate, scheduledTimeSlot, bookingNumber, amount } = params;
+  const { devoteeName, pujaName, templeName, scheduledDate, scheduledTimeSlot, bookingNumber, amount, priestName } = params;
+  const panditHtml = priestName
+    ? `<strong>Pandit:</strong> ${esc(priestName)}<br>`
+    : '<strong>Pandit:</strong> Being assigned — we\'ll confirm shortly<br>';
+  const panditText = priestName ? `Pandit: ${priestName}\n` : 'Pandit: being assigned\n';
   return {
     subject: `Puja booking confirmed: ${pujaName} at ${templeName}`,
     html: shell(`
-      <h1>Namaste ${devoteeName}, your puja is booked</h1>
-      <p>Your booking has been confirmed. Booking number: <strong>${bookingNumber}</strong></p>
-      <p><strong>Puja:</strong> ${pujaName}<br>
-      <strong>Temple:</strong> ${templeName}<br>
-      <strong>Date:</strong> ${scheduledDate}<br>
-      <strong>Time:</strong> ${scheduledTimeSlot}<br>
-      <strong>Amount paid:</strong> ${amount}</p>
+      <h1>Namaste ${esc(devoteeName)}, your puja is booked</h1>
+      <p>Your booking has been confirmed. Booking number: <strong>${esc(bookingNumber)}</strong></p>
+      <p><strong>Puja:</strong> ${esc(pujaName)}<br>
+      <strong>Temple:</strong> ${esc(templeName)}<br>
+      <strong>Date:</strong> ${esc(scheduledDate)}<br>
+      <strong>Time:</strong> ${esc(scheduledTimeSlot)}<br>
+      ${panditHtml}
+      <strong>Amount paid:</strong> ${esc(amount)}</p>
       <p>The priest will perform the puja and upload a video proof. You'll receive an email when the recording is ready.</p>
-      <a class="btn" href="https://darshya.online/bookings/${bookingNumber}">View booking</a>
+      <p style="font-size:12px;color:#999;">Need to change or cancel? Cancellation is open until 24 hours before the slot time above — your booking page shows the refund that applies.</p>
+      <a class="btn" href="https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}">View booking</a>
     `),
-    text: `Namaste ${devoteeName}, your puja is booked.\n\nBooking #${bookingNumber}\nPuja: ${pujaName}\nTemple: ${templeName}\nDate: ${scheduledDate} ${scheduledTimeSlot}\nAmount: ${amount}\n\nView at: https://darshya.online/bookings/${bookingNumber}`,
+    text: `Namaste ${devoteeName}, your puja is booked.\n\nBooking #${bookingNumber}\nPuja: ${pujaName}\nTemple: ${templeName}\nDate: ${scheduledDate}\nTime: ${scheduledTimeSlot}\n${panditText}Amount: ${amount}\n\nCancellation is open until 24 hours before the slot time.\nView at: https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}`,
   };
 }
 

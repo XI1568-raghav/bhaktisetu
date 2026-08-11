@@ -21,6 +21,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Portal path prefixes that require a logged-in session to render.
 // NOTE: these are no longer role-gated — see comment above.
+//
+// A-003 / A-013 (2026-08-10): `/temple-portal` and `/payouts` were missing, so
+// they were the only AuthGuard-wrapped surfaces with no server-side gate — a
+// logged-out visitor got a 200 + shell flash + client redirect instead of the
+// clean 307 the other portals emit. Both are 100% authenticated pages (every
+// route under them is wrapped in <AuthGuard>), so gating them costs no public
+// content. KEEP THIS LIST AND `config.matcher` BELOW IN SYNC — a prefix that
+// is in one but not the other is silently ineffective.
 const PORTAL_PREFIXES = [
   '/admin',
   '/priest',
@@ -28,6 +36,8 @@ const PORTAL_PREFIXES = [
   '/astrologer-portal',
   '/wellness-portal',
   '/gaushala-portal',
+  '/temple-portal',
+  '/payouts',
 ];
 
 // A session exists iff the poojly_user cookie is present and non-empty.
@@ -63,5 +73,7 @@ export const config = {
     '/astrologer-portal/:path*',
     '/wellness-portal/:path*',
     '/gaushala-portal/:path*',
+    '/temple-portal/:path*',
+    '/payouts/:path*',
   ],
 };

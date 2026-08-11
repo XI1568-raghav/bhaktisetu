@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 import { getStripe, isStripeDemoMode } from '../lib/stripe.js';
@@ -423,6 +424,28 @@ interface RefundResult {
   bookingId: string;
   amount: number;
   status: string;
+  /** RV-12: which cancellation tier produced `amount` (absent when the caller named the amount). */
+  tierLabel?: string;
+  /** RV-12: the tier's refundFraction (0..1). Absent when the caller named the amount. */
+  refundFraction?: number;
+}
+
+/** RV-12 (2026-08-10): options for the admin refund path. See PaymentService.processRefund. */
+export interface AdminRefundOptions {
+  /**
+   * Explicit refund amount in INR (partial refund). Clamped to whatever is
+   * still refundable on the payment. Omit to apply the booking's cancellation
+   * ladder instead.
+   */
+  amountInr?: number;
+  /**
+   * Force a 100% refund of everything still refundable, bypassing the ladder.
+   * This is the PANDIT-FAULT / platform-fault path — policy
+   * `panditCancelRefundFraction` is 1.0, the devotee is always made whole.
+   */
+  fullRefund?: boolean;
+  /** Reason recorded on the Payment metadata + Razorpay notes. Defaults to the booking's. */
+  reason?: string;
 }
 
 // ─── PaymentService ─────────────────────────────────────────────────────────────
@@ -600,6 +623,10 @@ export class PaymentService {
         // A failure here rolls back the capture+confirm (better than a silent
         // missing payout row). Idempotent via the findFirst guard inside.
         await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+        // RV-03: the temple's 5% share, in the SAME transaction as the
+        // commission that earned it. Without this call temples receive Rs 0.00
+        // on every paid booking — the writer exists but nothing reaches it.
+        await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
       }
     });
 
@@ -934,6 +961,10 @@ export class PaymentService {
               });
               // P1-12: commission ledger row inside the tx.
               await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+        // RV-03: the temple's 5% share, in the SAME transaction as the
+        // commission that earned it. Without this call temples receive Rs 0.00
+        // on every paid booking — the writer exists but nothing reaches it.
+        await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
             }
           });
 
@@ -1032,15 +1063,44 @@ export class PaymentService {
   }
 
   /**
-   * Process a full refund for a cancelled/refundable booking.
+   * Process a refund for a cancelled/refundable booking (admin path,
+   * POST /api/v1/payments/:id/refund).
+   *
+   * RV-12 (2026-08-10): this method was structurally incapable of a partial
+   * refund — it had no amount parameter at all and always sent 100% of the
+   * captured amount to Razorpay, while the 100/75/50/25 cancellation ladder
+   * was never referenced. On a Rs 1,100 booking cancelled 12h before the slot
+   * the snapshotted policy awards the devotee 50% (Rs 550); the retained
+   * Rs 550 is earmarked IN FULL as pandit compensation
+   * (cancellationFeeToPriestFraction = 1.0), so a blanket 100% refund took
+   * Rs 550 straight out of the pandit's pocket — and the platform still ate
+   * the non-refundable Razorpay MDR on the original capture.
+   *
+   * Amount resolution, in precedence order:
+   *   1. `opts.amountInr` — caller names the amount (partial).
+   *   2. `opts.fullRefund` — force 100%: the pandit-fault / platform-fault
+   *      path, where the devotee is always made whole.
+   *   3. neither — apply the booking's SNAPSHOTTED cancellation ladder, the
+   *      same computation refund.service's auto-refund cron performs. Only
+   *      valid on a cancelled booking; anything else throws rather than guess.
+   * Whatever is asked for is clamped to what is still refundable, so no path
+   * can ever return more money than was taken.
    */
-  async processRefund(bookingId: string, adminId?: string): Promise<RefundResult> {
+  async processRefund(
+    bookingId: string,
+    adminId?: string,
+    opts: AdminRefundOptions = {}
+  ): Promise<RefundResult> {
     // 1. Get booking and its captured payment
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
       include: {
         payments: {
-          where: { status: 'captured' },
+          // RV-12: a `partially_refunded` payment is still a valid target — an
+          // admin may top a partial up later — because we only ever send the
+          // REMAINING balance. `refunded` stays excluded: that is the
+          // double-refund guard, and it still holds.
+          where: { status: { in: ['captured', 'partially_refunded'] } },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
@@ -1061,8 +1121,77 @@ export class PaymentService {
       throw new Error('No gateway payment ID found. Cannot process refund.');
     }
 
-    // 2. Call Razorpay refund API
-    const refundAmountInPaise = Math.round(Number(payment.amount) * 100);
+    // 2. Work out how much to refund. Money stays in Decimal all the way to
+    //    the single paise conversion Razorpay's API requires.
+    const paid = new Prisma.Decimal(payment.amount);
+    const alreadyRefunded = payment.refundAmount
+      ? new Prisma.Decimal(payment.refundAmount)
+      : new Prisma.Decimal(0);
+    const refundable = paid.minus(alreadyRefunded);
+
+    if (refundable.lte(0)) {
+      throw new Error('This payment has already been fully refunded.');
+    }
+
+    let requested: Prisma.Decimal;
+    let tierLabel: string | undefined;
+    let refundFraction: number | undefined;
+
+    if (opts.amountInr !== undefined) {
+      if (!Number.isFinite(opts.amountInr) || opts.amountInr <= 0) {
+        throw new Error('Refund amount must be a positive number of rupees.');
+      }
+      requested = new Prisma.Decimal(opts.amountInr.toFixed(2));
+    } else if (opts.fullRefund) {
+      requested = refundable;
+    } else {
+      // RV-12: the ladder is a CANCELLATION instrument. On a booking that was
+      // never cancelled — a dispute, a goodwill refund, or a `delivered` puja
+      // whose PriestPayout already exists — it is meaningless: hoursUntilSlot
+      // is negative, every tier fails its `minHoursBefore`, and
+      // cancellation.service's `?? last tier` fallback would silently hand back
+      // 25%. Refuse to guess with someone else's money; make the admin state
+      // their intent. (Before this fix the same call silently refunded 100%.)
+      if (!booking.cancelledAt && booking.status !== 'cancelled') {
+        throw new Error(
+          'This booking has not been cancelled, so the cancellation ladder does not apply. ' +
+            'Pass an explicit refund amount, or fullRefund for a platform-fault refund.'
+        );
+      }
+      // Dynamic import mirrors the confirm path above — keeps
+      // cancellation.service out of this module's static load graph.
+      const { cancellationService } = await import('./cancellation.service.js');
+      const policy = await cancellationService.getPolicy(bookingId);
+      const quote = cancellationService.computeDevoteeRefund({
+        policy,
+        scheduledDate: booking.scheduledDate,
+        // scheduledDate is a DATE column (midnight); the slot carries the time.
+        scheduledTimeSlot: booking.scheduledTimeSlot,
+        pujaPriceInr: Number(booking.priceAmount),
+        totalPaidInr: Number(payment.amount),
+        // Measure the tier at the moment the devotee CANCELLED, not now. An
+        // admin working the queue days later must not push them down a tier
+        // for our own latency — same rule as processAutoRefunds.
+        now: booking.cancelledAt ?? undefined,
+      });
+      requested = new Prisma.Decimal(quote.refundAmountInr.toFixed(2));
+      tierLabel = quote.tierLabel;
+      refundFraction = quote.refundFraction;
+    }
+
+    // Never send more than what is still refundable, whatever was asked for.
+    const refundAmount = requested.gt(refundable) ? refundable : requested;
+    if (refundAmount.lte(0)) {
+      throw new Error(
+        `No refund is due on this booking${tierLabel ? ` (${tierLabel})` : ''}.`
+      );
+    }
+
+    const isFullRefund = refundAmount.plus(alreadyRefunded).gte(paid);
+    const reason = opts.reason ?? booking.cancellationReason ?? 'Booking cancelled';
+
+    // 3. Call Razorpay refund API
+    const refundAmountInPaise = Number(refundAmount.mul(100).toFixed(0));
 
     const refund = await razorpay.payments.refund(payment.gatewayPaymentId, {
       amount: refundAmountInPaise,
@@ -1070,37 +1199,69 @@ export class PaymentService {
         bookingId: booking.id,
         bookingNumber: booking.bookingNumber,
         adminId: adminId ?? 'system',
-        reason: booking.cancellationReason ?? 'Booking cancelled',
+        reason: reason.slice(0, 250),
+        tier: tierLabel ?? 'admin-specified amount',
       },
     }) as { id: string };
 
-    // 3. Update payment record
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        refundAmount: payment.amount,
-        status: 'refunded',
-        metadata: {
-          ...((payment.metadata as Record<string, unknown>) ?? {}),
-          refundId: refund.id,
-          refundedBy: adminId ?? 'system',
-          refundedAt: new Date().toISOString(),
-        },
-      },
-    });
+    const newRefundTotal = alreadyRefunded.plus(refundAmount);
+    const newPaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
 
-    // 4. Update booking status
-    await prisma.pujaBooking.update({
-      where: { id: bookingId },
-      data: { status: 'refunded' },
+    // 4. Persist. Razorpay has already debited us; if the Payment write lands
+    //    and the PujaBooking write does not, the devotee is refunded while the
+    //    booking still looks live. Commit them together (refund.service does
+    //    the same).
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          refundAmount: newRefundTotal,
+          status: newPaymentStatus,
+          metadata: {
+            ...((payment.metadata as Record<string, unknown>) ?? {}),
+            refundId: refund.id,
+            refundedBy: adminId ?? 'system',
+            refundedAt: new Date().toISOString(),
+            refundAmountInr: refundAmount.toFixed(2),
+            refundReason: reason,
+            refundTier: tierLabel ?? null,
+          },
+        },
+      });
+
+      if (isFullRefund) {
+        await tx.pujaBooking.update({
+          where: { id: bookingId },
+          data: {
+            status: 'refunded',
+            cancelledAt: booking.cancelledAt ?? new Date(),
+            cancellationReason: `[refunded] ${reason}`.slice(0, 500),
+          },
+        });
+      } else {
+        await tx.pujaBooking.update({
+          where: { id: bookingId },
+          data: {
+            // RV-12: a partial does NOT flip the booking to 'refunded' — but the
+            // "[refund-requested]" marker MUST be cleared. The auto-refund cron
+            // selects bookings on that marker and treats a `partially_refunded`
+            // payment as still refundable, so leaving it in place would let the
+            // cron refund the same booking a second time an hour later.
+            cancellationReason:
+              `[partially-refunded ${refundAmount.toFixed(2)}] ${reason}`.slice(0, 500),
+          },
+        });
+      }
     });
 
     return {
       refundId: refund.id,
       paymentId: payment.id,
       bookingId: booking.id,
-      amount: Number(payment.amount),
-      status: 'refunded' as const,
+      amount: refundAmount.toNumber(),
+      status: newPaymentStatus,
+      ...(tierLabel ? { tierLabel } : {}),
+      ...(refundFraction !== undefined ? { refundFraction } : {}),
     };
   }
 
@@ -1407,6 +1568,10 @@ export class PaymentService {
               });
               // P1-12: commission ledger row inside the tx.
               await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+        // RV-03: the temple's 5% share, in the SAME transaction as the
+        // commission that earned it. Without this call temples receive Rs 0.00
+        // on every paid booking — the writer exists but nothing reaches it.
+        await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
             }
           });
 

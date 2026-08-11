@@ -214,7 +214,28 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // RV-02: refund-time ledger reversal uses updateMany + count.
+    updateMany: vi.fn(),
+    count: vi.fn(),
     aggregate: vi.fn(),
+  },
+  // RV-02: the temple's 5% share is reversed alongside the provider commission.
+  templePayout: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+    count: vi.fn(),
+    aggregate: vi.fn(),
+  },
+  payoutRequest: {
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+    count: vi.fn(),
   },
   aiConversation: {
     findFirst: vi.fn(),

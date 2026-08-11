@@ -1,0 +1,11 @@
+-- RV-20 (2026-08-10): index puja_bookings.priest_id.
+--
+-- WHY: priest_id is the sole predicate of the entire pandit portal (my-bookings,
+-- earnings, dispatch assignment) and was unindexed — every pandit page did a
+-- full table scan of puja_bookings.
+--
+-- NOT using CREATE INDEX CONCURRENTLY: migrate deploy runs each migration in a
+-- transaction, and CONCURRENTLY inside a transaction fails with 25001 and then
+-- blocks every later migration (documented incident, docs/caveats.md).
+-- puja_bookings is small enough that a plain CREATE INDEX is a sub-second lock.
+CREATE INDEX IF NOT EXISTS "puja_bookings_priest_id_idx" ON "puja_bookings" ("priest_id");

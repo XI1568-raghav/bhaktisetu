@@ -51,7 +51,12 @@ export class OnboardingService {
     }
 
     try {
-      // Create role assignment
+      // Create role assignment. Deliberately NOT primary yet — see the note on
+      // setPrimaryRole (A-010): opening the wizard is not a commitment, and
+      // promoting here would drop a devotee who abandons step 1 into an empty
+      // provider portal on their next login. The promotion happens where the
+      // provider profile is actually written (submitForApproval /
+      // upsertProviderProfile).
       await prisma.userRoleAssignment.upsert({
         where: { userId_role: { userId, role } },
         update: {},
@@ -189,6 +194,11 @@ export class OnboardingService {
 
       await this.createProviderProfile(userId, role as RoleType, stepsData);
 
+      // A-010: the multi-step wizard never touched isPrimary after
+      // startOnboarding, so a devotee who completed every step still logged in
+      // as 'devotee'. Promote once the profile exists, not before.
+      await this.setPrimaryRole(userId, role as RoleType);
+
       return { message: 'Application submitted for review. You will be notified upon approval.', submitted: true };
     } catch {
       return { message: 'Application submitted for review (demo). You will be notified upon approval.', submitted: true };
@@ -207,16 +217,54 @@ export class OnboardingService {
     role: RoleType,
     data: Record<string, unknown>,
   ): Promise<{ role: string; profileId?: string }> {
-    await prisma.userRoleAssignment.upsert({
-      where: { userId_role: { userId, role } },
-      update: {},
-      create: { userId, role, isPrimary: false },
-    });
+    // A-010: was `create: { isPrimary: false }` + a no-op `update: {}`, which
+    // left the account resolving as whatever it was before (devotee).
+    await this.setPrimaryRole(userId, role);
 
     await this.createProviderProfile(userId, role, data);
 
     const profileId = await this.fetchProfileId(userId, role);
     return { role, profileId };
+  }
+
+  /**
+   * A-010 (2026-08-10) — provider portal lockout.
+   *
+   * A user has exactly ONE primary role assignment, and
+   * `getPrimaryRoleForUser` (routes/auth.ts) derives the login role from it,
+   * ordering `isPrimary desc, createdAt asc`. Onboarding used to write the new
+   * provider assignment with `isPrimary:false` and never cleared the older
+   * DEVOTEE row, so the devotee row always won: a devotee who became a pandit /
+   * store owner / astrologer / wellness instructor / gaushala manager / temple
+   * manager kept resolving as 'devotee' and the web AuthGuard bounced them off
+   * their own portal permanently — recoverable only by a manual admin edit.
+   *
+   * Demote every other assignment, then promote this one, so the one-primary
+   * invariant actually holds. Both halves run in ONE transaction: a demote that
+   * commits without its promote would leave the account with no primary row at
+   * all, which is a different flavour of the same lockout.
+   */
+  private async setPrimaryRole(userId: string, role: RoleType): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const existing = (await tx.userRoleAssignment.findMany({ where: { userId } })) ?? [];
+
+      for (const assignment of existing) {
+        if (assignment.role === role || !assignment.isPrimary) continue;
+        // upsert rather than update so a row that disappears between the read and
+        // the write is recreated demoted instead of throwing P2025 mid-onboarding.
+        await tx.userRoleAssignment.upsert({
+          where: { userId_role: { userId, role: assignment.role } },
+          update: { isPrimary: false },
+          create: { userId, role: assignment.role, isPrimary: false },
+        });
+      }
+
+      await tx.userRoleAssignment.upsert({
+        where: { userId_role: { userId, role } },
+        update: { isPrimary: true },
+        create: { userId, role, isPrimary: true },
+      });
+    });
   }
 
   /**

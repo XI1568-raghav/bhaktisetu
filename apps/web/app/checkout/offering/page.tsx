@@ -121,22 +121,11 @@ function OfferingCheckoutInner() {
   const [bookingNumber, setBookingNumber] = useState('');
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
 
-  // NRI / USD checkout toggle. Mirrors the pujas/[slug]/book heuristic:
-  // browser timezone outside Asia/Kolkata → diaspora user, default to
-  // USD/Stripe. User can flip the toggle either way. Falls back to INR
-  // on SSR / errors. Keep parity with that file — when one moves to a
-  // shared util, both call sites flip together.
-  const [payInUsd, setPayInUsd] = useState(false);
-  useEffect(() => {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (tz && tz !== 'Asia/Kolkata' && !tz.startsWith('Asia/Calcutta')) {
-        setPayInUsd(true);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  // The INR/USD toggle was removed 2026-08-10 with the Stripe rail. It defaulted
+  // to USD for ANY browser outside Asia/Kolkata and displayed `basePrice * 9` as
+  // dollars — Rs 1,100 shown and billed as $9,900 (RV-01). Razorpay is now the
+  // only gateway and INR the only currency; NRI premium pricing returns with the
+  // PayPal rail as a server-quoted amount rendered before payment.
 
   // Prefill devotee name from the signed-in user once auth resolves.
   useEffect(() => {
@@ -194,11 +183,6 @@ function OfferingCheckoutInner() {
   }, [fetchOffering]);
 
   const priceInr = offering ? parseFloat(offering.basePrice) : 0;
-  // NRI USD price = basePrice × 9, mirroring W6 backend
-  // (POST /bookings/from-offering with currency='USD' bills basePrice × 9).
-  // Hard-coded multiplier here so the displayed amount matches what the
-  // server will charge — keep in lock-step with the server constant.
-  const priceUsd = Math.round(priceInr * 9);
   const canPay =
     !!offering &&
     !!priest &&
@@ -340,94 +324,7 @@ function OfferingCheckoutInner() {
     }
   };
 
-  // ─── Stripe NRI / USD payment ────────────────────────────────
-  //
-  // W6 wired POST /bookings/from-offering to accept currency='USD' and
-  // bill basePrice × 9 via Stripe. Mirrors the pattern in
-  // /pujas/[slug]/book → handleStripePayment: server returns either a
-  // checkoutUrl (hosted Stripe Checkout — redirect) or `demo: true` when
-  // STRIPE_SECRET_KEY is absent, in which case we show the success screen
-  // so the flow stays exercisable in dev/preview.
-  const handleStripePayment = async () => {
-    if (!offering || !priest) return;
-    if (!isAuthenticated) {
-      window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      return;
-    }
-
-    setPaymentLoading(true);
-    setPaymentError('');
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/bookings/from-offering`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-        body: JSON.stringify({
-          offeringId: offering.id,
-          scheduledDate,
-          scheduledTime,
-          devotees: [
-            {
-              name: devoteeName.trim(),
-              gotra: gotra.trim() || undefined,
-            },
-          ],
-          sankalp: sankalp.trim() || undefined,
-          prasadDelivery: false,
-          currency: 'USD',
-        }),
-      }).catch(() => null);
-
-      if (!res || !res.ok) {
-        const body = res ? await res.json().catch(() => null) : null;
-        const msg = body?.error
-          ? `${body.error}`
-          : res
-            ? `Could not create your USD order (${res.status}). Please try again or contact support@darshya.online.`
-            : 'Network error reaching the booking service. Please check your connection.';
-        setPaymentError(msg);
-        setPaymentLoading(false);
-        return;
-      }
-
-      const data = await res.json().catch(() => null);
-      if (!data?.orderId) {
-        setPaymentError('Booking service returned an unexpected response. Please try again.');
-        setPaymentLoading(false);
-        return;
-      }
-
-      // Demo mode: no STRIPE_SECRET_KEY on the server. Booking row still
-      // exists; surface the success screen so the funnel stays usable.
-      if (data.demo || (!data.checkoutUrl && !data.clientSecret)) {
-        const bkNum: string = data.bookingNumber ?? data.orderId;
-        setBookingNumber(bkNum);
-        setBookingSuccess(true);
-        setPaymentLoading(false);
-        return;
-      }
-
-      // Real Stripe — redirect to hosted Checkout.
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-        return;
-      }
-
-      // clientSecret-only path: mount embedded Stripe Elements.
-      // Falls back to mailto if NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY missing
-      // (handled inside StripeClientSecretCheckout).
-      const bk = data.bookingNumber ?? data.orderId;
-      setBookingNumber(bk);
-      setStripeClientSecret(data.clientSecret as string);
-      setPaymentLoading(false);
-    } catch (err: any) {
-      setPaymentError(err.message || 'Something went wrong. Please try again.');
-      setPaymentLoading(false);
-    }
-  };
+  // handleStripePayment removed 2026-08-10 — Stripe is no longer a payment rail.
 
   // ─── Render ──────────────────────────────────────────────────
 
@@ -544,16 +441,10 @@ function OfferingCheckoutInner() {
                 </p>
               )}
               <div className="flex items-center gap-4 mt-3 text-sm text-surface-600">
-                {payInUsd ? (
-                  <span className="inline-flex items-center gap-1 font-semibold text-surface-800">
-                    ${priceUsd.toLocaleString('en-US')}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 font-semibold text-surface-800">
-                    <IndianRupee className="w-3.5 h-3.5" />
-                    {priceInr.toLocaleString('en-IN')}
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1 font-semibold text-surface-800">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  {priceInr.toLocaleString('en-IN')}
+                </span>
                 <span className="inline-flex items-center gap-1 text-surface-500">
                   <Clock className="w-3.5 h-3.5" />
                   {offering.durationMinutes} min
@@ -694,50 +585,16 @@ function OfferingCheckoutInner() {
           </div>
         )}
 
-        {/* INR / USD toggle — diaspora-friendly. Defaults to USD when
-          * the browser timezone is outside Asia/Kolkata. Either currency
-          * routes server-side to the correct gateway (Razorpay vs Stripe). */}
-        {priceUsd > 0 && (
-          <div className="mb-4 flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm">
-            <span className="text-surface-600">Currency</span>
-            <div className="flex gap-1 rounded-lg bg-surface-100 p-1">
-              <button
-                type="button"
-                onClick={() => setPayInUsd(false)}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  !payInUsd ? 'bg-white text-saffron-600 shadow-sm' : 'text-surface-500'
-                }`}
-              >
-                INR &#8377;{priceInr.toLocaleString('en-IN')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayInUsd(true)}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  payInUsd ? 'bg-white text-saffron-600 shadow-sm' : 'text-surface-500'
-                }`}
-              >
-                USD ${priceUsd.toLocaleString('en-US')}
-              </button>
-            </div>
-          </div>
-        )}
-
         <button
           type="button"
           disabled={!canPay}
-          onClick={payInUsd ? handleStripePayment : handlePayment}
+          onClick={handlePayment}
           className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 disabled:bg-surface-300 disabled:cursor-not-allowed transition-colors"
         >
           {paymentLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               Processing...
-            </>
-          ) : payInUsd ? (
-            <>
-              <CreditCard className="w-4 h-4" />
-              Pay ${priceUsd.toLocaleString('en-US')} with Stripe
             </>
           ) : (
             <>

@@ -219,8 +219,11 @@ function DashboardContent() {
  <div className="flex items-center justify-between mb-4">
  <h2 className="text-lg font-semibold text-surface-800">Recent Bookings</h2>
  {bookingsCount > 5 && (
+ // S2C-10 (2026-08-11): /dashboard/bookings has never existed (app/dashboard
+ // holds only page.tsx), so this "View All" 404'd for exactly the repeat
+ // devotees with more than 5 bookings. The real route is top-level /bookings.
  <a
- href="/dashboard/bookings"
+ href="/bookings"
  className="text-sm text-saffron-600 font-semibold hover:text-saffron-700 flex items-center gap-1"
  >
  View All <ChevronRight className="w-4 h-4" />

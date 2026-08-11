@@ -104,6 +104,207 @@ const paramsWithId = z.object({
   id: z.string().uuid(),
 });
 
+// ─── Guards ─────────────────────────────────────────────────────────────────────
+//
+// Hoisted to module scope so the pure decision helpers are unit-testable via
+// __testing without booting Fastify (same pattern as routes/priest.ts).
+// See the __testing export at the bottom of this file.
+
+type GateResult =
+  | { ok: true }
+  | { ok: false; status: number; error: string; message: string };
+
+/**
+ * RV-08 (2026-08-10): business rule 1 — "video proof is MANDATORY for puja
+ * bookings" — was enforced nowhere on this endpoint.
+ *
+ * `data` is optional on the completed/video_uploaded/delivered variants above
+ * and `videoProofUrl` is optional inside it, while booking.service's
+ * VALID_TRANSITIONS allowlist is status-only with no videoProofUrl predicate.
+ * So `PATCH {"status":"video_uploaded"}` with no body at all walked
+ * completed -> video_uploaded -> delivered on a booking whose videoProofUrl was
+ * null — and video_uploaded/delivered is precisely where booking.service calls
+ * paymentService.createPriestPayout to mint the pandit's 80% payout. The
+ * devotee had paid in full for a puja with no evidence it happened, and the
+ * admin's only remediation (POST /video-proof/flag) returns 409 when
+ * videoProofUrl is null, so the row could not even be reverted afterwards.
+ *
+ * Two gates, both enforcing the same rule:
+ *  1. video_uploaded / delivered require a videoProofUrl — either already on
+ *     the booking (written by the safe path, booking.service.uploadVideoProof)
+ *     or supplied in this same request.
+ *  2. only the assigned pandit or an admin may ATTACH proof here. Without this
+ *     the devotee — who passes the owner branch of the authz check below —
+ *     could self-attest any URL and mint the pandit's payout, leaving gate 1
+ *     satisfiable by exactly the party it is meant to protect against. The
+ *     safe path already requires priest ownership; this makes PATCH match it.
+ */
+const VIDEO_PROOF_REQUIRED_STATUSES: readonly BookingStatus[] = ['video_uploaded', 'delivered'];
+
+function checkVideoProofGate(input: {
+  newStatus: BookingStatus;
+  existingVideoProofUrl: string | null;
+  suppliedVideoProofUrl?: string | null;
+  isAssignedPriest: boolean;
+  isAdmin: boolean;
+}): GateResult {
+  const supplied = input.suppliedVideoProofUrl?.trim() || null;
+
+  if (supplied && !input.isAssignedPriest && !input.isAdmin) {
+    return {
+      ok: false,
+      status: 403,
+      error: 'Forbidden',
+      message: 'Only the assigned pandit or an admin may attach video proof to a booking.',
+    };
+  }
+
+  if (!VIDEO_PROOF_REQUIRED_STATUSES.includes(input.newStatus)) {
+    return { ok: true };
+  }
+
+  const existing = input.existingVideoProofUrl?.trim() || null;
+  if (existing || supplied) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    status: 409,
+    error: 'Video proof required',
+    message:
+      `Video proof is mandatory before a booking can move to "${input.newStatus}". ` +
+      'Upload the recording first (POST /priest/bookings/:id/video) or send ' +
+      'data.videoProofUrl with this request.',
+  };
+}
+
+/**
+ * RV-17 (2026-08-10): admin priest reassignment was accepted and silently
+ * discarded. `body.priestId` had exactly one consumer — the admin-only 403
+ * branch below — and was never passed to updateBookingStatus, which strips
+ * priestId in its own denylist anyway. The endpoint answered 200 carrying the
+ * OLD priest, so the documented capability (see the priest_assigned schema
+ * variant) did not exist while appearing to succeed. dispatch.service
+ * designates admin as the T4 escalation owner, and that escalation had no
+ * working assignment tool anywhere in the product.
+ *
+ * The write now happens in the route (booking.service's denylist is a
+ * deliberate defence-in-depth boundary and stays untouched), but only in the
+ * window where it cannot rewrite settled money: once a booking reaches
+ * completed the puja has been performed by the pandit on record, and at
+ * video_uploaded/delivered a PriestPayout has already been minted for them.
+ */
+const PRIEST_REASSIGNABLE_STATUSES: readonly BookingStatus[] = [
+  'pending_payment',
+  'confirmed',
+  'priest_assigned',
+  'in_progress',
+];
+
+function checkPriestReassignable(currentStatus: BookingStatus): GateResult {
+  if (PRIEST_REASSIGNABLE_STATUSES.includes(currentStatus)) {
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    status: 409,
+    error: 'Conflict',
+    message:
+      `Cannot reassign the pandit on a booking in "${currentStatus}" status — ` +
+      'the puja has already been performed or settled. Cancel and rebook instead.',
+  };
+}
+
+/**
+ * S2C-13 / RV-17 (2026-08-10): a pandit cannot be in two places at once.
+ *
+ * `POST /from-offering` wrote `priestId` straight into `pujaBooking.create`
+ * with no conflict query at all — the third priestId-write path and the only
+ * unguarded one (priest.service and dispatch.service both check
+ * (priestId, scheduledDate, scheduledTimeSlot) before assigning). Two devotees
+ * could book the SAME pandit at the same 09:00 slot through two different
+ * offerings, both pay, and only one puja could physically happen; the other is
+ * undeliverable (video proof is mandatory) and must be refunded after the
+ * platform has already eaten a non-refundable Razorpay MDR.
+ *
+ * Serialize on (priest, date, slot) exactly the way booking.service serializes
+ * on (offering, date, slot): a transaction-scoped advisory lock, released at
+ * COMMIT so it is safe under Supabase's transaction-mode pooler (a
+ * session-level lock would leak across pooled clients). Best-effort by design —
+ * if the statement cannot run we log and fall through to the re-check inside
+ * the transaction, which still closes the multi-round-trip TOCTOU window that
+ * made the plain count-then-create race reachable.
+ */
+type BookingTx = Prisma.TransactionClient;
+
+function priestSlotKey(priestId: string, scheduledDate: Date, slot: string): string {
+  return `puja-priest-slot:${priestId}:${scheduledDate.toISOString().slice(0, 10)}:${slot}`;
+}
+
+async function lockPriestSlot(tx: BookingTx, key: string): Promise<void> {
+  try {
+    await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', key);
+  } catch (err) {
+    console.warn('[bookings.route] priest slot advisory lock unavailable:', err);
+  }
+}
+
+/** Thrown inside a slot transaction so the handler can answer 409, not a bare 400. */
+class SlotConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SlotConflictError';
+  }
+}
+
+/**
+ * PriestPujaOffering.availableSlots is `Json?` and accepts either "HH:MM"
+ * strings or {time,label} objects (see routes/priest.ts). An empty/absent list
+ * means the pandit has not published a slot whitelist.
+ */
+function normalizePriestSlots(rawSlots: unknown): string[] {
+  if (!Array.isArray(rawSlots)) return [];
+  return (rawSlots as unknown[])
+    .map((s) => (typeof s === 'string' ? s : ((s as { time?: string })?.time ?? '')))
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * S2C-13 decision, split out from the transaction so it is unit-testable.
+ *
+ * `held` is every non-cancelled booking the pandit already holds in the
+ * requested (date, slot), whichever offering it came through.
+ */
+function evaluatePriestSlot(input: {
+  held: readonly { bookingNumber: string; priestPujaOfferingId: string | null }[];
+  offeringId: string;
+  maxBookingsPerSlot: number;
+  scheduledDate: string;
+  scheduledTime: string;
+}): { ok: true } | { ok: false; message: string } {
+  // One body, one puja: a booking from a DIFFERENT offering (or from the
+  // temple path, where priestPujaOfferingId is NULL) is a hard block.
+  const clash = input.held.find((b) => b.priestPujaOfferingId !== input.offeringId);
+  if (clash) {
+    return {
+      ok: false,
+      message:
+        `This pandit already has booking ${clash.bookingNumber} at ${input.scheduledTime} ` +
+        `on ${input.scheduledDate}. Please pick another time.`,
+    };
+  }
+  // Everything left is same-offering, so `held.length` is that count and the
+  // pandit's own configured capacity governs it.
+  if (input.held.length >= input.maxBookingsPerSlot) {
+    return {
+      ok: false,
+      message: `Slot ${input.scheduledTime} is fully booked (${input.held.length}/${input.maxBookingsPerSlot}).`,
+    };
+  }
+  return { ok: true };
+}
+
 // ─── Routes ─────────────────────────────────────────────────────────────────────
 
 export async function bookingRoutes(server: FastifyInstance) {
@@ -267,12 +468,17 @@ export async function bookingRoutes(server: FastifyInstance) {
         const me = request.currentUser!;
 
         // Authorization: fetch the booking's owner + assigned priest.
+        // videoProofUrl (RV-08) and scheduledDate/scheduledTimeSlot (RV-17)
+        // are read here because both guards below need them.
         const booking = await prisma.pujaBooking.findUnique({
           where: { id },
           select: {
             userId: true,
             priestId: true,
             status: true,
+            videoProofUrl: true,
+            scheduledDate: true,
+            scheduledTimeSlot: true,
             priest: { select: { userId: true } },
           },
         });
@@ -300,6 +506,84 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
+        // RV-08: business rule 1. Reject the transition before anything is
+        // written — booking.service mints the pandit payout on the way through
+        // video_uploaded/delivered, so an unproven flip is unrecoverable there.
+        const proofGate = checkVideoProofGate({
+          newStatus: body.status as BookingStatus,
+          existingVideoProofUrl: booking.videoProofUrl,
+          suppliedVideoProofUrl: (body.data as Record<string, any> | undefined)
+            ?.videoProofUrl,
+          isAssignedPriest,
+          isAdmin,
+        });
+        if (!proofGate.ok) {
+          return reply
+            .status(proofGate.status)
+            .send({ error: proofGate.error, message: proofGate.message });
+        }
+
+        // RV-17: land the admin's reassignment for real, BEFORE the status
+        // flip, so the ledger rows booking.service writes during that flip
+        // (the Commission row minted on `confirmed`, the PriestPayout minted on
+        // video_uploaded/delivered) key off the NEW pandit rather than the one
+        // being replaced. If the status transition that follows is itself
+        // illegal the caller gets a 409 with the reassignment already applied —
+        // recoverable, because retrying with a legal status is then a no-op for
+        // this block (priestId already equals the target).
+        if (isAdmin && body.priestId && body.priestId !== booking.priestId) {
+          const reassignGate = checkPriestReassignable(booking.status as BookingStatus);
+          if (!reassignGate.ok) {
+            return reply
+              .status(reassignGate.status)
+              .send({ error: reassignGate.error, message: reassignGate.message });
+          }
+
+          const target = await prisma.priest.findUnique({
+            where: { id: body.priestId },
+            select: { id: true, isVerified: true, status: true },
+          });
+          if (!target) {
+            return reply.status(404).send({ error: 'Priest not found.' });
+          }
+          if (!target.isVerified || target.status !== 'active') {
+            return reply.status(409).send({
+              error: 'Conflict',
+              message: 'That pandit is not currently available for assignment.',
+            });
+          }
+
+          const newPriestId = body.priestId;
+          await prisma.$transaction(async (tx) => {
+            await lockPriestSlot(
+              tx,
+              priestSlotKey(newPriestId, booking.scheduledDate, booking.scheduledTimeSlot),
+            );
+            // Same double-booking guard as priest.service / dispatch.service —
+            // an admin must not be able to create the collision those paths
+            // refuse to create.
+            const conflict = await tx.pujaBooking.findFirst({
+              where: {
+                priestId: newPriestId,
+                scheduledDate: booking.scheduledDate,
+                scheduledTimeSlot: booking.scheduledTimeSlot,
+                status: { notIn: ['cancelled', 'refunded'] },
+                id: { not: id },
+              },
+              select: { bookingNumber: true },
+            });
+            if (conflict) {
+              throw new SlotConflictError(
+                `That pandit already has booking ${conflict.bookingNumber} at this date and time slot.`,
+              );
+            }
+            await tx.pujaBooking.update({
+              where: { id },
+              data: { priestId: newPriestId },
+            });
+          });
+        }
+
         const updated = await bookingService.updateBookingStatus(
           id,
           body.status as BookingStatus,
@@ -313,6 +597,12 @@ export async function bookingRoutes(server: FastifyInstance) {
             error: 'Validation Error',
             details: error.errors,
           });
+        }
+        // RV-17: a reassignment that would double-book the pandit. Checked
+        // before the message-sniffing branches below so it can never be
+        // misclassified as a 404/400.
+        if (error instanceof SlotConflictError) {
+          return reply.status(409).send({ error: 'Conflict', message: error.message });
         }
         if (error.message?.includes('not found')) {
           return reply.status(404).send({ error: error.message });
@@ -577,6 +867,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         const quote = cancellationService.computeDevoteeRefund({
           policy,
           scheduledDate: booking.scheduledDate,
+          // RV-13: without the slot the tier is measured from midnight, quoting
+          // a worse tier than policy (and a negative hoursUntilSlot for a
+          // same-day slot, which falls through every tier to the 25% floor).
+          scheduledTimeSlot: booking.scheduledTimeSlot,
           pujaPriceInr: Number(booking.priceAmount),
           totalPaidInr: Number(booking.priceAmount),
         });
@@ -835,105 +1129,12 @@ export async function bookingRoutes(server: FastifyInstance) {
     },
   );
 
-  // POST /create-stripe-order - NRI / USD checkout via Stripe.
+  // POST /create-stripe-order — REMOVED 2026-08-10.
   //
-  // Mirror of /create-order but bills in USD using PujaType.nriPrice. The
-  // server picks gateway based on the request body's `currency` field —
-  // 'INR' (default, omitted) → Razorpay; 'USD' → Stripe. Web booking
-  // page flips this when the user toggles "Pay in USD" or when their
-  // session profile flag isNri is set.
-  const createStripeOrderBodySchema = createOrderBodySchema.extend({
-    currency: z.literal('USD').optional(),
-  });
-
-  server.post(
-    '/create-stripe-order',
-    { preHandler: [authenticateUser] },
-    async (request, reply) => {
-      try {
-        const body = createStripeOrderBodySchema.parse(request.body);
-        const userId = request.currentUser!.id;
-
-        // Resolve puja + offering as in /create-order.
-        const pujaType = await prisma.pujaType.findUnique({
-          where: { slug: body.pujaSlug },
-          select: { id: true },
-        });
-        if (!pujaType) {
-          return reply.status(404).send({ error: 'Puja type not found.' });
-        }
-
-        const offering = await prisma.templePujaOffering.findUnique({
-          where: { id: body.templeOfferingId },
-          select: { id: true, templeId: true, pujaTypeId: true, isActive: true },
-        });
-        if (!offering) {
-          return reply.status(404).send({ error: 'Temple offering not found.' });
-        }
-        if (offering.pujaTypeId !== pujaType.id) {
-          return reply.status(400).send({
-            error: 'Selected temple does not offer this puja.',
-          });
-        }
-
-        let prasadAddressId: string | undefined;
-        if (body.prasadDelivery && body.deliveryAddress) {
-          const addr = await prisma.userAddress.create({
-            data: {
-              userId,
-              label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
-              line1: body.deliveryAddress.line1,
-              line2: body.deliveryAddress.line2 ?? null,
-              city: body.deliveryAddress.city,
-              state: body.deliveryAddress.state,
-              pincode: body.deliveryAddress.pincode,
-            },
-            select: { id: true },
-          }).catch(() => null);
-          prasadAddressId = addr?.id;
-        }
-
-        const booking = await bookingService.createBooking({
-          userId,
-          templeId: offering.templeId,
-          pujaTypeId: offering.pujaTypeId,
-          templePujaOfferingId: offering.id,
-          scheduledDate: body.scheduledDate,
-          scheduledTimeSlot: body.scheduledTime,
-          devoteeNames: body.devotees,
-          sankalpDetails: body.sankalp,
-          specialInstructions: body.specialInstructions,
-          prasadDeliveryRequested: body.prasadDelivery,
-          prasadDeliveryAddressId: prasadAddressId,
-        });
-
-        const order = await paymentService.createStripeOrder(booking.id, userId);
-
-        return reply.status(201).send({
-          orderId: booking.id,
-          bookingId: booking.id,
-          bookingNumber: booking.bookingNumber,
-          stripePaymentIntentId: order.paymentIntentId,
-          clientSecret: order.clientSecret,
-          amount: order.amount,
-          currency: order.currency,
-          stripePublishableKey: order.publishableKey,
-          demo: order.demo,
-        });
-      } catch (error: any) {
-        if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: 'Validation Error',
-            details: error.errors,
-          });
-        }
-        server.log.error(error, 'Failed to create Stripe NRI booking order');
-        return reply.status(400).send({
-          error: error.message || 'Failed to create Stripe booking order',
-        });
-      }
-    },
-  );
+  // Stripe is no longer a payment rail (PayPal via Razorpay replaces it for
+  // international devotees). This route was also the delivery vehicle for the
+  // RV-01 defect: it billed an INR figure as USD. Every booking now goes
+  // through /create-order or /from-offering on Razorpay, in INR.
 
   // POST /from-offering - Book a PriestPujaOffering (priest-authored catalog,
   // distinct from the temple-anchored TemplePujaOffering used by /create-order).
@@ -949,9 +1150,12 @@ export async function bookingRoutes(server: FastifyInstance) {
   // NRI flow (rule #2): if user.isNri is true (or country override sent),
   // bill in USD via Stripe at basePrice * 9. Otherwise INR via Razorpay.
   //
-  // Slot capacity: if offering.availableSlots is set, the scheduledTime
-  // must match one of the slots and that slot must not exceed
-  // offering.maxBookingsPerSlot for the requested date.
+  // Slot capacity (S2C-13, corrected 2026-08-10): if offering.availableSlots
+  // is set, the scheduledTime must match one of the slots. INDEPENDENTLY of
+  // that — availableSlots is nullable and unset by default — the pandit must
+  // be free at (date, slot) and the offering must be under
+  // maxBookingsPerSlot; both are re-checked under an advisory lock inside the
+  // create transaction. See the block at step 6.
   const fromOfferingBodySchema = z.object({
     offeringId: z.string().uuid(),
     scheduledDate: z
@@ -999,7 +1203,9 @@ export async function bookingRoutes(server: FastifyInstance) {
   // NRI multiplier for priest-offering pricing. Business rule #2 (NRI
   // pricing 9-10× domestic) — we pick 9x as the lower bound; temple-side
   // offerings already use PujaType.nriPrice which is set explicitly.
-  const NRI_USD_MULTIPLIER = 9;
+  // (An NRI price multiplier lived here. Removed 2026-08-10 with the Stripe/USD
+  // path — it was being applied as if it were an FX rate. NRI premium pricing
+  // returns with the PayPal rail as a server-quoted amount the client renders.)
 
   server.post(
     '/from-offering',
@@ -1071,28 +1277,37 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
-        // 3. Resolve pricing. Business rule #2: NRI pay 9-10× domestic.
-        // The booking row's priceAmount/currency reflects the actual amount
-        // we will bill (INR via Razorpay or USD via Stripe). The commission
-        // ledger ratios (30/70) stay the same regardless of currency since
-        // the priest payout is settled in the same currency the devotee
-        // paid in (handled downstream).
+        // 3. Resolve pricing. Everything bills in INR via Razorpay — see the
+        // pricing note below. (The old comment here claimed a 30/70 commission
+        // split; the real take-rate is 80/20 in favour of the pandit, honouring
+        // priest.commissionRate — see DEFAULT_PRIEST_SHARE.)
         const user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { isNri: true },
+          select: { id: true },
         });
         if (!user) {
           return reply.status(404).send({ error: 'User not found.' });
         }
-        const wantsUsd = body.currency === 'USD' || (!body.currency && user.isNri);
+        // PRICING — single currency, single price. (2026-08-10)
+        //
+        // Was: `basePrice * 9` labelled 'USD' and handed to Stripe, so a
+        // Rs 1,100 puja billed $9,900 instead of ~$118 — an 83.5x overcharge
+        // (RV-01). The author had conflated business rule 2 ("NRI pricing is
+        // 9-10x domestic", a PRICE-LEVEL rule) with an FX conversion.
+        //
+        // Stripe is removed (PayPal via Razorpay replaces it). We deliberately
+        // do NOT re-apply the 9x here: the web checkout displays `basePrice`,
+        // and applying a server-side multiplier the UI cannot see would charge
+        // an NRI devotee Rs 9,900 against a Rs 1,100 quote — a worse failure
+        // than the one being fixed. Displayed price MUST equal charged price.
+        //
+        // NRI premium pricing is re-introduced with the PayPal rail, as an
+        // explicit server-quoted amount the client renders before payment.
+        // `body.currency` is still accepted (older clients post 'USD') but is
+        // now only an NRI hint for analytics — it never changes the amount.
         const basePrice = new Prisma.Decimal(offering.basePrice.toString());
-        // basePrice * 9 for NRI USD. Decimal arithmetic so we never lose
-        // precision; .toDecimalPlaces(2) trims any fractional rounding.
-        const usdAmount = wantsUsd
-          ? basePrice.mul(new Prisma.Decimal(NRI_USD_MULTIPLIER)).toDecimalPlaces(2)
-          : null;
-        const priceAmount = wantsUsd ? usdAmount! : basePrice;
-        const currency = wantsUsd ? 'USD' : 'INR';
+        const priceAmount = basePrice;
+        const currency = 'INR';
         // Honour the pandit's own commissionRate (their share); default 80/20
         // (booking revamp take-rate cut — see booking.service DEFAULT_PRIEST_SHARE).
         const share =
@@ -1102,36 +1317,18 @@ export async function bookingRoutes(server: FastifyInstance) {
         const priestPayoutAmount = priceAmount.mul(new Prisma.Decimal(share.toString()));
         const platformCommission = priceAmount.mul(new Prisma.Decimal((1 - share).toString()));
 
-        // 3b. Slot capacity enforcement. Skip when the priest hasn't
-        // configured availableSlots — back-compat with offerings created
-        // before the slot-capacity migration. When configured, the
-        // scheduledTime must match a defined slot, and that slot's booking
-        // count for the day must be below maxBookingsPerSlot.
-        const rawSlots = offering.availableSlots as unknown;
-        const slotTimes: string[] = Array.isArray(rawSlots)
-          ? (rawSlots as unknown[]).map((s) =>
-              typeof s === 'string' ? s : ((s as { time?: string })?.time ?? ''),
-            ).filter((t) => t.length > 0)
-          : [];
-        if (slotTimes.length > 0) {
-          if (!slotTimes.includes(body.scheduledTime)) {
-            return reply.status(409).send({
-              error: `Slot ${body.scheduledTime} is not offered. Available slots: ${slotTimes.join(', ')}.`,
-            });
-          }
-          const slotBooked = await prisma.pujaBooking.count({
-            where: {
-              priestPujaOfferingId: offering.id,
-              scheduledDate: new Date(body.scheduledDate),
-              scheduledTimeSlot: body.scheduledTime,
-              status: { notIn: ['cancelled', 'refunded'] },
-            },
+        // 3b. Slot whitelist. Skipped when the priest hasn't configured
+        // availableSlots — back-compat with offerings created before the
+        // slot-capacity migration, and with pandits who deliberately leave the
+        // list empty. This is a pure validation of the requested string; the
+        // COLLISION and CAPACITY checks are no longer conditional on it and now
+        // run under a lock inside the create transaction at step 6 (S2C-13).
+        const scheduledDate = new Date(body.scheduledDate);
+        const slotTimes = normalizePriestSlots(offering.availableSlots);
+        if (slotTimes.length > 0 && !slotTimes.includes(body.scheduledTime)) {
+          return reply.status(409).send({
+            error: `Slot ${body.scheduledTime} is not offered. Available slots: ${slotTimes.join(', ')}.`,
           });
-          if (slotBooked >= offering.maxBookingsPerSlot) {
-            return reply.status(409).send({
-              error: `Slot ${body.scheduledTime} is fully booked (${slotBooked}/${offering.maxBookingsPerSlot}).`,
-            });
-          }
         }
 
         // 4. Optional prasad delivery address (mirrors /create-order).
@@ -1180,75 +1377,106 @@ export async function bookingRoutes(server: FastifyInstance) {
 
         // 6. Persist the booking. The PriestPujaOffering FK
         // (migration 20260520020000) replaces the previous JSON marker.
-        const booking = await prisma.pujaBooking.create({
-          data: {
-            bookingNumber,
-            userId,
-            templeId: anchorOffering.templeId,
-            pujaTypeId: anchorOffering.pujaTypeId,
-            templePujaOfferingId: anchorOffering.id,
-            priestPujaOfferingId: offering.id,
-            priestId: offering.priest.id,
-            scheduledDate: new Date(body.scheduledDate),
-            scheduledTimeSlot: body.scheduledTime,
-            devoteeNames: body.devotees as Prisma.InputJsonValue,
-            sankalpDetails: body.sankalp ?? null,
-            specialInstructions: body.specialInstructions ?? null,
-            priceAmount,
-            currency,
-            platformCommission,
-            priestPayout: priestPayoutAmount,
-            status: 'pending_payment',
-            prasadDeliveryRequested: body.prasadDelivery,
-            prasadDeliveryAddressId: prasadAddressId ?? null,
-          },
-          select: {
-            id: true,
-            bookingNumber: true,
-            status: true,
-            priceAmount: true,
-            currency: true,
-            scheduledDate: true,
-            scheduledTimeSlot: true,
-            createdAt: true,
-          },
-        });
-
-        // 7. Create the payment order. USD → Stripe; INR → Razorpay.
-        // createStripeOrder normally reads PujaType.nriPrice; we pass an
-        // explicit USD override so it bills basePrice * 9 instead of the
-        // anchor temple-puja's nriPrice.
-        if (wantsUsd) {
-          const stripe = await paymentService.createStripeOrder(
-            booking.id,
-            userId,
-            { usdAmountOverride: Number(usdAmount) },
+        //
+        // S2C-13 (2026-08-10): this create used to run naked on the top-level
+        // client with the pandit pinned via `priestId` and NO conflict query of
+        // any kind — the only unguarded one of the three priestId-write paths.
+        // Two failure modes, both now closed inside one locked transaction:
+        //
+        //  (i) CROSS-OFFERING collision. A pandit listing two pujas could be
+        //      booked for both at the same date+slot: the old capacity count
+        //      was scoped to `priestPujaOfferingId`, so every offering kept an
+        //      independent counter. Any booking the pandit already holds in
+        //      this slot from a DIFFERENT offering is a hard block — one body,
+        //      one puja. Same-offering demand stays governed by the pandit's
+        //      own maxBookingsPerSlot (one ceremony may legitimately seat
+        //      several households), so their configured capacity is unchanged.
+        //
+        //  (ii) UNCONFIGURED slots. The whole capacity check sat behind
+        //      `if (slotTimes.length > 0)`, and availableSlots is nullable and
+        //      unset by default — so for most pandits N devotees could book the
+        //      same offering at the same instant, unbounded. The count now runs
+        //      unconditionally; only the slot-string whitelist above remains
+        //      conditional, which is the part that is genuinely back-compat.
+        //
+        // The lock also closes the TOCTOU: the old count and create were
+        // several round-trips apart with no transaction, so concurrent racers
+        // both read 0/1 and both inserted.
+        const booking = await prisma.$transaction(async (tx) => {
+          await lockPriestSlot(
+            tx,
+            priestSlotKey(offering.priest.id, scheduledDate, body.scheduledTime),
           );
-          return reply.status(201).send({
-            orderId: booking.id,
-            bookingId: booking.id,
-            bookingNumber: booking.bookingNumber,
-            stripePaymentIntentId: stripe.paymentIntentId,
-            clientSecret: stripe.clientSecret,
-            amount: stripe.amount,
-            currency: stripe.currency,
-            stripePublishableKey: stripe.publishableKey,
-            demo: stripe.demo,
-            booking: {
-              id: booking.id,
-              bookingNumber: booking.bookingNumber,
-              status: booking.status,
-              priceAmount: booking.priceAmount.toString(),
-              currency: booking.currency,
-              scheduledDate: booking.scheduledDate,
-              scheduledTimeSlot: booking.scheduledTimeSlot,
-              offeringId: offering.id,
-              offeringName: offering.name,
+
+          // One read answers both questions. `take` is capacity + 1 — enough to
+          // decide `>= maxBookingsPerSlot`, and enough to surface a
+          // cross-offering row whenever the same-offering rows have not already
+          // filled the slot (in which case we reject on capacity anyway).
+          const held = await tx.pujaBooking.findMany({
+            where: {
               priestId: offering.priest.id,
+              scheduledDate,
+              scheduledTimeSlot: body.scheduledTime,
+              status: { notIn: ['cancelled', 'refunded'] },
+            },
+            select: { bookingNumber: true, priestPujaOfferingId: true },
+            take: offering.maxBookingsPerSlot + 1,
+          });
+
+          // Compared in JS rather than via a Prisma `not` filter because
+          // priestPujaOfferingId is nullable — temple-path bookings pinned to
+          // this pandit carry NULL and must count as a collision.
+          const verdict = evaluatePriestSlot({
+            held,
+            offeringId: offering.id,
+            maxBookingsPerSlot: offering.maxBookingsPerSlot,
+            scheduledDate: body.scheduledDate,
+            scheduledTime: body.scheduledTime,
+          });
+          if (!verdict.ok) {
+            throw new SlotConflictError(verdict.message);
+          }
+
+          return tx.pujaBooking.create({
+            data: {
+              bookingNumber,
+              userId,
+              templeId: anchorOffering.templeId,
+              pujaTypeId: anchorOffering.pujaTypeId,
+              templePujaOfferingId: anchorOffering.id,
+              priestPujaOfferingId: offering.id,
+              priestId: offering.priest.id,
+              scheduledDate,
+              scheduledTimeSlot: body.scheduledTime,
+              devoteeNames: body.devotees as Prisma.InputJsonValue,
+              sankalpDetails: body.sankalp ?? null,
+              specialInstructions: body.specialInstructions ?? null,
+              priceAmount,
+              currency,
+              platformCommission,
+              priestPayout: priestPayoutAmount,
+              status: 'pending_payment',
+              prasadDeliveryRequested: body.prasadDelivery,
+              prasadDeliveryAddressId: prasadAddressId ?? null,
+            },
+            select: {
+              id: true,
+              bookingNumber: true,
+              status: true,
+              priceAmount: true,
+              currency: true,
+              scheduledDate: true,
+              scheduledTimeSlot: true,
+              createdAt: true,
             },
           });
-        }
+        });
 
+        // 7. Create the payment order. Razorpay is the ONLY rail — Stripe was
+        // removed 2026-08-10 (PayPal via Razorpay replaces it for international
+        // devotees). NRI bookings are priced 9x in INR above and charged here
+        // exactly like a domestic booking, so there is no second gateway and no
+        // currency branch to get wrong.
         const order = await paymentService.createRazorpayOrder(booking.id, userId);
 
         return reply.status(201).send({
@@ -1278,6 +1506,11 @@ export async function bookingRoutes(server: FastifyInstance) {
             error: 'Validation Error',
             details: error.errors,
           });
+        }
+        // S2C-13: the pandit is already taken for this date+slot, or the slot
+        // is at capacity. A conflict, not a malformed request.
+        if (error instanceof SlotConflictError) {
+          return reply.status(409).send({ error: error.message });
         }
         server.log.error(error, 'Failed to create offering-based booking');
         return reply.status(400).send({
@@ -1382,3 +1615,19 @@ export async function bookingRoutes(server: FastifyInstance) {
     }
   );
 }
+
+// Pure decision helpers exposed for unit tests (see bookings.test.ts). The
+// route harness in apps/api is pure-function/Zod only — there is no
+// Fastify+Prisma integration scaffolding — so the guards are written as pure
+// functions and the DB steps they gate are exercised manually / in staging.
+export const __testing = {
+  checkVideoProofGate,
+  checkPriestReassignable,
+  priestSlotKey,
+  SlotConflictError,
+  updateBookingStatusSchema,
+  normalizePriestSlots,
+  evaluatePriestSlot,
+  VIDEO_PROOF_REQUIRED_STATUSES,
+  PRIEST_REASSIGNABLE_STATUSES,
+};

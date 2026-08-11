@@ -182,28 +182,36 @@ export async function authenticateUser(
       }
       const userId = match[1];
 
-      // Phase C P1 #5 (2026-06-08): EmailSession enforcement — check revoked + expired.
-      // Best-effort: if row exists, enforce strictly. If row missing (legacy in-memory token
-      // pre-table-migration), allow through w/ backward-compat to avoid breaking in-flight sessions.
+      // SECURITY (A-005, 2026-08-10): fail CLOSED. This token type is valid ONLY
+      // if a matching, non-revoked, non-expired email_sessions row exists (rows are
+      // written at issuance by lib/email-session.ts). A missing row means a forged
+      // token, so it is REJECTED. Previously a missing row fell through to "allow",
+      // which — because no code ever wrote the table — let anyone forge
+      // `email-<anyKnownUserId>-<any 32 hex>` and authenticate as that user (incl.
+      // admin). A DB error also rejects rather than granting access.
+      let sessionRow: Array<{ revoked_at: Date | null; expires_at: Date }>;
       try {
-        const sessionRow = await prisma.$queryRawUnsafe<Array<{ revoked_at: Date | null; expires_at: Date }>>(
+        sessionRow = await prisma.$queryRawUnsafe<Array<{ revoked_at: Date | null; expires_at: Date }>>(
           `SELECT revoked_at, expires_at FROM email_sessions WHERE id = $1 LIMIT 1`,
           token,
         );
-        const row = sessionRow[0];
-        if (row) {
-          if (row.revoked_at !== null) {
-            reply.code(401).send({ error: 'Unauthorized', message: 'Session revoked.' });
-            return;
-          }
-          if (new Date(row.expires_at).getTime() < Date.now()) {
-            reply.code(401).send({ error: 'Unauthorized', message: 'Session expired.' });
-            return;
-          }
-        }
-        // Row missing → backward-compat allow (legacy in-memory tokens, pre-7adbd87 migration).
       } catch (err) {
-        request.log.warn({ err }, 'EmailSession lookup failed — falling back to legacy accept');
+        request.log.error({ err }, 'EmailSession lookup failed — rejecting (fail-closed)');
+        reply.code(401).send({ error: 'Unauthorized', message: 'Could not validate session.' });
+        return;
+      }
+      const row = sessionRow?.[0];
+      if (!row) {
+        reply.code(401).send({ error: 'Unauthorized', message: 'Invalid or expired email session token.' });
+        return;
+      }
+      if (row.revoked_at !== null) {
+        reply.code(401).send({ error: 'Unauthorized', message: 'Session revoked.' });
+        return;
+      }
+      if (new Date(row.expires_at).getTime() < Date.now()) {
+        reply.code(401).send({ error: 'Unauthorized', message: 'Session expired.' });
+        return;
       }
 
       const dbUser = await prisma.user.findUnique({ where: { id: userId } });

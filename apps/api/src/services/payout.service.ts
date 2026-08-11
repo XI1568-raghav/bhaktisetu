@@ -27,6 +27,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
+import { Prisma } from '@prisma/client';
 import type { ProviderRole } from '@prisma/client';
 
 export type ProviderRoleKey =
@@ -59,7 +60,8 @@ export async function getPayoutBalance(providerId: string) {
   });
   const paid = paidRows.reduce((s, r) => s + Number(r.amount), 0);
 
-  // In-flight (requested but not yet completed) — locked from new requests.
+  // In-flight (requested but not yet completed) — already linked to a request,
+  // so NOT part of `pending` above. Reported for display only.
   const inFlightRows = await prisma.commission.findMany({
     where: {
       providerId,
@@ -69,8 +71,18 @@ export async function getPayoutBalance(providerId: string) {
   });
   const inFlight = inFlightRows.reduce((s, r) => s + Number(r.amount), 0);
 
+  // RV-05 (2026-08-10): availableInr used to be `pending - inFlight`, but the two
+  // sets are disjoint by construction — the `pending` query filters
+  // payoutRequestId: null and a Prisma to-one relation filter never matches a
+  // NULL FK, so no in-flight row is ever inside `pending`. The subtraction
+  // removed money that was never added: requestPayout sized the PayoutRequest at
+  // (new earnings − in-flight) while linking ALL unlinked commissions to it, so
+  // on completion every one of them flipped to PAID and the difference was
+  // destroyed (provider short-paid, platform kept it) — every Monday, via the
+  // weekly settlement cron. Available is exactly `pending`; in-flight is only
+  // ever reported separately as pendingInr.
   return {
-    availableInr: Math.round((pending - inFlight) * 100) / 100,
+    availableInr: Math.round(pending * 100) / 100,
     pendingInr: Math.round(inFlight * 100) / 100,
     paidOutInr: Math.round(paid * 100) / 100,
   };
@@ -97,9 +109,17 @@ export async function getKycStatus(providerId: string): Promise<{
 }
 
 /**
+ * Message surfaced (as a 400) when a concurrent request already claimed the
+ * commissions this call intended to pay out — the caller may simply retry.
+ */
+export const PAYOUT_CONCURRENT_REQUEST_ERROR =
+  'Another payout request for this balance is already being created. Please try again in a moment.';
+
+/**
  * Create a payout request for the provider's full available balance. Atomic:
- * create the request + link its commissions in one transaction so a crash
- * can't leave a request pointing at no commissions (or double-spend a balance).
+ * the ledger is re-read, the request is created, and its commissions are linked
+ * inside ONE transaction, so a crash can't leave a request pointing at no
+ * commissions and two concurrent calls can't double-spend the same balance.
  * Internal callers (weekly settlement) may skip the KYC gate via `opts.skipKyc`
  * after they've already applied their own verified-KYC filter.
  */
@@ -119,36 +139,71 @@ export async function requestPayout(
     }
   }
 
-  const balance = await getPayoutBalance(providerId);
-  if (balance.availableInr < MIN_PAYOUT_INR) {
+  // Cheap pre-check so an empty balance fails fast without opening a
+  // transaction. RV-06: this read is advisory ONLY — it must never size the
+  // request, because it happens outside the transaction below.
+  const preview = await getPayoutBalance(providerId);
+  if (preview.availableInr < MIN_PAYOUT_INR) {
     throw new Error('No withdrawable balance.');
   }
 
-  return prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
+    // RV-06 (2026-08-10): the amount used to come from a balance read taken
+    // BEFORE the transaction opened, and nothing checked whether those
+    // commissions were still unlinked. Two concurrent calls (a double-clicked
+    // Withdraw button is enough — no idempotency key on POST /payouts/request)
+    // therefore minted two PayoutRequests for one balance: the first linked
+    // every commission, the second linked none and silently succeeded, and an
+    // admin completing both transferred the balance twice.
+    // Now the ledger is re-read inside the transaction, the request is sized
+    // from exactly the rows we are about to link, and the link is conditioned on
+    // payoutRequestId still being NULL. Under READ COMMITTED the loser blocks on
+    // the winner's row locks, re-evaluates the predicate, matches fewer rows
+    // than it selected, and throws — rolling back its own PayoutRequest.
+    const rows = await tx.commission.findMany({
+      where: { providerId, status: 'PENDING', payoutRequestId: null },
+      select: { id: true, amount: true },
+    });
+    if (!rows.length) throw new Error('No withdrawable balance.');
+
+    // Decimal maths — Commission.amount is Decimal(10,2); never float-sum money.
+    const total = rows.reduce(
+      (sum, r) => sum.add(new Prisma.Decimal(r.amount)),
+      new Prisma.Decimal(0),
+    );
+    if (total.lessThan(MIN_PAYOUT_INR)) throw new Error('No withdrawable balance.');
+
     const request = await tx.payoutRequest.create({
       data: {
         providerId,
         role,
-        amount: balance.availableInr,
+        amount: total,
         method,
         status: 'pending',
       },
     });
-    // Link exactly the PENDING, unlinked commissions that make up this balance.
-    await tx.commission.updateMany({
-      where: { providerId, status: 'PENDING', payoutRequestId: null },
+
+    const linked = await tx.commission.updateMany({
+      where: {
+        id: { in: rows.map((r) => r.id) },
+        status: 'PENDING',
+        payoutRequestId: null, // in-flight guard: a concurrent tx already took these
+      },
       data: { payoutRequestId: request.id },
     });
+    if (linked.count !== rows.length) {
+      throw new Error(PAYOUT_CONCURRENT_REQUEST_ERROR);
+    }
     return request;
-  }).then(async (req) => {
-    // Notify the provider the request is in (fire-and-forget).
-    void notifyUser(providerId, {
-      title: 'Payout requested',
-      body: `Your payout of ₹${balance.availableInr.toLocaleString('en-IN')} is being processed.`,
-      url: '/payouts',
-    }).catch(() => undefined);
-    return req;
   });
+
+  // Notify the provider the request is in (fire-and-forget).
+  void notifyUser(providerId, {
+    title: 'Payout requested',
+    body: `Your payout of ₹${Number(created.amount).toLocaleString('en-IN')} is being processed.`,
+    url: '/payouts',
+  }).catch(() => undefined);
+  return created;
 }
 
 /**
@@ -216,11 +271,13 @@ export async function processPayout(
 /** List a provider's own payout requests. */
 /**
  * Weekly settlement sweep (Phase-2 "guaranteed payout day"). For every provider
- * with a withdrawable balance ≥ the weekly floor, verified KYC, and no in-flight
- * request, auto-create a PayoutRequest so providers are paid on a predictable
- * weekly cadence (research anchor: Amazon/Flipkart/UC T+7) instead of only when
- * they remember to self-serve. Best-effort per provider — one failure (e.g. an
- * unverified KYC) never blocks the rest.
+ * with a withdrawable balance ≥ the weekly floor and verified KYC, auto-create a
+ * PayoutRequest so providers are paid on a predictable weekly cadence (research
+ * anchor: Amazon/Flipkart/UC T+7) instead of only when they remember to
+ * self-serve. A still-unprocessed request from a previous week does not block
+ * the sweep — each request covers only commissions no earlier request claimed
+ * (RV-05). Best-effort per provider — one failure (e.g. an unverified KYC)
+ * never blocks the rest.
  */
 export async function runWeeklySettlement(): Promise<{
   providersScanned: number;
@@ -253,8 +310,12 @@ export async function runWeeklySettlement(): Promise<{
         skippedKyc++;
         continue;
       }
-      // requestPayout is atomic + no-ops when there's already an in-flight
-      // request (balance.availableInr would be 0 in that case). KYC already
+      // RV-05 (2026-08-10): the old note here claimed availableInr would be 0
+      // when a request is already in flight — that was the double-subtraction
+      // bug talking. A provider with an unprocessed request still settles their
+      // NEWLY-earned (still unlinked) commissions this week; each request covers
+      // a disjoint set of commission rows, so nothing is paid twice and nothing
+      // is stranded. requestPayout is atomic and self-guarding; KYC is already
       // filtered above, so skip the duplicate gate.
       await requestPayout(providerId, 'PANDIT' as ProviderRole, 'upi', { skipKyc: true });
       requestsCreated++;
