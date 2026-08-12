@@ -26,12 +26,17 @@ const orderItemSchema = z.object({
 const shippingAddressSchema = z.object({
   fullName: z.string().min(1),
   line1: z.string().min(1),
-  line2: z.string().optional(),
+  // `.optional()` accepts undefined but REJECTS null — and saved addresses
+  // store line2/phone as SQL NULL, which serialises to null. So every checkout
+  // using a saved address 400'd with
+  // {"shippingAddress":["Expected string, received null"]} before any product
+  // was even looked at. `.nullish()` accepts both.
+  line2: z.string().nullish(),
   city: z.string().min(1),
   state: z.string().min(1),
   pincode: z.string().min(1),
   country: z.string().default('India'),
-  phone: z.string().optional(),
+  phone: z.string().nullish(),
 });
 
 const createOrderSchema = z.object({
@@ -173,10 +178,21 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     // atomically. The client-sent price/total are ignored.
     const requestedItems = parsed.data.items;
     const productIds = requestedItems.map((it) => it.productId);
-    const products = await prisma.storeProduct.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, price: true, stock: true, isActive: true, storeProfileId: true },
-    });
+    // StoreProduct.id is a uuid column, but the shopper-facing catalogue serves
+    // static handles like `prod_015`. Passing one into a uuid `in` filter makes
+    // Prisma throw P2023 ("Error creating UUID") and the request 500s with a
+    // raw error blob rendered mid-word at the highest-intent moment in the
+    // funnel. The per-item loop below ALREADY answers a clean
+    // `400 Unknown product: <id>` — it just never got the chance to run.
+    // Filtering to uuid-shaped ids lets that intended path handle them.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const lookupIds = productIds.filter((id) => UUID_RE.test(id));
+    const products = lookupIds.length
+      ? await prisma.storeProduct.findMany({
+          where: { id: { in: lookupIds } },
+          select: { id: true, price: true, stock: true, isActive: true, storeProfileId: true },
+        })
+      : [];
     const productById = new Map(products.map((p) => [p.id, p]));
     const serverItems: { productId: string; qty: number; priceAtPurchase: number; name?: string }[] = [];
     let serverTotal = 0;

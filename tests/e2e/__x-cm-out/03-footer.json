@@ -1,0 +1,369 @@
+{
+  "count": 91,
+  "links": [
+    {
+      "text": "",
+      "href": "https://www.facebook.com/darshya.online"
+    },
+    {
+      "text": "",
+      "href": "https://www.instagram.com/darshya.online"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/@darshya"
+    },
+    {
+      "text": "Temples",
+      "href": "/temples"
+    },
+    {
+      "text": "Live Darshan",
+      "href": "/darshan"
+    },
+    {
+      "text": "Book a Puja",
+      "href": "/pujas"
+    },
+    {
+      "text": "Donate (80G)",
+      "href": "/donations"
+    },
+    {
+      "text": "Dharmic Yatra",
+      "href": "/yatra"
+    },
+    {
+      "text": "Panchang",
+      "href": "/panchang"
+    },
+    {
+      "text": "Aarti",
+      "href": "/aarti"
+    },
+    {
+      "text": "Chalisa",
+      "href": "/chalisa"
+    },
+    {
+      "text": "Mantra",
+      "href": "/content?tab=mantra"
+    },
+    {
+      "text": "Bhajan",
+      "href": "/content?tab=bhajan"
+    },
+    {
+      "text": "List your temple",
+      "href": "/list-temple"
+    },
+    {
+      "text": "Become a pandit",
+      "href": "/become-priest"
+    },
+    {
+      "text": "Become an astrologer",
+      "href": "/become-astrologer"
+    },
+    {
+      "text": "Teach yoga & meditation",
+      "href": "/become-wellness"
+    },
+    {
+      "text": "List your gaushala",
+      "href": "/list-gaushala"
+    },
+    {
+      "text": "Register a gurukul",
+      "href": "/become-gurukul"
+    },
+    {
+      "text": "Gurukul portal",
+      "href": "/gurukul-portal"
+    },
+    {
+      "text": "About Us",
+      "href": "/about"
+    },
+    {
+      "text": "Careers",
+      "href": "/careers"
+    },
+    {
+      "text": "Blog",
+      "href": "/blog"
+    },
+    {
+      "text": "Contact",
+      "href": "/contact"
+    },
+    {
+      "text": "Pricing",
+      "href": "/pricing"
+    },
+    {
+      "text": "Support Center",
+      "href": "/support"
+    },
+    {
+      "text": "FAQ",
+      "href": "/support/faq"
+    },
+    {
+      "text": "My Tickets",
+      "href": "/support/tickets"
+    },
+    {
+      "text": "Help Center",
+      "href": "/help"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "/privacy"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "/terms"
+    },
+    {
+      "text": "Refund Policy",
+      "href": "/refunds"
+    },
+    {
+      "text": "Shipping Policy",
+      "href": "/shipping"
+    },
+    {
+      "text": "Contact Us",
+      "href": "/contact"
+    },
+    {
+      "text": "Image Credits",
+      "href": "/credits"
+    },
+    {
+      "text": "Bhagavad Gita",
+      "href": "/gita"
+    },
+    {
+      "text": "Ramayana 7 Kandas",
+      "href": "/ramayana"
+    },
+    {
+      "text": "Mahabharata 18 Parvas",
+      "href": "/mahabharata"
+    },
+    {
+      "text": "10 Upanishads",
+      "href": "/upanishads"
+    },
+    {
+      "text": "4 Vedas",
+      "href": "/vedas"
+    },
+    {
+      "text": "18 Puranas",
+      "href": "/puranas"
+    },
+    {
+      "text": "6 Darshanas",
+      "href": "/darshanas"
+    },
+    {
+      "text": "Yoga Sutras",
+      "href": "/yoga-sutras"
+    },
+    {
+      "text": "Hindu Philosophies",
+      "href": "/hindu-philosophies"
+    },
+    {
+      "text": "Hindu Symbols",
+      "href": "/hindu-symbols"
+    },
+    {
+      "text": "12 Bhakti Saints",
+      "href": "/bhakti-saint"
+    },
+    {
+      "text": "10 Mahavidyas",
+      "href": "/devi/mahavidyas"
+    },
+    {
+      "text": "9 Navadurga",
+      "href": "/devi/navadurga"
+    },
+    {
+      "text": "27 Nakshatras",
+      "href": "/nakshatra"
+    },
+    {
+      "text": "12 Rashis",
+      "href": "/rashi"
+    },
+    {
+      "text": "9 Nava-Graha",
+      "href": "/nava-graha"
+    },
+    {
+      "text": "10 Avatars of Vishnu",
+      "href": "/dashavatar"
+    },
+    {
+      "text": "7 Sapta Rishis",
+      "href": "/sapta-rishis"
+    },
+    {
+      "text": "Famous Chants",
+      "href": "/chants"
+    },
+    {
+      "text": "Vrats Guide",
+      "href": "/vrat"
+    },
+    {
+      "text": "Muhurat Guide",
+      "href": "/muhurat"
+    },
+    {
+      "text": "Sacred Tirthas",
+      "href": "/tirth"
+    },
+    {
+      "text": "12 Jyotirlinga",
+      "href": "/jyotirlinga"
+    },
+    {
+      "text": "51 Shakti Peeth",
+      "href": "/shakti-peeth"
+    },
+    {
+      "text": "8 Ashta Lakshmi",
+      "href": "/ashta-lakshmi"
+    },
+    {
+      "text": "12 Adityas (Sun)",
+      "href": "/aditya"
+    },
+    {
+      "text": "7 Sapta Matrika",
+      "href": "/sapta-mathruka"
+    },
+    {
+      "text": "30 Lunar Tithis",
+      "href": "/tithi"
+    },
+    {
+      "text": "12 Vedic Months",
+      "href": "/masa"
+    },
+    {
+      "text": "5 Pancha Bhoota Stalam",
+      "href": "/pancha-bhoota"
+    },
+    {
+      "text": "9 Navaratna Gems",
+      "href": "/navaratna"
+    },
+    {
+      "text": "Pilgrimage Circuits",
+      "href": "/pilgrimage"
+    },
+    {
+      "text": "16 Samskaras",
+      "href": "/samskaras"
+    },
+    {
+      "text": "7 Chakras",
+      "href": "/chakras"
+    },
+    {
+      "text": "10 Vedic Yajnas",
+      "href": "/vedic-yajnas"
+    },
+    {
+      "text": "Sacred Rivers",
+      "href": "/sacred-rivers"
+    },
+    {
+      "text": "Sacred Trees",
+      "href": "/sacred-trees"
+    },
+    {
+      "text": "Sacred Mountains",
+      "href": "/sacred-mountains"
+    },
+    {
+      "text": "18 Rudraksha",
+      "href": "/rudraksha"
+    },
+    {
+      "text": "24 Ekadashis",
+      "href": "/ekadashi"
+    },
+    {
+      "text": "Sankalp Generator",
+      "href": "/sankalp"
+    },
+    {
+      "text": "Today's Panchang",
+      "href": "/today"
+    },
+    {
+      "text": "Hindu Calendar 2026",
+      "href": "/calendar"
+    },
+    {
+      "text": "Shloka Cards",
+      "href": "/shloka-card"
+    },
+    {
+      "text": "Gift a Puja",
+      "href": "/gift"
+    },
+    {
+      "text": "FAQs",
+      "href": "/faqs"
+    },
+    {
+      "text": "Why Darshya",
+      "href": "/why-darshya"
+    },
+    {
+      "text": "All Guides",
+      "href": "/discover"
+    },
+    {
+      "text": "Browse all 500+ guides →",
+      "href": "/discover"
+    },
+    {
+      "text": "English",
+      "href": "/"
+    },
+    {
+      "text": "हिन्दी",
+      "href": "/hi"
+    },
+    {
+      "text": "தமிழ்",
+      "href": "/ta"
+    },
+    {
+      "text": "తెలుగు",
+      "href": "/te"
+    },
+    {
+      "text": "বাংলা",
+      "href": "/bn"
+    },
+    {
+      "text": "मराठी",
+      "href": "/mr"
+    },
+    {
+      "text": "+91 92551 09400",
+      "href": "tel:+919255109400"
+    }
+  ]
+}

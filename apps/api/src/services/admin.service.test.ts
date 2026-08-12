@@ -175,6 +175,12 @@ describe('AdminService.updateUser', () => {
 
 describe('AdminService.getDashboard', () => {
   it('returns aggregated counts + recent transactions', async () => {
+    // AO-04: headline revenue = captured marketplace payments + completed
+    // subscription charges. It used to sum ONLY the Transaction table, which
+    // nothing but subscription.service ever writes — so marketplace revenue
+    // was structurally Rs 0 and would have read Rs 0 on the day the platform
+    // took its first Rs 1,00,000.
+    prismaMock.payment.aggregate.mockResolvedValue({ _sum: { amount: 4500 } });
     prismaMock.user.count.mockResolvedValue(100);
     prismaMock.userRoleAssignment.findMany.mockResolvedValue([
       { role: 'DEVOTEE' },
@@ -213,12 +219,16 @@ describe('AdminService.getDashboard', () => {
     expect(out.totalUsers).toBe(100);
     expect(out.usersByRole).toEqual({ DEVOTEE: 2, PANDIT: 1 });
     expect(out.activeSubscriptions).toBe(8);
-    expect(out.totalRevenue).toBe(1500);
+    // Rs 4,500 captured marketplace payments + Rs 1,500 completed subscription
+    // charges. The marketplace half is the fix: this used to assert 1500,
+    // because the tile could only ever see subscriptions.
+    expect(out.totalRevenue).toBe(6000);
     expect(out.pendingApprovals).toBe(4);
     expect(out.recentTransactions).toHaveLength(2);
   });
 
   it('throws on DB failure instead of serving fake metrics', async () => {
+    prismaMock.payment.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
     // Changed 2026-07-17: the catch block used to return a mock dashboard
     // with 8 fake users + ₹125000 fake revenue, masking real DB outages.
     // Now it rethrows so the admin UI surfaces the real error.

@@ -20,6 +20,11 @@ const userQuerySchema = z.object({
 const userUpdateSchema = z.object({
   approved: z.boolean().optional(),
   blocked: z.boolean().optional(),
+  // Why a moderation action was taken has to survive the request. Zod strips
+  // unknown keys, so without this the reason an admin typed was silently
+  // dropped and every blocked account looked identical in the audit trail —
+  // no way to tell a payments-fraud ban from a duplicate-account cleanup.
+  blockedReason: z.string().max(500).optional(),
   roles: z
     .array(
       z.enum([

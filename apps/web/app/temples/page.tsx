@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTemples, type TempleListItem } from '../../lib/api';
 import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details';
 import { TemplesBrowser, type TempleCardData } from '../../components/temples/TemplesBrowser';
+import { TRUST_SCORE_MARQUEE } from '../../lib/trust-score';
 
 export const metadata: Metadata = {
  title: 'Sacred Temples of India',
@@ -73,7 +74,7 @@ function apiToCard(t: TempleListItem): TempleCardData {
  trustScore: t.trustScore,
  liveDarshanEnabled: t.liveDarshanEnabled,
  viewers,
- isJyotirlinga: deityType === 'Shiva' && t.trustScore >= 97,
+ isJyotirlinga: deityType === 'Shiva' && t.trustScore >= TRUST_SCORE_MARQUEE,
  isShaktiPeetha: false,
  isDivyaDesam: false,
  popularity: t.trustScore,

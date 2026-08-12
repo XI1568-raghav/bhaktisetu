@@ -1372,6 +1372,33 @@ export class BookingService {
       },
     });
 
+    // PF-02 (2026-08-12, P0): mint the pandit's payout.
+    //
+    // This is the SECOND path that sets `video_uploaded`. The other —
+    // updateBookingStatus — mints the PriestPayout on that transition (see the
+    // P0 #pp-02 hook), but this one wrote the status with a raw update and
+    // skipped it entirely. Since the pandit portal's proof upload comes through
+    // HERE, the pandit did the puja, filed the proof, got a 200 reading "Video
+    // proof uploaded successfully" — and their earnings stayed Rs 0 forever.
+    // The platform's own books also held no record of what it owed. That is the
+    // fastest possible way to lose supply: the first payout cycle produces
+    // nothing and every pandit churns.
+    //
+    // Why this is duplicated rather than delegated to updateBookingStatus: that
+    // method's FORBIDDEN_DATA_KEYS denylist strips `videoUploadedAt` (S3-03, so
+    // a client cannot forge the evidence timestamp), so routing through it
+    // would silently drop the server stamp this method exists to write.
+    //
+    // Same contract as the other call site: createPriestPayout is idempotent,
+    // Aadhaar-gated, refuses when the unified Commission ledger already owns the
+    // booking, and is fire-and-forget — a payout write must never fail the proof
+    // upload the pandit just completed.
+    void paymentService
+      .createPriestPayout(updated.id)
+      .catch((err) =>
+        console.warn('[booking.service] priest payout write failed after video proof:', err),
+      );
+
     return updated;
   }
 

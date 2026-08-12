@@ -134,6 +134,13 @@ export class AdminService {
         phone: u.phone,
         roles: roleMap.get(u.id) ?? ['DEVOTEE'],
         subscriptionTier: u.subscriptionTier,
+        // AO-01: the admin table's Status column had no field to read, so it
+        // showed every account as active — including ones an operator had just
+        // "blocked". Moderation state has to come back from the server or the
+        // UI is only ever displaying its own optimistic guess.
+        blocked: u.blocked,
+        blockedAt: u.blockedAt ? u.blockedAt.toISOString() : null,
+        blockedReason: u.blockedReason,
         createdAt: u.createdAt.toISOString(),
       }));
 
@@ -191,7 +198,7 @@ export class AdminService {
 
   async updateUser(
     id: string,
-    updates: { approved?: boolean; blocked?: boolean; roles?: string[] },
+    updates: { approved?: boolean; blocked?: boolean; blockedReason?: string; roles?: string[] },
   ) {
     try {
       const user = await prisma.user.findUnique({ where: { id } });
@@ -348,9 +355,38 @@ export class AdminService {
         await this.sendApprovalEmail(id, updates.approved, roleAssignments).catch(() => undefined);
       }
 
-      return { message: 'User updated', userId: id };
-    } catch {
-      return { message: 'User updated (mock)', userId: id };
+      // AO-01 (2026-08-12, P0): actually block the user.
+      //
+      // `blocked` has been in this method's SIGNATURE since it was written, and
+      // User.blocked / blockedReason / blockedAt have existed in the schema all
+      // along — but nothing ever wrote them. The admin UI's Ban button flipped
+      // the Status badge optimistically, the API answered 200, and the account
+      // stayed fully live: still able to sign in, take bookings and take money.
+      // This is the platform's ONLY moderation control, so an operator blocking
+      // a fraudulent pandit got a green confirmation and moved on while nothing
+      // happened. The only way to notice was to reload and re-check every action.
+      if (updates.blocked !== undefined) {
+        await prisma.user.update({
+          where: { id },
+          data: {
+            blocked: updates.blocked,
+            blockedAt: updates.blocked ? new Date() : null,
+            // Clear the reason on unblock so a stale one cannot linger and
+            // reappear if the account is blocked again later.
+            blockedReason: updates.blocked ? (updates.blockedReason ?? null) : null,
+          },
+        });
+      }
+
+      return { message: 'User updated', userId: id, blocked: updates.blocked };
+    } catch (err) {
+      // NEVER report success on failure. This used to answer
+      // "User updated (mock)" — a 200 with a success message — for ANY error,
+      // so a DB outage was indistinguishable from a completed moderation
+      // action. Same class as the fabricated revenue in getRevenue, and the
+      // same fix: fail loud, exactly as getUsers already does.
+      console.error('[admin.service.updateUser] failed', { id, err });
+      throw err;
     }
   }
 
@@ -362,7 +398,14 @@ export class AdminService {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const [totalUsers, roleAssignments, subscriptions, recentTransactions, mtdRevenueAgg] =
+      const [
+        totalUsers,
+        roleAssignments,
+        subscriptions,
+        recentTransactions,
+        mtdSubscriptionAgg,
+        mtdCapturedAgg,
+      ] =
         await Promise.all([
           prisma.user.count(),
           prisma.userRoleAssignment.findMany(),
@@ -376,6 +419,27 @@ export class AdminService {
             where: { status: 'COMPLETED', createdAt: { gte: monthStart } },
             _sum: { amount: true },
           }),
+          // AO-04 (2026-08-12, P0): the marketplace half of the number.
+          //
+          // "Revenue This Month" summed COMPLETED `Transaction` rows only — and
+          // the ONLY writers of that table are in subscription.service. No puja
+          // booking, store order, donation or consultation has ever created a
+          // Transaction. So the founder's single most important tile could
+          // never show marketplace revenue: it was structurally Rs 0, and wrong
+          // in the direction that HIDES success — it would still read Rs 0 on
+          // the day the platform took its first Rs 1,00,000. Meanwhile
+          // /admin/reports read a different source and showed a real number, so
+          // two admin screens flatly contradicted a third.
+          //
+          // Captured payments are the money that actually arrived. This is GMV
+          // COLLECTED, not the platform's net cut — that is
+          // getRevenue().totalCommissions, derived through commission-math.
+          // Keeping the two clearly separate is the whole reason the ledger
+          // conventions exist.
+          prisma.payment.aggregate({
+            where: { status: 'captured', createdAt: { gte: monthStart } },
+            _sum: { amount: true },
+          }),
         ]);
 
       const usersByRole: Record<string, number> = {};
@@ -383,7 +447,11 @@ export class AdminService {
         usersByRole[ra.role] = (usersByRole[ra.role] ?? 0) + 1;
       }
 
-      const totalRevenue = Number(mtdRevenueAgg._sum.amount ?? 0);
+      // Money collected this month = captured marketplace payments + completed
+      // subscription charges. Both halves, one number, same basis as
+      // /admin/metrics — so /admin, /admin/revenue and /admin/reports agree.
+      const totalRevenue =
+        Number(mtdCapturedAgg._sum.amount ?? 0) + Number(mtdSubscriptionAgg._sum.amount ?? 0);
       const transactions = recentTransactions;
 
       // Count pending approvals across all profile types

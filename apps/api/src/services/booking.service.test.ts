@@ -1776,6 +1776,75 @@ describe('BookingService.uploadVideoProof', () => {
     expect(result.status).toBe('video_uploaded');
     expect(result.videoProofUrl).toBe('https://video.url');
   });
+
+  // PF-02 (2026-08-12, P0). This is the SECOND path that sets `video_uploaded`.
+  // updateBookingStatus mints the PriestPayout on that transition; this one
+  // wrote the status with a raw update and skipped the hook. Because the pandit
+  // portal's proof upload comes through HERE, pandits did the puja, filed the
+  // proof, got a 200 — and their earnings stayed Rs 0 forever.
+  //
+  // The two paths must never drift apart again, so this mirrors the
+  // "writes a PriestPayout on transition to video_uploaded" test above.
+  it('mints the pandit payout — proof upload is the step that earns the money', async () => {
+    prismaMock.pujaBooking.findUnique
+      // 1. the authz/status read inside uploadVideoProof
+      .mockResolvedValueOnce({ id: 'booking-1', priestId: 'pr-1', status: 'completed' })
+      // 2. createPriestPayout re-fetches the POST-transition row
+      .mockResolvedValue({
+        id: 'booking-1',
+        status: 'video_uploaded',
+        priestId: 'pr-1',
+        priestPayout: 880,
+        currency: 'INR',
+        bookingNumber: 'BS-20261225-ABC12',
+      });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'BS-20261225-ABC12',
+      status: 'video_uploaded',
+      videoProofUrl: 'https://video.url',
+      videoUploadedAt: new Date(),
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      id: 'pr-1',
+      aadhaarVerified: true,
+      displayName: 'Pandit Joshi',
+    });
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+    // No Commission owns this booking, so the legacy rail is the payer here.
+    prismaMock.commission.findFirst.mockResolvedValue(null);
+    prismaMock.priestPayout.create.mockResolvedValue({ id: 'payout-1', amount: 880 });
+
+    await service.uploadVideoProof('booking-1', 'pr-1', 'https://video.url');
+
+    // Fire-and-forget: flush the microtask queue before asserting.
+    await new Promise((r) => setImmediate(r));
+
+    expect(prismaMock.priestPayout.create).toHaveBeenCalled();
+    const call = prismaMock.priestPayout.create.mock.calls[0]![0] as any;
+    expect(call.data.bookingId).toBe('booking-1');
+    expect(call.data.priestId).toBe('pr-1');
+  });
+
+  it('a payout failure never fails the proof upload the pandit just completed', async () => {
+    prismaMock.pujaBooking.findUnique
+      .mockResolvedValueOnce({ id: 'booking-1', priestId: 'pr-1', status: 'completed' })
+      .mockRejectedValue(new Error('payout lookup exploded'));
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'BS-20261225-ABC12',
+      status: 'video_uploaded',
+      videoProofUrl: 'https://video.url',
+      videoUploadedAt: new Date(),
+    });
+
+    // The proof is the pandit's evidence the work happened — it must be
+    // recorded even if the money plumbing is having a bad day.
+    const result = await service.uploadVideoProof('booking-1', 'pr-1', 'https://video.url');
+    expect(result.status).toBe('video_uploaded');
+
+    await new Promise((r) => setImmediate(r));
+  });
 });
 
 // ─── submitReview ────────────────────────────────────────────────────────────

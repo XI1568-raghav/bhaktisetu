@@ -601,4 +601,118 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       }
     }
   );
+
+  // ─── Provider KYC verification ──────────────────────────────────────────
+  //
+  // PJ-01 (2026-08-12, P0). `payout.service` gates BOTH payout paths on
+  // `provider_kyc.verified`: requestPayout throws "Your KYC is pending
+  // verification. Payouts unlock once an admin verifies it." and the Monday
+  // settlement sweep does `if (!kyc.verified || !kyc.hasBank) { skippedKyc++ }`.
+  //
+  // Nothing in the codebase ever set that column to true. A repo-wide search
+  // for provider_kyc returned three files: the provider's own submit route
+  // (which only ever writes `verified = false`), the CREATE TABLE, and the
+  // payout gate that READS it. routes/provider-kyc.ts:29 even documents
+  // "Approval (verified=true) is admin-driven" — describing an admin route that
+  // was never written.
+  //
+  // Net effect: every pandit, astrologer, wellness instructor, store owner and
+  // temple manager who earned money was permanently told their KYC was pending
+  // and could never withdraw a rupee, by either path. This is the missing
+  // writer. The actual bank transfer stays owner-gated on RazorpayX/Cashfree —
+  // this unblocks the request, not the rail.
+  const kycDecisionSchema = z.object({
+    action: z.enum(['verify', 'reject']),
+    reason: z.string().min(3).max(500).optional(),
+  }).refine((d) => d.action !== 'reject' || !!d.reason, {
+    message: 'A reason is required when rejecting KYC',
+    path: ['reason'],
+  });
+
+  server.patch(
+    '/provider-kyc/:userId',
+    { preHandler: adminPreHandlers },
+    async (request, reply) => {
+      const { userId } = request.params as { userId: string };
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+        return reply.code(400).send({ error: 'userId must be a UUID' });
+      }
+      const parsed = kycDecisionSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+      }
+      const { action, reason } = parsed.data;
+
+      try {
+        // Verifying requires bank details on file — otherwise we would unlock a
+        // payout that has nowhere to send the money, which is how a "verified"
+        // provider ends up stuck one step further along with no explanation.
+        const rows = await prisma.$queryRawUnsafe<
+          Array<{ user_id: string; bank_account_number: string | null; bank_ifsc: string | null }>
+        >(
+          `SELECT user_id, bank_account_number, bank_ifsc FROM provider_kyc WHERE user_id = $1::uuid LIMIT 1`,
+          userId,
+        );
+        const row = rows[0];
+        if (!row) {
+          return reply.code(404).send({ error: 'No KYC submission found for this provider' });
+        }
+
+        if (action === 'verify') {
+          if (!row.bank_account_number || !row.bank_ifsc) {
+            return reply.code(409).send({
+              error: 'Cannot verify: this provider has no bank account on file. Ask them to resubmit KYC with bank details.',
+            });
+          }
+          await prisma.$executeRawUnsafe(
+            `UPDATE provider_kyc
+                SET verified = true, verified_at = now(), rejection_reason = NULL, updated_at = now()
+              WHERE user_id = $1::uuid`,
+            userId,
+          );
+        } else {
+          await prisma.$executeRawUnsafe(
+            `UPDATE provider_kyc
+                SET verified = false, verified_at = NULL, rejection_reason = $2, updated_at = now()
+              WHERE user_id = $1::uuid`,
+            userId,
+            reason,
+          );
+        }
+
+        request.log.info({ userId, action, adminId: request.currentUser!.id }, 'provider KYC decision');
+        return reply.send({ ok: true, userId, verified: action === 'verify', reason: reason ?? null });
+      } catch (err) {
+        request.log.error({ err, userId }, 'provider KYC decision failed');
+        return reply.code(500).send({ error: 'Failed to record the KYC decision' });
+      }
+    },
+  );
+
+  // GET the queue an admin actually works from. Without this the decision
+  // endpoint above is unreachable in practice — nobody knows who is waiting.
+  server.get('/provider-kyc', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const status = (request.query as { status?: string })?.status ?? 'pending';
+    try {
+      const where =
+        status === 'verified' ? 'k.verified = true'
+        : status === 'rejected' ? 'k.verified = false AND k.rejection_reason IS NOT NULL'
+        : 'k.verified = false AND k.rejection_reason IS NULL';
+      const rows = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+        `SELECT k.user_id, k.verified, k.verified_at, k.rejection_reason, k.created_at,
+                (k.bank_account_number IS NOT NULL AND k.bank_ifsc IS NOT NULL) AS has_bank,
+                u.full_name, u.email
+           FROM provider_kyc k
+           LEFT JOIN users u ON u.id = k.user_id
+          WHERE ${where}
+          ORDER BY k.created_at ASC
+          LIMIT 200`,
+      );
+      // Never return raw account numbers to a list view.
+      return reply.send({ status, submissions: rows });
+    } catch (err) {
+      request.log.error({ err }, 'provider KYC queue failed');
+      return reply.code(500).send({ error: 'Failed to load the KYC queue' });
+    }
+  });
 }

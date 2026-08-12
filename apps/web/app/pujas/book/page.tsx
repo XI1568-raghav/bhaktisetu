@@ -42,6 +42,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { DateInput } from '../../../components/ui/DateInput';
+import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../lib/trust-score';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -212,7 +213,7 @@ function getFallbackPuja(slug: string): PujaInfo {
  { time: '17:00', label: 'Evening (5:00 PM)' },
  ],
  isActive: true,
- trustScore: 98,
+ trustScore: 4.9,
  isVerified: true,
  },
  {
@@ -228,7 +229,7 @@ function getFallbackPuja(slug: string): PujaInfo {
  { time: '16:00', label: 'Afternoon (4:00 PM)' },
  ],
  isActive: true,
- trustScore: 96,
+ trustScore: 4.8,
  isVerified: true,
  },
  {
@@ -243,7 +244,7 @@ function getFallbackPuja(slug: string): PujaInfo {
  { time: '11:00', label: 'Late Morning (11:00 AM)' },
  ],
  isActive: true,
- trustScore: 95,
+ trustScore: 4.75,
  isVerified: true,
  },
  ],
@@ -1443,13 +1444,14 @@ function PujaBookingInner() {
  <span className="text-lg font-bold text-saffron-600">
  ₹{Number(price).toLocaleString('en-IN')}
  </span>
- {/* P2 (2026-08-03): trustScore is 0-100. The old `/20` shrank 98 → "4.9" but
-   a near-empty temple (score ~1) rendered as an unexplained "0.0/0.2" badge
-   that read as a bug. Show the star rating only when it's meaningful. */}
- {temple.trustScore >= 20 && (
+ {/* trustScore is 0-5 (see lib/trust-score.ts). The 2026-08-03 note here
+   claimed 0-100 — taken from this file's own MOCK fixtures, which used 98/96/95
+   while the API served 4.9. That made the `>= 20` guard hide the badge on every
+   REAL temple. Scale and threshold now come from one shared module. */}
+ {hasMeaningfulTrustScore(temple.trustScore) && (
  <span className="flex items-center gap-1 text-xs text-surface-400">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
- {(temple.trustScore / 20).toFixed(1)}
+ {formatTrustScoreOutOf(temple.trustScore)}
  </span>
  )}
  </div>

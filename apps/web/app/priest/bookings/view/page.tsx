@@ -128,11 +128,17 @@ function PriestBookingDetailInner() {
  setActionError(null);
  try {
  const endpoint = `${API_BASE_URL}/priest/bookings/${booking.id}/${action}`;
+ // NO Content-Type header: these actions send NO body. Declaring
+ // application/json on a bodyless request makes Fastify reject it before the
+ // handler ever runs — FST_ERR_CTP_EMPTY_JSON_BODY, "Body cannot be empty when
+ // content-type is application/json". Every button on this page (Accept /
+ // Start Puja / Mark Complete) returned 400 for that reason alone, so no
+ // pandit could progress a single booking: every paid puja stalled at
+ // Accepted, no devotee got their video, and nobody got paid.
  const res = await fetch(endpoint, {
  method: 'PATCH',
  headers: {
  Authorization: `Bearer ${session?.accessToken ?? ''}`,
- 'Content-Type': 'application/json',
  },
  });
  if (!res.ok) {

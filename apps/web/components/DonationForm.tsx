@@ -227,11 +227,29 @@ export default function DonationForm({
           Authorization: `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify({
-          // Backend expects `gaushalaId` — we use it as the opaque cause id
-          // for both gaushalas and temples; the backend stores it as a
-          // string in the donations table.
-          gaushalaId: causeId,
+          // POLYMORPHIC DONEE (fixed 2026-08-12, P0).
+          //
+          // This used to post `{ gaushalaId: causeId }` for EVERY cause, with a
+          // comment claiming the backend treated it as an opaque id for both
+          // kinds. It does not: the API takes a `causeKind` and writes either
+          // donations.temple_id or donations.gaushala_id, and
+          // finalizeDonationReceipt decides the donee from which one is set.
+          // So every temple donation took the gaushala branch — temple_id NULL,
+          // the gaushala lookup missing, and the 80G receipt falling back to
+          // the literal string "Darshya Gaushala Network". A devotee giving
+          // Rs 2,100 to Siddhivinayak was emailed a receipt naming a cow
+          // shelter, and the temple manager's portal (which filters on
+          // templeId) showed Rs 0 forever.
+          //
+          // donorPan and dedication were collected and validated here — PAN is
+          // REQUIRED above Rs 2,000 for a valid 80G receipt — and then dropped
+          // on the floor; the API has accepted both since PBO-14.
+          ...(causeKind === 'temple'
+            ? { causeKind: 'temple' as const, templeId: causeId }
+            : { causeKind: 'gaushala' as const, gaushalaId: causeId }),
           amountInr: amountNumber,
+          ...(donorPan.trim() ? { donorPan: donorPan.trim().toUpperCase() } : {}),
+          ...(dedication.trim() ? { dedication: dedication.trim() } : {}),
         }),
       }).catch(() => null);
 

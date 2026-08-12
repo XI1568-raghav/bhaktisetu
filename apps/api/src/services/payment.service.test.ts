@@ -487,6 +487,68 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
     razorpayRefundMock.mockResolvedValue({ id: 'rfnd_test_1' });
   });
 
+  // ── Ledger reversal on refund (2026-08-12, P0) ──────────────────────────
+  //
+  // There are TWO refund rails. refund.service reversed the provider ledger
+  // (RV-02); THIS one refunded the devotee and left the pandit's earning
+  // PENDING and fully withdrawable. Driven end to end by an audit agent:
+  // BS-20260812-J3M76 was refunded Rs 1,151 here, then a Rs 770 payout request
+  // was raised successfully against that same refunded booking — the platform
+  // pays the devotee back AND pays the pandit, roughly 172% of booking value,
+  // with no alert anywhere. Both rails now share reverseBookingLedger().
+  it('reverses the provider ledger on a FULL refund — otherwise a refund pays out twice', async () => {
+    const service = await loadLiveService();
+    arrange(
+      makeBooking({
+        cancelledAt: new Date('2026-08-25T00:00:00Z'), // >7 days out -> 100% tier
+        cancellationReason: '[refund-requested] full refund',
+      })
+    );
+    prismaMock.commission.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.commission.count.mockResolvedValue(0);
+    prismaMock.templePayout.updateMany.mockResolvedValue({ count: 1 });
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+    expect(out.status).toBe('refunded');
+
+    // The assertion that matters: the pandit's earning is voided in the SAME
+    // transaction as the refund, and only while it is still unclaimed.
+    expect(prismaMock.commission.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'bk-1', status: 'PENDING', payoutRequestId: null },
+      data: { status: 'REVERSED' },
+    });
+    // Money already paid out or mid-transfer is NEVER silently clawed back.
+    expect(prismaMock.commission.count).toHaveBeenCalledWith({
+      where: { bookingId: 'bk-1', OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }] },
+    });
+    // The temple's share follows the same rule.
+    expect(prismaMock.templePayout.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'bk-1', status: 'pending' },
+      data: { status: 'reversed' },
+    });
+  });
+
+  it('does NOT reverse the ledger on a PARTIAL refund', async () => {
+    // Deliberate, and an OPEN OWNER DECISION rather than an oversight: the
+    // published ladder (100/75/50/25/0) makes partial the NORMAL case, and on a
+    // 75% tier the platform keeps Rs 275 while still owing the pandit Rs 825 —
+    // roughly -Rs 550 per mid-ladder cancellation. Making it proportional
+    // changes what providers earn, so it is the founder's call. This test pins
+    // TODAY's behaviour so the change is deliberate when it happens.
+    const service = await loadLiveService();
+    arrange(
+      makeBooking({
+        cancelledAt: new Date('2026-09-01T00:30:00Z'), // 12h out -> 50% tier
+        cancellationReason: '[refund-requested] partial',
+      })
+    );
+    prismaMock.commission.updateMany.mockResolvedValue({ count: 0 });
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+    expect(out.status).toBe('partially_refunded');
+    expect(prismaMock.commission.updateMany).not.toHaveBeenCalled();
+  });
+
   it('applies the 50% tier (12h out) instead of refunding 100%', async () => {
     const service = await loadLiveService();
     arrange(

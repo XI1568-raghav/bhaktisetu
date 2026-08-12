@@ -814,3 +814,48 @@ describe('booking-create failures carry an actionable status', () => {
     expect(classifyCreateBookingError(undefined).status).toBe(400);
   });
 });
+
+// ─── Take-rate doctrine (2026-08-12) ───────────────────────────────────────────
+//
+// The platform take is 20% / provider 80%, uniform across every marketplace role
+// and confirmed with the founder. It is expressed in TWO places that must agree:
+// the DEFAULT_PRIEST_SHARE constant, and the `priests.commission_rate` column
+// default. Between 2026-08-04 and 2026-08-12 they did NOT agree — the revamp
+// changed the constant to 0.8 and left the column default at 0.70 — and because
+// resolvePriestShare treats any stored value in (0,1] as authoritative, the
+// column won. Every normally-onboarded pandit was paid 70%.
+//
+// These tests bind the two together so they cannot drift apart again silently.
+
+describe('take-rate doctrine — 20% platform / 80% provider', () => {
+  it('the constant is the provider share, not the platform cut', () => {
+    expect(DEFAULT_PRIEST_SHARE).toBe(0.8);
+  });
+
+  it('a pandit on the DEFAULT share is paid 80% — the number the supply pitch promises', () => {
+    const split = splitPujaPrice(new Prisma.Decimal(10000), resolvePriestShare(undefined));
+    expect(split.priestPayout.toString()).toBe('8000');
+    expect(split.platformCommission.toString()).toBe('2000');
+  });
+
+  it('the stale 0.70 default would have underpaid by Rs 1,000 on a Rs 10,000 booking', () => {
+    // Pinning the regression itself: if the column default ever reverts to 0.70,
+    // resolvePriestShare accepts it and this is what the pandit receives.
+    const stale = splitPujaPrice(new Prisma.Decimal(10000), resolvePriestShare(0.7));
+    expect(stale.priestPayout.toString()).toBe('7000');
+    const correct = splitPujaPrice(new Prisma.Decimal(10000), resolvePriestShare(undefined));
+    expect(correct.priestPayout.sub(stale.priestPayout).toString()).toBe('1000');
+  });
+
+  it('a genuinely negotiated rate is still honoured over the default', () => {
+    // The fix must not clobber a pandit who really is on a different deal.
+    const negotiated = splitPujaPrice(new Prisma.Decimal(10000), resolvePriestShare(0.85));
+    expect(negotiated.priestPayout.toString()).toBe('8500');
+  });
+
+  it('an out-of-range stored rate falls back to the doctrine', () => {
+    for (const bad of [0, -0.5, 1.5, NaN]) {
+      expect(resolvePriestShare(bad as number)).toBe(DEFAULT_PRIEST_SHARE);
+    }
+  });
+});

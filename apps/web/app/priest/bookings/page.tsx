@@ -97,6 +97,10 @@ function PriestBookingsInner() {
  const [loading, setLoading] = useState(true);
  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
+ // A failed action used to be invisible: `if (res.ok)` had no else and the
+ // catch was marked "Silent fail for MVP", so a pandit clicking Accept saw
+ // literally nothing happen and had no idea why.
+ const [actionError, setActionError] = useState<string | null>(null);
 
  useEffect(() => {
   const qs = activeTab === 'all' ? '' : `?status=${activeTab}`;
@@ -166,16 +170,28 @@ function PriestBookingsInner() {
  }
  }
 
+ // Only the `video` action sends a body. A Content-Type of application/json
+ // on the OTHER actions (accept / reject / start / complete) made Fastify
+ // reject them with FST_ERR_CTP_EMPTY_JSON_BODY before the handler ran — so
+ // every button here 400'd, and the silent `if (res.ok)` below meant the card
+ // simply never changed. "Nothing happens at all" was the reported symptom.
+ const sendsBody = action === 'video';
  const res = await fetch(endpoint, {
  method,
  headers: {
  Authorization: `Bearer ${session?.accessToken}`,
- 'Content-Type': 'application/json',
+ ...(sendsBody ? { 'Content-Type': 'application/json' } : {}),
  },
- ...(action === 'video' ? { body: JSON.stringify({ videoUrl }) } : {}),
+ ...(sendsBody ? { body: JSON.stringify({ videoUrl }) } : {}),
  });
 
- if (res.ok) {
+ if (!res.ok) {
+ const detail = await res.text().catch(() => '');
+ setActionError(
+ `Could not ${action} this booking (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ );
+ } else {
+ setActionError(null);
  // Optimistically update the status
  const statusMap: Record<string, string> = {
  accept: 'priest_assigned',
@@ -190,8 +206,10 @@ function PriestBookingsInner() {
  )
  );
  }
- } catch {
- // Silent fail for MVP
+ } catch (err) {
+ setActionError(
+ err instanceof Error ? err.message : 'Network error — please try again.',
+ );
  } finally {
  setActionLoading(null);
  }
@@ -280,6 +298,25 @@ function PriestBookingsInner() {
  <h1 className="text-2xl font-bold text-surface-800">My Bookings</h1>
  <p className="text-surface-500 mt-1">Manage your assigned puja bookings</p>
  </div>
+
+ {/* Action failures must be visible. Setting actionError without rendering it
+     would leave the exact silent failure this fix exists to remove. */}
+ {actionError && (
+ <div
+ role="alert"
+ className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+ >
+ <span className="flex-1">{actionError}</span>
+ <button
+ type="button"
+ onClick={() => setActionError(null)}
+ className="shrink-0 font-medium text-red-600 hover:text-red-800"
+ aria-label="Dismiss error"
+ >
+ ×
+ </button>
+ </div>
+ )}
 
  {/* Tabs */}
  <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-surface-100">

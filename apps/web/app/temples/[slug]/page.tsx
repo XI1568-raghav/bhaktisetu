@@ -860,8 +860,17 @@ function RichTemplePage({
  >
  <Video className="h-4 w-4" /> Live Darshan
  </Link>
+ {/* causeId MUST be the temple UUID: the API's temple donation branch
+     validates `templeId: z.string().uuid()`, so the slug this used to send
+     (e.g. "siddhivinayak") is rejected outright. When there is no API record
+     behind a curated page there is no UUID to send, so link to the generic
+     donations page rather than a request that cannot succeed. */}
  <Link
- href={`/donations?causeId=${encodeURIComponent(rich.slug)}&causeKind=temple&causeName=${encodeURIComponent(rich.name)}`}
+ href={
+ apiTemple?.id
+ ? `/donations?causeId=${encodeURIComponent(apiTemple.id)}&causeKind=temple&causeName=${encodeURIComponent(rich.name)}`
+ : '/donations'
+ }
  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white py-2.5 text-sm font-medium text-surface-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
  >
  <Heart className="h-4 w-4" /> Donate to this Temple

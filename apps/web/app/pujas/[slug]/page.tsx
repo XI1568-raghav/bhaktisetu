@@ -16,7 +16,6 @@ import {
  MapPin,
  Users,
  IndianRupee,
- DollarSign,
  Heart,
  Share2,
  Sparkles,
@@ -26,6 +25,7 @@ import {
  Undo2,
 } from 'lucide-react';
 import { getDeityImage, getPujaImage } from '../../../lib/images';
+import { formatTrustScoreOutOf } from '../../../lib/trust-score';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -56,6 +56,8 @@ interface PujaDetail {
  deity: string;
  durationMinutes: number;
  basePrice: string;
+ /** INR, not USD (business rule 2: 9-10x domestic). Not rendered — see the
+  * note in the hero block. Kept on the type because the API still returns it. */
  nriPrice: string;
  samagriIncluded: boolean;
  samagriList?: string[];
@@ -331,10 +333,18 @@ export default async function PujaDetailPage({
  </span>
  </div>
  </div>
- <div className="mt-2 flex items-center gap-1.5 text-sm text-white/70">
- <DollarSign className="h-3.5 w-3.5" />
- <span>NRI Price: ${Number(puja.nriPrice).toLocaleString('en-US')}</span>
- </div>
+ {/* NRI PRICE REMOVED 2026-08-12 (P0).
+     This rendered `puja.nriPrice` — an INR column, per business rule 2's
+     "NRI pricing 9-10x domestic" — behind a `$` and a dollar icon. On
+     /pujas/ram-charit-manas-path that read "$31,999" (about Rs 27.5 lakh) for a
+     puja the platform actually charges Rs 3,501 for. The highest-ARPU cohort in
+     the category was being quoted a number that reads as fraud.
+     Deleting rather than re-glyphing to Rs: /bookings/from-offering charges
+     basePrice to EVERYONE (the USD rail went with Stripe), so an "NRI Price
+     Rs 13,999" line advertises a premium that is never collected — still a
+     displayed-price != charged-price violation, just quieter.
+     This returns when a server-QUOTED NRI amount exists, rendered from the same
+     value the gateway is asked for. */}
  </div>
 
  <Link
@@ -490,7 +500,7 @@ export default async function PujaDetailPage({
  <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
  <span className="flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
- {(temple.trustScore / 20).toFixed(1)}
+ {formatTrustScoreOutOf(temple.trustScore)}
  </span>
  <span className="rounded-full bg-surface-100 px-2 py-0.5">
  {temple.availableSlots.length} time slots
@@ -529,11 +539,6 @@ export default async function PujaDetailPage({
  icon={IndianRupee}
  label="Price (INR)"
  value={`₹${Number(puja.basePrice).toLocaleString('en-IN')} onwards`}
- />
- <SidebarRow
- icon={DollarSign}
- label="Price (USD/NRI)"
- value={`$${Number(puja.nriPrice).toLocaleString('en-US')}`}
  />
  <SidebarRow
  icon={MapPin}

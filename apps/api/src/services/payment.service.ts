@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
+import { reverseBookingLedger } from './ledger-reversal.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -1278,6 +1279,18 @@ export class PaymentService {
             cancellationReason: `[refunded] ${reason}`.slice(0, 500),
           },
         });
+
+        // Unwind the ledger IN THE SAME TRANSACTION as the refund.
+        //
+        // This rail refunded the devotee and left the pandit's 80% and the
+        // temple's share PENDING and fully withdrawable — so a refunded booking
+        // still paid the provider. Proven end to end: BS-20260812-J3M76 was
+        // refunded Rs 1,151 here, then a Rs 770 payout request was raised
+        // against that same booking. ~172% of the booking value out the door,
+        // silently. refund.service has reversed correctly since RV-02; this
+        // rail was simply never backported, so the two now share one
+        // implementation instead of two copies that can drift again.
+        await reverseBookingLedger(tx, bookingId, reason);
       } else {
         await tx.pujaBooking.update({
           where: { id: bookingId },

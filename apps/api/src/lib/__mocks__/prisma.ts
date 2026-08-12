@@ -48,6 +48,9 @@ export const prismaMock = {
     findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // AO-04: the admin dashboard's headline revenue now sums CAPTURED payments
+    // (it used to sum a Transaction table nothing writes, so it was always ₹0).
+    aggregate: vi.fn(),
   },
   priest: {
     findUnique: vi.fn(),

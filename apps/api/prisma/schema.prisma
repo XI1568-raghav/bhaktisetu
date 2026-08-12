@@ -325,7 +325,13 @@ model Priest {
   verificationStatus PriestVerificationStatus @default(pending) @map("verification_status")
   bio                String?
   avatarUrl          String?                  @map("avatar_url")
-  commissionRate     Float                    @default(0.70) @map("commission_rate")
+  /// The PANDIT's share, not the platform's. Default 0.80 = the uniform
+  /// 20/80 take rate (booking.service DEFAULT_PRIEST_SHARE). This sat at 0.70
+  /// until 2026-08-12: the 2026-08-04 revamp cut the platform take 30%->20% by
+  /// changing the CONSTANT but never the schema default, and resolvePriestShare
+  /// treats any stored value in (0,1] as authoritative — so 0.70 always won and
+  /// the constant never fired. Every normally-onboarded pandit was paid 70%.
+  commissionRate     Float                    @default(0.80) @map("commission_rate")
   status             PriestStatus             @default(active)
   tier                 PriestTier             @default(standard)
   isOnDuty             Boolean                @default(false) @map("is_on_duty")
