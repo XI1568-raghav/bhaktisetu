@@ -50,8 +50,11 @@ export function MobileBottomTabs() {
   return (
     <nav
       aria-label="Bottom tab navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-surface-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="md:hidden fixed left-0 right-0 z-40 bg-white border-t border-surface-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
+      // RESP-01: the consent banner is z-[80] and was covering this bar
+      // outright. --consent-h is its live height while open, 0px otherwise,
+      // so the tabs ride above it instead of underneath.
+      style={{ bottom: 'var(--consent-h, 0px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="grid grid-cols-4 items-stretch h-14">
         {TABS.map((tab) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type ConsentCategory = "essential" | "analytics" | "marketing";
 
@@ -54,11 +54,33 @@ export function hasConsent(category: ConsentCategory): boolean {
   return Boolean(state[category]);
 }
 
+/**
+ * RESP-01 — the banner is position:fixed, so it used to sit ON TOP of whatever
+ * was at the bottom of the page. At 390x844 it covered 41% of the viewport and
+ * buried the entire /auth/login form: a hit test on the Sign In button's own
+ * centre returned "Reject all". Scrolling did not help.
+ *
+ * While the banner is open it now publishes its measured height as --consent-h.
+ * globals.css reserves that much space at the end of the document, and the
+ * mobile tab bar lifts above it, so nothing is ever occluded. Measured rather
+ * than hardcoded because the height changes when "Manage preferences" expands
+ * and when the title wraps at different widths.
+ */
+const CONSENT_HEIGHT_VAR = "--consent-h";
+
+function publishConsentHeight(px: number | null) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (px === null) root.style.removeProperty(CONSENT_HEIGHT_VAR);
+  else root.style.setProperty(CONSENT_HEIGHT_VAR, `${Math.ceil(px)}px`);
+}
+
 export default function CookieBanner() {
   const [open, setOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  const shellRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const state = loadConsent();
@@ -69,6 +91,27 @@ export default function CookieBanner() {
     setAnalytics(state.analytics);
     setMarketing(state.marketing);
   }, []);
+
+  useLayoutEffect(() => {
+    const node = shellRef.current;
+    if (!open || !node) {
+      publishConsentHeight(null);
+      return;
+    }
+    publishConsentHeight(node.getBoundingClientRect().height);
+
+    // The height changes when preferences expand or the viewport rotates.
+    // Read the border box, not contentRect — the shell carries px-4 pb-4, and
+    // contentRect would under-reserve by exactly that padding.
+    const ro = new ResizeObserver(() => {
+      publishConsentHeight(node.getBoundingClientRect().height);
+    });
+    ro.observe(node);
+    return () => {
+      ro.disconnect();
+      publishConsentHeight(null);
+    };
+  }, [open]);
 
   const save = (next: { analytics: boolean; marketing: boolean }) => {
     const state: ConsentState = {
@@ -89,18 +132,25 @@ export default function CookieBanner() {
 
   return (
     <div
+      ref={shellRef}
       role="dialog"
       aria-modal="false"
       aria-labelledby="darshya-cookie-title"
       className="fixed inset-x-0 bottom-0 z-[80] px-4 pb-4 sm:px-6 sm:pb-6"
     >
-      <div className="mx-auto max-w-3xl rounded-xl border bg-white p-5 shadow-xl sm:p-6"
+      {/* RESP-01: at 390x844 this card was 347px — 41% of the viewport — which
+          left 497px for a 632px sign-in form. Tighter type and padding on
+          mobile bring it to ~240px. Every word of the notice is still shown at
+          every breakpoint: nothing is clamped, collapsed or removed, because
+          shrinking a DPDP/UK-GDPR disclosure is a compliance decision, not a
+          layout one. */}
+      <div className="mx-auto max-w-3xl rounded-xl border bg-white p-4 shadow-xl sm:p-6"
         style={{ borderColor: "var(--color-border, #e5e7eb)" }}
       >
-        <h2 id="darshya-cookie-title" className="text-base font-semibold text-surface-900 sm:text-lg">
+        <h2 id="darshya-cookie-title" className="text-sm font-semibold leading-snug text-surface-900 sm:text-lg">
           We use cookies for darshan, devotion, and DPDP/UK-GDPR compliance
         </h2>
-        <p className="mt-2 text-sm text-surface-700">
+        <p className="mt-1.5 text-xs leading-relaxed text-surface-700 sm:mt-2 sm:text-sm">
           Essential cookies keep your account and bookings working. Analytics and marketing
           cookies are optional and only run with your consent. You can change these any time
           in our <a href="/legal/cookies" className="underline">Cookie Policy</a>.
@@ -148,7 +198,11 @@ export default function CookieBanner() {
           </div>
         )}
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        {/* RESP-01: three stacked full-width buttons cost ~148px of a 844px
+            viewport. A 2-up grid on mobile drops that to ~96px. The disclosure
+            copy above is untouched — shortening a DPDP/UK-GDPR notice is not a
+            layout decision. */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <button
             type="button"
             onClick={() => save({ analytics: false, marketing: false })}
@@ -159,7 +213,10 @@ export default function CookieBanner() {
           <button
             type="button"
             onClick={() => setShowSettings((v) => !v)}
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-surface-300 px-4 text-sm font-medium text-surface-800 hover:bg-surface-50"
+            // order-last keeps the two actual choices side by side on row 1 and
+            // drops this full-width onto row 2. Without it, DOM order puts the
+            // col-span-2 element second, which wraps and costs a third row.
+            className="order-last col-span-2 inline-flex h-11 items-center justify-center rounded-lg border border-surface-300 px-4 text-sm font-medium text-surface-800 hover:bg-surface-50 sm:order-none sm:col-span-1"
             aria-expanded={showSettings}
           >
             {showSettings ? "Hide settings" : "Manage preferences"}

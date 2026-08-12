@@ -240,6 +240,11 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   line-height: var(--leading-relaxed);
+  /* RESP-01: CookieBanner is position:fixed and used to bury whatever sat at
+     the bottom of the page — at 390x844 the entire /auth/login form, Sign In
+     included. While it is open it publishes its measured height here, so the
+     document always has somewhere to scroll to. 0px when dismissed. */
+  padding-bottom: var(--consent-h, 0px);
 }
 
 /* Devanagari font stack when locale is Hindi. Cabinet Grotesk / Satoshi

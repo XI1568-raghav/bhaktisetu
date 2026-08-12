@@ -22,7 +22,17 @@ export const metadata: Metadata = {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
  return (
- <div className="min-h-[100dvh] relative flex items-center justify-center overflow-hidden py-8">
+ // RESP-01: this centres the sign-in card inside a full-viewport box. While
+ // the cookie banner is open it covers the bottom 41% of a 390x844 screen, so
+ // "centred in the viewport" put the Sign In button underneath it — a hit test
+ // on the button's own centre returned "Reject all". Centring inside the
+ // VISIBLE area instead means the form is reachable on first paint, with no
+ // scrolling and no dismissing the banner first. --consent-h is 0px whenever
+ // the banner is closed, so this is a no-op for returning visitors.
+ <div
+ className="relative flex items-center justify-center overflow-hidden py-8"
+ style={{ minHeight: 'calc(100dvh - var(--consent-h, 0px))' }}
+ >
  {/* Background gradient — warm saffron tones */}
  <div className="absolute inset-0 bg-gradient-to-br from-saffron-700 via-saffron-600 to-temple-gold" />
 
