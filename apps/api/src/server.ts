@@ -13,6 +13,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import { clientIp, rateLimitKey } from './lib/rate-limit-key.js';
 import fastifyRawBody from 'fastify-raw-body';
 import fastifyCookie from '@fastify/cookie';
 import { registerAuthDecorators, authenticateUser, requireRole } from './middlewares/auth.js';
@@ -207,13 +208,13 @@ async function bootstrap() {
     max: globalMax,
     timeWindow: globalWindow,
     allowList: (req) => SKIP_RATE_LIMIT_PATHS.has(req.url.split('?')[0] ?? ''),
-    keyGenerator: (req) => {
-      const uid = (req as unknown as { currentUser?: { id?: string } }).currentUser?.id;
-      return uid ? `u:${uid}` : `ip:${req.ip}`;
-    },
+    keyGenerator: (req) => rateLimitKey(req),
     onExceeded: (req) => {
+      // Log the resolved client IP and the bucket that filled. req.ip alone is
+      // the Cloudflare/Render proxy on every line, which tells you nothing
+      // about who is actually generating the load.
       server.log.warn(
-        { ip: req.ip, url: req.url, method: req.method },
+        { ip: clientIp(req), bucket: rateLimitKey(req), url: req.url, method: req.method },
         'rate_limit_exceeded',
       );
     },
