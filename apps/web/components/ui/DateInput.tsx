@@ -20,6 +20,14 @@ interface DateInputProps {
   dateMarkers?: Record<string, 'shubh' | 'neutral' | 'avoid'>;
   /** Optional set of dates that cannot be selected (e.g. avoid days). */
   disabledDates?: Set<string>;
+  /**
+   * DB-10: called when the user types a date the field then refuses.
+   *
+   * OPTIONAL by design — ~26 consumers, and a required prop turns a one-file
+   * change into a 26-file one. Call sites that pass nothing still get the fix:
+   * the field renders its own inline message.
+   */
+  onInvalid?: (attempted: string, reason: 'out-of-range' | 'unparseable') => void;
 }
 
 /**
@@ -96,12 +104,19 @@ export function DateInput({
   className,
   dateMarkers,
   disabledDates,
+  onInvalid,
 }: DateInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reactId = useId();
   const inputId = `date-${reactId}`;
   const hintId = `date-hint-${reactId}`;
+  const errorId = `date-error-${reactId}`;
   const [display, setDisplay] = useState(value ? formatForDisplay(value) : '');
+  /** DB-10: the last typed value this field refused, so it can say so. */
+  const [rejected, setRejected] = useState<{
+    attempted: string;
+    reason: 'out-of-range' | 'unparseable';
+  } | null>(null);
   const [open, setOpen] = useState(false);
 
   // Calendar viewport state
@@ -150,7 +165,16 @@ export function DateInput({
     if (iso && isInRange(iso, min, max)) {
       onChange(iso);
       setDisplay(formatForDisplay(iso));
-    } else if (display && display.length > 0) {
+      setRejected(null);
+      return;
+    }
+    if (display && display.length > 0) {
+      // DB-10: say WHY before reverting. The revert still happens — the field
+      // must not hold a value the form would submit — but the user now sees
+      // what was rejected instead of watching their typing disappear.
+      const reason = iso ? 'out-of-range' : 'unparseable';
+      setRejected({ attempted: display, reason });
+      onInvalid?.(display, reason);
       setDisplay(value ? formatForDisplay(value) : '');
     }
   }
@@ -160,6 +184,8 @@ export function DateInput({
     if (!isInRange(iso, min, max)) return;
     onChange(iso);
     setDisplay(formatForDisplay(iso));
+    // DB-10: recovering via the calendar clears the message too.
+    setRejected(null);
     setOpen(false);
   }
 
@@ -187,11 +213,15 @@ export function DateInput({
   const selectedIso = value;
   const todayIso = toIso(today.getFullYear(), today.getMonth(), today.getDate());
 
-  // Year list for dropdown (1900 to current+5)
-  const minYear = 1900;
-  const maxYear = today.getFullYear() + 5;
+  // PF-09: this was a fixed 1900..currentYear+5 on EVERY consumer, so a booking
+  // picker offered ~130 years and isInRange() then silently refused 125 of them
+  // — all three booking call sites already pass `min`. The props were there the
+  // whole time; only this list ignored them. Date-of-birth consumers pass
+  // neither and keep the full 1900 range they need.
+  const minYear = parseIso(min ?? '')?.year ?? 1900;
+  const maxYear = parseIso(max ?? '')?.year ?? today.getFullYear() + 5;
   const years: number[] = [];
-  for (let y = maxYear; y >= minYear; y--) years.push(y);
+  for (let y = Math.max(maxYear, minYear); y >= minYear; y--) years.push(y);
 
   return (
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
@@ -214,7 +244,8 @@ export function DateInput({
           required={required}
           aria-required={required || undefined}
           aria-label={label ? undefined : (ariaLabel ?? 'Date')}
-          aria-describedby={hintId}
+          aria-describedby={rejected ? `${hintId} ${errorId}` : hintId}
+          aria-invalid={rejected ? true : undefined}
           inputMode="numeric"
           autoComplete="off"
           className="w-full px-4 py-3 pr-12 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
@@ -223,6 +254,17 @@ export function DateInput({
         <span id={hintId} className="sr-only">
           Format: DD/MM/YYYY
         </span>
+        {rejected && (
+          // DB-10: role="alert" so a screen reader hears it — the whole defect
+          // was that the rejection was invisible.
+          <p id={errorId} role="alert" className="mt-1.5 text-xs text-[var(--color-status-error)]">
+            {rejected.reason === 'unparseable'
+              ? `“${rejected.attempted}” isn’t a date we could read. Use DD/MM/YYYY.`
+              : `“${rejected.attempted}” is outside the dates this booking accepts${
+                  minYear === maxYear ? ` (${minYear})` : ` (${minYear}–${maxYear})`
+                }.`}
+          </p>
+        )}
         <button
           type="button"
           tabIndex={-1}
