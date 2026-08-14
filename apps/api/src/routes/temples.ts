@@ -1,7 +1,89 @@
 import { FastifyInstance } from 'fastify';
 import { templeService } from '../services/temple.service.js';
+import { prisma } from '../lib/prisma.js';
+import { authenticateUser } from '../middlewares/auth.js';
 
 export async function templeRoutes(server: FastifyInstance) {
+  // ─── Temple follows (NOTIF-09) ────────────────────────────────────────────
+  //
+  // jobs/aarti-notify.ts now sends aarti reminders ONLY to the followers of the
+  // temple whose aarti is firing — the correct audience, and the fix for one
+  // opt-in buying twenty pushes a day about temples the devotee never chose.
+  //
+  // Nothing could create a follower. `templeFollow` appeared in exactly one
+  // file in apps/api/src, as a read, and `temple_follows` held zero rows, so
+  // the targeted branch had an audience of nobody and always would. That turns
+  // a spamming feature into a silent one, which is not a fix — the darshan
+  // page's "aarti reminders" toggle would sit on, honestly wired, and deliver
+  // nothing forever.
+  //
+  // These three routes are the write side of that contract.
+
+  /** Resolve a slug (or a raw id) to the temple row the follow points at. */
+  async function resolveTemple(slugOrId: string): Promise<{ id: string; name: string } | null> {
+    const bySlug = await prisma.temple.findUnique({
+      where: { slug: slugOrId },
+      select: { id: true, name: true },
+    });
+    if (bySlug) return bySlug;
+    // Accept an id too: the mobile client holds ids, the web client holds slugs,
+    // and a follow that works on one surface and 404s on the other is the kind
+    // of split that goes unnoticed until the reminders do not arrive.
+    return prisma.temple
+      .findUnique({ where: { id: slugOrId }, select: { id: true, name: true } })
+      .catch(() => null);
+  }
+
+  server.post('/:slug/follow', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { slug } = request.params as { slug: string };
+    const temple = await resolveTemple(slug);
+    if (!temple) return reply.status(404).send({ error: 'Temple not found' });
+    const userId = request.currentUser!.id;
+    try {
+      // Idempotent on the (userId, templeId) unique — a devotee tapping the bell
+      // twice must not double their aarti pushes.
+      await prisma.templeFollow.upsert({
+        where: { userId_templeId: { userId, templeId: temple.id } },
+        create: { userId, templeId: temple.id },
+        update: {},
+      });
+    } catch (error) {
+      server.log.error(error, 'Failed to follow temple');
+      return reply.status(500).send({ error: 'Failed to follow temple' });
+    }
+    return { following: true, templeId: temple.id, templeName: temple.name };
+  });
+
+  server.delete('/:slug/follow', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const { slug } = request.params as { slug: string };
+    const temple = await resolveTemple(slug);
+    if (!temple) return reply.status(404).send({ error: 'Temple not found' });
+    const userId = request.currentUser!.id;
+    try {
+      await prisma.templeFollow.deleteMany({ where: { userId, templeId: temple.id } });
+    } catch (error) {
+      server.log.error(error, 'Failed to unfollow temple');
+      return reply.status(500).send({ error: 'Failed to unfollow temple' });
+    }
+    return { following: false, templeId: temple.id };
+  });
+
+  server.get('/follows/mine', { preHandler: [authenticateUser] }, async (request, reply) => {
+    try {
+      // Bounded: this is a devotee's own follow list, not a scan (SCAL-04).
+      const rows = await prisma.templeFollow.findMany({
+        where: { userId: request.currentUser!.id },
+        select: { templeId: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      });
+      return { templeIds: rows.map((r) => r.templeId), total: rows.length };
+    } catch (error) {
+      server.log.error(error, 'Failed to list temple follows');
+      return reply.status(500).send({ error: 'Failed to list follows' });
+    }
+  });
+
   // GET / - List temples with filters
   server.get('/', async (request, reply) => {
     const { city, state, deity, tradition, search, isVerified, liveDarshan, page, limit } =

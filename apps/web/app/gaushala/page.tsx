@@ -18,6 +18,19 @@ import {
  Leaf,
 } from "lucide-react";
 import Link from "next/link";
+import { COMPANY } from "../../lib/company";
+
+/**
+ * COM-02 (prod sweep 2026-08-12): every 80G claim on this page is gated on the
+ * one owner-controlled flag that records whether Darshya actually holds an
+ * 80G(5) certificate. It is false today, and `donationLegal.eightyGNumber` is
+ * null, so the receipt the donor receives is not an 80G instrument
+ * (apps/api/src/lib/pdf-receipt.ts says so on the PDF itself now). Selling
+ * "80G tax receipt" as a plan feature, badging "Save on income tax", and
+ * answering "Is my donation tax-deductible?" with "Yes!" was a tax
+ * misrepresentation to the donor. The copy returns the day the flag flips.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/gaushala' },
@@ -194,7 +207,6 @@ const adoptionPlans = [
  "Unlimited visits",
  "Framed certificate with cow photo",
  "Monthly health report",
- "80G tax receipt",
  "Festival special updates",
  ],
  },
@@ -211,7 +223,6 @@ const adoptionPlans = [
  "Unlimited visits with family",
  "Premium framed certificate",
  "Monthly health report",
- "80G tax receipt",
  "Name plaque at gaushala",
  "Annual Gau Puja invitation",
  "Priority for new cow adoption",
@@ -230,7 +241,9 @@ const faqs = [
  },
  {
  q: "Is my donation tax-deductible?",
- a: "Yes! Donations under the Annual (Gau Raksha) and Lifetime (Gau Daan) plans are eligible for tax deduction under Section 80G of the Income Tax Act. You will receive a valid 80G receipt for your records.",
+ a: HAS_80G
+ ? "Yes. Donations under the Annual (Gau Raksha) and Lifetime (Gau Daan) plans are eligible for deduction under Section 80G of the Income Tax Act, and the receipt we email carries our registration number and PAN."
+ : "Not yet. Darshya does not hold a Section 80G registration today, so a donation made here cannot be claimed as a deduction. You will receive a receipt PDF by email as proof of your donation, and we will publish the registration number on this page the day it is issued.",
  },
  {
  q: "What happens if the cow I adopted passes away?",
@@ -343,8 +356,8 @@ export default function GaushalaPage() {
  },
  {
  icon: FileText,
- label: "Tax Receipt (80G)",
- sub: "Save on income tax",
+ label: HAS_80G ? "Tax Receipt (80G)" : "Donation Receipt",
+ sub: HAS_80G ? "Save on income tax" : "Emailed instantly as a PDF",
  },
  ].map((badge) => (
  <div

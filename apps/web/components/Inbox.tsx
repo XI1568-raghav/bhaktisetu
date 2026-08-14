@@ -202,13 +202,24 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
     );
   }
 
+  // RES-02: the list is UNKNOWN, not empty, when every load so far has failed.
+  // `reconnecting` is RES-08's failure-streak flag; paired with an empty list it
+  // is the precise condition under which the zeros below would be invented.
+  const listUnknown = reconnecting && conversations.length === 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4 h-[calc(100dvh-180px)] min-h-[500px]">
       {/* Conversation list */}
       <div className={`bg-white rounded-xl border border-surface-100 overflow-hidden flex flex-col ${activeId ? 'hidden md:flex' : ''}`}>
         <div className="px-4 py-3 border-b border-surface-100">
           <h2 className="font-semibold text-surface-800 text-sm">Messages</h2>
-          <p className="text-xs text-surface-400">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
+          {/* RES-02: a count is only printable when a load succeeded. With every
+              request answering 500 this read "0 conversations" beside "No
+              conversations yet" — two figures the server never sent, shown to a
+              devotee who may have live threads. */}
+          {!listUnknown && (
+            <p className="text-xs text-surface-400">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
+          )}
           {/* RES-08: during an incident the list simply stopped updating and
               said nothing. Name the state instead of letting the user read a
               stale list as a live one. */}
@@ -220,7 +231,25 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
           )}
         </div>
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
+          {listUnknown ? (
+            /* RES-02: "you have none" and "we could not find out" are different
+               answers. Only one of them is true during an incident, and the
+               empty state was asserting the other one. */
+            <div className="p-8 text-center">
+              <MessageSquare className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+              <p className="text-sm text-surface-600">Could not load your conversations.</p>
+              <p className="text-xs text-surface-400 mt-1">
+                This is a connection problem, not an empty inbox — any threads you have are safe.
+              </p>
+              <button
+                type="button"
+                onClick={() => { void fetchConvs(); }}
+                className="mt-3 text-xs font-medium text-saffron-600 underline underline-offset-2"
+              >
+                Retry
+              </button>
+            </div>
+          ) : conversations.length === 0 ? (
             <div className="p-8 text-center">
               <MessageSquare className="w-10 h-10 text-surface-300 mx-auto mb-3" />
               <p className="text-sm text-surface-500">No conversations yet.</p>
@@ -327,9 +356,14 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
   useEffect(() => {
     setRating(null);
     setRatingLoaded(false);
-    fetch(`${API_BASE_URL}/ratings/${conversationId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    // RES-01: `ratingLoaded` is set in the `finally` of this chain, and a bare
+    // fetch on a stalled socket never reaches it — the rating bar would never
+    // render at all, not even as an error.
+    fetchWithTimeout(
+      `${API_BASE_URL}/ratings/${conversationId}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+      POLL_TIMEOUT_MS,
+    )
       .then((r) => (r.ok ? r.json() : { rating: null }))
       .then((d) => {
         if (d?.rating) setRating({ stars: d.rating.stars, body: d.rating.body });
@@ -388,10 +422,14 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
     sinceRef.current = null;
     fetchMessages(true);
     // mark read
-    fetch(`${API_BASE_URL}/conversations/${conversationId}/read`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => undefined);
+    // RES-01: fire-and-forget, but still bounded — an unaborted mark-read on a
+    // dead API is a socket held open for the life of the tab, and RES-08's whole
+    // point is that this component must not accumulate those.
+    fetchWithTimeout(
+      `${API_BASE_URL}/conversations/${conversationId}/read`,
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+      POLL_TIMEOUT_MS,
+    ).catch(() => undefined);
 
     // Phase D P1 #1: visibility-pause for active thread polling.
     // RES-08: same self-scheduling + backoff treatment as the conversation
@@ -618,11 +656,17 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
           existing={rating}
           counterpartyName={counterpartyName}
           onSubmit={async (stars, body) => {
-            const res = await fetch(`${API_BASE_URL}/ratings`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ conversationId, stars, body: body || undefined }),
-            });
+            // RES-01: the last bare fetch in this component. A stalled submit
+            // left the rating bar spinning with no error and no retry.
+            const res = await fetchWithTimeout(
+              `${API_BASE_URL}/ratings`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ conversationId, stars, body: body || undefined }),
+              },
+              POLL_TIMEOUT_MS,
+            );
             if (res.ok) setRating({ stars, body: body || null });
           }}
         />

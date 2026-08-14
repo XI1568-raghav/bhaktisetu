@@ -20,7 +20,7 @@
  * surface can tell the user how much of it is actually translated instead of
  * implying a finished localisation.
  *
- * CATALOG PROVENANCE — hi.json is intentionally partial (19 of 374 keys). Every
+ * CATALOG PROVENANCE — hi.json is intentionally partial (42 of 374 keys). Every
  * string in it is lifted from Hindi already authored by a human elsewhere in
  * this repo (app/hi/page.tsx and the CONTENT_LABELS.hi block in
  * components/LanguageSwitcher.tsx). Nothing here is machine-translated, and the
@@ -28,6 +28,13 @@
  * Shipping Policy) are deliberately LEFT OUT: a mistranslated refund policy is
  * worse than an English one. Filling the remaining keys is a content decision
  * for the owner, not a code change.
+ *
+ * That provenance rule is no longer only a comment: __tests__/i18n-hi-catalog
+ * asserts every non-English string appears verbatim in one of those two
+ * human-authored sources, so a machine translation cannot be added without the
+ * build failing. ta/te/bn/mr still have NO catalog (0 of 374 each) on purpose —
+ * a handful of translated words under an English chrome reads as a deliberate
+ * choice rather than an unfinished one, which is the harm I-03 measured.
  */
 
 import en from './i18n/en.json';

@@ -88,6 +88,9 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
+    // DI-02 (2026-08-14): the partial-refund unwind scales pending sidecar
+    // payouts, which is the only provider rail a temple-path booking has.
+    update: vi.fn(),
     count: vi.fn(),
     aggregate: vi.fn(),
   },
@@ -318,6 +321,23 @@ export const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
     count: vi.fn(),
+  },
+  // NOTIF-09: temple follows are the ONLY audience the aarti reminder job has.
+  // Added, not reassigned.
+  templeFollow: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    upsert: vi.fn(),
+    deleteMany: vi.fn(),
+    count: vi.fn(),
+  },
+  // NOTIF-14: the generic push fan-out (routes/notifications.notifyUser) reads
+  // and prunes persisted Web Push subscriptions. Added, not reassigned.
+  pushSubscription: {
+    findMany: vi.fn(),
+    deleteMany: vi.fn(),
+    upsert: vi.fn(),
+    create: vi.fn(),
   },
   $queryRaw: vi.fn(),
   $queryRawUnsafe: vi.fn(),

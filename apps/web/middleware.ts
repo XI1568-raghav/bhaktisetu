@@ -133,6 +133,63 @@ function withLocale(req: NextRequest, res: NextResponse): NextResponse {
   return res;
 }
 
+/**
+ * Let a language the visitor ACTUALLY CHOSE route them — audit I-08, and the
+ * back half of I-02.
+ *
+ * Until now the `poojly_language` cookie was written on a click, read for the
+ * coverage disclosure, and then ignored by routing: a visitor who tapped
+ * हिन्दी, read /hi, and then tapped the logo was returned to the English
+ * homepage. I-02 measured that same loop from the other side — "reads one
+ * translated screen, clicks any call-to-action, and is in English with no way
+ * back". This is the "no redirect" clause of I-08.
+ *
+ * FOUR THINGS THIS DOES NOT DO, EACH ON PURPOSE:
+ *
+ *  - It does not read Accept-Language. `negotiateLocale` exists and is used,
+ *    but only to OFFER (components/TranslationCoverageNotice). A header is not
+ *    a choice, and at hi.json's coverage adopting one would serve a
+ *    mostly-English page while asserting it is Hindi. Hence `source: 'cookie'`
+ *    — the cookie only exists because somebody clicked a language link.
+ *  - It does not touch any path but the bare root. The finding is explicit:
+ *    never bounce a visitor mid-flow, and /hi/pujas is still a 404.
+ *  - It does not fire without a cookie, so the anonymous English homepage is
+ *    byte-for-byte what it is today — no Set-Cookie, no Vary, no 307, one
+ *    shared CDN entry. Crawlers send no cookie, so Googlebot always indexes
+ *    the English `/` and the hreflang cluster is untouched.
+ *  - It does not fire on a prefetch. next/link prefetches the header logo on
+ *    every page; letting that prefetch follow the redirect would park /hi's
+ *    payload in the Next 15 client Router Cache under the href `/`, where it
+ *    would survive a later switch back to English. Refusing costs nothing —
+ *    the cached entry is then plain `/`, exactly today's behaviour.
+ */
+function rootLocaleRedirect(req: NextRequest): NextResponse | null {
+  if (req.nextUrl.pathname !== '/') return null;
+  if (isPrefetch(req)) return null;
+
+  const { locale, source } = resolveRequestLocale({
+    pathname: req.nextUrl.pathname,
+    search: req.nextUrl.searchParams,
+    cookie: req.cookies.get(LOCALE_COOKIE)?.value ?? null,
+  });
+
+  // 'cookie' is the only source that can reach here (root has no locale
+  // segment, and `?lang=` was already consumed above), and resolveRequestLocale
+  // never reports it for English — so this is exactly "they chose a language".
+  if (source !== 'cookie' || locale === DEFAULT_LOCALE) return null;
+
+  const target = req.nextUrl.clone();
+  target.pathname = `/${locale}`;
+
+  // withLocale adds `Vary: Cookie`, which this response MUST carry: it was
+  // decided by a cookie, and a shared cache that served it to an anonymous
+  // visitor would send the whole internet to /hi. `no-store` is the belt to
+  // that braces — a cached 307 on `/` is unrecoverable from the client side.
+  const res = withLocale(req, NextResponse.redirect(target, 307));
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
+
 export function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
@@ -164,6 +221,9 @@ export function middleware(req: NextRequest) {
     signIn.searchParams.set('redirect', pathname);
     return withLocale(req, NextResponse.redirect(signIn, 307));
   }
+
+  const rooted = rootLocaleRedirect(req);
+  if (rooted) return rooted;
 
   return withLocale(req, NextResponse.next());
 }

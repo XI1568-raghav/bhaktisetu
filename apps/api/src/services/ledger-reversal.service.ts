@@ -103,6 +103,18 @@ export interface PartialLedgerResult {
   scaledCommissions: number;
   /** Temple payout rows whose amount was scaled down. */
   scaledTemplePayouts: number;
+  /**
+   * PriestPayout sidecar rows scaled down. On the temple booking path this is
+   * the ONLY provider rail — no Commission is ever minted there (DI-05).
+   */
+  scaledPriestPayouts: number;
+  /**
+   * True when `PujaBooking.priestPayout` / `platformCommission` were rewritten.
+   * That pair is what GET /admin/bookings/payouts/pending settles from, so a
+   * false here on a puja booking means the admin queue is still quoting the
+   * pre-refund figure.
+   */
+  scaledBookingSplit: boolean;
   /** Total rupees removed from provider earnings, as a 2dp string. */
   clawedBackInr: string;
   /** Rows that could NOT be reduced because the money has left or is mid-transfer. */
@@ -149,6 +161,8 @@ export async function reduceBookingLedgerForPartialRefund(
   const result: PartialLedgerResult = {
     scaledCommissions: 0,
     scaledTemplePayouts: 0,
+    scaledPriestPayouts: 0,
+    scaledBookingSplit: false,
     clawedBackInr: '0.00',
     alreadySettled: 0,
   };
@@ -178,7 +192,13 @@ export async function reduceBookingLedgerForPartialRefund(
     clawedBack = clawedBack.add(before.sub(after));
     result.scaledCommissions += 1;
   }
-  result.clawedBackInr = clawedBack.toFixed(2);
+  // NOTE: `clawedBackInr` is stamped ONCE, at the end of this function. It used
+  // to be set here, before the temple and priest rails ran, so it reported the
+  // commission delta alone — and on a temple-anchored booking, which mints no
+  // Commission at all (DI-05), that is `0.00` beside real money removed from the
+  // temple's share and the pandit's sidecar. An operator reconciling the refund
+  // reads "the ledger was not touched" and adjusts by hand: a second claw-back
+  // on money already reversed.
 
   result.alreadySettled = await tx.commission.count({
     where: { bookingId, OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }] },
@@ -214,12 +234,83 @@ export async function reduceBookingLedgerForPartialRefund(
       const after = before.mul(retain).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
       if (after.equals(before)) continue;
       await tx.templePayout.update({ where: { id: row.id }, data: { amount: after } });
+      clawedBack = clawedBack.add(before.sub(after));
       result.scaledTemplePayouts += 1;
     }
   } catch {
     // Never let temple bookkeeping fail a refund Razorpay has already made —
     // a stuck exception would also lose the Payment/Booking writes.
   }
+
+  // ── DI-02, second half (2026-08-14): THE SCREEN THE MONEY LEAVES FROM ──────
+  //
+  // Scaling the Commission ledger is not enough, because a partial refund
+  // deliberately does NOT flip the booking out of a paid status (payment.service
+  // RV-12: "a partial does NOT flip the booking to 'refunded'" — it must not, or
+  // the auto-refund cron would refund it a second time). The booking therefore
+  // stays `completed`/`video_uploaded`/`delivered`, and
+  // GET /admin/bookings/payouts/pending sums `PujaBooking.priestPayout` as the
+  // authoritative, fee-exclusive split that must be settled (DI-03,
+  // routes/admin-bookings.ts:152-156 and :250). Settlement there is a MANUAL
+  // bank/UPI transfer, so the pre-refund figure is what an admin actually pays.
+  //
+  // On the finding's own case that reads: ledger Rs 192.50, settlement queue
+  // Rs 770.00, same pandit, same booking — and the queue wins.
+  //
+  // It also closes "either rail" literally. A booking made through the TEMPLE
+  // path never mints a Commission at all (DI-05), so the loop above finds zero
+  // rows and, before this, a partial refund on that path reversed nothing
+  // whatsoever. `PriestPayout` is the only provider rail it has.
+  //
+  // Scaled by the SAME retain factor as everything else, so `priestPayout +
+  // platformCommission` keeps summing to the retained puja base and no reader
+  // has to reconcile two different definitions of the split.
+  try {
+    const booking = await tx.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: { priestPayout: true, platformCommission: true },
+    });
+    if (booking) {
+      const scale = (v: Prisma.Decimal | null | undefined): Prisma.Decimal =>
+        new Prisma.Decimal((v ?? 0) as Prisma.Decimal)
+          .mul(retain)
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      await tx.pujaBooking.update({
+        where: { id: bookingId },
+        data: {
+          priestPayout: scale(booking.priestPayout),
+          platformCommission: scale(booking.platformCommission),
+        },
+      });
+      result.scaledBookingSplit = true;
+    }
+  } catch {
+    // Not a puja booking (Commission.bookingId also carries consultation ids —
+    // AW-06), or the row is gone. Never abort the caller's transaction over it:
+    // that would lose the ledger scaling that already landed above.
+  }
+
+  try {
+    const sidecar = await tx.priestPayout.findMany({
+      where: { bookingId, status: 'pending' },
+      select: { id: true, amount: true },
+    });
+    for (const row of sidecar) {
+      const before = new Prisma.Decimal(row.amount as Prisma.Decimal);
+      const after = before.mul(retain).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      if (after.equals(before)) continue;
+      await tx.priestPayout.update({ where: { id: row.id }, data: { amount: after } });
+      clawedBack = clawedBack.add(before.sub(after));
+      result.scaledPriestPayouts += 1;
+    }
+  } catch {
+    // Same contract as the temple leg: a bookkeeping failure must never fail a
+    // refund the gateway has already made.
+  }
+
+  // Every rail this function reduced, in one figure. Stamped last on purpose —
+  // see the note by the commission loop.
+  result.clawedBackInr = clawedBack.toFixed(2);
 
   return result;
 }

@@ -413,7 +413,11 @@ export async function notifyDevotee(
       // notifyUser returns the number of subscriptions that actually accepted
       // the push. Zero means VAPID is unset or the devotee has no live
       // subscription — a skip, never a delivery.
-      push = await notifyUser(ctx.devoteeUserId, { ...text, url }).then(
+      // NOTIF-14: `record: false` — this function writes its own three-channel
+      // row below (push + WhatsApp + email in ONE entry). Letting notifyUser log
+      // as well would put two items in the devotee's notification centre for a
+      // single booking event, one of them describing only the push leg.
+      push = await notifyUser(ctx.devoteeUserId, { ...text, url }, { record: false }).then(
         (n) => (typeof n === 'number' && n > 0 ? 'sent' : 'skipped'),
         () => 'failed' as ChannelOutcome,
       );
@@ -573,7 +577,34 @@ export async function notifyRefundProcessed(params: {
  * Never throws; safe to call fire-and-forget once the proof is stored.
  */
 export async function notifyVideoReady(bookingId: string): Promise<NotifyOutcome> {
-  const miss = (): Promise<NotifyOutcome> => missOutcome('video_ready', bookingId);
+  return notifyBookingEvent(bookingId, 'video_ready');
+}
+
+/**
+ * NOTIF-06 (2026-08-14): fan out ANY lifecycle event from a booking id alone.
+ *
+ * The generic form of notifyVideoReady, and for the same reason: the only
+ * caller that knows a transition happened is booking.service's
+ * `updateBookingStatus`, whose `BOOKING_STATUS_RESPONSE_INCLUDE` selects
+ * `user: { select: { id: true } }` — no phone, no email. Building a ctx from
+ * that row would silently produce `devoteePhone: null` and
+ * `devoteeEmail: null`, i.e. a fan-out whose WhatsApp and email legs are both
+ * 'no-target' by construction: notifications that look wired and reach a
+ * phone-OTP devotee on no channel at all. Re-reading with the right select is
+ * the difference between "sent" and "sent nowhere".
+ *
+ * Used for the three transitions that reached a devotee on nothing (or on a
+ * browser push only): `in_progress`, `completed` and the service-side
+ * `cancelled`. Their WhatsApp templates (puja_started, puja_completed,
+ * booking_cancelled) and push copy were already written and unreachable.
+ *
+ * Never throws; safe to call fire-and-forget after the status flip commits.
+ */
+export async function notifyBookingEvent(
+  bookingId: string,
+  event: BookingEvent,
+): Promise<NotifyOutcome> {
+  const miss = (): Promise<NotifyOutcome> => missOutcome(event, bookingId);
   try {
     const b = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
@@ -589,9 +620,9 @@ export async function notifyVideoReady(bookingId: string): Promise<NotifyOutcome
       },
     });
     if (!b) return miss();
-    return await notifyDevotee('video_ready', buildBookingCtx(b));
+    return await notifyDevotee(event, buildBookingCtx(b));
   } catch (err) {
-    console.warn('[booking-notify] notifyVideoReady failed:', err);
+    console.warn(`[booking-notify] notifyBookingEvent(${event}) failed:`, err);
     return miss();
   }
 }
@@ -620,7 +651,9 @@ export async function notifyPriest(
   const text = pushTextFor(event, ctx);
   const url = `/priest/bookings/${ctx.bookingId}`;
   try {
-    push = await notifyUser(priestUserId, { ...text, url }).then(
+    // NOTIF-14: same reason as the devotee leg — the combined row is written
+    // below with audience 'priest'.
+    push = await notifyUser(priestUserId, { ...text, url }, { record: false }).then(
       (n) => (typeof n === 'number' && n > 0 ? 'sent' : 'skipped'),
       () => 'failed' as ChannelOutcome,
     );
@@ -660,11 +693,18 @@ export async function sendOfferToPriest(params: {
 }): Promise<void> {
   const { priestPhone, priestUserId, bookingId, pujaName, acceptUrl, expiresInSec } = params;
   try {
-    await notifyUser(priestUserId, {
-      title: 'New booking request',
-      body: `${pujaName ?? 'Puja'} request — accept within ${Math.round(expiresInSec / 60)} min.`,
-      url: `/priest/bookings/${bookingId}`,
-    }).catch(() => undefined);
+    await notifyUser(
+      priestUserId,
+      {
+        title: 'New booking request',
+        body: `${pujaName ?? 'Puja'} request — accept within ${Math.round(expiresInSec / 60)} min.`,
+        url: `/priest/bookings/${bookingId}`,
+      },
+      // NOTIF-14: this one DOES record — it writes no row of its own, and the
+      // dispatch offer is exactly the event an operator gets asked about
+      // ("was the pandit ever told?").
+      { event: 'dispatch_offer', audience: 'priest', bookingId },
+    ).catch(() => undefined);
     if (priestPhone) {
       await sendWhatsappText({
         to: priestPhone,

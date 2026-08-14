@@ -22,7 +22,7 @@ import {
  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
 import { friendlyApiError } from '../../lib/friendly-error';
 import AuthGuard from '../../components/AuthGuard';
 
@@ -205,14 +205,22 @@ function BookingsContent() {
   if (!ok) return;
   setCancellingId(bookingId);
   try {
-   const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
-    method: 'POST',
-    headers: {
-     Authorization: `Bearer ${session.accessToken}`,
-     'Content-Type': 'application/json',
+   // RES-01: a bare fetch never rejects on a stalled socket, so the `finally`
+   // that clears `cancellingId` could not run — the row's Cancel button stayed
+   // in its spinner state forever with no error, on the one action a devotee
+   // takes when she is already unhappy.
+   const res = await fetchWithTimeout(
+    `${API_BASE_URL}/bookings/${bookingId}/cancel`,
+    {
+     method: 'POST',
+     headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      'Content-Type': 'application/json',
+     },
+     body: JSON.stringify({}),
     },
-    body: JSON.stringify({}),
-   });
+    DATA_FETCH_TIMEOUT_MS,
+   );
    if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     window.alert(body?.error ?? `Could not cancel (HTTP ${res.status}).`);
@@ -252,11 +260,18 @@ function BookingsContent() {
     page: String(page),
     limit: String(PAGE_SIZE),
    });
-   const res = await fetch(`${API_BASE_URL}/bookings/my?${qs.toString()}`, {
-    headers: {
-     Authorization: `Bearer ${session?.accessToken ?? ''}`,
+   // RES-01: without a timeout this queryFn never settles, so react-query stays
+   // `isPending` forever and the page holds its skeleton — the exact state the
+   // sweep measured at T+30s on /dashboard and /priest.
+   const res = await fetchWithTimeout(
+    `${API_BASE_URL}/bookings/my?${qs.toString()}`,
+    {
+     headers: {
+      Authorization: `Bearer ${session?.accessToken ?? ''}`,
+     },
     },
-   });
+    DATA_FETCH_TIMEOUT_MS,
+   );
    if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);

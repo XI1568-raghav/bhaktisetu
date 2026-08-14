@@ -216,6 +216,51 @@ honestly today.
 
 ---
 
+## ▶ STATUS 2026-08-14 — 223 of 388 closed
+
+| Severity | Total | Fixed | Partial | Owner | Open |
+|---|---:|---:|---:|---:|---:|
+| P0 | 65 | 50 | 7 | 3 | 5 |
+| P1 | 155 | 108 | 41 | 6 | **0** |
+| P2 | 120 | 49 | 27 | 8 | 36 |
+| P3 | 48 | 16 | 1 | 0 | 31 |
+| **All** | **388** | **223** | **76** | **17** | **72** |
+
+Suites at last full run: **API 1615 · web 1438 · mobile 78**, all three tsc clean.
+Committed through **`97fbd58c`** (734 files, 67,303 insertions).
+
+**Deploy path, branch divergence and the sweep coverage gap are documented in
+[`DEPLOY-PLAN.md`](DEPLOY-PLAN.md) — read it before merging or deploying.**
+
+### Method that produced these numbers
+
+Four fix waves, each followed by an **adversarial verify pass** whose job is to
+find over-claims. It has repeatedly earned its cost:
+
+- **20 claims downgraded** from fixed to partial for scope over-claim.
+- **3 vacuous tests caught** — one asserted precisely what the OLD buggy code
+  did (`AO-05`: `href === '/admin/users/<id>'`, which was the bug).
+- Verifiers are required to **revert the change and prove the test goes red**.
+  ⚠ Do NOT use `git stash` for that while other agents are writing — it stashes
+  their in-flight work too. Copy the file to a scratch dir, restore HEAD's
+  version with `git show`, run, then put the copy back.
+
+**Read-only triage before fixing is extremely high value.** Three triage agents
+over the 48 P3s found **13 already dead** (one was an *environment artifact* —
+the sweep hit an unseeded local DB) and flagged **3 whose instructions would
+cause damage if executed literally**:
+
+- `DF-12` — deleting the "mock" astrologer array breaks every REAL astrologer;
+  the API overlay only *merges onto* it (reviews/badges/specializations exist
+  only there).
+- `TD-08` — "44 nameless footer links" is `innerText` reading `''` through a
+  deliberately collapsed `<details>`. Acting on it un-collapses a footer trimmed
+  on purpose.
+- `PF-10` — a `'use client'` page can return 404 *content* but not a 404
+  *status*, and its fix is gated on `PF-01` landing first.
+
+---
+
 ## ▶ RESUME HERE
 
 **Standing instruction from the owner:** keep going until all 388 are worked.

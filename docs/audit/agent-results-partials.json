@@ -1,0 +1,773 @@
+{
+ "fixes": [
+  {
+   "id": "DU-03",
+   "area": "design-uniformity",
+   "outcome": "fixed",
+   "change": "Split the CTA recipe out of the 'use client' Button into components/ui/button-recipe.ts (no directive) so Server Components can call buttonClass() — importing it from Button.tsx would have handed them a client-reference proxy and thrown. Button.tsx now re-exports it, so there is one source of truth. Adopted at every call site the ledger note named plus the two the finding named as outliers: HomeHeroCta (experiment keeps only the fill override), NavAuthButton (gradient-saffron retired — it was the site's only gradient button, on all ten screens), app/page.tsx x4, app/pujas/page.tsx x4, app/pricing/page.tsx x3 (including the 0px-horizontal-padding 'Start Free Trial'), app/auth/login/page.tsx x3 (the 49.6px submits), app/pujas/[slug]/page.tsx x3, app/layout.tsx header 'Ask Pandit' (the 10px-radius outlier), EmailCapture x2 ('Get free panchang', 41px/10px radius), NextFestivalStrip x3, ShopStrip, HowItWorks, MyProviderProfileCard.",
+   "evidence": "Re-ran the finding's own census (every <a>/<button> whose computed background is saffron-600/700, across the 7 public screens at 1280x800): 15 distinct full recipes -> 6. Of the 6, three ARE the Button sizes (sm h=36 r=16px 14/600 on all 7 screens; md h=44 r=16px 17/600 covering 15 CTAs including Book a Puja, Sign In, Apply, Subscribe x6, Book Now x2, Book This Puja; lg h=48 for the /pricing hero). The remaining 3 are the owner-gated consent banner 'Accept all' (RESP-01 — deliberately untouched), the /store category filter chip (rounded-full, RESP-08 territory) and the live-aarti card link. Radii went 4 -> 1 for buttons (16px). /pujas card CTA measured 134x44 r=16px bg=rgb(158,98,41) fs=16.1px fw=600. RESIDUAL, stated plainly: pages outside the ten measured screens still hand-roll (~280 of the 297 repo-wide bg-saffron-600 elements), and no lint rule banning bg-saffron-*/bg-amber-* on a button was added.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/components/ui/button-recipe.ts",
+    "E:/NewClaude/bhaktisetu/apps/web/components/ui/Button.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/HomeHeroCta.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/NavAuthButton.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pricing/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/auth/login/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/[slug]/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/EmailCapture.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/NextFestivalStrip.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/ShopStrip.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/HowItWorks.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/MyProviderProfileCard.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts (DU-03 block: 11 assertions — 8 adopter files call buttonClass, the recipe module carries no 'use client', Button.tsx does not duplicate the recipe, no /pricing CTA still paints its fill inline) + apps/web/__tests__/login-page-chrome.test.tsx (Sign In carries every BUTTON_SIZES.md class and no longer py-3/px-6). Red proof: restoring 19 files from 376153d5 -> 40 failed / 9 passed; restored -> 53/53."
+  },
+  {
+   "id": "DU-04",
+   "area": "design-uniformity",
+   "outcome": "fixed",
+   "change": "Swept 51 solid `bg-saffron-500` fills to `bg-saffron-600` across 37 files, moving `hover:bg-saffron-600`->`700` and `hover:bg-saffron-400`->`700` with them so the hover step survives; normalised 5 companion `border-saffron-500` rims that ringed a now-600 fill; retired `.gradient-saffron` from the header Sign In pill (the 135deg blend of the two weights that put both on screen at once). Opacity tints (bg-saffron-500/10, /15, /20) were deliberately left — that is a different role and the finding keeps saffron-500 for borders and icons.",
+   "evidence": "grep across apps/web/{app,components,lib}: 0 remaining solid `bg-saffron-500` (was 69 across 44 files); 18 tint uses preserved. Live on the mobile homepage the warm-colour census the finding used goes 16 distinct hexes -> 6, all declared palette (saffron-300/400/600/700 + amber-600/800), and #B87333 no longer appears as a resting fill. Contrast recomputed from the shipped tokens: saffron-500 3.79:1, saffron-600 4.96:1 — the ratio the CTA now carries. --color-primary was already saffron-600 from the earlier wave; the token side was not retouched, so __tests__/cta-contrast.test.ts:107 (expects 3.79) still passes.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/components/NavAuthButton.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/book/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/BookingStatusTracker.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/store/StoreFilterBar.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/admin/consultations/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/gurukul-portal/applications/ApplicationsClient.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/astrology/lal-kitab/LalKitabClient.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-04/A11Y-10 block: walks every .ts/.tsx under app/ and components/ and asserts zero solid bg-saffron-500 (tints must still exist, so the sweep cannot have flattened the role), plus the gradient is gone from NavAuthButton. 4 assertions. Red on restore."
+  },
+  {
+   "id": "DU-05",
+   "area": "design-uniformity",
+   "outcome": "fixed",
+   "change": "Added components/ui/heading-recipe.ts with exactly the four archetypes the finding's 'expected' asks for — marketing / catalogue / detail / portal — as a non-'use client' module so Server Components can use it. Applied H1.catalogue to /pujas, /store, /temples (both the page skeleton and TemplesBrowser) and the three astrology hubs the test caught still hard-coding the old recipe; H1.detail to /temples/[slug] x2 and /pujas/[slug]; H1.portal to /admin and /priest; H1.marketing to the home hero and /pricing. Promoted the /auth/login wordmark lockup from a <span> to the page <h1> (pixels unchanged; the purpose is appended sr-only rather than duplicated on screen). Demoted the second /priest h1 in app/priest/layout.tsx to a labelled div.",
+   "evidence": "Live at 390x844 all seven audited pages report exactly one VISIBLE h1 (/temples has a second in the hidden Suspense skeleton — a pre-existing streaming artifact, offsetParent null, box 0x0). At 1280x800 the archetypes now agree pairwise: / and /pricing both 70px display-stack (was 70.4px vs 43.2px, and different weights); /pujas, /temples and /store all 54px display-stack (was Satoshi 53.6px w700); /admin and /priest both text-xl. /auth/login went h1Count=0 -> 1 and its first heading is now level 1. No source file still matches the old `<h1 className=\"text-3xl md:text-4xl font-bold text-surface-800`. RESIDUAL: the auth card is a fifth treatment (a wordmark lockup, deliberately not one of the four archetypes), and the ~330 h1 tags outside these files are not migrated.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/components/ui/heading-recipe.ts",
+    "E:/NewClaude/bhaktisetu/apps/web/app/auth/login/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/store/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/temples/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/temples/TemplesBrowser.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/temples/[slug]/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/[slug]/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/admin/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pricing/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/HeroCopyVariant.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts (DU-05/DU-06 block, 16 assertions: exactly four archetype keys, each applied file wears the right one ON the h1, no file still hard-codes the old recipe, the priest layout has no h1 left) + apps/web/__tests__/login-page-chrome.test.tsx (renders the real page: exactly one h1, its name carries both the product and the purpose, the flame mark survives inside it, and no heading level is skipped). Login test red proof: restoring page.tsx from 376153d5 -> 7 failed / 2 passed."
+  },
+  {
+   "id": "DU-06",
+   "area": "design-uniformity",
+   "outcome": "partial",
+   "change": "Encoded the rule the finding recommends as a `.heading-display` utility in globals.css (font-family: var(--font-display), one place to change it) and applied it through H1.marketing/catalogue/detail. Portal chrome deliberately does not carry it — a provider lives in the dashboard all day.",
+   "evidence": "The h1 on /, /pricing, /pujas, /temples, /store now computes its font stack from --font-display (first declared family 'Cabinet Grotesk') where six of the ten screens previously fell through to the body stack. Honest caveat on that measurement: the first DECLARED family is not the PAINTED one — PERF-03 removed the api.fontshare.com stylesheet, so --font-display currently resolves to the Noto Sans layout.tsx already downloads and the h1 paints in the body face today. Every call site is correct and invisible until a woff2 lands.",
+   "blocked_on": "OWNER: no licensed display face is bundled. Licensing Cabinet Grotesk (or choosing an alternative) and dropping the woff2 under apps/web/public/fonts with an @font-face named at the head of --font-display makes the hierarchy appear everywhere at once with no further call-site edits. Also still open regardless of the licence: the rule is applied to h1 only — h2 adoption on marketing and catalogue pages is not done (811 h2 tags in 37 recipes).",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/globals.css",
+    "E:/NewClaude/bhaktisetu/apps/web/components/ui/heading-recipe.ts"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — asserts .heading-display exists and resolves to var(--font-display) not a literal family, that marketing/catalogue/detail carry it and portal does not, and that each applied file wears it on the h1."
+  },
+  {
+   "id": "DU-07",
+   "area": "design-uniformity",
+   "outcome": "fixed",
+   "change": "Fixed the three pages the finding names. /pujas: the two 36px section h3s dropped text-2xl -> text-xl so they no longer match the h2 above them. /priest: 'Upcoming Bookings' h2 -> text-lg and the 'Accept Bookings' / 'Upload Video' h3s -> text-sm (they were pixel-identical at 16px/600). /admin: the h1 -> text-xl via H1.portal and both h2s -> text-base (they were 13.4px, smaller than the body copy under them).",
+   "evidence": "Live at 390x844: /pujas now reads h1 30px > h2 24px > h3 20px > card h3 17.26px (was h3 36px vs h2 16px, an inversion). /admin signed in as an admin reads h1 20px > h2 16px > h3 13px (was h1 18px, h2 13.4px). /priest reads h1 20px > h2 18px > h3 14px. RESIDUAL: only the three named pages; the 811 h2 tags in 37 recipes repo-wide are untouched and no ramp is enforced by lint.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/admin/page.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-07 block ranks the Tailwind text-* steps and asserts, per page, that every named h3 ranks strictly below its h2 and every h2 ranks below the h1 and at or above text-base. 3 assertions over 8 headings."
+  },
+  {
+   "id": "DU-08",
+   "area": "design-uniformity",
+   "outcome": "fixed",
+   "change": "Wrapped the /store product grid and the /temples card grid in a <section aria-labelledby> with a real, visually hidden h2 ('All products' / 'All temples') — hidden because the hero title already names the page on screen; AT needs the grouping, sighted users do not need it twice. On /priest, promoted the onboarding banner h3 in MyProviderProfileCard to an h2 and demoted the portal layout's second h1 to a labelled div, which is what produced the 1,1,3 opening.",
+   "evidence": "Live level sequences at 390x844, computed from the server HTML of all seven audited pages: zero skipped levels anywhere, and the first heading is level 1 on every page. /store was 1,3x24 (one recorded skip) and now opens 1,2,3...; /temples was 1,3x21 and now opens 1,2,3...; /priest was 1,1,3,2 and now opens 1,2,...",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/store/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/temples/TemplesBrowser.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/MyProviderProfileCard.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/layout.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-08 block: the /store section+h2 exists and precedes the first h3, /temples likewise, the priest banner is an h2. Plus apps/web/__tests__/login-page-chrome.test.tsx walks the rendered login page's level list and fails on any jump greater than 1."
+  },
+  {
+   "id": "DU-09",
+   "area": "design-uniformity",
+   "outcome": "partial",
+   "change": "Removed the two Tailwind stock oranges the finding says to start with — 28 literal replacements of #E16318 (orange-600) and #9E3F0A (orange-700), plus their off-palette tint pair #FFF4EC/#FBD0A8, across 12 files, onto saffron-600/700/50/200. That included the PWA manifest themeColor and the Razorpay checkout theme, which were publishing a brand colour the palette does not declare.",
+   "evidence": "grep: zero occurrences of #E16318 or #9E3F0A anywhere under app/ or components/. Live census on the mobile homepage using the finding's own filter: 16 distinct warm hexes -> 6, and every one is declared in globals.css (saffron-300/400/600/700 + amber-600/800). The 30 pure-orange elements the finding measured on / are gone. Contrast checked: #7d4e1f on the new #FFF8F0 tint is 6.68:1, #9e6229 is 4.71:1.",
+   "blocked_on": "OWNER/DESIGN: the finding counts 16 warm colours, and the residual four are declared ramps, not mistakes — temple-gold, amber, sandal and rudraksha. Deciding whether amber is a named semantic role (time-sensitive / rating) or dead weight to be deleted is a design call, and the answer determines whether the remaining 2 hexes on the homepage stay. The lint rule allowing only saffron-*/temple-gold/semantic tokens for warm colour is not written because it cannot be written until that decision lands.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/IntentTrio.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/NriLaneAbTest.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/HowItWorks.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/ShopStrip.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/HomeHeroCta.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/MobileBottomTabs.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/store/checkout/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/astrology/[id]/book/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/wellness/classes/[id]/ClassDetailClient.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/press/page.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-09 block: no source file ships either orange or its tint pair, every hex in the homepage Worship card is declared in globals.css, and the manifest themeColor equals --color-primary. 4 assertions."
+  },
+  {
+   "id": "DU-10",
+   "area": "design-uniformity",
+   "outcome": "partial",
+   "change": "Swept 680 arbitrary sizes — text-[9px] (102), text-[10px] (363), text-[11px] (210), plus 5 stray 12/13px — onto text-xs across 146 files, which is the codemod the finding asks for. Left the 35 text-[6/7/8px] in app/demo/[role]/role-demo-client.tsx and app/mobile/**: those render a miniature phone UI inside a device frame — a picture of an interface, not an interface — and are exempted by name in the test rather than silently.",
+   "evidence": "Live at 390x844 on all seven audited pages: 0 elements under 12px and a minimum computed size of 12.11px, where the sweep measured 190 under 12px with a floor of 9px on the mobile homepage alone. /priest, whose 12px prose the finding calls out as the worst case, also reports min 12px / 0 under.",
+   "blocked_on": "The other half of DU-10 is unified PROSE size, not the legibility floor. The two competing base scales are already reconciled at the token layer (--type-* aliases --text-*), but the five paragraph recipes the finding measured — 12 / 13.4 / 16 / 17 / 18px — come from per-page classes (text-sm vs text-base vs text-lg on <p>), and picking one reading size plus one line-height ratio and applying it to every prose block is a design decision plus a much wider sweep than the arbitrary-size codemod. Not attempted.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/globals.css"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-10/RESP-05 block: --text-xs floors at 0.75rem, no source file ships an arbitrary size below 12px outside the two named mockup files, and the catalogue pages contain no text-[10px]/text-[11px] at all. 3 assertions."
+  },
+  {
+   "id": "DU-12",
+   "area": "design-uniformity",
+   "outcome": "partial",
+   "change": "Declared warm --shadow-xl and --shadow-2xl in @theme. This is the part of DU-12 the token wave could not reach: --shadow-sm/md/lg were already warm oklch, but shadow-xl and shadow-2xl had no token and fell through to Tailwind's stock rgb(0 0 0 / a) on 28 call sites (modals, dropdowns, the nav menu), so the elevation ramp changed temperature halfway up.",
+   "evidence": "Both tokens now sit on the same oklch(L C 60) warm hue as the rest of the ramp, and the ramp still grows outward (largest blur radius: lg 40px < xl 64px < 2xl 88px). Verified by removing the two declarations: 3 assertions go red, restored 53/53 green.",
+   "blocked_on": "The two remaining halves are both larger than a token fix and one of them is a design decision. (1) 2,257 gray/slate/zinc/neutral/stone utility NAMES across 122 files — the PIXELS are already warm because the earlier wave redefined --color-gray-50..950 and aliased the other four ramps onto it, so a rename is cosmetic-in-source and pixel-neutral, but it is a 2,257-site codemod with real regression surface and no visible payoff. (2) The card-ground split: 1,382 bg-white against 699 bg-surface-50/100/200. Choosing which is canonical is an owner design call — many bg-white uses are modals and overlays on dark grounds where cream would be wrong — and the finding does not say which one wins. Neither attempted.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/globals.css"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-12 block: shadow-xl/2xl are really used in source, each is declared, each is on the warm hue and not rgb(0...), and the ramp grows lg -> xl -> 2xl. 4 assertions."
+  },
+  {
+   "id": "A11Y-08",
+   "area": "accessibility",
+   "outcome": "fixed",
+   "change": "All three remaining halves, in apps/web/app/pujas/book/page.tsx. (1) The step indicator became <nav aria-label=\"Booking progress\"> + <ol> + <li aria-current={isCurrent ? 'step' : undefined}> — the flex classes are unchanged and an <ol> under Tailwind preflight has no marker, margin or padding, so nothing moved on screen. (2) An always-mounted sr-only role=status aria-live=polite region announcing 'Step N of 4, <label>' (always mounted because a region inserted at the same moment as its text is not reliably announced), plus a focusable sr-only h2 that useEffect focuses on every currentStep change, guarded by a mounted-ref so the first paint does not steal focus from the browser's own restore. (3) role=radiogroup + aria-labelledby on the temple grid and on the slot container, with role=radio aria-checked={isSelected} on every card — the eight temple cards and the slot buttons were previously eight and N separate actions to AT.",
+   "evidence": "Verified structurally against the finding's own measurement, which reported {\"radiogroups\":0,\"radios\":0,\"progressbars\":0} and liveRegions:[] with no aria-current anywhere in the file. All four are now present and bound to state, not hard-coded (the test explicitly fails on aria-checked=\"true\"). I did NOT re-measure the live wizard as a signed-in devotee — the page is a ~2,700-line client component whose first paint needs three API round trips, and A11Y-16 (fixed in this same pass) is why the earlier attempt at that measurement produced an error page.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/book/page.tsx"
+   ],
+   "test": "apps/web/__tests__/booking-wizard-a11y.test.ts — 18 assertions across the ordered list, the live region, the focus move and the two radiogroups, each anchored to a JSX slice so it cannot match elsewhere in the file. Red proof: `git show 376153d5:apps/web/app/pujas/book/page.tsx` over the file -> 15 failed / 3 passed (the 3 survivors assert DateInput.tsx, which the earlier wave had already fixed); restored -> 18/18."
+  },
+  {
+   "id": "A11Y-09",
+   "area": "accessibility",
+   "outcome": "fixed",
+   "change": "The DISPUTED half was the call site, and it is now closed: apps/web/app/pujas/book/page.tsx passes ariaLabel=\"Puja date\" and required to <DateInput>. Deliberate deviation from the finding's literal wording, documented in the file: it says 'pass label=\"Puja date\"', but the card already renders a visible h2 'Select Date' immediately above the field, so a visible label prop would print a second heading under the first. ariaLabel is the prop DateInput exposes for exactly this case and gives the screen-reader user the same name.",
+   "evidence": "The live DOM measurement was {\"ariaLabel\":null,\"labelFor\":false,\"wrapped\":false} with only the 2.05:1 DD/MM/YYYY placeholder. The input now carries an explicit accessible name and aria-required, and DateInput's persistent sr-only 'Format: DD/MM/YYYY' hint (wired through aria-describedby, so it survives the first keystroke unlike the placeholder) is asserted alongside it. required is honest: validateStep really does block Continue on errors.date.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/book/page.tsx"
+   ],
+   "test": "apps/web/__tests__/booking-wizard-a11y.test.ts — A11Y-09 block, 3 assertions on the call site and the component's hint wiring. Red on restore (the call-site assertions fail; the DateInput ones pass, which is correct — that component half was already done)."
+  },
+  {
+   "id": "A11Y-10",
+   "area": "accessibility",
+   "outcome": "fixed",
+   "change": "The DISPUTED scope was 'bg-saffron-500 used 70 times / 44 files' while the earlier fix only covered a few surfaces. That whole scope is now swept: 51 solid fills across 37 files moved to saffron-600, hover states stepped with them, and 5 companion borders normalised. The accent badge fills (ganga-blue, temple-gold, lotus-pink, tulsi-green) were already inverted or darkened by the earlier wave.",
+   "evidence": "Zero solid bg-saffron-500 remain under app/, components/ or lib/ — the assertion walks every .ts/.tsx rather than a hand-listed SURFACES array, which is precisely the narrowness the verifier called out. Ratios recomputed from the shipped tokens rather than hard-coded: saffron-500 3.79:1 (still the pinned value in cta-contrast.test.ts:107, untouched), saffron-600 4.96:1. The two named failing CTAs are both closed: /pujas 'Book Now' (now 'View details' per CM-09) measures bg rgb(158,98,41) live, and the cookie-banner 'Accept all' was already on saffron-600 at 44px. The 3.79:1 token itself is deliberately unchanged and still available for borders and icons.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/components/ui/WizardSteps.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/book/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/BookingStatusTracker.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — the repo-wide sweep assertion, which is the one the narrow SURFACES-scoped test was missing. Existing __tests__/cta-contrast.test.ts (15) and __tests__/token-contrast.test.ts (19) re-run green, so the token layer is provably untouched."
+  },
+  {
+   "id": "A11Y-15",
+   "area": "accessibility",
+   "outcome": "fixed",
+   "change": "All three structural nits. (1) /auth/login: the wordmark lockup at page.tsx:310 was a <span>; it is now the page <h1>, pixel-identical, with the purpose appended sr-only. (2) /store: the 24 product-title h3s now sit in a <section aria-labelledby> under a real sr-only h2 'All products'. (3) /admin double <main>: rather than editing seven portal layouts, components/SiteChrome.tsx renders the outer wrapper as a <div id=\"main\"> on portal routes and a <main id=\"main\"> everywhere else, so the portal's own <main> becomes the single landmark and the skip-link target survives either way.",
+   "evidence": "Live at 390x844: /auth/login h1Count 0 -> 1 and its first heading is level 1; /store level sequence opens 1,2,3 with zero recorded skips (was 1,3x24 with one skip); /admin signed in as an admin reports landmarks {main:1, nav:1, header:1, footer:1}, matching every other page — it measured {main:2, nav:4, header:2, footer:1}. All seven audited pages report exactly one <main> in the server HTML.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/auth/login/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/store/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/SiteChrome.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/layout.tsx"
+   ],
+   "test": "apps/web/__tests__/login-page-chrome.test.tsx (renders the real login page: one h1, correct accessible name, mark preserved, no level skip) + apps/web/__tests__/site-chrome-portal.test.tsx (renders SiteChrome with a mocked pathname: consumer wrapper IS the main landmark, portal wrapper yields zero outer <main>, #main survives both) + the DU-08 block for /store. Red proofs: login 7/9, SiteChrome 14/21 with the gate neutered."
+  },
+  {
+   "id": "A11Y-16",
+   "area": "accessibility",
+   "outcome": "fixed",
+   "change": "Extracted the CORS allowlist from apps/api/src/server.ts into a pure exported resolveCorsOrigins(env) in apps/api/src/lib/cors-origins.ts — server.ts calls bootstrap() at import time, so the inline expression could not be asserted without booting the API against a database — and added http://127.0.0.1:3000 and :3001 alongside the two localhost spellings. Production behaviour is byte-identical: CORS_ORIGIN is still required and is still the only source there.",
+   "evidence": "The finding reproduced it with curl: Origin http://localhost:3000 returned access-control-allow-origin, Origin http://127.0.0.1:3000 returned 200 with no such header, so the browser blocked every client fetch and /pujas/book rendered its catalog-error state at HTTP 200 with h1Count=0 — which is what burned two of the sweep's own accessibility passes. The fallback now contains both spellings on both ports and is asserted to stay loopback-only (every entry must match ^http://(localhost|127.0.0.1):\\d+$, no wildcard), so the LAN-address regression the original comment warns about cannot come back. apps/api tsc clean.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/cors-origins.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/server.ts"
+   ],
+   "test": "apps/api/src/lib/cors-origins.test.ts — 9 assertions: both spellings on both ports, loopback-only, prod still throws without CORS_ORIGIN, an explicit CORS_ORIGIN wins verbatim and never picks up the loopback fallback, and a blank/comma-only CORS_ORIGIN in prod throws rather than producing an empty allowlist. Red proof: deleting the two 127.0.0.1 entries -> 2 failed / 7 passed; restored -> 9/9."
+  },
+  {
+   "id": "RESP-05",
+   "area": "responsive",
+   "outcome": "fixed",
+   "change": "Same codemod as DU-10: 680 arbitrary text-[9..13px] -> text-xs across 146 files. The clamp floor itself (--text-xs at 0.75rem) was already raised by the earlier wave; this closes the 86 elements it could not reach.",
+   "evidence": "Live at 390x844 on all seven audited pages the census the finding used reports {under12: 0, min: 12.11px}. The sweep measured {\"under12\":190,\"under10\":2,\"min\":9} at 390 and {\"under12\":191,\"min\":9} at 768. Spot-checked named instances: /store 'Bestseller' / '-32%' / rating, /auth/login 'Forgot password?' and the Terms/Privacy consent line, /admin table headers, the bottom tab labels and the trust copy ('Aadhaar authenticated', 'Manager-signed, on-site audit') all now compute at or above 12px. RESIDUAL, named rather than hidden: 35 text-[6/7/8px] survive in app/demo/[role]/role-demo-client.tsx and app/mobile/**, which draw a scaled-down phone mockup inside a device frame; the test exempts exactly those two paths by regex so the exemption is visible and cannot silently widen.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/globals.css"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — DU-10/RESP-05 block, 3 assertions."
+  },
+  {
+   "id": "RESP-07",
+   "area": "responsive",
+   "outcome": "fixed",
+   "change": "Added a `.tap-safe` utility to globals.css exactly as the finding specifies (display:inline-flex + min-height:44px + padding-block .625rem cancelled by margin-block -.625rem, so the hit box grows and the row does not move) and applied it to the 'Forgot password?' link — the one control on this page the media-query floor could not reach, because it is a bare anchor outside any list.",
+   "evidence": "Live at 390x844 'Forgot password?' measures 103x44 (was 89.2x14.8). The other two controls the finding names were already closed by the token-layer floor and are re-confirmed live: the password reveal toggle and the Email/Mobile method tabs are <button>s, which the ≤1023px rule floors at 44px. The Sign In submit went from 49.6px/12-24 padding/16px-500 to the shared 44px recipe. RESIDUAL: the inline prose links inside sentences on this page — Terms of Service, Privacy Policy, Sign Up — remain ~17px tall; flooring an anchor that sits mid-sentence breaks the line box, which is why the finding's own fix names only the three controls above.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/globals.css",
+    "E:/NewClaude/bhaktisetu/apps/web/app/auth/login/page.tsx"
+   ],
+   "test": "apps/web/__tests__/login-page-chrome.test.tsx — RESP-07 block: the link carries tap-safe, the utility really sets min-height 44px AND a negative margin AND inline-flex (min-height does nothing to a display:inline anchor), and a git-grep assertion that `tap-safe` is never written with a Tailwind variant prefix — `sm:tap-safe` silently does nothing because .tap-safe is plain CSS, and on a `hidden sm:` element that would leave it hidden. I hit that exact bug mid-sweep on two homepage links and this assertion is what pins it."
+  },
+  {
+   "id": "RESP-09",
+   "area": "responsive",
+   "outcome": "fixed",
+   "change": "Applied `.tap-safe` to the five homepage section CTAs the finding names (All streams, Talk to Astrologer, Browse Pujas and two more of the same recipe), the six footer language links, the footer phone link, the /admin and /priest 'View All' links, the /priest 'View your open offers' link, and the puja-detail breadcrumb (Home / Pujas) and 'Compare all' CTA. Gave the three footer social icons min-h-[44px] min-w-[44px] and the 'Browse all 500+ guides' pill min-h-[44px]. Moved the short primary buttons onto the 44px Button recipe: the festival strip's 'Book <puja>' and 'Learn more' (157.6x34 / 112.5x34), ShopStrip 'Visit store', HowItWorks 'Book a puja', EmailCapture x2, the puja-detail 'Book Now' x2 and 'Book This Puja'.",
+   "evidence": "Live at 390x844 on /pujas/rudrabhishek — the page whose action row the finding calls out — 138 interactive elements now yield 4 under 44px, and all four are legitimate: the sr-only skip link (1x1, visible on focus), and 'Darshya' + 'Ask Pandit' inside the CLOSED MobileNavV2 drawer (off-screen, and that component is locked by MobileNavV2.modal.test.tsx), plus 'Cookie Policy' which is an inline prose link inside the consent sentence. Breadcrumb Home went 38x19 -> ≥44, Pujas 33x19 -> ≥44, 'Compare all' 95x19 -> ≥44. On the homepage the sub-44 count went from 114 to a handful of the same three categories. Footer language links (41.3x18, 25.6x18, 37.4x18, 40.2x18, 28.9x18) all clear 44 now. RESIDUAL: inline links inside running prose are deliberately left, per the reasoning above.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/globals.css",
+    "E:/NewClaude/bhaktisetu/apps/web/app/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/pujas/[slug]/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/admin/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/NextFestivalStrip.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/ShopStrip.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/home/HowItWorks.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/EmailCapture.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — RESP-09/RESP-11 block: at least five homepage CTAs carry tap-safe, all six hrefLang links carry it, the three social icons carry min-h/min-w-[44px] and the tel link carries tap-safe. Plus the variant-prefix guard in login-page-chrome.test.tsx."
+  },
+  {
+   "id": "RESP-10",
+   "area": "responsive",
+   "outcome": "fixed",
+   "change": "Added components/ui-adjacent components/SiteChrome.tsx — a client gate that takes the global header and the MobileBottomTabs as props and drops both on /admin, /priest and the six *-portal routes, and swaps the wrapper's pt-16/pb-20 offsets for a bare flex-1 so the removed chrome does not leave 145px of dead space behind. usePathname resolves during SSR in the App Router, so the server markup already omits the header and there is no hydration flash. Route matching uses an exact-or-slash-boundary test, not a bare startsWith, so /priesthood and /administrators are not swallowed.",
+   "evidence": "Live at 390x844 signed in as pandit@demo.com, /priest now reports exactly one pinned bar — its own sticky HEADER at 0->64 — where the sweep measured three (global header 0->65, portal header 64->128, tab bar 787->844 = 185px, 21.9% of the viewport). /admin signed in as an admin reports one sticky HEADER 0->56 against the measured 177px, and no bottom tab bar. The consumer chrome leak is gone with it: no 'Cart (0 items)' and no devotee 'Book' tab inside a provider surface. Consumer routes are unchanged — / still renders both and keeps pt-16/pb-20.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/components/SiteChrome.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/layout.tsx"
+   ],
+   "test": "apps/web/__tests__/site-chrome-portal.test.tsx — 21 assertions rendering the real component with a mocked pathname: all eight prefixes match root and children, the exact eight-surface list is pinned, four lookalike consumer routes are rejected, consumer routes keep header+tabs+offsets, four portal routes lose all three, and the page body still renders. Red proof: replacing the gate body with `return false` -> 14 failed / 7 passed; restored -> 21/21."
+  },
+  {
+   "id": "RESP-11",
+   "area": "responsive",
+   "outcome": "fixed",
+   "change": "The pandit on-duty switch — the control that decides whether a provider is dispatched paid work — went from a 48x28 painted pill to a 56x32 track inside a 72x48 padded button, with -m-2 so the row does not shift; the track is an inner span so the padding is not painted green, and aria-pressed is kept (not swapped to role=switch) because three existing PF-14 assertions read it and because role=switch is explicitly exempted from the globals 44px floor. Portal sidebar nav links and the Back-to-Site / Sign Out pair went py-2.5 -> py-3 across all seven portal layouts (they are <a> children of <nav> with no <li>, so the `nav li > a` floor never reached them). /admin/users pagination buttons went w-8 h-8 -> h-11 w-11.",
+   "evidence": "Live at 390x844 signed in as pandit@demo.com with the drawer open: on-duty toggle 72x48 (was 48x28), sidebar close button 44x44 (was 20x20 — already floored by the token layer's `button:has(> svg:only-child)` rule, re-confirmed), sidebar nav links 232x44-46 (were 232x40-42), 'Back to Main Site' 232x44 (was 232x40), 'Sign Out' 232x44. After those fixes /priest reports three sub-44 controls in total: the sr-only skip link, and two inline prose links. HONEST GAP: /admin/users pagination is verified by source and test only — I measured /admin live but not /admin/users. NOTE for anyone re-measuring: this dev server serves stale client chunks after an edit to a portal layout; a fresh tab is not enough, the chunk must be refetched with cache:'reload'. I chased a false 'py-2.5 survived' for several minutes before confirming the server was serving py-3.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/admin/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/priest/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/astrologer-portal/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/gaushala-portal/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/store-admin/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/temple-portal/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/wellness-portal/layout.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/admin/users/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/components/MyProviderProfileCard.tsx"
+   ],
+   "test": "apps/web/__tests__/page-chrome-uniformity.test.ts — RESP-09/RESP-11 block: all seven portal layouts carry py-3 on the sidebar row AND no py-2.5 row survives anywhere in them, the on-duty block carries h-8 w-14 + p-2 + -m-2 + an inner rounded-full track, and the pagination button is h-11 w-11. 3 assertions over 7 files."
+  },
+  {
+   "id": "I-02",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "Closed the worst leg of the dead-end loop: middleware.ts:166-201 now sends a visitor who explicitly chose a language from the bare `/` to their landing instead of the English homepage, so tapping the logo no longer strands them. hi.json expanded 19->42 keys. No className changes.",
+   "evidence": "VERIFIED STILL OPEN (read today, not from the ledger): apps/web/app/layout.tsx:587-592 still emits the six-language 'Read in:' footer block on every page of the product — the finding's option (a) 'stop advertising' is untouched. The chrome is still English for every locale because apps/web/app/layout.tsx:246-247 calls `t('nav')` / `t('footer')` with NO locale argument, and `getServerTranslations` in apps/web/lib/i18n/server.ts:36 — the drop-in that would fix it — has ZERO call sites (grep across apps/web returns only its own definition). All 8 wired pages import the locale-less `getTranslations` from lib/t.ts (app/page.tsx:24, app/pujas/page.tsx:3, app/darshan/page.tsx:4, app/donations/page.tsx:13, app/store/page.tsx:2, app/upgrade/page.tsx:5, app/yatra/destinations/page.tsx:4, app/auth/login/page.tsx:6). ALREADY DONE BEFORE THIS WAVE: localeHref on every landing CTA (components/LangLanding.tsx:52, app/hi/page.tsx:19). SHIPPED THIS WAVE: root redirect, RED 5 failed/8 passed -> GREEN 16/16.",
+   "test": "apps/web/__tests__/i18n-root-redirect.test.ts (16 tests) + apps/web/__tests__/i18n-hi-catalog.test.ts (33 tests); full i18n suite 134/134",
+   "files": [
+    "apps/web/middleware.ts",
+    "apps/web/lib/i18n/hi.json",
+    "apps/web/__tests__/i18n-root-redirect.test.ts"
+   ],
+   "blocked_on": "apps/web/app/layout.tsx (DO-NOT-TOUCH, another agent is in it right now — `git status` shows it modified). Two things needed there: (1) swap `t('nav')`/`t('footer')` at :246-247 for `getServerTranslations` — note the cost warning at lib/i18n/server.ts:8-19, it opts ~370 routes out of static prerender; (2) resolve the finding's own either/or on the :587-592 footer block. Option (b) additionally needs a [locale] route segment — /hi/pujas is still a 404."
+  },
+  {
+   "id": "I-03",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "Closed the CATALOG half. Six more of the 15 dead CONTENT_LABELS.hi labels are now live catalog entries in apps/web/lib/i18n/hi.json under en.json's own key names (content.pageSubtitle, tabAll, views, likes, search, noContent), taking the content namespace from 5 to 11 of its 18 keys. The finding's own fix says this 'is a wiring change against copy that already exists — no new translation needed'; the copy is now where the wiring can reach it in one line.",
+   "evidence": "VERIFIED STILL OPEN: apps/web/components/ContentPageHeader.tsx still consumes exactly THREE labels — `grep -c 't\\.' components/ContentPageHeader.tsx` returns 3 (t.pageTitle:32, t.pageSubtitle:35, t.searchPlaceholder:56), unchanged from the finding. apps/web/components/LanguageSwitcher.tsx:8 is still `export type SupportedLanguage = 'en' | 'hi'` and still the only consumer of CONTENT_LABELS (imported at ContentPageHeader.tsx:5). REFUSED ON PURPOSE, documented in the test: `stories` ('कथाएँ') was NOT mapped onto content.tabArticle ('Articles') and `todaysFeatured` ('आज का विशेष' = Today's Featured) was NOT mapped onto content.featured ('Featured') — near enough is how a catalog starts lying. RED 25 failed/8 passed -> GREEN 33/33.",
+   "test": "apps/web/__tests__/i18n-hi-catalog.test.ts — 11 it.each cases pin the label-by-label move, plus a case proving `t('terms','hi')` resolves with fallback:false while an unsourced key still degrades to fallback:true/lang:'en'",
+   "files": [
+    "apps/web/lib/i18n/hi.json",
+    "apps/web/lib/t.ts",
+    "apps/web/__tests__/i18n-hi-catalog.test.ts"
+   ],
+   "blocked_on": "apps/web/components/ContentPageHeader.tsx and apps/web/components/LanguageSwitcher.tsx (both DO-NOT-TOUCH). Remaining work is now purely mechanical: point ContentPageHeader at `t('content', language)` and consume the keys at their render sites. Eight CONTENT_LABELS keys have no en.json slot at all (todaysFeaturedSubtitle, curatedCollections, title, deity, type, tracks, tryDifferentSearch, checkBackSoon) and need an owner decision on whether to add them to en.json."
+  },
+  {
+   "id": "I-04",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible — apps/api is entirely outside this lane and another agent is actively editing the exact file the fix lands in. Verified the defect is unchanged rather than assuming it.",
+   "evidence": "VERIFIED STILL OPEN: apps/api/src/server.ts:444 is still `server.setErrorHandler((err, _req, reply) => {` — the request is still discarded, so the handler cannot read Accept-Language even in principle, which is the finding's stated root cause. apps/api/src/lib/error-i18n.ts:14 is still `export type SupportedLang = 'en' | 'hi' | 'ta' | 'te' | 'kn'` and :217 `const CATALOGS: Record<SupportedLang, Catalog> = { en, hi, ta, te, kn }` — bn and mr (the two the web footer links at app/layout.tsx:591-592) still cannot be localized, kn still has no landing page. `git status` shows apps/api/src/server.ts is currently modified by another agent, so editing it would collide.",
+   "files": [],
+   "blocked_on": "apps/api/src/server.ts:444 (another agent's lane, currently dirty). One-line choke point, same as I18N-03: accept `req`, compute `pickLang(req.headers['accept-language'], (req.query as any)?.lang)` once, and emit `buildErrorResponse(code, lang)` — `buildErrorResponse` still has zero callers. Then 683 hardcoded English literals across 87 route files need error codes before the 108 currently-unreachable catalog strings can be delivered."
+  },
+  {
+   "id": "I-05",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None this wave — the server-rendered attribute is in a DO-NOT-TOUCH file, and in the App Router only the root layout can render <html>, so there is no in-lane substitute. The client-side correction shipped in wave 1 still holds and is still green.",
+   "evidence": "VERIFIED STILL OPEN: apps/web/app/layout.tsx:258 is still a literal `lang=\"en\"` on the root <html>. apps/web/app/globals.css:419 still gates the Devanagari swap on `html[lang=\"hi\"] {` — a selector the server never satisfies — and the base sans stack at globals.css:353 (`--font-body: 'Satoshi', var(--font-noto-sans), system-ui, …`) still contains no Indic family, so the finding's second recommendation (make coverage unconditional rather than selector-gated) is also untouched. ALREADY DONE: components/TranslationCoverageNotice.tsx:174-176 sets `document.documentElement.lang` from what the PAGE declares (`main[lang]`), re-running on every client navigation via `usePathname()` — 15 tests, all green. The finding's own closing ask ('Add a test asserting document.documentElement.lang matches the route locale') was satisfied in wave 1.",
+   "test": "apps/web/__tests__/i18n-html-lang.test.tsx — 15/15 green, unchanged by this wave",
+   "files": [],
+   "blocked_on": "apps/web/app/layout.tsx:258 and apps/web/app/globals.css:353,419 (both DO-NOT-TOUCH; layout.tsx is currently dirty from the styling sweep). Needs one owner of those two files to drive `lang` from the route's first path segment and to append the Indic families to --font-body/--font-display instead of swapping them under html[lang=\"hi\"]."
+  },
+  {
+   "id": "I-06",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible in this lane. Verified unchanged.",
+   "evidence": "VERIFIED STILL OPEN: apps/web/app/layout.tsx:2 still imports exactly three faces — `import { Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro } from \"next/font/google\"` (declared at :60, :67, :74). No Noto_Sans_Tamil, Telugu, Bengali, Kannada, Gujarati or Oriya face exists anywhere in the app, so the 11 of 20 temple names in Tamil/Telugu/Odia/Gujarati/Bengali/Kannada still render from whatever the client OS happens to have. apps/web/app/globals.css:353 confirms the base stack still has no Indic family and :419 confirms the only Devanagari activation is still the html[lang=\"hi\"] rule that never matches (see I-05).",
+   "files": [],
+   "blocked_on": "apps/web/app/layout.tsx (next/font declarations) and apps/web/app/globals.css:353 — both DO-NOT-TOUCH. Purely mechanical: add the six Noto faces with `display:'swap'` and append all of them to --font-body/--font-display so coverage is unconditional. unicode-range means a Latin-only page downloads none of them, so the cost to English users is ~zero. Must be verified on a container with no system Indic fonts — it is untestable from this Windows box, which has Nirmala UI."
+  },
+  {
+   "id": "I-07",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible in this lane. Verified unchanged (the line has MOVED, which is exactly why re-reading mattered rather than trusting the ledger's line number).",
+   "evidence": "VERIFIED STILL OPEN: apps/web/app/temples/[slug]/page.tsx:70 is still `nameLocal: null,` — hardcoded. The finding recorded it at :65; the file has since been edited by another agent (it is dirty in `git status`) and the defect survived at :70. The API still ships the value (finding confirmed 20/20 temples carry a populated `nameLocal` on the wire), so it is still paid for in payload bytes on every /temples request and still discarded by the client.",
+   "files": [],
+   "blocked_on": "apps/web/app/temples/[slug]/page.tsx and the temples list/card components (DO-NOT-TOUCH, currently dirty). Delete the hardcoded null, pass the API value through, and render it under the temple name using the pattern already live at app/pujas/[slug]/page.tsx:293-294. Ship alongside I-06 or 11 of 20 names render from OS fallback. No translation work and no backend change required — this remains the highest-leverage fix in the area."
+  },
+  {
+   "id": "I-08",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "Shipped the missing redirect — the last unclaimed clause of the finding's title. `rootLocaleRedirect` (apps/web/middleware.ts:166-201): a bare `/` request carrying an explicitly-stored non-English locale now 307s to `/{locale}` with `Vary: Cookie` and `Cache-Control: no-store`. Four hard constraints are pinned by test: root-only (never bounce mid-flow — /hi/pujas is still a 404), no-cookie-no-redirect (the anonymous English `/` emits no Set-Cookie, no Vary, no 307, so it stays one shared CDN entry and crawlers are unaffected), explicit-English-wins, and not-shareable (a CDN that cached this 307 would send every anonymous visitor to /hi).",
+   "evidence": "BEFORE: `middleware(request('/', {poojly_language:'hi'}))` returned 200 with no Location — the cookie was written on a click, read for disclosure, and ignored by routing. AFTER: 307 -> https://darshya.online/hi. RED 5 failed / 8 passed -> GREEN 16/16, and reverting middleware.ts re-fails exactly those 5. ALREADY DONE IN WAVE 1: the Accept-Language parser is real and used — `negotiateLocale` (lib/i18n/locales.ts:173-200) handles q-weights, q=0 refusals, primary-subtag matching and the navigator.languages array form, consumed by TranslationCoverageNotice.tsx:158-167 as an OFFER (21 tests). So of the finding's three clauses, 'no middleware locale logic' and 'no redirect' are now both false. STILL DELIBERATELY REFUSED: a redirect driven by Accept-Language. At 42 of 374 hi keys and 0 of 374 for ta/te/bn/mr, adopting a locale from a request header would serve a mostly-English page while asserting it is Hindi, to a visitor who never asked — rationale recorded at lib/i18n/locales.ts:112-119 and restated at middleware.ts:140-148. NOT APPLICABLE: the finding also asks for an `i18n` block in apps/web/next.config.ts. `grep -n i18n next.config.ts` returns nothing and there is no `apps/web/pages` directory — this is Next 15.5.20 App Router, where the `i18n` config key is a Pages-Router-only feature with no App Router equivalent. There is nothing to add there.",
+   "test": "apps/web/__tests__/i18n-root-redirect.test.ts (16 tests, incl. an END-TO-END case proving the '/?lang=en' escape hatch on /hi still clears the cookie and lands on English, so the new redirect cannot trap anyone)",
+   "files": [
+    "apps/web/middleware.ts",
+    "apps/web/__tests__/i18n-root-redirect.test.ts"
+   ],
+   "blocked_on": "Owner decision only: whether to also adopt a locale from Accept-Language for a first-time visitor. Recommendation is to keep refusing until catalog coverage justifies the claim — the offer banner already tells that visitor, in their own language, that the page exists. No code is blocked."
+  },
+  {
+   "id": "I-09",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible in this lane — all three of the finding's sub-fixes land in DO-NOT-TOUCH files. Verified all three are still open rather than assuming.",
+   "evidence": "VERIFIED STILL OPEN, all three: (1) Review status is still undisclosed — apps/web/lib/help-articles.ts still carries `reviewed_by?: string | null` at :48 with five `reviewed_by: null` entries at :112, :135, :158, :181, :204 (i.e. all five non-English articles are unreviewed seed translations), and nothing renders a badge or a noindex. (2) Still unlinked — `grep -c 'help/articles' app/help/page.tsx app/sitemap.ts` returns 0 and 0, so the six articles are reachable only by typing the URL. (3) The overstated claim is still live — apps/web/lib/support.ts:708 still reads 'The app is available in English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali… Switch from the language selector in the footer', naming Kannada, which has no landing page (SUPPORTED_LOCALES in lib/i18n/locales.ts:25 is en/hi/ta/te/bn/mr). The stated target at help-articles.ts:5 is still '50 articles × 6 languages = 300 total' against 1 slug × 6 languages actually present. NOTE: lib/support.ts is dirty in `git status`, so another agent may be mid-fix on (3).",
+   "files": [],
+   "blocked_on": "apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/help/articles/[lang]/[slug]/page.tsx, apps/web/app/sitemap.ts, apps/web/lib/support.ts — all DO-NOT-TOUCH. Code slices are small and owner-independent (badge + robots:noindex when reviewed_by is null; a HELP_LANGS-driven language row on /help; correct the support.ts:708 sentence). The 294 missing articles and the human review of the 5 machine-translated ones are owner copy decisions — a mistranslated refund or cancellation step is a chargeback, not a typo."
+  },
+  {
+   "id": "I-11",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "Gave the web side's single source of truth teeth. lib/i18n/locales.ts:25 was already the one list; three new assertions now make it load-bearing — every locale in SUPPORTED_LOCALES must have an app/<locale>/page.tsx to be redirected to, the root layout must advertise exactly that set (no more, no fewer), and each footer label must be the LOCALE_NATIVE_NAMES string this module declares. Adding a seventh footer link without a landing now fails the build instead of shipping the exact harm the finding describes.",
+   "evidence": "VERIFIED STILL DIVERGENT — four of the five lists are unchanged and all sit outside this lane: apps/api/src/routes/users.ts:14 still validates `z.enum(['en','hi','ta','te','bn','mr','gu','kn','ml','pa'])` (10 values, 4 of which have no destination); apps/api/src/lib/error-i18n.ts:14 still declares 5 (en/hi/ta/te/kn — includes kn, excludes bn+mr); apps/web/components/LanguageSwitcher.tsx:8 still declares 2 (`'en' | 'hi'`); apps/web/lib/support.ts:708 still tells users there are 7. On the write-only half: apps/api/src/routes/auth.ts:625 and :731 still hardcode `preferredLanguage: 'en'` on the synthetic-user branch while :390 and :1117 hardcode 'hi' — the same four literals the finding flagged. apps/web/app/profile/page.tsx:385-392 still presents the control and still changes nothing. HONEST LABEL: the three new assertions PASS on unmodified code — they are regression guards, not a fix, and I am not claiming otherwise.",
+   "test": "apps/web/__tests__/i18n-root-redirect.test.ts — describe('I-08 / I18N-04 — the redirect can only ever target a page that exists'), 3 cases",
+   "files": [
+    "apps/web/__tests__/i18n-root-redirect.test.ts"
+   ],
+   "blocked_on": "apps/web/app/layout.tsx, apps/web/components/LanguageSwitcher.tsx, apps/web/lib/support.ts (DO-NOT-TOUCH) and apps/api/src/routes/users.ts + lib/error-i18n.ts + routes/auth.ts (out of lane). Needs one owner decision first: drop kn, or author bn+mr error catalogs (2 × 30 = 60 strings). Until that is answered the five lists cannot be derived from one const."
+  },
+  {
+   "id": "I18N-03",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible — apps/api is outside this lane and apps/api/src/server.ts is currently being edited by another agent.",
+   "evidence": "VERIFIED STILL OPEN: apps/api/src/server.ts:444 is still declared `(err, _req, reply)` — the underscore-prefixed request is the whole defect, and the finding's fix is a one-line change to that signature. The catalog is still complete and still proven working (the finding's live probe returned correct Hindi/Tamil/Telugu/Kannada for SLOT_UNAVAILABLE), and still reachable for only 3 of 30 codes via the two bookings.ts call sites. `buildErrorResponse` still has zero callers.",
+   "files": [],
+   "blocked_on": "apps/api/src/server.ts:444 (another agent's lane, dirty in `git status`). Exact remaining change: accept `req`, compute `const lang = pickLang(req.headers['accept-language'], (req.query as any)?.lang)` once, emit `buildErrorResponse(code, lang)`, and map the common Fastify/Zod failure shapes to catalog codes so 401/404/validation inherit localisation for free. Keep the two bookings.ts call sites — they already prove the pattern."
+  },
+  {
+   "id": "I18N-04",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "Same in-lane increment as I-11 (these two findings are the same defect seen from the web and the API side): the web list is now machine-checked against the landing routes, the layout's advertised hreflang set, and the native-name labels.",
+   "evidence": "VERIFIED STILL DIVERGENT: five sets, unchanged. apps/api/src/lib/error-i18n.ts:16 `SUPPORTED_LANGS = ['en','hi','ta','te','kn']` still includes kn and excludes bn+mr, so the two languages the footer actively links (app/layout.tsx:591-592) are still the two the API cannot localize, and the one it can localize still has no landing page. apps/web/components/LanguageSwitcher.tsx:8 is still 2 values. The Prisma preferred_language enum is still 10 (mirrored at apps/api/src/routes/users.ts:14). The finding's prescribed unit test 'asserting Object.keys(CATALOGS) equals the UI-offered set' CANNOT be written green today — it would fail on unmodified code and I cannot edit the files that would make it pass, so I did not ship a test that asserts a bug. What I shipped instead is the subset of that invariant that is both true and load-bearing: advertised locales must have a landing, and the layout must advertise exactly SUPPORTED_LOCALES.",
+   "test": "apps/web/__tests__/i18n-root-redirect.test.ts — 'every advertised locale has a landing route to be redirected to', 'the root layout advertises exactly the locales this module can serve', 'renders each language under the same native name this module declares'",
+   "files": [
+    "apps/web/__tests__/i18n-root-redirect.test.ts"
+   ],
+   "blocked_on": "Owner decision (add bn+mr catalogs to apps/api/src/lib/error-i18n.ts, 60 strings, or drop kn and the two footer links), then code in apps/api/src/lib/error-i18n.ts, apps/web/components/LanguageSwitcher.tsx:8, apps/web/app/layout.tsx:587-592 and the Prisma enum — none of them in this lane. The canonical const should live in packages/shared so web and API import one list."
+  },
+  {
+   "id": "I18N-05",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "Closed the catalog half of the finding's own fix ('move its strings into the content namespace of en.json/hi.json, which already has 18 keys reserved'). Six more human-authored Hindi labels are now in apps/web/lib/i18n/hi.json; the content namespace went 5 -> 11 of 18. Also made the anti-machine-translation rule enforceable: every non-English string must now appear verbatim inside app/hi/page.tsx or the CONTENT_LABELS.hi block, with app/mr/page.tsx excluded from the corpus so Marathi cannot vouch for a Hindi string.",
+   "evidence": "VERIFIED STILL OPEN: components/LanguageSwitcher.tsx:150 still exports CONTENT_LABELS and is still imported by exactly one file (ContentPageHeader.tsx:5), so the switcher still renders only on /content; ContentPageHeader still consumes exactly 3 of the 18 labels (`grep -c 't\\.'` = 3). ALREADY DONE IN WAVE 1, and re-verified green: the finding's second ask — 'have it write the locale to the same source of truth the server reads' — is satisfied by `syncClientLocale` (lib/i18n/locales.ts:324-350), which converges the localStorage key the switcher writes with the cookie the middleware writes, on every page view. RED 25 failed/8 passed -> GREEN 33/33.",
+   "test": "apps/web/__tests__/i18n-hi-catalog.test.ts (33 tests) — 11 label-move cases, 17 landing-lift cases, a provenance sweep over every non-English catalog string, an en.json-divergence guard, and two coverage cases that pin the real numbers",
+   "files": [
+    "apps/web/lib/i18n/hi.json",
+    "apps/web/lib/t.ts",
+    "apps/web/__tests__/i18n-hi-catalog.test.ts"
+   ],
+   "blocked_on": "apps/web/components/LanguageSwitcher.tsx and apps/web/components/ContentPageHeader.tsx (DO-NOT-TOUCH). Remaining: delete CONTENT_LABELS, read `t('content', locale)` instead, and render the switcher from the global layout rather than one page header. Ten of the 18 labels still need an owner copy call — 8 have no en.json slot, and 2 ('कथाएँ' -> tabArticle, 'आज का विशेष' -> featured) are semantic near-misses I refused to map."
+  },
+  {
+   "id": "I18N-06",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible in this lane. Verified unchanged.",
+   "evidence": "VERIFIED STILL OPEN: apps/web/app/layout.tsx:2 still loads only `Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro` — no Tamil, Telugu or Bengali face exists in the app at all, so the finding's canvas measurement (identical widths against a deliberately-missing font on /ta, /te, /bn) would reproduce exactly as recorded. The Devanagari face that IS declared is still downloaded-and-unused by headings: apps/web/app/globals.css:148 wires it only into `--font-devanagari`, and the base `--font-body` at :353 (`'Satoshi', var(--font-noto-sans), system-ui, …`) never references it — the only activation is still the `html[lang=\"hi\"]` block at :419, and app/layout.tsx:258 still hardcodes lang=\"en\", so that selector still cannot match server-side.",
+   "files": [],
+   "blocked_on": "apps/web/app/layout.tsx (next/font) and apps/web/app/globals.css:148,353,419 — both DO-NOT-TOUCH and layout.tsx is currently dirty. Needs one owner of the pair: add the Tamil/Telugu/Bengali faces and put them into the stacks headings actually use, not only into --font-devanagari."
+  },
+  {
+   "id": "I18N-07",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible — both halves (the API echo and the profile control) are outside this lane. Verified the exact literals the finding named are still present.",
+   "evidence": "VERIFIED STILL OPEN: apps/api/src/routes/auth.ts:625 and :731 still hardcode `preferredLanguage: 'en'` on the synthetic-user branch, while :390 and :1117 hardcode 'hi' — so login still hands back a value the users row does not hold, for exactly the accounts used in demos and E2E. The real reads at :425, :673, :780 and :1141 echo `dbUser.preferredLanguage`, which is why the defect is invisible for non-demo users. apps/web/app/profile/page.tsx:385-392 still renders the 'Preferred Language' <select> that PATCHes the field, and apps/api/src/routes/users.ts:14 still validates it against all 10 codes. Nothing on the web reads it to alter rendering. NOTE for whoever picks this up: the web now HAS a place to put it — `syncClientLocale`/`LOCALE_COOKIE` in apps/web/lib/i18n/locales.ts is the source of truth the middleware and the coverage notice both read, so seeding that cookie from user.preferredLanguage at login is a one-call change once the API returns the true value.",
+   "files": [],
+   "blocked_on": "apps/api/src/routes/auth.ts:625,731 and apps/web/app/profile/page.tsx (both out of lane), plus apps/web/lib/auth-context.tsx to seed the locale cookie on login. Owner call on the interim: either label the profile control 'coming soon' (the page already uses that pattern for avatar upload two fields above) or leave it, but it currently reports success while doing nothing."
+  },
+  {
+   "id": "I18N-08",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible in this lane. Confirmed the in-lane half is already correct so the remaining work is precisely scoped to one file.",
+   "evidence": "VERIFIED STILL OPEN: apps/web/app/layout.tsx:301-307 still emits seven hardcoded `<link rel=\"alternate\">` tags from the ROOT layout, so every route still declares the same cluster — /pujas still tells Google its Hindi equivalent is the Hindi homepage, while /hi/pujas is still a 404. ALREADY CORRECT AND IN THIS LANE (verified, no change needed): apps/web/app/hi/page.tsx:26-36 already emits per-page `alternates.languages` for the five-landing cluster plus its own canonical — it is the pattern the finding points at as the model. So the remaining work is exactly: delete the seven tags from the root layout, and let each landing keep emitting its own.",
+   "files": [],
+   "blocked_on": "apps/web/app/layout.tsx:301-307 (DO-NOT-TOUCH, currently dirty from the styling sweep). While deleting, also drop the redundant en-IN/en-US entries and the duplicate x-default the finding flagged as an outright validation error."
+  },
+  {
+   "id": "I18N-09",
+   "area": "i18n",
+   "outcome": "partial",
+   "change": "None possible in this lane. Verified all three sub-claims still hold.",
+   "evidence": "VERIFIED STILL OPEN: apps/web/lib/help-articles.ts:5 still states 'Target: 50 articles × 6 languages (en/hi/ta/te/bn/mr) = 300 total' while the file still holds one slug — `grep -n 'slug:' lib/help-articles.ts` returns 'how-to-book-a-puja' at :56, :85, :115, :138, :161, :184, i.e. six objects sharing a single slug, 2% of the stated target. Still undiscoverable: `grep -c 'help/articles' app/help/page.tsx app/sitemap.ts` returns 0 and 0, so neither the /help index nor the sitemap references the route — reachable only by typing the URL or by already being on one of the six pages. Five of the six still carry `reviewed_by: null` (:112, :135, :158, :181, :204) and nothing renders that state.",
+   "files": [],
+   "blocked_on": "apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/sitemap.ts — all DO-NOT-TOUCH. Near-term code slices (owner-independent): a HELP_LANGS-driven language row on /help, and /help/articles/[lang]/[slug] entries in sitemap.ts. Owner decision: fill the catalogue or retract the 300 target in the header comment, and get the five machine-translated articles human-reviewed — they cover booking, and the highest-ticket slugs (refunds, cancellation, order tracking) do not exist in any language yet. 294 articles missing against the stated target."
+  },
+  {
+   "id": "CM-11",
+   "area": "customer-mindset",
+   "outcome": "fixed",
+   "change": "lib/platform-stats.ts templeTotalFromPayload() now reads the raw API envelope (top-level `total`) first and keeps `pagination.total` as a second accepted shape. strictCount is unchanged on both branches, so a drifted contract answering the string \"200\" still yields null rather than a fabricated trust number.",
+   "files": [
+    "apps/web/lib/platform-stats.ts",
+    "apps/web/__tests__/platform-stats-api-contract.test.ts"
+   ],
+   "test": "apps/web/__tests__/platform-stats-api-contract.test.ts — RED 2 failed / 4 passed, GREEN 6/6. Existing __tests__/funnel-inventory-claims.test.tsx 18/18 still green.",
+   "evidence": "The DISPUTED note was right and the cause is a contract mismatch. Live API on 127.0.0.1:4000: `GET /api/v1/temples?limit=1` -> TOP KEYS [temples,total,page,limit,totalPages], total=20, pagination=undefined. lib/platform-stats.ts:56-61 (pre-fix) read `payload.pagination.total` only; the `pagination` wrapper is invented by lib/api.ts:65 normalizePaginated(), and getPlatformCounts uses a raw fetch that never calls it. So verifiedTemples was null on every request and app/page.tsx:757 rendered verifiedTempleClaim(null) = 'Verified temples, manager-signed' forever. The old test at funnel-inventory-claims.test.tsx:120 asserted `templeTotalFromPayload({pagination:{total:20}})` — exactly the payload shape the verifier flagged as never emitted. LIVE PROOF AFTER FIX: `curl localhost:3000/ | grep -o '[0-9]+ verified temples'` returns '20 verified temples' x3 (DB has 20 temples). Nothing false was ever published (the fallback is honest), but the finding asked for the true number and the true number never reached the page."
+  },
+  {
+   "id": "LEG-15",
+   "area": "legal-content",
+   "outcome": "fixed",
+   "change": "app/layout.tsx now imports CookieSettingsButton and renders it as the last <li> of the footer 'support' column on every page. Deliberately not an i18n key — lib/i18n has no entry and lib/i18n/** is out of lane this wave, so a key would render raw in the five non-English locales; plain English matches the untranslated 'Browse all 500+ guides' pill in the same footer.",
+   "files": [
+    "apps/web/app/layout.tsx",
+    "apps/web/__tests__/cookie-consent-withdrawal.test.tsx"
+   ],
+   "test": "apps/web/__tests__/cookie-consent-withdrawal.test.tsx — RED 2 failed / 6 passed, GREEN 8/8. __tests__/CookieBanner.test.tsx 14/14 and __tests__/legal-content-p2.test.ts unaffected.",
+   "evidence": "The note said the persistent FOOTER link was NOT shipped, and that was accurate: components/CookieSettingsButton.tsx existed and was wired into app/legal/cookies/page.tsx:90, app/privacy/page.tsx:270 and app/account/privacy/page.tsx:317 only — a user who rejected on the homepage had to already know one of those three pages existed. LIVE PROOF: data-testid=cookie-settings-button now present on / /about /refunds /privacy /legal/cookies /legal/privacy-uk /terms /contact /uk /account/privacy (all HTTP 200). Rendered markup on /terms: <li><button type=\"button\" data-testid=\"cookie-settings-button\" ...>Cookie settings</button></li>. The button's behaviour (click -> panel re-opens with stored choices pre-filled, withdrawal persists) was already covered by the 5 DOM tests in the same file and still passes. Note for the verifier: /refunds served stale HTML without the control for several minutes after the edit — that was a Next dev per-route compile cache, and it resolved as soon as app/refunds/page.tsx was itself edited for LEG-06."
+  },
+  {
+   "id": "LEG-10",
+   "area": "legal-content",
+   "outcome": "partial",
+   "change": "lib/support.ts — the surface the FAQ, help centre and live-chat bot all read from — no longer publishes money rules no code implements. FAQ sd-4 replaced 'Duties and taxes are calculated at checkout for transparency' with a statement that duty/local tax are excluded and collected by the carrier on arrival. FAQ bp-8 retitled from 'Can I get a GST invoice?' and no longer promises a 'GST breakup' or business/GSTIN invoices; it now says the document is a payment receipt and not a GST tax invoice. FAQ sd-2 and the store auto-reply now interpolate COMPANY.store instead of retyping ₹999.",
+   "files": [
+    "apps/web/lib/support.ts",
+    "apps/web/__tests__/support-content-tax-honesty.test.ts"
+   ],
+   "test": "apps/web/__tests__/support-content-tax-honesty.test.ts — RED 7 failed / 3 passed, GREEN 10/10. Revert-proof re-run with git checkout of lib/support.ts: 7 failed again, restored: 10/10.",
+   "evidence": "The web slice you flagged as mine is closed. Proof the claims were false: apps/api/src/lib/store-pricing.ts computeStoreOrderTotals() is `Σ(unitPrice × qty) + deliveryFee` with no tax and no duty, takes no destination and no HSN, and the API refuses an order whose total disagrees; a grep of the store path for duty/customs returns nothing. COMPANY.tax.HAS_GST_REGISTRATION_VERIFIED=false, gstin=null. FREE_DELIVERY_THRESHOLD_INR=499 in both apps/api and apps/web store-pricing.ts, so the ₹999 in sd-2 and in the 'shipping' auto-reply was a number no basket has ever been measured against (LEG-12 fixed /shipping and the store badge from COMPANY.store but missed this file). One guard test also pins store-pricing.ts as tax/duty-free so the copy cannot become honest by accident if a real duty line ever lands.",
+   "blocked_on": "Two things remain and neither is in this lane. (1) apps/api/src/lib/pdf-invoice.ts:195 still draws the header 'DARSHYA TAX INVOICE' with no GSTIN on the document — apps/api is explicitly do-not-touch this wave; the finding's own fix is to retitle it 'RECEIPT'. (2) OWNER: the legal entity name, CIN, GSTIN and registered office are facts only he holds. company.ts already has the gates (IS_INCORPORATED_VERIFIED, tax.HAS_GST_REGISTRATION_VERIFIED) and operatedByLine()/postalContactLine()/taxTreatmentLine() are already rendered on /terms /privacy /refunds /contact /shipping, so the day the certificate lands it is a data edit in one file. The 5% CartContext GST line the finding names was already removed by COM-06/S-09 (components/CartContext.tsx:136-139 now destructures computeStoreOrderTotals with no tax)."
+  },
+  {
+   "id": "LEG-06",
+   "area": "legal-content",
+   "outcome": "fixed",
+   "change": "/refunds section 2 (both the table row and the 'Missing video proof' bullet) now states the sweep's real scope: it runs at 72h and covers only a booking still waiting on its assigned pandit; anything already advanced — a booking marked completed, for example — needs an email, and the devotee is told to write in rather than wait for the sweep.",
+   "files": [
+    "apps/web/app/refunds/page.tsx",
+    "apps/web/__tests__/legal-content-p1.test.ts"
+   ],
+   "test": "apps/web/__tests__/legal-content-p1.test.ts LEG-06 block — RED 3 failed, GREEN. Combined with LEG-13: 5 failed / 39 passed RED -> 70/70 green across legal-content-p1, p2 and both render suites.",
+   "evidence": "The DISPUTED note was right that 'fixed' over-claimed. The earlier fix moved the published window from 48h to 72h and dropped the auto-refund promise, but the replacement sentence said 'we cancel the booking automatically and place it in our refund review queue' as though the sweep saw every booking. It does not: apps/api/src/services/booking.service.ts:1853-1858 escalateStaleBookings filters `where: { status: 'priest_assigned', videoProofUrl: null }` — ONE member of a nine-member BookingStatus enum (apps/api/prisma/schema.prisma:93-103). The audit's own evidence is three bookings in `completed` with videoProofUrl NULL and one in `video_uploaded` with a two-space URL; not one is reachable. A test asserts the single-status premise straight out of the API source, so if the sweep is ever widened the copy assertion is forced to be revisited rather than silently passing. LIVE PROOF: curl localhost:3000/refunds returns 'still waiting on its assigned pandit, it is cancelled and sent for manual review. Any other status — a booking already marked completed, for example — needs...'. I did NOT touch the refund ladder rows (100/50/0 vs the engine's 100/75/50/25) — that is LEG-01/LEG-03 and the owner's, and the published ladder is less generous than the code pays, so it is safe in the meantime."
+  },
+  {
+   "id": "LEG-13",
+   "area": "legal-content",
+   "outcome": "fixed",
+   "change": "app/about/page.tsx principle 'Video proof, or it is not delivered' no longer claims every proof-less booking reaches the refund review queue 'rather than being quietly closed'. It now names the sweep's real scope and says a booking a pandit has already advanced is outside it and handled on request.",
+   "files": [
+    "apps/web/app/about/page.tsx",
+    "apps/web/__tests__/legal-content-p2.test.ts"
+   ],
+   "test": "apps/web/__tests__/legal-content-p2.test.ts LEG-13 block — RED 2 failed, GREEN. Full file 21/21 after the LEG-16 additions.",
+   "evidence": "This closes the 'substitutes a new unverified claim' half of the dispute. The verified-good half is intact and I confirmed it rather than redoing it: lib/live-stats.ts parses only the envelope total and returns null otherwise, app/about/page.tsx:214-228 shippedStats() DROPS a stat it cannot read instead of substituting a figure, and the '200+' / '100%' literals are gone (pinned by 4 existing tests). The substituted claim was the second sentence of the principle at app/about/page.tsx:86, and it was false for exactly the rows the finding is built on — escalateStaleBookings only selects status 'priest_assigned', so a `completed` booking with videoProofUrl NULL IS quietly closed, the precise thing the sentence denied. LIVE PROOF: curl localhost:3000/about returns 'outside that sweep, and we handle those on request — which is why the Refund Policy asks you to write in rather than wait.' The remaining half of the finding's fix — enforcing video proof on the transition INTO 'completed' the way checkVideoProofGate already does for video_uploaded/delivered (apps/api/src/routes/bookings.ts:276) — is apps/api and out of lane; the copy is now true without it."
+  },
+  {
+   "id": "LEG-16",
+   "area": "legal-content",
+   "outcome": "fixed",
+   "change": "Added COMPANY.HAS_SPECIALTY_INBOXES_VERIFIED (false) plus specialtyEmail(kind) / rightsContactEmail() / legalContactEmail() to lib/company.ts, following the same gate pattern the file already uses for phones, 80G and GSTIN. Every legal surface that published privacy@ or legal@ now routes through the helpers, so while the gate is false they publish supportEmail — the inbox the product actually answers. The /contact 'Specialty inboxes' block is gated as a whole and hides itself (the section was already conditional on a non-empty list).",
+   "files": [
+    "apps/web/lib/company.ts",
+    "apps/web/app/privacy/page.tsx",
+    "apps/web/app/privacy/v2/page.tsx",
+    "apps/web/app/terms/page.tsx",
+    "apps/web/app/contact/page.tsx",
+    "apps/web/app/account/privacy/page.tsx",
+    "apps/web/app/legal/cookies/page.tsx",
+    "apps/web/app/legal/privacy-uk/page.tsx",
+    "apps/web/app/uk/page.tsx",
+    "apps/web/__tests__/legal-content-p2.test.ts"
+   ],
+   "test": "apps/web/__tests__/legal-content-p2.test.ts LEG-16 block — RED 3 failed / 18 passed, GREEN 21/21. Regression batch across company.test.ts, account-privacy-dsar.test.tsx, uk-pricing-honesty.test.tsx, csr-match.test.tsx and 6 others: 146/146 green.",
+   "evidence": "The note said the third clause — 'confirm privacy@ and grievance@ actually deliver before publishing them' — is an owner/DNS action, and provisioning a mailbox still is. But the repo could stop publishing an address it did not believe in, and that is what shipped. company.ts said of the specialty inboxes, verbatim, 'support@ is already in supportEmail; the others are aspirational', while 13 call sites across 8 pages printed privacy@ or legal@ as THE statutory channel for a DPDP / UK-GDPR rights request; if the alias does not resolve, the one channel a data principal has bounces in silence. The first two clauses were already closed and I verified rather than redid them: app/account/privacy/page.tsx exists and posts to /dpdp/dsar and /dpdp/dsar/mine, and app/privacy/page.tsx:302-303 links to it from section 8. LIVE PROOF after the change: privacy@=0 legal@=0 on /privacy, /legal/cookies, /legal/privacy-uk, /contact, /terms and /uk, with support@ rendered in their place; /contact 200 with the Specialty inboxes section correctly absent. RESIDUAL OWNER ACTION (not a code blocker): provision privacy@/legal@/sales@/partners@/press@, send a test message, then flip HAS_SPECIALTY_INBOXES_VERIFIED to true — one boolean, no other edit."
+  },
+  {
+   "id": "CM-20",
+   "area": "customer-mindset",
+   "outcome": "already_fixed",
+   "evidence": "The finding's own prescribed fix — 'a token change in the shared button styles plus a sweep of the ad-hoc inline ones' — landed in the page-styling sweep that ran immediately before me, in the two files the note named as out of lane. app/globals.css:504-551 floors button, [role=button], select, summary, checkbox/radio labels, `nav li > a` and `footer li > a` to min-height:44px under max-width:1023px, adds min-width:44px for icon-only controls and for every header a[aria-label]/button[aria-label], with documented opt-outs for [role=switch] and [data-tap-exempt]; globals.css:589-595 adds the .tap-safe escape hatch for bare inline anchors the selector cannot reach, using negative margin so the hit box grows without moving the row. components/ui/button-recipe.ts BUTTON_SIZES.md is 'h-11' = 44px and is documented as the WCAG 2.5.5 target. The two controls the finding measured are both fixed: the ten /pujas 'Book Now' buttons at 89x34 are gone — app/pujas/page.tsx:645-733 now wraps the WHOLE card in a next/link Link (which also closes CM-09) with an h-11 saffron-600 'View details' span; the homepage hero CTAs 'Explore Temples' 155x38 and 'Book a Puja' 108x38 are now a single HomeHeroCta using buttonClass('primary','md') (components/HomeHeroCta.tsx:66) plus a min-h-[44px] text link (app/page.tsx:158-163). I made no className changes, per the lane rule."
+  },
+  {
+   "id": "LEG-02",
+   "area": "legal-content",
+   "outcome": "owner_gated",
+   "files": [
+    "apps/web/lib/company.ts"
+   ],
+   "evidence": "Nothing to close in my lane and I confirmed the web side is already fully gated. lib/company.ts donationLegal has HAS_80G_VERIFIED:false, pan:null, eightyGNumber:null, HAS_CSR1_VERIFIED:false, csr1Number:null, and csrCredentialLine() refuses to render any 80G/CSR-1 claim while they are false — /csr-match renders that refusal at CsrMatchClient.tsx:85 and :224 and the route is additionally env-gated (LEG-14, verified by 3 passing tests).",
+   "blocked_on": "OWNER: the 80G(5) registration number and the donee PAN are legal facts only the founder holds; without them no receipt can honestly assert Section 80G eligibility. Separately, the code gate is in apps/api and out of lane: apps/api/src/lib/pdf-receipt.ts:84-85 still draws 'OFFICIAL DONATION RECEIPT' + '80G Income Tax Exemption' unconditionally while the substantiating lines are conditional (`if (data.gaushala80GNumber)` at :137, `if (data.gaushalaPan)` at :141) — so the document claims the exemption and silently drops the two fields that would prove it. The fix is to emit the 80G header and the Section 80G line only when BOTH are present, else title it 'DONATION RECEIPT' with 'This is an acknowledgement of your contribution. It is not an 80G tax receipt.'"
+  },
+  {
+   "id": "LEG-11",
+   "area": "legal-content",
+   "outcome": "owner_gated",
+   "files": [
+    "apps/web/lib/company.ts"
+   ],
+   "evidence": "Every code-side item the finding asks for is shipped and I verified all of it renders. lib/company.ts:97-115 has the grievance block with acknowledgeHours:24 and resolveBusinessDays:15 — ONE SLA, which resolves the 48h/30d vs 15-business-day contradiction the finding names. grievanceOfficerLine() and grievanceSlaLine() are rendered identically on /privacy (page.tsx:353), /refunds (:292-293), /contact (:298), /account/privacy (:323-324) and /privacy/v2 (:221-222). grievanceOfficerLine() does NOT imply an officer exists: while HAS_NAMED_OFFICER_VERIFIED is false it states plainly that a named officer has not yet been appointed and that complaints are handled by the platform operator. The grievance email is also no longer hardcoded into two pages.",
+   "blocked_on": "OWNER: the officer's NAME, DESIGNATION and PHONE are the substance of IT Rules 2021 Rule 3(2) and Consumer Protection (E-Commerce) Rules 2020 Rule 4(5), and I will not invent a person. Appoint someone, fill officerName / officerDesignation / officerPhone in lib/company.ts:105-109 and flip HAS_NAMED_OFFICER_VERIFIED — all five pages update from that one edit with no further code change."
+  },
+  {
+   "id": "CM-08",
+   "area": "customer-mindset",
+   "outcome": "partial",
+   "files": [
+    "apps/web/app/pujas/page.tsx",
+    "apps/web/lib/images.ts"
+   ],
+   "evidence": "More is closed than the note recorded, but not by me and not completely. The bytes problem is largely addressed: app/pujas/page.tsx:652-659 now serves the card image through pujaCardImage() -> lib/images.ts remoteImage(), which rewrites an upload.wikimedia.org/wikipedia/commons/ original into a /thumb/ URL at the requested width (lib/images.ts:129-131), and the <img> now carries srcSet (remoteSrcSet at THUMB and CARD widths), sizes, explicit width=500 height=313, loading=lazy and decoding=async inside the aspect-[16/10] box. So the 3,592 KB / 2,218 KB originals are no longer what a 382px slot downloads.",
+   "blocked_on": "Three things remain. (1) Self-hosting / CDN — the images are STILL hotlinked to upload.wikimedia.org, so the burst 429 the audit measured (4 of 10 HEADs failing as a concurrent burst) is unchanged; that needs apps/web/lib/images.ts and next.config.*, both explicitly do-not-touch this wave, and it is TASKS.md #203/#204 awaiting a self-host-vs-CDN decision. (2) The onError fallback to the deity gradient is still absent from that <img>, and adding a handler needs the card extracted into a client component — a structural change to another agent's page, not a copy fix. (3) OWNER/merchandising: the assets are still 'Ganesha Basohli miniature circa 1730' and a generic 1_Om.svg for a ₹2,501 jaap; real photography of the actual priests and sanctums is a commissioning decision, not a code one."
+  },
+  {
+   "id": "CM-10",
+   "area": "customer-mindset",
+   "outcome": "partial",
+   "files": [
+    "apps/web/lib/puja-labels.ts",
+    "apps/web/app/pujas/page.tsx",
+    "apps/web/app/pujas/[slug]/page.tsx"
+   ],
+   "evidence": "The DISPUTED scope over-claim is now narrower than the note recorded, and I verified rather than redid it. Closed: the raw enum leak is gone — lib/puja-labels.ts pujaCategoryLabel() is applied at app/pujas/page.tsx:707 and app/pujas/[slug]/page.tsx:285-288, with unit tests. Also closed and NOT credited in the note: the detail hero IS clamped — app/pujas/[slug]/page.tsx:307 renders the description under `line-clamp-3`, and git show HEAD confirms that clamp is already committed at line 305, so the 1,144-character wall between the H1 and the price card is gone. The card copy remains clamped at line-clamp-2 (page.tsx:696).",
+   "blocked_on": "The remaining half is a contract change in apps/api, which is do-not-touch this wave: add a shortDescription / cardBlurb field (100-140 chars, benefit-first) to the puja type model, return it in GET /api/v1/pujas/types, and drop `description` from the LIST response entirely — that alone removes 72.5% of the 15,767-byte payload. Until the field exists the card can only clamp prose written for a detail page; no web-side edit can invent the blurb."
+  },
+  {
+   "id": "CM-12",
+   "area": "customer-mindset",
+   "outcome": "partial",
+   "files": [
+    "apps/web/app/search/SearchClient.tsx",
+    "apps/web/app/search/page.tsx"
+   ],
+   "evidence": "The web half is done and I confirmed it: app/search/SearchClient.tsx:92 now calls the same federated endpoint the header overlay uses (`${API_BASE_URL}/search?q=…&limit=8`), renders Pujas (:153) and Temples (:173) groups, the 'Search knowledge' / 'Across Sanskrit, Vedas, and Sanatan Dharma articles.' framing is gone (page title and subtitle now read 'Pujas you can book, temples, and the Sanskrit / Veda / Sanatan Dharma library'), an outage degrades to the article index instead of an error wall, and the zero-result state carries recovery links to /pujas and /temples. All pinned by __tests__/search-federation.test.tsx.",
+   "blocked_on": "Everything left needs apps/api/src/routes/search.ts, which is out of lane. Confirmed against the live API: `GET /api/v1/search?q=rudrabhishek&limit=8` returns results with keys exactly [temples, pujas, content, total] — there is NO store-products corpus, so 'store products in the result set' cannot be done from the web. Cross-corpus relevance ranking and 'nearest match' suggestions on zero results are the same endpoint: the web receives three pre-split arrays with no scores, so it has nothing to rank across and no candidate set to fuzzy-match a miss against."
+  },
+  {
+   "id": "CM-13",
+   "area": "customer-mindset",
+   "outcome": "partial",
+   "files": [
+    "apps/web/app/page.tsx",
+    "apps/web/components/home/HowItWorks.tsx",
+    "apps/web/components/HomeHeroCta.tsx",
+    "apps/web/components/CookieBanner.tsx"
+   ],
+   "evidence": "Four of the finding's six fixes are shipped and I verified them rather than redoing them. The two co-equal CTAs are gone: app/page.tsx:155-166 renders a single HomeHeroCta plus 'Explore temples' demoted to an underlined text link (which is also the CM-14 re-point). A real 3-step How-It-Works sits directly under the hero at app/page.tsx:234 (components/home/HowItWorks.tsx), and it is careful — it states the cancellation WINDOW and links to /refunds rather than publishing a refund percentage, precisely because three ladders are live and the choice is the owner's. 'Free cancellation up to 24 hours' is lifted next to the CTA in that section's subhead.",
+   "blocked_on": "Three remain. (1) The H1 rewrite ('Darshya, your bridge to sacred traditions' -> a job statement) lives in lib/i18n/en.json heroTitle1/heroTitle2 consumed via HeroCopyVariant, and lib/i18n/** and lib/t.ts are explicitly do-not-touch — another agent is editing lib/i18n/hi.json, lib/t.ts and middleware.ts in this wave right now. (2) The 20-second proof-video clip is asset/owner-gated: the only real footage is customer puja recordings, and publishing a devotee's ceremony on the homepage needs their consent, not a code change. (3) The cookie-banner deferral (open on first scroll or 3s dwell instead of on mount) is NOT shipped and I deliberately did not ship it: components/CookieBanner.tsx:105-113 opens synchronously on mount, and deferring it breaks 8 of the 14 assertions in __tests__/CookieBanner.test.tsx which render and immediately getByRole('dialog'). Changing WHEN a DPDP/UK-GDPR consent notice appears is a compliance judgement I am not willing to make unilaterally on the owner's behalf, even though no analytics or marketing request fires before consent today. Recommend it as an explicit owner decision with the test update budgeted."
+  },
+  {
+   "id": "CM-14",
+   "area": "customer-mindset",
+   "outcome": "partial",
+   "files": [
+    "apps/web/app/page.tsx",
+    "apps/web/app/temples/page.tsx"
+   ],
+   "evidence": "The homepage half of the finding's fix is shipped: 'Re-point the hero second CTA' is done — app/page.tsx:148-166 carries the CM-13/CM-14 comment and renders one primary (the puja catalogue via HomeHeroCta) with /temples demoted to a text link, so half the hero traffic is no longer aimed at a directory where three of four destinations cannot take money.",
+   "blocked_on": "The directory-level badge is blocked by the API payload, not by lane alone. Confirmed live: `GET /api/v1/temples?limit=2` returns temple keys [id,name,nameLocal,slug,description,deityPrimary,deities,tradition,city,state,lat,lng,images,timingInfo,isVerified,liveDarshanEnabled] — there is NO offerings count and no bookability flag, so app/temples/page.tsx cannot know which 15 of 20 temples have zero temple_puja_offerings without an N+1 of 20 detail fetches on a directory page, which is not acceptable. It needs a field on the list endpoint (apps/api, out of lane). The 'Notify me when pujas open here' demand capture on those detail pages is also not shipped — app/temples/[slug]/page.tsx:465-474 has only a disabled 'Direct bookings coming soon' card about the temple's OWN official website, which is a different thing; a real capture needs a waitlist endpoint that accepts a temple slug, and I found none."
+  },
+  {
+   "id": "CM-15",
+   "area": "customer-mindset",
+   "outcome": "partial",
+   "files": [
+    "apps/web/app/temples/page.tsx",
+    "apps/web/app/astrology/page.tsx"
+   ],
+   "evidence": "The /temples half is genuinely and well done: app/temples/page.tsx:88-131 TemplesSkeleton renders a real card-grid skeleton (6 shimmer cards matching the actual layout, plus filter-chip placeholders) with role=status, aria-busy and aria-live=polite, and the API round trip was moved inside the Suspense boundary so a cold Render dyno no longer holds the whole document. The empty `<div className=\"min-h-[100dvh]\" />` is gone from that file.",
+   "blocked_on": "app/astrology/page.tsx:171 still reads `<Suspense fallback={<div className=\"min-h-[100dvh]\" />}>` — verbatim the empty full-viewport div the finding names — and app/astrology/** is on this wave's explicit do-not-touch list with another agent in it. The fix is one line once the lane frees: extract the existing TemplesSkeleton card grid into a shared component and use it for both, which is what the finding's own fix prescribes ('one small component reused in both places')."
+  },
+  {
+   "id": "LEG-04",
+   "area": "legal-content",
+   "outcome": "partial",
+   "files": [
+    "apps/web/lib/pricing.ts",
+    "apps/web/app/pricing/page.tsx"
+   ],
+   "evidence": "Half of this moved since the note was written, by the pricing agent, not by me. The fabricated three-price catalogue is gone: app/pricing/page.tsx:258 now renders the plan cards from GET /api/v1/subscriptions/plans (PM-02b), and lib/pricing.ts:1-20 records that the universal Free/₹499/₹1,499/₹4,999 ladder was replaced by the real per-role catalogue — a store owner reading 'Basic ₹499' against a real ₹1,499 was the 3.0x error the finding measured. lib/pricing.ts:465 does the fetch.",
+   "blocked_on": "The commission half is untouched and remains a live wrong-data exposure to the supply side. lib/pricing.ts:180 COMMISSION_RATES still publishes the plan-based ladder the API has no lookup for — pandit 30/20/15/10, store 25/15/12/8, astrologer 35/25/18/12 — rendered on the page at app/pricing/page.tsx:444 and :496. It has been annotated with chargedRate:20 and a chargedRateSource pointing at the schema defaults, so the page can now show the truth alongside the fiction, but the finding's fix is to DELETE the table until plan-based commission is actually implemented (or implement it and read it from the API). app/pricing/** and lib/pricing.ts are both on this wave's explicit do-not-touch list — the pricing-market agent owns them — so this needs to be handed to that lane or to a later wave."
+  },
+  {
+   "id": "COM-01",
+   "area": "commerce-temple-gaushala",
+   "outcome": "owner_gated",
+   "evidence": "Shipped half verified at apps/api/src/routes/store-orders.ts:199-206: `const UUID_RE = ...; const lookupIds = productIds.filter((id) => UUID_RE.test(id))` — a `prod_015` handle no longer reaches the uuid `in` filter, so the P2023 500 is now the clean `400 Unknown product: prod_015` at line 217. Live DB confirms the rest is unchanged and unfixable in code: `SELECT count(*) FROM store_products` = 0 total, 0 active, while apps/web/lib/products.ts still serves 24 fixtures keyed `prod_001`..`prod_024`. So every catalogue product still dead-ends, honestly. I was instructed not to unify the catalogue, and doing so is the only fix.",
+   "blocked_on": "Owner decision on the single catalogue + keyspace: either seed the 24 SKUs as real StoreProduct rows under a Darshya house StoreProfile, or add a `handle` column to StoreProduct and resolve POST /store/orders by handle. Both are schema/data decisions about what Darshya itself sells vs what sellers sell.",
+   "files": [],
+   "change": "None. Verified only.",
+   "test": "Existing apps/api/src/routes/store-orders.totals.test.ts unchanged and green; no new test (no code change)."
+  },
+  {
+   "id": "COM-02",
+   "area": "commerce-temple-gaushala",
+   "outcome": "partial",
+   "evidence": "The ledger note said only donor PAN shipped, and that was accurate: the 80G assertion was still UNCONDITIONAL at apps/api/src/lib/pdf-receipt.ts:156 ('Eligible for deduction under Section 80G...') and again in the subtitle at :85 ('80G Income Tax Exemption'), while the registration number and donee PAN stayed behind `if`s at :137/:141. Live DB: gaushala_profiles has 3 rows, 0 with regn_80g, 0 with pan — the claim was false on 100% of receipts. Now derived: new exported `is80GEligible()` requires BOTH fields; the subtitle falls back to 'Proof of donation — not a tax exemption certificate' and the note to 'This receipt is not valid for a Section 80G deduction: the donee organisation has no 80G registration number and PAN on record with Darshya.' The covering email said 'Your 80G tax receipt PDF is attached' unconditionally — now driven by the same predicate from apps/api/src/routes/donations.ts. Web copy gated on the existing owner flag COMPANY.donationLegal.HAS_80G_VERIFIED (false today): /gaushala plan bullets, trust badge and the 'Is my donation tax-deductible?' FAQ (which answered 'Yes!'), /gaushala/[id] adoption bullet + plan blurb, and the /donations hero badge + meta description.",
+   "blocked_on": "The two owner actions: obtain the 80G(5) registration + donee PAN (I must not invent a registration number), and decide option (b) — build the admin/portal capture field so each gaushala AND each temple can store regn_80g + PAN, then extend the temple branch of finalizeDonationReceipt to read them (it never queries the tax columns at all, apps/api/src/routes/donations.ts:124). Until one donee has both fields, every receipt correctly prints the non-80G form.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/pdf-receipt.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/email.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/donations.ts",
+    "E:/NewClaude/bhaktisetu/apps/web/app/gaushala/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/gaushala/[id]/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/app/donations/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/pdf-receipt.80g.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/web/__tests__/gaushala-80g-claim-honesty.test.tsx"
+   ],
+   "change": "Made the 80G assertion data-derived on the PDF, the covering email and the marketing surfaces, instead of asserted unconditionally.",
+   "test": "apps/api/src/lib/pdf-receipt.80g.test.ts — RED 5 failed / 1 passed, then 1 more failed when the email cases were added; GREEN 8/8. It inflates the Flate content stream and decodes the hex `<...> Tj` operands, because a raw byte scan silently passes every negative assertion (I caught that vacuity mid-write and fixed the extractor). apps/web/__tests__/gaushala-80g-claim-honesty.test.tsx — RED 3 failed / 1 passed, GREEN 6/6; it stubs the async ApprovedProvidersStrip and asserts container text length > 500 first so an empty tree cannot pass the negatives."
+  },
+  {
+   "id": "COM-11",
+   "area": "commerce-temple-gaushala",
+   "outcome": "owner_gated",
+   "evidence": "The shelf half is already built and green: apps/web/lib/store-live.ts (getLiveProducts/getLiveProduct, no fixture fallback), apps/web/components/store/SellerShelf.tsx (renders null when empty, by design), apps/web/app/store/seller/[id]/page.tsx (PDP on the StoreProduct UUID that POST /store/orders resolves), wired at apps/web/app/store/page.tsx:11. apps/web/__tests__/store-seller-shelf.test.tsx passes. So 'zero callers of products/live' no longer reproduces. Live DB: store_products = 0 rows, so the shelf correctly renders nothing — there is no seller supply to show, and that is data, not code. The finding's own fix is 'merge the two catalogues behind one endpoint and one keyspace (see COM-01)'.",
+   "blocked_on": "Same owner decision as COM-01 — one catalogue, one keyspace, and a handle column on StoreProduct so the seller PDP can live under /store/[handle] instead of its own /store/seller segment. I was instructed not to unify.",
+   "files": [],
+   "change": "None. Verified the shipped half and confirmed the remainder is the COM-01 decision.",
+   "test": "apps/web/__tests__/store-seller-shelf.test.tsx + apps/web/__tests__/temple-book-cta-honesty.test.tsx run together: 17/17 green. No new test (no code change)."
+  },
+  {
+   "id": "COM-12",
+   "area": "commerce-temple-gaushala",
+   "outcome": "partial",
+   "evidence": "Both code halves are shipped and verified: apps/web/components/temple/TempleBookPujaCta.tsx guards the card on real offerings and the CTA target is built from `apiTemple.pujaOfferings` filtered to isActive (apps/web/app/temples/[slug]/page.tsx:327-328), applied at all three render sites (:434, :879, :1038), replacing the truncated `/pujas?temple=vaishno-devi` slug. Live DB confirms the untouched half exactly as the finding measured it: `SELECT count(DISTINCT temple_id) FROM temple_puja_offerings` = 5 against 20 temples (25 offering rows) — still 15 temples with nothing bookable.",
+   "blocked_on": "Seeding offerings for the remaining 15 temples is business content, not code: which pujas each temple offers, at what price, in which slots, and which verified priest fulfils them. Inventing those rows would be fabricating data (and would put fake prices on Vaishno Devi and Badrinath). Needs the owner's catalogue, then a seed migration.",
+   "files": [],
+   "change": "None this wave — the code guard and the slug fix were already shipped. Confirmed against the live DB rather than the ledger note.",
+   "test": "apps/web/__tests__/temple-book-cta-honesty.test.tsx green (part of the 17/17 above). No new test written."
+  },
+  {
+   "id": "COM-16",
+   "area": "commerce-temple-gaushala",
+   "outcome": "partial",
+   "evidence": "Shipped half confirmed: the '100% to cause' badge is gone from apps/web/components/DonationForm.tsx (the remaining two badges are Razorpay + 80G receipt, lines 603-610) and apps/web/__tests__/donation-settlement-claim.test.tsx asserts on the RENDERED form, so any rewording fails. The settlement rail is genuinely not buildable in this lane, and the live DB says why: the `commissions` table columns are id, booking_id, store_order_id, wellness_enrollment_id, payout_request_id, provider_id, amount, percentage, status, paid_at, created_at — there is NO donation_id. Writing a Commission per donation with no donation key gives the row no idempotency handle, so a re-verify or the webhook backstop would double-credit the donee. TemplePayout cannot be reused either: schema.prisma:559 makes bookingId a non-null FK to PujaBooking. Count of donation-backed commission rows today: 0.",
+   "blocked_on": "Two things. (1) Schema: Commission needs a nullable `donationId` + unique/index, a migration, and a Prisma client regen — a schema change I will not land mid-wave while three other agents hold the working tree, and it is the same client every one of them compiles against. (2) Owner decision, which the finding itself names: whether donations carry a platform fee at all. Commission.percentage is the PLATFORM rate, so the rail cannot be written until that number exists — 0% (full pass-through, matching the removed promise) and a non-zero fee produce different ledgers and different disclosure copy on the form.",
+   "files": [],
+   "change": "None this wave. The badge removal was already shipped; the rail is blocked at the schema and at the fee decision.",
+   "test": "apps/web/__tests__/donation-settlement-claim.test.tsx re-run green. No new test (no code change)."
+  },
+  {
+   "id": "COM-18",
+   "area": "commerce-temple-gaushala",
+   "outcome": "partial",
+   "evidence": "Both sides of the thumbnail contract are shipped and tested — this is more than the ledger note implies. API: apps/api/src/lib/commons-thumb.ts rewrites every absolute Commons URL to a ladder-width /thumb/ variant and apps/api/src/services/store.service.ts:79-86 routes all 13 Commons product images through it at PRODUCT_IMAGE_WIDTH=600; apps/api/src/services/store-product-images.test.ts asserts no Commons ORIGINAL can leave the service and that the two ladders match. Web: apps/web/lib/products.ts carries zero wikimedia URLs (it uses `imageKey` slugs resolved through lib/images.ts wikiThumb, COMMONS_LADDER at :55). So the 5.7 MB originals are no longer served by either half.",
+   "blocked_on": "Two hard blocks on the self-host step. (1) It requires downloading 24 third-party binary images from Wikimedia into apps/web/public — downloading files is an action I need the owner's explicit go-ahead for, and it is ~30 MB of third-party media whose licence attribution has to be decided. (2) Serving them through next/image means editing apps/web/lib/images.ts, which is on this wave's DO-NOT-TOUCH list (another agent holds it).",
+   "files": [],
+   "change": "None. Verified both halves of the already-shipped thumbnail fix rather than trusting the note.",
+   "test": "apps/api/src/services/store-product-images.test.ts re-run green as part of the 71/71. No new test (no code change)."
+  },
+  {
+   "id": "PM-03",
+   "area": "pricing-market",
+   "outcome": "partial",
+   "evidence": "The assigned remaining half — the admin override for a negotiated priest rate — is now shipped and tested. It was genuinely absent: PATCH /admin/priests/:id (apps/api/src/routes/admin.ts:370-375) echoed its body back (`return { message: 'Priest updated', updates: body }`) and touched no row, so a negotiated split could only be applied with raw SQL against production — which is exactly what the finding's 'do not treat a stored 0.70 as unset, that would silently override any pandit genuinely negotiated onto 70%' presupposes is possible. New PATCH /admin/priests/:id/commission-rate writes Priest.commissionRate, rejects anything outside (0,1] (the band resolvePriestShare trusts, bookings.ts:605-607) so a stored value can never be silently ignored at booking time, refuses a share below 0.5 (the common failure is typing the PLATFORM number into the PANDIT field), 404s instead of upserting, logs from/to/admin/reason, and returns both `commissionRate` (provider share) and `platformTakeRate` so the two halves of the split cannot be confused. BUT the live DB contradicts the 'schema default + migration landed' half: information_schema says priests.commission_rate default is STILL '0.70', all 3 priest rows are at 0.7, and there is no _prisma_migrations table in darshya_utf8 at all — migration 20260812000000_priest_commission_rate_80 is written but NOT applied.",
+   "blocked_on": "Applying migration 20260812000000_priest_commission_rate_80 to the running databases (local and prod). Until it runs, every newly-onboarded pandit is still created at 0.70 and the 3 existing rows are still paid 70% — the schema.prisma edit alone changes nothing at runtime. That is a deploy/ops action (per docs/handoff: migrations do not auto-apply on Render deploy).",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/admin.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/admin.priest-commission.test.ts"
+   ],
+   "change": "Added a real, bounded, audited admin override for a per-pandit negotiated share, plus a regression guard on the schema default.",
+   "test": "apps/api/src/routes/admin.priest-commission.test.ts — RED 4 failed / 1 passed (endpoint did not exist, everything 404'd), GREEN 6/6. The schema-default guard was separately proven red: I set schema.prisma back to @default(0.70) and it failed, then restored it."
+  },
+  {
+   "id": "PM-04",
+   "area": "pricing-market",
+   "outcome": "fixed",
+   "evidence": "The server hole was exactly as described and is now closed. apps/api/src/services/subscription.service.ts subscribe() went straight from plan lookup to `marketplaceSubscription.create({ amount: plan.price, status: 'ACTIVE' })` plus a COMPLETED Transaction. It now takes a 4th `SubscriptionActivationEvidence` argument and throws the new PaymentRequiredError for any plan with price > 0 without it, BEFORE any write — so a rejected attempt no longer cancels the subscriber's existing plan as a side effect. Only two callers hold the evidence: the Razorpay webhook path (subscription.activated/.charged, signature already verified in the route) and the explicitly-demo branch that assertNotProductionDemo has already proven is not production. POST /subscriptions/subscribe answers 402 with `payWith: '/api/v1/subscriptions/create'`. I also removed the fabricated fallback the previous agent flagged and did not fix: the `catch { mockSubscriptions.set(...) }` that answered a synthetic `sub-<timestamp>` with status ACTIVE on a DB failure — it now rethrows. And I found a second live ₹0 hole in the paid rail itself: `isDemo = !keyId || keyId === 'rzp_test_demo' || !rzpPlanId` meant a production deploy with REAL Razorpay keys but no RAZORPAY_PLAN_* mapping took the demo branch and granted the plan free with a `sub_demo_*` id — and `astro_session` (₹99) and `nri_premium_yearly` (₹5,000) are both absent from mapToRazorpayPlanId's env map and both offered on /upgrade. The demo escape now keys on credentials only and an unmapped plan throws. Web side of the same contract: apps/web/app/upgrade/page.tsx chose its endpoint by CADENCE (only astro_monthly went to /create), so those same two paid cards POSTed the free-grant endpoint; it now chooses by PRICE. Consequence to be explicit about: the ₹99 pass and the ₹5,000 NRI annual now have no working purchase rail and fail loudly — which is the finding's own prescribed fallback, but a Razorpay one-time-order rail (or the two RAZORPAY_PLAN_* ids) is the follow-up to actually sell them.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/subscription.service.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/subscriptions.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/subscription.service.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/subscriptions.paid-gate.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/web/app/upgrade/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/lib/subscription-api.ts",
+    "E:/NewClaude/bhaktisetu/apps/web/__tests__/upgrade-paid-plan-rail.test.tsx"
+   ],
+   "change": "A priced subscription can no longer be provisioned without evidence of collection, on either side of the wire, and the paid rail's own free-grant escape is closed.",
+   "test": "apps/api/src/routes/subscriptions.paid-gate.test.ts — RED 3 failed / 3 passed, then the demo-escape case added RED 1 failed / 6 passed; GREEN 7/7. apps/web/__tests__/upgrade-paid-plan-rail.test.tsx — proven RED 2 failed / 1 passed by reverting the endpoint selection and re-running, then restored; GREEN 3/3. The existing subscription.service.test.ts case 'creates subscription + transaction for paid plan' asserted exactly the old buggy behaviour (subscribe with no evidence returning ACTIVE); it was rewritten to go through the webhook-evidenced path and renamed, 17/17 green."
+  },
+  {
+   "id": "PM-08",
+   "area": "pricing-market",
+   "outcome": "partial",
+   "evidence": "The code-side reconciliation is now real and enforced. Five authorities were checked at source and all agree on 20% platform / 80% provider: schema.prisma Priest.commissionRate @default(0.80), booking.service.ts DEFAULT_PRIEST_SHARE = 0.8, schema.prisma StoreProfile.commission @default(0.20) (schema.prisma:962), astrologer.service.ts ASTROLOGER_PLATFORM_RATE = 0.2, wellness-sessions.ts WELLNESS_PLATFORM_COMMISSION default '0.20'; and every COMMISSION_RATES row in apps/web/lib/pricing.ts publishes chargedRate 20 with a chargedRateSource naming the apps/api code that charges it. Nothing tied them together — a web page and an API in different packages with no shared constant, plus a schema default no unit test covered. The new test is that tie, and it doubles as the checklist of every place that has to change if the owner moves the rate. It also pins DEFAULT_TEMPLE_SHARE_RATE = 0.05 as a payout in the OPPOSITE direction so a later edit cannot fold it into the take and make the real cut 25%.",
+   "blocked_on": "The owner's single decision and the three PROSE authorities it governs, none of which is a code change: publish the number, then amend PROJECT_CONTEXT.md immutable rule 3 ('Platform commission 20-40% per temple'), amend darshya-gtm-master-plan.md ('Take rate is fixed at 15-18% forever'), and decide whether the vestigial tier ladder (COMMISSION_RATES[].rates, 30/20/15/10) is deleted outright — it is already unrendered and quarantined, but apps/web/components/CommissionBanner.tsx and apps/web/__tests__/pricing.test.ts still read it, and whether a tier discount ever ships is the same decision.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/__tests__/take-rate-reconciliation.test.ts"
+   ],
+   "change": "Added a cross-package reconciliation test binding all five code-side take-rate authorities to one number; no rate values changed (they already agreed after PM-03).",
+   "test": "apps/web/__tests__/take-rate-reconciliation.test.ts — GREEN 9/9, and proven non-vacuous by setting schema.prisma back to @default(0.70): 'the pandit schema default pays the provider share' failed, 8 passed. Schema restored, 37/37 green across take-rate-reconciliation + pricing-commission-truth + pricing."
+  },
+  {
+   "id": "PM-11",
+   "area": "pricing-market",
+   "outcome": "fixed",
+   "evidence": "The astrology half was already rebuilt by another agent (apps/web/app/astrology/astrologers/live/page.tsx + LiveAstrologersClient.tsx exist). The store half was still exactly as the sweep found it: there was no apps/web/app/store/products directory at all, so /store/products/live rendered the global not-found page while GET /api/v1/store/products/live answered 200. Created apps/web/app/store/products/live/page.tsx — a server component reading getLiveProducts(200), sorted by price ascending (the finding's point is price discovery), each row linking to /store/seller/<StoreProduct UUID>, the id POST /store/orders actually resolves. Canonical https://darshya.online/store/products/live, revalidate 120 to match the seller shelf and seller PDP so the three surfaces never disagree. No fixture fallback: with store_products = 0 rows in the live DB today the page renders 'No seller has listed a product yet', never the 24 catalogue SKUs — showing those would attribute someone else's goods to real named businesses and hand the shopper a checkout that 400s.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/web/app/store/products/live/page.tsx",
+    "E:/NewClaude/bhaktisetu/apps/web/__tests__/store-live-directory-route.test.tsx"
+   ],
+   "change": "Created the missing /store/products/live route in front of the healthy API endpoint.",
+   "test": "apps/web/__tests__/store-live-directory-route.test.tsx — RED: the suite could not even collect ('Failed to resolve import ../app/store/products/live/page. Does the file exist?'), 0 tests ran; GREEN 5/5, covering render, price ordering, the seller-PDP hrefs, the honest empty state (asserting no fixture leakage), and the canonical URL."
+  }
+ ],
+ "verds": []
+}

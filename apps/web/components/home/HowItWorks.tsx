@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { buttonClass } from '../ui/button-recipe';
 import { CalendarCheck, UserCheck, Video, ArrowRight } from 'lucide-react';
 
 /**
@@ -94,8 +95,7 @@ export default function HowItWorks() {
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <Link
             href="/pujas"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-5 text-sm font-medium text-white"
-            style={{ background: 'var(--color-primary)' }}
+            className={buttonClass('primary', 'md')}
           >
             Book a puja <ArrowRight className="h-3.5 w-3.5" />
           </Link>

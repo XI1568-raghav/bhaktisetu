@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 export const revalidate = 3600;
 
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import { notFound } from 'next/navigation';
 import {
  ChevronRight,
@@ -259,11 +261,11 @@ export default async function PujaDetailPage({
  <div className="border-b border-surface-100 bg-white">
  <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
  <nav className="flex items-center gap-2 text-sm text-surface-500">
- <Link href="/" className="hover:text-orange-600">
+ <Link href="/" className="tap-safe hover:text-saffron-700">
  Home
  </Link>
  <ChevronRight className="h-3.5 w-3.5" />
- <Link href="/pujas" className="hover:text-orange-600">
+ <Link href="/pujas" className="tap-safe hover:text-saffron-700">
  Pujas
  </Link>
  <ChevronRight className="h-3.5 w-3.5" />
@@ -485,7 +487,7 @@ export default async function PujaDetailPage({
  </h2>
  <Link
  href={`/pujas/${puja.slug}/temples`}
- className="text-sm font-semibold text-saffron-700 hover:underline whitespace-nowrap"
+ className="tap-safe text-sm font-semibold text-saffron-700 hover:underline whitespace-nowrap"
  >
  Compare all →
  </Link>
@@ -532,7 +534,7 @@ export default async function PujaDetailPage({
  </div>
  <Link
  href={`/pujas/${puja.slug}/book?temple=${temple.templeSlug}`}
- className="inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Book Now
  <ArrowRight className="h-3.5 w-3.5" />
@@ -576,7 +578,7 @@ export default async function PujaDetailPage({
  <div className="mt-6 space-y-3">
  <Link
  href={`/pujas/${puja.slug}/book`}
- className="flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 py-3 font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'md', 'w-full')}
  >
  <Flame className="h-4 w-4" />
  Book This Puja

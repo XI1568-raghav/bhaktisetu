@@ -10,6 +10,40 @@ import {
   ASTROLOGER_SHARE,
 } from '../services/astrologer.service.js';
 
+/**
+ * PAR-13. `AstrologerProfile.userId` and `Commission.providerId` are both
+ * `@db.Uuid`. The demo astrologer signs in with `user.id = "demo-astro"`, which
+ * cannot be cast to a uuid, so every lookup keyed on it threw Prisma P2023 and
+ * the portal home answered 500 with the server's absolute path and four lines
+ * of source in the body — on both web and the app, for that account.
+ *
+ * A value that cannot be a uuid cannot match a uuid column: the honest result is
+ * a miss, not an exception. Every other portal (priest/temple/store/gaushala/
+ * wellness) already answers 200 for the same class of id; this is that same
+ * behaviour, made explicit.
+ *
+ * Same regex as routes/priests-public.ts:29 and lib/gaushala-donee.ts:27.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value: string | null | undefined): boolean {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
+/** No ledger rows can exist for an id the ledger cannot store. All zeros. */
+function emptyAstrologerLedger() {
+  return {
+    data: [] as Array<Record<string, unknown>>,
+    summary: {
+      totalEarningsInr: 0,
+      pendingInr: 0,
+      paidInr: 0,
+      monthEarningsInr: 0,
+      todayEarningsInr: 0,
+      astrologerShare: ASTROLOGER_SHARE,
+    },
+  };
+}
+
 const profileUpdateSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   specialties: z.array(z.string().max(50)).max(20).optional(),
@@ -53,6 +87,10 @@ export const __testing = { profileUpdateSchema, availabilityUpdateSchema };
  * either.
  */
 async function loadAstrologerLedger(userId: string) {
+  // PAR-13: `Commission.providerId` is @db.Uuid — a non-UUID account id throws
+  // P2023 here just as it does on astrologerProfile. No rows can be attributed
+  // to an id that cannot be stored, so an empty ledger is the true answer.
+  if (!isUuid(userId)) return emptyAstrologerLedger();
   const allRows = await prisma.commission.findMany({
     where: { providerId: userId },
     orderBy: { createdAt: 'desc' },
@@ -126,7 +164,10 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'ASTROLOGER role required' });
     }
 
-    const profile = await prisma.astrologerProfile.findUnique({ where: { userId } });
+    // PAR-13: guarded — see isUuid. A miss, not a P2023 crash.
+    const profile = isUuid(userId)
+      ? await prisma.astrologerProfile.findUnique({ where: { userId } })
+      : null;
 
     // P0 #AP-04/05 (2026-07-09): astrologer attribution. astrologer_consultations.
     // astrologer_id is TEXT and has been written as several forms over time —
@@ -227,6 +268,15 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
     }
+    // PAR-13: this handler both reads and CREATES on the uuid-typed userId, so
+    // a non-UUID account id would throw P2023 on findUnique and again on create.
+    // There is no profile to read and none that could be written; say so.
+    if (!isUuid(userId)) {
+      return reply.code(409).send({
+        error:
+          'This account cannot own an astrologer profile. Sign in with a full Darshya account to edit your astrologer details.',
+      });
+    }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
     if (!existing) {
       const profile = await prisma.astrologerProfile.create({
@@ -262,6 +312,15 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     const parsed = availabilityUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    // PAR-13: this handler both reads and CREATES on the uuid-typed userId, so
+    // a non-UUID account id would throw P2023 on findUnique and again on create.
+    // There is no profile to read and none that could be written; say so.
+    if (!isUuid(userId)) {
+      return reply.code(409).send({
+        error:
+          'This account cannot own an astrologer profile. Sign in with a full Darshya account to edit your astrologer details.',
+      });
     }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
     if (!existing) {

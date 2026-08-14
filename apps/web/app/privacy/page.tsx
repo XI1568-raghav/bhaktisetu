@@ -5,6 +5,7 @@ import {
  grievanceSlaLine,
  operatedByLine,
  postalContactLine,
+ rightsContactEmail,
 } from "../../lib/company";
 import CookieSettingsButton from "../../components/CookieSettingsButton";
 
@@ -311,7 +312,7 @@ export default function PrivacyPage() {
  </p>
  <p>
  No account, or prefer email? Write to{" "}
- {COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail} from your
+ {rightsContactEmail()} from your
  registered email address and we will file it for you.
  </p>
  </PolicySection>
@@ -389,7 +390,7 @@ export default function PrivacyPage() {
  For privacy-related queries or to exercise your data rights:
  </p>
  <ul>
- <li>Email: {COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}</li>
+ <li>Email: {rightsContactEmail()}</li>
  {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
  </PolicySection>

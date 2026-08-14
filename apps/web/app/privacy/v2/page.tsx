@@ -6,6 +6,7 @@ import {
  grievanceSlaLine,
  operatedByLine,
  postalContactLine,
+ rightsContactEmail,
 } from "../../../lib/company";
 
 export const metadata: Metadata = {
@@ -192,11 +193,11 @@ export default function PrivacyV2Page() {
  <p className="mt-4">
  To exercise any right, email{" "}
  <a
- href={`mailto:${COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}`}
+ href={`mailto:${rightsContactEmail()}`}
  className="underline"
  style={{ color: "var(--color-primary)" }}
  >
- {COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}
+ {rightsContactEmail()}
  </a>
  . We respond within 30 days (DPDP/GDPR) or 45 days (CCPA), extendable once
  with notice.
@@ -207,11 +208,11 @@ export default function PrivacyV2Page() {
  <p>
  <strong>Data protection contact:</strong>{" "}
  <a
- href={`mailto:${COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}`}
+ href={`mailto:${rightsContactEmail()}`}
  className="underline"
  style={{ color: "var(--color-primary)" }}
  >
- {COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}
+ {rightsContactEmail()}
  </a>
  </p>
  {/* LEG-11: this used to point at /grievance, a route that does not exist,

@@ -104,6 +104,10 @@ const nextConfig: NextConfig = {
   // turning maps back on without a release to attach them to is still pointless.
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
+  // SEC-03: Next sets `X-Powered-By: Next.js` on every response by default,
+  // handing an attacker the framework and a version-range hint for free. No
+  // behaviour depends on it.
+  poweredByHeader: false,
   webpack: (config) => {
     // Workspace packages (@poojly/api-client, @poojly/shared) use NodeNext-style
     // `./foo.js` imports in their TS source. Webpack's default resolver doesn't

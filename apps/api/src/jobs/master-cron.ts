@@ -393,7 +393,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
         skipped: true,
         reason: 'outreachOnly',
       },
-      weeklyDigest: { sent: 0, skipped: 0, failed: 0, gated: true, reason: 'outreachOnly' },
+      weeklyDigest: { sent: 0, skipped: 0, failed: 0, alreadyDelivered: 0, deferred: 0, gated: true, reason: 'outreachOnly' },
       horoscopes: { generated: 0, date: new Date().toISOString().slice(0, 10), skipped: true, reason: 'outreachOnly' },
       refunds: { processed: 0, succeeded: 0, failed: 0, skipped: true, reason: 'outreachOnly' },
       staleBookingEscalation: { escalated: 0, scanned: 0, skipped: true, reason: 'outreachOnly' },
@@ -607,6 +607,8 @@ async function tickWeeklyDigest(): Promise<WeeklyDigestResult & { gated?: boolea
       sent: 0,
       skipped: 0,
       failed: 0,
+      alreadyDelivered: 0,
+      deferred: 0,
       gated: true,
       reason: err instanceof Error ? err.message : String(err),
     };

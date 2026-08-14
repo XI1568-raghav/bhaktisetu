@@ -363,6 +363,34 @@ export function TemplesBrowser({
  );
 }
 
+/**
+ * HN-05 — a dropped upstream fetch must not render as a hole in the grid.
+ *
+ * On production /temples one of 33 images had `complete === true` with
+ * `naturalWidth === 0` and no HTTP status recorded at all: Wikimedia dropping a
+ * hotlinked request rather than answering it. A later pass measured 49 of 348
+ * temple URLs rate-limiting at 3 concurrent requests, so this is a throughput
+ * property of the upstream, not one bad file.
+ *
+ * Whether to self-host or front the images with a CDN is the owner's decision
+ * and is not code. This is: the card degrades to a local vector placeholder.
+ *
+ * `srcset` is cleared along with `src`. Leaving it would let the browser
+ * re-select a Wikimedia candidate on the next layout pass and blank the tile
+ * again. `dataset.fellBack` makes the swap idempotent — without it, a
+ * placeholder that ever failed would re-trigger onError against itself, which
+ * is an infinite request loop on a free-tier box.
+ */
+const TEMPLE_IMAGE_FALLBACK = '/images/temple-placeholder.svg';
+
+function handleTempleImageError(event: React.SyntheticEvent<HTMLImageElement>) {
+ const img = event.currentTarget;
+ if (img.dataset.fellBack === '1') return;
+ img.dataset.fellBack = '1';
+ img.removeAttribute('srcset');
+ img.src = TEMPLE_IMAGE_FALLBACK;
+}
+
 function TempleCard({ temple }: { temple: TempleCardData }) {
  return (
  <Link
@@ -380,6 +408,7 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
  height={313}
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
  decoding="async"
+ onError={handleTempleImageError}
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
 

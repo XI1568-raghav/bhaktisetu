@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendEmail, donationReceiptEmail } from '../lib/email.js';
-import { generate80GReceipt } from '../lib/pdf-receipt.js';
+import { generate80GReceipt, is80GEligible } from '../lib/pdf-receipt.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
 import Razorpay from 'razorpay';
@@ -182,6 +182,13 @@ export async function finalizeDonationReceipt(
         gaushalaName: doneeName,
         receiptNumber,
         date: donationDate,
+        // COM-02: one source of truth for the 80G claim — the same predicate
+        // the PDF uses. Both are false today for every donee (regn_80g / pan
+        // are written nowhere), and the temple branch never loads them at all.
+        is80G: is80GEligible({
+          gaushala80GNumber: taxFields?.regn_80g ?? undefined,
+          gaushalaPan: taxFields?.pan ?? undefined,
+        }),
       });
       await sendEmail({
         to: user.email,

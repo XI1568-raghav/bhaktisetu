@@ -42,6 +42,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
+import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
 import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../lib/trust-score';
 import {
@@ -375,19 +376,15 @@ type RazorpayInstance = {
 type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
 type RazorpayWindow = typeof window & { Razorpay?: RazorpayConstructor };
 
-const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
- return new Promise((resolve) => {
- const w = window as RazorpayWindow;
- if (w.Razorpay) {
- resolve(w.Razorpay);
- return;
- }
- const script = document.createElement('script');
- script.src = 'https://checkout.razorpay.com/v1/checkout.js';
- script.onload = () => resolve((window as RazorpayWindow).Razorpay);
- document.body.appendChild(script);
- });
-};
+// RES-04: this file used to hand-roll the loader with `script.onload` only —
+// no `onerror`, no timer — so a blocked or slow checkout.razorpay.com left the
+// promise unsettled forever. That await sits AFTER create-order has succeeded,
+// so a PujaBooking row and a live Razorpay order already exist and hold a slot
+// place while the Pay button spins with no error and no retry. The sibling
+// flows (DonationForm, astrology booking, store checkout) all handled it; this
+// one did not. lib/razorpay-loader.ts is the single loader with the single
+// failure contract: it resolves `undefined` on error OR timeout, which is what
+// the "Could not load Razorpay checkout. Please retry." branch below needs.
 
 // The literal placeholder the API ships when RAZORPAY_KEY_ID is unset. A real
 // Razorpay *test* key (rzp_test_<random>) is a valid key and is left alone —
@@ -1042,7 +1039,7 @@ function PujaBookingInner() {
  orderRazorpayKeyId = typeof data.razorpayKeyId === 'string' ? data.razorpayKeyId : '';
 
  // Step 2: Open Razorpay checkout
- const Razorpay = await loadRazorpay();
+ const Razorpay = await loadRazorpayCheckout();
  if (!Razorpay) {
  setPaymentError('Could not load Razorpay checkout. Please retry.');
  setPaymentLoading(false);

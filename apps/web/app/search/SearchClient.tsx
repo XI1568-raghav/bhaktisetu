@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search as SearchIcon, ArrowRight, Flame, Landmark } from 'lucide-react';
+import { Search as SearchIcon, ArrowRight, BookOpen, Flame, Landmark } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api-config';
 
 /**
@@ -27,10 +27,25 @@ interface ApiHit {
   href: string;
 }
 
+/**
+ * HN-03. `GET /api/v1/search` answers THREE buckets — `{ temples, pujas,
+ * content }` (apps/api/src/routes/search.ts:107 maps `contentItem` rows to
+ * `href: /content/<slug>`). This interface declared two, so the whole content
+ * corpus — every aarti, chalisa, mantra and bhajan — was fetched and dropped.
+ *
+ * That is exactly the pair the sweep recorded as dead: /search?q=hanuman and
+ * ?q=aarti both said "0 results" while the header typeahead over the SAME
+ * endpoint returned /content/hanuman-chalisa and /content/bajrang-baan, and the
+ * site serves a full /aarti page. Two surfaces, one endpoint, disagreeing
+ * because one of them read two thirds of the payload.
+ */
 interface ApiResults {
   temples: ApiHit[];
   pujas: ApiHit[];
+  content: ApiHit[];
 }
+
+const EMPTY_API_RESULTS: ApiResults = { temples: [], pujas: [], content: [] };
 
 interface Entry {
   category: 'sanskrit' | 'ved' | 'sanatan';
@@ -71,7 +86,7 @@ export default function SearchClient() {
   const [input, setInput] = useState(q);
   const [idx, setIdx] = useState<Entry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [api, setApi] = useState<ApiResults>({ temples: [], pujas: [] });
+  const [api, setApi] = useState<ApiResults>(EMPTY_API_RESULTS);
 
   useEffect(() => { setInput(q); }, [q]);
 
@@ -85,7 +100,7 @@ export default function SearchClient() {
   useEffect(() => {
     const trimmed = q.trim();
     if (!trimmed) {
-      setApi({ temples: [], pujas: [] });
+      setApi(EMPTY_API_RESULTS);
       return;
     }
     let cancelled = false;
@@ -96,12 +111,16 @@ export default function SearchClient() {
         setApi({
           temples: Array.isArray(body.results?.temples) ? body.results!.temples! : [],
           pujas: Array.isArray(body.results?.pujas) ? body.results!.pujas! : [],
+          // Absent bucket stays empty rather than being back-filled from
+          // anywhere: a missing key is "the server did not say", not "there are
+          // aartis and here they are".
+          content: Array.isArray(body.results?.content) ? body.results!.content! : [],
         });
       })
       .catch(() => {
         // Catalogue search unavailable — fall back to the article index alone.
         // Never invent a puja result to fill the gap.
-        if (!cancelled) setApi({ temples: [], pujas: [] });
+        if (!cancelled) setApi(EMPTY_API_RESULTS);
       });
     return () => {
       cancelled = true;
@@ -109,7 +128,8 @@ export default function SearchClient() {
   }, [q]);
 
   const hits = useMemo(() => (idx ? search(idx, q, 50) : []), [idx, q]);
-  const totalHits = hits.length + api.pujas.length + api.temples.length;
+  const totalHits =
+    hits.length + api.pujas.length + api.temples.length + api.content.length;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -187,6 +207,32 @@ export default function SearchClient() {
         </section>
       )}
 
+      {/*
+        HN-03: aartis, chalisas, mantras and bhajans. This bucket was already on
+        the wire and was being discarded, which is why the two most common
+        devotional searches in this market — "hanuman" and "aarti" — both
+        answered "0 results" on a site that serves full pages for both.
+      */}
+      {q && api.content.length > 0 && (
+        <section className="mb-6">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
+            <BookOpen className="w-3.5 h-3.5" /> Aartis, chalisas &amp; mantras
+          </h2>
+          <div className="space-y-2">
+            {api.content.map((r) => (
+              <Link
+                key={`content-${r.id || r.slug}`}
+                href={r.href || `/content/${r.slug}`}
+                className="block p-4 bg-white border border-surface-200 rounded-xl hover:border-saffron-400 transition-colors"
+              >
+                <h3 className="font-bold text-surface-900">{r.name}</h3>
+                {r.subtitle && <p className="text-sm text-surface-600 mt-0.5">{r.subtitle}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {idx && q && totalHits === 0 && (
         <div className="rounded-xl border border-surface-200 bg-white p-6">
           <p className="text-sm text-surface-700">No matches for &ldquo;{q}&rdquo;.</p>
@@ -210,7 +256,7 @@ export default function SearchClient() {
         </div>
       )}
 
-      {q && hits.length > 0 && (api.pujas.length > 0 || api.temples.length > 0) && (
+      {q && hits.length > 0 && (api.pujas.length > 0 || api.temples.length > 0 || api.content.length > 0) && (
         <h2 className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
           Library
         </h2>

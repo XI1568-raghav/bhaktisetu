@@ -27,8 +27,52 @@ const SRC = join(import.meta.dirname, '..');
  * and 32 after: payout 8→6, admin-metrics 7→1, whatsapp-broadcast 4→0,
  * store-admin 7→6, aarti-notify 4→3.
  */
-const BASELINE = 101;
+const BASELINE = 95;
 
+// −6 on 2026-08-14 (third pass) — services/admin.service.getPendingApprovals.
+//
+//   Six reads, one per provider role, each `{ where: { approved: false } }` with
+//   no take, no orderBy and no select, concatenated and returned whole. Of every
+//   list in this API it is the one most certain to grow without bound: an
+//   unreviewed signup never leaves it, so the read scales with the operator's
+//   own backlog rather than with traffic, and each row is a full profile.
+//
+//   Now `take: PENDING_APPROVAL_PAGE` (100) + `orderBy: { createdAt: 'asc' }`
+//   per queue, with the true backlog size counted in SQL by six `count()` calls
+//   so the page can be bounded WITHOUT the total quietly becoming the page
+//   length — that swap is SCAL-09's defect, and re-committing it on the
+//   approvals screen would have traded a memory bug for a lying number.
+//   Ordering changed newest-first → oldest-first at the same time: on any real
+//   backlog the newest-first sort buried the longest-waiting provider under
+//   every day's fresh signups.
+//
+//   The take/orderBy are written out at each of the six call sites rather than
+//   hoisted into a shared options object. Hoisting made this scanner read them
+//   as unbounded (it matches argument TEXT) — the number would not have moved,
+//   and a genuinely unbounded read added there later would have been invisible.
+
+// NET ZERO on 2026-08-14 (second pass) — one removal paid for one addition, so
+// BASELINE is unchanged at 101. Both are recorded because an unexplained
+// movement in either direction is what this file exists to prevent.
+//
+//   REMOVED  routes/admin-leads.ts, GET /admin/waitlist/stats: read the WHOLE
+//   waitlist table (status + referredByEmail + email, no where/take/cursor) to
+//   compute six scalars and a top-20 referrer list in a JS loop. Now two
+//   `groupBy` reads — one row per status, and a `take: 20` ordered slice for the
+//   leaderboard. Same numbers, bounded by construction.
+//
+//   ADDED  services/ledger-reversal.service.ts (DI-02, second half): the partial
+//   refund unwind now also scales PENDING `PriestPayout` sidecar rows, because a
+//   temple-path booking never mints a Commission and that rail was the only one
+//   it had. Bounded by the where clause to a SINGLE booking — realistically one
+//   row — exactly like the commission/temple reads justified below, and a `take`
+//   here would silently leave a row fully payable on money already handed back.
+//
+// A NOTE ON THIS SCANNER: it is textual and paren-matched, so a `findMany(`
+// written inside a COMMENT counts too. Several entries in the current 101 are
+// prose describing a call that was already removed. Do not "fix" that by
+// rewording comments — that lowers the number without lowering the risk.
+//
 // +1 on 2026-08-14 — two legitimately-bounded additions arrived while one
 // unbounded call elsewhere was removed, so the net is +1.
 //

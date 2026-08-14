@@ -24,7 +24,7 @@ export interface WizardStep {
  *     time as its text is not reliably announced);
  *   - decorative icons hidden from AT (the label next to them is the name).
  *
- * A11Y-10: the active pill was bg-saffron-500 (3.79:1 with white) and the
+ * A11Y-10: the active pill was painted saffron-500 (3.79:1 with white) and the
  * completed pill bg-tulsi-green (3.30:1). Both now use the passing weight.
  */
 export function WizardSteps({

@@ -83,7 +83,14 @@ const principles = [
     // `video_uploaded` and `delivered` transitions only — a booking can reach
     // `completed` with videoProofUrl NULL, and four have — and no payout path
     // reads videoProofUrl at all. What is enforced is described here instead.
-    body: 'A booking cannot be moved to video-uploaded or delivered without a proof link attached by the assigned pandit — the server refuses the transition. If proof is still missing after the window in our Refund Policy, the booking goes to a refund review queue rather than being quietly closed.',
+    // LEG-06/LEG-13 re-open: the second sentence used to read "If proof is
+    // still missing after the window in our Refund Policy, the booking goes to
+    // a refund review queue rather than being quietly closed." That traded one
+    // unverified headline for another. escalateStaleBookings selects
+    // `status: 'priest_assigned'` only, and the three proof-less bookings this
+    // finding is built on are in `completed` — so they are exactly what the
+    // sentence promised they were not.
+    body: 'A booking cannot be moved to video-uploaded or delivered without a proof link attached by the assigned pandit — the server refuses the transition. If proof is still missing after the window in our Refund Policy and the booking is still waiting on its assigned pandit, an automatic sweep cancels it into a refund review queue. A booking a pandit has already advanced is outside that sweep, and we handle those on request — which is why the Refund Policy asks you to write in rather than wait.',
   },
   {
     icon: Heart,

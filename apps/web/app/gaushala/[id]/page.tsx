@@ -6,6 +6,7 @@ export function generateStaticParams() {
 }
 
 import { getGaushalaImage, remoteImage, remoteSrcSet, IMG_W } from "../../../lib/images";
+import { COMPANY } from "../../../lib/company";
 import {
  Heart,
  MapPin,
@@ -335,7 +336,7 @@ const adoptionPlans = [
  id: "plan_annual",
  name: "Gau Raksha",
  price: "\u20B930,000/yr",
- description: "Annual care + 80G",
+ description: COMPANY.donationLegal.HAS_80G_VERIFIED ? "Annual care + 80G" : "Annual care",
  },
  {
  id: "plan_lifetime",
@@ -652,7 +653,7 @@ export default async function CowDetailPage({
  {[
  "Monthly photo & video updates",
  "Visit your cow anytime",
- "80G tax receipt (annual/lifetime)",
+ "Donation receipt PDF, emailed instantly",
  "Digital adoption certificate",
  ].map((item) => (
  <div

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { COMPANY, operatedByLine, postalContactLine } from "../../lib/company";
+import { COMPANY, operatedByLine, postalContactLine, legalContactEmail } from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Terms of Service",
@@ -321,7 +321,7 @@ export default function TermsPage() {
  For questions regarding these Terms of Service, contact us at:
  </p>
  <ul>
- <li>Email: {COMPANY.specialtyEmails.legal ?? COMPANY.supportEmail}</li>
+ <li>Email: {legalContactEmail()}</li>
  {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
  </TermsSection>

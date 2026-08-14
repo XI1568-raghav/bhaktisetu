@@ -274,8 +274,13 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.get('/pending-approvals', { preHandler: adminPreHandlers }, async (request, reply) => {
     try {
-      const approvals = await adminService.getPendingApprovals();
-      return { approvals, total: approvals.length };
+      // SCAL-04: `total` is now counted in SQL rather than being
+      // `approvals.length`. The response shape the admin page consumes
+      // (`{ approvals, total }`) is unchanged; `hasMore` is additive and tells
+      // an operator when the backlog is longer than the page they are looking
+      // at, which `approvals.length` never could.
+      const page = await adminService.getPendingApprovals();
+      return { approvals: page.items, total: page.total, hasMore: page.hasMore };
     } catch (err) {
       request.log.error({ err }, 'admin /pending-approvals failed');
       return reply.code(500).send({ error: 'Failed to load pending approvals' });
@@ -378,6 +383,100 @@ export async function adminRoutes(server: FastifyInstance) {
     const { id } = request.params as { id: string };
     return { message: 'Priest deleted', priestId: id };
   });
+
+  // ─── PATCH /priests/:id/commission-rate — negotiated pandit share ──────────
+  //
+  // PM-03 (prod sweep 2026-08-12). `Priest.commissionRate` is the PANDIT's
+  // share, not the platform's: 0.80 means the pandit keeps 80% and Darshya
+  // takes 20%. resolvePriestShare (bookings.ts) and booking.service both treat
+  // any stored value in (0,1] as authoritative, so this column IS the pandit's
+  // pay for every booking they take.
+  //
+  // The schema default has been corrected to 0.80 (migration
+  // 20260812000000_priest_commission_rate_80), but nothing in the API could
+  // ever WRITE the column — PATCH /priests/:id above echoes its body and
+  // touches no row. So the finding's own instruction, "do not treat a stored
+  // 0.70 as unset, that would silently override any pandit genuinely
+  // negotiated onto 70%", had no way to be honoured: a negotiated rate could
+  // only be applied with raw SQL against production. This is that path.
+  const priestCommissionSchema = z.object({
+    // The PANDIT's share. Same units as the column and as
+    // DEFAULT_PRIEST_SHARE — a fraction, never a percentage.
+    commissionRate: z.number().finite(),
+    reason: z.string().max(500).optional(),
+  });
+
+  server.patch(
+    '/priests/:id/commission-rate',
+    { preHandler: adminPreHandlers },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = validateBody(priestCommissionSchema, request.body, reply);
+      if (!body) return;
+
+      const share = body.commissionRate;
+      // (0,1] is exactly the band resolvePriestShare trusts; anything outside
+      // it silently falls back to DEFAULT_PRIEST_SHARE at booking time, so
+      // storing it would look applied and never be.
+      if (!(share > 0 && share <= 1)) {
+        return reply.code(400).send({
+          error:
+            'commissionRate is the pandit\'s SHARE as a fraction in (0,1] — 0.8 means the pandit keeps 80%. A percentage like 80 is not accepted.',
+        });
+      }
+      // A share under half means a platform take over 50%. The uniform rate is
+      // 20%, the category tops out near 25%, and the most common way to land
+      // here is entering the PLATFORM's number in the PANDIT's field. Refuse
+      // it: paying a pandit less than half of their own booking should not be
+      // reachable by a typo.
+      if (share < 0.5) {
+        return reply.code(400).send({
+          error:
+            'commissionRate below 0.5 would take more than half of the pandit\'s booking. If that is genuinely intended it needs a schema-level decision, not an admin override.',
+        });
+      }
+
+      const existing = await prisma.priest.findUnique({
+        where: { id },
+        select: { id: true, displayName: true, commissionRate: true },
+      });
+      if (!existing) {
+        return reply.code(404).send({ error: 'Priest not found' });
+      }
+
+      const updated = await prisma.priest.update({
+        where: { id },
+        data: { commissionRate: share },
+        select: { id: true, displayName: true, commissionRate: true },
+      });
+
+      request.log?.info(
+        {
+          priestId: id,
+          adminId: request.currentUser?.id,
+          from: existing.commissionRate,
+          to: share,
+          reason: body.reason ?? null,
+        },
+        'admin override: pandit commission rate',
+      );
+
+      return {
+        message: 'Commission rate updated',
+        priest: {
+          id: updated.id,
+          displayName: updated.displayName,
+          // The pandit's share, as stored.
+          commissionRate: updated.commissionRate,
+          // The platform's take — the number Commission.percentage carries.
+          // Stated explicitly so the two halves of the split can never be
+          // confused by whoever reads this response.
+          platformTakeRate: 1 - updated.commissionRate,
+        },
+        previousCommissionRate: existing.commissionRate,
+      };
+    },
+  );
 
   server.get('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, q } = request.query as { page?: string; limit?: string; q?: string };

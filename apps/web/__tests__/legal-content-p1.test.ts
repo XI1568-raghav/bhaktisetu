@@ -81,6 +81,49 @@ describe('LEG-06 — the video-proof guarantee describes the process that exists
   it('/why-darshya does not offer an unconditional satisfaction refund', () => {
     expect(whyDarshya).not.toMatch(/Full refund if\s*\n?\s*you&apos;re not satisfied/);
   });
+
+  /**
+   * LEG-06, second half (re-opened by adversarial verify). Moving the published
+   * window from 48h to 72h and dropping the word "automatic refund" fixed the
+   * NUMBER but not the SCOPE. The replacement copy said the sweep "cancels the
+   * booking automatically and places it in our refund review queue" as though
+   * it applied to any booking with no video — and it does not.
+   *
+   * escalateStaleBookings (apps/api/src/services/booking.service.ts) filters on
+   * ONE status:
+   *
+   *     where: { status: 'priest_assigned', videoProofUrl: null, … }
+   *
+   * BookingStatus has nine members (prisma/schema.prisma:93). The audit's own
+   * evidence is three bookings sitting in `completed` with videoProofUrl NULL
+   * and one in `video_uploaded` whose proof URL is two literal spaces. Not one
+   * of them is reachable by the sweep, so a devotee in exactly the situation
+   * the guarantee is written for waits for an automation that will never look
+   * at their booking.
+   *
+   * The published text must therefore name the limit and tell that devotee to
+   * write in instead of waiting.
+   */
+  it('the sweep really does cover a single status — the premise of the test below', () => {
+    const svc = readRepo('apps/api/src/services/booking.service.ts');
+    const sweep = svc.slice(svc.indexOf('async escalateStaleBookings'));
+    expect(sweep).toMatch(/status:\s*'priest_assigned'/);
+    // one status, not a set: `status: { in: [...] }` would change the answer
+    expect(sweep.slice(0, 2000)).not.toMatch(/status:\s*\{\s*in:/);
+  });
+
+  it('/refunds does not describe the 72h sweep as covering every booking', () => {
+    expect(refunds).not.toMatch(/we cancel the booking automatically and place it/i);
+  });
+
+  it('/refunds names the status the sweep is limited to', () => {
+    expect(refunds).toMatch(/still waiting on (its |the )?assigned pandit/i);
+  });
+
+  it('/refunds tells a devotee outside that scope to write in rather than wait', () => {
+    expect(refunds).toMatch(/rather than waiting for the sweep/i);
+    expect(refunds).toMatch(/completed/);
+  });
 });
 
 describe('LEG-08 — one NRI Premium feature list, matching the SKU that is sold', () => {

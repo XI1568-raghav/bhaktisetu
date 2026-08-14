@@ -10,7 +10,7 @@
  * Falls back gracefully when network is unavailable so demo / offline flows
  * keep rendering instead of crashing.
  */
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
 
 export type ProviderRole =
   | 'priest'
@@ -300,9 +300,9 @@ function unwrapCheckout(payload: unknown): SubscriptionCheckout | null {
 
 export async function listPlans(role?: ProviderRole | string): Promise<SubscriptionPlan[]> {
   const qs = role ? `?role=${encodeURIComponent(toApiPlanRole(role))}` : '';
-  const res = await fetch(`${API_BASE_URL}/subscriptions/plans${qs}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/subscriptions/plans${qs}`, {
     cache: 'no-store',
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   const json = await asJson<unknown>(res);
   return unwrapPlans(json);
 }
@@ -310,10 +310,10 @@ export async function listPlans(role?: ProviderRole | string): Promise<Subscript
 export async function getMySubscription(
   token: string | undefined,
 ): Promise<MarketplaceSubscription | null> {
-  const res = await fetch(`${API_BASE_URL}/subscriptions/my`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/subscriptions/my`, {
     headers: authHeaders(token),
     cache: 'no-store',
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (res.status === 404) return null;
   const json = await asJson<unknown>(res);
   return unwrapSub(json);
@@ -323,22 +323,28 @@ export async function getMySubscription(
  * Claim a FREE plan. No money moves, so no gateway is involved.
  *
  * PM-04 — this must not be called for a plan with a price. The endpoint it hits
- * writes an ACTIVE MarketplaceSubscription plus a COMPLETED `Transaction` for
- * `plan.price` with no Razorpay order and no payment verification anywhere
- * between the request and the row, so calling it for a paid plan provisions
- * that plan for ₹0 and books the amount as collected revenue. Paid plans go
- * through `createSubscriptionCheckout` below. Closing the server hole is an
- * apps/api change and is still open.
+ * used to write an ACTIVE MarketplaceSubscription plus a COMPLETED
+ * `Transaction` for `plan.price` with no Razorpay order and no payment
+ * verification anywhere between the request and the row, so calling it for a
+ * paid plan provisioned that plan for ₹0 and booked the amount as collected
+ * revenue. Paid plans go through `createSubscriptionCheckout` below.
+ *
+ * The server hole is closed: subscriptionService.subscribe() refuses a priced
+ * plan without activation evidence (only the verified Razorpay webhook and the
+ * assert-guarded demo branch hold it), and POST /subscriptions/subscribe
+ * answers 402 rather than granting. So a paid planId reaching this function is
+ * now a loud failure instead of a silent free upgrade — but it is still a
+ * failure, so keep this call on the free tier.
  */
 export async function subscribeToFreePlan(
   token: string | undefined,
   planId: string,
 ): Promise<MarketplaceSubscription | null> {
-  const res = await fetch(`${API_BASE_URL}/subscriptions/subscribe`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/subscriptions/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ planId }),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   const json = await asJson<unknown>(res);
   return unwrapSub(json);
 }
@@ -354,11 +360,11 @@ export async function createSubscriptionCheckout(
   planId: string,
   role: ProviderRole | string,
 ): Promise<SubscriptionCheckout | null> {
-  const res = await fetch(`${API_BASE_URL}/subscriptions/create`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/subscriptions/create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ planId, role: toApiPlanRole(String(role)) }),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   const json = await asJson<unknown>(res);
   return unwrapCheckout(json);
 }
@@ -366,11 +372,11 @@ export async function createSubscriptionCheckout(
 export async function cancelMySubscription(
   token: string | undefined,
 ): Promise<MarketplaceSubscription | null> {
-  const res = await fetch(`${API_BASE_URL}/subscriptions/cancel`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/subscriptions/cancel`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({}),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   const json = await asJson<unknown>(res);
   return unwrapSub(json);
 }
@@ -379,10 +385,10 @@ export async function listAllSubscriptions(
   token: string | undefined,
 ): Promise<MarketplaceSubscription[]> {
   // Admin endpoint — returns every active subscription across providers.
-  const res = await fetch(`${API_BASE_URL}/admin/subscriptions`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/admin/subscriptions`, {
     headers: authHeaders(token),
     cache: 'no-store',
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   const json = await asJson<unknown>(res);
   if (Array.isArray(json)) return json as MarketplaceSubscription[];
   if (json && typeof json === 'object') {

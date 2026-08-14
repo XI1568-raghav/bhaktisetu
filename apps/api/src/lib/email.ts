@@ -15,12 +15,24 @@ const REPLY_TO = process.env.RESEND_REPLY_TO ?? 'support@darshya.online';
 
 const resend = apiKey ? new Resend(apiKey) : null;
 
+/**
+ * SCAL-11: which allowance this mail is allowed to spend.
+ *
+ * `transactional` — a receipt, an 80G donation certificate, a password reset, a
+ * booking confirmation. Someone is waiting for it and there is no second copy.
+ * `bulk` — the weekly digest, drip and marketing. Valuable, but a day late is
+ * not a broken promise.
+ */
+export type EmailKind = 'transactional' | 'bulk';
+
 interface SendEmailParams {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   attachments?: { filename: string; content: Buffer | string }[];
+  /** Defaults to `transactional` — an unlabelled mail is never yielded. */
+  kind?: EmailKind;
 }
 
 interface SendEmailResult {
@@ -30,6 +42,13 @@ interface SendEmailResult {
   error?: string;
   /** SCAL-11: true when the provider refused because the daily budget is gone. */
   rateLimited?: boolean;
+  /**
+   * SCAL-11: a BULK mail we declined to send so the day's remaining allowance
+   * stays available for receipts and password resets. Nothing was attempted and
+   * nothing is charged — the caller should retry on a later day rather than
+   * record a delivery.
+   */
+  deferred?: boolean;
 }
 
 // ─── SCAL-11: daily send budget ────────────────────────────────────────────
@@ -60,6 +79,24 @@ interface SendEmailResult {
 const DAILY_CAP = Number(process.env.RESEND_DAILY_CAP ?? 100);
 const WARN_AT = Number(process.env.RESEND_DAILY_WARN_AT ?? 70);
 
+/**
+ * SCAL-11, second half — how much of the day BULK mail may never touch.
+ *
+ * Instrumentation makes the wall visible; it does not decide who hits it first,
+ * and today that is decided by luck. The weekly digest fans out to every
+ * devotee from a single cron tick, so on any Sunday past 100 users it spends
+ * the whole day's allowance before a single booking is made. The receipt that
+ * IS the devotee's proof of purchase, and the 80G certificate that is a tax
+ * document, then come back 429 — silently, because no caller checks.
+ *
+ * Reserving 30 of 100 for transactional mail is roughly ten signups' worth at
+ * the doc's own "~3 mails per signup" arithmetic. It does not create headroom
+ * (that is the paid tier, an owner call); it decides who goes without when
+ * there is none, and a digest going out a day late is the correct answer to
+ * that question.
+ */
+const BULK_RESERVE = Number(process.env.RESEND_BULK_RESERVE ?? 30);
+
 interface EmailQuotaSnapshot {
   /** UTC calendar day these counters belong to, YYYY-MM-DD. */
   day: string;
@@ -79,6 +116,7 @@ const quota = {
   rateLimited: 0,
   warned: false,
   capAnnounced: false,
+  bulkDeferAnnounced: false,
 };
 
 function utcDay(): string {
@@ -95,6 +133,7 @@ function rollDay(): void {
   quota.rateLimited = 0;
   quota.warned = false;
   quota.capAnnounced = false;
+  quota.bulkDeferAnnounced = false;
 }
 
 /** Current day's send counters. Exported for ops surfaces and tests. */
@@ -138,12 +177,39 @@ function announceIfNearCap(): void {
   }
 }
 
+/** The point past which bulk mail must yield to receipts and resets. */
+function bulkCeiling(): number {
+  return Math.max(0, DAILY_CAP - BULK_RESERVE);
+}
+
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
   if (!resend) {
     // No key configured — nothing was sent, so nothing is charged to the day.
     return { ok: false, skipped: true };
   }
   rollDay();
+
+  // SCAL-11: bulk yields. Checked against `attempted` rather than `sent`
+  // because a mail Resend refused still consumed a request against the same
+  // daily budget, and a bulk retry storm must not be able to spend the reserve
+  // by failing repeatedly.
+  if (params.kind === 'bulk' && quota.attempted >= bulkCeiling()) {
+    if (!quota.bulkDeferAnnounced) {
+      quota.bulkDeferAnnounced = true;
+      console.warn(
+        `[email][SCAL-11] Bulk mail deferred on ${quota.day}: ${quota.attempted}/${DAILY_CAP} of the ` +
+          `Resend day is spent and the last ${BULK_RESERVE} are reserved for receipts, 80G ` +
+          'certificates and password resets. The digest will resume on the next day with quota.',
+      );
+    }
+    return {
+      ok: false,
+      skipped: true,
+      deferred: true,
+      error: `bulk send deferred — ${quota.attempted}/${DAILY_CAP} used, ${BULK_RESERVE} reserved for transactional mail`,
+    };
+  }
+
   quota.attempted += 1;
   try {
     const { data, error } = await resend.emails.send({
@@ -481,14 +547,31 @@ export function supportTicketReplyEmail(params: {
   };
 }
 
+/**
+ * COM-02 (prod sweep 2026-08-12): `is80G` must mirror the attachment.
+ *
+ * This mail said "Your 80G tax receipt PDF is attached" for every donation,
+ * while the donee's 80G registration number and PAN are NULL for every donee on
+ * the platform — so the attachment is not an 80G instrument and the donor was
+ * being told it was. The PDF now states its own status
+ * (lib/pdf-receipt.ts is80GEligible); this copy has to agree with it, or the
+ * donor believes the email and files the deduction anyway.
+ */
 export function donationReceiptEmail(params: {
   donorName: string;
   amount: string;
   gaushalaName: string;
   receiptNumber: string;
   date: string;
+  is80G?: boolean;
 }): { subject: string; html: string; text: string } {
-  const { donorName, amount, gaushalaName, receiptNumber, date } = params;
+  const { donorName, amount, gaushalaName, receiptNumber, date, is80G = false } = params;
+  const attachmentLineHtml = is80G
+    ? 'Your 80G tax receipt PDF is attached to this email. Please retain it for your records.'
+    : 'Your donation receipt PDF is attached to this email. Please retain it for your records.';
+  const attachmentLineText = is80G
+    ? 'Your 80G tax receipt is attached.'
+    : 'Your donation receipt is attached.';
   return {
     subject: `Thank you — donation receipt for ${gaushalaName}`,
     html: shell(`
@@ -496,10 +579,10 @@ export function donationReceiptEmail(params: {
       <p>Your donation of <strong>${amount}</strong> to ${gaushalaName} has been received.</p>
       <p><strong>Receipt #:</strong> ${receiptNumber}<br>
       <strong>Date:</strong> ${date}</p>
-      <p>Your 80G tax receipt PDF is attached to this email. Please retain it for your records.</p>
+      <p>${attachmentLineHtml}</p>
       <p>The cows you support will be fed, sheltered, and cared for with your seva.</p>
       <a class="btn" href="https://darshya.online/gaushala">Visit gaushala</a>
     `),
-    text: `Thank you ${donorName}!\n\nYour donation of ${amount} to ${gaushalaName} has been received.\nReceipt #${receiptNumber} dated ${date}\n\nYour 80G tax receipt is attached.`,
+    text: `Thank you ${donorName}!\n\nYour donation of ${amount} to ${gaushalaName} has been received.\nReceipt #${receiptNumber} dated ${date}\n\n${attachmentLineText}`,
   };
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CookieSettingsButton from "../../../components/CookieSettingsButton";
+import { rightsContactEmail } from "../../../lib/company";
 
 
 export const metadata: Metadata = {
@@ -91,7 +92,7 @@ export default function CookiePolicyPage() {
  </p>
  <p>
  Prefer we do it for you? Email{" "}
- <a href="mailto:privacy@darshya.online">privacy@darshya.online</a> and we
+ <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a> and we
  will clear the record of your consent on request.
  </p>
 
@@ -110,7 +111,7 @@ export default function CookiePolicyPage() {
  <h2>Contact</h2>
  <p>
  Questions about cookies or your data?{" "}
- <a href="mailto:privacy@darshya.online">privacy@darshya.online</a>. UK
+ <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a>. UK
  residents may also see our{" "}
  <a href="/legal/privacy-uk">UK Privacy Notice</a>.
  </p>

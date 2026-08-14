@@ -5,6 +5,7 @@
     "pujas": "पूजा",
     "content": "सामग्री",
     "panchang": "पंचांग",
+    "donate": "दान",
     "gauseva": "गौ सेवा",
     "gurukuls": "गुरुकुल",
     "sanatan": "सनातन धर्म",
@@ -13,15 +14,43 @@
     "deity": "देवता",
     "search": "खोजें"
   },
+  "common": {
+    "search": "खोजें"
+  },
+  "home": {
+    "featLiveDarshan": "लाइव दर्शन"
+  },
   "footer": {
     "liveDarshan": "लाइव दर्शन",
     "bookPuja": "पूजा बुक करें"
   },
   "content": {
     "pageTitle": "भक्ति संगीत पुस्तकालय",
+    "pageSubtitle": "हजारों आरतियाँ, चालीसा, मंत्र, भजन और आध्यात्मिक कथाएँ खोजें। ऑनलाइन सुनें या ऑफलाइन के लिए डाउनलोड करें।",
+    "tabAll": "सभी",
     "tabAarti": "आरती",
     "tabChalisa": "चालीसा",
     "tabMantra": "मंत्र",
-    "tabBhajan": "भजन"
+    "tabBhajan": "भजन",
+    "views": "दृश्य",
+    "likes": "पसंद",
+    "search": "शीर्षक, देवता या टैग से खोजें...",
+    "noContent": "कोई सामग्री नहीं मिली।"
+  },
+  "terms": {
+    "temple": "मंदिर",
+    "puja": "पूजा",
+    "aarti": "आरती",
+    "darshan": "दर्शन",
+    "pandit": "पंडित",
+    "sankalp": "संकल्प",
+    "videoProof": "वीडियो प्रमाण",
+    "gauSeva": "गौ सेवा",
+    "yatra": "यात्रा",
+    "bhajan": "भजन",
+    "mantra": "मंत्र",
+    "chalisa": "चालीसा",
+    "muhurat": "मुहूर्त",
+    "tithi": "तिथि"
   }
 }

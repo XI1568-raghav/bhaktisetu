@@ -51,9 +51,35 @@ function strictCount(value: unknown): number | null {
   return value;
 }
 
-/** Pull `pagination.total` out of GET /temples. Anything else yields null. */
+/**
+ * Pull the catalogue size out of GET /temples. Anything else yields null.
+ *
+ * CM-11 re-open: this used to read `payload.pagination.total` ONLY, and the API
+ * does not send that. Read off the running API on 2026-08-14:
+ *
+ *   GET /api/v1/temples?limit=1
+ *   -> { temples: [...], total: 20, page: 1, limit: 1, totalPages: 20 }
+ *
+ * The `pagination` wrapper is invented by `lib/api.ts normalizePaginated()`,
+ * and `getPlatformCounts` below deliberately does NOT go through that helper —
+ * it is a raw `fetch` so it can carry its own revalidate/tag. So the parser saw
+ * `pagination: undefined`, returned null on every single request, and the
+ * homepage printed the digit-free fallback forever. The fix that was supposed
+ * to put the real count on the trust strip never put a number on it at all.
+ *
+ * Both shapes are accepted now: the raw envelope (what the server sends) and
+ * the normalised one (what a caller that already went through lib/api holds).
+ * Neither branch relaxes `strictCount` — a drifted contract that answers with
+ * the string "200" still yields null rather than a fabricated trust number.
+ */
 export function templeTotalFromPayload(payload: unknown): number | null {
   if (!payload || typeof payload !== 'object') return null;
+
+  // Raw API envelope: { temples: [...], total, page, limit, totalPages }.
+  const direct = strictCount((payload as { total?: unknown }).total);
+  if (direct !== null) return direct;
+
+  // Already normalised by lib/api.ts: { data: [...], pagination: { total } }.
   const pagination = (payload as { pagination?: unknown }).pagination;
   if (!pagination || typeof pagination !== 'object') return null;
   return strictCount((pagination as { total?: unknown }).total);

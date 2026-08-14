@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,9 +65,9 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
 // ─── Pandit-side (authed) ───────────────────────────────────────────────────
 
 export async function listMyOfferings(token: string | undefined): Promise<Offering[]> {
-  const res = await fetch(`${API_BASE_URL}/priest/pujas`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priest/pujas`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
   const data = (await res.json()) as { offerings: Offering[] };
   return data.offerings;
@@ -77,14 +77,14 @@ export async function createOffering(
   token: string | undefined,
   input: CreateOfferingInput,
 ): Promise<Offering> {
-  const res = await fetch(`${API_BASE_URL}/priest/pujas`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priest/pujas`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...authHeaders(token),
     },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create puja'));
   const data = (await res.json()) as { offering: Offering };
   return data.offering;
@@ -95,14 +95,14 @@ export async function updateOffering(
   id: string,
   input: UpdateOfferingInput,
 ): Promise<Offering> {
-  const res = await fetch(`${API_BASE_URL}/priest/pujas/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priest/pujas/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       ...authHeaders(token),
     },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update puja'));
   const data = (await res.json()) as { offering: Offering };
   return data.offering;
@@ -112,10 +112,10 @@ export async function deleteOffering(
   token: string | undefined,
   id: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/priest/pujas/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priest/pujas/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete puja'));
 }
 
@@ -123,10 +123,10 @@ export async function toggleOfferingActive(
   token: string | undefined,
   id: string,
 ): Promise<Offering> {
-  const res = await fetch(`${API_BASE_URL}/priest/pujas/${id}/toggle-active`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priest/pujas/${id}/toggle-active`, {
     method: 'PATCH',
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to toggle puja'));
   const data = (await res.json()) as { offering: Offering };
   return data.offering;
@@ -148,9 +148,9 @@ export interface PriestReview {
 }
 
 export async function getMyReviews(token: string | undefined): Promise<PriestReview[]> {
-  const res = await fetch(`${API_BASE_URL}/priest/reviews`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priest/reviews`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load reviews'));
   const data = (await res.json()) as { reviews: PriestReview[] };
   return data.reviews ?? [];

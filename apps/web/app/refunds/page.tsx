@@ -110,8 +110,11 @@ export default function RefundsPage() {
  after the scheduled time
  </td>
  <td className="py-1.5">
- Booking cancelled and sent for manual review. Where the pandit
- is at fault, the refund is 100% of everything you paid.
+ If the booking is still waiting on its assigned pandit, it is
+ cancelled and sent for manual review. Any other status &mdash;
+ a booking already marked completed, for example &mdash; needs
+ an email from you. Where the pandit is at fault, the refund is
+ 100% of everything you paid.
  </td>
  </tr>
  </tbody>
@@ -134,17 +137,31 @@ export default function RefundsPage() {
  Prasad delivery charges are refunded only if the entire
  booking is cancelled before the puja is performed.
  </li>
+ {/* LEG-06: this used to read "we cancel the booking automatically and
+     place it in our refund review queue", which described the sweep as
+     though it saw every booking. escalateStaleBookings selects ONE status
+     — `where: { status: 'priest_assigned', videoProofUrl: null }` in
+     apps/api/src/services/booking.service.ts, against a nine-member
+     BookingStatus enum. A booking a pandit has already advanced (the
+     audit found three sitting in `completed` with videoProofUrl NULL) is
+     invisible to it. Telling that devotee an automation is coming is the
+     same failure as the original 48h promise, one step further in. */}
  <li>
  <strong>Missing video proof.</strong> Video is mandatory on
- every puja booking. If no video has been uploaded{" "}
- {COMPANY.refunds.missingVideoEscalationHours} hours after your
- scheduled time, we cancel the booking automatically and place it
- in our refund review queue. The refund itself is issued by a
- person, not by the automatic sweep, so allow us{" "}
+ every puja booking. {COMPANY.refunds.missingVideoEscalationHours}{" "}
+ hours after your scheduled time an automatic sweep runs, and it
+ covers one case: a booking still waiting on its assigned pandit.
+ Those it cancels and places in our refund review queue. It does
+ not reach a booking that has already been moved on &mdash; one
+ marked completed, for example &mdash; so if yours shows as
+ completed and no video ever arrived, email {COMPANY.supportEmail}{" "}
+ rather than waiting for the sweep. Either way the refund is
+ issued by a person, not by the sweep, so allow us{" "}
  {COMPANY.grievance.acknowledgeHours} hours to come back to you.
- Where the pandit is at fault you are refunded in full; you do not
- need to wait for the {COMPANY.refunds.missingVideoEscalationHours}-hour
- mark to contact {COMPANY.supportEmail}.
+ Where the pandit is at fault you are refunded in full, and you
+ never need to wait for the{" "}
+ {COMPANY.refunds.missingVideoEscalationHours}-hour mark to write
+ to us.
  </li>
  </ul>
  </RefundSection>

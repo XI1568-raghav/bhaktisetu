@@ -191,12 +191,20 @@ function PriestBookingsInner() {
  setPage(1);
  }
 
- const tabs: { key: TabKey; label: string; count: number }[] = [
- { key: 'all', label: 'All', count: counts.all },
- { key: 'confirmed', label: 'Pending', count: counts.confirmed },
- { key: 'priest_assigned', label: 'Accepted', count: counts.priest_assigned },
- { key: 'in_progress', label: 'In Progress', count: counts.in_progress },
- { key: 'completed', label: 'Completed', count: counts.completed },
+ // PF-15, second half. The error banner below split "load failed" from "empty
+ // day" in the RESULT area but left this strip publishing `All 0 / Pending 0 /
+ // Accepted 0 / In Progress 0 / Completed 0` on a failed load — `counts` starts
+ // at ZERO_COUNTS and the catch never touches it. That is the exact strip the
+ // sweep recorded for an account holding 25 bookings. A count is a claim about
+ // the pandit's book; a book that was never read supports no claim, so the
+ // badge reads "—" until one loads. `null` rather than 0 so the distinction
+ // cannot be lost again by a later formatter.
+ const tabs: { key: TabKey; label: string; count: number | null }[] = [
+ { key: 'all', label: 'All', count: loadError ? null : counts.all },
+ { key: 'confirmed', label: 'Pending', count: loadError ? null : counts.confirmed },
+ { key: 'priest_assigned', label: 'Accepted', count: loadError ? null : counts.priest_assigned },
+ { key: 'in_progress', label: 'In Progress', count: loadError ? null : counts.in_progress },
+ { key: 'completed', label: 'Completed', count: loadError ? null : counts.completed },
  ];
 
  // PJ-09: there used to be a `video` branch here that collected the mandatory
@@ -362,7 +370,7 @@ function PriestBookingsInner() {
  activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-surface-100 text-surface-500'
  }`}
  >
- {tab.count}
+ {tab.count === null ? '—' : tab.count}
  </span>
  </button>
  ))}

@@ -906,8 +906,13 @@ export async function bookingRoutes(server: FastifyInstance) {
         return result;
       } catch (error: any) {
         server.log.error(error, 'Failed to fetch user bookings');
+        // SEC-04: never echo error.message to the client. server.setErrorHandler
+        // sanitises 5xx bodies in production, but it only fires for errors that
+        // PROPAGATE — this site catches and replies directly, so the guard never
+        // ran and a raw Prisma/driver message reached the caller. The detail is
+        // already in the log line above; the client gets a fixed string.
         return reply.status(500).send({
-          error: error.message || 'Failed to fetch bookings',
+          error: 'Failed to fetch bookings',
         });
       }
     }
@@ -966,8 +971,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         return result;
       } catch (error: any) {
         server.log.error(error, 'Failed to check slot availability');
+        // SEC-04: see the note on the sibling handler above — this catch also
+        // replies directly, bypassing the global sanitiser.
         return reply.status(500).send({
-          error: error.message || 'Failed to check availability',
+          error: 'Failed to check availability',
         });
       }
     }

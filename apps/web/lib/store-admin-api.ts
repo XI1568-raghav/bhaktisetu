@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // Mirrors the /store/reviews response (mounted under /api/v1/store, not
@@ -37,9 +37,9 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
 export async function getMyReviews(
   token: string | undefined,
 ): Promise<StoreReview[]> {
-  const res = await fetch(`${API_BASE_URL}/store/reviews`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/store/reviews`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load reviews'));
   const data = (await res.json()) as { reviews: StoreReview[]; total: number };
   return data.reviews ?? [];
@@ -87,9 +87,9 @@ export async function listStoreProducts(token: string | undefined): Promise<Stor
 export async function listStoreProductsWithSetupState(
   token: string | undefined,
 ): Promise<{ products: StoreProduct[]; storeProfileMissing: boolean }> {
-  const res = await fetch(`${API_BASE_URL}/store-admin/products`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/store-admin/products`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load products'));
   const body = (await res.json()) as {
     products: StoreProduct[];
@@ -114,11 +114,11 @@ export async function saveStoreProfile(
   token: string | undefined,
   input: { storeName: string; city?: string; state?: string; address?: string },
 ): Promise<StoreProfile> {
-  const res = await fetch(`${API_BASE_URL}/store-admin/profile`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/store-admin/profile`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Could not save your store details'));
   const body = (await res.json()) as { profile: StoreProfile };
   return body.profile;
@@ -128,11 +128,11 @@ export async function createStoreProduct(
   token: string | undefined,
   input: CreateStoreProductInput,
 ): Promise<StoreProduct> {
-  const res = await fetch(`${API_BASE_URL}/store-admin/products`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/store-admin/products`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create product'));
   const body = (await res.json()) as { product: StoreProduct };
   return body.product;
@@ -143,11 +143,11 @@ export async function updateStoreProduct(
   id: string,
   input: UpdateStoreProductInput,
 ): Promise<StoreProduct> {
-  const res = await fetch(`${API_BASE_URL}/store-admin/products/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/store-admin/products/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update product'));
   const body = (await res.json()) as { product: StoreProduct };
   return body.product;
@@ -157,9 +157,9 @@ export async function deleteStoreProduct(
   token: string | undefined,
   id: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/store-admin/products/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/store-admin/products/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete product'));
 }

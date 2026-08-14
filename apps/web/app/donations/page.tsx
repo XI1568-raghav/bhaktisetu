@@ -14,12 +14,25 @@ import { getTranslations } from '../../lib/t';
 import { getGaushalaImage, IMG_W } from '../../lib/images';
 import { getTemples, getApprovedProviders } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';
+import { COMPANY } from '../../lib/company';
+
+/**
+ * COM-02 (prod sweep 2026-08-12): the hero badge read "Tax-deductible (80G)"
+ * and the meta description sold "80G tax-deductible donations", while
+ * lib/company.ts records donationLegal.HAS_80G_VERIFIED false and
+ * eightyGNumber null — and the donee's own registration/PAN columns are
+ * written nowhere, so the receipt the API mints is not an 80G instrument (see
+ * apps/api/src/lib/pdf-receipt.ts, which now says so on the PDF). The badge is
+ * bound to the same owner-controlled flag as every other 80G surface; it
+ * returns the day the registration does.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/donations' },
   title: 'Donate to Temples & Gaushalas',
   description:
-    'Support verified temples and gaushalas across India. 80G tax-deductible donations with instant PDF receipts. Razorpay-secured payments via Darshya.',
+    'Support verified temples and gaushalas across India. Instant PDF donation receipts, Razorpay-secured payments via Darshya.',
 };
 
 // ─── Verified gaushala causes ──────────────────────────
@@ -126,9 +139,11 @@ export default async function DonationsLandingPage({
       <section className="relative overflow-hidden bg-gradient-to-br from-saffron-50 via-amber-50 to-rose-50">
         <div className="mx-auto max-w-5xl px-6 py-14 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-saffron-700 shadow-sm backdrop-blur">
-              <Heart className="h-3.5 w-3.5" /> {t('tax80G')}
-            </div>
+            {HAS_80G && (
+              <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-saffron-700 shadow-sm backdrop-blur">
+                <Heart className="h-3.5 w-3.5" /> {t('tax80G')}
+              </div>
+            )}
             <h1 className="mb-3 text-3xl font-bold text-surface-900 sm:text-4xl">
               {t('pageTitle')}
             </h1>

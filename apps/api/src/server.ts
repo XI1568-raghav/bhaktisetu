@@ -14,6 +14,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { clientIp, rateLimitKey } from './lib/rate-limit-key.js';
+import { resolveCorsOrigins } from './lib/cors-origins.js';
 import { startOpsScheduler, getSchedulerStatus } from './jobs/scheduler.js';
 import fastifyRawBody from 'fastify-raw-body';
 import fastifyCookie from '@fastify/cookie';
@@ -151,33 +152,13 @@ async function bootstrap() {
   // tokens out of localStorage (XSS-theft risk) into a JS-inaccessible cookie.
   await server.register(fastifyCookie);
   // CORS: production requires CORS_ORIGIN to be set explicitly. Local dev
-  // falls back to localhost-only — no LAN IPs, no wildcards. The previous
-  // default included a LAN address (192.168.x.x) which leaked into the
-  // production allowlist via committed env scaffolding.
+  // falls back to the loopback origins only — no LAN IPs, no wildcards. The
+  // previous default included a LAN address (192.168.x.x) which leaked into
+  // the production allowlist via committed env scaffolding. The list lives in
+  // lib/cors-origins.ts so it can be asserted without booting the server; see
+  // A11Y-16 for why 127.0.0.1 had to join localhost there.
   const isProd = process.env.NODE_ENV === 'production';
-  const corsOriginEnv = process.env.CORS_ORIGIN;
-  const corsOrigins = corsOriginEnv
-    ? corsOriginEnv.split(',').map((o) => o.trim()).filter(Boolean)
-    : isProd
-      ? (() => {
-          // Explicit fail in prod — refuse to start with a wide-open default.
-          throw new Error('CORS_ORIGIN env var is required in production. Set it to the comma-separated list of allowed origins.');
-        })()
-      : [
-          // A11Y-16 (prod sweep 2026-08-12): the dev fallback listed only the
-          // `localhost` spelling. A page served from http://127.0.0.1:3000 got
-          // a 200 with NO access-control-allow-origin header, so the browser
-          // blocked every client fetch and the booking wizard rendered its
-          // "we couldn't reach the catalog" state instead of the four-step
-          // form — at HTTP 200, so it looked like the real product. Two
-          // accessibility passes were spent auditing that error page.
-          // 127.0.0.1 and localhost are the same host; only the string
-          // differed. Development only — prod still requires CORS_ORIGIN.
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://127.0.0.1:3000',
-          'http://127.0.0.1:3001',
-        ];
+  const corsOrigins = resolveCorsOrigins(process.env);
   await server.register(cors, {
     origin: corsOrigins,
     credentials: true,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  Star,
  ChevronLeft,
@@ -113,7 +114,7 @@ export default function HoroscopePage() {
  </Link>
 
  <div className="text-center pb-4">
- <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
+ <h1 className={`${H1.catalogue} mb-3`}>
  Daily Horoscope
  </h1>
  <p className="text-surface-500 max-w-xl mx-auto mb-6">

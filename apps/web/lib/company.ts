@@ -72,8 +72,27 @@ export const COMPANY = {
   }>,
 
   /**
-   * Specialty inboxes we publish on Contact. Set to null to hide a row.
-   * support@ is already in supportEmail; the others are aspirational.
+   * Set to true ONLY once every alias in `specialtyEmails` below has been
+   * provisioned AND a test message has been delivered to a monitored inbox.
+   *
+   * LEG-16 (prod sweep 2026-08-12): the comment on `specialtyEmails` used to
+   * read "support@ is already in supportEmail; the others are aspirational" —
+   * and every legal page nonetheless printed privacy@ / legal@ as THE channel
+   * for a DPDP or UK-GDPR rights request. If the alias does not resolve, the
+   * one statutory channel a data principal has bounces in silence, which is
+   * worse than publishing no specialty address at all.
+   *
+   * While this is false, `rightsContactEmail()` and `legalContactEmail()`
+   * return `supportEmail`, which is the inbox the product already answers.
+   * Provisioning the aliases is an owner/DNS action; flipping this boolean is
+   * the only code change it needs.
+   */
+  HAS_SPECIALTY_INBOXES_VERIFIED: false,
+
+  /**
+   * Specialty inboxes. Set to null to hide a row entirely. These are read
+   * through the helpers below, never directly by a page — the helpers are what
+   * apply HAS_SPECIALTY_INBOXES_VERIFIED.
    */
   specialtyEmails: {
     sales: 'sales@darshya.online' as string | null,
@@ -194,6 +213,29 @@ export function operatedByLine(): string {
     return `${COMPANY.legalEntity.name} (operating the ${COMPANY.brand} platform at ${COMPANY.domain})`;
   }
   return `${COMPANY.brand} is an independently-operated platform based in India. Until incorporation completes, contracts and notices should be addressed to ${COMPANY.supportEmail}.`;
+}
+
+/**
+ * The address a user is told to write to for a given specialty. Returns the
+ * alias only when the inboxes have been verified as deliverable; otherwise the
+ * staffed support inbox.
+ *
+ * LEG-16: a statutory rights channel that bounces is a compliance failure, and
+ * the previous behaviour published one the codebase itself called aspirational.
+ */
+export function specialtyEmail(kind: keyof typeof COMPANY.specialtyEmails): string {
+  if (!COMPANY.HAS_SPECIALTY_INBOXES_VERIFIED) return COMPANY.supportEmail;
+  return COMPANY.specialtyEmails[kind] ?? COMPANY.supportEmail;
+}
+
+/** Where a DPDP / UK-GDPR data-rights request must be sent. */
+export function rightsContactEmail(): string {
+  return specialtyEmail('privacy');
+}
+
+/** Where a legal or compliance notice must be sent. */
+export function legalContactEmail(): string {
+  return specialtyEmail('legal');
 }
 
 export function postalContactLine(): string | null {

@@ -23,6 +23,7 @@ import {
 // Read, not duplicated: the same constant the puja checkout adds, so this
 // sentence cannot drift away from the number the devotee is actually charged.
 import { PLATFORM_FEE_INR } from '../../lib/puja-pricing';
+import { rightsContactEmail } from "../../lib/company";
 
 export const revalidate = 86400;
 
@@ -344,8 +345,8 @@ export default async function UkLaunchPage() {
               <span>
                 <strong>UK GDPR + Data Protection Act 2018</strong> compliant. Data Processing
                 Agreement (DPA) available on request via{' '}
-                <a href="mailto:privacy@darshya.online" className="text-saffron-700 underline">
-                  privacy@darshya.online
+                <a href={`mailto:${rightsContactEmail()}`} className="text-saffron-700 underline">
+                  {rightsContactEmail()}
                 </a>
                 . Cookie banner shipped per R-Q3-L-002 (UK & EEA visitors only).
               </span>

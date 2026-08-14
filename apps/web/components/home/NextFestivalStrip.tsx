@@ -2,6 +2,7 @@
 // with a days-until countdown and a CTA to book a related puja. Pulls from
 // the static festival calendar in lib/festivals.ts — zero-cost render.
 import Link from 'next/link';
+import { buttonClass } from '../ui/button-recipe';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { nextFestival, resolveBookablePujas } from '../../lib/festivals';
 import { getCatalogueSlugs } from '../../lib/puja-catalogue';
@@ -79,21 +80,21 @@ export default async function NextFestivalStrip({ catalogueSlugs }: Props = {}) 
               {firstPuja ? (
                 <Link
                   href={`/pujas/${firstPuja}`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-saffron-600 text-white text-sm font-semibold hover:bg-saffron-700"
+                  className={buttonClass('primary', 'md')}
                 >
                   Book {firstPuja.replace(/-/g, ' ')} <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               ) : (
                 <Link
                   href="/pujas"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-saffron-600 text-white text-sm font-semibold hover:bg-saffron-700"
+                  className={buttonClass('primary', 'md')}
                 >
                   Browse pujas <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               )}
               <Link
                 href={`/festival/${f.slug}`}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-saffron-700 hover:underline"
+                className={buttonClass('ghost', 'md', 'text-saffron-700 hover:underline')}
               >
                 Learn more <ArrowRight className="w-3.5 h-3.5" />
               </Link>

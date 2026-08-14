@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { authenticateUser } from '../middlewares/auth.js';
-import { subscriptionService } from '../services/subscription.service.js';
+import { subscriptionService, PaymentRequiredError } from '../services/subscription.service.js';
 import { checkAndRecord } from '../lib/webhook-idempotency.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
@@ -52,6 +52,16 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       return { message: 'Subscription created', subscription };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create subscription';
+      // PM-04 (prod sweep 2026-08-12): this endpoint granted a priced plan for
+      // ₹0 — no Razorpay order, no signature check, no paid gate — and wrote a
+      // COMPLETED Transaction for the price that admin revenue reporting then
+      // counted as earned. The service now refuses a priced plan outright;
+      // answer 402 so the caller fails loudly and is pointed at the rail that
+      // can actually take the money, instead of a generic 400 that reads like
+      // a validation slip.
+      if (err instanceof PaymentRequiredError) {
+        return reply.code(402).send({ error: message, code: err.code, payWith: '/api/v1/subscriptions/create' });
+      }
       return reply.code(400).send({ error: message });
     }
   });

@@ -68,10 +68,30 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
   return 'shiva';
 }
 
+/**
+ * PAR-15. There is no in-app booking flow: this screen's only booking action is
+ * `Linking.openURL`, which ejects the devotee into the mobile browser. Building
+ * the flow is separate work (the dead `useCreateBooking` hook it would use is
+ * fixed in packages/api-client), but the control must not keep claiming to be
+ * something it is not — a saffron primary button reading "Book Puja" with a
+ * calendar icon is the strongest possible signal that the booking happens here.
+ * It says where it goes now, and announces itself to VoiceOver/TalkBack as a
+ * link rather than a plain button.
+ */
 const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
+  // Slug comes from the API row (PAR-07 replaced the hardcoded catalogue this
+  // used to read), so the page that opens is the puja that was tapped.
   const bookUrl = `https://darshya.online/pujas/book?slug=${encodeURIComponent(puja.slug)}&utm_source=mobile-app&utm_medium=puja-card`;
+  const leavesAppHint = `Opens darshya.online in your browser to book ${puja.name}`;
   return (
-    <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
+    <TouchableOpacity
+      style={styles.pujaCard}
+      activeOpacity={0.7}
+      accessibilityRole="link"
+      accessibilityLabel={puja.name}
+      accessibilityHint={leavesAppHint}
+      onPress={() => Linking.openURL(bookUrl)}
+    >
 
       {/* Image placeholder */}
       <View style={styles.pujaImageArea}>
@@ -133,9 +153,16 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.bookButton} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
-          <Ionicons name="calendar-outline" size={16} color={colors.white} />
-          <Text style={styles.bookButtonText}>Book Puja</Text>
+        <TouchableOpacity
+          style={styles.bookButton}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel={`Book ${puja.name} on darshya.online`}
+          accessibilityHint={leavesAppHint}
+          onPress={() => Linking.openURL(bookUrl)}
+        >
+          <Ionicons name="open-outline" size={16} color={colors.white} />
+          <Text style={styles.bookButtonText}>Book on darshya.online</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>

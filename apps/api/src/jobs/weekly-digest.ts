@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { panchangService } from '../services/panchang.service.js';
 import { parseSchedule } from '../lib/darshan-schedule.js';
+import { claimRun, releaseRun } from '../lib/notification-run-log.js';
 
 /**
  * Weekly devotee digest — Sunday 9 AM IST fan-out.
@@ -35,7 +36,40 @@ export interface WeeklyDigestResult {
   sent: number;
   skipped: number;
   failed: number;
+  /**
+   * NOTIF-13: recipients this tick did NOT email because an earlier tick of the
+   * SAME edition already delivered to them. Deliberately its own counter —
+   * folding it into `sent` would report deliveries that did not happen on this
+   * run, the same conflation that made a comms layer with zero configured
+   * channels read green (NOTIF-03).
+   */
+  alreadyDelivered: number;
+  /**
+   * SCAL-11: recipients the day's BULK budget refused. Distinct from `skipped`
+   * (opted out / no address / channel unconfigured — nothing is owed) and from
+   * `failed` (the provider tried and could not). A deferral is "come back
+   * tomorrow", so it must keep the edition open; folding it into `skipped`
+   * stamps the run complete and writes those devotees off for the week, which
+   * is the whole of NOTIF-13 restored through a new door.
+   */
+  deferred: number;
   reason?: string;
+}
+
+/**
+ * The edition a digest belongs to, as an IST calendar week.
+ *
+ * The per-recipient delivery claim is keyed on this, so "already got this
+ * week's digest" survives a process restart and a second cron instance, while
+ * next week's digest is a fresh key and goes out to everyone again.
+ */
+function digestEditionKey(now: Date): string {
+  // IST date, then the Sunday that starts its week — the same anchor the
+  // Sunday 09:00 IST window uses, so both ticks inside that hour agree.
+  const ist = new Date(now.getTime() + 330 * 60 * 1000);
+  const sunday = new Date(ist);
+  sunday.setUTCDate(ist.getUTCDate() - ist.getUTCDay());
+  return `digest:${sunday.toISOString().slice(0, 10)}`;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -50,6 +84,37 @@ function isSunday9AmIst(now: Date): boolean {
   const istHour = Math.floor((istMinutesOfWeek % (24 * 60)) / 60);
   const istDow = Math.floor(istMinutesOfWeek / (24 * 60)); // 0=Sun
   return istDow === 0 && istHour === 9;
+}
+
+/**
+ * The instant this week's edition became due: Sunday 09:00 IST, as UTC.
+ *
+ * NOTIF-13, last half. The gate used to be "is it Sunday 09:00 IST" and then
+ * "has it been 6 days", which locks every retry inside a single 60-minute
+ * window. The thing that makes a run incomplete is the Resend 100/day cap
+ * (docs/free-tier-budgets.md), and that does not reset until the next UTC day —
+ * so both ticks of that hour fail on the same wall, and recipient 101 is
+ * written off for the week exactly as before. Not stamping the run bought
+ * nothing while the clock decided who may run.
+ *
+ * Keying on the edition instead makes the question answerable: this edition is
+ * OWED until a completed run is stamped at or after its start, and a drain on
+ * Tuesday carries the same `digestEditionKey` (also Sunday-anchored) and
+ * therefore the same per-recipient delivery claims. Nobody is mailed twice; the
+ * people the cap locked out are simply reached when the quota comes back.
+ *
+ * It also repairs a quieter loss: a Sunday the cron missed entirely used to
+ * mean a skipped week, silently.
+ */
+function editionStartInstant(now: Date): Date {
+  const istMinutesOfWeek =
+    (now.getUTCDay() * 24 * 60 + now.getUTCHours() * 60 + now.getUTCMinutes() + 330) %
+    (7 * 24 * 60);
+  // Minutes elapsed since Sunday 09:00 IST of the CURRENT IST week.
+  const sinceStart = (istMinutesOfWeek - 9 * 60 + 7 * 24 * 60) % (7 * 24 * 60);
+  const startMs = now.getTime() - sinceStart * 60_000;
+  // Truncate to the minute so a mid-minute `now` cannot drift the anchor.
+  return new Date(startMs - (startMs % 60_000));
 }
 
 interface DigestContext {
@@ -318,7 +383,7 @@ async function fetchPanchang(): Promise<DigestContext['panchang']> {
 
 export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
   if (!process.env.RESEND_API_KEY) {
-    return { sent: 0, skipped: 0, failed: 0, reason: 'RESEND_API_KEY not set' };
+    return { sent: 0, skipped: 0, failed: 0, alreadyDelivered: 0, deferred: 0, reason: 'RESEND_API_KEY not set' };
   }
 
   const optOut = await fetchOptOutSet();
@@ -337,7 +402,10 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  let alreadyDelivered = 0;
+  let deferred = 0;
   let cursor: string | null = null;
+  const edition = digestEditionKey(new Date());
 
   while (true) {
     let batch: UserRow[];
@@ -357,7 +425,7 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
         },
       });
     } catch {
-      return { sent, skipped, failed, reason: 'user query failed' };
+      return { sent, skipped, failed, alreadyDelivered, deferred, reason: 'user query failed' };
     }
     if (batch.length === 0) break;
 
@@ -381,6 +449,25 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
         panchang,
       };
 
+      // NOTIF-13: claim this recipient for this edition BEFORE sending.
+      //
+      // Not stamping WeeklyDigestRun after a partial run is what lets the job
+      // retry at all — but without a per-recipient claim that retry restarts
+      // from user #1. On a list larger than the 100/day Resend cap that means
+      // the first hundred are emailed the identical digest again on every tick
+      // and every following Sunday, while recipient 101 is never reached,
+      // because each retry burns the day's quota on people who already have it.
+      //
+      // The claim is durable and atomic (INSERT … ON CONFLICT DO NOTHING), so
+      // two cron instances in the same window cannot both send, and it degrades
+      // to in-process dedupe when the table is unavailable — the same contract
+      // aarti-notify relies on.
+      const claimKey = `${edition}:${user.id}`;
+      if (!(await claimRun(claimKey))) {
+        alreadyDelivered++;
+        continue;
+      }
+
       const unsubscribeUrl = `https://darshya.online/account/digest/unsubscribe?u=${encodeURIComponent(user.id)}`;
       const tpl = digestEmailHtml({ user, ctx, weekStartLabel, unsubscribeUrl });
 
@@ -390,12 +477,34 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
           subject: tpl.subject,
           html: tpl.html,
           text: tpl.text,
+          // SCAL-11: the digest is bulk. It gets the day's allowance down to the
+          // transactional reserve and no further, so a Sunday fan-out to a list
+          // larger than the Resend cap can no longer eat the booking receipt
+          // and 80G certificate budget of everyone who books that day.
+          kind: 'bulk',
         });
-        if (r.ok) sent++;
-        else if (r.skipped) skipped++;
-        else failed++;
+        if (r.ok) {
+          sent++;
+        } else if (r.deferred) {
+          // The budget said "not today". Nothing was attempted and the devotee
+          // is still owed this edition: release the claim so the drain
+          // (NOTIF-13) reaches them once the day rolls over, and keep the run
+          // unstamped so the drain is allowed to happen at all.
+          deferred++;
+          await releaseRun(claimKey);
+        } else if (r.skipped) {
+          // The channel is unconfigured — nothing was attempted, so the claim
+          // must go back or the recipient is permanently marked as handled for
+          // an edition they were never sent.
+          skipped++;
+          await releaseRun(claimKey);
+        } else {
+          failed++;
+          await releaseRun(claimKey);
+        }
       } catch {
         failed++;
+        await releaseRun(claimKey);
       }
       await sleep(SEND_RATE_MS);
     }
@@ -414,12 +523,19 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
   // reach everyone is not a completed run: leave the stamp alone so the next
   // tick tries again. `skipped` (opted out, no address, or the channel being
   // unconfigured) is NOT a failure and must never block the stamp forever.
-  if (failed > 0) {
+  if (failed > 0 || deferred > 0) {
     console.warn(
       '[weekly-digest][INCOMPLETE]',
-      JSON.stringify({ sent, skipped, failed, note: 'run not stamped; will retry next tick' }),
+      JSON.stringify({ sent, skipped, failed, deferred, note: 'run not stamped; will retry next tick' }),
     );
-    return { sent, skipped, failed, reason: 'incomplete run - not stamped, will retry' };
+    return {
+      sent,
+      skipped,
+      failed,
+      alreadyDelivered,
+      deferred,
+      reason: 'incomplete run - not stamped, will retry',
+    };
   }
 
   try {
@@ -436,7 +552,7 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
     // best-effort — migration may be pending
   }
 
-  return { sent, skipped, failed };
+  return { sent, skipped, failed, alreadyDelivered, deferred };
 }
 
 /**
@@ -448,31 +564,63 @@ export async function maybeRunWeeklyDigest(
   opts: { force?: boolean; now?: Date } = {},
 ): Promise<WeeklyDigestResult & { gated?: boolean }> {
   const now = opts.now ?? new Date();
-  if (!opts.force && !isSunday9AmIst(now)) {
-    return { sent: 0, skipped: 0, failed: 0, gated: true, reason: 'outside Sunday 09:00 IST window' };
+  if (opts.force) return runWeeklyDigest();
+
+  // Has THIS edition already been delivered in full? `WeeklyDigestRun` is
+  // stamped only by a run that reached everyone (failed === 0), so a stamp at
+  // or after the edition start is the one durable proof that nothing is owed.
+  const editionStart = editionStartInstant(now);
+  let stampedThisEdition = false;
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ last_run_at: Date | null }[]>(
+      `SELECT last_run_at FROM "WeeklyDigestRun" WHERE id = 1`,
+    );
+    const last = rows[0]?.last_run_at;
+    stampedThisEdition = !!last && new Date(last).getTime() >= editionStart.getTime();
+  } catch {
+    // Table missing → treat the edition as unstamped and let the send window
+    // decide, which is the pre-existing behaviour for a fresh database.
   }
-  if (!opts.force) {
-    try {
-      const rows = await prisma.$queryRawUnsafe<{ last_run_at: Date | null }[]>(
-        `SELECT last_run_at FROM "WeeklyDigestRun" WHERE id = 1`,
-      );
-      const last = rows[0]?.last_run_at;
-      if (last) {
-        const sixDaysMs = 6 * 24 * 60 * 60 * 1000;
-        if (now.getTime() - new Date(last).getTime() < sixDaysMs) {
-          return {
-            sent: 0,
-            skipped: 0,
-            failed: 0,
-            gated: true,
-            reason: 'last run was less than 6 days ago',
-          };
-        }
-      }
-    } catch {
-      // table missing → run anyway
+
+  if (stampedThisEdition) {
+    return {
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      alreadyDelivered: 0,
+      deferred: 0,
+      gated: true,
+      reason: 'this week\'s edition already completed',
+    };
+  }
+
+  // Unstamped. Send inside the Sunday 09:00 IST window as always — and, on any
+  // later tick of the SAME edition, drain what the window could not finish.
+  // Both paths share `digestEditionKey`, so a recipient already claimed on
+  // Sunday is skipped here rather than mailed a second time.
+  if (!isSunday9AmIst(now)) {
+    if (now.getTime() < editionStart.getTime()) {
+      // Cannot happen with the anchor above (sinceStart is never negative), but
+      // an edition that has not begun must never send early.
+      return {
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        alreadyDelivered: 0,
+        deferred: 0,
+        gated: true,
+        reason: 'edition has not started',
+      };
     }
+    console.warn(
+      '[weekly-digest][DRAIN]',
+      JSON.stringify({
+        editionStart: editionStart.toISOString(),
+        note: 'edition unfinished; resuming outside the Sunday window',
+      }),
+    );
   }
+
   return runWeeklyDigest();
 }
 

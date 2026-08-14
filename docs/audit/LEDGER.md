@@ -3,15 +3,15 @@
 Source: `prod-sweep-raw-2026-08-12.md` — 388 findings, 32 agents, 4 workflows.
 Update with `node docs/audit/ledger.mjs set <key> <state> <commit> <note>`.
 
-## Closed: 184 of 388 (47.4%)
+## Closed: 200 of 388 (51.5%)
 
 | Severity | Total | Fixed | Partial | Owner | Open |
 |---|---:|---:|---:|---:|---:|
 | P0 | 65 | 50 | 9 | 1 | 5 |
 | P1 | 155 | 99 | 52 | 4 | 0 |
 | P2 | 120 | 35 | 41 | 8 | 36 |
-| P3 | 48 | 0 | 0 | 0 | 48 |
-| **All** | **388** | **184** | **102** | **13** | **89** |
+| P3 | 48 | 16 | 1 | 0 | 31 |
+| **All** | **388** | **200** | **103** | **13** | **72** |
 
 ## Closed and partial
 
@@ -36,6 +36,7 @@ Update with `node docs/audit/ledger.mjs set <key> <state> <commit> <note>`.
 | F017 | P2 | DF-08 | devotee-funnel | partial | — | Cannot be fixed in code as stated. 'Remove the cow_00X mock entries so only real adoptable cows are shown' would leave the gau-seva page with zero inv |
 | F018 | P2 | DF-09 | devotee-funnel | fixed | — | verified: All three defects addressed, and the hardest one honestly. The 32-entry hardcoded April grid is DELETED and re |
 | F019 | P2 | DF-10 | devotee-funnel | fixed | — | verified: All three renders are genuinely gone from app/darshan/[id]/page.tsx: the `{stream.viewerCount.toLocaleString(' |
+| F020 | P3 | DF-11 | devotee-funnel | fixed | — | triage-verified: already dead — temples/page.tsx:185 renders merged.length (comment cites this exact "33 of 22" finding); [slug]:203 permanentRedirects aliases via lib/temple-slug.ts |
 | F023 | P0 | COM-01 | commerce-temple-gaushala | partial | 1645e4da | fails honestly now; catalogue split owner-gated |
 | F024 | P0 | COM-02 | commerce-temple-gaushala | partial | 1645e4da | donor PAN sent; donee 80G regn missing |
 | F025 | P0 | COM-03 | commerce-temple-gaushala | fixed | 1645e4da |  |
@@ -67,6 +68,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F048 | P1 | PM-07 | pricing-market | fixed | — | already_fixed · VERIFIED IN TREE: apps/api/prisma/schema.prisma:338 now reads `commissionRate Float @default(0. |
 | F049 | P1 | PM-08 | pricing-market | partial | — | The reconciliation itself is the owner's single decision (the sweep recommends 20% uniform, published, permanent). Encoding it then touches apps/api/p |
 | F050 | P2 | PM-09 | pricing-market | owner | — | Owner decision plus two out-of-lane changes. (1) BUSINESS: the sign-off line at the bottom of E:\NewClaude\deliverables\launch-catalog-2sku-pricing.md |
+| F051 | P3 | PM-10 | pricing-market | fixed | — | triage-verified: AstrologyClient:469 renders ₹{rate}/min and the live directory does the same, both with a "Rate on request" fallback — committed in 97fbd58c |
 | F052 | P2 | PM-11 | pricing-market | partial | — | The literal /store/products/live route is unfixable in this lane: creating it means adding apps/web/app/store/products/live/page.tsx, and app/store/** |
 | F053 | P0 | PM-01 | pricing-market | owner | — | Owner decides: implement the tier→commission override in apps/api/src/lib/commission-math.ts and have all five Commission writers resolve through it ( |
 | F054 | P0 | PM-02 | pricing-market | fixed | — | already_fixed · Same defect as PM-02a from the second heading. Additionally verified the two downstream halves  |
@@ -78,13 +80,16 @@ DELIVERED-MARKUP PROOF: ran  |
 | F063 | P0 | PF-01 | puja-funnel | fixed | 1645e4da | tier now seeded from query param; shim+wizard contract closed |
 | F064 | P1 | PF-02 | puja-funnel | fixed | — | verified: Correctly identified as the same defect as DB-04: the sweep's PF-02 at prod-sweep-raw-2026-08-12.md:402 cites  |
 | F065 | P1 | PF-03 | puja-funnel | fixed | — | verified: Both sites really changed: apps/web/app/checkout/offering/page.tsx:102-104 and :207-209 now call buildLoginRed |
+| F070 | P3 | PF-08 | puja-funnel | fixed | — | triage-verified: already dead — pujas/page.tsx:693 already renders the description with line-clamp-2 |
 | F074 | P0 | HN-01 | home-nav | fixed | — | homepage 14,815->945 KB; 4 leak paths bypassing wikiThumb closed |
 | F075 | P1 | HN-02 | home-nav | fixed | — | already_fixed · NOT REPRODUCIBLE — closed under the RESP-01 remediation before I started, and the file document |
 | F076 | P1 | HN-03 | home-nav | partial | — | File-lane assignment, not an owner decision. My lane is app/become-*/**, app/list-temple/**, app/list-gaushala/**, app/priest/** and the homepage + co |
 | F077 | P1 | HN-04 | home-nav | partial | — | Two separate gates. (a) The header/nav translation lives in lib/i18n/** and lib/t.ts plus the global header component — lib/i18n/** and lib/t.ts are o |
 | F078 | P1 | HN-05 | home-nav | partial | — | Both remaining files are out of this lane — lib/images.ts is on the explicit do-not-touch list and TemplesBrowser.tsx is under active edit by the imag |
+| F086 | P3 | HN-13 | home-nav | fixed | — | triage-verified: already dead — GurukulPortalClient:39 renders a real <Link href="/auth/login">; only polish remains |
 | F087 | P1 | TD-01 | temples-darshan | partial | — | The larger half of the 37.5s is Render free-tier cold start on the web and API services, which the audit itself names as the likely contributor. Closi |
 | F088 | P1 | TD-02 | temples-darshan | fixed | — | verified: Fix is real and the data behind it holds up. The hand-written fallbackScheduleTable with three literal `status |
+| F092 | P3 | TD-06 | temples-darshan | fixed | — | triage-verified: already dead — /panchang:33 and /calendar:12 titles no longer carry the suffix; surviving "| Darshya" literals are inside openGraph/twitter where the template does not apply |
 | F096 | P0 | PF-01 | pandit-fulfilment | fixed | 1645e4da |  |
 | F097 | P0 | PF-02 | pandit-fulfilment | fixed | 1645e4da |  |
 | F098 | P0 | PF-03 | pandit-fulfilment | fixed | 1645e4da |  |
@@ -128,6 +133,8 @@ DELIVERED-MARKUP PROOF: ran  |
 | F149 | P1 | AW-07 | astro-wellness | partial | — | DISPUTED by verify: Real but narrower than 'fixed', and one cited assertion is vacuous against the real contract. What IS shipped: apps/web/app/wellness/classes/{page,Wel |
 | F150 | P1 | AW-08 | astro-wellness | partial | — | DISPUTED by verify: The middleware half is real and non-vacuous: apps/api/src/middlewares/auth.ts:160-181 replaces the synthetic-id fallback with a 401 naming the unseede |
 | F151 | P1 | AW-09 | astro-wellness | partial | — | The owner must edit apps/api/.env by hand — this agent cannot. Both Write and Edit to that path are refused by the machine's credential-stor |
+| F157 | P3 | AW-15 | astro-wellness | fixed | — | triage-verified: already dead — server.ts:168-179 allowlists 127.0.0.1:3000/3001 citing this finding; astrologer-portal:231 renders "—" not confident zeros on load error |
+| F160 | P3 | AW-18 | astro-wellness | fixed | — | triage-verified: already dead — wellness-portal/sessions:287-299 renders a distinct red banner + Retry, separate from the empty state |
 | F161 | P0 | S-01 | store-temple-gaushala | fixed | 1645e4da |  |
 | F162 | P0 | S-02 | store-temple-gaushala | fixed | 1645e4da |  |
 | F163 | P1 | S-03 | store-temple-gaushala | fixed | — | already_fixed · apps/api/src/server.ts:449-465 registers `server.setErrorHandler` which logs the full error int |
@@ -140,6 +147,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F170 | P2 | S-10 | store-temple-gaushala | fixed | — | already_fixed · Closed by an earlier wave; no change made. git show HEAD:apps/web/app/store/checkout/page.tsx:2 |
 | F171 | P2 | S-11 | store-temple-gaushala | fixed | — | already_fixed · Closed by an earlier wave; no change made. git show HEAD:apps/web/app/store/checkout/page.tsx:1 |
 | F172 | P2 | S-12 | store-temple-gaushala | owner | — | Owner-only, two parts. (1) ROTATE the exposed credentials — Supabase service-role key, the production JWT_SECRET, the Groq key and the Cohere key — si |
+| F173 | P3 | S-13 | store-temple-gaushala | fixed | — | triage-verified: already dead — server.ts CORS dev fallback already lists 127.0.0.1:3000/3001, added while closing A11Y-16 |
 | F174 | P1 | LC-01 | list-controls | fixed | — | already_fixed · Closed by the S-04 fix. The sort <select> is now a real client control: E:/NewClaude/bhaktisetu |
 | F175 | P1 | LC-02 | list-controls | fixed | — | already_fixed · The hero box is now inside a real <form role="search"> with name="q", a controlled value and a  |
 | F176 | P1 | LC-03 | list-controls | fixed | — | already_fixed · Pills are real buttons with onClick -> go({category}) and the active style is driven by the sel |
@@ -154,6 +162,8 @@ DELIVERED-MARKUP PROOF: ran  |
 | F185 | P2 | LC-12 | list-controls | partial | — | The /astrology half is unfixed: apps/web/app/astrology/AstrologyClient.tsx:161-171 still has the identical router.replace-in-an-effect pattern (filter |
 | F186 | P2 | LC-13 | list-controls | fixed | — | already_fixed · Closed by AW-02 and the fallback is gone entirely, not merely relabelled. E:/NewClaude/bhaktise |
 | F187 | P2 | LC-14 | list-controls | partial | — | Publishing a post cannot be done in code without two owner decisions: (1) how drafts reach the runtime — make the repo publicly readable, supply a Git |
+| F188 | P3 | LC-15 | list-controls | fixed | — | triage-verified: already dead — ENVIRONMENT ARTIFACT: prod GET /api/v1/gurukuls returns 3 real gurukuls and /gurukuls is 200. The sweep hit an unseeded local DB |
+| F190 | P3 | LC-17 | list-controls | fixed | — | triage-verified: fixed by lib/temple-filters.ts (DEFAULT_TEMPLE_FILTERS.sort + hasActiveTempleFilters) — committed in 97fbd58c |
 | F191 | P1 | DU-01 | design-uniformity | fixed | — | verified: Change is real and is exactly the fix the finding prescribes. globals.css:145-149 now declares --font-sans/--f |
 | F192 | P1 | DU-02 | design-uniformity | fixed | — | verified: --shadow-warm-sm/--shadow-warm/--shadow-warm-md/--shadow-warm-lg are added to @theme (not :root), and the comp |
 | F193 | P1 | DU-03 | design-uniformity | partial | — | Adoption. The CTA sprawl is at app/pujas/page.tsx, app/temples/**, app/store/page.tsx, app/pricing/page.tsx, app/admin/page.tsx, app/priest/page.tsx,  |
@@ -177,6 +187,8 @@ DELIVERED-MARKUP PROOF: ran  |
 | F214 | P2 | RESP-09 | responsive | partial | — | app/page.tsx:347 and :488 and the puja-detail action row are call-site edits outside my edit-only lane. Fixing them from CSS is not possible without a |
 | F215 | P2 | RESP-10 | responsive | partial | — | app/admin/** is explicit DO-NOT-TOUCH this wave; app/priest/** and app/layout.tsx are outside my edit-only lane (globals.css + components/ui/**). Need |
 | F216 | P2 | RESP-11 | responsive | partial | — | I could not sign in as pandit@demo.com / admin@demo.com and visually confirm the on-duty toggle at 390px within this wave, and app/priest/page.tsx is  |
+| F219 | P3 | SEC-03 | security | fixed | — | poweredByHeader:false in next.config.ts |
+| F220 | P3 | SEC-04 | security | fixed | — | removed error.message from both 5xx bodies (lines had moved 723/783 -> 909/969); 2 of 3 tests red on old code |
 | F222 | P0 | LEG-02 | legal-content | partial | 1645e4da | same as COM-02 |
 | F224 | P1 | LEG-04 | legal-content | partial | — | apps/web/app/pricing/** and apps/web/lib/pricing.ts are on my explicit do-not-touch list this session (the pricing-market agent is editing t |
 | F225 | P1 | LEG-05 | legal-content | fixed | — | verified: apps/web/__tests__/legal-content-p1.test.ts + legal-content-p1-render.test.tsx. RED: 'drop |
@@ -242,6 +254,8 @@ DELIVERED-MARKUP PROOF: ran  |
 | F290 | P2 | SCAL-09 | scalability | partial | — | NOT DONE: the search half. `CREATE EXTENSION IF NOT EXISTS pg_trgm;` plus GIN trigram indexes on users(full_name) and users(email) require a Prisma mi |
 | F291 | P2 | SCAL-10 | scalability | owner | — | OWNER DECISION: which service gets the 750 free instance-hours, and whether to spend. The three options, with the numbers: (a) move the web front end  |
 | F292 | P2 | SCAL-11 | scalability | partial | — | OWNER DECISIONS, none of which are code: (1) buy the paid Resend tier ($20/mo for 50k) as a launch-day line item; (2) decide where digest/drip/marketi |
+| F293 | P3 | SCAL-12 | scalability | fixed | — | triage-verified: informational finding, not a defect — its own text says "no action needed on storage" |
+| F294 | P3 | SCAL-13 | scalability | fixed | — | triage-verified: HEALTHY finding — reportNPlusOne already wired at db/instrument-prisma.ts:84; only optional hardening remains |
 | F295 | P0 | A11Y-01 | accessibility | fixed | — | contrast recomputed; 19-assertion test, 14 red first |
 | F296 | P0 | A11Y-02 | accessibility | fixed | — | contrast recomputed; 19-assertion test, 14 red first |
 | F297 | P0 | A11Y-03 | accessibility | fixed | — | mega-menu keyboard operable; 30 tests green, tsc finished after agent died |
@@ -277,6 +291,8 @@ DELIVERED-MARKUP PROOF: ran  |
 | F328 | P2 | I18N-07 | i18n | partial | — | Lane — apps/api is entirely off-limits to this agent and apps/web/app/profile/page.tsx is DO-NOT-TOUCH. Remaining: echo the stored value (or resolve d |
 | F329 | P2 | I18N-08 | i18n | partial | — | Lane — apps/web/app/layout.tsx is DO-NOT-TOUCH. Remaining: delete the seven hardcoded <link rel="alternate"> tags from the root layout and emit altern |
 | F330 | P2 | I18N-09 | i18n | partial | — | Lane — lib/help-articles.ts, app/help/** and app/sitemap.ts are all DO-NOT-TOUCH. Near-term code slices for whoever owns them: link a HELP_LANGS-drive |
+| F331 | P3 | I18N-10 | i18n | partial | — | triage: Accept-Language negotiation DOES exist (lib/i18n/locales.ts negotiateLocale, consumed at middleware.ts:121) and html lang is driven off the declared <main lang>. Residual: no Content-Language response header |
+| F332 | P3 | I18N-11 | i18n | fixed | — | triage-verified: already dead for the customer-facing claim — bare toLocaleDateString 24 -> 1, toLocaleTimeString 11 -> 3, all survivors admin-internal |
 | F333 | P0 | NOTIF-01 | notifications | fixed | — | in-process scheduler + /ops/scheduler staleness; 13 tests |
 | F334 | P0 | NOTIF-02 | notifications | fixed | — | ::uuid cast + honest 500; side-by-side instance proof; 6 tests, 5 red first |
 | F336 | P0 | NOTIF-04 | notifications | fixed | — | wired into both refund rails post-commit; honest per-channel outcomes |
@@ -320,3 +336,4 @@ DELIVERED-MARKUP PROOF: ran  |
 | F379 | P1 | SEO-05 | seo-perf-budget | fixed | — | verified: Both fabrications are gone and both are guarded. app/pujas/[slug]/page.tsx no longer computes lowestPrice or ` |
 | F380 | P1 | SEO-06 | seo-perf-budget | fixed | — | verified: The consolidation is real: lib/temple-slug.ts is the single normaliser, imported by app/temples/[slug]/page.ts |
 | F386 | P0 | CWV-01 | seo-perf-budget | partial | — | measured: LCP fails all 4 pages (improved 0.85-4.4s), CLS PASSES (audit claim wrong), TBT now binding = JS not images |
+| F388 | P3 | SEO-10 | seo-perf-budget | fixed | — | triage-verified: dead by cascade — its own fix says "no change needed once SEO-02 is fixed", and SEO-02 is fixed (robots.ts no longer disallows /_next/) |

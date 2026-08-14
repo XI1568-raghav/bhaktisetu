@@ -28,9 +28,59 @@ const priestOfferingCreateSchema = z.object({
 });
 const priestOfferingUpdateSchema = priestOfferingCreateSchema.partial();
 
+/**
+ * PF-13, the half the `?status` enum did not close.
+ *
+ * Every handler below ends `catch (err: any) { reply.code(400).send({ error:
+ * err.message }) }`. That catch cannot tell a deliberate 4xx ("This booking is
+ * not assigned to you", which the portal renders) from an infrastructure fault,
+ * and a Prisma fault's `message` is a multi-line block carrying the server's
+ * absolute path, the source file, the line number and four lines of source.
+ * Constraining `?status` removed one way to trigger it; a bad date range, a
+ * non-UUID id or a dropped connection are all still live.
+ *
+ * server.ts's setErrorHandler cannot cover this: it sanitises 5xx only, and
+ * only for errors that PROPAGATE — these are caught and answered 400 by hand,
+ * and 400 is on its `safeToEcho` list on purpose.
+ *
+ * So the discrimination has to happen here. A message is echoed only if it
+ * looks like something a person wrote for another person: one line, short, and
+ * free of any filesystem path, ORM invocation or source frame. Anything else is
+ * replaced. The real error is still logged (see the callers) — nothing is lost
+ * except the copy of it that was being handed to the client.
+ */
+const PRISMA_ERROR_CODE = /^P\d{4}$/;
+const LEAKY_MESSAGE =
+  /(prisma\.[a-z]|invocation in|[a-z]:\\|\/(?:opt|home|usr|var|srv)\/|\.(?:ts|js|mjs|cjs):\d+|node_modules|→\s*\d+|\bat\s+\w+\s+\()/i;
+
+export function safeErrorMessage(err: unknown): string {
+  const GENERIC = 'Request failed. Please try again.';
+  if (!err || typeof err !== 'object') {
+    return typeof err === 'string' && err.trim() && !LEAKY_MESSAGE.test(err) && err.length <= 200
+      ? err
+      : GENERIC;
+  }
+
+  const e = err as { message?: unknown; code?: unknown; name?: unknown; clientVersion?: unknown };
+
+  // Prisma tags every known request error with a P-code and every client error
+  // class with a PrismaClient* name. Both are infrastructure by definition.
+  if (typeof e.code === 'string' && PRISMA_ERROR_CODE.test(e.code)) return GENERIC;
+  if (typeof e.name === 'string' && e.name.startsWith('PrismaClient')) return GENERIC;
+  if (typeof e.clientVersion === 'string') return GENERIC;
+
+  const message = typeof e.message === 'string' ? e.message.trim() : '';
+  if (!message) return GENERIC;
+  if (message.includes('\n')) return GENERIC;
+  if (message.length > 200) return GENERIC;
+  if (LEAKY_MESSAGE.test(message)) return GENERIC;
+  return message;
+}
+
 export const __testing = {
   priestOfferingCreateSchema,
   priestOfferingUpdateSchema,
+  safeErrorMessage,
   get bookingsQuerySchema() {
     return bookingsQuerySchema;
   },
@@ -161,7 +211,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const dashboard = await priestService.getDashboard(priestId);
       return dashboard;
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -187,7 +238,8 @@ export async function priestRoutes(server: FastifyInstance) {
 
       return result;
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -213,7 +265,8 @@ export async function priestRoutes(server: FastifyInstance) {
       }
       return { booking: result.booking };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -226,7 +279,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.acceptBooking(id, priestId);
       return { message: 'Booking accepted successfully.', booking };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -243,7 +297,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.rejectBooking(id, priestId);
       return { message: 'Booking released back to the queue.', booking };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -264,7 +319,8 @@ export async function priestRoutes(server: FastifyInstance) {
       });
       return { message: body.isOnDuty ? 'You are now on duty.' : 'You are now off duty.', priest: updated };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -276,7 +332,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const res = await dispatchService.accept(bookingId, priestId);
       return { message: 'Booking confirmed. You are assigned.', ...res };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -288,7 +345,8 @@ export async function priestRoutes(server: FastifyInstance) {
       await dispatchService.decline(bookingId, priestId);
       return { message: 'Offer declined.' };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -315,7 +373,8 @@ export async function priestRoutes(server: FastifyInstance) {
       });
       return { offers };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -329,7 +388,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const res = await cancellationService.panditCancel(id, priestId, body.reason);
       return { message: 'Booking released. We are re-matching the devotee.', ...res };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -342,7 +402,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.startPuja(id, priestId);
       return { message: 'Puja started.', booking };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -355,7 +416,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.completePuja(id, priestId);
       return { message: 'Puja completed.', booking };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -431,7 +493,8 @@ export async function priestRoutes(server: FastifyInstance) {
           maxSizeMb: MAX_VIDEO_MB,
         });
       } catch (err: any) {
-        reply.code(400).send({ error: err.message });
+        request.log?.error({ err }, 'priest route failed');
+        reply.code(400).send({ error: safeErrorMessage(err) });
       }
     }
   );
@@ -455,7 +518,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const result = await priestService.uploadVideoProof(id, priestId, videoUrl);
       return { message: 'Video proof uploaded successfully.', booking: result };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -478,7 +542,8 @@ export async function priestRoutes(server: FastifyInstance) {
 
       return result;
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -490,7 +555,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const profile = await priestService.getProfile(priestId);
       return profile;
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -511,7 +577,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const updated = await priestService.updateProfile(priestId, body);
       return { message: 'Profile updated successfully.', profile: updated };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -596,7 +663,8 @@ export async function priestRoutes(server: FastifyInstance) {
 
       return reply.send({ reviews, total: reviews.length });
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -649,7 +717,8 @@ export async function priestRoutes(server: FastifyInstance) {
       });
       return { offerings: offerings.map(serializeOffering) };
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -676,7 +745,8 @@ export async function priestRoutes(server: FastifyInstance) {
       });
       return reply.code(201).send({ offering: serializeOffering(offering) });
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -708,7 +778,8 @@ export async function priestRoutes(server: FastifyInstance) {
       const offering = await prisma.priestPujaOffering.update({ where: { id }, data });
       return reply.send({ offering: serializeOffering(offering) });
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -725,7 +796,8 @@ export async function priestRoutes(server: FastifyInstance) {
       await prisma.priestPujaOffering.delete({ where: { id } });
       return reply.send({ ok: true });
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -745,7 +817,8 @@ export async function priestRoutes(server: FastifyInstance) {
       });
       return reply.send({ offering: serializeOffering(offering) });
     } catch (err: any) {
-      reply.code(400).send({ error: err.message });
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 }

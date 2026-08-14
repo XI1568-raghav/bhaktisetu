@@ -7,7 +7,7 @@ import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // exposes the name to importers but does not bind it in local scope.
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
 import { notifyUser } from '../routes/notifications.js';
-import { notifyVideoReady } from './booking-notify.service.js';
+import { notifyBookingEvent, notifyVideoReady } from './booking-notify.service.js';
 import { ensureConversationForBooking } from './conversation.service.js';
 import { paymentService } from './payment.service.js';
 
@@ -83,28 +83,27 @@ export const PLATFORM_FEE_INR = 51;
 export const PRASAD_DELIVERY_FEE_INR = 150;
 
 // Booking revamp (2026-08-04): platform take-rate cut from 30% to 20% to win
-// pandit supply. Research basis: Sri Mandir takes 20-25% from temples; the
-// current hardcoded 30% (with Priest.commissionRate 0.70 ignored) is both
-// uncompetitive for supply acquisition AND inconsistent. The pandit's
-// Priest.commissionRate (their share) is now the source of truth, falling back
-// to DEFAULT_PRIEST_SHARE when it is outside (0,1]. Confirmed with founder.
+// pandit supply. Research basis: Sri Mandir takes 20-25% from temples; the old
+// hardcoded 30% (with Priest.commissionRate ignored) was both uncompetitive for
+// supply acquisition AND inconsistent. The pandit's Priest.commissionRate
+// (their SHARE) is the source of truth, falling back to DEFAULT_PRIEST_SHARE
+// when it is outside (0,1]. Confirmed with founder.
 //
-// ⚠ OPEN SCHEMA MISMATCH (found 2026-08-11). This comment used to claim the
-// schema default for `Priest.commissionRate` was 0.80. It is not:
-// prisma/schema.prisma still carries `@default(0.70)`, the pre-revamp 30/70
-// split. No writer sets 0.80 and no migration changed the default, so a pandit
-// onboarded through the normal flow is paid 70%, not the 80% this constant and
-// the supply pitch promise — Rs 7,000 instead of Rs 8,000 on a Rs 10,000
-// booking — and the Commission row minted at confirm records
-// `percentage = 0.3000`, a 30% platform take on a product advertised at 20%.
-// Not changed unilaterally here because the direction is an owner call and
-// both shapes live outside this file:
-//   (a) set the Prisma default to 0.80 plus an additive
-//       `ALTER TABLE priests ALTER COLUMN commission_rate SET DEFAULT 0.8`
-//       (no backfill of existing rows unless the owner asks), or
-//   (b) treat a stored 0.70 as "unset" at both call sites (here and
-//       routes/bookings.ts from-offering) — which would also silently override
-//       any pandit genuinely negotiated onto 70%.
+// PJ-03 (opened 2026-08-11, CLOSED 2026-08-13). The schema default really did
+// disagree with this constant: `Priest.commissionRate` carried `@default(0.70)`,
+// the pre-revamp 30/70 split, so a pandit onboarded through the normal flow was
+// paid Rs 7,000 instead of Rs 8,000 on a Rs 10,000 booking and the Commission
+// row recorded a 30% platform take on a product advertised at 20%. All three
+// halves have shipped:
+//   - schema.prisma now declares `commissionRate Float @default(0.80)`;
+//   - migration 20260812000000_priest_commission_rate_80 moves the column
+//     default AND backfills the existing 0.70 rows (no live money had moved);
+//   - PATCH /admin/priests/:id/commission-rate (routes/admin.ts) is the
+//     authenticated, audit-logged write path for a genuinely negotiated rate.
+// A stored 0.70 is therefore honoured as a deliberate negotiation, never
+// silently treated as "unset" — which was the trap in the alternative fix.
+// booking.service.commission-doctrine.pj03.test.ts pins this comment to the
+// schema so the two cannot drift apart again.
 export const DEFAULT_PRIEST_SHARE = 0.8;
 export const DEFAULT_PLATFORM_SHARE = 0.2;
 
@@ -955,11 +954,43 @@ export class BookingService {
       );
     }
 
+    // NOTIF-06 (2026-08-14): the middle of the lifecycle finally has a producer.
+    //
+    // `in_progress` and `completed` are written ONLY here, and pushMessageFor
+    // returns null for both — so a devotee whose puja started and finished was
+    // told nothing on any channel, while the `puja_started` / `puja_completed`
+    // WhatsApp templates and their push copy sat written and unreachable in
+    // booking-notify.service. `cancelled` was one step better and still wrong:
+    // the devotee-initiated route (POST /bookings/:id/cancel) fans out, but the
+    // two paths that reach `cancelled` through THIS method — the admin PATCH and
+    // the unpaid-hold expiry sweep — only fired a bare web push, i.e. a desktop
+    // browser with granted permission or nothing.
+    //
+    // No double-send: cancelBooking writes `cancelled` with its own raw
+    // `pujaBooking.update` and never enters this method, so the route's fan-out
+    // and this one are on disjoint paths.
+    const FAN_OUT_EVENT = {
+      in_progress: 'in_progress',
+      completed: 'completed',
+      cancelled: 'cancelled',
+    } as const;
+    const fanOutEvent = FAN_OUT_EVENT[newStatus as keyof typeof FAN_OUT_EVENT];
+    if (fanOutEvent) {
+      void notifyBookingEvent(updated.id, fanOutEvent).catch((err) =>
+        console.warn(`[booking.service] ${fanOutEvent} notify failed:`, err),
+      );
+    }
+
     // Push notification on key transitions. Fire-and-forget — push failure
     // must never break booking flow. notifyUser no-ops if VAPID is unset
     // or the user has no subscriptions.
+    //
+    // Statuses owned by a fan-out above are skipped here rather than pushed a
+    // second time: notifyVideoReady / notifyBookingEvent each carry their own
+    // push leg, so leaving `cancelled` on this path would send two identical
+    // pushes for one cancellation.
     const message =
-      newStatus === 'video_uploaded'
+      newStatus === 'video_uploaded' || fanOutEvent
         ? null
         : pushMessageFor(newStatus, updated.pujaType.name, updated.temple.name);
     if (message) {

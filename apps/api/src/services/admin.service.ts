@@ -90,6 +90,34 @@ interface PendingApproval {
   createdAt: string;
 }
 
+/**
+ * SCAL-04: how many pending providers one call may materialise.
+ *
+ * The six approval queues were each read with an unfiltered pending lookup —
+ * no take, no orderBy, no select, six times, full profile rows. This is the
+ * list on the platform most likely to grow without bound: an unreviewed signup
+ * stays in it forever, so the read scales with the operator's own backlog.
+ *
+ * 100 is the same ceiling the public list routes use. It is a page for a human
+ * to work, not a data export.
+ */
+export const PENDING_APPROVAL_PAGE = 100;
+
+/**
+ * A page of the approval queue plus the size of the queue it came from.
+ *
+ * `total` is counted in SQL, never `items.length`. Bounding the read without
+ * this makes the count agree with the truncated page — which is precisely
+ * SCAL-09's defect ("a nearly-empty page with a wrong count, so the operator
+ * concludes there are no pandits when there are thousands"), reintroduced on a
+ * different screen.
+ */
+export interface PendingApprovalPage {
+  items: PendingApproval[];
+  total: number;
+  hasMore: boolean;
+}
+
 interface ReportsResponse {
   generatedAt: string;
   userGrowth: Array<{ month: string; users: number }>;
@@ -887,16 +915,69 @@ export class AdminService {
     }
   }
 
-  async getPendingApprovals(): Promise<PendingApproval[]> {
+  async getPendingApprovals(): Promise<PendingApprovalPage> {
     try {
-      const [pandits, stores, astrologers, wellness, gaushalas, temples] = await Promise.all([
-        prisma.panditProfile.findMany({ where: { approved: false } }),
-        prisma.storeProfile.findMany({ where: { approved: false } }),
-        prisma.astrologerProfile.findMany({ where: { approved: false } }),
-        prisma.wellnessProfile.findMany({ where: { approved: false } }),
-        prisma.gaushalaProfile.findMany({ where: { approved: false } }),
-        prisma.templeProfile.findMany({ where: { approved: false } }),
+      const pendingWhere = { approved: false } as const;
+      // `take`/`orderBy` are written out at every call site rather than hoisted
+      // into a shared object: the SCAL-04 ratchet
+      // (lib/unbounded-findmany.scal04.test.ts) matches on the ARGUMENT TEXT, so
+      // a hoisted options object reads to it as an unbounded call and, worse, a
+      // future unbounded read here would be indistinguishable from a bounded
+      // one. A guard that cannot see the bound is not a guard.
+      const orderOldestFirst = { createdAt: 'asc' as const };
+      const [
+        pandits,
+        stores,
+        astrologers,
+        wellness,
+        gaushalas,
+        temples,
+        panditTotal,
+        storeTotal,
+        astroTotal,
+        wellnessTotal,
+        gaushalaTotal,
+        templeTotal,
+      ] = await Promise.all([
+        prisma.panditProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.storeProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.astrologerProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.wellnessProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.gaushalaProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.templeProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.panditProfile.count({ where: pendingWhere }),
+        prisma.storeProfile.count({ where: pendingWhere }),
+        prisma.astrologerProfile.count({ where: pendingWhere }),
+        prisma.wellnessProfile.count({ where: pendingWhere }),
+        prisma.gaushalaProfile.count({ where: pendingWhere }),
+        prisma.templeProfile.count({ where: pendingWhere }),
       ]);
+      const total =
+        panditTotal + storeTotal + astroTotal + wellnessTotal + gaushalaTotal + templeTotal;
 
       // PanditProfile has no display-name column — `templeName` is a
       // legacy nullable field that historically held a free-form
@@ -962,9 +1043,14 @@ export class AdminService {
         })),
       ];
 
-      return approvals.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      // Oldest wait first — the provider who has been waiting longest is the
+      // one the queue exists to reach. The old sort was newest-first, which on
+      // any real backlog buries them permanently below the day's signups.
+      const items = approvals
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .slice(0, PENDING_APPROVAL_PAGE);
+
+      return { items, total, hasMore: total > items.length };
     } catch (err) {
       console.error('[admin.service.getPendingApprovals] DB failure', err);
       throw err;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { H1 } from "../../components/ui/heading-recipe";
 import { buttonClass } from "../../components/ui/button-recipe";
 import {
  Check,
@@ -80,13 +81,11 @@ export default async function PricingPage() {
  >
  Pricing
  </p>
+ {/* DU-05: this was Cabinet Grotesk 43.2px w700 while the home hero was
+   Cabinet Grotesk 70.4px w600 - two marketing pages, two recipes. */}
  <h1
- className="text-2xl sm:text-3xl font-bold mb-4"
- style={{
- fontFamily: "var(--font-display)",
- color: "var(--color-text-inverse)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.marketing} mb-4`}
+ style={{ color: "var(--color-text-inverse)" }}
  >
  Simple, Transparent Pricing
  </h1>

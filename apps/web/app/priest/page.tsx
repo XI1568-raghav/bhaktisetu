@@ -1,5 +1,6 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
+import { H1 } from '../../components/ui/heading-recipe';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -298,7 +299,7 @@ export default function PriestDashboard() {
  un-accepted offer does not have yet. */}
  <Link
  href="/priest/offers"
- className="mt-1 inline-block text-xs font-semibold text-saffron-700 underline underline-offset-2"
+ className="tap-safe mt-1 text-xs font-semibold text-saffron-700 underline underline-offset-2"
  >
  View your open offers
  </Link>

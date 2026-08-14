@@ -8,15 +8,32 @@ import {
   grievanceSlaLine,
   operatedByLine,
   postalContactLine,
+  specialtyEmail,
 } from "../../lib/company";
 
 type EscalationItem = { label: string; email: string; icon: typeof Briefcase };
-const escalationEmails: EscalationItem[] = ([
-  COMPANY.specialtyEmails.sales        ? { label: "Sales & enterprise",  email: COMPANY.specialtyEmails.sales,        icon: Briefcase  } : null,
-  COMPANY.specialtyEmails.partnerships ? { label: "Temple partnerships", email: COMPANY.specialtyEmails.partnerships, icon: Handshake  } : null,
-  COMPANY.specialtyEmails.press        ? { label: "Press & media",       email: COMPANY.specialtyEmails.press,        icon: Newspaper  } : null,
-  COMPANY.specialtyEmails.legal        ? { label: "Legal & compliance",  email: COMPANY.specialtyEmails.legal,        icon: Scale      } : null,
-] satisfies (EscalationItem | null)[]).filter((x): x is EscalationItem => Boolean(x));
+
+/**
+ * LEG-16: these four aliases were published on the Contact page while
+ * lib/company.ts described them, in its own words, as "aspirational". A
+ * contact page whose addresses may not resolve is worse than one that lists
+ * only the inbox we answer — and for legal@ it is a statutory-notice channel.
+ *
+ * The whole block is now gated on HAS_SPECIALTY_INBOXES_VERIFIED (the section
+ * below already hides itself when the list is empty), and the addresses come
+ * from specialtyEmail() rather than being read off the object directly. The
+ * owner flips one boolean the day the aliases are provisioned and deliverable.
+ */
+const escalationEmails: EscalationItem[] = (
+  COMPANY.HAS_SPECIALTY_INBOXES_VERIFIED
+    ? ([
+        { label: "Sales & enterprise",  email: specialtyEmail('sales'),        icon: Briefcase },
+        { label: "Temple partnerships", email: specialtyEmail('partnerships'), icon: Handshake },
+        { label: "Press & media",       email: specialtyEmail('press'),        icon: Newspaper },
+        { label: "Legal & compliance",  email: specialtyEmail('legal'),        icon: Scale     },
+      ] satisfies EscalationItem[])
+    : []
+);
 
 const contactMethods: Array<{ icon: typeof Mail; title: string; detail: string; description: string }> = [
   {

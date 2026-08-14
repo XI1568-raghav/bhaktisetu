@@ -7,6 +7,7 @@ export const dynamicParams = true;
 export const revalidate = 3600;
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 import { notFound, permanentRedirect } from 'next/navigation';
 import {
  MapPin,

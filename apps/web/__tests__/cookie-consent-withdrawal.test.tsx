@@ -15,6 +15,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, cleanup } from '@testing-library/react';
+import fs from 'node:fs';
+import path from 'node:path';
 import CookieBanner, { openCookieSettings, OPEN_CONSENT_EVENT } from '../components/CookieBanner';
 import CookieSettingsButton from '../components/CookieSettingsButton';
 
@@ -112,5 +114,53 @@ describe('LEG-15 — consent can be withdrawn after it has been given', () => {
       .getAllByRole('checkbox')
       .filter((el) => !(el as HTMLInputElement).disabled) as HTMLInputElement[];
     expect(boxes[0].checked).toBe(false);
+  });
+});
+
+/**
+ * LEG-15, remaining half — the control existed on three pages but nowhere
+ * persistent, and the finding names the footer explicitly: "Add a 'Cookie
+ * settings' link to the footer AND to /legal/cookies".
+ *
+ * A user who rejected on the homepage and now wants analytics back had to
+ * already know that /legal/cookies, /privacy or /account/privacy exists. The
+ * footer is on every page of the site, which is the whole point: withdrawal
+ * has to be reachable from wherever the user happens to be, not only from the
+ * page that explains cookies.
+ *
+ * The footer is a Server Component inside app/layout.tsx, which pulls
+ * next/font/google and the whole i18n table — it cannot be rendered in this
+ * environment. So the wiring is asserted at the source, and the BEHAVIOUR of
+ * the thing being wired (click -> panel opens with stored choices) is already
+ * covered by the DOM tests above. Both halves have to hold for the loop to
+ * close.
+ */
+describe('LEG-15 — the cookie control is reachable from every page', () => {
+  const layout = () =>
+    fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'app/layout.tsx'), 'utf8');
+
+  it('the root layout imports the consent control', () => {
+    expect(layout()).toMatch(
+      /import\s+CookieSettingsButton\s+from\s+["'][^"']*components\/CookieSettingsButton["']/,
+    );
+  });
+
+  it('renders it inside the <footer>, not merely somewhere in the file', () => {
+    const src = layout();
+    const footerStart = src.indexOf('<footer');
+    const footerEnd = src.indexOf('</footer>');
+    expect(footerStart).toBeGreaterThan(-1);
+    expect(footerEnd).toBeGreaterThan(footerStart);
+    expect(src.slice(footerStart, footerEnd)).toMatch(/<CookieSettingsButton\b/);
+  });
+
+  it('the cookie policy still carries its own copy of the control', () => {
+    const policy = fs.readFileSync(
+      path.join(path.resolve(__dirname, '..'), 'app/legal/cookies/page.tsx'),
+      'utf8',
+    );
+    expect(policy).toMatch(/<CookieSettingsButton\b/);
+    // and no longer tells the reader to hand-edit browser storage
+    expect(policy).not.toMatch(/clearing the darshya_cookie_consent_v1/i);
   });
 });

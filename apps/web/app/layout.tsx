@@ -33,6 +33,8 @@ import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNavV2 } from "../components/MobileNavV2";
 import { MobileBottomTabs } from "../components/MobileBottomTabs";
 import { SiteChrome } from "../components/SiteChrome";
+import CookieSettingsButton from "../components/CookieSettingsButton";
+import { buttonClass } from "../components/ui/button-recipe";
 import { CategoryNav } from "../components/CategoryNav";
 import OnboardingTrigger from "../components/OnboardingTrigger";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
@@ -365,7 +367,9 @@ export default function RootLayout({
  {/* Ask Pandit — icon-only below xl, label visible 1280px+ */}
  <a
  href={highlightLink.href}
- className="hidden md:inline-flex items-center gap-1.5 h-9 px-2.5 xl:px-3 text-sm font-medium text-white bg-saffron-600 hover:bg-saffron-700 rounded-md transition-colors whitespace-nowrap btn-press"
+ // DU-03: the header "Ask Pandit" was the 10px-radius outlier — the only
+ // rounded-md CTA on the site, on every one of the ten measured screens.
+ className={buttonClass("primary", "sm", "hidden md:inline-flex btn-press")}
  aria-label={tNav(highlightLink.labelKey)}
  title={tNav(highlightLink.labelKey)}
  >
@@ -438,7 +442,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="Facebook"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Facebook className="w-4 h-4" />
  </a>
@@ -447,7 +451,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="Instagram"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Instagram className="w-4 h-4" />
  </a>
@@ -456,7 +460,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="YouTube"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Youtube className="w-4 h-4" />
  </a>
@@ -480,6 +484,24 @@ export default function RootLayout({
  </a>
  </li>
  ))}
+ {/* LEG-15: withdrawal of consent must be as easy as giving it (UK GDPR
+     Art. 7(3), DPDP Act s.6(4)). The control shipped on /legal/cookies,
+     /privacy and /account/privacy, but a user who rejected on the homepage
+     had to already know one of those pages existed. The footer is on every
+     page, which is the only placement that satisfies "as easy".
+
+     Not an i18n key on purpose: lib/i18n has no entry for it and this file
+     must not gain a footer link that renders as a raw key in the five
+     non-English locales. Plain English here matches the untranslated
+     "Browse all 500+ guides" pill below. */}
+ {section.titleKey === 'support' && (
+ <li key="support-cookie-settings">
+ <CookieSettingsButton
+ label="Cookie settings"
+ className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ />
+ </li>
+ )}
  </ul>
  </div>
  ))}
@@ -566,7 +588,7 @@ export default function RootLayout({
  <div className="mt-6 flex justify-center">
  <Link
  href="/discover"
- className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-saffron-300 bg-white/5 hover:bg-white/10 hover:text-saffron-400 border border-saffron-700/40 rounded-full transition-colors"
+ className="inline-flex min-h-[44px] items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-saffron-300 bg-white/5 hover:bg-white/10 hover:text-saffron-400 border border-saffron-700/40 rounded-full transition-colors"
  >
  Browse all 500+ guides &rarr;
  </Link>
@@ -601,7 +623,7 @@ export default function RootLayout({
  </span>
  <span className="flex items-center gap-1.5">
  <Phone className="w-3.5 h-3.5" />
- <a href="tel:+919255109400" className="hover:text-saffron-400 transition-colors">+91 92551 09400</a>
+ <a href="tel:+919255109400" className="tap-safe hover:text-saffron-400 transition-colors">+91 92551 09400</a>
  </span>
  <span className="flex items-center gap-1.5">
  <MapPin className="w-3.5 h-3.5" /> Bengaluru, India

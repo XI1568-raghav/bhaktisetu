@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { buttonClass } from './ui/button-recipe';
 import Link from 'next/link';
 import { CheckCircle2, Clock, ExternalLink, Pencil, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
@@ -158,7 +159,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  </p>
  <Link
  href={`/onboarding/view?role=${onboardingSlug}`}
- className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Complete onboarding
  <ExternalLink className="w-3.5 h-3.5" />

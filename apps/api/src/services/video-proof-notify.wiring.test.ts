@@ -30,14 +30,17 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
-const { notifyVideoReadyMock, createPriestPayoutMock, notifyUserMock } = vi.hoisted(() => ({
-  notifyVideoReadyMock: vi.fn(),
-  createPriestPayoutMock: vi.fn(),
-  notifyUserMock: vi.fn(),
-}));
+const { notifyVideoReadyMock, notifyBookingEventMock, createPriestPayoutMock, notifyUserMock } =
+  vi.hoisted(() => ({
+    notifyVideoReadyMock: vi.fn(),
+    notifyBookingEventMock: vi.fn(),
+    createPriestPayoutMock: vi.fn(),
+    notifyUserMock: vi.fn(),
+  }));
 
 vi.mock('./booking-notify.service.js', () => ({
   notifyVideoReady: notifyVideoReadyMock,
+  notifyBookingEvent: notifyBookingEventMock,
 }));
 
 vi.mock('./payment.service.js', () => ({
@@ -165,6 +168,11 @@ describe('NOTIF-05 — updateBookingStatus(video_uploaded) announces the video',
   });
 
   it('leaves other transitions on the existing push path untouched', async () => {
+    // `priest_assigned`, not `cancelled`: NOTIF-06 (2026-08-14) moved
+    // cancelled/in_progress/completed onto notifyBookingEvent's full fan-out and
+    // off this bare-push leg, precisely so they stop being push-only. This case
+    // exists to prove the video-proof wiring did not capture the push path
+    // wholesale, so it needs a status that is still legitimately push-only.
     prismaMock.pujaBooking.findUnique.mockReset();
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'booking-1',
@@ -172,17 +180,18 @@ describe('NOTIF-05 — updateBookingStatus(video_uploaded) announces the video',
     } as never);
     prismaMock.pujaBooking.update.mockResolvedValue({
       id: 'booking-1',
-      status: 'cancelled',
+      status: 'priest_assigned',
       pujaType: { id: 'pt-1', name: 'Satyanarayan Puja', slug: 'satyanarayan' },
       temple: { id: 't-1', name: 'Shri Kashi Vishwanath', slug: 'kashi' },
       user: { id: 'u-1' },
       priest: null,
     } as never);
 
-    await service.updateBookingStatus('booking-1', 'cancelled' as never);
+    await service.updateBookingStatus('booking-1', 'priest_assigned' as never);
     await flush();
 
     expect(notifyVideoReadyMock).not.toHaveBeenCalled();
+    expect(notifyBookingEventMock).not.toHaveBeenCalled();
     expect(notifyUserMock).toHaveBeenCalledTimes(1);
   });
 });

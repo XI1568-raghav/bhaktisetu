@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // Donation model is currently gaushala-only (schema.prisma:1080), so the
@@ -38,9 +38,9 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
 export async function getMyDonations(
   token: string | undefined,
 ): Promise<TempleDonation[]> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/donations`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/donations`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load donations'));
   const data = (await res.json()) as { donations: TempleDonation[]; total: number };
   return data.donations ?? [];
@@ -74,9 +74,9 @@ export interface CreateTemplePujaInput {
 export type UpdateTemplePujaInput = Partial<CreateTemplePujaInput>;
 
 export async function listTemplePujas(token: string | undefined): Promise<TemplePujaOffering[]> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/pujas`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
   const body = (await res.json()) as { offerings: TemplePujaOffering[] };
   return body.offerings;
@@ -99,9 +99,9 @@ export interface TemplePujaListResult {
 export async function listTemplePujasWithLinkState(
   token: string | undefined,
 ): Promise<TemplePujaListResult> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/pujas`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
   const body = (await res.json()) as {
     offerings?: TemplePujaOffering[];
@@ -121,11 +121,11 @@ export async function createTemplePuja(
   token: string | undefined,
   input: CreateTemplePujaInput,
 ): Promise<TemplePujaOffering> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/pujas`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create puja'));
   const body = (await res.json()) as { offering: TemplePujaOffering };
   return body.offering;
@@ -136,11 +136,11 @@ export async function updateTemplePuja(
   id: string,
   input: UpdateTemplePujaInput,
 ): Promise<TemplePujaOffering> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/pujas/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update puja'));
   const body = (await res.json()) as { offering: TemplePujaOffering };
   return body.offering;
@@ -150,10 +150,10 @@ export async function deleteTemplePuja(
   token: string | undefined,
   id: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/pujas/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete puja'));
 }
 
@@ -203,9 +203,9 @@ export interface CreateDarshanStreamInput {
 export type UpdateDarshanStreamInput = Partial<CreateDarshanStreamInput>;
 
 export async function listDarshanStreams(token: string | undefined): Promise<DarshanStream[]> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/darshan`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/darshan`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load streams'));
   const body = (await res.json()) as { streams: DarshanStream[] };
   return body.streams;
@@ -215,11 +215,11 @@ export async function createDarshanStream(
   token: string | undefined,
   input: CreateDarshanStreamInput,
 ): Promise<DarshanStream> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/darshan`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/darshan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create stream'));
   const body = (await res.json()) as { stream: DarshanStream };
   return body.stream;
@@ -230,11 +230,11 @@ export async function updateDarshanStream(
   id: string,
   input: UpdateDarshanStreamInput,
 ): Promise<DarshanStream> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/darshan/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/darshan/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update stream'));
   const body = (await res.json()) as { stream: DarshanStream };
   return body.stream;
@@ -244,10 +244,10 @@ export async function deleteDarshanStream(
   token: string | undefined,
   id: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/darshan/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/darshan/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete stream'));
 }
 
@@ -256,11 +256,11 @@ export async function setDarshanStreamStatus(
   id: string,
   status: DarshanStreamStatusPatch,
 ): Promise<DarshanStream> {
-  const res = await fetch(`${API_BASE_URL}/temple-portal/darshan/${id}/status`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/darshan/${id}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ status }),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update stream status'));
   const body = (await res.json()) as { stream: DarshanStream };
   return body.stream;
@@ -283,7 +283,7 @@ export interface PublicPriestSummary {
 }
 
 export async function listPublicPriests(): Promise<PublicPriestSummary[]> {
-  const res = await fetch(`${API_BASE_URL}/priests`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/priests`, {}, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) return [];
   const body = (await res.json()) as { priests: PublicPriestSummary[] };
   return body.priests ?? [];
@@ -298,7 +298,7 @@ export interface PujaTypeSummary {
 }
 
 export async function listPujaTypes(): Promise<PujaTypeSummary[]> {
-  const res = await fetch(`${API_BASE_URL}/pujas/types?limit=100`);
+  const res = await fetchWithTimeout(`${API_BASE_URL}/pujas/types?limit=100`, {}, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) return [];
   const body = (await res.json()) as {
     pujaTypes?: PujaTypeSummary[];

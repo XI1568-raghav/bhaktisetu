@@ -12,7 +12,12 @@ import {
   isNetworkFailure,
   NETWORK_ERROR_MESSAGE,
 } from '../../../lib/api-config';
-import { COMPANY, grievanceOfficerLine, grievanceSlaLine } from '../../../lib/company';
+import {
+  COMPANY,
+  grievanceOfficerLine,
+  grievanceSlaLine,
+  rightsContactEmail,
+} from '../../../lib/company';
 
 /**
  * LEG-16 (prod sweep 2026-08-12) — DPDP rights were email-only.
@@ -158,7 +163,7 @@ function AccountPrivacyInner() {
       );
       if (!res.ok) {
         setSubmitError(
-          `We could not file that request (HTTP ${res.status}). Nothing has been submitted — try again, or email ${COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail}.`,
+          `We could not file that request (HTTP ${res.status}). Nothing has been submitted — try again, or email ${rightsContactEmail()}.`,
         );
         return;
       }

@@ -115,14 +115,14 @@ function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
  <div className="px-3 py-4 border-t border-white/10">
  <Link
  href="/"
- className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
+ className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
  >
  <ChevronRight className="w-5 h-5 rotate-180" />
  Back to Main Site
  </Link>
  <button
  onClick={signOut}
- className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
+ className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
  >
  <LogOut className="w-5 h-5" />
  Sign Out

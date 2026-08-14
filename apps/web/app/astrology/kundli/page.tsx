@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  Sun,
  Moon,
@@ -78,7 +79,7 @@ export default function KundliPage() {
  <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
  <span className="text-xs font-bold text-saffron-700 uppercase tracking-wider">Free Tool</span>
  </div>
- <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
+ <h1 className={`${H1.catalogue} mb-3`}>
  Free Kundli Generator
  </h1>
  <p className="text-surface-500 max-w-xl mx-auto">

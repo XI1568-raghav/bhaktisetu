@@ -255,6 +255,57 @@ export function useBooking(
   });
 }
 
+/**
+ * The body POST /api/v1/bookings/book actually accepts.
+ *
+ * PAR-15. Pointing the hook at the right URL is only half of it: the shared
+ * `createBookingSchema` and the route's own `createBookingSchema`
+ * (apps/api/src/routes/bookings.ts:59) are different shapes with the same name.
+ * The shared one carries `scheduledTime`, a flat `devoteeNames: string[]` and
+ * parallel `gotras[]` / `nakshatras[]`; the route requires `scheduledTimeSlot`
+ * and one object per devotee. Sending the client shape at the corrected URL
+ * would have traded a 404 for a 400.
+ *
+ * The shared schema is not the thing to change — it has its own suite and other
+ * consumers — so the difference is reconciled here, at the boundary, once.
+ */
+export interface CreateBookingBody {
+  templeId: string;
+  pujaTypeId: string;
+  templePujaOfferingId: string;
+  scheduledDate: string;
+  scheduledTimeSlot: string;
+  devoteeNames: Array<{ name: string; gotra?: string; nakshatra?: string }>;
+  specialInstructions?: string;
+  prasadDeliveryRequested: boolean;
+  prasadDeliveryAddressId?: string;
+}
+
+export function toCreateBookingBody(data: CreateBooking): CreateBookingBody {
+  const gotras = data.gotras ?? [];
+  const nakshatras = data.nakshatras ?? [];
+  return {
+    templeId: data.templeId,
+    pujaTypeId: data.pujaTypeId,
+    templePujaOfferingId: data.templePujaOfferingId,
+    scheduledDate: data.scheduledDate,
+    // The route requires a slot; the client type has it optional. Empty string
+    // rather than a fabricated default — the route rejects it with "Time slot is
+    // required", which is the truthful outcome for a booking with no slot.
+    scheduledTimeSlot: data.scheduledTime ?? "",
+    // Positional zip: the shared shape carries gotra/nakshatra as arrays
+    // parallel to the names, which is exactly how the web wizard collects them.
+    devoteeNames: data.devoteeNames.map((name, i) => ({
+      name,
+      gotra: gotras[i],
+      nakshatra: nakshatras[i],
+    })),
+    specialInstructions: data.specialInstructions,
+    prasadDeliveryRequested: data.prasadDeliveryRequested,
+    prasadDeliveryAddressId: data.prasadDeliveryAddressId,
+  };
+}
+
 export function useCreateBooking(
   options?: UseMutationOptions<ApiResponse<PujaBooking>, Error, CreateBooking>
 ) {
@@ -262,7 +313,10 @@ export function useCreateBooking(
 
   return useMutation({
     mutationFn: (data: CreateBooking) =>
-      api.post<ApiResponse<PujaBooking>>(API_ENDPOINTS.BOOKINGS, data),
+      api.post<ApiResponse<PujaBooking>>(
+        API_ENDPOINTS.BOOKINGS,
+        toCreateBookingBody(data)
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
     },

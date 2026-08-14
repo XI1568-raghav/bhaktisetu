@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  ChevronLeft,
  Send,
@@ -332,7 +333,7 @@ How may I guide you today?`,
  <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
  <span className="text-xs font-bold text-saffron-700 uppercase tracking-wider">Free AI Consultation</span>
  </div>
- <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
+ <h1 className={`${H1.catalogue} mb-3`}>
  AI Vedic Astrologer
  </h1>
  <p className="text-surface-500 max-w-xl mx-auto">

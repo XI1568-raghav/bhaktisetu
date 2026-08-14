@@ -272,7 +272,15 @@ export class DispatchService {
         priestUserId: c.userId,
         bookingId,
         pujaName: booking.pujaType.name,
-        acceptUrl: `${acceptBase}/priest/bookings/${bookingId}?accept=1`,
+        // PJ-04: the accept intent lives in the PATH, never the query string.
+        // apps/web/middleware.ts:221 bounces an unauthenticated portal request
+        // to /auth/login with `redirect=pathname` — pathname only — so a
+        // `?accept=1` on a WhatsApp link tapped from a signed-out phone is gone
+        // before the login form renders, and the pandit lands on the plain
+        // booking view, which is assigned-only and 403s for an offer he has not
+        // accepted. `/priest/bookings/:id/accept` round-trips that bounce
+        // unchanged. Served by apps/web/app/priest/bookings/[id]/accept/page.tsx.
+        acceptUrl: `${acceptBase}/priest/bookings/${bookingId}/accept`,
         expiresInSec: cfg.acceptWindowSec,
       }).catch(() => undefined);
     }
