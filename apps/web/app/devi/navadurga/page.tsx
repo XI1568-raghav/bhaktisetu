@@ -7,11 +7,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: 'Navadurga — 9 Forms of Goddess Durga | Navratri Day-by-Day Guide | Darshya',
+ title: 'Navadurga — 9 Forms of Goddess Durga | Navratri Day-by-Day Guide',
  description:
   'Free Navadurga guide — 9 sacred forms of Maa Durga worshipped through Navratri. Day-by-day: Shailaputri, Brahmacharini, Chandraghanta, Kushmanda, Skandamata, Katyayani, Kalaratri, Mahagauri, Siddhidatri. Each form\'s color, mantra, prasad, flower, mount, blessing & how-to-worship. Per Devi Mahatmya, Markandeya Purana & Devi Bhagavata Purana.',
  alternates: { canonical: `${BASE_URL}/devi/navadurga` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Navadurga — 9 Forms of Durga Worshipped in Navratri',
   description: 'Each of the 9 nights of Navratri honors one form of Durga. Day, color, mantra, prasad — full guide.',
   url: `${BASE_URL}/devi/navadurga`,
@@ -145,7 +146,7 @@ export default function NavadurgaPage() {
          />
         </div>
         <p className="mt-3 text-xs leading-relaxed text-gray-700">{n.meaning}</p>
-        <div className="mt-3 flex flex-wrap gap-1.5 text-[10px]">
+        <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
          <span className="rounded-full bg-saffron-50 px-2 py-0.5 text-saffron-800">{n.planet}</span>
          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-800">{n.chakra.split(' ')[0]}</span>
          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-800">{n.prasad}</span>

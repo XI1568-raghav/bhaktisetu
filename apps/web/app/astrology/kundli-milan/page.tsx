@@ -11,10 +11,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Free Kundli Milan Online — Ashtakoot 36-Point Guna Match Calculator | Darshya',
+ title: 'Free Kundli Milan Online — Ashtakoot 36-Point Guna Match Calculator',
  description: 'Free Kundli Milan calculator with full Ashtakoot 36-point Guna match — Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, Nadi. Manglik dosh check included. Authentic Vedic computation, no signup.',
  alternates: { canonical: `${BASE_URL}/astrology/kundli-milan` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Free Kundli Milan — Ashtakoot 36-Point Guna Match',
   description: 'Vedic marriage compatibility calculator. Full 8-Koota Ashtakoot breakdown + Manglik check. Free, no signup.',
   url: `${BASE_URL}/astrology/kundli-milan`,

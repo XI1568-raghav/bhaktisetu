@@ -1,12 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendPush, webPushConfig, PushSubscriptionPayload } from '../lib/web-push.js';
-import { sendFcm, fcmConfig } from '../lib/fcm.js';
+import { sendFcm, fcmConfig, isFcmRegistrationToken } from '../lib/fcm.js';
 import { prisma } from '../lib/prisma.js';
+import { listNotifications, recordNotification } from '../lib/notification-log.js';
 
 /**
- * Web push subscription endpoints.
+ * Web push subscription endpoints + the devotee notification centre.
  *
+ *   GET  /                  → this devotee's notification history (NOTIF-14)
  *   GET  /vapid-public-key  → returns the VAPID public key for the browser
  *   POST /subscribe         { subscription }      auth required
  *   POST /unsubscribe       { endpoint }          auth required
@@ -26,6 +28,35 @@ interface StoredSub extends PushSubscriptionPayload {
 const subsByUser = new Map<string, StoredSub[]>();
 
 export async function notificationRoutes(server: FastifyInstance) {
+  /**
+   * NOTIF-14 — the in-app notification centre.
+   *
+   * Seven candidate read endpoints (/notifications, /list, /inbox, /feed, /me,
+   * /unread, /history) all 404'd on the live API, and no table recorded that a
+   * notification had ever been attempted, so a devotee who missed a push had no
+   * way to see it later and support could not answer "did the confirmation go
+   * out?" for any booking.
+   *
+   * `available:false` means the log could not be READ — a different fact from
+   * "you have no notifications", and the client must not render it as one.
+   * `items: []` with `available:true` is the honest empty state and stays empty:
+   * no sample rows, no placeholder history.
+   */
+  server.get('/', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const q = (request.query ?? {}) as { limit?: string; before?: string };
+    const limit = Number(q.limit);
+    const result = await listNotifications(request.currentUser!.id, {
+      limit: Number.isFinite(limit) ? limit : undefined,
+      before: q.before,
+    });
+    return reply.send({
+      items: result.items,
+      available: result.available,
+      // Cursor for the next page, or null when this page is the end.
+      nextBefore: result.items.length ? result.items[result.items.length - 1]!.createdAt : null,
+    });
+  });
+
   server.get('/vapid-public-key', async (_request, reply) => {
     return reply.send({
       publicKey: webPushConfig.publicKey,
@@ -129,6 +160,21 @@ export async function notificationRoutes(server: FastifyInstance) {
     if (!platform || !['ios', 'android', 'web'].includes(platform)) {
       return reply.code(400).send({ error: 'platform must be ios|android|web' });
     }
+    // NOTIF-07: refuse anything that is not an FCM registration token.
+    //
+    // apps/web/components/AartiOptIn.tsx posts `pushSubscription.endpoint` — a
+    // Web Push URL — here, on the assumption that "the API treats both as
+    // opaque strings". FCM does not: it answers INVALID_ARGUMENT, which the send
+    // path used to classify as `expired` and DELETE, so the devotee's aarti
+    // toggle went on, no reminder ever arrived, and the row that would have made
+    // it diagnosable was gone by the next tick. Storing it and answering ok is
+    // the dishonest option; the caller already surfaces a non-2xx to the user.
+    if (!isFcmRegistrationToken(deviceToken)) {
+      return reply.code(400).send({
+        error:
+          'deviceToken must be an FCM registration token, not a Web Push endpoint. For browser push use POST /notifications/subscribe with the full PushSubscription (endpoint + p256dh + auth).',
+      });
+    }
     const userId = request.currentUser!.id;
     // Idempotent upsert on the unique deviceToken — re-registration overwrites
     // any prior owner (handles device handed between users / re-installs).
@@ -193,6 +239,7 @@ export async function notificationRoutes(server: FastifyInstance) {
     const expired: string[] = [];
     let sent = 0;
     let failed = 0;
+    let invalid = 0;
     for (const r of rows) {
       const result = await sendFcm(r.deviceToken, {
         title: body.title ?? 'Darshya',
@@ -201,10 +248,14 @@ export async function notificationRoutes(server: FastifyInstance) {
       });
       if (result.ok) sent++;
       else if (result.expired) expired.push(r.deviceToken);
+      // NOTIF-07: a malformed token is a registration-path bug, not a dead
+      // device. Counted and reported, never deleted — deleting it is what made
+      // the stuck aarti toggle impossible to diagnose.
+      else if (result.invalidToken) invalid++;
       else if (!result.skipped) failed++;
     }
     if (expired.length) await model.deleteMany({ where: { deviceToken: { in: expired } } });
-    return reply.send({ ok: true, sent, expired: expired.length, failed });
+    return reply.send({ ok: failed === 0 && invalid === 0, sent, expired: expired.length, invalid, failed });
   });
 }
 
@@ -212,10 +263,61 @@ export async function notificationRoutes(server: FastifyInstance) {
  * Helper used by other routes (e.g. booking confirmed → notify devotee).
  * Returns count of successful sends; silently drops expired endpoints.
  */
+/**
+ * NOTIF-14: what to write to `notification_log` for this push.
+ *
+ * Defaults on purpose. A new caller of `notifyUser` gets a durable record
+ * without having to remember one, because the finding's whole shape was that
+ * every send path was fire-and-forget with the result discarded — an opt-IN
+ * would reproduce it for the next fifteen call sites the way it did for the
+ * last fifteen.
+ *
+ * `record: false` exists for exactly one caller: `booking-notify.service`
+ * writes the richer three-channel row itself, so recording here as well would
+ * put two entries in the devotee's own notification centre for one event.
+ */
+export interface NotifyUserMeta {
+  /** What happened, in the log's vocabulary. Defaults to a generic 'push'. */
+  event?: string;
+  audience?: 'devotee' | 'priest';
+  bookingId?: string | null;
+  /** Set false when the caller writes its own multi-channel row. */
+  record?: boolean;
+}
+
 export async function notifyUser(
   userId: string,
   payload: { title: string; body: string; url?: string },
+  meta: NotifyUserMeta = {},
 ): Promise<number> {
+  const shouldRecord = meta.record !== false;
+  // Written whatever the outcome — including "there was nowhere to send it",
+  // which is the answer support most often needs and the one the old code
+  // could not distinguish from success.
+  const log = async (push: 'sent' | 'failed' | 'no-target'): Promise<void> => {
+    if (!shouldRecord) return;
+    try {
+      await recordNotification({
+        userId,
+        audience: meta.audience ?? 'devotee',
+        event: meta.event ?? 'push',
+        bookingId: meta.bookingId ?? null,
+        title: payload.title,
+        body: payload.body,
+        url: payload.url ?? null,
+        push,
+        // This helper only owns the push leg. Saying 'no-target' for the other
+        // two is the honest reading: nothing was attempted on them here.
+        whatsapp: 'no-target',
+        email: 'no-target',
+        delivered: push === 'sent',
+      });
+    } catch {
+      // The log is best-effort by contract (lib/notification-log.ts). A missing
+      // table must never cost a devotee their notification.
+    }
+  };
+
   // Cross-cutting Phase 2: read persisted subscriptions from the DB (the source
   // of truth now), falling back to the in-memory map for any not-yet-persisted
   // subs in the same process. This is what makes push survive a restart.
@@ -233,7 +335,10 @@ export async function notifyUser(
   } catch {
     // DB unavailable — use in-memory only.
   }
-  if (!subs.length) return 0;
+  if (!subs.length) {
+    await log('no-target');
+    return 0;
+  }
   const results = await Promise.all(subs.map((s) => sendPush(s, payload)));
   // Drop expired endpoints from BOTH stores.
   const expired = subs.filter((_, i) => results[i]?.expired);
@@ -242,5 +347,7 @@ export async function notifyUser(
   }
   const stillValid = subs.filter((_, i) => !results[i]?.expired);
   if (stillValid.length !== subs.length) subsByUser.set(userId, stillValid);
-  return results.filter((r) => r.ok).length;
+  const delivered = results.filter((r) => r.ok).length;
+  await log(delivered > 0 ? 'sent' : 'failed');
+  return delivered;
 }

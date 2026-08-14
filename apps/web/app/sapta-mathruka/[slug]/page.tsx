@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const m = getSaptaMathrukaBySlug(slug);
   if (!m) return { title: 'Not found' };
   return {
-    title: `${m.name} — Matrika ${m.number} of 7, Shakti of ${m.consortDeity} | Darshya`,
+    title: `${m.name} — Matrika ${m.number} of 7, Shakti of ${m.consortDeity}`,
     description: `${m.name} (${m.sanskrit}) — ${m.number}th Matrika. Vahana: ${m.vahana}. Weapons: ${m.weapons.slice(0, 2).join(', ')}. Includes beej mantra, story, vrata and associated temple.`,
     alternates: { canonical: `${BASE_URL}/sapta-mathruka/${m.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${m.name} — ${m.number} of 7 Matrikas`,
       description: m.benefit,
       url: `${BASE_URL}/sapta-mathruka/${m.slug}`,

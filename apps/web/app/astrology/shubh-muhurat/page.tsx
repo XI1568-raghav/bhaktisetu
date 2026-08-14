@@ -8,11 +8,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Shubh Muhurat Finder — Free Auspicious Time Calculator (Marriage, Griha Pravesh, Vehicle) | Darshya',
+ title: 'Shubh Muhurat Finder — Free Auspicious Time Calculator (Marriage, Griha Pravesh, Vehicle)',
  description:
   'Free Shubh Muhurat finder. Best auspicious time today for marriage, griha pravesh, vehicle purchase, naming, business start, signing, travel, surgery. Composite scoring: Choghadiya + Hora + Rahu Kalam avoidance. Ranked windows 0-100.',
  alternates: { canonical: `${BASE_URL}/astrology/shubh-muhurat` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Shubh Muhurat Finder — Free Auspicious Time Calculator',
   description: 'Ranked auspicious windows for 12 life events. Composite Choghadiya + Hora + Rahu Kalam scoring.',
   url: `${BASE_URL}/astrology/shubh-muhurat`,
@@ -116,9 +117,9 @@ export default function ShubhMuhuratPage() {
       <div key={e.value} className="rounded-xl border-2 border-saffron-200 bg-saffron-50/40 p-4">
        <p className="font-serif text-base font-semibold text-gray-900">{e.label}</p>
        <p className="text-xs text-saffron-700">{e.sanskrit}</p>
-       <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Ideal planets</p>
+       <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Ideal planets</p>
        <p className="text-xs text-gray-800">{e.idealPlanets.join(' · ')}</p>
-       <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Ideal Choghadiya</p>
+       <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Ideal Choghadiya</p>
        <p className="text-xs text-gray-800">{e.idealChogh.join(' · ')}</p>
       </div>
      ))}

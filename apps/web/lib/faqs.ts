@@ -100,7 +100,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Do you have an annual NRI membership?',
-        a: 'Yes — Darshya NRI Premium at ₹5000/year or $60/year includes 4 free pujas per year, monthly panchang calendar, priority WhatsApp support, prasad shipping discount, and access to NRI-exclusive aarti recordings. Detail at /nri.',
+        a: 'Yes — Darshya NRI Premium, ₹5,000 per year (about $60), billed once in INR through Razorpay. It includes no NRI surcharge on bookings, no ads, priority booking 7 days early, a weekly 1:1 call with a priest, a free 80G receipt PDF for any donation, and unlimited AI astro chat. Detail at /nri.',
       },
     ],
   },

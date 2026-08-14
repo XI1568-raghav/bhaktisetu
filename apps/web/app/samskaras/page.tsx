@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '16 Samskaras — Hindu Rites of Passage from Conception to Cremation | Darshya',
+  title: '16 Samskaras — Hindu Rites of Passage from Conception to Cremation',
   description: 'The complete 16 samskaras (sodasa-samskaras) of the Hindu lifecycle — Garbhadhana, Namakarana, Annaprashana, Upanayana, Vivaha, Antyeshti and more. Sanskrit, timing, ritual + modern relevance.',
   alternates: { canonical: `${BASE_URL}/samskaras` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'The 16 Hindu Samskaras',
     description: 'Sodasa-samskaras — the sacred rites that consecrate every passage of a Hindu life.',
     url: `${BASE_URL}/samskaras`,

@@ -19,10 +19,26 @@ const nextConfig: NextConfig = {
     // Historically `unoptimized: true` because Cloudflare Pages couldn't run
     // Next's default image optimizer. Cloudflare is now out (self-host on
     // Render Node via `output: 'standalone'`, where the optimizer WOULD work),
-    // but the flag is kept for now: on the free-tier Node box, sharp-based
-    // on-the-fly optimization adds CPU per request and free-tier RAM is tight.
-    // Remote images are already served optimized from Supabase/CloudFront, so
-    // the optimizer buys little. Revisit if/when moving off free tier.
+    // but the flag is kept: on the free-tier Node box, sharp-based on-the-fly
+    // optimization adds CPU per request and free-tier RAM is tight. An
+    // unbounded optimizer in front of arbitrary remote URLs is its own
+    // availability risk on a single 512 MB container.
+    //
+    // 2026-08-13 correction — the old justification here ("remote images are
+    // already served optimized from Supabase/CloudFront") was false. 100% of
+    // them are Wikimedia Commons files, and measured at a 375px viewport the
+    // app was shipping 29,056 KB of images on /store, 25,658 KB on /pujas,
+    // 16,131 KB on /gaushala and 14,815 KB on /. The optimizer was never what
+    // stood between a 6016x4000 original and a phone.
+    //
+    // What replaces it: every remote URL now goes through `remoteImage()` in
+    // lib/images.ts, which asks the ORIGIN's own resizer (Commons /thumb/,
+    // Unsplash w/h params) for the slot width, and `remoteSrcSet()` emits a
+    // srcset so a 375px phone takes the 500px candidate. That costs this
+    // container zero CPU. Flipping `unoptimized` to false is therefore no
+    // longer the lever it looks like — only 4 call sites use next/image at
+    // all, and all four opt out individually. Revisit only alongside the
+    // self-host-vs-CDN decision, not on its own.
     unoptimized: true,
     remotePatterns: [
       {
@@ -88,6 +104,10 @@ const nextConfig: NextConfig = {
   // turning maps back on without a release to attach them to is still pointless.
   productionBrowserSourceMaps: false,
   reactStrictMode: true,
+  // SEC-03: Next sets `X-Powered-By: Next.js` on every response by default,
+  // handing an attacker the framework and a version-range hint for free. No
+  // behaviour depends on it.
+  poweredByHeader: false,
   webpack: (config) => {
     // Workspace packages (@poojly/api-client, @poojly/shared) use NodeNext-style
     // `./foo.js` imports in their TS source. Webpack's default resolver doesn't

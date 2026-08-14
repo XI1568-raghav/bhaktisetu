@@ -5,7 +5,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getTempleBySlug } from '../../../../lib/api';
+import { resolveApiTemple } from '../../../../lib/temple-resolve';
 
 export const revalidate = 3600;
 
@@ -18,32 +18,17 @@ function fmtINR(s: string): string {
   return Number.isFinite(n) ? `₹${n.toLocaleString('en-IN')}` : s;
 }
 
-// P0 #202 (cont.): map a curated short temple slug to the API's `<name>-<city>`
-// form. The API seeds temples with a city suffix the short slug lacks. We only
-// need a deterministic candidate to TRY (the api call is the source of truth);
-// if neither the short nor the long form resolves, the caller 404s.
-const SHORT_TO_API_SLUG: Record<string, string> = {
-  'kashi-vishwanath': 'kashi-vishwanath-varanasi',
-  somnath: 'somnath-gujarat',
-  siddhivinayak: 'siddhivinayak-mumbai',
-  akshardham: 'akshardham-delhi',
-  badrinath: 'badrinath-uttarakhand',
-  dwarkadhish: 'dwarkadhish-dwarka',
-  'vaishno-devi': 'vaishno-devi-katra',
-  meenakshi: 'meenakshi-madurai',
-  'meenakshi-temple': 'meenakshi-madurai',
-  rameshwaram: 'ramanathaswamy-rameshwaram',
-  'tirupati-balaji': 'tirumala-tirupati',
-};
-
-function apiSlugFor(shortSlug: string): string {
-  return SHORT_TO_API_SLUG[shortSlug] ?? shortSlug;
-}
+// DF-04 (prod sweep 2026-08-12): this file used to carry its own eleven-row
+// short-slug table while app/temples/[slug]/page.tsx resolved the API temple by
+// walking the temple list. The two disagreed, so a temple whose detail page
+// rendered could 404 on its own /pujas child route — which made the detail
+// page's booking CTAs unsafe to point here. Both now share lib/temple-api.ts.
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const t = await getTempleBySlug(slug);
+    const t = await resolveApiTemple(slug);
+    if (!t) return { title: 'Temple pujas' };
     const name = t.name;
     const city = t.city || '';
     const count = t.pujaOfferings?.filter((o) => o.isActive).length || 0;
@@ -60,7 +45,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       },
     };
   } catch {
-    return { title: 'Temple pujas — Darshya' };
+    return { title: 'Temple pujas' };
   }
 }
 
@@ -71,9 +56,7 @@ export default async function TemplePujasPage({ params }: Params) {
   // curated short slugs (kashi-vishwanath, somnath, etc.) but the API only
   // carries the `<name>-<city>` form, so getTempleBySlug(short) 404'd. Resolve
   // the short slug to its API slug before fetching.
-  const temple =
-    (await getTempleBySlug(rawSlug).catch(() => null)) ??
-    (await getTempleBySlug(apiSlugFor(rawSlug)).catch(() => null));
+  const temple = await resolveApiTemple(rawSlug);
   if (!temple) notFound();
 
   const offerings = (temple.pujaOfferings || []).filter((o) => o.isActive);

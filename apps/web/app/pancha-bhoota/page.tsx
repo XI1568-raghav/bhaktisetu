@@ -5,7 +5,7 @@ import { PANCHA_BHOOTA } from '../../lib/pancha-bhoota';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: '5 Pancha Bhoota Stalam — Five Element Shiva Temples | Darshya',
+  title: '5 Pancha Bhoota Stalam — Five Element Shiva Temples',
   description:
     'The five Tamil Nadu Shiva temples mapped to the five great elements — Earth (Ekambareshwarar Kanchipuram), Water (Jambukeshwarar Thiruvanaikaval), Fire (Arunachala Thiruvannamalai), Air (Srikalahasti), Ether (Nataraja Chidambaram). Element-proof, sthala vriksha, signature ritual, mantra at each.',
   alternates: { canonical: 'https://darshya.online/pancha-bhoota' },

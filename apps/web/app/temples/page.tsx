@@ -1,10 +1,13 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { H1 } from '../../components/ui/heading-recipe';
 import { getTemples, type TempleListItem } from '../../lib/api';
 import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details';
 import { TemplesBrowser, type TempleCardData } from '../../components/temples/TemplesBrowser';
+import { TRUST_SCORE_MARQUEE } from '../../lib/trust-score';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/temples' },
  title: 'Sacred Temples of India',
  description:
  'Explore sacred temples across India. Find temples by state, deity or tradition. Watch live darshan, book pujas with verified priests, and plan your pilgrimage.',
@@ -73,7 +76,7 @@ function apiToCard(t: TempleListItem): TempleCardData {
  trustScore: t.trustScore,
  liveDarshanEnabled: t.liveDarshanEnabled,
  viewers,
- isJyotirlinga: deityType === 'Shiva' && t.trustScore >= 97,
+ isJyotirlinga: deityType === 'Shiva' && t.trustScore >= TRUST_SCORE_MARQUEE,
  isShaktiPeetha: false,
  isDivyaDesam: false,
  popularity: t.trustScore,
@@ -82,17 +85,69 @@ function apiToCard(t: TempleListItem): TempleCardData {
  };
 }
 
-export default async function TemplesPage() {
+/**
+ * TD-01: shown while the temple list is in flight. Structure only — no temple
+ * names, no imagery — so nothing here can be mistaken for real content if the
+ * fetch is slow or fails.
+ */
+function TemplesSkeleton() {
+ return (
+  <div
+   role="status"
+   aria-busy="true"
+   aria-live="polite"
+   className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]"
+  >
+   <section className="bg-[#ede9e3] py-12 md:py-16">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+     <h1 className={`${H1.catalogue} mb-3`}>
+      Sacred Temples of India
+     </h1>
+     <p className="max-w-2xl text-lg text-surface-500">Loading temples…</p>
+     <div className="mt-8 h-[54px] max-w-2xl animate-pulse rounded-lg bg-white/70" />
+    </div>
+   </section>
+   <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mb-6 flex flex-wrap gap-2">
+     {Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="h-8 w-24 animate-pulse rounded-full bg-white/70" />
+     ))}
+    </div>
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+     {Array.from({ length: 6 }).map((_, i) => (
+      <div
+       key={i}
+       className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]"
+      >
+       <div className="aspect-[16/10] animate-pulse bg-surface-100" />
+       <div className="space-y-2 p-5">
+        <div className="h-5 w-2/3 animate-pulse rounded bg-surface-100" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-surface-100" />
+        <div className="h-4 w-full animate-pulse rounded bg-surface-100" />
+       </div>
+      </div>
+     ))}
+    </div>
+   </div>
+  </div>
+ );
+}
+
+/**
+ * TD-01: the API round trip lives here, inside the Suspense boundary, instead
+ * of in the page body. Both Render services are free tier and spin down, so a
+ * cold API used to hold the ENTIRE document — head, header, hero — hostage for
+ * up to serverFetch's 4s abort budget with nothing painted on screen.
+ */
+async function TemplesData() {
  // Start with all rich-detail temples
  const richCards = Object.values(TEMPLE_DETAILS).map(richToCard);
 
  // Try to merge in additional API temples
  let merged = richCards;
- let totalFromApi = richCards.length;
 
  try {
  const result = await getTemples({ limit: 50 });
- totalFromApi = Math.max(result.pagination.total, richCards.length);
  // P2 #217 (2026-08-03): the API seeds temples with `<name>-<city>` slugs while
  // the rich-detail map uses short slugs. Matching by exact slug meant every
  // long-slug API temple failed to match its rich twin and got APPENDED as a
@@ -121,9 +176,20 @@ export default async function TemplesPage() {
  // API unavailable — proceed with rich-detail only
  }
 
+ // The denominator of "Showing X of Y temples" is the list the browser holds,
+ // NOT `result.pagination.total`. Those two are different numbers: pagination
+ // counts the API's own rows, while `merged` also carries every rich-detail
+ // temple the API has never heard of, so on prod the page claimed "Showing 33
+ // of 22 temples" with no filter applied. There is no pagination UI here —
+ // every card is already on screen — so `merged.length` is the only total the
+ // user can verify by counting.
+ return <TemplesBrowser temples={merged} total={merged.length} />;
+}
+
+export default function TemplesPage() {
  return (
-  <Suspense fallback={<div className="min-h-[100dvh]" />}>
-   <TemplesBrowser temples={merged} total={totalFromApi} />
+  <Suspense fallback={<TemplesSkeleton />}>
+   <TemplesData />
   </Suspense>
  );
 }

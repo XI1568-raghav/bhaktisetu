@@ -8,10 +8,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Kundli Matching Online — Free Ashtakoot 36-Point Guna Milan + Pandit | Darshya',
+ title: 'Kundli Matching Online — Free Ashtakoot 36-Point Guna Milan + Pandit',
  description: 'Free Vedic kundli matching for marriage. Ashtakoot 36-point Guna Milan across 8 kootas (Varna, Vashya, Tara, Yoni, Graha, Gana, Bhakoot, Nadi). Manglik dosh check. Plus verified pandits for full reading.',
  alternates: { canonical: `${BASE_URL}/matchmaking` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Free Kundli Matching — Ashtakoot Guna Milan + Pandit Consult',
   description: 'Free Vedic horoscope matching for marriage. 36-point Ashtakoot calculator + verified pandit consults.',
   url: `${BASE_URL}/matchmaking`,

@@ -213,9 +213,9 @@ export function LiveChatWidget() {
  <div className="flex-1 min-w-0">
  <div className="font-semibold text-sm flex items-center gap-1.5">
  Asha · AI Support
- <span className="text-[9px] font-medium bg-white/20 px-1.5 py-0.5 rounded-full">AI</span>
+ <span className="text-xs font-medium bg-white/20 px-1.5 py-0.5 rounded-full">AI</span>
  </div>
- <div className="text-[11px] text-white/80 flex items-center gap-1">
+ <div className="text-xs text-white/80 flex items-center gap-1">
  <span className="w-1.5 h-1.5 rounded-full bg-green-300" />
  {escalated ? 'Escalated to human agent' : 'Usually replies instantly'}
  </div>
@@ -266,7 +266,7 @@ export function LiveChatWidget() {
  key={a.href}
  href={a.href}
  onClick={() => setOpen(false)}
- className="text-[11px] inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-saffron-50 border border-saffron-200 text-saffron-800 hover:bg-saffron-100"
+ className="text-xs inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-saffron-50 border border-saffron-200 text-saffron-800 hover:bg-saffron-100"
  >
  {a.label} <ArrowRight className="w-2.5 h-2.5" />
  </Link>
@@ -280,10 +280,10 @@ export function LiveChatWidget() {
  {typing && (
  <div className="flex justify-start">
  <div className="bg-white border border-surface-200 rounded-xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1">
- <span className="w-1.5 h-1.5 bg-saffron-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
- <span className="w-1.5 h-1.5 bg-saffron-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
- <span className="w-1.5 h-1.5 bg-saffron-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
- <span className="text-[11px] text-surface-500 ml-1.5">Asha is thinking...</span>
+ <span className="w-1.5 h-1.5 bg-saffron-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+ <span className="w-1.5 h-1.5 bg-saffron-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+ <span className="w-1.5 h-1.5 bg-saffron-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+ <span className="text-xs text-surface-500 ml-1.5">Asha is thinking...</span>
  </div>
  </div>
  )}
@@ -299,7 +299,7 @@ export function LiveChatWidget() {
  <UserCircle className="w-4 h-4" />
  Talk to Human Agent
  </button>
- <p className="text-[10px] text-amber-800 mt-1.5 text-center">
+ <p className="text-xs text-amber-800 mt-1.5 text-center">
  We&apos;ll save this conversation and a human agent will reply within 4 hours.
  </p>
  </div>
@@ -346,7 +346,7 @@ export function LiveChatWidget() {
  <Send className="w-4 h-4" />
  </button>
  </div>
- <div className="mt-2 flex items-center justify-between text-[11px] text-surface-500">
+ <div className="mt-2 flex items-center justify-between text-xs text-surface-500">
  <span className="flex items-center gap-1">
  <Bot className="w-3 h-3" />
  Powered by Claude AI

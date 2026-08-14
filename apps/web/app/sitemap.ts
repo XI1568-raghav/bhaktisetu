@@ -3,6 +3,7 @@ import { getTemples, getPujaTypes } from '../lib/api';
 import { SHLOKAS } from '../lib/shlokas';
 import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
 import { CITY_PUJA_SLUGS } from '../lib/city-pujas';
+import { canonicalTempleSlug } from '../lib/temple-slug';
 
 const BASE_URL = 'https://darshya.online';
 // deploy-stamp 2026-06-05 #7 — CF rebuild trigger for 5f71b48 dead-href + /discover GROUPS 54->61 (HEAD was [skip ci])
@@ -45,25 +46,20 @@ const FALLBACK_PUJA_SLUGS = [
 // P0 #202 (2026-08-03): the API seeds temples with `<name>-<city>` slugs
 // (e.g. `kashi-vishwanath-varanasi`) but `/temples/[slug]` resolves the curated
 // short slug (`kashi-vishwanath`). The sitemap was advertising the long API
-// slugs → 19/20 temple URLs 404'd. Normalize to the short slug the route
-// renders so every advertised URL returns 200.
-function toCanonicalTempleSlug(slug: string): string {
-  const parts = slug.split('-');
-  const candidates = [slug];
-  while (parts.length > 1) {
-    parts.pop();
-    candidates.push(parts.join('-'));
-  }
-  for (const c of candidates) {
-    if ((FALLBACK_TEMPLE_SLUGS as readonly string[]).includes(c)) return c;
-  }
-  return slug;
-}
-
+// slugs → 19/20 temple URLs 404'd.
+//
+// SEO-06 (prod sweep 2026-08-12): the normaliser that fixed that lived HERE, as
+// a private `toCanonicalTempleSlug` keyed off the hardcoded FALLBACK_TEMPLE_SLUGS
+// array — while app/temples/[slug]/page.tsx carried a SECOND, independent
+// implementation keyed off TEMPLE_DETAILS. Two lists, two functions, one URL
+// space: they disagreed for any temple curated in TEMPLE_DETAILS but absent
+// from the fallback array, so the sitemap advertised a slug the route did not
+// treat as canonical. `canonicalTempleSlug` in lib/temple-slug.ts is now the
+// single implementation, shared with the route that serves the redirect.
 async function safeTempleSlugs(): Promise<string[]> {
   try {
     const res = await getTemples({ limit: 100 });
-    const slugs = res.data.map((t) => t.slug).filter(Boolean).map(toCanonicalTempleSlug);
+    const slugs = res.data.map((t) => t.slug).filter(Boolean).map(canonicalTempleSlug);
     const unique = Array.from(new Set(slugs));
     return unique.length > 0 ? unique : FALLBACK_TEMPLE_SLUGS;
   } catch {

@@ -32,9 +32,9 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { rashi } = await params;
   const r = getRashi(rashi);
-  if (!r) return { title: 'Horoscope — Darshya' };
+  if (!r) return { title: 'Horoscope' };
   return {
-    title: `${r.rashiEnglish} Horoscope Today (${r.rashiHindi} Rashifal) — Darshya`,
+    title: `${r.rashiEnglish} Horoscope Today (${r.rashiHindi} Rashifal)`,
     description: `Daily ${r.rashiEnglish} horoscope: ${r.prediction.slice(0, 130)}... Lucky number ${r.luckyNumber}, color ${r.luckyColor}. Ruling planet ${r.rulingPlanet}.`,
     alternates: { canonical: `https://darshya.online/astrology/horoscope/${r.rashi}` },
     openGraph: {
@@ -105,7 +105,7 @@ export default async function RashiPage({ params }: Params) {
             {Array.from({ length: liveRating }).map((_, i) => (
               <Star key={i} className="w-3 h-3 fill-amber-500 text-amber-500" />
             ))}
-            <span className="ml-1 text-surface-500 text-[10px]">{liveRating}/5 today</span>
+            <span className="ml-1 text-surface-500 text-xs">{liveRating}/5 today</span>
           </span>
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-2">

@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const v = getVeda(slug);
   if (!v) return { title: 'Not found' };
   return {
-    title: `${v.name} (${v.sanskrit}) — ${v.bestKnownFor} | Darshya`,
+    title: `${v.name} (${v.sanskrit}) — ${v.bestKnownFor}`,
     description: `${v.name} — ${v.totalMantras.toLocaleString()} mantras, ${v.shakhasExtant} extant shakhas, presiding priest ${v.associatedPriest}. ${v.summary.slice(0, 100)}`,
     alternates: { canonical: `${BASE_URL}/vedas/${v.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${v.name} — ${v.bestKnownFor}`,
       description: v.primaryFocus.slice(0, 160),
       url: `${BASE_URL}/vedas/${v.slug}`,
@@ -127,7 +128,7 @@ export default async function VedaPage({ params }: { params: Promise<{ slug: str
             <li key={h.name} className="rounded-xl bg-white p-3">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-sm font-semibold text-rose-900">{h.name}</span>
-                <span className="rounded bg-rose-100 px-2 py-0.5 text-[10px] font-mono text-rose-800">{h.reference}</span>
+                <span className="rounded bg-rose-100 px-2 py-0.5 text-xs font-mono text-rose-800">{h.reference}</span>
               </div>
               <p className="mt-1 text-xs text-gray-700">{h.significance}</p>
             </li>

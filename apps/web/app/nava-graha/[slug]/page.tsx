@@ -21,7 +21,7 @@ export async function generateMetadata({
   const g = getNavaGraha(slug);
   if (!g) return { title: 'Graha not found' };
 
-  const title = `${g.sanskritName} (${g.english}) — Mantra, Gemstone, Remedies | Darshya`;
+  const title = `${g.sanskritName} (${g.english}) — Mantra, Gemstone, Remedies`;
   const description = `${g.sanskritName} graha profile: ${g.natureKaraka}. Beej mantra, ${g.gemstone.split(' ')[0]} gemstone, ${g.dayOfWeek} fasting, ${g.mahadashaYears}y mahadasha, remedies for weak ${g.english}.`;
 
   return {

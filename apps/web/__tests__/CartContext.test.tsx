@@ -39,8 +39,8 @@ describe('CartContext', () => {
     expect(result.current.itemCount).toBe(2);
     expect(result.current.subtotal).toBe(200);
     expect(result.current.deliveryFee).toBe(49);
-    expect(result.current.tax).toBe(10);
-    expect(result.current.total).toBe(259);
+    // COM-06/S-09: no tax line. It was displayed, never charged, never remitted.
+    expect(result.current.total).toBe(249);
   });
 
   it('caps quantity at 10 per product', () => {

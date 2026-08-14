@@ -6,11 +6,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Learn Vipassana — The Complete Guide to the 10-Day Course | Darshya',
+  title: 'Learn Vipassana — The Complete Guide to the 10-Day Course',
   description:
     'A complete guide to Vipassana meditation in the S.N. Goenka tradition. The 10-day journey day by day, daily schedule, code of discipline, food rules, course variations, common concerns, and what comes after.',
   alternates: { canonical: `${BASE_URL}/wellness/vipassana/learn` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Learn Vipassana — Complete Guide',
     description: 'Day-by-day breakdown of the 10-day silent retreat, code of discipline, post-course practice.',
     url: `${BASE_URL}/wellness/vipassana/learn`,

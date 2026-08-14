@@ -13,6 +13,9 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import { clientIp, rateLimitKey } from './lib/rate-limit-key.js';
+import { resolveCorsOrigins } from './lib/cors-origins.js';
+import { startOpsScheduler, getSchedulerStatus } from './jobs/scheduler.js';
 import fastifyRawBody from 'fastify-raw-body';
 import fastifyCookie from '@fastify/cookie';
 import { registerAuthDecorators, authenticateUser, requireRole } from './middlewares/auth.js';
@@ -111,6 +114,7 @@ import { prisma } from './lib/prisma.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
 import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
+import { redactError } from './lib/error-redaction.js';
 
 const server = Fastify({
   logger: {
@@ -126,6 +130,33 @@ async function bootstrap() {
   // Render start command may have skipped. Runs before routes register so
   // hot-path Prisma queries see the columns they expect.
   await ensureSchemaInvariants(server.log);
+
+  // ── Error handler ─── MUST be installed BEFORE any route plugin ───────────
+  //
+  // AW-08 (prod sweep 2026-08-12, P1). This block used to sit at the BOTTOM of
+  // bootstrap(), after ~90 `server.register(routes, { prefix })` calls. Fastify
+  // resolves a route's error handler from the encapsulation context the route
+  // was registered in, so a handler installed afterwards never reaches any of
+  // them — it was dead code for every route in this API, in every environment,
+  // and Fastify's default serializer answered instead:
+  //
+  //   {"statusCode":500,"code":"P2023","message":"Invalid `prisma.astrologer
+  //    Profile.findUnique()` invocation in E:\\NewClaude\\...\\astrologer-portal.ts:53:52"}
+  //
+  // — the ORM, the query, the SQL and the absolute server path, to any caller.
+  // Moving it here is half the fix; lib/error-redaction.ts is the other half
+  // (driver internals are stripped in ALL environments, not just production).
+  // Both halves are locked by src/lib/error-redaction.test.ts.
+  //
+  // Do not move this below the registers again.
+  const isProdEnv = process.env.NODE_ENV === 'production';
+  server.setErrorHandler((err, _req, reply) => {
+    server.log.error(err);
+    captureException(err);
+    if (reply.sent) return;
+    const body = redactError(err as unknown as Record<string, unknown>, { isProd: isProdEnv });
+    void reply.code(body.statusCode).send({ error: body.error, message: body.message });
+  });
 
   // Security plugins
   // API serves only JSON — no HTML, no inline scripts, no embedded frames.
@@ -149,19 +180,13 @@ async function bootstrap() {
   // tokens out of localStorage (XSS-theft risk) into a JS-inaccessible cookie.
   await server.register(fastifyCookie);
   // CORS: production requires CORS_ORIGIN to be set explicitly. Local dev
-  // falls back to localhost-only — no LAN IPs, no wildcards. The previous
-  // default included a LAN address (192.168.x.x) which leaked into the
-  // production allowlist via committed env scaffolding.
+  // falls back to the loopback origins only — no LAN IPs, no wildcards. The
+  // previous default included a LAN address (192.168.x.x) which leaked into
+  // the production allowlist via committed env scaffolding. The list lives in
+  // lib/cors-origins.ts so it can be asserted without booting the server; see
+  // A11Y-16 for why 127.0.0.1 had to join localhost there.
   const isProd = process.env.NODE_ENV === 'production';
-  const corsOriginEnv = process.env.CORS_ORIGIN;
-  const corsOrigins = corsOriginEnv
-    ? corsOriginEnv.split(',').map((o) => o.trim()).filter(Boolean)
-    : isProd
-      ? (() => {
-          // Explicit fail in prod — refuse to start with a wide-open default.
-          throw new Error('CORS_ORIGIN env var is required in production. Set it to the comma-separated list of allowed origins.');
-        })()
-      : ['http://localhost:3000', 'http://localhost:3001'];
+  const corsOrigins = resolveCorsOrigins(process.env);
   await server.register(cors, {
     origin: corsOrigins,
     credentials: true,
@@ -207,13 +232,13 @@ async function bootstrap() {
     max: globalMax,
     timeWindow: globalWindow,
     allowList: (req) => SKIP_RATE_LIMIT_PATHS.has(req.url.split('?')[0] ?? ''),
-    keyGenerator: (req) => {
-      const uid = (req as unknown as { currentUser?: { id?: string } }).currentUser?.id;
-      return uid ? `u:${uid}` : `ip:${req.ip}`;
-    },
+    keyGenerator: (req) => rateLimitKey(req),
     onExceeded: (req) => {
+      // Log the resolved client IP and the bucket that filled. req.ip alone is
+      // the Cloudflare/Render proxy on every line, which tells you nothing
+      // about who is actually generating the load.
       server.log.warn(
-        { ip: req.ip, url: req.url, method: req.method },
+        { ip: clientIp(req), bucket: rateLimitKey(req), url: req.url, method: req.method },
         'rate_limit_exceeded',
       );
     },
@@ -245,6 +270,17 @@ async function bootstrap() {
   // resolves to /api/v1/cron/health — NOT a root-level duplicate of this /health.
   // Only ONE root /health exists. No removal needed.
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+
+  // NOTIF-01: the scheduler was dead for the entire life of the product and
+  // nothing surfaced that. Age of the last completed tick is the signal — a
+  // silent scheduler is indistinguishable from a working one without it.
+  // Unauthenticated by design: it exposes only timings and counters, no data,
+  // and an external pinger must be able to read it. Rate-limited normally.
+  server.get('/ops/scheduler', async (_request, reply) => {
+    const status = getSchedulerStatus();
+    // 503 when stale so an uptime monitor can alarm on it without parsing JSON.
+    return reply.code(status.stale ? 503 : 200).send(status);
+  });
 
   // /ready = READINESS — actually verifies dependencies. Returns 503 if the DB
   // is unreachable or (when REDIS_URL is set) Redis won't ping. Used by
@@ -427,33 +463,20 @@ async function bootstrap() {
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
   const host = process.env.HOST || '0.0.0.0';
 
-  // Forward uncaught Fastify errors to Sentry (no-op when SENTRY_DSN unset).
-  // In production, never echo `err.message` back to the client — Prisma
-  // errors carry table/column/constraint names and query fragments that
-  // leak schema details. Surface a generic message; the full error is in
-  // the server logs and Sentry. Validation errors (4xx) and rate-limit
-  // errors are exempt — those messages are intentionally user-facing.
-  server.setErrorHandler((err, _req, reply) => {
-    server.log.error(err);
-    captureException(err);
-    if (reply.sent) return;
-
-    const e = err as { statusCode?: number; name?: string; message?: string; code?: string };
-    const status = e.statusCode ?? 500;
-    const isClientError = status >= 400 && status < 500;
-    const safeToEcho = !isProd || isClientError || e.code === 'FST_ERR_VALIDATION';
-
-    reply.code(status).send({
-      error: e.name ?? 'InternalServerError',
-      message: safeToEcho
-        ? (e.message ?? 'Something went wrong')
-        : 'Internal server error',
-    });
-  });
+  // (The error handler + Sentry forwarding now live at the TOP of bootstrap().
+  //  AW-08: installed here, after every server.register(), Fastify never routed
+  //  a single error through it. It must stay above the registers.)
 
   try {
     await server.listen({ port, host });
     server.log.info(`Darshya API running at http://${host}:${port}`);
+    // NOTIF-01: nothing anywhere invoked runDailyOps, so every time-based
+    // feature — panchang push, aarti reminders, weekly digest, expired-offer
+    // rebroadcast, auto-refunds, weekly settlement — was dead code in
+    // production. Start it here, after listen, so a scheduler fault can never
+    // stop the API from serving. See jobs/scheduler.ts for why this is
+    // in-process rather than a GitHub Actions schedule.
+    startOpsScheduler(server.log);
   } catch (err) {
     server.log.error(err);
     captureException(err);

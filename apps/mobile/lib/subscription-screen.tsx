@@ -5,8 +5,10 @@ import {
   useMySubscription,
   useSubscribe,
   useCancelSubscription,
+  usePaymentConfig,
 } from '@poojly/api-client';
 import { PortalScreen, EmptyHint } from './portal-screen';
+import { evaluateUpgradeGate, UPGRADE_BLOCKED_MESSAGE } from './subscription-gate';
 import { colors, spacing, fontSize, borderRadius } from './theme';
 
 interface Plan {
@@ -28,23 +30,49 @@ interface MySub {
   currentPeriodEnd?: string;
 }
 
+/**
+ * PAR-01, provider side. This screen has the identical hazard as the devotee
+ * Upgrade screen: `useSubscribe()` posts to /api/v1/subscriptions/subscribe,
+ * which grants an ACTIVE paid plan and writes a COMPLETED transaction without
+ * charging anything, and the screen then said "Subscription started — check the
+ * dashboard to complete payment."
+ *
+ * Same treatment: the Subscribe control is gated on a live Razorpay key
+ * reported by GET /api/v1/payments/config, and a response with no hosted
+ * payment URL is a failure, not a silent success.
+ */
 export function SubscriptionScreen({ role }: { role: string }) {
   const plansQuery = useSubscriptionPlans({ role });
   const myQuery = useMySubscription();
+  const paymentConfigQuery = usePaymentConfig();
   const subscribe = useSubscribe();
   const cancel = useCancelSubscription();
 
   const plans = (plansQuery.data?.plans as Plan[] | undefined) ?? [];
   const my = (myQuery.data?.subscription as MySub | null | undefined) ?? null;
 
+  const gate = evaluateUpgradeGate({
+    paymentConfig: paymentConfigQuery.data,
+    configError: paymentConfigQuery.error,
+    isPremium: false,
+  });
+
   async function handleSubscribe(planId: string) {
+    if (!gate.canPurchase) {
+      Alert.alert('Not available', gate.message ?? UPGRADE_BLOCKED_MESSAGE);
+      return;
+    }
     try {
-      const res: any = await subscribe.mutateAsync({ planId });
-      const url: string | undefined = res?.paymentUrl ?? res?.shortUrl ?? res?.url;
+      const res: unknown = await subscribe.mutateAsync({ planId });
+      const r = res as { paymentUrl?: string; shortUrl?: string; url?: string } | null;
+      const url = r?.paymentUrl ?? r?.shortUrl ?? r?.url;
       if (url) {
         Linking.openURL(url);
       } else {
-        Alert.alert('Subscription started', 'Check the dashboard to complete payment.');
+        Alert.alert(
+          'Checkout could not be started',
+          'The payment gateway did not return a checkout page, so no payment was taken. Do not treat this plan as paid — contact support@darshya.online if it shows as active.',
+        );
       }
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not subscribe');
@@ -108,6 +136,9 @@ export function SubscriptionScreen({ role }: { role: string }) {
       ) : null}
 
       <Text style={styles.sectionTitle}>Available plans</Text>
+      {!gate.canPurchase ? (
+        <Text style={styles.gateNotice}>{gate.message ?? UPGRADE_BLOCKED_MESSAGE}</Text>
+      ) : null}
       {plansQuery.isLoading ? (
         <Text style={styles.loading}>Loading...</Text>
       ) : plans.length === 0 ? (
@@ -127,15 +158,28 @@ export function SubscriptionScreen({ role }: { role: string }) {
                 </Text>
               </View>
               <TouchableOpacity
-                style={[styles.btn, isCurrent ? styles.btnGhost : styles.btnPrimary]}
+                style={[
+                  styles.btn,
+                  isCurrent || !gate.canPurchase ? styles.btnGhost : styles.btnPrimary,
+                ]}
                 onPress={() => (isCurrent ? null : handleSubscribe(p.id))}
-                disabled={isCurrent || subscribe.isPending}
+                disabled={isCurrent || !gate.canPurchase || subscribe.isPending}
                 activeOpacity={0.8}
               >
                 <Text
-                  style={isCurrent ? styles.btnGhostText : styles.btnPrimaryText}
+                  style={
+                    isCurrent || !gate.canPurchase
+                      ? styles.btnGhostText
+                      : styles.btnPrimaryText
+                  }
                 >
-                  {isCurrent ? 'Current' : subscribe.isPending ? '...' : 'Subscribe'}
+                  {isCurrent
+                    ? 'Current'
+                    : !gate.canPurchase
+                      ? 'Unavailable'
+                      : subscribe.isPending
+                        ? '...'
+                        : 'Subscribe'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -157,6 +201,16 @@ const styles = StyleSheet.create({
   },
   errorText: { color: colors.red[600], fontSize: fontSize.sm },
   loading: { textAlign: 'center', padding: spacing.lg, color: colors.stone[500] },
+  gateNotice: {
+    fontSize: fontSize.sm,
+    color: colors.stone[600],
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
   currentCard: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,

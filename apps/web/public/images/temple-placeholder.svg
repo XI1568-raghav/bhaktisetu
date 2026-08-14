@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 313" role="img" aria-label="Temple photograph unavailable" width="500" height="313">
+  <!--
+    HN-05. Shown in place of a temple photograph whose upstream fetch was
+    dropped (Wikimedia throttles hotlinked originals; 49 of 348 temple URLs
+    rate-limited at 3 concurrent requests). Local and inline so the fallback
+    cannot share the failure mode it exists to cover, and vector so it costs
+    ~1 KB at any card size.
+  -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff3e0"/>
+      <stop offset="100%" stop-color="#fde4c4"/>
+    </linearGradient>
+  </defs>
+  <rect width="500" height="313" fill="url(#sky)"/>
+  <g fill="#e0a35f" opacity="0.85">
+    <!-- Shikhara -->
+    <path d="M250 78 l52 96 h-104 z"/>
+    <rect x="214" y="174" width="72" height="74" rx="3"/>
+    <rect x="196" y="248" width="108" height="14" rx="3"/>
+    <!-- Flanking mandapas -->
+    <path d="M162 138 l34 62 h-68 z"/>
+    <rect x="134" y="200" width="56" height="48" rx="3"/>
+    <path d="M338 138 l34 62 h-68 z"/>
+    <rect x="310" y="200" width="56" height="48" rx="3"/>
+    <!-- Kalash -->
+    <circle cx="250" cy="66" r="9"/>
+    <rect x="247" y="46" width="6" height="16" rx="2"/>
+  </g>
+  <rect x="238" y="196" width="24" height="52" rx="12" fill="#c9803a" opacity="0.9"/>
+  <text x="250" y="292" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="15" fill="#9a6b3f">Photo unavailable</text>
+</svg>

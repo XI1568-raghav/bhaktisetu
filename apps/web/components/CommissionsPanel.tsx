@@ -8,13 +8,13 @@ import {
  Filter,
  IndianRupee,
  Clock,
- CheckCircle2,
  ArrowUpRight,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import {
  listMyCommissions,
  listCommissions,
+ COMMISSION_PAGE_SIZE,
  type Commission,
  type CommissionStatus,
 } from '../lib/commission-api';
@@ -27,17 +27,41 @@ interface Props {
  description?: string;
 }
 
+/**
+ * batch9-review (2026-08-11): these ids are the WIRE values, and they must stay
+ * that way.
+ *
+ * They used to be lowercase — and three of the six ('processing', 'failed',
+ * 'on_hold') were PayoutRequestStatus values a Commission can never hold. The
+ * API spreads the raw Prisma row, so every status arrives as 'PENDING' | 'PAID'
+ * | 'REVERSED'. The result was that every chip except "All" matched zero rows:
+ * an admin looking at 40 pending commissions worth Rs 3,20,000 clicked "Pending"
+ * and read "No commissions with status pending" — a live settlement queue
+ * reading as empty. The same mismatch zeroed both summary cards.
+ */
 const STATUSES: { id: StatusFilter; label: string }[] = [
  { id: 'all', label: 'All' },
- { id: 'pending', label: 'Pending' },
- { id: 'processing', label: 'Processing' },
- { id: 'paid', label: 'Paid' },
- { id: 'failed', label: 'Failed' },
- { id: 'on_hold', label: 'On hold' },
+ { id: 'PENDING', label: 'Pending' },
+ { id: 'PAID', label: 'Paid' },
+ { id: 'REVERSED', label: 'Reversed' },
 ];
 
-function formatINR(n: number | null | undefined): string {
- if (n === null || n === undefined) return '—';
+const STATUS_LABEL: Record<string, string> = {
+ PENDING: 'Pending',
+ PAID: 'Paid',
+ REVERSED: 'Reversed',
+};
+
+/** Money arrives as a stringified Decimal — coerce, never concatenate. */
+function toNumber(v: string | number | null | undefined): number | null {
+ if (v === null || v === undefined || v === '') return null;
+ const n = Number(v);
+ return Number.isFinite(n) ? n : null;
+}
+
+function formatINR(v: string | number | null | undefined): string {
+ const n = toNumber(v);
+ if (n === null) return '—';
  return new Intl.NumberFormat('en-IN', {
  style: 'currency',
  currency: 'INR',
@@ -56,11 +80,11 @@ function formatDate(iso: string | null | undefined): string {
 
 function statusClass(status: string): string {
  const map: Record<string, string> = {
- pending: 'bg-amber-100 text-amber-700',
- processing: 'bg-blue-100 text-blue-700',
- paid: 'bg-green-100 text-green-700',
- failed: 'bg-red-100 text-red-700',
- on_hold: 'bg-surface-100 text-surface-600',
+ PENDING: 'bg-amber-100 text-amber-700',
+ PAID: 'bg-green-100 text-green-700',
+ // A refund reversal is not a failure — grey, not red, so it doesn't read as
+ // an incident in the ledger.
+ REVERSED: 'bg-surface-200 text-surface-700',
  };
  return map[status] ?? 'bg-surface-100 text-surface-600';
 }
@@ -68,51 +92,71 @@ function statusClass(status: string): string {
 export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  const { session } = useAuth();
  const [items, setItems] = useState<Commission[]>([]);
+ const [total, setTotal] = useState(0);
+ const [page, setPage] = useState(1);
+ const [pageSize, setPageSize] = useState(COMMISSION_PAGE_SIZE);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [filter, setFilter] = useState<StatusFilter>('all');
 
  useEffect(() => {
- let cancelled = false;
- (async () => {
- try {
- const data =
- mode === 'admin'
- ? await listCommissions(session?.accessToken)
- : await listMyCommissions(session?.accessToken);
- if (!cancelled) setItems(data);
- } catch (err) {
- if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load commissions');
- } finally {
- if (!cancelled) setLoading(false);
- }
- })();
- return () => {
- cancelled = true;
- };
- }, [mode, session?.accessToken]);
+  let cancelled = false;
+  setLoading(true);
+  setError(null);
+  (async () => {
+   try {
+    const res =
+     mode === 'admin'
+      ? await listCommissions(session?.accessToken, { page })
+      : await listMyCommissions(session?.accessToken, { page });
+    if (!cancelled) {
+     setItems(res.items);
+     setTotal(res.total);
+     setPageSize(res.pageSize);
+    }
+   } catch (err) {
+    if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load commissions');
+   } finally {
+    if (!cancelled) setLoading(false);
+   }
+  })();
+  return () => {
+   cancelled = true;
+  };
+ }, [mode, page, session?.accessToken]);
 
  const filtered = useMemo(() => {
- if (filter === 'all') return items;
- return items.filter((c) => c.status === filter);
+  if (filter === 'all') return items;
+  return items.filter((c) => c.status === filter);
  }, [items, filter]);
 
  const summary = useMemo(() => {
- // `amount` arrives from the API as a STRING (admin.ts stringifies the Decimal)
- // while the type says number, so `sum + c.amount` was concatenating digits —
- // two rows of 800 and 1200 rendered as "08001200". Coerce explicitly.
- const value = (c: Commission) => Number(c.netAmount ?? c.amount ?? 0) || 0;
- const totalEarned = items
- .filter((c) => c.status === 'paid')
- .reduce((sum, c) => sum + value(c), 0);
- const pending = items
- .filter((c) => c.status === 'pending' || c.status === 'processing')
- .reduce((sum, c) => sum + value(c), 0);
- const lastPaid = items
- .filter((c) => c.status === 'paid')
- .sort((a, b) => (b.processedAt ?? '').localeCompare(a.processedAt ?? ''))[0];
- return { totalEarned, pending, lastPaid };
+  // `amount` arrives from the API as a STRING (the Decimal is stringified so it
+  // never round-trips through a JS float), so `sum + c.amount` was
+  // concatenating digits — two rows of 800 and 1200 rendered as "08001200".
+  // Coerce explicitly.
+  //
+  // `amount` IS the provider's earning under the fixed ledger convention
+  // (apps/api/src/lib/commission-math.ts). There is no separate "net".
+  const value = (c: Commission) => toNumber(c.amount) ?? 0;
+  const totalEarned = items
+   .filter((c) => c.status === 'PAID')
+   .reduce((sum, c) => sum + value(c), 0);
+  const pending = items
+   .filter((c) => c.status === 'PENDING')
+   .reduce((sum, c) => sum + value(c), 0);
+  const lastPaid = items
+   .filter((c) => c.status === 'PAID')
+   .sort((a, b) => (b.processedAt ?? '').localeCompare(a.processedAt ?? ''))[0];
+  return { totalEarned, pending, lastPaid };
  }, [items]);
+
+ const rangeStart = items.length === 0 ? 0 : (page - 1) * pageSize + 1;
+ const rangeEnd = rangeStart === 0 ? 0 : rangeStart + items.length - 1;
+ const hasMore = rangeEnd < total;
+ // The summary and the status chips only see the rows actually loaded. Say so
+ // rather than presenting one page as the whole ledger.
+ const partial = total > items.length;
 
  return (
  <div className="space-y-6 max-w-5xl">
@@ -124,7 +168,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  {description ??
  (mode === 'admin'
  ? 'Every commission record across providers.'
- : 'Net payouts after platform commission for completed bookings.')}
+ : 'Your earnings after platform commission for completed bookings.')}
  </p>
  </div>
 
@@ -136,6 +180,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  )}
 
  {mode === 'me' && !loading && !error && (
+ <div className="space-y-2">
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
  <SummaryCard
  label="Total earned (paid)"
@@ -153,12 +198,18 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  />
  <SummaryCard
  label="Last payout"
- value={summary.lastPaid ? formatINR(summary.lastPaid.netAmount ?? summary.lastPaid.amount) : '—'}
+ value={summary.lastPaid ? formatINR(summary.lastPaid.amount) : '—'}
  subtitle={summary.lastPaid ? formatDate(summary.lastPaid.processedAt) : undefined}
  icon={ArrowUpRight}
  color="text-saffron-700"
  bg="bg-saffron-50"
  />
+ </div>
+ {partial && (
+ <p className="text-xs text-surface-400">
+ Totals cover the {items.length} records on this page of {total}.
+ </p>
+ )}
  </div>
  )}
 
@@ -189,7 +240,9 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <div className="bg-white rounded-xl border border-surface-200 p-10 text-center">
  <Inbox className="w-8 h-8 text-surface-400 mx-auto mb-2" />
  <p className="text-sm text-surface-500">
- {filter === 'all' ? 'No commission records yet.' : `No commissions with status "${filter}".`}
+ {filter === 'all'
+ ? 'No commission records yet.'
+ : `No ${(STATUS_LABEL[filter] ?? filter).toLowerCase()} commissions.`}
  </p>
  </div>
  ) : (
@@ -201,12 +254,15 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <th className="text-left px-4 py-3 font-semibold">Booking</th>
  {mode === 'admin' && <th className="text-left px-4 py-3 font-semibold">Provider</th>}
  <th className="text-right px-4 py-3 font-semibold">Gross</th>
+ <th className="text-right px-4 py-3 font-semibold">Platform cut</th>
  {/* `Commission.amount` is the PROVIDER's earning, not the platform's
      deduction — see apps/api/src/lib/commission-math.ts. This column was
      labelled "Commission" and rendered as a negative, so a Rs 1,000 booking
-     showed the provider "-Rs 800". */}
+     showed the provider "-Rs 800". The old "Net" column that sat next to it
+     is gone: under the fixed convention Net and Provider earning are the
+     same number, and showing both invited exactly the confusion
+     commission-math.ts was written to end. */}
  <th className="text-right px-4 py-3 font-semibold">Provider earning</th>
- <th className="text-right px-4 py-3 font-semibold">Net</th>
  <th className="text-left px-4 py-3 font-semibold">Status</th>
  <th className="text-left px-4 py-3 font-semibold">Date</th>
  <th className="text-left px-4 py-3 font-semibold">Reference</th>
@@ -218,7 +274,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <td className="px-4 py-3">
  <div className="text-sm text-surface-800">{c.itemName ?? 'Booking'}</div>
  <div className="text-xs text-surface-500 font-mono">
- {c.bookingNumber ?? c.bookingId}
+ {c.bookingNumber ?? c.bookingId ?? '—'}
  </div>
  </td>
  {mode === 'admin' && (
@@ -226,7 +282,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <div className="text-sm text-surface-800">{c.providerName ?? c.providerId}</div>
  {c.providerRole && (
  <div className="text-xs text-surface-500 capitalize">
- {c.providerRole.replace('_', ' ')}
+ {c.providerRole.replace(/_/g, ' ').toLowerCase()}
  </div>
  )}
  </td>
@@ -234,19 +290,22 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  <td className="px-4 py-3 text-right text-sm text-surface-700">
  {formatINR(c.grossAmount)}
  </td>
- <td className="px-4 py-3 text-right text-sm text-emerald-700">
- {formatINR(c.amount)}
+ <td className="px-4 py-3 text-right text-sm text-surface-600">
+ {formatINR(c.platformCut)}
+ {c.ratePercent !== null && c.ratePercent !== undefined && (
+ <span className="block text-xs text-surface-400">{c.ratePercent}%</span>
+ )}
  </td>
- <td className="px-4 py-3 text-right text-sm font-semibold text-surface-900">
- {formatINR(c.netAmount ?? null)}
+ <td className="px-4 py-3 text-right text-sm font-semibold text-emerald-700">
+ {formatINR(c.amount)}
  </td>
  <td className="px-4 py-3">
  <span
- className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full capitalize ${statusClass(
+ className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${statusClass(
  String(c.status),
  )}`}
  >
- {String(c.status).replace('_', ' ')}
+ {STATUS_LABEL[String(c.status)] ?? String(c.status)}
  </span>
  </td>
  <td className="px-4 py-3 text-xs text-surface-500 whitespace-nowrap">
@@ -260,6 +319,35 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  </tbody>
  </table>
  </div>
+ </div>
+ )}
+
+ {!loading && !error && total > 0 && (
+ <div className="flex items-center justify-between gap-3 text-xs text-surface-500">
+ <span>
+ Showing {rangeStart}–{rangeEnd} of {total}
+ {filter !== 'all' && filtered.length !== items.length
+ ? ` (${filtered.length} on this page match "${STATUS_LABEL[filter] ?? filter}")`
+ : ''}
+ </span>
+ {(page > 1 || hasMore) && (
+ <div className="flex gap-2">
+ <button
+ onClick={() => setPage((p) => Math.max(1, p - 1))}
+ disabled={page <= 1}
+ className="px-3 py-1.5 rounded-lg border border-surface-200 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:border-saffron-300"
+ >
+ Previous
+ </button>
+ <button
+ onClick={() => setPage((p) => p + 1)}
+ disabled={!hasMore}
+ className="px-3 py-1.5 rounded-lg border border-surface-200 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:border-saffron-300"
+ >
+ Next
+ </button>
+ </div>
+ )}
  </div>
  )}
  </div>

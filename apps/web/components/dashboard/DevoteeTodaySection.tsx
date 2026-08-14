@@ -322,7 +322,7 @@ function ContinueReadingCard({ loading }: { loading: boolean }) {
                   <p className="text-sm font-medium text-surface-800 truncate group-hover:text-saffron-600">{it.title}</p>
                   {typeof it.progress === 'number' && (
                     <div className="mt-1 h-1.5 w-full bg-surface-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-saffron-500" style={{ width: `${Math.min(100, Math.max(0, it.progress))}%` }} />
+                      <div className="h-full bg-saffron-600" style={{ width: `${Math.min(100, Math.max(0, it.progress))}%` }} />
                     </div>
                   )}
                 </div>

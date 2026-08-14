@@ -18,15 +18,15 @@ import {
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia | Darshya',
+  title: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia',
   description:
-    'Complete guide for NRIs to book authentic Hindu pujas at verified India temples. Dual currency USD/INR, video proof on WhatsApp, 80G receipt eligible donations, 24-hour cancellation. Trusted by Indian diaspora worldwide.',
+    'Complete guide for NRIs to book authentic Hindu pujas at verified India temples. International cards billed in INR, video proof on WhatsApp, 80G receipt eligible donations, 24-hour cancellation. Trusted by Indian diaspora worldwide.',
   robots: { index: false, follow: false },
   alternates: { canonical: 'https://darshya.online/nri-pujas' },
   openGraph: {
     title: 'NRI Pujas — Book from Anywhere in the World | Darshya',
     description:
-      'Step-by-step guide for booking pujas at India temples from abroad. Dual currency, video proof, 80G receipts.',
+      'Step-by-step guide for booking pujas at India temples from abroad. International cards billed in INR, video proof, 80G receipts.',
     url: 'https://darshya.online/nri-pujas',
     type: 'website',
     images: ['/og/default.png'],
@@ -67,7 +67,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How does pricing work from abroad?',
-    a: 'Domestic prices are shown in INR. NRI prices are priced separately to cover international payment processing, currency conversion, dedicated WhatsApp coordination and priority slot allocation. The full NRI price is shown in your local currency at checkout — no hidden conversion markups.',
+    a: 'Domestic prices are shown in INR. NRI prices are priced separately to cover international payment processing, currency conversion, dedicated WhatsApp coordination and priority slot allocation. Any USD figures on this page are reference prices only — Razorpay charges the full amount in INR, and your bank applies its own conversion rate and any foreign-transaction fee.',
   },
   {
     q: 'Are the pandits verified?',
@@ -135,7 +135,11 @@ const steps = [
 const trustSignals = [
   { icon: Video, title: 'Video proof mandatory', body: 'Every puja delivers a video — pandit payout is gated on upload.' },
   { icon: ShieldCheck, title: 'Verified pandits only', body: '5-step KYC: Aadhaar, gotra, temple affiliation, test puja, devotee rating.' },
-  { icon: CreditCard, title: 'Dual currency, no markup', body: 'USD/GBP/CAD/AUD/EUR/SGD/AED — full price shown upfront.' },
+  // CM-06: this signal used to advertise dual-currency billing and list seven
+  // foreign currencies. There is no multi-currency rail — Razorpay charges in
+  // INR only, and the foreign-currency path was deleted with Stripe (RV-01).
+  // Say what actually happens at checkout.
+  { icon: CreditCard, title: 'International cards, no markup', body: 'Billed in INR — full price shown upfront, no platform FX fee.' },
   { icon: Clock, title: '24-hour free cancellation', body: 'Full refund up to 24h before scheduled time.' },
   { icon: FileText, title: '80G tax receipts', body: 'Eligible donations get 80G receipt within 7 days.' },
   { icon: Globe2, title: 'Trusted by diaspora', body: 'NRIs from USA, UK, Canada, Australia, Singapore, UAE.' },
@@ -435,7 +439,7 @@ export default function NRIPujasPillarPage() {
           <div className="flex flex-col gap-2 md:items-end">
             <Link
               href="/pujas"
-              className="inline-flex items-center gap-2 rounded-lg bg-saffron-500 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-600"
+              className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
             >
               Browse pujas
               <ArrowRight className="h-4 w-4" />

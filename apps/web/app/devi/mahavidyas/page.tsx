@@ -7,11 +7,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: 'Dasa Mahavidya — 10 Tantric Wisdom Goddesses | Kali Tara Sundari Bhuvaneshwari | Darshya',
+ title: 'Dasa Mahavidya — 10 Tantric Wisdom Goddesses | Kali Tara Sundari Bhuvaneshwari',
  description:
   'Complete guide to all 10 Mahavidyas — Kali, Tara, Tripura Sundari, Bhuvaneshwari, Bhairavi, Chinnamasta, Dhumavati, Bagalamukhi, Matangi, Kamala. Origin story, iconography, mantras, sadhana, householder cautions per Devi Bhagavata + Brihad Nila Tantra.',
  alternates: { canonical: `${BASE_URL}/devi/mahavidyas` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Dasa Mahavidya — 10 Tantric Wisdom Goddesses',
   description: 'All 10 Mahavidyas — origin, iconography, mantras, sadhana goal, householder cautions.',
   url: `${BASE_URL}/devi/mahavidyas`,

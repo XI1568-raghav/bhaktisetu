@@ -124,7 +124,7 @@ function WelcomeContent() {
                 <p className="text-3xl font-semibold" style={{ color: 'var(--color-primary, #ea580c)', fontFamily: 'var(--font-display)' }}>
                   {stats ? `#${stats.rank}` : '…'}
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
                   Your rank
                 </p>
               </div>
@@ -132,7 +132,7 @@ function WelcomeContent() {
                 <p className="text-3xl font-semibold" style={{ color: 'var(--color-text, #1f1b18)', fontFamily: 'var(--font-display)' }}>
                   {stats?.total ?? '…'}
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
                   Total joined
                 </p>
               </div>
@@ -140,7 +140,7 @@ function WelcomeContent() {
                 <p className="text-3xl font-semibold" style={{ color: 'var(--color-text, #1f1b18)', fontFamily: 'var(--font-display)' }}>
                   {stats?.referralCount ?? 0}
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
                   Friends referred
                 </p>
               </div>

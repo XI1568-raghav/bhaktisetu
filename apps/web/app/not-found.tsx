@@ -57,13 +57,117 @@ export default function NotFound() {
         The page you&rsquo;re looking for may have moved or doesn&rsquo;t exist on Darshya.
       </p>
 
-      <Link
-        href="/"
-        className="btn-press mt-8 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white"
-        style={{ background: 'var(--color-primary)' }}
+      {/* CM-17 (prod sweep 2026-08-12): this page used to be a single "Back to
+          Home" link. WhatsApp forwards, old bookmarks and stale search results
+          are a primary acquisition channel for this audience — the intent that
+          lands here is already qualified, and dumping it at an 8,222px
+          homepage throws it away. A search box plus the two catalogue hubs and
+          a handful of real destinations recycles traffic already paid for.
+          Every slug below is in the live catalogue (Postgres puja_types /
+          temples, 2026-08-13); nothing here links a puja the platform does not
+          sell. */}
+      <form
+        action="/search"
+        method="get"
+        role="search"
+        className="mt-8 flex w-full max-w-md items-center gap-2"
       >
-        Back to Home
-      </Link>
+        <label htmlFor="notfound-q" className="sr-only">
+          Search Darshya
+        </label>
+        <input
+          id="notfound-q"
+          name="q"
+          type="search"
+          placeholder="Search a puja, temple or article"
+          className="min-h-[44px] flex-1 rounded-lg border px-3 text-sm"
+          style={{
+            background: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text)',
+          }}
+        />
+        <button
+          type="submit"
+          className="btn-press bg-saffron-600 hover:bg-saffron-700 min-h-[44px] rounded-lg px-4 text-sm font-medium text-white"
+        >
+          Search
+        </button>
+      </form>
+
+      <div className="mt-8 w-full max-w-md text-left">
+        <p
+          className="mb-2 text-xs font-semibold uppercase tracking-wider"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          Popular pujas
+        </p>
+        <ul className="flex flex-wrap gap-2">
+          {[
+            { slug: 'rudrabhishek', name: 'Rudrabhishek' },
+            { slug: 'satyanarayan-katha', name: 'Satyanarayan Katha' },
+            { slug: 'ganesh-puja', name: 'Ganesh Puja' },
+            { slug: 'lakshmi-puja', name: 'Lakshmi Puja' },
+          ].map((p) => (
+            <li key={p.slug}>
+              <Link
+                href={`/pujas/${p.slug}`}
+                className="inline-flex min-h-[44px] items-center rounded-full border px-3 text-sm"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+              >
+                {p.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <p
+          className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          Popular temples
+        </p>
+        <ul className="flex flex-wrap gap-2">
+          {[
+            { slug: 'kashi-vishwanath', name: 'Kashi Vishwanath' },
+            { slug: 'somnath', name: 'Somnath' },
+            { slug: 'siddhivinayak', name: 'Siddhivinayak' },
+          ].map((t) => (
+            <li key={t.slug}>
+              <Link
+                href={`/temples/${t.slug}`}
+                className="inline-flex min-h-[44px] items-center rounded-full border px-3 text-sm"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+              >
+                {t.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/pujas"
+          className="btn-press bg-saffron-600 hover:bg-saffron-700 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-5 text-sm font-medium text-white"
+        >
+          Browse all pujas
+        </Link>
+        <Link
+          href="/temples"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border px-5 text-sm font-medium"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+        >
+          Browse temples
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex min-h-[44px] items-center px-2 text-sm underline"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          Back to Home
+        </Link>
+      </div>
     </div>
   );
 }

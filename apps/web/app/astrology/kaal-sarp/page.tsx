@@ -8,11 +8,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Kaal Sarp Dosh Calculator — Free Online Kalsarpa Yoga Check | Darshya',
+ title: 'Kaal Sarp Dosh Calculator — Free Online Kalsarpa Yoga Check',
  description:
   'Free Kaal Sarp Dosh calculator. Detect all 12 Kalsarpa Yoga types (Anant · Kulik · Vasuki · Shankhpal · Padma · Mahapadma · Takshak · Karkotak · Shankhachud · Ghatak · Vishdhar · Sheshnag) based on Rahu-Ketu axis in your kundli. Severity + remedies + Naga puja guidance.',
  alternates: { canonical: `${BASE_URL}/astrology/kaal-sarp` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Kaal Sarp Dosh Calculator — Free Online Kalsarpa Yoga Check',
   description: 'Detect all 12 Kalsarpa Yoga types from your birth chart. Severity classification + traditional Naga puja remedies.',
   url: `${BASE_URL}/astrology/kaal-sarp`,
@@ -123,7 +124,7 @@ export default function KaalSarpPage() {
          <p className="font-serif text-base font-semibold text-gray-900">{t.house}. {t.name}</p>
          <p className="text-xs text-purple-700">{t.sanskrit}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-900">House {t.house}</span>
+        <span className="shrink-0 rounded-full bg-purple-200 px-2 py-0.5 text-xs font-bold text-purple-900">House {t.house}</span>
        </div>
        <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Theme</p>
        <p className="text-sm text-gray-800">{t.theme}</p>

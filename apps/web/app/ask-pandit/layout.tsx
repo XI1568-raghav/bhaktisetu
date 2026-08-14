@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
- title: 'Ask a Pandit — Free AI Astrology Consultation | Darshya',
+ title: 'Ask a Pandit — Free AI Astrology Consultation',
  description:
   'Get instant Vedic astrology answers from AI Pandit. Free consultation on horoscope, kundli, muhurat, and more.',
  alternates: { canonical: 'https://darshya.online/ask-pandit' },

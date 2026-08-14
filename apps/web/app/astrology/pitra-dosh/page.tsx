@@ -8,11 +8,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: 'Pitra Dosha Calculator — 5 Types, 30 Symptoms, 18 Remedies | Free Vedic | Darshya',
+ title: 'Pitra Dosha Calculator — 5 Types, 30 Symptoms, 18 Remedies | Free Vedic',
  description:
   'Free Pitra Dosh analyser per Brihat Parashara. 5 dosh types (Surya / Chandra / Rahu / Ketu / Guru Pitra Dosh) — symptoms across 6 life areas (progeny, marriage, wealth, health, family, career), karmic causes per Garuda Purana, 30+ household + temple remedies — Pind Daan at Gaya, Narayan Nagbali at Trimbakeshwar, Pitru Paksha tarpan, peepal water, feed-the-five. No birth chart needed for symptom check.',
  alternates: { canonical: `${BASE_URL}/astrology/pitra-dosh` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Pitra Dosha Calculator — Symptom Checker + 30 Remedies',
   description: 'Free analyser: pick your life problem → identify which of 5 Pitra Dosh patterns likely affects you → get prescribed remedies.',
   url: `${BASE_URL}/astrology/pitra-dosh`,

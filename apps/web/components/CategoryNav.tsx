@@ -9,29 +9,43 @@ const HOVER_OPEN_DELAY_MS = 120;
 const HOVER_CLOSE_DELAY_MS = 120;
 
 /**
+ * Focusable descendants of an open panel, in DOM order. The Library panel
+ * renders plain links (no role="menuitem"), so match on focusability rather
+ * than on the menuitem role — otherwise Library would have no keyboard entry.
+ */
+const PANEL_ITEM_SELECTOR = 'a[href], button:not([disabled])';
+
+/**
  * Desktop-only 5-category mega-menu nav. Hidden < md.
  *
  * Open behavior:
  *  - hovering a trigger opens its panel after 120ms
  *  - leaving the trigger AND panel closes it after 120ms (allows mouse travel)
- *  - focusing a trigger via keyboard opens it immediately
  *  - clicking a trigger toggles it
+ *  - Enter/Space/ArrowDown opens a panel and moves focus to its first item;
+ *    ArrowUp opens and moves focus to the last item
+ *  - ArrowUp/ArrowDown/Home/End rove between items inside an open panel
  *  - Escape closes any open panel and returns focus to its trigger
- *  - clicking outside closes
+ *  - clicking outside, or tabbing out of the nav entirely, closes
+ *
+ * Focus deliberately does NOT open a panel. A single shared panel is rendered
+ * after all five triggers, so when every trigger opened its own panel on focus
+ * a forward Tab across the nav kept swapping the panel and only the LAST
+ * trigger's items were ever reachable (A11Y-03, WCAG 2.1.1 Level A).
  *
  * Mobile gets MobileNavV2 instead — render this only inside an `md:` block.
  */
 export function CategoryNav() {
   const [openKey, setOpenKey] = useState<CategoryKey | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const triggerRefs = useRef<Map<CategoryKey, HTMLButtonElement | null>>(
     new Map(),
   );
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Set briefly while Escape returns focus to a trigger, so the trigger's
-  // onFocus handler doesn't immediately re-open the panel it just closed.
-  const suppressFocusOpenRef = useRef(false);
+  // Where focus should land once a keyboard-opened panel has rendered.
+  const focusIntentRef = useRef<'first' | 'last' | null>(null);
   const baseId = useId();
 
   const clearTimers = useCallback(() => {
@@ -67,6 +81,46 @@ export function CategoryNav() {
     setOpenKey(null);
   }, [clearTimers]);
 
+  const panelItems = useCallback((): HTMLElement[] => {
+    const root = panelRef.current;
+    return root
+      ? Array.from(root.querySelectorAll<HTMLElement>(PANEL_ITEM_SELECTOR))
+      : [];
+  }, []);
+
+  const focusPanelItem = useCallback(
+    (which: 'first' | 'last') => {
+      const items = panelItems();
+      if (!items.length) return;
+      // Guarded by the length check above; noUncheckedIndexedAccess still
+      // widens an index read to `| undefined`.
+      (which === 'last' ? items[items.length - 1] : items[0])?.focus();
+    },
+    [panelItems],
+  );
+
+  // Move focus into the panel once a keyboard open has rendered it.
+  useEffect(() => {
+    const intent = focusIntentRef.current;
+    focusIntentRef.current = null;
+    if (!openKey || !intent) return;
+    focusPanelItem(intent);
+  }, [openKey, focusPanelItem]);
+
+  const openAndFocus = useCallback(
+    (key: CategoryKey, which: 'first' | 'last') => {
+      clearTimers();
+      if (openKey === key) {
+        // Already open: no state change would fire, so move focus directly.
+        focusPanelItem(which);
+        return;
+      }
+      focusIntentRef.current = which;
+      setOpenKey(key);
+    },
+    [clearTimers, focusPanelItem, openKey],
+  );
+
   // Close on Escape and outside click
   useEffect(() => {
     if (!openKey) return;
@@ -75,15 +129,7 @@ export function CategoryNav() {
       if (e.key === 'Escape') {
         const trigger = triggerRefs.current.get(openKey);
         closeNow();
-        // Focus the trigger for keyboard users, but suppress the onFocus
-        // handler so it doesn't re-open the panel we just closed. The flag is
-        // cleared on the next event loop tick so subsequent legitimate focus
-        // events (Tab/Arrow keys) open the panel as expected.
-        suppressFocusOpenRef.current = true;
         trigger?.focus();
-        setTimeout(() => {
-          suppressFocusOpenRef.current = false;
-        }, 0);
       }
     };
     const onClick = (e: MouseEvent) => {
@@ -122,11 +168,53 @@ export function CategoryNav() {
         if (prev) triggerRefs.current.get(prev.key)?.focus();
       } else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        clearTimers();
-        setOpenKey(key);
+        openAndFocus(key, 'first');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        openAndFocus(key, 'last');
       }
     },
-    [clearTimers],
+    [openAndFocus],
+  );
+
+  // Roving focus between items inside the open panel.
+  const onPanelKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const items = panelItems();
+      if (!items.length) return;
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        items[current < 0 ? 0 : (current + 1) % items.length]?.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[
+          current < 0
+            ? items.length - 1
+            : (current - 1 + items.length) % items.length
+        ]?.focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        items[0]?.focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+      }
+    },
+    [panelItems],
+  );
+
+  // Tabbing out of the nav entirely closes the panel. relatedTarget is null for
+  // synthetic/unknown blurs — leave the panel alone in that case.
+  const onContainerBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      const next = e.relatedTarget as Node | null;
+      if (!next) return;
+      if (containerRef.current && !containerRef.current.contains(next)) {
+        closeNow();
+      }
+    },
+    [closeNow],
   );
 
   const openCategory = openKey
@@ -138,6 +226,7 @@ export function CategoryNav() {
       ref={containerRef}
       className="hidden md:flex items-center gap-1 mx-auto relative"
       onMouseLeave={scheduleClose}
+      onBlur={onContainerBlur}
     >
       {CATEGORY_TREE.map((category) => {
         const isOpen = openKey === category.key;
@@ -155,11 +244,6 @@ export function CategoryNav() {
             aria-expanded={isOpen}
             aria-controls={isOpen ? panelId : undefined}
             onMouseEnter={() => scheduleOpen(category.key)}
-            onFocus={() => {
-              if (suppressFocusOpenRef.current) return;
-              clearTimers();
-              setOpenKey(category.key);
-            }}
             onClick={() => {
               clearTimers();
               setOpenKey((prev) => (prev === category.key ? null : category.key));
@@ -184,6 +268,7 @@ export function CategoryNav() {
 
       {openCategory && (
         <div
+          ref={panelRef}
           id={`${baseId}-panel-${openCategory.key}`}
           className={
             openCategory.key === 'library'
@@ -192,6 +277,7 @@ export function CategoryNav() {
           }
           onMouseEnter={clearTimers}
           onMouseLeave={scheduleClose}
+          onKeyDown={onPanelKeyDown}
         >
           <CategoryMegaMenu
             category={openCategory}

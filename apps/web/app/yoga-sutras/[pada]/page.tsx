@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ pada: str
   const p = getPada(pada);
   if (!p) return { title: 'Not found' };
   return {
-    title: `${p.english} — Pada ${p.number}, ${p.sutraCount} Sutras | Yoga Sutras | Darshya`,
+    title: `${p.english} — Pada ${p.number}, ${p.sutraCount} Sutras | Yoga Sutras`,
     description: `${p.sanskrit} (${p.iast}) — Pada ${p.number} of Patanjali Yoga Sutras. ${p.centralFocus}. ${p.summary.slice(0, 100)}`,
     alternates: { canonical: `${BASE_URL}/yoga-sutras/${p.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${p.english} — ${p.centralFocus}`,
       description: p.summary.slice(0, 160),
       url: `${BASE_URL}/yoga-sutras/${p.slug}`,

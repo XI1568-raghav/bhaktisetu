@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const p = getPurana(slug);
   if (!p) return { title: 'Not found' };
   return {
-    title: `${p.name} (${p.sanskrit}) — Summary, Verse Count, Notable Stories | Darshya`,
+    title: `${p.name} (${p.sanskrit}) — Summary, Verse Count, Notable Stories`,
     description: `${p.name} — ${p.verseCount.toLocaleString()} verses, presiding deity ${p.presidingDeity}. ${p.centralTheme}. ${p.summary.slice(0, 100)}`,
     alternates: { canonical: `${BASE_URL}/puranas/${p.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${p.name} — ${p.bestKnownFor}`,
       description: p.summary.slice(0, 160),
       url: `${BASE_URL}/puranas/${p.slug}`,

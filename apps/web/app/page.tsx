@@ -22,14 +22,16 @@ import {
  BookOpen,
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
+import { buttonClass } from '../components/ui/button-recipe';
 import { getTodayPanchang } from '../lib/api';
+import { getPlatformCounts } from '../lib/platform-stats';
 import Image from 'next/image';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
 import ScrambleReveal from '../components/motion/ScrambleReveal';
 import StickyHeadlinePin from '../components/motion/StickyHeadlinePin';
 import { brandFaqJsonLd } from '../lib/jsonld';
-import { getTempleHero, getDeityImage, getContentImage, getProductImage } from '../lib/images';
+import { getTempleHero, getDeityImage, getContentImage, getProductImage, IMG_W } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
@@ -42,6 +44,7 @@ import YatraStrip from '../components/home/YatraStrip';
 import TrustStrip from '../components/home/TrustStrip';
 import EmailCapture from '../components/EmailCapture';
 import NextFestivalStrip from '../components/home/NextFestivalStrip';
+import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
 import NriLaneAbTest from '../components/home/NriLaneAbTest';
 
@@ -94,6 +97,12 @@ export default async function HomePage() {
    panchangChip = null;
  }
 
+ // CM-11 / DF-05 (prod sweep 2026-08-12): every inventory number on this page
+ // used to be a string literal ("200+ verified temples", "500+ vetted
+ // pandits"). They are now server counts, and a failed count renders copy with
+ // no digits rather than the old marketing figure. See lib/platform-stats.ts.
+ const counts = await getPlatformCounts();
+
  return (
  <ScrollReveal>
  <script
@@ -135,14 +144,22 @@ export default async function HomePage() {
  controlSubtitle={t('heroSubtitle')}
  />
 
- <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
+ {/* CM-13 / CM-14 (prod sweep 2026-08-12): these were two equally-weighted
+   filled buttons at the same y — "Explore Temples" and "Book a Puja" —
+   splitting intent at the highest-stakes decision on the site. Worse, the
+   temples branch is the weaker one: 15 of 20 temples have zero puja
+   offerings, so three of every four destinations behind it cannot take
+   money. One primary (the catalogue, via HomeHeroCta), and the temple
+   directory demoted to a text link. */}
+ <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-4 flex-wrap">
  <HomeHeroCta />
  <Link
- href="/pujas"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
- style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ href="/temples"
+ data-hero-secondary
+ className="inline-flex min-h-[44px] items-center gap-1 text-sm font-medium underline underline-offset-4"
+ style={{ color: 'var(--color-text-muted)' }}
  >
- {t('heroCtaSecondary')}
+ Explore temples <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
 
@@ -160,36 +177,36 @@ export default async function HomePage() {
  <div data-reveal="zoom-rotate" data-delay="1" className="grid grid-cols-2 gap-2.5">
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
  <Image
- src={getTempleHero('golden-temple')}
+ src={getTempleHero('golden-temple', IMG_W.CARD)}
  alt="Sri Harmandir Sahib (Golden Temple), live darshan"
- width={1280}
- height={640}
- sizes="(max-width: 768px) 100vw, 50vw"
+ width={500}
+ height={250}
+ sizes="(max-width: 768px) 100vw, 360px"
  className="w-full h-40 object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
  priority
  unoptimized
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
- <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+ <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </div>
  <div className="absolute bottom-2.5 left-2.5">
  <p className="text-xs font-medium text-white">Golden Temple, Amritsar</p>
- <p className="text-[10px] text-white/70">Watch live darshan →</p>
+ <p className="text-xs text-white/70">Watch live darshan →</p>
  </div>
  </Link>
  <div className="rounded-xl p-3 flex flex-col justify-between scroll-float" style={{ background: 'var(--color-art-1)', minHeight: '90px', animationDelay: '0s' }}>
  <Shield className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <div>
- <p className="text-[11px] font-medium mt-1" style={{ color: 'var(--color-text)' }}>Verified Priests</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Aadhaar authenticated</p>
+ <p className="text-xs font-medium mt-1" style={{ color: 'var(--color-text)' }}>Verified Priests</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Aadhaar authenticated</p>
  </div>
  </div>
  <div className="rounded-xl p-3 flex flex-col justify-between scroll-float" style={{ background: 'var(--color-art-2)', minHeight: '90px', animationDelay: '1.5s' }}>
  <Sparkles className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <div>
- <p className="text-[11px] font-medium mt-1" style={{ color: 'var(--color-text)' }}>AI Pandit</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Gita-powered guidance</p>
+ <p className="text-xs font-medium mt-1" style={{ color: 'var(--color-text)' }}>AI Pandit</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Gita-powered guidance</p>
  </div>
  </div>
  </div>
@@ -207,10 +224,14 @@ export default async function HomePage() {
 
  {/* ═══ ONBOARDING — intent trio (anon) / continue card (returning) — moved below hero per Phase D-6 ═══ */}
  <ContinueJourneyCard />
- <IntentTrio />
+ <IntentTrio liveDarshanTemples={counts.liveDarshanTemples} />
 
  {/* ═══ NEXT FESTIVAL countdown — relocated below intent trio per user feedback 2026-06-07 ═════ */}
  <NextFestivalStrip />
+
+ {/* CM-13: the answer to "how do I know the puja actually happened?", placed
+     where the buyer asks it rather than ten screens down. */}
+ <HowItWorks />
 
  {/* ═══ CATEGORY COLOR STRIP — 5 brand worlds visible above fold ═══════ */}
  {/* User complaint 2026-06-05: above-fold reads as saffron monoculture. */}
@@ -219,7 +240,7 @@ export default async function HomePage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
  {[
- { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF4EC', border: '#FBD0A8', text: '#9E3F0A', icon: '#E16318' },
+ { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF8F0', border: '#FDD8AF', text: '#7d4e1f', icon: '#9e6229' },
  { label: 'Library', sub: '500 plus wisdom guides', href: '/discover', Icon: BookOpen, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
  { label: 'Astrology', sub: 'Kundli, Horoscope, Doshas', href: '/astrology', Icon: Stars, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
  { label: 'Yatra', sub: 'Pilgrimage, Wellness', href: '/yatra', Icon: Compass, bg: '#ECFDF5', border: '#A7F3D0', text: '#065F46', icon: '#059669' },
@@ -235,7 +256,7 @@ export default async function HomePage() {
  <cat.Icon className="w-5 h-5" style={{ color: cat.icon }} />
  <div>
  <p className="text-sm font-semibold" style={{ color: cat.text }}>{cat.label}</p>
- <p className="text-[11px] mt-0.5" style={{ color: cat.text, opacity: 0.75 }}>{cat.sub}</p>
+ <p className="text-xs mt-0.5" style={{ color: cat.text, opacity: 0.75 }}>{cat.sub}</p>
  </div>
  </Link>
  ))}
@@ -263,7 +284,7 @@ export default async function HomePage() {
  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
  >
  <chip.Icon className="w-5 h-5" style={{ color: chip.color }} />
- <span className="text-[11px] font-medium" style={{ color: 'var(--color-text)' }}>{chip.label}</span>
+ <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{chip.label}</span>
  </Link>
  ))}
  </div>
@@ -284,7 +305,7 @@ export default async function HomePage() {
  <t.icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: t.accent }} />
  <div>
  <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{t.title}</p>
- <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</p>
+ <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</p>
  </div>
  </div>
  ))}
@@ -344,7 +365,7 @@ export default async function HomePage() {
  {t('liveDarshanTitle')}
  </h2>
  </div>
- <Link href="/darshan" data-reveal="fade" className="inline-flex items-center gap-1 text-xs font-medium link-underline" style={{ color: 'var(--color-primary)' }}>
+ <Link href="/darshan" data-reveal="fade" className="tap-safe items-center gap-1 text-xs font-medium link-underline" style={{ color: 'var(--color-primary)' }}>
  {t('allStreams')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
@@ -352,18 +373,18 @@ export default async function HomePage() {
  <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/9] relative">
  <Image
- src={getTempleHero('mahakaleshwar')}
+ src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
  alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
  width={1280}
  height={720}
  sizes="(max-width: 768px) 100vw, 960px"
  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
- priority
+ loading="lazy"
  unoptimized
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
  <div className="absolute top-3 left-3 flex items-center gap-2">
- <span className="flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+ <span className="flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </span>
  </div>
@@ -398,14 +419,14 @@ export default async function HomePage() {
  </p>
  <div className="grid grid-cols-5 grid-rows-2 gap-2 mb-4" style={{ height: '160px' }}>
  <div className="col-span-3 row-span-2 rounded-lg overflow-hidden" data-parallax="0.04">
- <img src={getDeityImage('lord-shiva')} alt="Puja ceremony" width={480} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img src={getDeityImage('lord-shiva', 'portrait', IMG_W.CARD)} alt="Puja ceremony" width={480} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="col-span-2 rounded-lg overflow-hidden">
- <img src={getContentImage('aarti', 'thumbnail')} alt="Aarti" width={320} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img src={getContentImage('aarti', 'thumbnail', IMG_W.THUMB)} alt="Aarti" width={320} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
  <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>HD</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Video proof every puja</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Video proof every puja</p>
  </div>
  </div>
  <div className="flex flex-wrap gap-3 mb-4">
@@ -416,11 +437,11 @@ export default async function HomePage() {
  ].map((f) => (
  <div key={f.label} className="flex items-center gap-1.5">
  <f.icon className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
- <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{f.label}</span>
+ <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{f.label}</span>
  </div>
  ))}
  </div>
- <Link href="/pujas" className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+ <Link href="/pujas" className="tap-safe items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
  {t('browsePujas')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
@@ -442,31 +463,31 @@ export default async function HomePage() {
  <div className="flex items-center gap-2">
  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs" style={{ background: '#4f46e5' }}>PK</div>
  <div>
- <p className="text-[11px] font-semibold" style={{ color: 'var(--color-text)' }}>Pandit Kamal</p>
- <p className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Vedic • 15yr exp</p>
+ <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>Pandit Kamal</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Vedic • 15yr exp</p>
  </div>
  </div>
  <div className="flex items-center gap-1">
  {[1,2,3,4,5].map(i => (
- <span key={i} className="text-[10px]" style={{ color: '#4f46e5' }}></span>
+ <span key={i} className="text-xs" style={{ color: '#4f46e5' }}></span>
  ))}
- <span className="text-[9px] ml-1" style={{ color: 'var(--color-text-muted)' }}>preview</span>
+ <span className="text-xs ml-1" style={{ color: 'var(--color-text-muted)' }}>preview</span>
  </div>
  <div className="flex items-center justify-between">
- <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(79, 70, 229, 0.12)', color: '#4f46e5' }}>Online</span>
- <p className="text-[10px] font-semibold" style={{ color: 'var(--color-text)' }}>₹25/min</p>
+ <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(79, 70, 229, 0.12)', color: '#4f46e5' }}>Online</span>
+ <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>₹25/min</p>
  </div>
  </div>
  {/* Today's horoscope preview */}
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Today • Leo</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Today • Leo</p>
  <p className="text-sm font-semibold mt-0.5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}></p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Lucky: 7</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Lucky: 7</p>
  </div>
  {/* Kundli chart icon */}
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center items-center text-center" style={{ background: 'rgba(79, 70, 229, 0.10)' }}>
  <p data-counter data-counter-target="15+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#4f46e5' }}>15+</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Astrologers</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Astrologers</p>
  </div>
  </div>
 
@@ -481,11 +502,11 @@ export default async function HomePage() {
  <Moon className="w-3.5 h-3.5" style={{ color: '#4f46e5' }} />
  <span className="text-xs font-medium group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</span>
  </div>
- <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(79, 70, 229, 0.10)', color: '#4f46e5' }}>{card.badge}</span>
+ <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(79, 70, 229, 0.10)', color: '#4f46e5' }}>{card.badge}</span>
  </Link>
  ))}
  </div>
- <Link href="/astrology" className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: '#4f46e5' }}>
+ <Link href="/astrology" className="tap-safe items-center gap-1.5 text-xs font-medium" style={{ color: '#4f46e5' }}>
  {t('talkToAstrologer')} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
@@ -509,7 +530,7 @@ export default async function HomePage() {
  {t('aiGuideDesc')}
  </p>
  <div data-reveal="spring" data-delay="2">
- <Link href="/ask-pandit" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/ask-pandit" className={buttonClass('primary', 'md', 'btn-press')}>
  {t('askYourQuestion')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
@@ -522,7 +543,7 @@ export default async function HomePage() {
  </div>
  <div>
  <p className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{t('panditJi')}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>{t('aiSpiritualGuide')}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{t('aiSpiritualGuide')}</p>
  </div>
  </div>
  <div className="p-4 space-y-3">
@@ -534,8 +555,8 @@ export default async function HomePage() {
  <div className="flex justify-start">
  <div className="px-3 py-2 rounded-2xl rounded-bl-md text-xs max-w-[85%]" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
  <p className="mb-1.5">The Bhagavad Gita teaches us in Chapter 2, Verse 47:</p>
- <p className="italic text-[11px] mb-1" style={{ color: 'var(--color-text-muted)' }}>{"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"}</p>
- <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>&quot;You have the right to perform your duty, but not to the fruits of your actions.&quot;</p>
+ <p className="italic text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>{"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>&quot;You have the right to perform your duty, but not to the fruits of your actions.&quot;</p>
  </div>
  </div>
  </div>
@@ -558,29 +579,29 @@ export default async function HomePage() {
  </p>
  <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-5">
  {['Puja Essentials', 'Rudraksha & Malas', 'Idols', 'Books', 'Organic'].map((tag) => (
- <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
+ <span key={tag} className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
  ))}
  </div>
  <div data-reveal="spring" data-delay="3">
- <Link href="/store" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/store" className={buttonClass('primary', 'md', 'btn-press')}>
  {t('shopEssentials')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
  </div>
  <div className="grid grid-cols-2 gap-3">
  {[
- { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali') },
- { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala') },
- { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks') },
- { name: 'Ganesh Murti', price: '₹2,499', img: getProductImage('ganesh-murti') },
+ { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali', IMG_W.THUMB) },
+ { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala', IMG_W.THUMB) },
+ { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks', IMG_W.THUMB) },
+ { name: 'Ganesh Murti', price: '₹2,499', img: getProductImage('ganesh-murti', IMG_W.THUMB) },
  ].map((p, i) => (
  <div key={p.name} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl overflow-hidden card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <div className="aspect-square">
- <img src={p.img} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+ <img src={p.img} alt={p.name} width={250} height={250} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="p-2.5">
- <p className="text-[11px] font-medium truncate" style={{ color: 'var(--color-text)' }}>{p.name}</p>
- <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-primary)' }}>{p.price}</p>
+ <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text)' }}>{p.name}</p>
+ <p className="text-xs mt-0.5" style={{ color: 'var(--color-primary)' }}>{p.price}</p>
  </div>
  </div>
  ))}
@@ -610,7 +631,7 @@ export default async function HomePage() {
  >
  <item.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />
  <h3 className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
- <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
+ <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
  </Link>
  ))}
  </div>
@@ -627,17 +648,12 @@ export default async function HomePage() {
  {t('finalCtaDesc')}
  </p>
  <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3">
- <Link
- href="/auth/login"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
- >
+ <Link href="/auth/login" className={buttonClass('primary', 'md', 'btn-press')}>
  {tCommon('getStarted')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  <Link
  href="/temples"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
- style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ className={buttonClass('secondary', 'md')}
  >
  {t('exploreFirst')}
  </Link>
@@ -646,7 +662,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ 5-CATEGORY DISCOVERY STRIPS ═══════════════════════════════════ */}
- <WorshipStrip />
+ <WorshipStrip liveDarshanTemples={counts.liveDarshanTemples} />
  <WisdomStrip />
  <ConsultStrip />
  <ShopStrip />
@@ -685,12 +701,12 @@ export default async function HomePage() {
  >
  <card.Icon className="w-5 h-5" style={{ color: '#4f46e5' }} />
  <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
- <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
+ <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
  </Link>
  ))}
  </div>
  <div className="sm:hidden mt-4 text-center">
- <Link href="/discover" className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
+ <Link href="/discover" className="tap-safe items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
  Browse all 500+ guides <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
@@ -726,19 +742,19 @@ export default async function HomePage() {
  >
  <card.Icon className="w-5 h-5" style={{ color: '#059669' }} />
  <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
- <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
+ <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
  </Link>
  ))}
  </div>
  <div className="sm:hidden mt-4 text-center">
- <Link href="/yatra" className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
+ <Link href="/yatra" className="tap-safe items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
  Plan a trip <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
  </div>
  </section>
 
- <TrustStrip />
+ <TrustStrip verifiedTemples={counts.verifiedTemples} />
 
  {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
  <section className="max-w-3xl mx-auto px-4 py-12">

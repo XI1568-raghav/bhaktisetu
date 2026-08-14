@@ -13,7 +13,7 @@ import { MessageCircle } from 'lucide-react';
  * and it is now static: no query parsing, no fetch, no client component.
  */
 export const metadata = {
-  title: 'Gift Puja — Darshya',
+  title: 'Gift Puja',
   robots: { index: false, follow: false },
 };
 

@@ -136,7 +136,7 @@ export default function VastuClient() {
      })}
     </div>
 
-    <p className="mt-4 text-[11px] text-gray-500">
+    <p className="mt-4 text-xs text-gray-500">
      Composite scoring per Mayamatam + Vishwakarma Prakash + Brihat Samhita. Ideal direction +40, acceptable +20, avoid −50, baseline +50, clamped 0–100.
     </p>
    </form>
@@ -206,11 +206,11 @@ function PlacementCard({ p }: { p: Placement }) {
      <span className="text-lg">{DIRECTION_GLYPH[p.chosen]}</span>
      <span className="font-serif text-base font-semibold text-gray-900">{p.roomLabel}</span>
      <span className="text-xs text-saffron-700">{p.roomSanskrit}</span>
-     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${s.pill}`}>{s.label}</span>
+     <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${s.pill}`}>{s.label}</span>
     </div>
     <div className="flex items-center gap-2">
      <span className="font-mono text-xs text-gray-700">{p.disha.name} · {p.disha.deity}</span>
-     <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-800">{p.score}/100</span>
+     <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold text-gray-800">{p.score}/100</span>
     </div>
    </div>
    <p className="mt-2 text-xs leading-relaxed text-gray-700">{p.reasoning}</p>

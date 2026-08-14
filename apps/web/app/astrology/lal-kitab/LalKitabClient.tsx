@@ -31,14 +31,14 @@ export default function LalKitabClient() {
      <button
       type="button"
       onClick={() => setMode('problem')}
-      className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${mode === 'problem' ? 'border-saffron-500 bg-saffron-600 text-white' : 'border-saffron-300 bg-white text-saffron-800 hover:bg-saffron-50'}`}
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${mode === 'problem' ? 'border-saffron-600 bg-saffron-600 text-white' : 'border-saffron-300 bg-white text-saffron-800 hover:bg-saffron-50'}`}
      >
       By life problem
      </button>
      <button
       type="button"
       onClick={() => setMode('graha')}
-      className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${mode === 'graha' ? 'border-saffron-500 bg-saffron-600 text-white' : 'border-saffron-300 bg-white text-saffron-800 hover:bg-saffron-50'}`}
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${mode === 'graha' ? 'border-saffron-600 bg-saffron-600 text-white' : 'border-saffron-300 bg-white text-saffron-800 hover:bg-saffron-50'}`}
      >
       By graha
      </button>
@@ -72,7 +72,7 @@ export default function LalKitabClient() {
      </label>
     )}
 
-    <p className="mt-4 text-[11px] text-gray-500">
+    <p className="mt-4 text-xs text-gray-500">
      Tradition: Pt. Roop Chand Joshi&apos;s Lal Kitab (1939-1952). All upay are household-grade Farman.
      If a remedy involves heavy donation or expensive gemstone, consult a Lal Kitab pandit first.
     </p>
@@ -121,7 +121,7 @@ function ProblemView({ result }: { result: ReturnType<typeof diagnoseByProblem> 
        <h3 className="font-serif text-xl text-gray-900">
         {graha.name} <span className="text-saffron-700">({graha.sanskrit})</span> — {graha.western}
        </h3>
-       <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-[11px] font-semibold text-saffron-800">{graha.nature}</span>
+       <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-xs font-semibold text-saffron-800">{graha.nature}</span>
       </div>
       <p className="mt-1 text-xs text-gray-600">{graha.significance}</p>
 
@@ -195,7 +195,7 @@ function GrahaView({ g, houses }: { g: ReturnType<typeof getGraha>; houses: Hous
        <div key={h.house} className={`rounded-xl border-2 p-3 ${s.border} ${s.bg}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
          <p className="font-semibold text-gray-900">House {h.house} · {h.sanskrit}</p>
-         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${s.pill}`}>{s.label}</span>
+         <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${s.pill}`}>{s.label}</span>
         </div>
         <p className="mt-1 text-xs text-gray-700">{h.effect}</p>
         <p className="mt-1 text-xs text-emerald-800"><span className="font-semibold">Farman:</span> {h.upay}</p>

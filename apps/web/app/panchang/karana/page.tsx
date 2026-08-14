@@ -7,11 +7,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: '11 Karanas — 5th Anga of Panchang | Free Vedic Reference | Darshya',
+ title: '11 Karanas — 5th Anga of Panchang | Free Vedic Reference',
  description:
   '11 karanas of Vedic Panchang. 7 chara (movable): Bava, Balava, Kaulava, Taitila, Gara, Vanija, Vishti (Bhadra). 4 sthira (fixed): Shakuni, Chatushpada, Naga, Kintughna. Vishti / Bhadra is the most-avoided karana — universally inauspicious for marriage, travel, business start. Full deity + mantra + best-for + avoid-for per karana.',
  alternates: { canonical: `${BASE_URL}/panchang/karana` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: '11 Karanas — 5th Anga of Panchang',
   description: '5th anga of Panchang. Vishti / Bhadra most-avoided. Free reference with deity + mantra + best-for per karana.',
   url: `${BASE_URL}/panchang/karana`,
@@ -62,11 +63,11 @@ function KaranaCard({ k }: { k: typeof PANCHANG_KARANAS[number] }) {
   >
    <div className="flex items-start justify-between">
     <div>
-     <p className="text-[11px] uppercase tracking-wider text-gray-600">#{k.number}</p>
+     <p className="text-xs uppercase tracking-wider text-gray-600">#{k.number}</p>
      <p className="font-serif text-lg text-gray-900">{k.name}</p>
      <p className="text-sm text-saffron-700">{k.sanskrit}</p>
     </div>
-    <span className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-gray-800">
+    <span className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-gray-800">
      {NATURE_LABEL[k.nature]}
     </span>
    </div>

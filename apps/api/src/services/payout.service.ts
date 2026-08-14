@@ -28,7 +28,7 @@
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
 import { Prisma } from '@prisma/client';
-import type { ProviderRole } from '@prisma/client';
+import type { ProviderRole, PayoutRequestStatus } from '@prisma/client';
 
 export type ProviderRoleKey =
   | 'PANDIT'
@@ -38,7 +38,14 @@ export type ProviderRoleKey =
   | 'TEMPLE_MANAGER'
   | 'GAUSHALA_MANAGER';
 
-const MIN_PAYOUT_INR = 1; // no meaningful floor; provider can withdraw any positive balance
+// Smallest balance a provider may withdraw. Commission.amount is Decimal(10,2),
+// so ₹0.01 is the smallest amount that can exist — this constant therefore means
+// "any positive balance", which is the standing decision for self-serve
+// requestPayout (no floor, no dedupe). batch9-review (2026-08-11): it was ₹1
+// while the comment claimed there was no meaningful floor, so a balance strictly
+// between ₹0.00 and ₹1.00 threw "No withdrawable balance." forever. At most ₹0.99
+// per provider, but the code and the documented decision disagreed.
+const MIN_PAYOUT_INR = 0.01;
 
 // Weekly settlement floor — below this the balance rolls to next week rather
 // than creating a trivial PayoutRequest. Self-serve requestPayout has no floor
@@ -64,29 +71,76 @@ export const PROVIDER_ROLE_MAP: Record<string, ProviderRoleKey> = {
   GAUSHALA_MANAGER: 'GAUSHALA_MANAGER',
 };
 
-export function resolveProviderRole(roles: string[]): ProviderRoleKey | null {
-  for (const r of roles) {
-    if (PROVIDER_ROLE_MAP[r]) return PROVIDER_ROLE_MAP[r]!;
+/**
+ * The ONE payout role a provider holding several is stamped with. Explicit and
+ * ordered in code because there is no ordering available in SQL that carries the
+ * meaning we want (see resolveProviderRoleForUser). Earning roles that generate
+ * their own commission streams come first — the dual-role case this exists for
+ * is a pandit who also sells samagri, whose STORE_OWNER commissions are the ones
+ * that pile up unlabelled.
+ *
+ * Exported so every surface that has to name a provider's payout role (this
+ * service, the self-serve route, the admin pending-payout grouping) agrees on
+ * one answer instead of each picking whichever assignment its query happened to
+ * return first.
+ */
+export const PROVIDER_ROLE_PRECEDENCE: readonly ProviderRoleKey[] = [
+  'STORE_OWNER',
+  'ASTROLOGER',
+  'WELLNESS_INSTRUCTOR',
+  'PANDIT',
+  'TEMPLE_MANAGER',
+  'GAUSHALA_MANAGER',
+];
+
+/** Highest-precedence payout role among a bag of role names; null if none. */
+function pickByPrecedence(roleNames: readonly string[]): ProviderRoleKey | null {
+  const held = new Set<ProviderRoleKey>();
+  for (const name of roleNames) {
+    const mapped = PROVIDER_ROLE_MAP[name];
+    if (mapped) held.add(mapped);
+  }
+  for (const role of PROVIDER_ROLE_PRECEDENCE) {
+    if (held.has(role)) return role;
   }
   return null;
 }
 
 /**
+ * Payout role from JWT role claims. The claims array is built by the auth
+ * middleware from an unordered `userRoleAssignment.findMany`, so "first mapped
+ * role wins" made a dual-role provider's self-serve payout label depend on row
+ * order; precedence makes it the same label the weekly sweep would stamp.
+ */
+export function resolveProviderRole(roles: string[]): ProviderRoleKey | null {
+  return pickByPrecedence(roles);
+}
+
+/**
  * Resolve a provider's payout role from their persisted role assignments,
- * primary role first. Used by the weekly settlement sweep, which has no request
- * context to read JWT claims from.
+ * primary assignment first. Used by the weekly settlement sweep, which has no
+ * request context to read JWT claims from.
  */
 export async function resolveProviderRoleForUser(
   providerId: string,
 ): Promise<ProviderRoleKey | null> {
   const assignments = await prisma.userRoleAssignment.findMany({
     where: { userId: providerId },
-    select: { role: true },
-    // isPrimary first, then a stable alphabetical tiebreak so a multi-role
-    // provider is stamped deterministically rather than by insertion order.
-    orderBy: [{ isPrimary: 'desc' }, { role: 'asc' }],
+    select: { role: true, isPrimary: true },
+    orderBy: [{ isPrimary: 'desc' }],
   });
-  return resolveProviderRole(assignments.map((a) => a.role as string));
+  // batch9-review (2026-08-11): the tiebreak used to be `{ role: 'asc' }`,
+  // described as "a stable alphabetical tiebreak". Postgres orders enum columns
+  // by DECLARATION order, and UserRole declares DEVOTEE, PANDIT, STORE_OWNER, …
+  // — so the real rule was "lowest-declared role wins", i.e. PANDIT for nearly
+  // every dual-role provider. A store owner who also holds PANDIT got their
+  // STORE_OWNER balance stamped role=PANDIT, vanishing from a STORE_OWNER-
+  // filtered admin queue: exactly the mislabelling #233 was built to remove.
+  // Precedence is applied in code now, so no SQL ordering carries semantics.
+  const primary = assignments.filter((a) => a.isPrimary).map((a) => a.role as string);
+  return (
+    pickByPrecedence(primary) ?? pickByPrecedence(assignments.map((a) => a.role as string))
+  );
 }
 
 /**
@@ -100,30 +154,49 @@ function sumAmounts(rows: Array<{ amount: Prisma.Decimal | number | string }>): 
   return rows.reduce((s, r) => s.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0));
 }
 
+/**
+ * SCAL-04 (2026-08-13): sum in SQL, not in Node.
+ *
+ * These three balances were each a `findMany({ select: { amount } })` reduced in
+ * JavaScript — an unbounded read of the provider's entire commission ledger
+ * measured at 10,309 kB by EXPLAIN (ANALYZE, SERIALIZE) at 200k rows, three
+ * times per dashboard load, into a 512 MB container.
+ *
+ * Postgres SUM over `numeric` is exact, so the Decimal correctness `sumAmounts`
+ * was written to protect is preserved: Prisma hands the aggregate back as a
+ * Decimal and it stays one until the display boundary at the end of this
+ * function. `_sum` is null when nothing matched — that is zero, not NaN.
+ */
+async function sumCommissionAmounts(
+  where: Prisma.CommissionWhereInput,
+): Promise<Prisma.Decimal> {
+  const agg = await prisma.commission.aggregate({ where, _sum: { amount: true } });
+  return new Prisma.Decimal(agg._sum?.amount ?? 0);
+}
+
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
-  const rows = await prisma.commission.findMany({
-    where: { providerId, status: 'PENDING', payoutRequestId: null },
-    select: { amount: true },
+  const pending = await sumCommissionAmounts({
+    providerId,
+    status: 'PENDING',
+    payoutRequestId: null,
   });
-  const pending = sumAmounts(rows);
 
-  const paidRows = await prisma.commission.findMany({
-    where: { providerId, status: 'PAID' },
-    select: { amount: true },
-  });
-  const paid = sumAmounts(paidRows);
+  const paid = await sumCommissionAmounts({ providerId, status: 'PAID' });
 
   // In-flight (requested but not yet completed) — already linked to a request,
   // so NOT part of `pending` above. Reported for display only.
-  const inFlightRows = await prisma.commission.findMany({
-    where: {
-      providerId,
-      payoutRequest: { status: { in: ['pending', 'processing'] } },
-    },
-    select: { amount: true },
+  // batch9-review (2026-08-11): this was the only one of the three queries with
+  // no filter on the Commission's own status, so any linked row that was already
+  // PAID (or REVERSED) counted here AND in `paid` below — the same ₹4,000 shown
+  // under both "Pending" and "Paid out", overstating the provider's position.
+  // Nothing reachable writes that state today, but the two sibling queries scope
+  // themselves and this one must too.
+  const inFlight = await sumCommissionAmounts({
+    providerId,
+    status: 'PENDING',
+    payoutRequest: { status: { in: ['pending', 'processing'] } },
   });
-  const inFlight = sumAmounts(inFlightRows);
 
   // RV-05 (2026-08-10): availableInr used to be `pending - inFlight`, but the two
   // sets are disjoint by construction — the `pending` query filters
@@ -170,6 +243,21 @@ export async function getKycStatus(providerId: string): Promise<{
  */
 export const PAYOUT_CONCURRENT_REQUEST_ERROR =
   'Another payout request for this balance is already being created. Please try again in a moment.';
+
+/**
+ * batch9-review (2026-08-11): both payout transactions ran on Prisma's defaults
+ * (maxWait 2s / timeout 5s). The RV-06 design below depends on the LOSING
+ * transaction blocking on the winner's row locks inside `commission.updateMany`
+ * and then re-evaluating its predicate — if the winner holds those locks past
+ * 5s, Prisma kills the loser with P2028 "Transaction already closed" before the
+ * linked-count guard can run, and the route surfaces that raw engine message
+ * instead of PAYOUT_CONCURRENT_REQUEST_ERROR ("try again in a moment"). Nothing
+ * is mispaid either way — the transaction still rolls back — but the retry
+ * affordance the guard exists to give is lost. The 2s maxWait is the other half:
+ * under connection-pool pressure during a weekly settlement burst it rejects a
+ * request outright rather than waiting for a connection.
+ */
+const TX_OPTS = { timeout: 15_000, maxWait: 5_000 } as const;
 
 /**
  * Create a payout request for the provider's full available balance. Atomic:
@@ -251,7 +339,7 @@ export async function requestPayout(
       throw new Error(PAYOUT_CONCURRENT_REQUEST_ERROR);
     }
     return request;
-  });
+  }, TX_OPTS);
 
   // Notify the provider the request is in (fire-and-forget).
   void notifyUser(providerId, {
@@ -277,10 +365,16 @@ export async function processPayout(
   reference?: string,
   failureReason?: string,
 ) {
-  return prisma.$transaction(async (tx) => {
+  // `changed` is false only on the already-completed short-circuit below, which
+  // resolves normally and therefore used to fall straight into the notification
+  // block — every repeat click on Complete (and every retry of
+  // POST /payout-requests/:id/process) pushed another "Your payout of ₹9,000 has
+  // been sent." for a transfer that happened once. A provider who gets three of
+  // those reasonably opens a ticket asking where the other ₹18,000 is.
+  const { req, changed } = await prisma.$transaction(async (tx) => {
     const req = await tx.payoutRequest.findUnique({ where: { id: payoutId } });
     if (!req) throw new Error('Payout request not found.');
-    if (req.status === 'completed') return req;
+    if (req.status === 'completed') return { req, changed: false };
 
     if (action === 'complete') {
       // batch5-review (2026-08-11): RV-06 closed the CREATION side of the
@@ -341,7 +435,7 @@ export async function processPayout(
         where: { payoutRequestId: payoutId, status: 'PENDING' },
         data: { status: 'PAID', paidAt: new Date() },
       });
-      return updated;
+      return { req: updated, changed: true };
     }
 
     // reject / fail → release commissions back to PENDING (balance not lost)
@@ -358,8 +452,10 @@ export async function processPayout(
       where: { payoutRequestId: payoutId },
       data: { payoutRequestId: null }, // unlink; status stays PENDING
     });
-    return updated;
-  }).then(async (req) => {
+    return { req: updated, changed: true };
+  }, TX_OPTS);
+
+  if (changed) {
     void notifyUser(req.providerId, {
       title: action === 'complete' ? 'Payout sent' : 'Payout update',
       body:
@@ -368,8 +464,8 @@ export async function processPayout(
           : `Your payout could not be completed${failureReason ? `: ${failureReason}` : ''}. Your balance is intact.`,
       url: '/payouts',
     }).catch(() => undefined);
-    return req;
-  });
+  }
+  return req;
 }
 
 /** List a provider's own payout requests. */
@@ -478,10 +574,43 @@ export async function listMyPayouts(providerId: string) {
   });
 }
 
+/**
+ * Every value PayoutRequest.status can hold. Exported so the admin route can
+ * build its query schema from this list instead of keeping a second copy that
+ * drifts (note `reversed` exists on ProviderPayoutStatus but NOT here).
+ */
+export const PAYOUT_REQUEST_STATUSES: readonly PayoutRequestStatus[] = [
+  'pending',
+  'processing',
+  'completed',
+  'failed',
+  'rejected',
+];
+
+function isPayoutRequestStatus(value: string): value is PayoutRequestStatus {
+  return (PAYOUT_REQUEST_STATUSES as readonly string[]).includes(value);
+}
+
 /** Admin: list payout requests (filterable by status). */
 export async function listPayoutRequests(status?: string) {
+  // batch9-review (2026-08-11): the route reads `request.query.status` with no
+  // schema and this forwarded it to Prisma as `status as never` — the cast was
+  // the only reason it compiled. Any value that is not a PayoutRequestStatus
+  // (wrong case, a typo, or the 'reversed' that migration 20260810000000 added
+  // to ProviderPayoutStatus but NOT to this enum) threw
+  // PrismaClientValidationError out of an unhandled handler, so the whole admin
+  // payout queue 500'd. No request can hold such a status, so the honest answer
+  // is the empty set — never an engine crash, and never the unfiltered list,
+  // which would silently answer a different question than the one asked.
+  // An empty string is the "All" filter, not a bad value.
+  let statusFilter: PayoutRequestStatus | undefined;
+  if (status) {
+    if (!isPayoutRequestStatus(status)) return [];
+    statusFilter = status;
+  }
+
   const requests = await prisma.payoutRequest.findMany({
-    where: status ? { status: status as never } : {},
+    where: statusFilter ? { status: statusFilter } : {},
     orderBy: { requestedAt: 'desc' },
     take: 200,
   });

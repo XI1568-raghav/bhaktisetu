@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  const bird = getBird(slug);
  if (!bird) return { title: 'Not found' };
  return {
-  title: `${bird.name} Pakshi (${bird.sanskrit}) — Tamil Pancha Pakshi Profile | Darshya`,
+  title: `${bird.name} Pakshi (${bird.sanskrit}) — Tamil Pancha Pakshi Profile`,
   description: `Full ${bird.name} profile per Pancha Pakshi Shastra. Deity ${bird.deity}, planet ${bird.planet}, lucky direction ${bird.luckyDirection}, lucky colors ${bird.luckyColor}. Strengths, weaknesses, career fits, compatible & adversarial Pakshi, daily mantra ${bird.mantraEnglish}, personal remedy.`,
   alternates: { canonical: `${BASE_URL}/astrology/pancha-pakshi/${bird.slug}` },
  };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
  IndianRupee,
  TrendingUp,
@@ -42,13 +42,6 @@ interface PayoutSummary {
  lastPayout: { amount: number; date: string } | null;
 }
 
-// ─── Fallback ───────────────────────────────────────────────────
-
-// Fallback removed - show empty state instead of fakes.
-const fallbackPayouts: PayoutItem[] = [];
-
-const fallbackSummary: PayoutSummary = { totalEarned: 0, pending: 0, lastPayout: null };
-
 // ─── Helpers ────────────────────────────────────────────────────
 
 function formatCurrency(amount: number): string {
@@ -89,29 +82,45 @@ export default function PriestPayoutsPage() {
  const [summary, setSummary] = useState<PayoutSummary | null>(null);
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState<PayoutStatusFilter>('all');
+ // PF-15: a non-OK response used to be thrown and caught into an empty array
+ // plus a zeroed summary, so any API hiccup rendered "You have no payout
+ // records yet" over ₹0 cards — indistinguishable from a pandit who genuinely
+ // has not been paid, and invisible to anyone watching. An unread ledger is an
+ // error, never a balance.
+ const [loadError, setLoadError] = useState<string | null>(null);
 
- useEffect(() => {
- async function fetchPayouts() {
+ const fetchPayouts = useCallback(async () => {
+ setLoading(true);
+ setLoadError(null);
  try {
  const res = await fetch(`${API_BASE_URL}/priest/payouts`, {
  headers: { Authorization: `Bearer ${session?.accessToken}` },
  });
- if (res.ok) {
+ if (!res.ok) {
+ const detail = await res.text().catch(() => '');
+ throw new Error(
+ `Could not load your payouts (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ );
+ }
  const data = await res.json();
  setPayouts(data.payouts || []);
  setSummary(data.summary || null);
- } else {
- throw new Error('API unavailable');
- }
- } catch {
- setPayouts(fallbackPayouts);
- setSummary(fallbackSummary);
+ } catch (err) {
+ setPayouts([]);
+ setSummary(null);
+ setLoadError(
+ err instanceof Error ? err.message : 'Could not load your payouts. Please try again.',
+ );
  } finally {
  setLoading(false);
  }
- }
- fetchPayouts();
- }, [session]);
+ // Keyed on the token, not the session object: a new object identity on every
+ // render would re-arm the effect after each setState and re-fetch forever.
+ }, [session?.accessToken]);
+
+ useEffect(() => {
+ void fetchPayouts();
+ }, [fetchPayouts]);
 
  const filteredPayouts = payouts.filter((p) => {
  if (filter === 'all') return true;
@@ -120,7 +129,12 @@ export default function PriestPayoutsPage() {
 
  const summaryCards = [
  {
- label: 'Total Earned',
+ // PF-12: this card said "Total Earned" over a figure that summed every
+ // PriestPayout regardless of status, so the same pandit read ₹2,310 earned
+ // here and ₹0 on /priest. The server now reports settled money only; the
+ // label uses the dashboard EarningsCard's own word so the two screens can
+ // never be read as contradicting each other again.
+ label: 'Paid out',
  value: formatCurrency(summary?.totalEarned ?? 0),
  icon: IndianRupee,
  color: 'text-tulsi-green',
@@ -158,8 +172,26 @@ export default function PriestPayoutsPage() {
  <p className="text-surface-500 mt-1">Track your earnings and payout history</p>
  </div>
 
+ {/* PF-15: a ledger we could not read is an error, not a balance. Shown
+     instead of — never alongside — the summary cards and the empty state. */}
+ {!loading && loadError && (
+ <div
+ role="alert"
+ className="flex flex-wrap items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+ >
+ <span className="flex-1 min-w-[12rem]">{loadError}</span>
+ <button
+ type="button"
+ onClick={() => { void fetchPayouts(); }}
+ className="shrink-0 font-semibold underline underline-offset-2"
+ >
+ Retry
+ </button>
+ </div>
+ )}
+
  {/* Summary Cards */}
- {!loading && summary && (
+ {!loading && !loadError && summary && (
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
  {summaryCards.map((card) => {
  const Icon = card.icon;
@@ -211,8 +243,8 @@ export default function PriestPayoutsPage() {
  </div>
  )}
 
- {/* Empty */}
- {!loading && filteredPayouts.length === 0 && (
+ {/* Empty — only ever shown for a response we actually read. */}
+ {!loading && !loadError && filteredPayouts.length === 0 && (
  <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-saffron-50">
  <Wallet className="h-8 w-8 text-saffron-400" />
@@ -227,7 +259,7 @@ export default function PriestPayoutsPage() {
  )}
 
  {/* Payouts List */}
- {!loading && filteredPayouts.length > 0 && (
+ {!loading && !loadError && filteredPayouts.length > 0 && (
  <div className="bg-white rounded-xl border border-surface-100 overflow-hidden">
  {/* Table header - desktop */}
  <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-surface-50 text-xs font-semibold text-surface-500 uppercase tracking-wider border-b border-surface-100">

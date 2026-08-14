@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!c) return { title: 'Chant not found' };
 
   return {
-    title: `${c.name} — Lyrics, Meaning, Benefits, How to Chant | Darshya`,
+    title: `${c.name} — Lyrics, Meaning, Benefits, How to Chant`,
     description: `${c.name}: ${c.meaning.slice(0, 130)}. Benefits: ${c.benefits.slice(0, 100)}. Source: ${c.source}.`,
     alternates: { canonical: `${BASE_URL}/chants/${c.slug}` },
     openGraph: {

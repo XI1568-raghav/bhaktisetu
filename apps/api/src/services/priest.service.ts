@@ -6,13 +6,73 @@ import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
+/**
+ * PF-07 (prod sweep 2026-08-12): the pandit portal's tab strip is not a list of
+ * raw statuses — "Completed" covers the three delivered-side states. The map
+ * lives here so the badge count and the rows behind it are computed from the
+ * SAME definition, server-side. Previously the page filtered and counted a
+ * 20-row page client-side and presented that as the total: a pandit with 25
+ * accepted jobs was told he had 15.
+ */
+export const PRIEST_BOOKING_VIEWS = {
+  all: null,
+  confirmed: ['confirmed'],
+  priest_assigned: ['priest_assigned'],
+  in_progress: ['in_progress'],
+  completed: ['completed', 'video_uploaded', 'delivered'],
+} as const satisfies Record<string, readonly BookingStatus[] | null>;
+
+export type PriestBookingView = keyof typeof PRIEST_BOOKING_VIEWS;
+
 export interface PriestBookingsFilters {
   status?: BookingStatus;
+  view?: PriestBookingView;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
   limit?: number;
 }
+
+export type AssignedBookingResult =
+  | { ok: true; booking: unknown }
+  | { ok: false; reason: 'not_found' | 'forbidden' };
+
+/**
+ * One select shared by the list and the by-id read so the two can never drift.
+ *
+ * PF-10: `platformCommission` was missing, so the detail page's Price Breakdown
+ * rendered "Platform Commission -₹NaN" — on the one screen where a pandit
+ * checks what the platform takes. `rating`/`reviewText` were missing for the
+ * same reason: the Devotee Review block could never render.
+ */
+const assignedBookingSelect = {
+  id: true,
+  bookingNumber: true,
+  status: true,
+  scheduledDate: true,
+  scheduledTimeSlot: true,
+  priceAmount: true,
+  currency: true,
+  platformCommission: true,
+  priestPayout: true,
+  devoteeNames: true,
+  sankalpDetails: true,
+  specialInstructions: true,
+  videoProofUrl: true,
+  videoUploadedAt: true,
+  rating: true,
+  reviewText: true,
+  createdAt: true,
+  temple: {
+    select: { id: true, name: true, nameLocal: true, slug: true, city: true, state: true },
+  },
+  pujaType: {
+    select: { id: true, name: true, nameLocal: true, slug: true, durationMinutes: true },
+  },
+  user: {
+    select: { id: true, fullName: true, phone: true },
+  },
+} as const;
 
 export interface PayoutFilters {
   status?: PayoutStatus;
@@ -59,6 +119,13 @@ export class PriestService {
         ratingAvg: true,
         ratingCount: true,
         avatarUrl: true,
+        // PF-14: the dashboard payload carried no on-duty state, so the portal's
+        // instant-dispatch toggle initialised to `false` on every load. A pandit
+        // who WAS in the pool saw "Go on duty", and switching himself off took
+        // two clicks — the first of which sent isOnDuty:true and re-armed him
+        // for 1-minute-SLA offers.
+        isOnDuty: true,
+        lastSeenAt: true,
       },
     });
 
@@ -137,6 +204,10 @@ export class PriestService {
         avatarUrl: priest.avatarUrl,
         ratingAvg: priest.ratingAvg,
         ratingCount: priest.ratingCount,
+        // PF-14: always present, never undefined — the client seeds its toggle
+        // from this and a missing key is indistinguishable from "off".
+        isOnDuty: priest.isOnDuty ?? false,
+        lastSeenAt: priest.lastSeenAt ?? null,
       },
       earnings: {
         total: totalEarnings._sum.amount ?? 0,
@@ -156,60 +227,64 @@ export class PriestService {
    * Get paginated bookings assigned to this priest with optional filters.
    */
   async getAssignedBookings(priestId: string, filters?: PriestBookingsFilters) {
-    const { status, dateFrom, dateTo, page = 1, limit = 20 } = filters ?? {};
+    const { status, view, dateFrom, dateTo, page = 1, limit = 20 } = filters ?? {};
 
-    const where: Prisma.PujaBookingWhereInput = { priestId };
-
-    if (status) {
-      where.status = status;
-    }
+    // The tab counts must describe the pandit's whole book, not the page the
+    // client happens to be looking at, so they are computed over this where
+    // clause — everything except the status filter.
+    const scopeWhere: Prisma.PujaBookingWhereInput = { priestId };
 
     if (dateFrom || dateTo) {
-      where.scheduledDate = {};
+      scopeWhere.scheduledDate = {};
       if (dateFrom) {
-        (where.scheduledDate as Prisma.DateTimeFilter).gte = new Date(dateFrom);
+        (scopeWhere.scheduledDate as Prisma.DateTimeFilter).gte = new Date(dateFrom);
       }
       if (dateTo) {
-        (where.scheduledDate as Prisma.DateTimeFilter).lte = new Date(dateTo);
+        (scopeWhere.scheduledDate as Prisma.DateTimeFilter).lte = new Date(dateTo);
       }
+    }
+
+    const where: Prisma.PujaBookingWhereInput = { ...scopeWhere };
+
+    const viewStatuses = view ? PRIEST_BOOKING_VIEWS[view] : null;
+    if (status) {
+      where.status = status;
+    } else if (viewStatuses) {
+      where.status = { in: [...viewStatuses] };
     }
 
     const skip = (page - 1) * limit;
 
-    const [bookings, total] = await Promise.all([
+    const [bookings, total, grouped] = await Promise.all([
       prisma.pujaBooking.findMany({
         where,
-        select: {
-          id: true,
-          bookingNumber: true,
-          status: true,
-          scheduledDate: true,
-          scheduledTimeSlot: true,
-          priceAmount: true,
-          currency: true,
-          priestPayout: true,
-          devoteeNames: true,
-          sankalpDetails: true,
-          specialInstructions: true,
-          videoProofUrl: true,
-          videoUploadedAt: true,
-          createdAt: true,
-          temple: {
-            select: { id: true, name: true, nameLocal: true, slug: true, city: true, state: true },
-          },
-          pujaType: {
-            select: { id: true, name: true, nameLocal: true, slug: true, durationMinutes: true },
-          },
-          user: {
-            select: { id: true, fullName: true, phone: true },
-          },
-        },
+        select: assignedBookingSelect,
         orderBy: { scheduledDate: 'desc' },
         skip,
         take: limit,
       }),
       prisma.pujaBooking.count({ where }),
+      prisma.pujaBooking.groupBy({
+        by: ['status'],
+        where: scopeWhere,
+        _count: { _all: true },
+      }),
     ]);
+
+    const byStatus = new Map<string, number>();
+    for (const row of (grouped ?? []) as Array<{ status: string; _count?: { _all?: number } }>) {
+      byStatus.set(row.status, row._count?._all ?? 0);
+    }
+    const sumOf = (statuses: readonly BookingStatus[]) =>
+      statuses.reduce((n, s) => n + (byStatus.get(s) ?? 0), 0);
+
+    const counts = {
+      all: [...byStatus.values()].reduce((n, v) => n + v, 0),
+      confirmed: sumOf(PRIEST_BOOKING_VIEWS.confirmed),
+      priest_assigned: sumOf(PRIEST_BOOKING_VIEWS.priest_assigned),
+      in_progress: sumOf(PRIEST_BOOKING_VIEWS.in_progress),
+      completed: sumOf(PRIEST_BOOKING_VIEWS.completed),
+    };
 
     return {
       bookings,
@@ -217,7 +292,30 @@ export class PriestService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      counts,
     };
+  }
+
+  /**
+   * PF-08: read ONE assigned booking.
+   *
+   * The detail page used to fetch the whole (20-row default) list and
+   * `.find()` the id client-side, so every booking from row 21 down rendered
+   * an empty shell — and that page holds the only video-proof control, so
+   * those bookings could never be completed.
+   */
+  async getAssignedBookingById(priestId: string, bookingId: string): Promise<AssignedBookingResult> {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: { ...assignedBookingSelect, priestId: true },
+    });
+
+    if (!booking) return { ok: false, reason: 'not_found' };
+    if (booking.priestId !== priestId) return { ok: false, reason: 'forbidden' };
+
+    const { priestId: _assigned, ...rest } = booking;
+    void _assigned;
+    return { ok: true, booking: rest };
   }
 
   /**
@@ -406,8 +504,48 @@ export class PriestService {
 
   /**
    * Priest uploads video proof — delegates to BookingService.
+   *
+   * PF-06 (prod sweep 2026-08-12): one exception. A booking already in
+   * `video_uploaded` used to be un-fixable: BookingService.uploadVideoProof
+   * only accepts `completed`, so a pandit who pasted a blank/junk URL (the
+   * route accepted any non-empty string) got 400 on every retry, while the
+   * delivery gate — which trims the stored value — refused to move the booking
+   * to `delivered`. The booking was bricked: no video for the devotee, no
+   * close-out, and support had to run curl. Live DB at the time of the sweep
+   * held five such rows ("   ", "not-a-url-at-all", …).
+   *
+   * The replace path writes ONLY the proof URL and its server stamp. It does
+   * not touch `status` (the transition already happened) and therefore does not
+   * re-enter the payout hook — the earning was minted on the first upload and
+   * createPriestPayout must not be invited to run twice.
    */
   async uploadVideoProof(bookingId: string, priestId: string, videoUrl: string) {
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: { id: true, status: true, priestId: true },
+    });
+
+    if (!booking) {
+      throw new Error('Booking not found.');
+    }
+    if (booking.priestId !== priestId) {
+      throw new Error('Only the assigned priest can upload video proof for this booking.');
+    }
+
+    if (booking.status === 'video_uploaded') {
+      return prisma.pujaBooking.update({
+        where: { id: bookingId },
+        data: { videoProofUrl: videoUrl, videoUploadedAt: new Date() },
+        select: {
+          id: true,
+          bookingNumber: true,
+          status: true,
+          videoProofUrl: true,
+          videoUploadedAt: true,
+        },
+      });
+    }
+
     return this.bookingService.uploadVideoProof(bookingId, priestId, videoUrl);
   }
 
@@ -450,8 +588,14 @@ export class PriestService {
         take: limit,
       }),
       prisma.priestPayout.count({ where }),
+      // PF-12: this used to aggregate EVERY PriestPayout regardless of status
+      // and label the result "Total Earned". The dashboard's earnings card
+      // aggregates `completed` only, so the same pandit read Rs 2,310 earned on
+      // /priest/payouts and Rs 0 on /priest — three pending rows presented as
+      // money he had been paid. One definition, on both screens: earned means
+      // settled. Pending is reported separately, below.
       prisma.priestPayout.aggregate({
-        where: { priestId },
+        where: { priestId, status: 'completed' },
         _sum: { amount: true },
       }),
     ]);

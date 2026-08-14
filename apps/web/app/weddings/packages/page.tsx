@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Wedding Packages — Basic, Premium, Royal | Darshya',
+  alternates: { canonical: 'https://darshya.online/weddings/packages' },
+  title: 'Wedding Packages — Basic, Premium, Royal',
   description:
     'Three Vedic Hindu wedding packages: Basic (₹15,000) pandit-only, Premium (₹50,000) with samagri & muhurat consultation, Royal (₹2,00,000) full 4-day ceremony.',
 };

@@ -22,7 +22,9 @@
 | 1.4 — Webhooks + unauth mutation surface | ✅ COVERED — webhook fail-closed verified (PR #242); unauth mutation probed (all portal endpoints 401) |
 | 1.5 — Admin surfaces | ✅ DONE — #211 re-traced (A-014), admin refund (RV-12), admin reassign (RV-17) |
 | 2 — Findings triage + owner prioritization | ✅ DONE — 58 findings triaged, owner decisions recorded |
-| 3 — Incremental fixes + verification | ✅ **50 of 58 fixed** across 7 batches; API+web tsc clean, 1059/1059 tests. Nothing committed/deployed |
+| 3 — Incremental fixes + verification | ✅ **57 of 58 fixed** across 8 batches (the 58th is deploy-only) |
+| 4 — Adversarial review of the fixes themselves | ✅ DONE 2026-08-11 — **14 further defects found, incl. a P0 the RV-04 fix created**; all fixed |
+| 5 — Ship | ✅ **MERGED + DEPLOYED + LIVE-VERIFIED** 2026-08-11 (`1715d4d6`) |
 
 ### ▶ RESUME HERE (for `claude --continue` / `--resume`)
 
@@ -247,6 +249,7 @@ tests were added by the Batch-8 fixes.)
 | 5 | 10-agent parallel run (payout engine, booking service, video-proof gate) | RV-03*, RV-05, RV-06, RV-08, RV-09, RV-10, RV-12*, RV-14, RV-15, RV-17*, S2C-13 |
 | 6 | 6-agent run (notifications, API auth, web surfaces) | RV-18, RV-19, RV-21, RV-22, A-008, A-009, A-010, A-011, A-014, A-015, S2C-02..08, S2C-10..12, A-003, A-007, A-012, A-013 |
 | 7 | Fix what the Batch-5 adversarial review caught | RV-03 (wired), RV-12 (endpoint) |
+| 8 | Owner decisions + Stripe removal, then the Batch-8 review's 14 defects | RV-17, RV-04/S2C-15, A-002, the 4 payout concerns, Stripe removal, + 14 review findings |
 
 \* Batch-5 review found RV-03 and RV-12 marked "fixed" but not actually working, and RV-17 partial — Batch 7 closed the first two.
 
@@ -254,17 +257,13 @@ Also fixed directly by the main session: A-005 (auth bypass, fail-closed middlew
 
 ### Pending — recorded, not blocking
 
-| ID | Sev | What | Owner needed? |
-|---|---|---|---|
-| RV-17 | P2 | Admin priest reassignment via PATCH /bookings/:id is silently discarded and returns 200 wi | no — code fix, noted |
-| A-002 | P1 | No password-reset path exists anywhere | product call (reset-email vs magic-link) |
-| M-002 | P2 | Muhurat layer still NOT wired to the booking date picker — page makes zero panchang/muhura | no — code fix, noted |
-| S2C-15 | P1 | Puja `Commission` writes the platform's 20% into the field the payout engine treats as the | **YES** — money-model + data migration |
-| RV-04 | P1 | Puja Commission row stores the platform's 20% cut in the field the payout engine treats as | **YES** — money-model + data migration |
+All five rows that stood here (RV-17, A-002, M-002, S2C-15, RV-04) were closed on 2026-08-11 except M-002,
+which is deploy-only and has since been deployed. See **Remaining work** above.
 
-Detail + suggested fixes for each are in the per-finding sections below and in `docs/audit/batch5-review.md`.
-Plus 4 non-blocking payout review concerns (processPayout completion guard, weekly-settlement dedupe,
-getPayoutBalance float-sum, hardcoded 'PANDIT' role) — all in `batch5-review.md`.
+
+The four non-blocking payout concerns from `batch5-review.md` (processPayout completion guard,
+weekly-settlement dedupe, getPayoutBalance float-sum, hardcoded 'PANDIT' role) were also all closed in
+Batch 8. Per-finding prose for every ID remains in the sections below.
 
 ### Verified-healthy (do not re-audit)
 

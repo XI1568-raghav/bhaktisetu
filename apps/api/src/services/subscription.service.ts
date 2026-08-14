@@ -245,6 +245,42 @@ const PLANS: PlanDefinition[] = [
 // In-memory subscriptions for demo
 const mockSubscriptions = new Map<string, SubscriptionResult>();
 
+/**
+ * PM-04 (prod sweep 2026-08-12): who is allowed to mint an ACTIVE row for a
+ * PRICED plan.
+ *
+ * subscribe() used to be reachable straight from POST /subscriptions/subscribe
+ * with nothing between the request and
+ * `marketplaceSubscription.create({ amount: plan.price, status: 'ACTIVE' })` —
+ * no Razorpay order, no signature check, no paid-status gate. The entitlement
+ * is real (ai-usage.ts reads marketplaceSubscription to grant AI Pandit quota)
+ * and the price was recorded as revenue admin reporting counts. So any
+ * signed-in devotee could take ₹499/mo "Astro Monthly Unlimited" for ₹0, and
+ * the dashboard reported the ₹499 as earned.
+ *
+ * Activation for a priced plan now requires this token, and only two callers
+ * hold it: the Razorpay subscription webhook (`subscription.activated` /
+ * `.charged` — the gateway has confirmed the mandate/charge) and the
+ * explicitly-demo branch of createRazorpaySubscription, which
+ * assertNotProductionDemo() has already proven cannot be production.
+ *
+ * `paymentReference` is not decorative — it is written into the Transaction
+ * metadata so finance can tie every ACTIVE paid row back to a gateway object.
+ */
+export interface SubscriptionActivationEvidence {
+  /** The gateway event/subscription id that evidences collection. */
+  paymentReference: string;
+  source: 'razorpay_webhook' | 'demo_mode';
+}
+
+export class PaymentRequiredError extends Error {
+  readonly code = 'PAYMENT_REQUIRED';
+  constructor(message: string) {
+    super(message);
+    this.name = 'PaymentRequiredError';
+  }
+}
+
 // ─── Service ────────────────────────────────────────────────────────────────────
 
 export class SubscriptionService {
@@ -253,12 +289,26 @@ export class SubscriptionService {
     return PLANS.filter((p) => p.roles.includes(role));
   }
 
-  async subscribe(userId: string, planId: string, role: string): Promise<SubscriptionResult> {
+  async subscribe(
+    userId: string,
+    planId: string,
+    role: string,
+    evidence?: SubscriptionActivationEvidence,
+  ): Promise<SubscriptionResult> {
     const plan = PLANS.find((p) => p.id === planId);
     if (!plan) throw new Error(`Plan not found: ${planId}`);
 
     if (!plan.roles.includes(role)) {
       throw new Error(`Plan ${planId} is not available for role ${role}`);
+    }
+
+    // PM-04: free plans provision as before; a priced plan needs evidence that
+    // the money was actually collected. Refuse BEFORE any write, so a rejected
+    // attempt does not cancel the subscriber's existing plan as a side effect.
+    if (plan.price > 0 && !evidence) {
+      throw new PaymentRequiredError(
+        `Plan ${planId} costs ₹${plan.price} — payment must be collected before it can be activated. Start the paid rail at POST /api/v1/subscriptions/create.`,
+      );
     }
 
     const now = new Date();
@@ -293,7 +343,9 @@ export class SubscriptionService {
         },
       });
 
-      // Create transaction record
+      // Create transaction record. It is only reachable for a priced plan when
+      // `evidence` exists, so COMPLETED now means money the gateway confirmed —
+      // and the reference that proves it is on the row.
       if (plan.price > 0) {
         await prisma.transaction.create({
           data: {
@@ -301,7 +353,13 @@ export class SubscriptionService {
             type: 'SUBSCRIPTION',
             amount: plan.price,
             status: 'COMPLETED',
-            metadata: { planId, role, interval: plan.interval },
+            metadata: {
+              planId,
+              role,
+              interval: plan.interval,
+              paymentReference: evidence?.paymentReference,
+              activationSource: evidence?.source,
+            },
           },
         });
       }
@@ -316,20 +374,14 @@ export class SubscriptionService {
         amount: Number(subscription.amount),
         status: subscription.status,
       };
-    } catch {
-      // Mock fallback
-      const sub: SubscriptionResult = {
-        id: `sub-${Date.now()}`,
-        userId,
-        plan: plan.plan,
-        role,
-        startDate: now.toISOString(),
-        endDate: endDate.toISOString(),
-        amount: plan.price,
-        status: 'ACTIVE',
-      };
-      mockSubscriptions.set(userId, sub);
-      return sub;
+    } catch (err) {
+      // PM-04: this used to swallow the failure and answer a synthetic
+      // `sub-<timestamp>` row with status ACTIVE, cached in an in-memory Map.
+      // Nothing was persisted, so the entitlement readers (ai-usage.ts,
+      // admin.service reporting, getMySubscription on any other instance) saw
+      // no subscription at all — while the caller was told the plan was live.
+      // A write that did not happen must not report success.
+      throw err instanceof Error ? err : new Error('Failed to create subscription');
     }
   }
 
@@ -391,7 +443,21 @@ export class SubscriptionService {
     // a "subscription created" UX with no real Razorpay subscription, no
     // recurring debit, and no way for finance to reconcile.
     assertNotProductionDemo('subscription.createRazorpaySubscription');
-    const isDemo = !keyId || keyId === 'rzp_test_demo' || !rzpPlanId;
+    // PM-04: the demo escape keys on the CREDENTIALS ONLY. It used to also
+    // trip on `!rzpPlanId`, which meant a deployment with real Razorpay keys
+    // but no RAZORPAY_PLAN_* mapping for the plan being sold quietly took the
+    // demo branch — minting a `sub_demo_<timestamp>` id and activating the
+    // plan for ₹0. `astro_session` (₹99) and `nri_premium_yearly` (₹5,000) are
+    // in exactly that state today: neither appears in mapToRazorpayPlanId's
+    // env map, and both are offered on /upgrade. A plan we cannot charge for
+    // is a plan we must refuse to sell, loudly.
+    const credentialsAreDemo = !keyId || keyId === 'rzp_test_demo';
+    if (!credentialsAreDemo && !rzpPlanId) {
+      throw new Error(
+        `No Razorpay plan is configured for ${args.planId} — set the matching RAZORPAY_PLAN_* environment variable before selling it.`,
+      );
+    }
+    const isDemo = credentialsAreDemo;
 
     let subscriptionId: string;
     let shortUrl: string | null;
@@ -445,7 +511,13 @@ export class SubscriptionService {
 
     if (isDemo) {
       try {
-        await this.subscribe(args.userId, args.planId, args.role);
+        // assertNotProductionDemo() above has already proven this branch is not
+        // production, so activating without a real charge is safe here and
+        // nowhere else. PM-04.
+        await this.subscribe(args.userId, args.planId, args.role, {
+          paymentReference: subscriptionId,
+          source: 'demo_mode',
+        });
       } catch {
         // ignore
       }
@@ -559,7 +631,14 @@ export class SubscriptionService {
     switch (event) {
       case 'subscription.activated':
       case 'subscription.charged': {
-        await this.subscribe(userId, planId, role);
+        // The webhook signature was verified in the route before we got here,
+        // and Razorpay only emits these two events once the mandate is
+        // authenticated / the charge captured. This is the evidence PM-04
+        // requires to mint an ACTIVE row for a priced plan.
+        await this.subscribe(userId, planId, role, {
+          paymentReference: sub.id,
+          source: 'razorpay_webhook',
+        });
         if (event === 'subscription.charged') {
           await safeSendEmail({
             userId,

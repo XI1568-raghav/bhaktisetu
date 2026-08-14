@@ -77,8 +77,10 @@ export default function PriestReviews() {
       }))
     : FALLBACK_REVIEWS;
 
-  const total = dash?.ratingCount ?? reviews.length;
-  const average = dash?.rating ?? (
+  // PAR-03 fallout: PriestDashboard nests these under `priest`; the old flat
+  // `dash.rating` / `dash.ratingCount` were fabricated fields.
+  const total = dash?.priest?.ratingCount ?? reviews.length;
+  const average = dash?.priest?.ratingAvg ?? (
     reviews.length > 0
       ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length
       : 0

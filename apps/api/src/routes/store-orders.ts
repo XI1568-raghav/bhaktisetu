@@ -7,6 +7,7 @@ import { authenticateUser } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 import { writeStoreOrderCommission } from '../services/store-commission.service.js';
+import { computeStoreOrderTotals } from '../lib/store-pricing.js';
 
 /**
  * Persisted store order endpoints. The product/SKU catalogue still lives
@@ -26,12 +27,17 @@ const orderItemSchema = z.object({
 const shippingAddressSchema = z.object({
   fullName: z.string().min(1),
   line1: z.string().min(1),
-  line2: z.string().optional(),
+  // `.optional()` accepts undefined but REJECTS null — and saved addresses
+  // store line2/phone as SQL NULL, which serialises to null. So every checkout
+  // using a saved address 400'd with
+  // {"shippingAddress":["Expected string, received null"]} before any product
+  // was even looked at. `.nullish()` accepts both.
+  line2: z.string().nullish(),
   city: z.string().min(1),
   state: z.string().min(1),
   pincode: z.string().min(1),
   country: z.string().default('India'),
-  phone: z.string().optional(),
+  phone: z.string().nullish(),
 });
 
 const createOrderSchema = z.object({
@@ -133,11 +139,21 @@ function serializeOrder(order: any, productNameMap?: Map<string, string>) {
     (order.shippingAddress as any)?.fullName ||
     'Customer';
   const totalAmount = Number(order.totalAmountInr ?? order.totalAmount ?? 0) || 0;
+  // COM-06: expose the breakdown the checkout screen and the order-history page
+  // render, so neither has to recompute (and drift from) the charged total.
+  // Derived rather than stored — StoreOrder has no fee columns, and
+  // total − subtotal IS the fee for both new and legacy rows.
+  const subtotalInr = items.reduce(
+    (sum: number, it: any) => sum + Number(it.priceAtPurchase ?? 0) * Number(it.quantity ?? 0),
+    0,
+  );
   return {
     ...order,
     items,
     customerName,
     totalAmount,
+    subtotalInr,
+    deliveryFeeInr: Math.max(0, Math.round((totalAmount - subtotalInr) * 100) / 100),
     totalAmountInr: order.totalAmountInr?.toString?.() ?? order.totalAmountInr,
   };
 }
@@ -173,10 +189,21 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     // atomically. The client-sent price/total are ignored.
     const requestedItems = parsed.data.items;
     const productIds = requestedItems.map((it) => it.productId);
-    const products = await prisma.storeProduct.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, price: true, stock: true, isActive: true, storeProfileId: true },
-    });
+    // StoreProduct.id is a uuid column, but the shopper-facing catalogue serves
+    // static handles like `prod_015`. Passing one into a uuid `in` filter makes
+    // Prisma throw P2023 ("Error creating UUID") and the request 500s with a
+    // raw error blob rendered mid-word at the highest-intent moment in the
+    // funnel. The per-item loop below ALREADY answers a clean
+    // `400 Unknown product: <id>` — it just never got the chance to run.
+    // Filtering to uuid-shaped ids lets that intended path handle them.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const lookupIds = productIds.filter((id) => UUID_RE.test(id));
+    const products = lookupIds.length
+      ? await prisma.storeProduct.findMany({
+          where: { id: { in: lookupIds } },
+          select: { id: true, price: true, stock: true, isActive: true, storeProfileId: true },
+        })
+      : [];
     const productById = new Map(products.map((p) => [p.id, p]));
     const serverItems: { productId: string; qty: number; priceAtPurchase: number; name?: string }[] = [];
     let serverTotal = 0;
@@ -204,6 +231,30 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       const unitPrice = Number(product.price);
       serverItems.push({ productId: it.productId, qty: it.qty, priceAtPurchase: unitPrice });
       serverTotal += unitPrice * it.qty;
+    }
+
+    // COM-06 / S-09: the delivery fee is part of the order, not a browser-only
+    // decoration. Compute it here so `totalAmountInr` — which is what Razorpay
+    // is charged (payment.service.ts) and what the invoice prints — is the same
+    // number the checkout screen promised.
+    const totals = computeStoreOrderTotals(
+      serverItems.map((it) => ({ qty: it.qty, unitPriceInr: it.priceAtPurchase })),
+    );
+    serverTotal = totals.totalInr;
+
+    // Both sides of the contract. The server used to silently ignore the
+    // client's `totalAmountInr`, which is exactly how a ₹733 button could sit
+    // on top of a ₹698 charge for months without anyone noticing. If the page
+    // showed a different number, refuse — do not charge a third one.
+    if (parsed.data.totalAmountInr !== totals.totalInr) {
+      return reply.code(409).send({
+        error: 'price_mismatch',
+        message:
+          'Prices changed while you were checking out. Please review your cart total and try again.',
+        serverTotalInr: totals.totalInr,
+        subtotalInr: totals.subtotalInr,
+        deliveryFeeInr: totals.deliveryFeeInr,
+      });
     }
 
     const initialHistory = [

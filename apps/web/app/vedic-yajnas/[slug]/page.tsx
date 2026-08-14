@@ -20,10 +20,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const y = getVedicYajna(slug);
   if (!y) return { title: 'Not found' };
   return {
-    title: `${y.name} (${y.sanskrit}) — Vedic Yajna | Darshya`,
+    title: `${y.name} (${y.sanskrit}) — Vedic Yajna`,
     description: `${y.name}: ${CATEGORY_LABELS[y.category]}. ${y.purpose.slice(0, 160)}`,
     alternates: { canonical: `${BASE_URL}/vedic-yajnas/${y.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${y.name} — ${CATEGORY_LABELS[y.category]}`,
       description: y.purpose.slice(0, 180),
       url: `${BASE_URL}/vedic-yajnas/${y.slug}`,

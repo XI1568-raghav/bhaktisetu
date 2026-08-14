@@ -94,7 +94,7 @@ export function CategoryMegaMenu({ category, onItemClick, labelledBy }: Props) {
       className="w-full bg-white rounded-xl border border-surface-200/60 shadow-xl shadow-surface-900/10 p-6"
     >
       <div className="mb-5 px-1">
-        <p className={`text-[11px] font-semibold uppercase tracking-widest ${a.eyebrow}`}>
+        <p className={`text-xs font-semibold uppercase tracking-widest ${a.eyebrow}`}>
           {category.label}
         </p>
         <p className="mt-1 text-sm text-surface-500">{category.tagline}</p>

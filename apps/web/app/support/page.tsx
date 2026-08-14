@@ -13,7 +13,8 @@ import {
 import { SUPPORT_CATEGORIES, POPULAR_ARTICLES } from '../../lib/support';
 
 export const metadata = {
- title: 'Support Center — Darshya',
+ alternates: { canonical: 'https://darshya.online/support' },
+ title: 'Support Center',
  description:
  'Get help with puja bookings, darshan, payments, store orders, and more. Contact Darshya support or raise a ticket.',
 };
@@ -138,7 +139,7 @@ export default function SupportPage() {
  {article.title}
  </h4>
  <p className="text-xs text-surface-500 mt-1 line-clamp-2">{article.excerpt}</p>
- <div className="flex items-center gap-3 mt-1.5 text-[11px] text-surface-400">
+ <div className="flex items-center gap-3 mt-1.5 text-xs text-surface-400">
  <span>{article.category}</span>
  <span>•</span>
  <span className="inline-flex items-center gap-1">

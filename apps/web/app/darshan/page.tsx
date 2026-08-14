@@ -9,8 +9,10 @@ import {
 } from '../../lib/api';
 import DarshanBrowser from '../../components/DarshanBrowser';
 import DarshanScheduleRemindButton from '../../components/DarshanScheduleRemindButton';
+import { darshanScheduleRows } from '../../lib/darshan-schedule';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/darshan' },
  title: 'Live Darshan',
  description:
  'Watch live darshan from India’s most sacred temples. Real-time temple ceremonies, aarti, and abhishekam streams from 100+ temples.',
@@ -232,18 +234,6 @@ const fallbackScheduledStreams: DarshanStream[] = [
  },
 ];
 
-const fallbackScheduleTable = [
- { time: '3:00 AM', temple: 'Kashi Vishwanath', event: 'Mangala Aarti', status: 'completed' as const },
- { time: '4:00 AM', temple: 'Mahakaleshwar', event: 'Bhasma Aarti', status: 'live' as const },
- { time: '4:30 AM', temple: 'ISKCON Vrindavan', event: 'Mangala Aarti', status: 'live' as const },
- { time: '5:00 AM', temple: 'Tirupati Balaji', event: 'Suprabhatam', status: 'live' as const },
- { time: '5:30 AM', temple: 'Jagannath, Puri', event: 'Mangala Aarti', status: 'upcoming' as const },
- { time: '6:00 AM', temple: 'Kedarnath', event: 'Maha Abhishek', status: 'upcoming' as const },
- { time: '7:00 AM', temple: 'Somnath', event: 'Morning Aarti', status: 'upcoming' as const },
- { time: '11:30 AM', temple: 'Kashi Vishwanath', event: 'Bhog Aarti', status: 'upcoming' as const },
- { time: '7:00 PM', temple: 'All Major Temples', event: 'Sandhya Aarti', status: 'upcoming' as const },
-];
-
 // ─── Data Fetching ────────────────────────────────────────────────────────────
 
 async function fetchLiveStreams(): Promise<{ streams: DarshanStream[]; upcoming: { templeSlug: string; nextSlot: string; startsInMin: number }[] }> {
@@ -279,6 +269,10 @@ async function StreamsBrowserSection() {
 export default async function DarshanPage() {
  const t = await getTranslations('darshan');
  const tCommon = await getTranslations('common');
+ // TD-02: rows come from the real per-temple aarti data and are graded against
+ // the IST clock at render time (page revalidates every 5 min), so LIVE means
+ // live and every row links at the temple's own stream.
+ const scheduleRows = darshanScheduleRows();
  return (
  <div className="min-h-[100dvh] bg-surface-50">
  {/* Hero */}
@@ -331,7 +325,7 @@ export default async function DarshanPage() {
  <div className="col-span-1"></div>
  </div>
 
- {fallbackScheduleTable.map((row, i) => {
+ {scheduleRows.map((row, i) => {
  const reminderId = `schedule:${row.time}:${row.temple}:${row.event}`;
  return (
  <div
@@ -365,7 +359,7 @@ export default async function DarshanPage() {
  <div className="md:col-span-1 md:text-right">
  {row.status === 'live' ? (
  <a
- href="/darshan"
+ href={row.href}
  className="text-saffron-400 hover:text-saffron-300 inline-flex"
  aria-label={`Watch ${row.temple} ${row.event} now`}
  >

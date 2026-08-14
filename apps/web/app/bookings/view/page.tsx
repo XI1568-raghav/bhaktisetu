@@ -22,6 +22,7 @@ import {
  Loader2,
  AlertCircle,
  Copy,
+ CreditCard,
  Truck,
  Gift,
  FileText,
@@ -29,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { friendlyApiError, serverErrorMessage } from '../../../lib/friendly-error';
 import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 
@@ -472,13 +474,23 @@ function BookingDetailContent() {
  body: JSON.stringify({ reason: refundReason || 'Devotee requested refund' }),
  });
  if (!res.ok) {
- const j = (await res.json().catch(() => ({}))) as { error?: string };
- throw new Error(j.error ?? `HTTP ${res.status}`);
+ // RES-09 (2026-08-12): the fallback here was the literal string
+ // `HTTP ${res.status}`, rendered straight into the refund panel — a
+ // devotee asking for her money back was shown "HTTP 500". The server's
+ // own sentence ("Refund window has closed") is still preferred; only
+ // when it has nothing to say do we substitute human copy.
+ const body = (await res.json().catch(() => null)) as { error?: string } | null;
+ setRefundError(
+ serverErrorMessage(body, friendlyApiError(`HTTP ${res.status}`).message),
+ );
+ return;
  }
  setRefundRequested(true);
  setBooking({ ...booking, status: 'cancelled' });
  } catch (err) {
- setRefundError(err instanceof Error ? err.message : 'Failed to request refund');
+ // A network/timeout failure used to surface the browser's own
+ // "Failed to fetch".
+ setRefundError(friendlyApiError(err).message);
  } finally {
  setRefunding(false);
  setShowRefundConfirm(false);
@@ -617,15 +629,30 @@ function BookingDetailContent() {
  </div>
  )}
 
+ {/* DB-03 (2026-08-12): this banner was text with no action. The list row
+     already offers "Complete payment"; the page the row links to did not,
+     so a devotee who followed the CTA arrived at a dead end. Same label,
+     same route, so the two surfaces read as one product. */}
  {booking.status === 'pending_payment' && (
- <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
+ <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-start sm:justify-between">
+ <div className="flex items-start gap-3">
  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
  <div>
  <h3 className="font-semibold text-amber-800">Payment Pending</h3>
  <p className="text-sm text-amber-700">
  This booking is not confirmed yet — we have not received your payment.
+ Your slot stays reserved for a short while; complete the payment to
+ confirm it, or cancel to release it for someone else.
  </p>
  </div>
+ </div>
+ <Link
+ href={`/bookings/pay?id=${booking.id}`}
+ className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+ >
+ <CreditCard className="h-4 w-4" />
+ Complete payment
+ </Link>
  </div>
  )}
 

@@ -1,0 +1,967 @@
+{
+  "capturedAt": "2026-08-12T21:24:13.986Z",
+  "apiBase": "http://127.0.0.1:4000",
+  "userBookings": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "bookings": [
+        {
+          "id": "318f5bec-a881-4f68-bef7-b1bf592eab78",
+          "bookingNumber": "BS-LEDGER-TEST-15272",
+          "userId": "2b5bd615-1633-4c95-9b09-03efb2b9e429",
+          "templeId": "6dd80402-b4eb-42be-b66c-c64b2054daa2",
+          "pujaTypeId": "d4422653-2e91-4515-ae90-16c4f9eaf680",
+          "priestId": "85090e1d-8bef-468d-bf56-2463436dad80",
+          "templePujaOfferingId": "d55026ea-a17e-4945-9df5-927ece128e88",
+          "priestPujaOfferingId": null,
+          "scheduledDate": "2026-08-17T00:00:00.000Z",
+          "scheduledTimeSlot": "10:00",
+          "devoteeNames": [],
+          "sankalpDetails": null,
+          "specialInstructions": null,
+          "priceAmount": "1151",
+          "currency": "INR",
+          "platformCommission": "220",
+          "priestPayout": "880",
+          "status": "confirmed",
+          "videoProofUrl": null,
+          "videoUploadedAt": null,
+          "prasadDeliveryRequested": false,
+          "prasadDeliveryAddressId": null,
+          "prasadTrackingId": null,
+          "rating": null,
+          "reviewText": null,
+          "cancelledAt": null,
+          "cancellationReason": null,
+          "dispatchTier": "scheduled",
+          "offerExpiresAt": null,
+          "assignedVia": null,
+          "rescheduleCount": 0,
+          "cancelPolicyJson": null,
+          "createdAt": "2026-08-12T22:03:35.289Z",
+          "updatedAt": "2026-08-12T22:03:35.289Z",
+          "temple": {
+            "id": "6dd80402-b4eb-42be-b66c-c64b2054daa2",
+            "name": "Kashi Vishwanath Temple",
+            "slug": "kashi-vishwanath-varanasi",
+            "city": "Varanasi",
+            "state": "Uttar Pradesh"
+          },
+          "pujaType": {
+            "id": "d4422653-2e91-4515-ae90-16c4f9eaf680",
+            "name": "Rudrabhishek",
+            "slug": "rudrabhishek",
+            "category": "planetary"
+          },
+          "priest": {
+            "id": "85090e1d-8bef-468d-bf56-2463436dad80",
+            "displayName": "Pandit Ramesh Shastri",
+            "avatarUrl": "https://images.darshya.online/priests/pandit-ramesh-shastri.jpg"
+          }
+        },
+        {
+          "id": "ea0cca65-13b1-4f84-bba9-8064306c392e",
+          "bookingNumber": "BS-20260812-D51VS",
+          "userId": "2b5bd615-1633-4c95-9b09-03efb2b9e429",
+          "templeId": "402aea1e-5e0e-4215-8855-38e08d954d83",
+          "pujaTypeId": "3ab25b17-aecd-47fd-b9c4-771a16a70de7",
+          "priestId": "6a56eba6-e340-40bc-b236-97440ada4001",
+          "templePujaOfferingId": "446684d4-1c65-48ea-a348-2f5faf851863",
+          "priestPujaOfferingId": "7e43fa80-bc6e-449f-a819-add29b98dbb8",
+          "scheduledDate": "2026-12-15T00:00:00.000Z",
+          "scheduledTimeSlot": "11:00",
+          "devoteeNames": [
+            {
+              "name": "X"
+            }
+          ],
+          "sankalpDetails": null,
+          "specialInstructions": null,
+          "priceAmount": "1151",
+          "currency": "INR",
+          "platformCommission": "330",
+          "priestPayout": "770",
+          "status": "confirmed",
+          "videoProofUrl": null,
+          "videoUploadedAt": null,
+          "prasadDeliveryRequested": false,
+          "prasadDeliveryAddressId": null,
+          "prasadTrackingId": null,
+          "rating": null,
+          "reviewText": null,
+          "cancelledAt": null,
+          "cancellationReason": null,
+          "dispatchTier": "scheduled",
+          "offerExpiresAt": null,
+          "assignedVia": null,
+          "rescheduleCount": 0,
+          "cancelPolicyJson": {
+            "tiers": [
+              {
+                "label": "Full refund (48h+ before)",
+                "minHoursBefore": 48,
+                "refundFraction": 1
+              },
+              {
+                "label": "75% refund (24–48h before)",
+                "minHoursBefore": 24,
+                "refundFraction": 0.75
+              },
+              {
+                "label": "50% refund (4–24h before)",
+                "minHoursBefore": 4,
+                "refundFraction": 0.5
+              },
+              {
+                "label": "25% refund (<4h before)",
+                "minHoursBefore": 0,
+                "refundFraction": 0.25
+              }
+            ],
+            "refundDaysLabel": "5-7 business days",
+            "noShowRefundFraction": 0,
+            "panditCancelRefundFraction": 1,
+            "cancellationFeeToPriestFraction": 1
+          },
+          "createdAt": "2026-08-12T15:49:46.299Z",
+          "updatedAt": "2026-08-12T15:49:46.609Z",
+          "temple": {
+            "id": "402aea1e-5e0e-4215-8855-38e08d954d83",
+            "name": "Siddhivinayak Temple",
+            "slug": "siddhivinayak-mumbai",
+            "city": "Mumbai",
+            "state": "Maharashtra"
+          },
+          "pujaType": {
+            "id": "3ab25b17-aecd-47fd-b9c4-771a16a70de7",
+            "name": "Ganesh Puja",
+            "slug": "ganesh-puja",
+            "category": "special_occasion"
+          },
+          "priest": {
+            "id": "6a56eba6-e340-40bc-b236-97440ada4001",
+            "displayName": "Demo Pandit",
+            "avatarUrl": null
+          }
+        },
+        {
+          "id": "1aed7b9e-506c-4848-98ab-8786039bba82",
+          "bookingNumber": "BS-20260812-54IVW",
+          "userId": "2b5bd615-1633-4c95-9b09-03efb2b9e429",
+          "templeId": "402aea1e-5e0e-4215-8855-38e08d954d83",
+          "pujaTypeId": "3ab25b17-aecd-47fd-b9c4-771a16a70de7",
+          "priestId": "6a56eba6-e340-40bc-b236-97440ada4001",
+          "templePujaOfferingId": "446684d4-1c65-48ea-a348-2f5faf851863",
+          "priestPujaOfferingId": "7e43fa80-bc6e-449f-a819-add29b98dbb8",
+          "scheduledDate": "2026-12-14T00:00:00.000Z",
+          "scheduledTimeSlot": "11:00",
+          "devoteeNames": [
+            {
+              "name": "X"
+            }
+          ],
+          "sankalpDetails": null,
+          "specialInstructions": null,
+          "priceAmount": "1151",
+          "currency": "INR",
+          "platformCommission": "330",
+          "priestPayout": "770",
+          "status": "confirmed",
+          "videoProofUrl": null,
+          "videoUploadedAt": null,
+          "prasadDeliveryRequested": false,
+          "prasadDeliveryAddressId": null,
+          "prasadTrackingId": null,
+          "rating": null,
+          "reviewText": null,
+          "cancelledAt": null,
+          "cancellationReason": null,
+          "dispatchTier": "scheduled",
+          "offerExpiresAt": null,
+          "assignedVia": null,
+          "rescheduleCount": 0,
+          "cancelPolicyJson": {
+            "tiers": [
+              {
+                "label": "Full refund (48h+ before)",
+                "minHoursBefore": 48,
+                "refundFraction": 1
+              },
+              {
+                "label": "75% refund (24–48h before)",
+                "minHoursBefore": 24,
+                "refundFraction": 0.75
+              },
+              {
+                "label": "50% refund (4–24h before)",
+                "minHoursBefore": 4,
+                "refundFraction": 0.5
+              },
+              {
+                "label": "25% refund (<4h before)",
+                "minHoursBefore": 0,
+                "refundFraction": 0.25
+              }
+            ],
+            "refundDaysLabel": "5-7 business days",
+            "noShowRefundFraction": 0,
+            "panditCancelRefundFraction": 1,
+            "cancellationFeeToPriestFraction": 1
+          },
+          "createdAt": "2026-08-12T15:49:45.902Z",
+          "updatedAt": "2026-08-12T15:49:46.036Z",
+          "temple": {
+            "id": "402aea1e-5e0e-4215-8855-38e08d954d83",
+            "name": "Siddhivinayak Temple",
+            "slug": "siddhivinayak-mumbai",
+            "city": "Mumbai",
+            "state": "Maharashtra"
+          },
+          "pujaType": {
+            "id": "3ab25b17-aecd-47fd-b9c4-771a16a70de7",
+            "name": "Ganesh Puja",
+            "slug": "ganesh-puja",
+            "category": "special_occasion"
+          },
+          "priest": {
+            "id": "6a56eba6-e340-40bc-b236-97440ada4001",
+            "displayName": "Demo Pandit",
+            "avatarUrl": null
+          }
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 10,
+        "total": 81,
+        "totalPages": 9
+      }
+    }
+  },
+  "userAddresses": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "addresses": [
+        {
+          "id": "47e34554-d8ff-4a1a-a25a-53d75d08a120",
+          "userId": "2b5bd615-1633-4c95-9b09-03efb2b9e429",
+          "label": "QA Probe2",
+          "line1": "9 Test Lane",
+          "line2": null,
+          "city": "Gurugram",
+          "state": "Haryana",
+          "pincode": "122002",
+          "country": "India",
+          "isDefault": true,
+          "lat": null,
+          "lng": null
+        },
+        {
+          "id": "4c032eb0-1dcb-42da-aeb7-4952ec2f644f",
+          "userId": "2b5bd615-1633-4c95-9b09-03efb2b9e429",
+          "label": "QA Home",
+          "line1": "12 MG Road",
+          "line2": "Sector 14",
+          "city": "Gurugram",
+          "state": "Haryana",
+          "pincode": "122001",
+          "country": "India",
+          "isDefault": false,
+          "lat": null,
+          "lng": null
+        }
+      ]
+    }
+  },
+  "priestDashboard": {
+    "status": 200,
+    "body": {
+      "priest": {
+        "id": "6a56eba6-e340-40bc-b236-97440ada4001",
+        "displayName": "Demo Pandit",
+        "avatarUrl": null,
+        "ratingAvg": 4.61,
+        "ratingCount": 43
+      },
+      "earnings": {
+        "total": 0,
+        "thisMonth": 0,
+        "pending": "2310"
+      },
+      "bookings": {
+        "total": 51,
+        "upcoming": 35,
+        "completed": 13
+      },
+      "upcomingBookings": [
+        {
+          "id": "b3611b5c-b040-4bdf-90fe-12e663e497b4",
+          "bookingNumber": "BS-20260812-6PRFY",
+          "status": "priest_assigned",
+          "scheduledDate": "2026-08-18T00:00:00.000Z",
+          "scheduledTimeSlot": "06:00",
+          "devoteeNames": [
+            {
+              "name": "Demo Devotee"
+            }
+          ],
+          "priceAmount": "1100",
+          "priestPayout": "770",
+          "temple": {
+            "id": "6dd80402-b4eb-42be-b66c-c64b2054daa2",
+            "name": "Kashi Vishwanath Temple",
+            "city": "Varanasi"
+          },
+          "pujaType": {
+            "id": "d4422653-2e91-4515-ae90-16c4f9eaf680",
+            "name": "Rudrabhishek"
+          }
+        },
+        {
+          "id": "37619859-643a-4f39-b4b6-f5aa93e87fa1",
+          "bookingNumber": "BS-20260812-48YGP",
+          "status": "priest_assigned",
+          "scheduledDate": "2026-08-19T00:00:00.000Z",
+          "scheduledTimeSlot": "06:00",
+          "devoteeNames": [
+            {
+              "name": "Demo Devotee"
+            }
+          ],
+          "priceAmount": "1100",
+          "priestPayout": "770",
+          "temple": {
+            "id": "6dd80402-b4eb-42be-b66c-c64b2054daa2",
+            "name": "Kashi Vishwanath Temple",
+            "city": "Varanasi"
+          },
+          "pujaType": {
+            "id": "d4422653-2e91-4515-ae90-16c4f9eaf680",
+            "name": "Rudrabhishek"
+          }
+        }
+      ]
+    }
+  },
+  "adminDashboard": {
+    "status": 200,
+    "body": {
+      "totalUsers": 23,
+      "usersByRole": {
+        "DEVOTEE": 1,
+        "PANDIT": 3,
+        "STORE_OWNER": 1,
+        "ASTROLOGER": 4,
+        "WELLNESS_INSTRUCTOR": 6,
+        "GAUSHALA_MANAGER": 4,
+        "TEMPLE_MANAGER": 1,
+        "ADMIN": 1
+      },
+      "totalRevenue": 26869,
+      "pendingApprovals": 0,
+      "activeSubscriptions": 7,
+      "recentTransactions": [
+        {
+          "id": "7b55fdbc-c8a1-4273-ae92-b386819dd79f",
+          "userId": "4b1e0a28-ce8a-46dd-92f6-f0d5866da86d",
+          "type": "SUBSCRIPTION",
+          "amount": 5000,
+          "status": "COMPLETED",
+          "createdAt": "2026-08-12T16:20:31.437Z"
+        }
+      ]
+    }
+  },
+  "temples": {
+    "status": 200,
+    "body": {
+      "temples": [
+        {
+          "id": "d1e712f6-e3af-4a5e-8e4d-27b46026dc4d",
+          "name": "Tirumala Tirupati Devasthanam",
+          "nameLocal": "తిరుమల తిరుపతి దేవస్థానం",
+          "slug": "tirumala-tirupati",
+          "description": "Sri Venkateswara Swamy Temple at Tirumala is one of the most visited Hindu pilgrimage sites in the world, drawing an average of 50,000 to 100,000 devotees daily…[elided]",
+          "deityPrimary": "Lord Venkateswara",
+          "deities": [
+            "Lord Venkateswara",
+            "Padmavathi",
+            "Lakshmi",
+            "Garuda"
+          ],
+          "tradition": "vaishnava",
+          "city": "Tirupati",
+          "state": "Andhra Pradesh",
+          "lat": 13.6833,
+          "lng": 79.3474,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/4/4e/Tirumala_090615.jpg",
+            "https://upload.wikimedia.org/wikipedia/commons/d/d9/Tirumala_Venkateswara_temple_entrance_09062015.JPG",
+            "https://upload.wikimedia.org/wikipedia/commons/4/4a/Tirumala_View_from_srivari_padalu.jpg",
+            "https://upload.wikimedia.org/wikipedia/commons/5/5a/Sri_vari_swarana_radham879.jpg"
+          ],
+          "timingInfo": {
+            "closedOn": "Open all days",
+            "specialDays": "Brahmotsavam (September), Vaikuntha Ekadashi",
+            "regularHours": {
+              "ekantaSeva": "23:00 - 23:30",
+              "suprabhatam": "02:30 - 03:00",
+              "eveningDarshan": "19:00 - 22:00",
+              "generalDarshan": "06:30 - 19:00",
+              "specialDarshan": "03:00 - 06:00"
+            }
+          },
+          "isVerified": true,
+          "liveDarshanEnabled": true
+        },
+        {
+          "id": "6bed1a9e-8774-4dd5-a3eb-a799f2a6571d",
+          "name": "Akshardham Temple",
+          "nameLocal": "अक्षरधाम मंदिर",
+          "slug": "akshardham-delhi",
+          "description": "Swaminarayan Akshardham in New Delhi is a Hindu mandir and spiritual-cultural campus on the banks of the Yamuna. Inaugurated in 2005, it showcases millennia of …[elided]",
+          "deityPrimary": "Bhagwan Swaminarayan",
+          "deities": [
+            "Bhagwan Swaminarayan",
+            "Radha-Krishna",
+            "Sita-Ram",
+            "Shiv-Parvati",
+            "Lakshmi-Narayan"
+          ],
+          "tradition": "vaishnava",
+          "city": "New Delhi",
+          "state": "Delhi",
+          "lat": 28.6127,
+          "lng": 77.2773,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/e/e9/Swaminarayan_Akshardham%2C_Delhi.jpg",
+            "https://upload.wikimedia.org/wikipedia/commons/3/33/Akshardham_Dome.jpg",
+            "https://upload.wikimedia.org/wikipedia/commons/9/98/Akshardham_Delhi_Ricky_W.jpg"
+          ],
+          "timingInfo": {
+            "closedOn": "Mondays",
+            "regularHours": {
+              "mandirOpen": "09:30 - 18:30",
+              "exhibitions": "10:00 - 18:00",
+              "musicalFountain": "19:15 - 19:45"
+            }
+          },
+          "isVerified": true,
+          "liveDarshanEnabled": false
+        },
+        {
+          "id": "d20bb7fc-e9c4-40ca-ab81-fb09e34345f2",
+          "name": "Badrinath Temple",
+          "nameLocal": "बद्रीनाथ मंदिर",
+          "slug": "badrinath-uttarakhand",
+          "description": "Shri Badrinath Dham, situated at an altitude of 3,133 m on the left bank of the Alaknanda river in Chamoli district of Uttarakhand's Garhwal Himalayas, is one o…[elided]",
+          "deityPrimary": "Lord Vishnu (Badrinarayan)",
+          "deities": [
+            "Badrinarayan (Vishnu)",
+            "Nara-Narayan",
+            "Lakshmi",
+            "Garuda"
+          ],
+          "tradition": "vaishnava",
+          "city": "Badrinath",
+          "state": "Uttarakhand",
+          "lat": 30.7433,
+          "lng": 79.4938,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/f/f9/Badrinath_Temple_%2C_Uttarakhand.jpg",
+            "https://upload.wikimedia.org/wikipedia/commons/c/c4/Badri_Night.JPG"
+          ],
+          "timingInfo": {
+            "closedOn": "Closed in winter (approx Nov-Apr)",
+            "specialDays": "Open May to November only; closed Nov to Apr (Akhand Jyoti during winter at Pandukeshwar)",
+            "regularHours": {
+              "evening": "16:00 - 21:00",
+              "morning": "04:30 - 13:00"
+            }
+          },
+          "isVerified": true,
+          "liveDarshanEnabled": false
+        }
+      ],
+      "total": 20,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    }
+  },
+  "pujaTypes": {
+    "status": 200,
+    "body": {
+      "pujaTypes": [
+        {
+          "id": "d4422653-2e91-4515-ae90-16c4f9eaf680",
+          "name": "Rudrabhishek",
+          "nameLocal": "रुद्राभिषेक",
+          "slug": "rudrabhishek",
+          "description": "Rudrabhishek is the ceremonial bathing of a Shiva linga performed while reciting the Shri Rudram and Chamakam hymns from the Krishna Yajurveda (Taittiriya Samhi…[elided]",
+          "category": "planetary",
+          "deity": "Lord Shiva",
+          "durationMinutes": 90,
+          "basePrice": "1100",
+          "nriPrice": "9999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/3/36/From_Abhisheka_To_Panchamrutha.jpg"
+          ],
+          "sortOrder": 1
+        },
+        {
+          "id": "3ab25b17-aecd-47fd-b9c4-771a16a70de7",
+          "name": "Ganesh Puja",
+          "nameLocal": "गणेश पूजा",
+          "slug": "ganesh-puja",
+          "description": "Ganesh Puja invokes Lord Ganesha — Vighneshwara, the remover of obstacles, and Buddhipriya, lover of intellect — before any new venture, marriage, housewarming …[elided]",
+          "category": "special_occasion",
+          "deity": "Lord Ganesha",
+          "durationMinutes": 60,
+          "basePrice": "751",
+          "nriPrice": "6999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg"
+          ],
+          "sortOrder": 2
+        },
+        {
+          "id": "fad0bea3-69ae-4805-8b84-44e2b98fe1d8",
+          "name": "Satyanarayan Katha",
+          "nameLocal": "सत्यनारायण कथा",
+          "slug": "satyanarayan-katha",
+          "description": "Satyanarayan Katha is the recitation of five chapters from the Skanda Purana, Reva Khanda, in which Sage Suta narrates how Lord Vishnu, in his form as Satya (Tr…[elided]",
+          "category": "special_occasion",
+          "deity": "Lord Vishnu (Satyanarayan)",
+          "durationMinutes": 120,
+          "basePrice": "1501",
+          "nriPrice": "13999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/9/9f/Devotees.jpg"
+          ],
+          "sortOrder": 3
+        },
+        {
+          "id": "1297eb5d-7211-4aa9-a123-542663a916be",
+          "name": "Maha Mrityunjay Jaap",
+          "nameLocal": "महा मृत्युंजय जाप",
+          "slug": "maha-mrityunjay-jaap",
+          "description": "The Maha Mrityunjaya Mantra — \"Om Tryambakam Yajamahe Sugandhim Pushtivardhanam, Urvarukamiva Bandhanan Mrityor Mukshiya Mamritat\" — is one of the oldest and mo…[elided]",
+          "category": "health",
+          "deity": "Lord Shiva (Tryambaka)",
+          "durationMinutes": 180,
+          "basePrice": "2501",
+          "nriPrice": "22999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/3/30/1_Om.svg"
+          ],
+          "sortOrder": 4
+        },
+        {
+          "id": "24ae1535-8e39-47f3-816f-b78684383cbc",
+          "name": "Lakshmi Puja",
+          "nameLocal": "लक्ष्मी पूजा",
+          "slug": "lakshmi-puja",
+          "description": "Lakshmi Puja invokes Goddess Mahalakshmi, consort of Lord Vishnu, who manifests in eight forms (Ashta Lakshmi): Adi, Dhana, Dhanya, Gaja, Santana, Veera, Vijaya…[elided]",
+          "category": "prosperity",
+          "deity": "Goddess Lakshmi",
+          "durationMinutes": 75,
+          "basePrice": "901",
+          "nriPrice": "8499",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/a/a6/Raja_Ravi_Varma%2C_Goddess_Lakshmi%2C_1896.jpg"
+          ],
+          "sortOrder": 5
+        },
+        {
+          "id": "18f1bb31-0dd6-4f1d-9019-aafcddd11053",
+          "name": "Navgraha Shanti Puja",
+          "nameLocal": "नवग्रह शांति पूजा",
+          "slug": "navgraha-shanti-puja",
+          "description": "Navgraha Shanti Puja is the comprehensive ritual to pacify the nine planetary deities — Surya (Sun), Chandra (Moon), Mangal (Mars), Budh (Mercury), Brihaspati (…[elided]",
+          "category": "planetary",
+          "deity": "Navagraha (Nine Planets)",
+          "durationMinutes": 120,
+          "basePrice": "2101",
+          "nriPrice": "18999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/9/92/Navagraha.jpg"
+          ],
+          "sortOrder": 6
+        },
+        {
+          "id": "cffaac17-6853-4c0d-b44d-65ffad242555",
+          "name": "Sunderkand Path",
+          "nameLocal": "सुंदरकांड पाठ",
+          "slug": "sunderkand-path",
+          "description": "Sunderkand is the fifth and most beloved kanda (book) of Goswami Tulsidas's Ramcharitmanas (composed 1574 CE in Awadhi), narrating Hanuman's heroic journey acro…[elided]",
+          "category": "special_occasion",
+          "deity": "Lord Hanuman",
+          "durationMinutes": 150,
+          "basePrice": "1101",
+          "nriPrice": "9999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/7/7e/Hanuman%27s_visit%2C_in_bazaar_art_with_a_Marathi_caption%2C_early_1900s.jpg"
+          ],
+          "sortOrder": 7
+        },
+        {
+          "id": "28936959-390f-45d0-8703-b21a4fab31f3",
+          "name": "Hanuman Chalisa Path",
+          "nameLocal": "हनुमान चालीसा पाठ",
+          "slug": "hanuman-chalisa-path",
+          "description": "The Hanuman Chalisa is a 40-verse Awadhi devotional poem composed by Goswami Tulsidas (c. 1532-1623 CE), arguably the most-recited Hindu devotional text in the …[elided]",
+          "category": "daily",
+          "deity": "Lord Hanuman",
+          "durationMinutes": 45,
+          "basePrice": "451",
+          "nriPrice": "3999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/7/70/Hanuman_Chalisa_img.jpg"
+          ],
+          "sortOrder": 8
+        },
+        {
+          "id": "241b84c4-69fc-4bf9-9f20-b09cd4fcc40d",
+          "name": "Ram Charit Manas Path",
+          "nameLocal": "रामचरित मानस पाठ",
+          "slug": "ram-charit-manas-path",
+          "description": "Ramcharitmanas — \"the lake of the deeds of Rama\" — is the magnum opus of Goswami Tulsidas, composed in Awadhi at Varanasi between 1574 and 1577 CE. Spanning sev…[elided]",
+          "category": "special_occasion",
+          "deity": "Lord Rama",
+          "durationMinutes": 240,
+          "basePrice": "3501",
+          "nriPrice": "31999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/7/7f/R%C4%81macaritam%C4%81nasa_manuscript_%2819th_century%29.png"
+          ],
+          "sortOrder": 9
+        },
+        {
+          "id": "a932950e-b579-43db-83d2-4a983a2f19c7",
+          "name": "Pitru Dosh Nivaran Puja",
+          "nameLocal": "पितृ दोष निवारण पूजा",
+          "slug": "pitru-dosh-nivaran-puja",
+          "description": "Pitru Dosh Nivaran Puja relieves the karmic affliction (dosha) caused by unfulfilled obligations to departed ancestors — known as Pitru Rin (ancestral debt) and…[elided]",
+          "category": "memorial",
+          "deity": "Pitru Devata (Ancestors)",
+          "durationMinutes": 180,
+          "basePrice": "2501",
+          "nriPrice": "22999",
+          "samagriIncluded": true,
+          "images": [
+            "https://upload.wikimedia.org/wikipedia/commons/9/96/Pinda_Daan_-_Jagannath_Ghat_-_Kolkata_2012-10-15_0701.JPG"
+          ],
+          "sortOrder": 10
+        }
+      ],
+      "total": 10,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    }
+  },
+  "darshanLive": {
+    "status": 200,
+    "body": {
+      "streams": [
+        {
+          "id": "5333dba9-97eb-463c-a97b-7ecb700fb9c5",
+          "templeId": "d1e712f6-e3af-4a5e-8e4d-27b46026dc4d",
+          "playbackUrl": "https://stream.darshya.online/tirumala-tirupati/live.m3u8",
+          "status": "live",
+          "viewerCount": 0,
+          "peakViewers": 0,
+          "isPremium": false,
+          "scheduledStart": null,
+          "currentSlot": "Suprabhatam",
+          "endsInMin": 11,
+          "temple": {
+            "name": "Tirumala Tirupati Devasthanam",
+            "slug": "tirumala-tirupati",
+            "city": "Tirupati",
+            "deityPrimary": "Lord Venkateswara",
+            "images": [
+              "https://upload.wikimedia.org/wikipedia/commons/4/4e/Tirumala_090615.jpg",
+              "https://upload.wikimedia.org/wikipedia/commons/d/d9/Tirumala_Venkateswara_temple_entrance_09062015.JPG",
+              "https://upload.wikimedia.org/wikipedia/commons/4/4a/Tirumala_View_from_srivari_padalu.jpg",
+              "https://upload.wikimedia.org/wikipedia/commons/5/5a/Sri_vari_swarana_radham879.jpg"
+            ]
+          }
+        }
+      ],
+      "total": 1,
+      "upcoming": [
+        {
+          "templeSlug": "kashi-vishwanath-varanasi",
+          "nextSlot": "Mangala Aarti",
+          "startsInMin": 11
+        },
+        {
+          "templeSlug": "siddhivinayak-mumbai",
+          "nextSlot": "Morning Aarti",
+          "startsInMin": 161
+        },
+        {
+          "templeSlug": "jagannath-puri",
+          "nextSlot": "Mangala Aarti",
+          "startsInMin": 131
+        },
+        {
+          "templeSlug": "iskcon-bangalore",
+          "nextSlot": "Mangala Arati",
+          "startsInMin": 86
+        },
+        {
+          "templeSlug": "govind-dev-ji-jaipur",
+          "nextSlot": "Mangala Aarti",
+          "startsInMin": 101
+        },
+        {
+          "templeSlug": "shirdi-sai-baba",
+          "nextSlot": "Kakad",
+          "startsInMin": 101
+        }
+      ]
+    }
+  },
+  "darshanScheduled": {
+    "status": 200,
+    "body": {
+      "streams": [
+        {
+          "id": "sched-live-somnath",
+          "templeId": "live-somnath",
+          "playbackUrl": "https://www.youtube.com/embed/live_stream?channel=UCT1egsvA08YcdMLiEu1DTRg&autoplay=1",
+          "status": "scheduled",
+          "viewerCount": 0,
+          "peakViewers": 0,
+          "isPremium": false,
+          "scheduledStart": "2026-08-12T23:19:17.816Z",
+          "temple": {
+            "name": "Somnath Temple",
+            "slug": "somnath-gujarat",
+            "city": "Veraval",
+            "deityPrimary": "Lord Shiva",
+            "images": [
+              "https://images.unsplash.com/photo-1590077428593-a55bb07c4665?w=640&h=360&fit=crop&auto=format&q=80"
+            ]
+          }
+        },
+        {
+          "id": "sched-live-ttd",
+          "templeId": "live-ttd",
+          "playbackUrl": "https://www.youtube.com/embed/live_stream?channel=UCS2Y83GD-fc7qqgNW5uj41g&autoplay=1",
+          "status": "scheduled",
+          "viewerCount": 0,
+          "peakViewers": 0,
+          "isPremium": false,
+          "scheduledStart": "2026-08-13T01:19:17.816Z",
+          "temple": {
+            "name": "Tirumala Venkateswara Temple (SVBC)",
+            "slug": "tirumala-tirupati",
+            "city": "Tirupati",
+            "deityPrimary": "Lord Venkateswara",
+            "images": [
+              "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=640&h=360&fit=crop&auto=format&q=80"
+            ]
+          }
+        }
+      ],
+      "total": 5,
+      "page": 1,
+      "limit": 20
+    }
+  },
+  "darshanStreamBareRoute": {
+    "status": 404,
+    "body": {
+      "message": "Route GET:/api/v1/darshan/5333dba9-97eb-463c-a97b-7ecb700fb9c5 not found",
+      "error": "Not Found",
+      "statusCode": 404
+    }
+  },
+  "darshanStreamRealRoute": {
+    "status": 200,
+    "body": {
+      "streamId": "5333dba9-97eb-463c-a97b-7ecb700fb9c5",
+      "templeId": "d1e712f6-e3af-4a5e-8e4d-27b46026dc4d",
+      "templeName": "Tirumala Tirupati Devasthanam",
+      "status": "offline",
+      "playbackUrl": "https://stream.darshya.online/tirumala-tirupati",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Tirumala_090615.jpg",
+      "viewerCount": 0,
+      "startedAt": null
+    }
+  },
+  "darshanStreamBySlug": {
+    "status": 200,
+    "body": {
+      "streamId": "kashi-vishwanath-varanasi",
+      "templeId": "kashi-vishwanath-varanasi",
+      "templeName": "Shri Kashi Vishwanath Temple",
+      "status": "live",
+      "playbackUrl": "https://www.youtube.com/embed/live_stream?channel=UCdMj2twWfMHXrWgX5oVdoyA&autoplay=1&mute=1&playsinline=1",
+      "recentVideoUrl": "https://www.youtube.com/embed/78xkitL2HE8?autoplay=1&mute=1&playsinline=1&rel=0",
+      "recentVideoTitle": "लाइव दर्शन |  श्री काशी विश्वनाथ धाम",
+      "youtubeChannelId": "UCdMj2twWfMHXrWgX5oVdoyA",
+      "thumbnailUrl": "https://images.unsplash.com/photo-1548013146-72479768bada?w=640&h=360&fit=crop&auto=format&q=80",
+      "viewerCount": 12450,
+      "startedAt": "2026-08-12T20:19:20.312Z"
+    }
+  },
+  "donationAmountField": {
+    "status": 400,
+    "body": {
+      "error": "Invalid request body",
+      "details": {
+        "formErrors": [],
+        "fieldErrors": {
+          "amountInr": [
+            "Required"
+          ]
+        }
+      }
+    }
+  },
+  "donationAmountInrOnly": {
+    "status": 400,
+    "body": {
+      "error": "Invalid request body",
+      "details": {
+        "formErrors": [],
+        "fieldErrors": {
+          "causeKind": [
+            "Provide gaushalaId for a gaushala cause or templeId for a temple cause (not both)."
+          ]
+        }
+      }
+    }
+  },
+  "donationCorrect": {
+    "status": 200,
+    "body": {
+      "donationId": "don_1786569560475_d3cffe09",
+      "razorpayOrderId": "order_demo_1786569560477",
+      "amount": 10100,
+      "currency": "INR",
+      "keyId": "rzp_test_demo",
+      "isDemoPayment": true
+    }
+  },
+  "gaushalas": {
+    "status": 200,
+    "body": {
+      "gaushalas": [
+        {
+          "id": "gs_001",
+          "name": "Shri Krishna Gaushala",
+          "location": "Vrindavan",
+          "state": "Uttar Pradesh",
+          "description": "One of the most revered gaushalas in Vrindavan, affiliated with ISKCON. Home to over 500 cows including rare indigenous breeds such as Gir, Sahiwal, and Red Sin…[elided]",
+          "totalCows": 500,
+          "availableCows": 3,
+          "image": "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&q=80",
+          "affiliation": "ISKCON-affiliated",
+          "isVerified": true,
+          "contactPhone": "+91 9876543210",
+          "contactEmail": "info@krishnagaushala.org",
+          "facilities": [
+            "Veterinary Hospital",
+            "Organic Farm",
+            "Visitor Center",
+            "Gau Puja Hall",
+            "Ayurvedic Product Unit",
+            "Calf Nursery",
+            "Fodder Storage"
+          ],
+          "visitingHours": "6:00 AM - 7:00 PM (All days)",
+          "coordinates": {
+            "lat": 27.5846,
+            "lng": 77.6947
+          },
+          "cowsListed": 4
+        },
+        {
+          "id": "gs_002",
+          "name": "Kamdhenu Gaushala",
+          "location": "Jaipur",
+          "state": "Rajasthan",
+          "description": "A government-registered gaushala spanning 50 acres on the outskirts of Jaipur, managed by the Kamdhenu Seva Samiti. Houses 1,200+ cows rescued from urban areas,…[elided]",
+          "totalCows": 1200,
+          "availableCows": 3,
+          "image": "https://images.unsplash.com/photo-1527153907836-a9a0438ff035?w=800&q=80",
+          "affiliation": "Government Registered",
+          "isVerified": true,
+          "contactPhone": "+91 9123456780",
+          "contactEmail": "seva@kamdhenugaushala.in",
+          "facilities": [
+            "50-Acre Campus",
+            "Modern Veterinary ICU",
+            "Organic Dairy",
+            "Panchgavya Lab",
+            "Training Center",
+            "Solar-Powered",
+            "Biogas Plant",
+            "Organic Farm"
+          ],
+          "visitingHours": "7:00 AM - 6:00 PM (Mon-Sat)",
+          "coordinates": {
+            "lat": 26.9124,
+            "lng": 75.7873
+          },
+          "cowsListed": 5
+        },
+        {
+          "id": "gs_003",
+          "name": "Pathmeda Gauseva Sansthan",
+          "location": "Sanchore, Jalore District",
+          "state": "Rajasthan",
+          "description": "One of India's largest and most well-known gaushalas, Pathmeda Gauseva Sansthan is spread across multiple campuses in the Jalore district of Rajasthan. Founded …[elided]",
+          "totalCows": 2800,
+          "availableCows": 3,
+          "image": "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=800&q=80",
+          "affiliation": "Nationally Recognized Model Gaushala",
+          "isVerified": true,
+          "contactPhone": "+91 9414312456",
+          "contactEmail": "info@pathmedagaushala.org",
+          "facilities": [
+            "Multi-Campus (200+ acres)",
+            "Panchgavya Product Factory",
+            "Organic Farming Demo",
+            "Breed Conservation Center",
+            "Farmer Training Institute",
+            "Research Lab",
+            "Gobar Gas Plant",
+            "Vermicompost Unit",
+            "Guest House"
+          ],
+          "visitingHours": "6:00 AM - 6:00 PM (All days)",
+          "coordinates": {
+            "lat": 24.7584,
+            "lng": 71.7714
+          },
+          "cowsListed": 4
+        }
+      ]
+    }
+  },
+  "paymentsConfig": {
+    "status": 200,
+    "body": {
+      "keyId": null,
+      "isDemo": true
+    }
+  }
+}

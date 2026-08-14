@@ -1,0 +1,414 @@
+{
+  "loadMs": 64905,
+  "texts": [
+    {
+      "tag": "span",
+      "top": 25,
+      "fs": "15px",
+      "fw": "600",
+      "text": "Darsh"
+    },
+    {
+      "tag": "span",
+      "top": 24,
+      "fs": "15px",
+      "fw": "600",
+      "text": "ya"
+    },
+    {
+      "tag": "span",
+      "top": 22,
+      "fs": "13.44px",
+      "fw": "500",
+      "text": "Ask Pandit"
+    },
+    {
+      "tag": "span",
+      "top": 24,
+      "fs": "12px",
+      "fw": "500",
+      "text": "Today"
+    },
+    {
+      "tag": "span",
+      "top": 22,
+      "fs": "13.44px",
+      "fw": "400",
+      "text": "Find your kundli…"
+    },
+    {
+      "tag": "h1",
+      "top": 147,
+      "fs": "72px",
+      "fw": "600",
+      "text": "Darshya, your bridge to"
+    },
+    {
+      "tag": "span",
+      "top": 304,
+      "fs": "72px",
+      "fw": "600",
+      "text": "sacred traditions"
+    },
+    {
+      "tag": "p",
+      "top": 480,
+      "fs": "13.44px",
+      "fw": "400",
+      "text": "Live temple darshan. Authentic pujas with verified priests and video proof. Vedic wisdom guided by AI, rooted in scripture."
+    },
+    {
+      "tag": "span",
+      "top": 621,
+      "fs": "17px",
+      "fw": "600",
+      "text": "Verified"
+    },
+    {
+      "tag": "span",
+      "top": 621,
+      "fs": "17px",
+      "fw": "600",
+      "text": "Aadhaar"
+    },
+    {
+      "tag": "span",
+      "top": 621,
+      "fs": "17px",
+      "fw": "600",
+      "text": "HD"
+    },
+    {
+      "tag": "p",
+      "top": 367,
+      "fs": "12px",
+      "fw": "500",
+      "text": "Golden Temple, Amritsar"
+    },
+    {
+      "tag": "p",
+      "top": 383,
+      "fs": "10px",
+      "fw": "400",
+      "text": "Watch live darshan →"
+    },
+    {
+      "tag": "p",
+      "top": 465,
+      "fs": "11px",
+      "fw": "500",
+      "text": "Verified Priests"
+    },
+    {
+      "tag": "p",
+      "top": 483,
+      "fs": "10px",
+      "fw": "400",
+      "text": "Aadhaar authenticated"
+    },
+    {
+      "tag": "p",
+      "top": 458,
+      "fs": "11px",
+      "fw": "500",
+      "text": "AI Pandit"
+    },
+    {
+      "tag": "p",
+      "top": 475,
+      "fs": "10px",
+      "fw": "400",
+      "text": "Gita-powered guidance"
+    },
+    {
+      "tag": "h2",
+      "top": 714,
+      "fs": "16px",
+      "fw": "400",
+      "text": "Choose where to begin"
+    },
+    {
+      "tag": "h3",
+      "top": 742,
+      "fs": "18px",
+      "fw": "600",
+      "text": "Live Darshan"
+    },
+    {
+      "tag": "p",
+      "top": 788,
+      "fs": "13.44px",
+      "fw": "400",
+      "text": "Watch live aarti from 200+ temples"
+    },
+    {
+      "tag": "span",
+      "top": 826,
+      "fs": "12px",
+      "fw": "600",
+      "text": "Watch now"
+    },
+    {
+      "tag": "h3",
+      "top": 742,
+      "fs": "18px",
+      "fw": "600",
+      "text": "Book a Puja"
+    },
+    {
+      "tag": "p",
+      "top": 788,
+      "fs": "13.44px",
+      "fw": "400",
+      "text": "Schedule a ritual at a temple"
+    },
+    {
+      "tag": "span",
+      "top": 826,
+      "fs": "12px",
+      "fw": "600",
+      "text": "Book now"
+    },
+    {
+      "tag": "h3",
+      "top": 742,
+      "fs": "18px",
+      "fw": "600",
+      "text": "Ask a Pandit"
+    },
+    {
+      "tag": "p",
+      "top": 788,
+      "fs": "13.44px",
+      "fw": "400",
+      "text": "AI guidance on dharma, rituals"
+    },
+    {
+      "tag": "span",
+      "top": 826,
+      "fs": "12px",
+      "fw": "600",
+      "text": "Ask now"
+    },
+    {
+      "tag": "h2",
+      "top": 717,
+      "fs": "18px",
+      "fw": "600",
+      "text": "We use cookies for darshan, devotion, and DPDP/UK-GDPR compliance"
+    },
+    {
+      "tag": "p",
+      "top": 753,
+      "fs": "13.44px",
+      "fw": "400",
+      "text": "Essential cookies keep your account and bookings working. Analytics and marketing cookies are optional and only run with your consent. You can change these any time in our ."
+    }
+  ],
+  "ctas": [
+    {
+      "tag": "a",
+      "top": 18,
+      "left": 112,
+      "w": 93,
+      "h": 28,
+      "href": "http://127.0.0.1:3000/",
+      "text": "Darshya"
+    },
+    {
+      "tag": "button",
+      "top": 16,
+      "left": 264,
+      "w": 96,
+      "h": 31,
+      "href": null,
+      "text": "Worship"
+    },
+    {
+      "tag": "button",
+      "top": 16,
+      "left": 363,
+      "w": 88,
+      "h": 31,
+      "href": null,
+      "text": "Library"
+    },
+    {
+      "tag": "button",
+      "top": 16,
+      "left": 455,
+      "w": 105,
+      "h": 31,
+      "href": null,
+      "text": "Astrology"
+    },
+    {
+      "tag": "button",
+      "top": 16,
+      "left": 564,
+      "w": 75,
+      "h": 31,
+      "href": null,
+      "text": "Yatra"
+    },
+    {
+      "tag": "button",
+      "top": 16,
+      "left": 643,
+      "w": 76,
+      "h": 31,
+      "href": null,
+      "text": "Shop"
+    },
+    {
+      "tag": "a",
+      "top": 14,
+      "left": 777,
+      "w": 110,
+      "h": 36,
+      "href": "http://127.0.0.1:3000/ask-pandit",
+      "text": "Ask Pandit"
+    },
+    {
+      "tag": "a",
+      "top": 14,
+      "left": 891,
+      "w": 72,
+      "h": 36,
+      "href": "http://127.0.0.1:3000/today",
+      "text": "Today"
+    },
+    {
+      "tag": "button",
+      "top": 14,
+      "left": 967,
+      "w": 240,
+      "h": 36,
+      "href": null,
+      "text": "Find your kundli…/"
+    },
+    {
+      "tag": "a",
+      "top": 14,
+      "left": 1251,
+      "w": 77,
+      "h": 35,
+      "href": "http://127.0.0.1:3000/auth/login",
+      "text": "Sign In"
+    },
+    {
+      "tag": "a",
+      "top": 547,
+      "left": 176,
+      "w": 161,
+      "h": 39,
+      "href": "http://127.0.0.1:3000/temples",
+      "text": "Explore Temples"
+    },
+    {
+      "tag": "a",
+      "top": 547,
+      "left": 349,
+      "w": 112,
+      "h": 39,
+      "href": "http://127.0.0.1:3000/pujas",
+      "text": "Book a Puja"
+    },
+    {
+      "tag": "a",
+      "top": 248,
+      "left": 736,
+      "w": 528,
+      "h": 162,
+      "href": "http://127.0.0.1:3000/darshan",
+      "text": "LIVEGolden Temple, AmritsarWatch live darshan →"
+    },
+    {
+      "tag": "a",
+      "top": 715,
+      "left": 176,
+      "w": 352,
+      "h": 148,
+      "href": "http://127.0.0.1:3000/darshan",
+      "text": "Live DarshanWatch live aarti from 200+ templesWatch now"
+    },
+    {
+      "tag": "a",
+      "top": 715,
+      "left": 544,
+      "w": 352,
+      "h": 148,
+      "href": "http://127.0.0.1:3000/pujas",
+      "text": "Book a PujaSchedule a ritual at a templeBook now"
+    },
+    {
+      "tag": "a",
+      "top": 715,
+      "left": 912,
+      "w": 352,
+      "h": 148,
+      "href": "http://127.0.0.1:3000/ask-pandit",
+      "text": "Ask a PanditAI guidance on dharma, ritualsAsk now"
+    },
+    {
+      "tag": "button",
+      "top": 824,
+      "left": 1364,
+      "w": 56,
+      "h": 56,
+      "href": null,
+      "text": "Need help? Chat with us"
+    },
+    {
+      "tag": "a",
+      "top": 774,
+      "left": 701,
+      "w": 80,
+      "h": 15,
+      "href": "http://127.0.0.1:3000/legal/cookies",
+      "text": "Cookie Policy"
+    },
+    {
+      "tag": "button",
+      "top": 807,
+      "left": 361,
+      "w": 89,
+      "h": 44,
+      "href": null,
+      "text": "Reject all"
+    },
+    {
+      "tag": "button",
+      "top": 807,
+      "left": 462,
+      "w": 157,
+      "h": 44,
+      "href": null,
+      "text": "Manage preferences"
+    },
+    {
+      "tag": "button",
+      "top": 807,
+      "left": 632,
+      "w": 90,
+      "h": 44,
+      "href": null,
+      "text": "Accept all"
+    }
+  ],
+  "images": [
+    {
+      "top": 249,
+      "w": 526,
+      "h": 160,
+      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/The_Golden_Temple_of_Amrithsar_7.jpg/1920px-The_Golden_Temple_of_Amrithsar_7.jpg",
+      "alt": "Sri Harmandir Sahib (Golden Temple), live darshan"
+    }
+  ],
+  "title": "Darshya, India's Devotional Super App",
+  "metaDesc": "Live darshan from sacred temples, online puja booking with verified pandits, daily panchang, Vedic astrology, Sanskrit lessons, gaushala donations and AI spiritual guidance. Your complete Sanatan Dharma companion.",
+  "h1": [
+    "Darshya, your bridge to sacred traditions"
+  ],
+  "docHeight": 8311
+}

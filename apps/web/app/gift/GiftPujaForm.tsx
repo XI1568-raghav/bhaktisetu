@@ -254,7 +254,7 @@ export function GiftPujaForm() {
           'Request gift puja'
         )}
       </button>
-      <p className="text-[11px] text-surface-500 text-center">
+      <p className="text-xs text-surface-500 text-center">
         Free to ask — no payment yet. We email pandit + date options + payment link within 4 hours.
       </p>
     </form>

@@ -9,19 +9,17 @@ import {
  Eye,
  UserCheck,
  Ban,
- Trash2,
  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import AuthGuard from '../../../components/AuthGuard';
+import { backendToUiRole, uiToBackendRole, type UiRole } from '../../../lib/admin-api';
 import {
-  getUsers,
-  patchUser,
-  backendToUiRole,
-  uiToBackendRole,
-  type BackendUser,
-  type UiRole,
-} from '../../../lib/admin-api';
+  fetchAllAdminUsers,
+  fetchPendingApprovalUserIds,
+  patchAdminUser,
+  type AdminUserRecord,
+} from './users-api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,6 +33,7 @@ interface AdminUserRow {
  status: UserStatus;
  joinedDate: string;
  phone: string;
+ blockedReason: string | null;
 }
 
 const roleLabels: Record<string, string> = {
@@ -67,17 +66,21 @@ const statusBadge: Record<string, string> = {
 
 const PAGE_SIZE = 10;
 
-// Maps the backend's free-form status string + role array to the UI's
-// active/pending/blocked tri-state. Backend sometimes omits status (recent
-// rows) — default to active so admins still see the user.
-function mapStatus(raw: BackendUser): UserStatus {
-  const s = (raw.status ?? '').toLowerCase();
-  if (s === 'blocked' || s === 'banned' || s === 'suspended') return 'blocked';
-  if (s === 'pending' || s === 'pending_approval' || s === 'awaiting_approval') return 'pending';
+// AO-08: status comes from the SERVER, not from a field the API has never sent.
+//
+// This used to read `raw.status` — a string GET /admin/users does not return —
+// so every row fell through to 'active' forever: the Blocked filter answered
+// "0 users" while accounts were blocked, and the per-row Approve control, gated
+// on status === 'pending', could never render on any row. `blocked` is real
+// (User.blocked, returned since the AO-01 fix); "pending" is real too, but it
+// lives in the provider profiles, so it arrives from /admin/pending-approvals.
+function mapStatus(raw: AdminUserRecord, awaitingApproval: Set<string>): UserStatus {
+  if (raw.blocked === true) return 'blocked';
+  if (awaitingApproval.has(raw.id)) return 'pending';
   return 'active';
 }
 
-function mapUser(raw: BackendUser): AdminUserRow {
+function mapUser(raw: AdminUserRecord, awaitingApproval: Set<string>): AdminUserRow {
   const primary = (raw.roles?.[0] ?? 'DEVOTEE') as keyof typeof backendToUiRole;
   const uiRole = backendToUiRole[primary] ?? 'devotee';
   return {
@@ -85,9 +88,10 @@ function mapUser(raw: BackendUser): AdminUserRow {
     name: raw.fullName,
     email: raw.email ?? '',
     role: uiRole,
-    status: mapStatus(raw),
+    status: mapStatus(raw, awaitingApproval),
     joinedDate: raw.createdAt,
-    phone: raw.phone,
+    phone: raw.phone ?? '',
+    blockedReason: raw.blockedReason ?? null,
   };
 }
 
@@ -104,14 +108,19 @@ function AdminUsersPageContent() {
  const token = session?.accessToken;
 
  const [users, setUsers] = useState<AdminUserRow[]>([]);
+ // AO-07: the server's own count. `users.length` is what the page HAS; this is
+ // what the platform has, and the two must be shown to agree.
+ const [apiTotal, setApiTotal] = useState(0);
+ const [partialDirectory, setPartialDirectory] = useState(false);
+ const [approvalsError, setApprovalsError] = useState<string | null>(null);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [search, setSearch] = useState('');
  const [roleFilter, setRoleFilter] = useState<string>('all');
  const [statusFilter, setStatusFilter] = useState<string>('all');
  const [page, setPage] = useState(1);
- const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
+ const [reloadKey, setReloadKey] = useState(0);
 
  useEffect(() => {
    if (!token) return;
@@ -119,10 +128,26 @@ function AdminUsersPageContent() {
    (async () => {
      setLoading(true);
      setError(null);
+     setApprovalsError(null);
+
+     // Which users are awaiting approval is a SEPARATE, non-blocking call: if
+     // it fails the directory is still correct, it just cannot offer Approve —
+     // and it says so instead of silently showing everyone as active.
+     let awaiting = new Set<string>();
      try {
-       const data = await getUsers(token);
+       awaiting = await fetchPendingApprovalUserIds(token);
+     } catch (err) {
+       if (!cancelled) {
+         setApprovalsError(err instanceof Error ? err.message : 'Could not load the approval queue.');
+       }
+     }
+
+     try {
+       const data = await fetchAllAdminUsers(token);
        if (cancelled) return;
-       setUsers(data.users.map(mapUser));
+       setUsers(data.users.map((u) => mapUser(u, awaiting)));
+       setApiTotal(data.total);
+       setPartialDirectory(!data.complete);
      } catch (err) {
        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load users');
      } finally {
@@ -132,8 +157,11 @@ function AdminUsersPageContent() {
    return () => {
      cancelled = true;
    };
- }, [token]);
+ }, [token, reloadKey]);
 
+ // Filtering runs over the COMPLETE directory, never over one API page, and
+ // never through `?role=` — admin.service applies that filter after paginating,
+ // so the server would answer "the pandits that happen to be on page 1".
  const filtered = useMemo(() => {
  return users.filter((u) => {
  const matchSearch = search === '' || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
@@ -143,35 +171,56 @@ function AdminUsersPageContent() {
  });
  }, [users, search, roleFilter, statusFilter]);
 
+ const filtersActive = search !== '' || roleFilter !== 'all' || statusFilter !== 'all';
+ // Unfiltered, the footer must show what the SERVER says exists — a client-side
+ // count can only ever report what was successfully fetched.
+ const shownTotal = filtersActive ? filtered.length : Math.max(apiTotal, users.length);
  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
- const handleApprove = async (userId: string) => {
-   setActionLoading(userId + '-approve');
-   setError(null);
-   try {
-     await patchUser(token, userId, { approved: true });
-     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: 'active' as UserStatus } : u)));
-   } catch (err) {
-     setError(err instanceof Error ? err.message : 'Approve failed');
-   } finally {
-     setActionLoading(null);
-   }
- };
+ /**
+  * Run a moderation write and PROVE it landed.
+  *
+  * PATCH /admin/users/:id answered 200 `{"message":"User updated"}` for a
+  * `blocked` flag it never wrote (AO-01), and this table believed it because it
+  * mutated local state optimistically — an operator blocking a fraudulent
+  * pandit got a green badge over an account that stayed fully live. So the
+  * only evidence accepted here is a re-read of the directory that shows the
+  * user in the state we asked for.
+  */
+ type Verdict = { ok: true } | { ok: false; message: string };
 
- const handleToggleBlock = async (userId: string, currentStatus: UserStatus) => {
-   setActionLoading(userId + '-block');
+ const applyAndVerify = async (
+   userId: string,
+   action: string,
+   updates: Parameters<typeof patchAdminUser>[2],
+   // `awaiting` is null when the approval queue could not be re-read. That is
+   // NOT the same as "the queue is empty" — treating it as empty is how a
+   // failed verification turns into a green confirmation.
+   verify: (row: AdminUserRecord | undefined, awaiting: Set<string> | null) => Verdict,
+ ) => {
+   setActionLoading(userId + '-' + action);
    setError(null);
-   const nextBlocked = currentStatus !== 'blocked';
    try {
-     await patchUser(token, userId, { blocked: nextBlocked });
-     setUsers((prev) =>
-       prev.map((u) =>
-         u.id === userId
-           ? { ...u, status: (nextBlocked ? 'blocked' : 'active') as UserStatus }
-           : u,
+     await patchAdminUser(token, userId, updates);
+
+     const [awaitingResult, data] = await Promise.all([
+       fetchPendingApprovalUserIds(token).then(
+         (s) => s,
+         () => null,
        ),
-     );
+       fetchAllAdminUsers(token),
+     ]);
+     const row = data.users.find((u) => u.id === userId);
+     setUsers(data.users.map((u) => mapUser(u, awaitingResult ?? new Set<string>())));
+     setApiTotal(data.total);
+     setPartialDirectory(!data.complete);
+     if (!awaitingResult) {
+       setApprovalsError('the approval queue could not be re-read');
+     }
+
+     const verdict = verify(row, awaitingResult);
+     if (!verdict.ok) setError(verdict.message);
    } catch (err) {
      setError(err instanceof Error ? err.message : 'Action failed');
    } finally {
@@ -179,34 +228,47 @@ function AdminUsersPageContent() {
    }
  };
 
- const handleRoleChange = async (userId: string, nextUiRole: UiRole) => {
-   setActionLoading(userId + '-role');
-   setError(null);
-   try {
-     await patchUser(token, userId, { roles: [uiToBackendRole[nextUiRole]] });
-     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: nextUiRole } : u)));
-   } catch (err) {
-     setError(err instanceof Error ? err.message : 'Role change failed');
-   } finally {
-     setActionLoading(null);
-   }
+ const handleApprove = (userId: string) =>
+   applyAndVerify(userId, 'approve', { approved: true }, (_row, awaiting) => {
+     if (!awaiting) {
+       return {
+         ok: false,
+         message:
+           'The server accepted the approval, but the approval queue could not be re-read, so it is unconfirmed. Check /admin/approvals before telling the provider they are live.',
+       };
+     }
+     if (awaiting.has(userId)) {
+       return {
+         ok: false,
+         message:
+           'The server accepted the approval but this account is still in the approval queue. Nothing has been approved.',
+       };
+     }
+     return { ok: true };
+   });
+
+ const handleToggleBlock = (userId: string, currentStatus: UserStatus) => {
+   const nextBlocked = currentStatus !== 'blocked';
+   return applyAndVerify(userId, 'block', { blocked: nextBlocked }, (row) => {
+     if (row && (row.blocked === true) === nextBlocked) return { ok: true };
+     return {
+       ok: false,
+       message: nextBlocked
+         ? 'The server accepted the block but the account still reads as active. It can still sign in and take bookings — do not treat this user as blocked.'
+         : 'The server accepted the unblock but the account still reads as blocked.',
+     };
+   });
  };
 
- const handleDelete = async (userId: string) => {
-   setDeleteConfirm(null);
-   setActionLoading(userId + '-delete');
-   setError(null);
-   // Soft-delete via block — there is no production-ready destructive
-   // delete endpoint yet, so we mark blocked and remove from the local view.
-   try {
-     await patchUser(token, userId, { blocked: true });
-     setUsers((prev) => prev.filter((u) => u.id !== userId));
-   } catch (err) {
-     setError(err instanceof Error ? err.message : 'Delete failed');
-   } finally {
-     setActionLoading(null);
-   }
- };
+ const handleRoleChange = (userId: string, nextUiRole: UiRole) =>
+   applyAndVerify(userId, 'role', { roles: [uiToBackendRole[nextUiRole]] }, (row) =>
+     row && (row.roles?.[0] ?? '') === uiToBackendRole[nextUiRole]
+       ? { ok: true }
+       : {
+           ok: false,
+           message: 'The server accepted the role change but the account still holds its old role.',
+         },
+   );
 
  return (
  <div className="space-y-6">
@@ -217,8 +279,29 @@ function AdminUsersPageContent() {
  </div>
 
  {error && (
-   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-     {error}
+   <div role="alert" className="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+     <span>{error}</span>
+     <button
+       type="button"
+       onClick={() => setReloadKey((k) => k + 1)}
+       className="shrink-0 rounded-md border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-100"
+     >
+       Reload
+     </button>
+   </div>
+ )}
+
+ {partialDirectory && (
+   <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+     Only {users.length} of {apiTotal} users could be loaded. This list is incomplete — do not
+     read a filter count as the whole picture.
+   </div>
+ )}
+
+ {approvalsError && (
+   <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+     The approval queue could not be loaded ({approvalsError}), so accounts awaiting approval are
+     not marked here and Approve is unavailable. Nobody has been approved or rejected.
    </div>
  )}
 
@@ -235,6 +318,7 @@ function AdminUsersPageContent() {
  />
  </div>
  <select
+ aria-label="Filter by role"
  value={roleFilter}
  onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
  className="px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-saffron-500/30"
@@ -249,6 +333,7 @@ function AdminUsersPageContent() {
  <option value="temple_manager">Temple Manager</option>
  </select>
  <select
+ aria-label="Filter by status"
  value={statusFilter}
  onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
  className="px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-saffron-500/30"
@@ -314,7 +399,10 @@ function AdminUsersPageContent() {
  </select>
  </td>
  <td className="py-3 px-4">
- <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadge[user.status] || ''}`}>
+ <span
+ title={user.status === 'blocked' && user.blockedReason ? user.blockedReason : undefined}
+ className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadge[user.status] || ''}`}
+ >
  {user.status}
  </span>
  </td>
@@ -352,36 +440,16 @@ function AdminUsersPageContent() {
  >
  <Ban className="w-4 h-4" />
  </button>
- <button
- onClick={() => setDeleteConfirm(user.id)}
- className="p-1.5 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
- title="Delete"
- >
- <Trash2 className="w-4 h-4" />
- </button>
+ {/*
+   The Delete control that used to sit here answered by blocking the user
+   and REMOVING THE ROW, so an operator got positive visual evidence the
+   account was gone while it was merely suspended — and DELETE
+   /admin/users/:id is a stub that replies "User deleted" for any id,
+   including ones that do not exist (AO-16). A control with no rail behind
+   it does more damage than a missing one; Block is the real action and it
+   is verified above.
+ */}
  </div>
-
- {/* Delete confirmation */}
- {deleteConfirm === user.id && (
- <div className="absolute right-5 top-full mt-1 z-20 bg-white border border-surface-200 rounded-lg shadow-lg p-4 w-64 text-left">
- <p className="text-sm text-surface-800 font-medium mb-2">Delete this user?</p>
- <p className="text-xs text-surface-500 mb-3">This will block and hide &quot;{user.name}&quot;. The account is not destroyed and can be restored by support.</p>
- <div className="flex gap-2">
- <button
- onClick={() => setDeleteConfirm(null)}
- className="flex-1 px-3 py-1.5 text-xs font-medium text-surface-600 bg-surface-100 rounded-md hover:bg-surface-200 transition-colors"
- >
- Cancel
- </button>
- <button
- onClick={() => handleDelete(user.id)}
- className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
- >
- Delete
- </button>
- </div>
- </div>
- )}
  </td>
  </tr>
  ))
@@ -393,7 +461,7 @@ function AdminUsersPageContent() {
  {/* Pagination */}
  <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border)]">
  <span className="text-xs text-surface-500">
- Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} users
+ Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} of {shownTotal} users
  </span>
  <div className="flex items-center gap-1">
  <button
@@ -407,7 +475,7 @@ function AdminUsersPageContent() {
  <button
  key={p}
  onClick={() => setPage(p)}
- className={`w-8 h-8 text-xs font-medium rounded-md transition-colors ${
+ className={`h-11 w-11 text-xs font-medium rounded-md transition-colors ${
  p === page
  ? 'bg-saffron-600 text-white'
  : 'text-surface-500 hover:bg-surface-100'

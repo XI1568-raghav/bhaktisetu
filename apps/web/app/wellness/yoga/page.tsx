@@ -16,6 +16,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/wellness/yoga' },
  title: 'Yoga — Live Classes & Expert Instructors',
  description:
  'Join live Hatha, Vinyasa, Ashtanga, Kundalini, and Yin yoga sessions with certified instructors. Morning and evening slots available.',
@@ -163,7 +164,7 @@ export default function YogaPage() {
  <div className="flex-1">
  <div className="flex items-center gap-2 mb-1">
  <h3 className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{type.name}</h3>
- <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
+ <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
  {type.difficulty}
  </span>
  </div>
@@ -260,17 +261,17 @@ export default function YogaPage() {
  <span className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
  <Clock className="w-3 h-3" /> {s.time}
  </span>
- <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
+ <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
  {s.type}
  </span>
  </div>
  <h4 className="text-sm font-medium mb-0.5" style={{ color: 'var(--color-text)' }}>{s.title}</h4>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{s.instructor} &middot; {s.duration}</p>
  <div className="mt-2 flex items-center justify-between">
- <span className="text-[10px]" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
+ <span className="text-xs" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
  {s.spots} spots left
  </span>
- <button className="text-[10px] font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className="text-xs font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
  Book
  </button>
  </div>
@@ -297,17 +298,17 @@ export default function YogaPage() {
  <span className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
  <Clock className="w-3 h-3" /> {s.time}
  </span>
- <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
+ <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
  {s.type}
  </span>
  </div>
  <h4 className="text-sm font-medium mb-0.5" style={{ color: 'var(--color-text)' }}>{s.title}</h4>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{s.instructor} &middot; {s.duration}</p>
  <div className="mt-2 flex items-center justify-between">
- <span className="text-[10px]" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
+ <span className="text-xs" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
  {s.spots} spots left
  </span>
- <button className="text-[10px] font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className="text-xs font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
  Book
  </button>
  </div>
@@ -342,7 +343,7 @@ export default function YogaPage() {
  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.15)' }}>
  <Play className="w-5 h-5 ml-0.5" style={{ color: 'var(--color-text)' }} />
  </div>
- <span className="absolute bottom-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
+ <span className="absolute bottom-2 right-2 text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
  {vid.duration}
  </span>
  </div>
@@ -351,7 +352,7 @@ export default function YogaPage() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
  {vid.instructor} &middot; {vid.views} views
  </p>
- <span className="inline-block mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
+ <span className="inline-block mt-2 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
  {vid.level}
  </span>
  </div>

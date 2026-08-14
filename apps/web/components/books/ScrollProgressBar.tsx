@@ -43,7 +43,7 @@ export function ScrollProgressBar({ onChange }: Props) {
       aria-label="Reading progress"
     >
       <div
-        className="h-full bg-saffron-500 transition-[width] duration-150"
+        className="h-full bg-saffron-600 transition-[width] duration-150"
         style={{ width: `${pct}%` }}
       />
     </div>

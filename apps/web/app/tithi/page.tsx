@@ -5,7 +5,7 @@ import { TITHIS } from '../../lib/tithis';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: '30 Tithis — Lunar Days of the Hindu Calendar | Darshya',
+  title: '30 Tithis — Lunar Days of the Hindu Calendar',
   description:
     'All 30 tithis of the lunar month — Pratipada through Chaturdashi (×2 pakshas), plus Purnima and Amavasya. Presiding deity, fasting tradition, major festivals and beej mantra per tithi.',
   alternates: { canonical: 'https://darshya.online/tithi' },

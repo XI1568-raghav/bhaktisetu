@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = getDwadashaAdityaBySlug(slug);
   if (!a) return { title: 'Not found' };
   return {
-    title: `${a.name} Aditya (${a.number} of 12) — Mantra, Month, Ratna, Vrata | Darshya`,
+    title: `${a.name} Aditya (${a.number} of 12) — Mantra, Month, Ratna, Vrata`,
     description: `${a.name} (${a.sanskrit}) — ${a.number}th Aditya, presides over ${a.presidingMonth}. Domain: ${a.domain.slice(0, 80)}. Includes beej mantra, ratna, vahana and signature vrata.`,
     alternates: { canonical: `${BASE_URL}/aditya/${a.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${a.name} — ${a.number} of 12 Adityas`,
       description: a.benefit,
       url: `${BASE_URL}/aditya/${a.slug}`,

@@ -139,10 +139,20 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
     }
     const existing = await prisma.gaushalaProfile.findUnique({ where: { userId } });
     if (!existing) {
+      // S-08: creating the profile with a placeholder name ('My Gaushala') put
+      // a name nobody chose on donor receipts and in the public directory. The
+      // manager supplies the real name or the profile is not created.
+      if (!parsed.data.gaushalaName?.trim()) {
+        return reply.code(400).send({
+          code: 'gaushala_name_required',
+          error: 'Gaushala name required',
+          message: 'Enter your gaushala’s name to create your profile.',
+        });
+      }
       const profile = await prisma.gaushalaProfile.create({
         data: {
           userId,
-          gaushalaName: parsed.data.gaushalaName ?? 'My Gaushala',
+          gaushalaName: parsed.data.gaushalaName.trim(),
           address: parsed.data.address,
           city: parsed.data.city,
           description: parsed.data.description,

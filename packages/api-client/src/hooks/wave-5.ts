@@ -183,13 +183,40 @@ export function useCreateWeddingInquiry() {
 // the API went out. Repointed to the surviving Razorpay path, matching what
 // apps/web/app/upgrade/page.tsx already does. INR only.
 
+// PAR-01 (2026-08-12): repointed AGAIN, from /subscriptions/subscribe to
+// /subscriptions/create.
+//
+// /subscribe is not a checkout — it is an unconditional grant. It writes an
+// ACTIVE ENTERPRISE subscription and a COMPLETED ₹5,000 Transaction with no
+// Razorpay order, no payment and no mandate (subscription.service.ts:284-307),
+// and the screen reported "Upgrade complete". /create at least attempts a real
+// Razorpay subscription and returns a hosted `shortUrl` to pay at.
+//
+// It is NOT sufficient on its own: when Razorpay is unconfigured — or when the
+// plan has no RAZORPAY_PLAN_* mapping, which `nri_premium_yearly` currently
+// does not (subscription.service.ts:637-649) — /create takes its demo branch,
+// sets `skipped: true`, and calls the same free grant. The caller must
+// therefore gate on a live payment rail BEFORE invoking this, and must treat
+// `skipped: true` or a missing shortUrl as a failure. See
+// apps/mobile/lib/subscription-gate.ts.
+export interface AnnualSubscriptionResponse {
+  subscription?: {
+    subscriptionId?: string;
+    shortUrl?: string | null;
+    url?: string | null;
+    status?: string;
+    skipped?: boolean;
+    reason?: string;
+  };
+}
+
 export function useCreateAnnualSubscription() {
   return useMutation({
     mutationFn: () =>
-      api.post<{ subscription?: { shortUrl?: string | null; url?: string | null } }>(
-        "/api/v1/subscriptions/subscribe",
-        { planId: "nri_premium_yearly", role: "DEVOTEE" },
-      ),
+      api.post<AnnualSubscriptionResponse>("/api/v1/subscriptions/create", {
+        planId: "nri_premium_yearly",
+        role: "DEVOTEE",
+      }),
   });
 }
 

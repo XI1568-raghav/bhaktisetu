@@ -68,7 +68,12 @@ describe('SubscriptionService.subscribe', () => {
     ).rejects.toThrow(/not available for role/);
   });
 
-  it('creates subscription + transaction for paid plan', async () => {
+  // PM-04: a priced plan now needs activation evidence (see
+  // subscriptions.paid-gate.test.ts). This case previously called subscribe()
+  // with no evidence and asserted an ACTIVE row came back — i.e. it pinned the
+  // ₹0-provisioning hole in place. It now exercises the same write through the
+  // one caller allowed to reach it, the verified Razorpay webhook.
+  it('creates subscription + transaction for paid plan when payment is evidenced', async () => {
     prismaMock.marketplaceSubscription.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.marketplaceSubscription.create.mockResolvedValue({
       id: 'sub-1',
@@ -82,7 +87,10 @@ describe('SubscriptionService.subscribe', () => {
     });
     prismaMock.transaction.create.mockResolvedValue({});
 
-    const out = await service.subscribe('user-1', 'plan-pandit-basic', 'PANDIT');
+    const out = await service.subscribe('user-1', 'plan-pandit-basic', 'PANDIT', {
+      paymentReference: 'sub_rzp_test',
+      source: 'razorpay_webhook',
+    });
 
     expect(out.plan).toBe('BASIC');
     expect(out.amount).toBe(999);

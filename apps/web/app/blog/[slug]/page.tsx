@@ -13,9 +13,9 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const p = await getBlogPost(slug);
-  if (!p) return { title: 'Blog post — Darshya' };
+  if (!p) return { title: 'Blog post' };
   return {
-    title: `${p.title} — Darshya blog`,
+    title: `${p.title} — Blog`,
     description: p.excerpt,
     alternates: { canonical: `https://darshya.online/blog/${p.slug}` },
     openGraph: {
@@ -99,16 +99,22 @@ export default async function BlogPostPage({ params }: Params) {
       />
 
       <footer className="border-t border-surface-200 pt-6 mt-10 text-sm text-surface-600">
-        <p className="mb-4">
-          <a
-            href={post.source}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-saffron-700 hover:underline"
-          >
-            View source on GitHub →
-          </a>
-        </p>
+        {/* LC-14: a post published from content/blog/published.ts has no
+            GitHub page. Rendering the anchor unconditionally produced
+            <a href> with no href — a focusable, keyboard-reachable control
+            that goes nowhere and reads as "View source on GitHub, link". */}
+        {post.source ? (
+          <p className="mb-4">
+            <a
+              href={post.source}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-saffron-700 hover:underline"
+            >
+              View source on GitHub →
+            </a>
+          </p>
+        ) : null}
 
         {others.length > 0 ? (
           <div>

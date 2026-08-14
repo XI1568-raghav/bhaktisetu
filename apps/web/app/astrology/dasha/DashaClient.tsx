@@ -95,7 +95,7 @@ export default function DashaClient({ options }: { options: TimezoneOption[] }) 
      Compute My Dasha
     </button>
 
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Vimshottari 120-yr cycle per Brihat Parashara Hora Shastra. Computed from your janma
      nakshatra position. For ceremonial muhurat or remedial recommendations consult a pandit.
     </p>
@@ -162,9 +162,9 @@ export default function DashaClient({ options }: { options: TimezoneOption[] }) 
            >
             <div className="flex items-center justify-between">
              <span>{result.currentMahadasha!.lord}—{ad.lord}</span>
-             <span className="text-[10px] text-gray-500">{ad.years.toFixed(1)}y</span>
+             <span className="text-xs text-gray-500">{ad.years.toFixed(1)}y</span>
             </div>
-            <div className="text-[10px] text-gray-500">{ad.startDate} → {ad.endDate}</div>
+            <div className="text-xs text-gray-500">{ad.startDate} → {ad.endDate}</div>
            </div>
           ))}
          </div>
@@ -191,7 +191,7 @@ export default function DashaClient({ options }: { options: TimezoneOption[] }) 
            <span className="font-serif text-base font-bold">{md.lord}</span>
            <span className="text-xs opacity-70">{DASHA_LORD_PLANET_HINDI[md.lord]}</span>
            {md.isCurrent && (
-            <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-xs font-bold text-white">
              NOW
             </span>
            )}

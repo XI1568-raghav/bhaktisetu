@@ -88,7 +88,7 @@ export default function BookingStatusTracker({
  isCompleted
  ? 'border-tulsi-green bg-tulsi-green text-white'
  : isCurrent
- ? 'border-saffron-500 bg-saffron-500 text-white shadow-lg shadow-saffron-200 animate-pulse'
+ ? 'border-saffron-600 bg-saffron-600 text-white shadow-lg shadow-saffron-200 animate-pulse'
  : 'border-surface-200 bg-white text-surface-400'
  }`}
  >
@@ -110,7 +110,7 @@ export default function BookingStatusTracker({
  {step.label}
  </span>
  {timestamps[step.key] && (
- <span className="mt-0.5 text-[10px] text-surface-400">
+ <span className="mt-0.5 text-xs text-surface-400">
  {formatTimestamp(timestamps[step.key]!)}
  </span>
  )}
@@ -145,7 +145,7 @@ export default function BookingStatusTracker({
  isCompleted
  ? 'border-tulsi-green bg-tulsi-green text-white'
  : isCurrent
- ? 'border-saffron-500 bg-saffron-500 text-white animate-pulse'
+ ? 'border-saffron-600 bg-saffron-600 text-white animate-pulse'
  : 'border-surface-200 bg-white text-surface-400'
  }`}
  >
@@ -169,7 +169,7 @@ export default function BookingStatusTracker({
  {step.label}
  </span>
  {timestamps[step.key] && (
- <p className="text-[11px] text-surface-400">
+ <p className="text-xs text-surface-400">
  {formatTimestamp(timestamps[step.key]!)}
  </p>
  )}

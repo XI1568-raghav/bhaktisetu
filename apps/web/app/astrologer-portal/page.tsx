@@ -3,7 +3,7 @@ import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import EarningsCard from '../../components/provider/EarningsCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
  Star,
@@ -14,7 +14,12 @@ import {
  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 
 // ─── Zero-state defaults ────────────────────────────────────────
 
@@ -29,6 +34,29 @@ const ZERO_STATS = {
 
 // ─── Component ──────────────────────────────────────────────────
 
+// AW-01 (2026-08-12, P0): this used to be `upcomingSessions: unknown[]` and the
+// field appeared NOWHERE else in the file — fetched from
+// GET /astrologer-portal/dashboard and thrown away, while the panel below the
+// stat cards was a hardcoded "No upcoming sessions" block. An astrologer whose
+// stat card read "1 Today's Sessions" was told one line lower that they had
+// none, and had no route to the Jitsi room the devotee had already paid for.
+//
+// Keys are snake_case because the API returns raw `astrologer_consultations`
+// rows (there is no Prisma model for that table — see routes/consultation.ts).
+// Everything is optional: this renders only what the row actually carries and
+// never substitutes an invented time, amount or room.
+type UpcomingSession = {
+ id?: string | null;
+ reference?: string | null;
+ minutes?: number | null;
+ amount_inr?: string | number | null;
+ scheduled_at?: string | null;
+ room_name?: string | null;
+ status?: string | null;
+ created_at?: string | null;
+ jitsiUrl?: string | null;
+};
+
 type ApiAstroDashboard = {
  profile: { fullName?: string | null; rating?: number | null; ratingCount?: number | null } | null;
  stats: {
@@ -40,28 +68,69 @@ type ApiAstroDashboard = {
   earningsTodayInr: number;
   earningsMonthInr: number;
   totalEarningsInr: number;
+  // AW-04 (2026-08-12, P1): the real settled/unsettled split off the Commission
+  // ledger. Optional because an older API build does not send them — and when
+  // they are missing the cards must render an em dash, never an invented ₹0.
+  paidOutInr?: number | null;
+  pendingPayoutInr?: number | null;
+  astrologerShare?: number | null;
   activeClients: number;
  };
- upcomingSessions: unknown[];
+ upcomingSessions: UpcomingSession[];
 };
+
+function formatSessionWhen(session: UpcomingSession): string {
+ const raw = session.scheduled_at ?? null;
+ if (!raw) return 'Time to be agreed with the devotee';
+ const d = new Date(raw);
+ if (Number.isNaN(d.getTime())) return 'Time to be agreed with the devotee';
+ return d.toLocaleString('en-IN', {
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+ });
+}
+
+function formatSessionAmount(session: UpcomingSession): string | null {
+ const n = Number(session.amount_inr);
+ if (!Number.isFinite(n) || n <= 0) return null;
+ return new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+ }).format(n);
+}
 
 export default function AstrologerDashboard() {
  const { session, user } = useAuth();
  const displayName = user?.fullName || 'Astrologer';
- const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ // RES-06: 'unknown' until /provider-kyc answers. The old 'unsubmitted'
+ // default plus `if (!r.ok) return;` told an approved astrologer their KYC was
+ // missing on every backend hiccup.
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected' | 'unknown'>('unknown');
  const [kycReason, setKycReason] = useState<string | null>(null);
  const [api, setApi] = useState<ApiAstroDashboard | null>(null);
+ // RES-02: `if (!r.ok) return;` rendered zeroes for every card on an HTTP 500
+ // with no error at all.
+ const [loadError, setLoadError] = useState<string | null>(null);
 
  // Go-online presence toggle (astrologer revamp 2026-08-05). The portal had
  // NO online/offline switch — devotees couldn't see who's available. POSTs to
  // /astrologer-portal/online; presence decays after a 15-min heartbeat.
  const [online, setOnline] = useState(false);
  const [onlineSaving, setOnlineSaving] = useState(false);
+ // RES-11 (2026-08-12): the toggle was `if (r.ok) setOnline(next)` with an
+ // empty `catch { /* keep prior */ }`, so any non-2xx or network failure
+ // reverted the switch with NO message. This flag drives the live astrologer
+ // directory, so an astrologer who thinks she is online sits waiting for
+ // consultations that were never routed to her.
+ const [onlineError, setOnlineError] = useState<string | null>(null);
  useEffect(() => {
   if (!session?.accessToken) return;
-  fetch(`${API_BASE_URL}/astrologer-portal/online`, {
+  fetchWithTimeout(`${API_BASE_URL}/astrologer-portal/online`, {
    headers: { Authorization: `Bearer ${session.accessToken}` },
-  })
+  }, DATA_FETCH_TIMEOUT_MS)
    .then((r) => (r.ok ? r.json() : null))
    .then((j) => { if (j) setOnline(!!j.online); })
    .catch(() => undefined);
@@ -69,45 +138,68 @@ export default function AstrologerDashboard() {
  async function toggleOnline(next: boolean) {
   if (!session?.accessToken) return;
   setOnlineSaving(true);
+  setOnlineError(null);
   try {
-   const r = await fetch(`${API_BASE_URL}/astrologer-portal/online`, {
+   const r = await fetchWithTimeout(`${API_BASE_URL}/astrologer-portal/online`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
     body: JSON.stringify({ online: next }),
-   });
-   if (r.ok) setOnline(next);
-  } catch { /* keep prior */ }
+   }, DATA_FETCH_TIMEOUT_MS);
+   if (r.ok) {
+    setOnline(next);
+   } else {
+    setOnlineError(
+     next
+      ? `Could not go online (HTTP ${r.status}) — devotees still cannot see you. Try again.`
+      : `Could not go offline (HTTP ${r.status}) — you are still listed as available. Try again.`,
+    );
+   }
+  } catch {
+   setOnlineError(
+    next
+     ? 'Could not reach Darshya — devotees still cannot see you. Check your connection and try again.'
+     : 'Could not reach Darshya — you are still listed as available. Check your connection and try again.',
+   );
+  }
   setOnlineSaving(false);
  }
 
- useEffect(() => {
+ const loadDashboard = useCallback(async () => {
   // P0 #AP-07 (2026-07-09): do NOT skip the API for demo sessions. The old
   // `startsWith('demo-')` early-return left a demo astrologer on hardcoded
-  // ZERO_STATS forever. The API accepts demo tokens in non-prod, so let the
-  // fetch run; a non-OK / catch keeps the existing mock fallback.
+  // ZERO_STATS forever. The API accepts demo tokens in non-prod.
   if (!session?.accessToken) return;
-  (async () => {
-   try {
-    const r = await fetch(`${API_BASE_URL}/astrologer-portal/dashboard`, {
-     headers: { Authorization: `Bearer ${session.accessToken}` },
-    });
-    if (!r.ok) return;
-    const j = (await r.json()) as ApiAstroDashboard;
-    setApi(j);
-   } catch {
-    // graceful — keep mock
+  setLoadError(null);
+  try {
+   // RES-01: bare fetch has no timeout — a stalled socket froze this loader.
+   const r = await fetchWithTimeout(
+    `${API_BASE_URL}/astrologer-portal/dashboard`,
+    { headers: { Authorization: `Bearer ${session.accessToken}` } },
+    DATA_FETCH_TIMEOUT_MS,
+   );
+   if (!r.ok) {
+    setLoadError(loadErrorMessage(r));
+    return;
    }
-  })();
- }, [session]);
+   const j = (await r.json()) as ApiAstroDashboard;
+   setApi(j);
+  } catch (err) {
+   setLoadError(loadErrorMessage(err));
+  }
+ }, [session?.accessToken]);
+
+ useEffect(() => { void loadDashboard(); }, [loadDashboard]);
 
  useEffect(() => {
  // P0 #AP-07: same fix — fetch KYC for demo sessions too (no demo-token skip).
  if (!session?.accessToken) return;
  (async () => {
  try {
- const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ const r = await fetchWithTimeout(`${API_BASE_URL}/provider-kyc`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },
- });
+ }, DATA_FETCH_TIMEOUT_MS);
+ // RES-06: leave the badge 'unknown' rather than accusing a verified
+ // astrologer of missing KYC because one request failed.
  if (!r.ok) return;
  const j = await r.json();
  if (!j.kyc) setKycState('unsubmitted');
@@ -123,6 +215,11 @@ export default function AstrologerDashboard() {
  }, [session]);
 
  const liveStats = api?.stats;
+ // AW-01: the paid consultations the API already returns. Never synthesised —
+ // an absent/!ok response leaves this empty and the panel says so.
+ const upcoming: UpcomingSession[] = Array.isArray(api?.upcomingSessions)
+  ? (api.upcomingSessions as UpcomingSession[])
+  : [];
  const quickStats = liveStats
   ? [
    { label: 'Today\'s Sessions', value: liveStats.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -131,9 +228,9 @@ export default function AstrologerDashboard() {
    { label: 'Rating', value: liveStats.rating ? liveStats.rating.toFixed(1) : '—', icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
   ]
   : [
-   { label: 'Today\'s Sessions', value: ZERO_STATS.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Total Consultations', value: ZERO_STATS.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
-   { label: 'Active Clients', value: ZERO_STATS.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Today\'s Sessions', value: loadError ? '—' : ZERO_STATS.consultationsToday, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Total Consultations', value: loadError ? '—' : ZERO_STATS.totalConsultations, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
+   { label: 'Active Clients', value: loadError ? '—' : ZERO_STATS.activeClients, icon: Users, color: 'text-saffron-600', bg: 'bg-saffron-50' },
    { label: 'Rating', value: '—', icon: Star, color: 'text-temple-gold', bg: 'bg-amber-50' },
   ];
 
@@ -150,8 +247,23 @@ export default function AstrologerDashboard() {
  </div>
  </div>
 
+ {loadError && (
+ <div role="alert" className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+ <span className="flex-1 min-w-[12rem]">{loadError}</span>
+ <button type="button" onClick={() => { void loadDashboard(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
+ Retry
+ </button>
+ </div>
+ )}
+
  {/* Go-online presence toggle (revamp: devotees see who's online to consult) */}
- <div className={`flex items-center justify-between rounded-xl border p-4 ${online ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
+ <div className={`rounded-xl border p-4 ${online ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
+ {onlineError && (
+ <p role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+ {onlineError}
+ </p>
+ )}
+ <div className="flex items-center justify-between">
  <div>
  <p className="font-semibold text-surface-800">
  {online ? 'You are ONLINE' : 'Go online to take consultations'}
@@ -172,13 +284,26 @@ export default function AstrologerDashboard() {
  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${online ? 'translate-x-6' : 'translate-x-1'}`} />
  </button>
  </div>
+ </div>
 
  <MyProviderProfileCard role="ASTROLOGER" onboardingSlug="astrologer" publicListingType="astrologer" />
 
+ {/*
+ AW-04 (2026-08-12, P1): "Paid out" used to be fed `totalEarningsInr`, which
+ the API computed as SUM(amount_inr) over confirmed consultations — GROSS,
+ before the 20% platform cut. An astrologer with one ₹375 consultation read
+ "Paid out ₹375", checked their bank, found nothing, and their real earning
+ was ₹300 anyway. `pending` was hardcoded `null`, so "Pending payout" was an
+ em dash for everyone. Both figures now come from the Commission ledger, the
+ same source the Earnings page and /payouts/balance read.
+
+ `?? null` and NOT `?? 0`: if the API did not send the split, EarningsCard
+ renders an em dash. A blank is honest; a confident ₹0 "paid out" is not.
+ */}
  <EarningsCard
- totalPaid={liveStats?.totalEarningsInr ?? ZERO_STATS.totalEarnings}
+ totalPaid={liveStats?.paidOutInr ?? null}
+ pending={liveStats?.pendingPayoutInr ?? null}
  thisMonth={liveStats?.earningsMonthInr ?? ZERO_STATS.earningsThisMonth}
- pending={null}
  />
 
  {/* Quick Stats */}
@@ -209,11 +334,49 @@ export default function AstrologerDashboard() {
  </Link>
  </div>
 
+ {upcoming.length === 0 ? (
  <div className="px-5 py-8 text-center">
  <Calendar className="w-10 h-10 text-surface-300 mx-auto mb-3" />
  <p className="text-sm text-surface-500">No upcoming sessions</p>
  <p className="text-xs text-surface-400 mt-1">Bookings will appear here once devotees consult you.</p>
  </div>
+ ) : (
+ <ul className="divide-y divide-surface-100">
+ {upcoming.map((s, i) => {
+ const amount = formatSessionAmount(s);
+ return (
+ <li key={s.id ?? s.reference ?? i} className="flex flex-wrap items-center gap-3 px-5 py-4">
+ <div className="w-10 h-10 shrink-0 rounded-lg bg-purple-50 flex items-center justify-center">
+ <Calendar className="w-5 h-5 text-purple-600" />
+ </div>
+ <div className="min-w-0 flex-1">
+ <p className="text-sm font-semibold text-surface-800 truncate">
+ {s.reference ?? 'Consultation'}
+ </p>
+ <p className="text-xs text-surface-500">
+ {formatSessionWhen(s)}
+ {typeof s.minutes === 'number' ? ` · ${s.minutes} min` : ''}
+ {amount ? ` · ${amount}` : ''}
+ </p>
+ </div>
+ {s.jitsiUrl ? (
+ <a
+ href={s.jitsiUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="inline-flex items-center gap-1 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 transition-colors"
+ >
+ Join room
+ </a>
+ ) : (
+ // No room minted yet — say so rather than render a dead button.
+ <span className="text-xs text-surface-400">Room not ready</span>
+ )}
+ </li>
+ );
+ })}
+ </ul>
+ )}
  </div>
 
  {/* Quick Actions */}

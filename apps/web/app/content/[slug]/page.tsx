@@ -341,6 +341,7 @@ export async function generateMetadata({
   const content = await getContentBySlug(slug);
   return {
     title: content.title,
+    alternates: { canonical: `https://darshya.online/content/${slug}` },
     description: `${content.type.charAt(0).toUpperCase() + content.type.slice(1)} - ${content.title}. ${content.deity ? `Dedicated to ${content.deity}.` : ''} Listen and read on Darshya.`,
     openGraph: {
       title: content.title,

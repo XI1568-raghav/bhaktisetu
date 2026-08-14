@@ -26,13 +26,21 @@ services:
     # deploy workflow), so a code merge isn't silently killed by a follow-up
     # CI/docs push. See reference_render_concurrent_push_cancels_build memory.
     autoDeploy: false
+    # Every entry here must match a path that actually exists. A `prisma/**`
+    # entry lived here and matched nothing — the only schema is
+    # apps/api/prisma/, already covered by `apps/api/**` — so it read as
+    # coverage that was never there. pnpm-workspace.yaml + turbo.json ARE
+    # build inputs (workspace resolution + task graph) and were unfiltered, so
+    # editing them rebuilt neither service and prod kept serving an image built
+    # against the previous workspace layout.
     renderBuildFilter:
       paths:
         - apps/api/**
         - packages/**
-        - prisma/**
         - package.json
         - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
   # ─────────────────────────────────────────────────────────────────────────
   # Web (Next.js 15, standalone) — migrated off Cloudflare Workers 2026-07-07.
   # The OpenNext server-function bundle (5.3 MiB gzip) exceeded the free
@@ -75,10 +83,13 @@ services:
         value: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
       - key: NEXT_PUBLIC_ENV
         value: production
+    # dockerContext is the repo root, so workspace resolution is a build input
+    # here too — pnpm-workspace.yaml must trigger a rebuild.
     renderBuildFilter:
       paths:
         - apps/web/**
         - packages/**
         - package.json
         - pnpm-lock.yaml
+        - pnpm-workspace.yaml
         - turbo.json

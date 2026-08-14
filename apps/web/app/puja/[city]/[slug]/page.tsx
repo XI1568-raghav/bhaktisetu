@@ -22,7 +22,7 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { city, slug } = await params;
   const cp = getCityPuja(city, slug);
-  if (!cp) return { title: 'Puja Booking | Darshya' };
+  if (!cp) return { title: 'Puja Booking' };
 
   const canonical = `${BASE_URL}/puja/${cp.city}/${cp.puja}`;
   return {

@@ -16,6 +16,7 @@ import {
   Star,
   MessageSquare,
   Sparkles,
+  BellRing,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -23,6 +24,9 @@ import { useAuth } from '../../lib/auth-context';
 const sidebarLinks = [
   { href: '/priest', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/priest/messages', label: 'Messages', icon: MessageSquare },
+  // PJ-04: the dispatch engine's offers had no entry point in the portal.
+  // Placed above Bookings because an offer is time-boxed and a booking is not.
+  { href: '/priest/offers', label: 'Offers', icon: BellRing },
   { href: '/priest/bookings', label: 'Bookings', icon: Calendar },
   { href: '/priest/services', label: 'My Services', icon: Flame },
   { href: '/priest/reviews', label: 'Reviews', icon: Star },
@@ -98,7 +102,7 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? 'bg-saffron-500/20 text-saffron-300 border border-saffron-500/30'
                     : 'text-white/60 hover:bg-white/5 hover:text-white/80'
@@ -116,14 +120,14 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
         <div className="px-3 py-4 border-t border-white/10">
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
+            className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
           >
             <ChevronRight className="w-5 h-5 rotate-180" />
             Back to Main Site
           </Link>
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
           >
             <LogOut className="w-5 h-5" />
             Sign Out
@@ -140,7 +144,18 @@ function PriestPortalLayout({ children }: { children: React.ReactNode }) {
             <Menu className="w-5 h-5" />
           </button>
           <div className="ml-2 lg:ml-0">
-            <h1 className="text-sm font-semibold text-surface-800 lg:hidden">Priest Portal</h1>
+            {/* DU-05/DU-08: this was a second level-1 heading. Below lg BOTH it and the
+                page's own h1 were visible, so /priest measured h1_in_dom=2 and
+                its level sequence opened 1,1,3. It is chrome, not the page
+                title - a labelled div carries the same information to AT
+                without competing for the document heading. */}
+            <div
+              role="doc-subtitle"
+              aria-label="Priest Portal"
+              className="text-sm font-semibold text-surface-800 lg:hidden"
+            >
+              Priest Portal
+            </div>
           </div>
         </header>
 

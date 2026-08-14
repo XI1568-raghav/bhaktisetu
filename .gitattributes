@@ -1,0 +1,36 @@
+# Line endings.
+#
+# The repo is authored on Windows but every file in the index is LF. Without
+# this file, any tool that round-trips a file through a Windows text write
+# rewrites it CRLF, and git then reports the ENTIRE file as changed — a one-line
+# edit shows up as 677 insertions / 661 deletions. During the 2026-08 audit
+# remediation that buried real changes across 16+ files and made review
+# impossible; 2,592 worktree files were CRLF at the time.
+#
+# `text=auto eol=lf` normalises on commit and checks out LF, so the working tree
+# and the index agree and diffs stay honest.
+#
+# After changing this file, run once:  git add --renormalize .
+* text=auto eol=lf
+
+# Binary — never touch these.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.webm  binary
+*.zip   binary
+
+# Generated — keep out of review noise and out of merge resolution.
+pnpm-lock.yaml       -diff linguist-generated
+apps/api/prisma/schema.prisma  text eol=lf
+graft/**             -diff linguist-generated

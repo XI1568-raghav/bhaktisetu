@@ -1,25 +1,23 @@
 import type { Metadata } from "next";
 import { getTranslations } from '../../lib/t';
-import { getProductImage } from "../../lib/images";
+import { H1 } from '../../components/ui/heading-recipe';
+import { getProductImage, remoteSrcSet, IMG_W } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
 import { listProducts, isMedusaEnabled } from "../../lib/medusa";
 import { storeItemListJsonLd, type StoreProductLite } from "../../lib/jsonld";
+import AddToCartButton from "../../components/store/AddToCartButton";
+import StoreFilterBar from "../../components/store/StoreFilterBar";
+import SellerShelf from "../../components/store/SellerShelf";
+import { getLiveProducts } from "../../lib/store-live";
+import { parseStoreFilters, filterAndSortProducts } from "../../lib/store-filters";
 import {
  ShoppingBag,
  Star,
- Heart,
  Search,
- ChevronDown,
- Filter,
- ArrowRight,
  Truck,
  Shield,
  RotateCcw,
- Tag,
- ShoppingCart,
  Package,
- Percent,
- ChevronRight,
  BadgeCheck,
  Flame,
  BookOpen,
@@ -74,8 +72,24 @@ const categories = [
 // Catalogue is fetched from Medusa Storefront API when
 // NEXT_PUBLIC_MEDUSA_BACKEND_URL is set; otherwise falls back to PRODUCTS
 // so the grid never blanks. See lib/medusa.ts.
-export default async function StorePage() {
- const products = await listProducts();
+export default async function StorePage({
+ searchParams,
+}: {
+ searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+ // COM-11: the seed catalogue and the seller catalogue are fetched
+ // independently — a seller shelf must not disappear because Medusa is down,
+ // and the seed grid must not disappear because the API is. Both degrade to
+ // their own empty state.
+ const [allProducts, sellerProducts] = await Promise.all([
+   listProducts(),
+   getLiveProducts(),
+ ]);
+ // S-04: the filter bar used to be inert decoration on this server component.
+ // State now lives in the URL, so the filtering happens here (shareable,
+ // crawlable) and the client half only pushes query params.
+ const filters = parseStoreFilters(searchParams ? await searchParams : {});
+ const products = filterAndSortProducts(allProducts, filters);
  const t = await getTranslations('store');
  const itemListJsonLd = storeItemListJsonLd(products as StoreProductLite[]);
  // P2-41: Medusa is configured but every product resolved from the seed
@@ -84,7 +98,7 @@ export default async function StorePage() {
  // isn't configured at all the seed catalogue *is* the source of truth, so no
  // banner is warranted in that case.
  const isStoreDegraded =
-   isMedusaEnabled() && products.length > 0 && products.every((p) => p.source === 'seed');
+   isMedusaEnabled() && allProducts.length > 0 && allProducts.every((p) => p.source === 'seed');
  return (
  <div className="min-h-[100dvh] bg-surface-50">
  <script
@@ -105,7 +119,7 @@ export default async function StorePage() {
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
+ <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
  <p className="text-surface-500 text-lg max-w-2xl">
@@ -132,123 +146,51 @@ export default async function StorePage() {
  </div>
  </div>
 
- {/* Search */}
- <div className="mt-8 max-w-2xl">
- <div className="relative">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
- <input
- type="text"
- placeholder={t('search')}
- className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[var(--color-border)] bg-white text-surface-800 placeholder:text-surface-500 shadow-warm-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
- />
- </div>
- </div>
+ {/* S-04: search, category pills and the filter row moved into
+     StoreFilterBar (a client component) so they actually work. */}
  </div>
  </section>
 
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
- {/* Category pills */}
- <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
- {categories.map((cat, i) => (
- <button
- key={cat.name}
- className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${
- i === 0
- ? "bg-saffron-600 text-white"
- : "bg-white text-surface-600 border border-surface-200 hover:border-saffron-300 hover:text-saffron-600"
- }`}
- >
- {cat.name}
- <span
- className={`text-xs px-1.5 py-0.5 rounded-full ${
- i === 0
- ? "bg-saffron-500 text-saffron-100"
- : "bg-surface-100 text-surface-400"
- }`}
- >
- {cat.count}
- </span>
- </button>
- ))}
- </div>
+ <StoreFilterBar
+ filters={filters}
+ categories={categories.map((c) => ({ name: c.name, slug: c.slug, count: c.count }))}
+ resultCount={products.length}
+ searchPlaceholder={t('search')}
+ />
 
- {/* Filters row */}
- <div className="flex flex-wrap items-center gap-3 mb-8">
- <div className="relative">
- <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
- <option>Sort: Popular</option>
- <option>Price: Low to High</option>
- <option>Price: High to Low</option>
- <option>Rating: High to Low</option>
- <option>Newest First</option>
- </select>
- <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
- </div>
-
- <div className="relative">
- <select className="appearance-none bg-white border border-surface-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200 cursor-pointer">
- <option>Any Price</option>
- <option>Under ₹500</option>
- <option>₹500 - ₹1,000</option>
- <option>₹1,000 - ₹2,500</option>
- <option>Above ₹2,500</option>
- </select>
- <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
- </div>
-
- <button className="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-4 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 transition-colors">
- <Truck className="w-4 h-4" />
- Free Delivery
- </button>
-
- <button className="inline-flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-4 py-2.5 text-sm font-medium text-surface-600 hover:border-saffron-300 transition-colors">
- <Star className="w-4 h-4 text-temple-gold" />
- 4+ Rating
- </button>
-
- <span className="text-sm text-surface-500 ml-auto">
- <span className="font-semibold text-surface-600">{products.length}</span> products
- </span>
- </div>
-
- {/* Promo Banner */}
- <div className="mb-8 bg-saffron-50 rounded-xl p-6 border border-saffron-200 flex items-center gap-6">
- <div className="w-14 h-14 bg-saffron-200 rounded-xl flex items-center justify-center shrink-0">
- <Percent className="w-7 h-7 text-saffron-700" />
- </div>
- <div className="flex-1">
- <h3 className="font-bold text-surface-800">
- Akshaya Tritiya Sale — Up to 50% Off!
- </h3>
- <p className="text-sm text-surface-500 mt-0.5">
- Shop puja essentials, gold-plated idols, and rudraksha malas at
- unbeatable prices. Offer valid till April 30.
- </p>
- </div>
- <a
- href="/store"
- className="hidden sm:inline-flex items-center gap-1 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors shrink-0"
- >
- Shop Sale
- <ArrowRight className="w-4 h-4" />
- </a>
- </div>
-
- {/* Product Grid */}
+ {/* Product Grid
+   DU-08 / A11Y-15: the measured level sequence was h1 then 24 consecutive
+   h3 card titles - one skipped level, and a screen-reader user navigating
+   by heading got a flat list with nothing to jump past. The grid now sits
+   in a named section. The label is visually hidden because the hero title
+   above already says "Bhakti Store" on screen; AT needs the grouping,
+   sighted users do not need it twice. */}
+ <section aria-labelledby="store-all-products">
+ <h2 id="store-all-products" className="sr-only">
+ All products
+ </h2>
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
  {products.map((product) => (
- <a
+ <div
  key={product.id}
- href={`/store/${product.handle}`}
- className="group bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300"
+ className="group relative bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300"
  >
  {/* Product image */}
  <div className="relative aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 overflow-hidden">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img
- src={getProductImage(product.imageKey)}
+ src={getProductImage(product.imageKey, IMG_W.CARD)}
+ srcSet={remoteSrcSet(getProductImage(product.imageKey, IMG_W.CARD), [
+ IMG_W.THUMB,
+ IMG_W.CARD,
+ ])}
+ sizes="(max-width: 768px) 50vw, 280px"
  alt={product.title}
+ width={500}
+ height={500}
  loading="lazy"
+ decoding="async"
  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
  />
 
@@ -262,30 +204,31 @@ export default async function StorePage() {
 
  {product.discount > 0 && (
  <div className="absolute top-3 right-3">
- <span className="bg-tulsi-green text-white text-xs font-bold px-2 py-1 rounded-full">
+ <span className="bg-tulsi-green-dark text-white text-xs font-bold px-2 py-1 rounded-full">
  -{product.discount}%
  </span>
  </div>
  )}
 
- <button
- className="absolute bottom-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
- aria-label="Add to wishlist"
- >
- <Heart className="w-4 h-4 text-surface-400" />
- </button>
  </div>
 
  <div className="p-4">
  <p className="text-xs text-saffron-600 font-medium mb-1">{product.category}</p>
+ {/* A11Y-11: one link per card, stretched over the whole card via ::after,
+     so the buttons below are siblings of the link instead of children. */}
  <h3 className="text-sm font-medium text-surface-800 line-clamp-2 min-h-[2.5rem] group-hover:text-saffron-600 transition-colors">
+ <a
+ href={`/store/${product.handle}`}
+ className="after:absolute after:inset-0 after:content-['']"
+ >
  {product.title}
+ </a>
  </h3>
 
  <div className="flex items-center gap-1 mt-2">
- <div className="flex items-center gap-0.5 bg-tulsi-green/10 px-1.5 py-0.5 rounded">
- <Star className="w-3 h-3 text-tulsi-green fill-tulsi-green" />
- <span className="text-xs font-bold text-tulsi-green">
+ <div className="flex items-center gap-0.5 bg-tulsi-green-dark/10 px-1.5 py-0.5 rounded">
+ <Star className="w-3 h-3 text-tulsi-green-dark fill-tulsi-green-dark" />
+ <span className="text-xs font-bold text-tulsi-green-dark">
  {product.rating}
  </span>
  </div>
@@ -304,31 +247,60 @@ export default async function StorePage() {
  </div>
 
  {product.freeDelivery && (
- <div className="mt-2 flex items-center gap-1 text-xs text-tulsi-green font-medium">
+ <div className="mt-2 flex items-center gap-1 text-xs text-tulsi-green-dark font-medium">
  <Truck className="w-3 h-3" />
  Free Delivery
  </div>
  )}
 
- {/* Add to cart button */}
- <button className="mt-3 w-full py-2.5 bg-saffron-50 text-saffron-700 font-medium text-sm rounded-lg border border-saffron-200 hover:bg-saffron-100 transition-colors flex items-center justify-center gap-1.5 group-hover:bg-saffron-600 group-hover:text-white group-hover:border-saffron-600">
- <ShoppingCart className="w-4 h-4" />
- Add to Cart
- </button>
+ {/* Add to cart — a real control, outside the card link (A11Y-11). */}
+ <AddToCartButton
+ product={{
+ id: product.id,
+ handle: product.handle,
+ title: product.title,
+ price: product.price,
+ compareAtPrice: product.compareAtPrice,
+ image: getProductImage(product.imageKey, IMG_W.CARD),
+ category: product.category,
+ inStock: product.inStock,
+ freeDelivery: product.freeDelivery,
+ }}
+ />
  </div>
- </a>
+ </div>
  ))}
  </div>
+ </section>
+
+ {/* S-04: a filter that matches nothing must say so — never silently fall
+     back to the unfiltered catalogue. */}
+ {products.length === 0 && (
+ <div className="rounded-xl border border-dashed border-surface-200 bg-white p-10 text-center">
+ <Search className="w-8 h-8 text-surface-300 mx-auto mb-3" />
+ <p className="font-medium text-surface-700">No products match these filters</p>
+ <p className="text-sm text-surface-500 mt-1">
+ Try a different category or price range, or clear the filters above.
+ </p>
+ </div>
+ )}
 
  {/* Load more — the full catalog is already fetched (listProducts limit=100),
      so a pagination button had nothing to load (dead CTA). Replace with an
-     honest catalog-count note + CTA to a category browse instead. */}
+     honest catalog-count note instead. */}
+ {products.length > 0 && (
  <div className="text-center mt-10">
  <p className="text-sm text-surface-500">
- Showing all {products.length} products in this collection.
+ Showing {products.length} of {allProducts.length} products.
  </p>
  </div>
+ )}
  </div>
+
+ {/* COM-11: inventory listed by real onboarded sellers. Renders nothing at
+     all while no seller has listed anything (which is the case today) —
+     the marketplace must not advertise supply it does not have. */}
+ <SellerShelf products={sellerProducts} />
  </div>
  );
 }

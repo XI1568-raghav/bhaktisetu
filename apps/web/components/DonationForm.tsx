@@ -13,7 +13,6 @@ import {
   Mail,
   Phone,
   User,
-  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
@@ -227,11 +226,29 @@ export default function DonationForm({
           Authorization: `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify({
-          // Backend expects `gaushalaId` — we use it as the opaque cause id
-          // for both gaushalas and temples; the backend stores it as a
-          // string in the donations table.
-          gaushalaId: causeId,
+          // POLYMORPHIC DONEE (fixed 2026-08-12, P0).
+          //
+          // This used to post `{ gaushalaId: causeId }` for EVERY cause, with a
+          // comment claiming the backend treated it as an opaque id for both
+          // kinds. It does not: the API takes a `causeKind` and writes either
+          // donations.temple_id or donations.gaushala_id, and
+          // finalizeDonationReceipt decides the donee from which one is set.
+          // So every temple donation took the gaushala branch — temple_id NULL,
+          // the gaushala lookup missing, and the 80G receipt falling back to
+          // the literal string "Darshya Gaushala Network". A devotee giving
+          // Rs 2,100 to Siddhivinayak was emailed a receipt naming a cow
+          // shelter, and the temple manager's portal (which filters on
+          // templeId) showed Rs 0 forever.
+          //
+          // donorPan and dedication were collected and validated here — PAN is
+          // REQUIRED above Rs 2,000 for a valid 80G receipt — and then dropped
+          // on the floor; the API has accepted both since PBO-14.
+          ...(causeKind === 'temple'
+            ? { causeKind: 'temple' as const, templeId: causeId }
+            : { causeKind: 'gaushala' as const, gaushalaId: causeId }),
           amountInr: amountNumber,
+          ...(donorPan.trim() ? { donorPan: donorPan.trim().toUpperCase() } : {}),
+          ...(dedication.trim() ? { dedication: dedication.trim() } : {}),
         }),
       }).catch(() => null);
 
@@ -572,16 +589,23 @@ export default function DonationForm({
         />
       </div>
 
-      {/* Trust strip */}
-      <div className="mb-5 flex flex-wrap items-center gap-3 text-[11px] text-surface-500">
+      {/* Trust strip.
+          COM-16 (prod sweep 2026-08-12): a third badge here read "100% to
+          cause". Donations settle into Darshya's own Razorpay account and
+          apps/api/src/routes/donations.ts writes no Commission, no
+          TemplePayout and no PayoutRequest on any donation path — the temple
+          and gaushala portals only LIST donations, nothing disburses them. So
+          the claim had no mechanism behind it and no way to be evidenced, on a
+          consumer-facing charitable collection. It is removed rather than
+          reworded; put it back when a donation settlement rail exists and can
+          show the donor where the money went. The two remaining badges are
+          both backed by code that runs. */}
+      <div className="mb-5 flex flex-wrap items-center gap-3 text-xs text-surface-500">
         <span className="flex items-center gap-1">
           <Shield className="h-3.5 w-3.5 text-emerald-600" /> Razorpay secured
         </span>
         <span className="flex items-center gap-1">
           <FileText className="h-3.5 w-3.5 text-saffron-600" /> 80G receipt
-        </span>
-        <span className="flex items-center gap-1">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" /> 100% to cause
         </span>
       </div>
 

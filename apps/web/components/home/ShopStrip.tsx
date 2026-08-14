@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { buttonClass } from '../ui/button-recipe';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import TextReveal from '../motion/TextReveal';
 
@@ -16,14 +17,14 @@ const PRODUCTS: Product[] = [
     category: 'Prasad',
     price: '₹399',
     href: '/store',
-    accentColor: '#E16318',
+    accentColor: '#9e6229',
   },
   {
     name: 'Brass Krishna Murti',
     category: 'Idols',
     price: '₹2,499',
     href: '/store',
-    accentColor: '#E16318',
+    accentColor: '#9e6229',
   },
   {
     name: 'Bhagavad Gita Hardcover',
@@ -87,7 +88,7 @@ export default function ShopStrip() {
               }}
             >
               <p
-                className="text-[10px] sm:text-[11px] font-medium uppercase tracking-widest mb-2"
+                className="text-xs sm:text-xs font-medium uppercase tracking-widest mb-2"
                 style={{ color: 'var(--color-text-muted)' }}
               >
                 {p.category}
@@ -121,8 +122,7 @@ export default function ShopStrip() {
           <Link
             href="/store"
             prefetch={false}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white btn-press"
-            style={{ background: 'var(--color-primary)' }}
+            className={buttonClass('primary', 'md', 'btn-press')}
           >
             <ShoppingBag className="w-4 h-4" aria-hidden="true" />
             Visit store <ArrowRight className="w-3.5 h-3.5" />

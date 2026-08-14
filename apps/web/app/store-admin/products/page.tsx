@@ -19,7 +19,8 @@ import {
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import {
-  listStoreProducts,
+  listStoreProductsWithSetupState,
+  saveStoreProfile,
   createStoreProduct,
   updateStoreProduct,
   deleteStoreProduct,
@@ -75,6 +76,13 @@ function StoreAdminProductsPageContent() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  // S-07: true when this owner has no StoreProfile at all. Without it the page
+  // showed "Add your first product to start selling" and then failed the add
+  // with a raw backend string, dead-ending seller onboarding.
+  const [storeSetupRequired, setStoreSetupRequired] = useState(false);
+  const [setupName, setSetupName] = useState('');
+  const [setupCity, setSetupCity] = useState('');
+  const [savingSetup, setSavingSetup] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Form state
@@ -91,8 +99,9 @@ function StoreAdminProductsPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const data = await listStoreProducts(token);
-      setProducts(data);
+      const data = await listStoreProductsWithSetupState(token);
+      setProducts(data.products);
+      setStoreSetupRequired(data.storeProfileMissing);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load products');
     } finally {
@@ -242,12 +251,74 @@ function StoreAdminProductsPageContent() {
             resetForm();
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors"
+          disabled={storeSetupRequired}
+          title={storeSetupRequired ? 'Finish setting up your store first' : undefined}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Add Product
         </button>
       </div>
+
+      {/* S-07: an owner with no StoreProfile could never list anything — the
+          add failed with "No StoreProfile for this user" and there was no
+          endpoint anywhere to create one. Ask for the store name (we never
+          invent a business name) and create it. */}
+      {storeSetupRequired && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!token || !setupName.trim()) return;
+            setSavingSetup(true);
+            setError(null);
+            try {
+              await saveStoreProfile(token, {
+                storeName: setupName.trim(),
+                city: setupCity.trim() || undefined,
+              });
+              setStoreSetupRequired(false);
+              await load();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Could not save your store details');
+            } finally {
+              setSavingSetup(false);
+            }
+          }}
+          className="rounded-xl border border-amber-200 bg-amber-50 p-6"
+        >
+          <h2 className="text-lg font-semibold text-surface-800">Finish setting up your store</h2>
+          <p className="text-sm text-surface-600 mt-1 mb-4">
+            Your store does not have a name yet, so products cannot be listed against it. Add it
+            here and you can start listing straight away. A reviewer approves the store before it
+            appears publicly.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <input
+              value={setupName}
+              onChange={(e) => setSetupName(e.target.value)}
+              placeholder="Store name"
+              aria-label="Store name"
+              required
+              minLength={2}
+              className="flex-1 min-w-[220px] rounded-lg border border-surface-200 px-3 py-2.5 text-sm"
+            />
+            <input
+              value={setupCity}
+              onChange={(e) => setSetupCity(e.target.value)}
+              placeholder="City (optional)"
+              aria-label="City"
+              className="w-48 rounded-lg border border-surface-200 px-3 py-2.5 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={savingSetup || setupName.trim().length < 2}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {savingSetup ? 'Saving…' : 'Save store details'}
+            </button>
+          </div>
+        </form>
+      )}
 
       {error && (
         <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -449,7 +520,9 @@ function StoreAdminProductsPageContent() {
           <p className="text-sm text-surface-500 mt-1">
             {search || categoryFilter !== 'all'
               ? 'Try adjusting your search or filter.'
-              : 'Add your first product to start selling.'}
+              : storeSetupRequired
+                ? 'Add your store name above, then you can list your first product.'
+                : 'Add your first product to start selling.'}
           </p>
         </div>
       ) : (

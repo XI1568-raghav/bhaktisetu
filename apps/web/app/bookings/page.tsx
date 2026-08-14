@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
  Calendar,
@@ -14,24 +14,37 @@ import {
  Video,
  Search,
  Filter,
+ CreditCard,
  Loader2,
  Inbox,
  ArrowRight,
+ ChevronLeft,
+ RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
+import { friendlyApiError } from '../../lib/friendly-error';
 import AuthGuard from '../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
+// DB-02 (2026-08-12): this list is the shipped Prisma `BookingStatus` enum,
+// verbatim and complete (apps/api/prisma/schema.prisma). It previously omitted
+// pending_payment / confirmed / refunded and carried a `booked` member that is
+// not a database value at all, so the three real statuses fell through
+// getStatusConfig's `{ label: status }` fallback and the raw enum was printed
+// to the customer. Keep this in lockstep with the enum — the Record below is
+// exhaustive, so adding a member here without a label is a compile error.
 type BookingStatus =
- | 'booked'
+ | 'pending_payment'
+ | 'confirmed'
  | 'priest_assigned'
  | 'in_progress'
  | 'completed'
  | 'video_uploaded'
  | 'delivered'
- | 'cancelled';
+ | 'cancelled'
+ | 'refunded';
 
 interface BookingListItem {
  id: string;
@@ -89,17 +102,26 @@ function mapBooking(b: ApiBooking): BookingListItem {
 
 // ─── Helpers ────────────────────────────────────────────────────
 
+// Labels are the ones the detail page already shows (bookings/view/page.tsx
+// getStatusBadge) — the two surfaces describe the same booking and must not
+// disagree. `Record<BookingStatus, …>` is deliberate: it makes a missing label
+// a type error instead of a silent raw-enum leak.
 function getStatusConfig(status: BookingStatus) {
  const map: Record<BookingStatus, { label: string; color: string; bg: string }> = {
- booked: { label: 'Booked', color: 'text-ganga-blue', bg: 'bg-ganga-blue-light/30' },
+ pending_payment: { label: 'Payment Pending', color: 'text-amber-700', bg: 'bg-amber-100' },
+ confirmed: { label: 'Confirmed', color: 'text-tulsi-green-dark', bg: 'bg-tulsi-green-light/30' },
  priest_assigned: { label: 'Priest Assigned', color: 'text-saffron-600', bg: 'bg-saffron-100' },
  in_progress: { label: 'In Progress', color: 'text-amber-600', bg: 'bg-amber-100' },
  completed: { label: 'Completed', color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/30' },
  video_uploaded: { label: 'Video Ready', color: 'text-purple-600', bg: 'bg-purple-100' },
  delivered: { label: 'Delivered', color: 'text-tulsi-green-dark', bg: 'bg-tulsi-green-light/30' },
  cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
+ refunded: { label: 'Refunded', color: 'text-red-600', bg: 'bg-red-100' },
  };
- return map[status] || { label: status, color: 'text-surface-600', bg: 'bg-surface-100' };
+ // Kept only for a status the server adds before this file is updated. It must
+ // never be a raw enum on screen, so an unknown value degrades to a neutral
+ // "Processing" pill rather than to `pending_payment`.
+ return map[status] || { label: 'Processing', color: 'text-surface-600', bg: 'bg-surface-100' };
 }
 
 function formatDate(dateStr: string): string {
@@ -124,6 +146,9 @@ function formatTime(time: string): string {
  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
+// Which tab a booking belongs to is decided by the API now (DB-01) — this
+// local predicate survives only to decide whether to offer the Cancel button
+// on a row that is already on screen.
 function isUpcoming(booking: BookingListItem): boolean {
  const pujaDT = new Date(`${booking.scheduledDate}T${booking.scheduledTime}`);
  return (
@@ -135,12 +160,24 @@ function isUpcoming(booking: BookingListItem): boolean {
  );
 }
 
-function isCompleted(booking: BookingListItem): boolean {
- return (
- booking.status === 'completed' ||
- booking.status === 'video_uploaded' ||
- booking.status === 'delivered'
- );
+/** Rows per page. Mirrors the API's default so page 1 costs one round trip. */
+const PAGE_SIZE = 20;
+
+interface TabCounts {
+ all: number;
+ upcoming: number;
+ completed: number;
+ cancelled: number;
+}
+
+interface BookingsPageData {
+ items: BookingListItem[];
+ total: number;
+ page: number;
+ totalPages: number;
+ /** null only if the API predates DB-01 — then no count is shown at all,
+  *  because printing the page length as if it were the total is the bug. */
+ counts: TabCounts | null;
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -149,7 +186,15 @@ function BookingsContent() {
  const { session } = useAuth();
  const queryClient = useQueryClient();
  const [activeTab, setActiveTab] = useState<TabFilter>('all');
+ const [page, setPage] = useState(1);
  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+ // A tab switch is a different query — never carry the old page number over,
+ // or "Cancelled" opens on page 3 of a one-page list and looks empty.
+ function selectTab(tab: TabFilter) {
+  setActiveTab(tab);
+  setPage(1);
+ }
 
  // D1 fix: the Cancel button was rendered with no onClick (dead UI). Wire it
  // to POST /bookings/{id}/cancel, then invalidate the list so the status pill
@@ -160,14 +205,22 @@ function BookingsContent() {
   if (!ok) return;
   setCancellingId(bookingId);
   try {
-   const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
-    method: 'POST',
-    headers: {
-     Authorization: `Bearer ${session.accessToken}`,
-     'Content-Type': 'application/json',
+   // RES-01: a bare fetch never rejects on a stalled socket, so the `finally`
+   // that clears `cancellingId` could not run — the row's Cancel button stayed
+   // in its spinner state forever with no error, on the one action a devotee
+   // takes when she is already unhappy.
+   const res = await fetchWithTimeout(
+    `${API_BASE_URL}/bookings/${bookingId}/cancel`,
+    {
+     method: 'POST',
+     headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      'Content-Type': 'application/json',
+     },
+     body: JSON.stringify({}),
     },
-    body: JSON.stringify({}),
-   });
+    DATA_FETCH_TIMEOUT_MS,
+   );
    if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     window.alert(body?.error ?? `Could not cancel (HTTP ${res.status}).`);
@@ -176,6 +229,9 @@ function BookingsContent() {
    window.alert('Network error while cancelling. Please try again.');
   } finally {
    setCancellingId(null);
+   // Cancelling the only row on the last page of the Upcoming tab would
+   // otherwise leave the pager parked on a page that no longer exists.
+   if (bookings.length === 1 && page > 1) setPage((p) => p - 1);
    await queryClient.invalidateQueries({ queryKey: ['bookings', 'my'] });
   }
  }
@@ -184,44 +240,83 @@ function BookingsContent() {
  // useQuery — gives cached refetch, single loading/error state, and avoids
  // the old "setState after unmount" footgun. StaleTime 60s (QueryProvider
  // default) matches how often a devotee would realistically re-open the list.
- const { data: bookings = [], isPending: loading, error } = useQuery({
-  queryKey: ['bookings', 'my', session?.accessToken],
+ // DB-01 (prod sweep 2026-08-12): this used to fetch `/bookings/my` with NO
+ // page or limit, so the API's default of 20 silently truncated the list — a
+ // devotee with 81 bookings saw 20 of them, with no pager and no hint that the
+ // rest existed (the booking they had just paid for was not guaranteed to be
+ // in that page). The tab chips then counted that truncated array, so "All 20"
+ // was presented as the total. Both halves are now the server's job: it filters
+ // by `view` and returns a count per tab, and this page renders exactly what it
+ // is given.
+ const { data, isPending: loading, error, refetch, isFetching } = useQuery<BookingsPageData>({
+  queryKey: ['bookings', 'my', session?.accessToken, activeTab, page],
   enabled: !!session?.accessToken,
+  // Keep the previous page on screen while the next one loads — otherwise
+  // every pager click flashes the full-page spinner.
+  placeholderData: keepPreviousData,
   queryFn: async () => {
-   const res = await fetch(`${API_BASE_URL}/bookings/my`, {
-    headers: {
-     Authorization: `Bearer ${session?.accessToken ?? ''}`,
-    },
+   const qs = new URLSearchParams({
+    view: activeTab,
+    page: String(page),
+    limit: String(PAGE_SIZE),
    });
+   // RES-01: without a timeout this queryFn never settles, so react-query stays
+   // `isPending` forever and the page holds its skeleton — the exact state the
+   // sweep measured at T+30s on /dashboard and /priest.
+   const res = await fetchWithTimeout(
+    `${API_BASE_URL}/bookings/my?${qs.toString()}`,
+    {
+     headers: {
+      Authorization: `Bearer ${session?.accessToken ?? ''}`,
+     },
+    },
+    DATA_FETCH_TIMEOUT_MS,
+   );
    if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
    }
-   const data = await res.json();
-   const raw: ApiBooking[] = data.bookings ?? data.data ?? [];
-   return raw.map(mapBooking);
+   const json = await res.json();
+   const raw: ApiBooking[] = json.bookings ?? json.data ?? [];
+   const items = raw.map(mapBooking);
+   const total = typeof json.total === 'number' ? json.total : items.length;
+   const counts: TabCounts | null =
+    json.counts && typeof json.counts.all === 'number' ? json.counts : null;
+   return {
+    items,
+    total,
+    page: typeof json.page === 'number' ? json.page : page,
+    totalPages:
+     typeof json.totalPages === 'number' && json.totalPages > 0
+      ? json.totalPages
+      : Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    counts,
+   };
   },
  });
- const errorText = error instanceof Error ? error.message : null;
+ // RES-09 (2026-08-12): this used to render `error.message` verbatim, so a
+ // devotee saw `API 500: {"error":"Internal Server Error"}` — and, when the
+ // gateway served HTML as JSON, the JavaScript parser's own sentence
+ // (`Unexpected token '<' …`). friendlyApiError() already mapped both to
+ // human copy and was wired into exactly two admin screens.
+ const loadError = error ? friendlyApiError(error) : null;
 
- const filteredBookings = bookings.filter((b) => {
- switch (activeTab) {
- case 'upcoming':
- return isUpcoming(b);
- case 'completed':
- return isCompleted(b);
- case 'cancelled':
- return b.status === 'cancelled';
- default:
- return true;
- }
- });
+ const bookings = data?.items ?? [];
+ const total = data?.total ?? 0;
+ const totalPages = data?.totalPages ?? 1;
+ const counts = data?.counts ?? null;
+ // 1-based inclusive range of the rows actually on screen.
+ const rangeFrom = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+ const rangeTo = Math.min(page * PAGE_SIZE, total);
 
- const tabs: { key: TabFilter; label: string; count: number }[] = [
- { key: 'all', label: 'All', count: bookings.length },
- { key: 'upcoming', label: 'Upcoming', count: bookings.filter(isUpcoming).length },
- { key: 'completed', label: 'Completed', count: bookings.filter(isCompleted).length },
- { key: 'cancelled', label: 'Cancelled', count: bookings.filter((b) => b.status === 'cancelled').length },
+ // Counts come from the server (`counts`), never from `bookings.length` —
+ // that is precisely the lie DB-01 was about. If an older API omits them the
+ // chip renders with no number rather than with a wrong one.
+ const tabs: { key: TabFilter; label: string; count: number | null }[] = [
+ { key: 'all', label: 'All', count: counts?.all ?? null },
+ { key: 'upcoming', label: 'Upcoming', count: counts?.upcoming ?? null },
+ { key: 'completed', label: 'Completed', count: counts?.completed ?? null },
+ { key: 'cancelled', label: 'Cancelled', count: counts?.cancelled ?? null },
  ];
 
  return (
@@ -248,17 +343,29 @@ function BookingsContent() {
  </div>
 
  <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
- {errorText && (
-   <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-     Could not load your bookings: {errorText}
-   </div>
+ {loadError && (
+ <div
+ role="alert"
+ className="mb-4 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
+ >
+ <span>Could not load your bookings. {loadError.message}</span>
+ <button
+ type="button"
+ onClick={() => void refetch()}
+ disabled={isFetching}
+ className="inline-flex shrink-0 items-center gap-2 self-start rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-60 sm:self-auto"
+ >
+ <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+ Retry
+ </button>
+ </div>
  )}
  {/* Tabs */}
  <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-surface-100">
  {tabs.map((tab) => (
  <button
  key={tab.key}
- onClick={() => setActiveTab(tab.key)}
+ onClick={() => selectTab(tab.key)}
  className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
  activeTab === tab.key
  ? 'bg-saffron-600 text-white shadow-sm'
@@ -266,6 +373,7 @@ function BookingsContent() {
  }`}
  >
  {tab.label}
+ {tab.count !== null && (
  <span
  className={`rounded-full px-2 py-0.5 text-xs font-bold ${
  activeTab === tab.key
@@ -275,9 +383,18 @@ function BookingsContent() {
  >
  {tab.count}
  </span>
+ )}
  </button>
  ))}
  </div>
+
+ {/* How much there actually is. Before DB-01 no number on this page
+     referred to anything but the 20 rows that happened to load. */}
+ {!loading && total > 0 && (
+ <p className="mb-4 text-sm text-surface-500">
+ Showing {rangeFrom}&ndash;{rangeTo} of {total} booking{total === 1 ? '' : 's'}
+ </p>
+ )}
 
  {/* Loading */}
  {loading && (
@@ -287,8 +404,12 @@ function BookingsContent() {
  </div>
  )}
 
- {/* Empty State */}
- {!loading && filteredBookings.length === 0 && (
+ {/* Empty State — never under an error. RES-09: /bookings rendered
+ "No bookings yet / Explore our pujas to book your first sacred
+ ritual" directly beneath its own failure banner, so a devotee with
+ confirmed pujas was told she had none. A failed load means the list
+ is UNKNOWN, not empty. */}
+ {!loading && !loadError && bookings.length === 0 && (
  <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-saffron-50">
  <Inbox className="h-8 w-8 text-saffron-400" />
@@ -311,9 +432,9 @@ function BookingsContent() {
  )}
 
  {/* Booking Cards */}
- {!loading && filteredBookings.length > 0 && (
+ {!loading && bookings.length > 0 && (
  <div className="space-y-4">
- {filteredBookings.map((booking) => {
+ {bookings.map((booking) => {
  const statusCfg = getStatusConfig(booking.status);
  const canCancel =
  isUpcoming(booking) &&
@@ -381,6 +502,20 @@ function BookingsContent() {
  View Details
  </Link>
 
+ {/* DB-03 (2026-08-12): a pending_payment row had no way to be paid —
+     only Cancel — so every failed or abandoned checkout was permanently
+     unrecoverable revenue AND a slot held for nothing. /bookings/pay
+     resumes payment on THIS booking rather than minting a new one. */}
+ {booking.status === 'pending_payment' && (
+ <Link
+ href={`/bookings/pay?id=${booking.id}`}
+ className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
+ >
+ <CreditCard className="h-3.5 w-3.5" />
+ Complete payment
+ </Link>
+ )}
+
  {booking.videoUrl && (
  <Link
  href={`/bookings/view?id=${booking.id}#video`}
@@ -409,6 +544,36 @@ function BookingsContent() {
  </div>
  );
  })}
+ </div>
+ )}
+
+ {/* Pager. Before DB-01 there was no page control at all, so rows 21+
+     were unreachable from the UI no matter how many the devotee had. */}
+ {!loading && totalPages > 1 && (
+ <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-surface-100 bg-white px-4 py-3">
+ <button
+  type="button"
+  onClick={() => setPage((p) => Math.max(1, p - 1))}
+  disabled={page <= 1}
+  className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-2 text-sm font-medium text-surface-600 transition-colors hover:bg-surface-50 disabled:cursor-not-allowed disabled:opacity-40"
+ >
+  <ChevronLeft className="h-4 w-4" />
+  Previous
+ </button>
+
+ <span className="text-sm text-surface-500">
+  Page {page} of {totalPages}
+ </span>
+
+ <button
+  type="button"
+  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+  disabled={page >= totalPages}
+  className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-2 text-sm font-medium text-surface-600 transition-colors hover:bg-surface-50 disabled:cursor-not-allowed disabled:opacity-40"
+ >
+  Next
+  <ChevronRight className="h-4 w-4" />
+ </button>
  </div>
  )}
  </div>

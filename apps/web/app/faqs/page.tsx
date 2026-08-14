@@ -5,7 +5,7 @@ import { FAQ_GROUPS, allFaqs, faqPageJsonLd } from '../../lib/faqs';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'FAQs — Puja Booking, Live Darshan, Pricing, Yatra | Darshya',
+  title: 'FAQs — Puja Booking, Live Darshan, Pricing, Yatra',
   description:
     'Frequently asked questions about Darshya — how to book pujas, video proof, NRI pricing, yatra packages, refunds, 80G receipts, live darshan.',
   alternates: { canonical: 'https://darshya.online/faqs' },

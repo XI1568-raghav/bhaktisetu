@@ -20,9 +20,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const p = getHinduPhilosophy(slug);
   if (!p) {
-    return { title: 'Not Found | Darshya' };
+    return { title: 'Not Found' };
   }
-  const title = `${p.name} — ${CATEGORY_LABEL[p.category]} | Darshya`;
+  const title = `${p.name} — ${CATEGORY_LABEL[p.category]}`;
   const description = p.centralThesis.length > 160
     ? `${p.centralThesis.slice(0, 157)}…`
     : p.centralThesis;
@@ -31,6 +31,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `${BASE_URL}/hindu-philosophies/${p.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${p.name} (${p.sanskrit})`,
       description,
       url: `${BASE_URL}/hindu-philosophies/${p.slug}`,

@@ -15,10 +15,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const r = getSacredRiver(slug);
   if (!r) return { title: 'Not found' };
   return {
-    title: `${r.name} — Sacred River Guide: Origin, Ghats, Legends | Darshya`,
+    title: `${r.name} — Sacred River Guide: Origin, Ghats, Legends`,
     description: `${r.name}: origin at ${r.origin.split(',')[0]}, flows through ${r.states.slice(0, 3).join(', ')}. ${r.spiritualSignificance.slice(0, 110)}…`,
     alternates: { canonical: `${BASE_URL}/sacred-rivers/${r.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${r.name} — Sacred River of Bharat`,
       description: r.spiritualSignificance,
       url: `${BASE_URL}/sacred-rivers/${r.slug}`,

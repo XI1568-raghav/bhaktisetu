@@ -17,7 +17,12 @@ import {
 import AuthGuard from '../../components/AuthGuard';
 import AddressManager from '../../components/profile/AddressManager';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 
 interface ProfileFormData {
  fullName: string;
@@ -84,6 +89,21 @@ function ProfileContent() {
  const [isSaving, setIsSaving] = useState(false);
  const [success, setSuccess] = useState('');
  const [error, setError] = useState('');
+ // RES-03 (2026-08-12): THE DATA-DESTROYING PAIR.
+ //
+ // The loader only populated state `if (res.ok)` and the catch only did a
+ // console.error, so a 500 rendered a completely BLANK form with no message.
+ // handleSave then PATCHed an explicit `null` for every empty field. A devotee
+ // who opened Edit Profile during a backend blip saw an empty profile, assumed
+ // it was never filled in, typed her name, pressed Save — and silently
+ // destroyed her gotra, nakshatra, rashi, city and email. Gotra and nakshatra
+ // are load-bearing for the sankalp, so the next puja is performed with the
+ // wrong ritual details and she is never told why.
+ //
+ // Two guards, both required: refuse to save over a form we never loaded, and
+ // only ever send fields the user actually edited.
+ const [loadFailed, setLoadFailed] = useState<string | null>(null);
+ const [touched, setTouched] = useState<Record<string, boolean>>({});
 
  /**
  * Load profile data from API.
@@ -91,12 +111,17 @@ function ProfileContent() {
  const loadProfile = useCallback(async () => {
  if (!session?.accessToken) return;
 
+ setLoadFailed(null);
  try {
- const res = await fetch(`${API_BASE_URL}/users/me`, {
+ // RES-01: bare fetch has no timeout — held open, /profile sat on
+ // "Loading profile..." at T+10s and at T+30s with no error.
+ const res = await fetchWithTimeout(`${API_BASE_URL}/users/me`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },
- });
+ }, DATA_FETCH_TIMEOUT_MS);
 
- if (res.ok) {
+ if (!res.ok) {
+ setLoadFailed(loadErrorMessage(res));
+ } else {
  const data = await res.json();
  const u = data.user;
  setForm({
@@ -111,9 +136,10 @@ function ProfileContent() {
  isNri: u.isNri || false,
  nriCountry: u.nriCountry || '',
  });
+ setTouched({});
  }
  } catch (err) {
- console.error('Failed to load profile:', err);
+ setLoadFailed(loadErrorMessage(err));
  } finally {
  setIsLoading(false);
  }
@@ -130,6 +156,12 @@ function ProfileContent() {
  setError('');
  setSuccess('');
 
+ // Never PATCH over a profile we never managed to read.
+ if (loadFailed) {
+ setError('We could not load your profile, so saving would overwrite it. Retry the load first.');
+ return;
+ }
+
  if (!form.fullName.trim()) {
  setError('Full name is required.');
  return;
@@ -143,41 +175,34 @@ function ProfileContent() {
  setIsSaving(true);
 
  try {
+ // A TRUE partial update. Only a field the user actually edited is sent, so
+ // an untouched gotra/nakshatra/rashi/city/email can never be nulled out by
+ // a save the user made for an unrelated reason. The old code sent
+ // `payload.gotra = null` for every empty string — which is exactly what a
+ // blank form produced.
  const payload: Record<string, any> = {
  fullName: form.fullName.trim(),
- preferredLanguage: form.preferredLanguage,
- isNri: form.isNri,
  };
+ if (touched.preferredLanguage) payload.preferredLanguage = form.preferredLanguage;
+ if (touched.isNri) payload.isNri = form.isNri;
+ if (touched.email) payload.email = form.email.trim() || null;
+ if (touched.gotra) payload.gotra = form.gotra.trim() || null;
+ if (touched.nakshatra) payload.nakshatra = form.nakshatra || null;
+ if (touched.rashi) payload.rashi = form.rashi || null;
+ if (touched.locationCity) payload.locationCity = form.locationCity.trim() || null;
+ if (touched.locationState) payload.locationState = form.locationState.trim() || null;
+ if (touched.nriCountry || touched.isNri) {
+ payload.nriCountry = form.isNri && form.nriCountry ? form.nriCountry : null;
+ }
 
- if (form.email.trim()) payload.email = form.email.trim();
- else payload.email = null;
-
- if (form.gotra.trim()) payload.gotra = form.gotra.trim();
- else payload.gotra = null;
-
- if (form.nakshatra) payload.nakshatra = form.nakshatra;
- else payload.nakshatra = null;
-
- if (form.rashi) payload.rashi = form.rashi;
- else payload.rashi = null;
-
- if (form.locationCity.trim()) payload.locationCity = form.locationCity.trim();
- else payload.locationCity = null;
-
- if (form.locationState.trim()) payload.locationState = form.locationState.trim();
- else payload.locationState = null;
-
- if (form.isNri && form.nriCountry) payload.nriCountry = form.nriCountry;
- else payload.nriCountry = null;
-
- const res = await fetch(`${API_BASE_URL}/users/me`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/users/me`, {
  method: 'PATCH',
  headers: {
  'Content-Type': 'application/json',
  Authorization: `Bearer ${session?.accessToken}`,
  },
  body: JSON.stringify(payload),
- });
+ }, DATA_FETCH_TIMEOUT_MS);
 
  const data = await res.json();
 
@@ -192,7 +217,7 @@ function ProfileContent() {
  // Clear success after 3 seconds
  setTimeout(() => setSuccess(''), 3000);
  } catch (err) {
- setError('Network error. Please try again.');
+ setError(loadErrorMessage(err));
  } finally {
  setIsSaving(false);
  }
@@ -200,6 +225,7 @@ function ProfileContent() {
 
  const updateField = (field: keyof ProfileFormData, value: string | boolean) => {
  setForm((prev) => ({ ...prev, [field]: value }));
+ setTouched((prev) => ({ ...prev, [field]: true }));
  setSuccess('');
  };
 
@@ -236,7 +262,7 @@ function ProfileContent() {
  {/* Mobile lang switcher — 6 langs, profile-drawer surface (gap #5; desktop uses footer LanguageSwitcher) */}
  <div className="md:hidden bg-white border-b border-surface-200">
   <div className="max-w-3xl mx-auto px-4 py-3">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Language</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-2">Language</p>
    <div className="flex flex-wrap gap-2 text-sm">
     <a href="/" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100">English</a>
     <a href="/hi" className="px-2.5 py-1 rounded-md bg-surface-100 text-surface-700 hover:bg-saffron-100" lang="hi">हिन्दी</a>
@@ -250,6 +276,21 @@ function ProfileContent() {
 
  <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 -mt-4">
  {/* Status messages */}
+ {loadFailed && (
+ <div role="alert" className="mb-6 flex flex-wrap items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+ <span className="flex-1 min-w-[12rem]">
+ {loadFailed} Saving is disabled until your profile loads, so a blank form
+ cannot overwrite your gotra, nakshatra or city.
+ </span>
+ <button
+ type="button"
+ onClick={() => { setIsLoading(true); void loadProfile(); }}
+ className="font-semibold underline underline-offset-2 hover:text-amber-900"
+ >
+ Retry
+ </button>
+ </div>
+ )}
  {error && (
  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
  {error}
@@ -505,7 +546,7 @@ function ProfileContent() {
  </a>
  <button
  onClick={handleSave}
- disabled={isSaving}
+ disabled={isSaving || !!loadFailed}
  className="inline-flex items-center gap-2 px-6 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-warm-sm"
  >
  {isSaving ? (

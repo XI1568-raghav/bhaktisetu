@@ -9,9 +9,11 @@ import {
  Users,
 } from 'lucide-react';
 import { getPublicPriests, type PriestSummary } from '../../lib/pandit-api';
+import { remoteImage, IMG_W } from '../../lib/images';
 
 export const metadata: Metadata = {
- title: 'Verified Pandits · Darshya',
+ alternates: { canonical: 'https://darshya.online/pandits' },
+ title: 'Verified Pandits',
  description:
   'Book authentic pujas with verified pandits across India. Each pandit is reviewed by Darshya before being listed.',
 };
@@ -33,7 +35,11 @@ function PriestCard({ priest }: { priest: PriestSummary }) {
     {priest.avatarUrl ? (
      // eslint-disable-next-line @next/next/no-img-element
      <img
-      src={priest.avatarUrl}
+      src={remoteImage(priest.avatarUrl, IMG_W.THUMB)}
+      width={48}
+      height={48}
+      loading="lazy"
+      decoding="async"
       alt={priest.displayName}
       className="w-12 h-12 rounded-full object-cover shrink-0"
      />
@@ -80,13 +86,13 @@ function PriestCard({ priest }: { priest: PriestSummary }) {
      {priest.specializations.slice(0, 3).map((s) => (
       <span
        key={s}
-       className="px-2 py-0.5 bg-saffron-50 text-saffron-700 text-[11px] rounded-full"
+       className="px-2 py-0.5 bg-saffron-50 text-saffron-700 text-xs rounded-full"
       >
        {s}
       </span>
      ))}
      {priest.specializations.length > 3 && (
-      <span className="px-2 py-0.5 bg-surface-100 text-surface-500 text-[11px] rounded-full">
+      <span className="px-2 py-0.5 bg-surface-100 text-surface-500 text-xs rounded-full">
        +{priest.specializations.length - 3}
       </span>
      )}

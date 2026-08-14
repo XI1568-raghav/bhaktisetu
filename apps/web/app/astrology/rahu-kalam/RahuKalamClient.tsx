@@ -59,7 +59,7 @@ export default function RahuKalamClient() {
       </select>
      </label>
     </div>
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Each octet = (sunset − sunrise) / 8 ≈ 90 minutes. Rahu / Yamaganda / Gulika octet
      position per weekday follows Muhurta Chintamani standard tables.
     </p>
@@ -78,7 +78,7 @@ export default function RahuKalamClient() {
 
       {result.currentDosha && (
        <div className={`mt-5 rounded-xl border-2 p-4 ${DOSHA_STYLE[result.currentDosha.kind].border} ${DOSHA_STYLE[result.currentDosha.kind].bg}`}>
-        <p className="text-[11px] uppercase tracking-wider text-gray-600">Right now — avoid important work</p>
+        <p className="text-xs uppercase tracking-wider text-gray-600">Right now — avoid important work</p>
         <p className="mt-1 font-serif text-xl text-gray-900">
          {result.currentDosha.label} <span className="text-sm font-normal text-gray-600">· {result.currentDosha.startTime} → {result.currentDosha.endTime}</span>
         </p>
@@ -132,7 +132,7 @@ export default function RahuKalamClient() {
 function Stat({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-gray-200 bg-white/90 p-3 text-center">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 font-serif text-lg text-gray-900">{value}</p>
   </div>
  );
@@ -145,11 +145,11 @@ function WindowCard({ w }: { w: DoshaWindow }) {
    <div className="flex flex-wrap items-start justify-between gap-2">
     <div>
      <div className="flex flex-wrap items-center gap-2">
-      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${s.pill}`}>Inauspicious</span>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${s.pill}`}>Inauspicious</span>
       <span className="font-serif text-lg font-semibold text-gray-900">{w.label}</span>
       <span className={`text-sm ${s.accent}`}>{w.sanskrit}</span>
       {w.isCurrent && (
-       <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-[10px] font-bold text-white">NOW</span>
+       <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-xs font-bold text-white">NOW</span>
       )}
      </div>
      <p className="mt-1 text-xs text-gray-600">Octet #{w.octet} of 8 · ruled by {w.ruler}</p>

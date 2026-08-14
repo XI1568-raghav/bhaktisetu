@@ -35,6 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  if (!yatra) return { title: 'Yatra not found' };
  return {
  title: `${yatra.title} — ${yatra.durationDays} days`,
+ alternates: { canonical: `https://darshya.online/yatra/${slug}` },
  description: yatra.description,
  };
 }
@@ -201,7 +202,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div className="space-y-2.5">
  {yatra.places.map((p, i) => (
  <div key={i} className="flex items-center gap-2.5">
- <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
+ <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold shrink-0" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
  {i + 1}
  </div>
  <span className="text-xs" style={{ color: 'var(--color-text)' }}>{p}</span>
@@ -212,9 +213,9 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div className="mt-5 p-3 rounded-lg" style={{ background: 'var(--color-primary-highlight)' }}>
  <div className="flex items-center gap-2 mb-1">
  <Plane className="w-3.5 h-3.5" style={{ color: 'var(--color-primary-active)' }} />
- <p className="text-[11px] font-semibold" style={{ color: 'var(--color-primary-active)' }}>Helicopter available</p>
+ <p className="text-xs font-semibold" style={{ color: 'var(--color-primary-active)' }}>Helicopter available</p>
  </div>
- <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Skip the strenuous trek — add helicopter at checkout.</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Skip the strenuous trek — add helicopter at checkout.</p>
  </div>
  )}
  </aside>
@@ -243,14 +244,14 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>{d.title}</h3>
  <p className="text-xs leading-relaxed mb-2.5" style={{ color: 'var(--color-text-muted)' }}>{d.description}</p>
- <div className="flex flex-wrap gap-3 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="flex flex-wrap gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {d.stay}</span>
  <span className="flex items-center gap-1"><Flame className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {d.meals}</span>
  </div>
  {d.highlights.length > 0 && (
  <div className="mt-2.5 flex flex-wrap gap-1">
  {d.highlights.map((h) => (
- <span key={h} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{h}</span>
+ <span key={h} className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{h}</span>
  ))}
  </div>
  )}
@@ -337,19 +338,19 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  }}
  >
  {isStandard && (
- <div className="absolute -top-3 left-5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: 'var(--color-primary)' }}>
+ <div className="absolute -top-3 left-5 px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: 'var(--color-primary)' }}>
  MOST POPULAR
  </div>
  )}
  <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>{pkg.tier}</p>
  <h3 className="text-lg font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{pkg.name}</h3>
- <p className="text-[11px] mt-1 mb-4" style={{ color: 'var(--color-text-muted)' }}>{pkg.tagline}</p>
+ <p className="text-xs mt-1 mb-4" style={{ color: 'var(--color-text-muted)' }}>{pkg.tagline}</p>
 
  <div className="mb-4">
  <p className="text-2xl font-semibold" style={{ color: 'var(--color-text)' }}>
  {formatINR(pkg.price)} <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>/ person</span>
  </p>
- <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-faint)' }}>Twin sharing • Taxes extra</p>
+ <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-faint)' }}>Twin sharing • Taxes extra</p>
  </div>
 
  <div className="space-y-1.5 mb-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
@@ -360,7 +361,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
 
  <ul className="space-y-1.5 mb-5 flex-1">
  {pkg.includes.map((inc) => (
- <li key={inc} className="flex items-start gap-1.5 text-[11px]" style={{ color: 'var(--color-text)' }}>
+ <li key={inc} className="flex items-start gap-1.5 text-xs" style={{ color: 'var(--color-text)' }}>
  <Check className="w-3 h-3 mt-0.5 shrink-0" style={{ color: 'var(--color-status-success)' }} />
  {inc}
  </li>
@@ -396,9 +397,9 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  </p>
  </div>
  <div className="text-right shrink-0">
- <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>From</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>From</p>
  <p className="text-base font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(8000)}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>per person, one-way</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>per person, one-way</p>
  </div>
  </div>
  )}
@@ -416,7 +417,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div key={a.title} className="p-3 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <a.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{a.title}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{a.desc}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{a.desc}</p>
  <p className="text-xs font-semibold mt-1" style={{ color: 'var(--color-primary)' }}>+{a.price}</p>
  </div>
  ))}
@@ -441,8 +442,8 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  ))}
  </div>
  <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--color-text)' }}>&ldquo;{r.comment}&rdquo;</p>
- <p className="text-[11px] font-semibold" style={{ color: 'var(--color-text)' }}>{r.name}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{r.location} • {r.date}</p>
+ <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{r.name}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{r.location} • {r.date}</p>
  </div>
  ))}
  </div>

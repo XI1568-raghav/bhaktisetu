@@ -4,6 +4,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../../lib/trust-score';
 
 export const revalidate = 3600;
 
@@ -64,7 +65,7 @@ async function loadPuja(slug: string): Promise<PujaDetail | null> {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const puja = await loadPuja(slug);
-  if (!puja) return { title: 'Puja temples — Darshya' };
+  if (!puja) return { title: 'Puja temples' };
   const count = puja.temples?.filter((t) => t.isActive).length || 0;
   return {
     title: `${puja.name} temples — book online${count > 0 ? ` (${count} options)` : ''}`,
@@ -159,8 +160,8 @@ export default async function PujaTemplesPage({ params }: Params) {
                 ) : null}
               </div>
               <h2 className="text-lg font-semibold text-surface-900 mb-1">{o.templeName}</h2>
-              {o.trustScore > 0 ? (
-                <p className="text-xs text-surface-500 mb-3">Trust score: {o.trustScore}/100</p>
+              {hasMeaningfulTrustScore(o.trustScore) ? (
+                <p className="text-xs text-surface-500 mb-3">Trust score: {formatTrustScoreOutOf(o.trustScore)}</p>
               ) : null}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-lg font-bold text-surface-900">

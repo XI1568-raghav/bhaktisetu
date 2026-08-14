@@ -16,7 +16,7 @@ export async function generateMetadata({
   const c = getChakra(slug);
   if (!c) return { title: 'Chakra not found' };
 
-  const title = `${c.english} (${c.iast}) — Bija Mantra ${c.bijaMantra}, ${c.presidingDeity.split(' (')[0]} | Darshya`;
+  const title = `${c.english} (${c.iast}) — Bija Mantra ${c.bijaMantra}, ${c.presidingDeity.split(' (')[0]}`;
   const description = `${c.english}: ${c.location}. Element ${c.element}, ${c.petals} petals, bija ${c.bijaMantra}. Presiding deity ${c.presidingDeity}. Awakening practice, yoga, meditation, psychological themes.`;
 
   return {

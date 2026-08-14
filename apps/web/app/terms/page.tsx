@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { COMPANY, operatedByLine, postalContactLine } from "../../lib/company";
+import { CANCELLATION_POLICY_SENTENCE } from "../../lib/cancellation-policy";
+import { COMPANY, operatedByLine, postalContactLine, legalContactEmail } from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Terms of Service",
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
  "Terms of service for using Darshya \u2014 puja bookings, live darshan, store purchases, and all platform services.",
  alternates: { canonical: "https://darshya.online/terms" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Terms of Service | Darshya",
  description:
  "Eligibility, services, payments, liability, and dispute resolution for the Darshya platform.",
@@ -178,14 +180,19 @@ export default function TermsPage() {
  conversion rate and any foreign-transaction fee.
  </li>
  <li>
- Platform commission rates by service category:
- <ul className="mt-2">
- <li>Puja booking: 25% (configurable 20&ndash;40% per temple)</li>
- <li>Astrology consultation: 30%</li>
- <li>Wellness session: 25%</li>
- <li>Donations: 0% commission + &#8377;100 flat fee per 80G receipt</li>
- <li>Store products: standard MedusaJS take rate</li>
- </ul>
+ Platform commission is a uniform <strong>20%</strong> of the
+ transaction value across every service category &mdash; puja
+ bookings, astrology consultations, wellness sessions and store
+ products alike. The provider (pandit, astrologer, instructor,
+ store owner) receives the remaining <strong>80%</strong>. Where a
+ temple is party to a booking, the temple&apos;s revenue share is
+ paid out of the platform&apos;s 20%, not deducted from the
+ provider&apos;s 80%.
+ </li>
+ <li>
+ Donations carry <strong>0% commission</strong>. Where the donee is
+ eligible, the 80G receipt is issued free of charge &mdash; there is
+ no per-receipt fee.
  </li>
  <li>
  Priest, astrologer, and provider payouts are processed
@@ -209,13 +216,17 @@ export default function TermsPage() {
  . Key points:
  </p>
  <ul>
+ {/* DB-06 (prod sweep 2026-08-12, P1) — this clause used to read
+     "cancelled up to 24 hours before the scheduled time for a full
+     refund", a FOURTH ladder, more generous than the one the API runs
+     (cancellation.service.ts DEFAULT_CANCEL_POLICY: 48h+ 100%,
+     24-48h 75%, plus a hard refusal inside 24h). Terms are the
+     operative document in a dispute, so this is the last place that
+     may disagree with checkout. It now renders the same sentence the
+     payment-step checkbox renders, from lib/cancellation-policy. */}
+ <li>{CANCELLATION_POLICY_SENTENCE}</li>
  <li>
- Puja bookings may be cancelled up to 24 hours before the
- scheduled time for a full refund.
- </li>
- <li>
- Cancellations within 24 hours of the scheduled time are
- non-refundable, as preparations may have begun.
+ If the pandit or temple cancels, you are refunded in full.
  </li>
  <li>
  Store orders may be returned within 7 days of delivery for
@@ -315,7 +326,7 @@ export default function TermsPage() {
  For questions regarding these Terms of Service, contact us at:
  </p>
  <ul>
- <li>Email: {COMPANY.specialtyEmails.legal ?? COMPANY.supportEmail}</li>
+ <li>Email: {legalContactEmail()}</li>
  {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
  </TermsSection>

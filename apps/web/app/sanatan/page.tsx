@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     'The definitive long-form overview of Sanatana Dharma: meaning, history from Vedic to modern times, the six darshanas, the Itihasa-Purana corpus, deities, festivals, and lived practice. A pillar reference for devotees, seekers and students.',
   alternates: { canonical: 'https://darshya.online/sanatan' },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Sanatana Dharma — Complete Evergreen Guide',
     description:
       'Long-form pillar reference: meaning, history, philosophy, deities, scriptures, festivals and lived practice of the eternal way.',

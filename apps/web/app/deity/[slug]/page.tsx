@@ -27,7 +27,7 @@ function fmtINR(s: string): string {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const d = getDeity(slug);
-  if (!d) return { title: 'Deity — Darshya' };
+  if (!d) return { title: 'Deity' };
   return {
     title: `${d.name} pujas online — verified pandits, video proof`,
     description: `Book ${d.name} pujas online with verified pandits. ${d.popularPujas.join(', ')}. Mantra: ${d.mantra}. Video proof + 80G receipts.`,

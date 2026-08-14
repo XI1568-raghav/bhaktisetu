@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 export const revalidate = 3600;
 
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import { notFound } from 'next/navigation';
 import {
  ChevronRight,
@@ -16,7 +18,6 @@ import {
  MapPin,
  Users,
  IndianRupee,
- DollarSign,
  Heart,
  Share2,
  Sparkles,
@@ -26,6 +27,26 @@ import {
  Undo2,
 } from 'lucide-react';
 import { getDeityImage, getPujaImage } from '../../../lib/images';
+import { formatTrustScoreOutOf } from '../../../lib/trust-score';
+// CM-03 (prod sweep 2026-08-12): this page advertises the bare puja price in
+// three places while checkout charges it plus a ₹51 platform fee. The fee is
+// real (apps/api booking.service folds it into the amount Razorpay is asked
+// for), so every advertised price here now carries it.
+import { PLATFORM_FEE_INR, formatInr, pujaTotalInr } from '../../../lib/puja-pricing';
+// CM-05 (prod sweep 2026-08-12): this page asserted trust ("verified", "video
+// proof") repeatedly and demonstrated it zero times, while completed bookings
+// sat unused in Postgres. This is the one honest, database-derived proof point.
+// DB-06: shared with the booking wizard's payment step so the two surfaces
+// state the same, real cancellation guarantee.
+import {
+ CANCELLATION_BADGE_LABEL,
+ CANCELLATION_BADGE_DESC,
+} from '../../../lib/cancellation-policy';
+import { pujaOffersJsonLd } from '../../../lib/jsonld';
+import { getPujaCompletionCounts } from '../../../lib/social-proof';
+import PujaShareButton from '../../../components/puja/PujaShareButton';
+import { pujaCategoryLabel } from '../../../lib/puja-labels';
+import PujaSocialProof from '../../../components/PujaSocialProof';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -56,6 +77,8 @@ interface PujaDetail {
  deity: string;
  durationMinutes: number;
  basePrice: string;
+ /** INR, not USD (business rule 2: 9-10x domestic). Not rendered — see the
+  * note in the hero block. Kept on the type because the API still returns it. */
  nriPrice: string;
  samagriIncluded: boolean;
  samagriList?: string[];
@@ -142,7 +165,7 @@ export async function generateMetadata({
  const puja = lookup.puja;
 
  const url = `https://darshya.online/pujas/${slug}`;
- const title = `${puja.name} — Book Online | Darshya`;
+ const title = `${puja.name} — Book Online`;
  const description = `Book ${puja.name} online at verified temples. ${puja.description.slice(0, 140)}`;
 
  // P0 #202 (cont.): the api returns `images` as a string[] of URLs, but the
@@ -204,10 +227,10 @@ export default async function PujaDetailPage({
  }
  const puja = lookup.puja;
 
- const lowestPrice = puja.temples.reduce((min, t) => {
- const p = Number(t.priceOverride || puja.basePrice);
- return p < min ? p : min;
- }, Number(puja.basePrice));
+ // CM-05: real count of completed/delivered/video-uploaded bookings for THIS
+ // puja, computed server-side from puja_bookings. 0 (or an API failure) means
+ // PujaSocialProof renders nothing at all — see lib/social-proof.ts.
+ const completedCount = (await getPujaCompletionCounts())[puja.slug] ?? 0;
 
  const jsonLd = {
  '@context': 'https://schema.org',
@@ -223,29 +246,9 @@ export default async function PujaDetailPage({
  '@type': 'Organization',
  name: 'Darshya',
  },
- offers: {
- '@type': 'AggregateOffer',
- priceCurrency: 'INR',
- lowPrice: lowestPrice,
- highPrice: Number(puja.basePrice) * 5,
- offerCount: puja.temples.length,
- availability: 'https://schema.org/InStock',
- url: `https://darshya.online/pujas/${puja.slug}`,
- offers: puja.temples.map((temple) => ({
- '@type': 'Offer',
- name: `${puja.name} at ${temple.templeName}`,
- price: Number(temple.priceOverride || puja.basePrice),
- priceCurrency: 'INR',
- availability: temple.isActive
- ? 'https://schema.org/InStock'
- : 'https://schema.org/OutOfStock',
- url: `https://darshya.online/pujas/${puja.slug}/book?temple=${temple.templeSlug}`,
- areaServed: {
- '@type': 'Place',
- name: `${temple.templeCity}, ${temple.templeState}`,
- },
- })),
- },
+ // SEO-05: bounds derived from the enumerated offers, never from basePrice * 5.
+ // See lib/jsonld.ts for why every rule in there is load-bearing.
+ offers: pujaOffersJsonLd(puja),
  };
 
  return (
@@ -258,11 +261,11 @@ export default async function PujaDetailPage({
  <div className="border-b border-surface-100 bg-white">
  <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
  <nav className="flex items-center gap-2 text-sm text-surface-500">
- <Link href="/" className="hover:text-orange-600">
+ <Link href="/" className="tap-safe hover:text-saffron-700">
  Home
  </Link>
  <ChevronRight className="h-3.5 w-3.5" />
- <Link href="/pujas" className="hover:text-orange-600">
+ <Link href="/pujas" className="tap-safe hover:text-saffron-700">
  Pujas
  </Link>
  <ChevronRight className="h-3.5 w-3.5" />
@@ -278,21 +281,30 @@ export default async function PujaDetailPage({
  {/* Left: Puja Info */}
  <div className="lg:col-span-3">
  <div className="mb-3 flex flex-wrap items-center gap-2">
+ {/* CM-10: the raw column value ("special_occasion") used to render here. */}
+ {pujaCategoryLabel(puja.category) && (
  <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
  <Flame className="h-3 w-3" />
- {puja.category}
+ {pujaCategoryLabel(puja.category)}
  </span>
+ )}
  <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
  {puja.deity}
  </span>
+ {/* Renders only for a puja that really has completed bookings. */}
+ <PujaSocialProof count={completedCount} pujaName={puja.name} variant="hero" />
  </div>
- <h1 className="mb-1 text-3xl font-bold text-white md:text-4xl">
+ <h1 className={`${H1.detail} mb-1`}>
  {puja.name}
  </h1>
  {puja.nameLocal && (
  <p className="mb-4 text-lg text-white/80">{puja.nameLocal}</p>
  )}
- <p className="mb-6 max-w-xl text-base leading-relaxed text-white/90">
+ {/* CM-10: unclamped, these average 1,144 chars of scripture citation and
+   push the price and the Book button ~900px down a 390px phone. The full
+   text is still rendered in the About section below, where a reader who
+   wants the Shiva Purana references will find it. */}
+ <p className="mb-6 line-clamp-3 max-w-xl text-base leading-relaxed text-white/90">
  {puja.description}
  </p>
 
@@ -331,10 +343,24 @@ export default async function PujaDetailPage({
  </span>
  </div>
  </div>
- <div className="mt-2 flex items-center gap-1.5 text-sm text-white/70">
- <DollarSign className="h-3.5 w-3.5" />
- <span>NRI Price: ${Number(puja.nriPrice).toLocaleString('en-US')}</span>
- </div>
+ {/* CM-03: the fee travels with the price, so the number never changes
+   between here and the Pay button. */}
+ <p className="mt-1 text-xs text-white/70">
+ + ₹{formatInr(PLATFORM_FEE_INR)} platform fee · ₹
+ {formatInr(pujaTotalInr(Number(puja.basePrice), false))} total
+ </p>
+ {/* NRI PRICE REMOVED 2026-08-12 (P0).
+     This rendered `puja.nriPrice` — an INR column, per business rule 2's
+     "NRI pricing 9-10x domestic" — behind a `$` and a dollar icon. On
+     /pujas/ram-charit-manas-path that read "$31,999" (about Rs 27.5 lakh) for a
+     puja the platform actually charges Rs 3,501 for. The highest-ARPU cohort in
+     the category was being quoted a number that reads as fraud.
+     Deleting rather than re-glyphing to Rs: /bookings/from-offering charges
+     basePrice to EVERYONE (the USD rail went with Stripe), so an "NRI Price
+     Rs 13,999" line advertises a premium that is never collected — still a
+     displayed-price != charged-price violation, just quieter.
+     This returns when a server-QUOTED NRI amount exists, rendered from the same
+     value the gateway is asked for. */}
  </div>
 
  <Link
@@ -345,16 +371,11 @@ export default async function PujaDetailPage({
  Book This Puja
  </Link>
 
+ {/* CM-18: "Save" is gone rather than faked — there is no wishlist endpoint
+   in apps/api and no wishlist table, so a Saved state would be a lie told
+   to a signed-in user. Share is now real (Web Share + clipboard). */}
  <div className="flex items-center justify-center gap-3">
- <button className="flex items-center gap-1 text-sm text-white/80 hover:text-white">
- <Heart className="h-4 w-4" />
- Save
- </button>
- <span className="text-white/30">|</span>
- <button className="flex items-center gap-1 text-sm text-white/80 hover:text-white">
- <Share2 className="h-4 w-4" />
- Share
- </button>
+ <PujaShareButton pujaName={puja.name} slug={puja.slug} />
  </div>
  </div>
  </div>
@@ -370,7 +391,10 @@ export default async function PujaDetailPage({
  { icon: Shield, label: 'Verified Pandits', desc: 'Aadhaar-verified priests' },
  { icon: Video, label: 'Live Video Proof', desc: 'Watch your puja live' },
  { icon: Gift, label: 'Prasad Delivery', desc: 'Sacred prasad to your door' },
- { icon: Undo2, label: 'Money-Back Guarantee', desc: '100% refund if not satisfied' },
+ // DB-06 (2026-08-12): this badge promised "100% refund if not satisfied".
+ // No dissatisfaction refund exists in the API — the shipped guarantee is
+ // the cancellation ladder, so the badge now states that instead.
+ { icon: Undo2, label: CANCELLATION_BADGE_LABEL, desc: CANCELLATION_BADGE_DESC },
  ].map((badge) => (
  <div
  key={badge.label}
@@ -446,7 +470,7 @@ export default async function PujaDetailPage({
  key={i}
  className="flex items-center gap-2 rounded-lg border border-surface-100 bg-amber-50/40 px-3 py-2"
  >
- <div className="h-1.5 w-1.5 rounded-full bg-saffron-500" />
+ <div className="h-1.5 w-1.5 rounded-full bg-saffron-600" />
  <span className="text-sm text-surface-600">{item}</span>
  </div>
  ))}
@@ -463,7 +487,7 @@ export default async function PujaDetailPage({
  </h2>
  <Link
  href={`/pujas/${puja.slug}/temples`}
- className="text-sm font-semibold text-saffron-700 hover:underline whitespace-nowrap"
+ className="tap-safe text-sm font-semibold text-saffron-700 hover:underline whitespace-nowrap"
  >
  Compare all →
  </Link>
@@ -490,7 +514,7 @@ export default async function PujaDetailPage({
  <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
  <span className="flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
- {(temple.trustScore / 20).toFixed(1)}
+ {formatTrustScoreOutOf(temple.trustScore)}
  </span>
  <span className="rounded-full bg-surface-100 px-2 py-0.5">
  {temple.availableSlots.length} time slots
@@ -498,12 +522,19 @@ export default async function PujaDetailPage({
  </div>
  </div>
  <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+ <div className="sm:text-right">
  <div className="text-xl font-bold text-saffron-600">
  ₹{Number(price).toLocaleString('en-IN')}
  </div>
+ {/* CM-03 */}
+ <div className="text-xs text-surface-400">
+ + ₹{formatInr(PLATFORM_FEE_INR)} fee · ₹
+ {formatInr(pujaTotalInr(Number(price), false))} total
+ </div>
+ </div>
  <Link
  href={`/pujas/${puja.slug}/book?temple=${temple.templeSlug}`}
- className="inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Book Now
  <ArrowRight className="h-3.5 w-3.5" />
@@ -528,12 +559,9 @@ export default async function PujaDetailPage({
  <SidebarRow
  icon={IndianRupee}
  label="Price (INR)"
- value={`₹${Number(puja.basePrice).toLocaleString('en-IN')} onwards`}
- />
- <SidebarRow
- icon={DollarSign}
- label="Price (USD/NRI)"
- value={`$${Number(puja.nriPrice).toLocaleString('en-US')}`}
+ value={`₹${Number(puja.basePrice).toLocaleString('en-IN')} onwards + ₹${formatInr(
+ PLATFORM_FEE_INR,
+ )} platform fee`}
  />
  <SidebarRow
  icon={MapPin}
@@ -550,7 +578,7 @@ export default async function PujaDetailPage({
  <div className="mt-6 space-y-3">
  <Link
  href={`/pujas/${puja.slug}/book`}
- className="flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 py-3 font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'md', 'w-full')}
  >
  <Flame className="h-4 w-4" />
  Book This Puja

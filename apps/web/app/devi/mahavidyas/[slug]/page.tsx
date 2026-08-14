@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  const m = getMahavidya(slug);
  if (!m) return { title: 'Not found' };
  return {
-  title: `${m.name} (${m.sanskrit}) — Mahavidya ${m.order} | Mantra, Iconography & Sadhana | Darshya`,
+  title: `${m.name} (${m.sanskrit}) — Mahavidya ${m.order} | Mantra, Iconography & Sadhana`,
   description: `Complete ${m.name} guide — ${m.epithet}. Origin, iconography, mool mantra ${m.mantraEnglish}, sadhana goal, householder cautions, famous shrines. ${m.order}th of 10 Mahavidyas per Brihad Nila Tantra & Devi Bhagavata.`,
   alternates: { canonical: `${BASE_URL}/devi/mahavidyas/${m.slug}` },
  };

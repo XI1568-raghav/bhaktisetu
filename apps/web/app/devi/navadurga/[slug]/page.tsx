@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  const form = getNavadurga(slug);
  if (!form) return { title: 'Not found' };
  return {
-  title: `${form.name} (${form.sanskrit}) — Day ${form.day} of Navratri | Navadurga Guide | Darshya`,
+  title: `${form.name} (${form.sanskrit}) — Day ${form.day} of Navratri | Navadurga Guide`,
   description: `Full ${form.name} guide — Day ${form.day} of Navratri. Color ${form.color}, planet ${form.planet}, mantra ${form.mantraEnglish}, prasad ${form.prasad}, mount ${form.mount}. Story, iconography, blessing & how-to-worship per Devi Mahatmya.`,
   alternates: { canonical: `${BASE_URL}/devi/navadurga/${form.slug}` },
  };

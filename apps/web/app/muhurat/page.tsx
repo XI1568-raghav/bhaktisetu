@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Muhurat Guide — Rahu Kalam, Abhijit, Brahma Muhurta, Vivah Dates | Darshya',
+  title: 'Muhurat Guide — Rahu Kalam, Abhijit, Brahma Muhurta, Vivah Dates',
   description:
     'Complete guide to Vedic muhurats — Brahma Muhurta, Abhijit, Rahu Kalam, Yamaganda, Pradosh, Amrit Kaal, Vivah, Griha Pravesh, Mundan. Auspicious & inauspicious time windows.',
   alternates: { canonical: `${BASE_URL}/muhurat` },

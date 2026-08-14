@@ -22,7 +22,21 @@ const productCreateSchema = z.object({
 });
 const productUpdateSchema = productCreateSchema.partial();
 
-export const __testing = { productCreateSchema, productUpdateSchema };
+// S-07: store-owner self-setup. There was no endpoint anywhere that could
+// create a StoreProfile, so an owner whose signup didn't happen to run the
+// onboarding upsert was permanently unable to list anything — POST /products
+// answered `400 {"error":"No StoreProfile for this user"}` forever. The store
+// name is required and comes from the owner; we never invent a business name.
+const storeProfileSchema = z.object({
+  storeName: z.string().trim().min(2).max(150),
+  address: z.string().max(500).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  gstNumber: z.string().max(20).optional(),
+  categories: z.array(z.string().max(80)).max(20).optional(),
+});
+
+export const __testing = { productCreateSchema, productUpdateSchema, storeProfileSchema };
 
 // Resolve the StoreProfile that belongs to the authenticated user. Returns
 // null when the user has no profile — caller maps that to 400.
@@ -65,6 +79,47 @@ function serializeProduct(p: {
 }
 
 export async function storeAdminRoutes(server: FastifyInstance) {
+  // ─── GET /profile ───────────────────────────────────────────────────────────
+  // S-07: `null` means "you have not set your store up yet" — an honest state
+  // the UI can act on, not a stub profile pretending one exists.
+
+  server.get('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('STORE_OWNER')) {
+      return reply.code(403).send({ error: 'STORE_OWNER role required' });
+    }
+    const profile = await prisma.storeProfile.findUnique({
+      where: { userId: request.currentUser!.id },
+    });
+    return reply.send({ profile: profile ?? null });
+  });
+
+  // ─── PUT /profile ───────────────────────────────────────────────────────────
+  // Create-or-update. `approved` is deliberately NOT set here — a self-created
+  // store stays unapproved until a human reviews it.
+
+  server.put('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('STORE_OWNER')) {
+      return reply.code(403).send({ error: 'STORE_OWNER role required' });
+    }
+    const parsed = storeProfileSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const userId = request.currentUser!.id;
+    const existing = await prisma.storeProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    const profile = existing
+      ? await prisma.storeProfile.update({ where: { userId }, data: parsed.data })
+      : await prisma.storeProfile.create({
+          data: { userId, ...parsed.data, categories: parsed.data.categories ?? [] },
+        });
+    return reply.send({ profile });
+  });
+
   // ─── GET /products ──────────────────────────────────────────────────────────
 
   server.get('/products', { preHandler: [authenticateUser] }, async (request, reply) => {
@@ -73,7 +128,10 @@ export async function storeAdminRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'STORE_OWNER role required' });
     }
     const storeProfileId = await resolveStoreProfileId(request.currentUser!.id);
-    if (!storeProfileId) return reply.send({ products: [] });
+    // S-07: distinguish "no store set up" from "store set up, no products yet".
+    // The page previously showed the same "Add your first product" empty state
+    // for both, then failed the add with an internal string.
+    if (!storeProfileId) return reply.send({ products: [], storeProfileMissing: true });
     const products = await prisma.storeProduct.findMany({
       where: { storeProfileId },
       orderBy: { createdAt: 'desc' },
@@ -90,7 +148,15 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     }
     const storeProfileId = await resolveStoreProfileId(request.currentUser!.id);
     if (!storeProfileId) {
-      return reply.code(400).send({ error: 'No StoreProfile for this user' });
+      // S-07: was `400 {"error":"No StoreProfile for this user"}`, rendered
+      // verbatim to the owner by setError(err.message). Machine-readable code
+      // + copy a human can act on; PUT /store-admin/profile is the way out.
+      return reply.code(409).send({
+        code: 'store_profile_required',
+        error: 'Store setup incomplete',
+        message:
+          'Finish setting up your store — add your store name — before listing products.',
+      });
     }
     const parsed = productCreateSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -187,6 +253,38 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     return { revenue, lines };
   }
 
+  /**
+   * SCAL-04 (2026-08-13): walk a store's orders in pages instead of one read.
+   *
+   * /dashboard loaded every order of the current month and /revenue a full
+   * YEAR of them — `items` JSON included, and /dashboard also joined the buyer
+   * row for every one — only to produce five scalars and a ten-row strip. The
+   * totals cannot move into SQL: per-store revenue is attributed by walking the
+   * `items` JSON against this store's product ids (attributeOrderToStore), so
+   * the rows genuinely have to be read. What they must not do is all be
+   * resident at once in a 512 MB container. Paging keeps peak memory at one
+   * page for a store of any size while every order is still visited, so the
+   * numbers are unchanged.
+   *
+   * `id` breaks ties in the sort so the cursor is stable when two orders share
+   * a createdAt.
+   */
+  const ORDER_PAGE_SIZE = 200;
+
+  async function walkStoreOrders<T extends { id: string }>(
+    fetchPage: (cursor: string | undefined, take: number) => Promise<T[]>,
+    visit: (order: T) => void,
+  ): Promise<void> {
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await fetchPage(cursor, ORDER_PAGE_SIZE);
+      if (page.length === 0) return;
+      for (const order of page) visit(order);
+      if (page.length < ORDER_PAGE_SIZE) return;
+      cursor = page[page.length - 1]!.id;
+    }
+  }
+
   // ─── GET /dashboard ─────────────────────────────────────────────────────────
 
   server.get('/dashboard', { preHandler: [authenticateUser] }, async (request, reply) => {
@@ -216,16 +314,6 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     // P0 #S-15 (2026-07-09): scope to THIS store's orders. The old query had no
     // storeProfileId filter, so a store owner's dashboard aggregated every
     // store's sales on the platform (cross-vendor leak + wrong revenue).
-    const orders = await prisma.storeOrder.findMany({
-      where: {
-        storeProfileId,
-        status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
-        createdAt: { gte: monthStart },
-      },
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { fullName: true } } },
-    });
-
     let todaySales = 0;
     let todayOrders = 0;
     let monthSales = 0;
@@ -236,26 +324,62 @@ export async function storeAdminRoutes(server: FastifyInstance) {
       amount: number;
       status: string;
       createdAt: Date;
+      userId: string;
     }> = [];
 
-    for (const o of orders) {
-      const { revenue } = attributeOrderToStore(o.items, productIds);
-      if (revenue === 0) continue;
-      monthSales += revenue;
-      if (o.createdAt >= dayStart) {
-        todaySales += revenue;
-        todayOrders += 1;
-      }
-      if (o.status === 'CONFIRMED' || o.status === 'PROCESSING') pendingShipments += 1;
-      if (recentOrders.length < 10) {
-        recentOrders.push({
-          id: o.orderNumber,
-          customer: o.user?.fullName ?? 'Customer',
-          amount: revenue,
-          status: o.status,
-          createdAt: o.createdAt,
-        });
-      }
+    await walkStoreOrders(
+      (cursor, take) =>
+        prisma.storeOrder.findMany({
+          where: {
+            storeProfileId,
+            status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
+            createdAt: { gte: monthStart },
+          },
+          // The buyer's name is only needed for the ten rows that survive into
+          // `recentOrders`; joining it for every order of the month was a row
+          // of user data per order for nothing.
+          select: {
+            id: true,
+            orderNumber: true,
+            items: true,
+            status: true,
+            createdAt: true,
+            userId: true,
+          },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        }),
+      (o) => {
+        const { revenue } = attributeOrderToStore(o.items, productIds);
+        if (revenue === 0) return;
+        monthSales += revenue;
+        if (o.createdAt >= dayStart) {
+          todaySales += revenue;
+          todayOrders += 1;
+        }
+        if (o.status === 'CONFIRMED' || o.status === 'PROCESSING') pendingShipments += 1;
+        if (recentOrders.length < 10) {
+          recentOrders.push({
+            id: o.orderNumber,
+            customer: 'Customer',
+            amount: revenue,
+            status: o.status,
+            createdAt: o.createdAt,
+            userId: o.userId,
+          });
+        }
+      },
+    );
+
+    // One lookup for the at-most-ten buyers actually shown.
+    if (recentOrders.length > 0) {
+      const buyers = await prisma.user.findMany({
+        where: { id: { in: Array.from(new Set(recentOrders.map((o) => o.userId))) } },
+        select: { id: true, fullName: true },
+      });
+      const nameById = new Map(buyers.map((b) => [b.id, b.fullName] as const));
+      for (const o of recentOrders) o.customer = nameById.get(o.userId) ?? 'Customer';
     }
 
     return reply.send({
@@ -266,7 +390,9 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         lowStock,
         pendingShipments,
       },
-      recentOrders,
+      // `userId` is a join key, not part of the contract — the payload shape
+      // stays exactly what the store dashboard already consumes.
+      recentOrders: recentOrders.map(({ userId: _userId, ...row }) => row),
     });
   });
 
@@ -338,34 +464,40 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
-    const orders = await prisma.storeOrder.findMany({
-      where: {
-        // P0 #S-15: scope to this store (see dashboard orders query above).
-        storeProfileId,
-        status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
-        createdAt: { gte: yearStart },
-      },
-      select: { items: true, createdAt: true },
-    });
-
     let todayInr = 0;
     let monthInr = 0;
     let yearInr = 0;
     const perProduct = new Map<string, { sold: number; revenueInr: number }>();
 
-    for (const o of orders) {
-      const { revenue, lines } = attributeOrderToStore(o.items, productIds);
-      if (revenue === 0) continue;
-      yearInr += revenue;
-      if (o.createdAt >= monthStart) monthInr += revenue;
-      if (o.createdAt >= dayStart) todayInr += revenue;
-      for (const line of lines) {
-        const acc = perProduct.get(line.productId) ?? { sold: 0, revenueInr: 0 };
-        acc.sold += line.qty;
-        acc.revenueInr += line.lineInr;
-        perProduct.set(line.productId, acc);
-      }
-    }
+    // SCAL-04: a full year of orders, paged — see walkStoreOrders.
+    await walkStoreOrders(
+      (cursor, take) =>
+        prisma.storeOrder.findMany({
+          where: {
+            // P0 #S-15: scope to this store (see dashboard orders query above).
+            storeProfileId,
+            status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
+            createdAt: { gte: yearStart },
+          },
+          select: { id: true, items: true, createdAt: true },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        }),
+      (o) => {
+        const { revenue, lines } = attributeOrderToStore(o.items, productIds);
+        if (revenue === 0) return;
+        yearInr += revenue;
+        if (o.createdAt >= monthStart) monthInr += revenue;
+        if (o.createdAt >= dayStart) todayInr += revenue;
+        for (const line of lines) {
+          const acc = perProduct.get(line.productId) ?? { sold: 0, revenueInr: 0 };
+          acc.sold += line.qty;
+          acc.revenueInr += line.lineInr;
+          perProduct.set(line.productId, acc);
+        }
+      },
+    );
 
     const topProducts = Array.from(perProduct.entries())
       .map(([id, v]) => ({

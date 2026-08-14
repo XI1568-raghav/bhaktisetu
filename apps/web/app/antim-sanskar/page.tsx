@@ -11,7 +11,8 @@ import type { Metadata } from 'next';
 // about cremation.
 
 export const metadata: Metadata = {
-  title: 'Antim Sanskar — Darshya',
+  alternates: { canonical: 'https://darshya.online/antim-sanskar' },
+  title: 'Antim Sanskar',
   description:
     'Coordinated last rites support for Hindu families. Pandit, samagri, ghat coordination, and asthi visarjan handled with dignity. Available 24x7.',
   robots: { index: true, follow: true },

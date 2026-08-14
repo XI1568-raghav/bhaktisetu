@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
+import { TITLE_TEMPLATE } from '../../lib/seo/title-template';
 
 // Generic auth-segment defaults. Per-route canonical lives in each
 // route's own layout.tsx (login/signup/verify/callback) — hardcoding
 // /auth/login here would mistag signup, verify, callback as login.
 export const metadata: Metadata = {
- title: { default: 'Sign In', template: '%s | Darshya' },
+ // SEO-03: this `template` used to be a second hard-coded copy of the root
+ // layout's. It is the shared constant now, so /auth can never brand
+ // differently from the other ~1,780 pages after a rename or a separator change.
+ title: { default: 'Sign In', template: TITLE_TEMPLATE },
  description: 'Sign in to Darshya with your phone number. Access live darshan, book pujas, and manage your spiritual journey.',
  openGraph: {
    title: 'Darshya — Sign In',
@@ -22,7 +26,17 @@ export const metadata: Metadata = {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
  return (
- <div className="min-h-[100dvh] relative flex items-center justify-center overflow-hidden py-8">
+ // RESP-01: this centres the sign-in card inside a full-viewport box. While
+ // the cookie banner is open it covers the bottom 41% of a 390x844 screen, so
+ // "centred in the viewport" put the Sign In button underneath it — a hit test
+ // on the button's own centre returned "Reject all". Centring inside the
+ // VISIBLE area instead means the form is reachable on first paint, with no
+ // scrolling and no dismissing the banner first. --consent-h is 0px whenever
+ // the banner is closed, so this is a no-op for returning visitors.
+ <div
+ className="relative flex items-center justify-center overflow-hidden py-8"
+ style={{ minHeight: 'calc(100dvh - var(--consent-h, 0px))' }}
+ >
  {/* Background gradient — warm saffron tones */}
  <div className="absolute inset-0 bg-gradient-to-br from-saffron-700 via-saffron-600 to-temple-gold" />
 

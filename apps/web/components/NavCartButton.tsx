@@ -14,7 +14,7 @@ export default function NavCartButton() {
  >
  <ShoppingBag className="w-5 h-5" />
  {itemCount > 0 && (
- <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-saffron-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+ <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-saffron-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
  {itemCount > 99 ? '99+' : itemCount}
  </span>
  )}

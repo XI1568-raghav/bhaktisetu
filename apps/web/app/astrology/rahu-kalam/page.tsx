@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Rahu Kalam Today — Free Rahu Kaal, Yamaganda & Gulika Calculator | Darshya',
+ title: 'Rahu Kalam Today — Free Rahu Kaal, Yamaganda & Gulika Calculator',
  description:
   'Free Rahu Kalam (Rahu Kaal) calculator. Today\'s ~90-minute inauspicious windows: Rahu Kalam, Yamaganda, Gulika Kalam — computed from sunrise/sunset per Muhurta Chintamani weekday tables. Live "now" marker. No birth-data needed. 20 Indian cities + 6 NRI cities pre-loaded.',
  alternates: { canonical: `${BASE_URL}/astrology/rahu-kalam` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Rahu Kalam Today — Free Rahu Kaal Calculator',
   description: 'Today\'s Rahu Kalam, Yamaganda, Gulika Kalam timings for your city. Free Vedic muhurat tool.',
   url: `${BASE_URL}/astrology/rahu-kalam`,
@@ -152,11 +153,11 @@ export default function RahuKalamPage() {
          <p className="font-serif text-lg font-semibold text-gray-900">{d.label}</p>
          <p className="text-sm text-gray-700">{d.sanskrit}</p>
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${d.pill}`}>Inauspicious</span>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${d.pill}`}>Inauspicious</span>
        </div>
        <p className="mt-2 text-xs font-semibold text-gray-700">Ruler: {d.ruler}</p>
        <p className="mt-2 text-sm text-gray-700">{d.meaning}</p>
-       <p className="mt-3 rounded-md bg-white/70 px-2 py-1.5 font-mono text-[11px] text-gray-700">
+       <p className="mt-3 rounded-md bg-white/70 px-2 py-1.5 font-mono text-xs text-gray-700">
         Octet/weekday: {d.weekdayTable}
        </p>
       </div>

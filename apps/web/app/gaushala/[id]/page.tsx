@@ -5,7 +5,8 @@ export function generateStaticParams() {
   return Object.keys(allCows).map((id) => ({ id }));
 }
 
-import { IMAGES } from "../../../lib/images";
+import { getGaushalaImage, remoteImage, remoteSrcSet, IMG_W } from "../../../lib/images";
+import { COMPANY } from "../../../lib/company";
 import {
  Heart,
  MapPin,
@@ -23,11 +24,22 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata: Metadata = {
- title: "Cow Details — Gau Seva",
- description:
- "View cow details, health status, and monthly updates. Adopt this cow and receive regular photo updates.",
-};
+// Per-cow canonical: a single hardcoded `metadata.alternates.canonical` on a
+// dynamic segment would declare every cow detail page to be the same URL
+// (prod sweep 2026-08-12, SEO-01).
+export async function generateMetadata({
+ params,
+}: {
+ params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+ const { id } = await params;
+ return {
+  title: "Cow Details — Gau Seva",
+  alternates: { canonical: `https://darshya.online/gaushala/${id}` },
+  description:
+   "View cow details, health status, and monthly updates. Adopt this cow and receive regular photo updates.",
+ };
+}
 
 /* ── Fallback data (used for all cow detail pages in MVP) ─────────────────────── */
 
@@ -58,7 +70,7 @@ const allCows: Record<
  gaushalaName: "Shri Krishna Gaushala",
  gaushalaLocation: "Vrindavan, Uttar Pradesh",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  description:
  "Lakshmi is a gentle 5-year-old Gir cow with beautiful long ears and a calm temperament. She was rescued as a calf from a dairy that was shutting down. Now she is the star of the gaushala, often seen nuzzling visitors for treats. She gives 8 liters of rich A2 milk daily.",
@@ -68,14 +80,14 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  description:
  "Lakshmi is doing well! She enjoyed the spring sunshine and has been very active. Vet checkup: healthy weight at 420kg.",
  },
  {
  date: "2026-02-15",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  description:
  "Lakshmi participated in the Gau Puja ceremony this month. She was adorned with marigold garlands. All health parameters normal.",
  },
@@ -90,7 +102,7 @@ const allCows: Record<
  gaushalaName: "Shri Krishna Gaushala",
  gaushalaLocation: "Vrindavan, Uttar Pradesh",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  description:
  "Gauri is a young 3-year-old Tharparkar cow with a beautiful grey-white coat. She is playful and curious, often leading the herd during morning walks. Being from a desert breed, she is remarkably resilient and low-maintenance.",
@@ -100,7 +112,7 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  description:
  "Gauri has grown beautifully this month. She is very social and friendly with all the caretakers. Weight gain is on track.",
  },
@@ -115,7 +127,7 @@ const allCows: Record<
  gaushalaName: "Shri Krishna Gaushala",
  gaushalaLocation: "Vrindavan, Uttar Pradesh",
  photo:
- IMAGES.gaushala['red-sindhi-cow'],
+ getGaushalaImage('red-sindhi-cow'),
  healthStatus: "senior_care",
  description:
  "Radha is a 9-year-old Red Sindhi cow with a distinctive reddish-brown coat. She is one of the oldest residents at the gaushala and is treated with special care. Though she no longer gives milk, she is loved by everyone for her gentle nature.",
@@ -125,14 +137,14 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['red-sindhi-cow'],
+ getGaushalaImage('red-sindhi-cow'),
  description:
  "Radha is receiving special senior care diet. Joint supplements have been added. She enjoys sunbathing in the afternoon.",
  },
  {
  date: "2026-02-15",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  description:
  "Radha had a vet checkup. Slight arthritis detected — started on herbal treatment. Spirits remain high.",
  },
@@ -147,7 +159,7 @@ const allCows: Record<
  gaushalaName: "Kamdhenu Gaushala",
  gaushalaLocation: "Jaipur, Rajasthan",
  photo:
- IMAGES.gaushala['cow-shelter'],
+ getGaushalaImage('cow-shelter'),
  healthStatus: "healthy",
  description:
  "Kamala is a 4-year-old Gir cow rescued from an illegal dairy operation in Jaipur. Despite her difficult past, she has blossomed into a healthy and affectionate cow. She is one of the highest milk producers at the gaushala.",
@@ -157,7 +169,7 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['cow-shelter'],
+ getGaushalaImage('cow-shelter'),
  description:
  "Kamala is flourishing! She has fully recovered from her rescue trauma. Milk yield: 12 liters/day. She loves her new organic diet.",
  },
@@ -172,7 +184,7 @@ const allCows: Record<
  gaushalaName: "Kamdhenu Gaushala",
  gaushalaLocation: "Jaipur, Rajasthan",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  healthStatus: "under_treatment",
  description:
  "Dhanvantari is a 6-year-old Kankrej bull, a majestic breed from Gujarat. He was found injured on a highway and brought to the gaushala. Currently undergoing treatment for a leg fracture but recovering well under expert veterinary care.",
@@ -182,14 +194,14 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  description:
  "Dhanvantari is showing great improvement! The leg splint was adjusted. He can now walk short distances. Expected full recovery in 6 weeks.",
  },
  {
  date: "2026-02-15",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  description:
  "Surgery was successful. Dhanvantari is resting and eating well. Pain management is being handled with ayurvedic medicines.",
  },
@@ -204,7 +216,7 @@ const allCows: Record<
  gaushalaName: "Kamdhenu Gaushala",
  gaushalaLocation: "Jaipur, Rajasthan",
  photo:
- IMAGES.gaushala['red-sindhi-cow'],
+ getGaushalaImage('red-sindhi-cow'),
  healthStatus: "healthy",
  description:
  "Bhola is an adorable 2-year-old Tharparkar calf, born right here at Kamdhenu Gaushala. He is playful, energetic, and already a visitor favorite. Named 'Bhola' (innocent) for his trusting and sweet nature.",
@@ -214,7 +226,7 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['red-sindhi-cow'],
+ getGaushalaImage('red-sindhi-cow'),
  description:
  "Bhola is growing fast! He has gained 15kg this month. Very active and playful — loves running around the open paddock.",
  },
@@ -229,7 +241,7 @@ const allCows: Record<
  gaushalaName: "Gokul Gaushala",
  gaushalaLocation: "Mathura, Uttar Pradesh",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  description:
  "Surabhi is a magnificent 6-year-old Gir cow, the pride of Gokul Gaushala. Her A2 milk is used to produce the gaushala's famous organic ghee. She was hand-raised from birth and is incredibly friendly with humans.",
@@ -239,14 +251,14 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  description:
  "Surabhi produced 10 liters of rich A2 milk today. She is in excellent health. New organic fodder mix has been well received.",
  },
  {
  date: "2026-02-15",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  description:
  "Surabhi participated in the Go Puja on Makar Sankranti. She was decorated with flowers and tilak. All vitals excellent.",
  },
@@ -261,7 +273,7 @@ const allCows: Record<
  gaushalaName: "Gokul Gaushala",
  gaushalaLocation: "Mathura, Uttar Pradesh",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  description:
  "Kapila is a 4-year-old Sahiwal cow named after the sacred Kapila cow of Hindu mythology. She is known for her exceptionally creamy milk and calm temperament. Kapila is part of the gaushala's breed conservation program.",
@@ -271,7 +283,7 @@ const allCows: Record<
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['tharparkar-cow'],
+ getGaushalaImage('tharparkar-cow'),
  description:
  "Kapila is thriving in the conservation program. She has been selected for the indigenous breed documentation project. Health is excellent.",
  },
@@ -289,7 +301,7 @@ const defaultCow = {
  gaushalaName: "Shri Krishna Gaushala",
  gaushalaLocation: "Vrindavan, Uttar Pradesh",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  description:
  "Lakshmi is a gentle 5-year-old Gir cow with beautiful long ears and a calm temperament. She was rescued as a calf from a dairy that was shutting down.",
@@ -299,7 +311,7 @@ const defaultCow = {
  {
  date: "2026-03-15",
  photo:
- IMAGES.gaushala['gir-cow'],
+ getGaushalaImage('gir-cow'),
  description:
  "Lakshmi is doing well! She enjoyed the spring sunshine and has been very active.",
  },
@@ -324,7 +336,7 @@ const adoptionPlans = [
  id: "plan_annual",
  name: "Gau Raksha",
  price: "\u20B930,000/yr",
- description: "Annual care + 80G",
+ description: COMPANY.donationLegal.HAS_80G_VERIFIED ? "Annual care + 80G" : "Annual care",
  },
  {
  id: "plan_lifetime",
@@ -455,7 +467,14 @@ export default async function CowDetailPage({
  <div className="bg-white rounded-xl overflow-hidden border border-surface-100 shadow-sm">
  <div className="relative h-72 sm:h-96 overflow-hidden">
  <img
- src={cow.photo}
+ src={remoteImage(cow.photo, IMG_W.WIDE)}
+ srcSet={remoteSrcSet(cow.photo, [IMG_W.CARD, IMG_W.WIDE])}
+ sizes="(max-width: 1024px) 100vw, 720px"
+ width={960}
+ height={540}
+ loading="eager"
+ fetchPriority="high"
+ decoding="async"
  alt={cow.name}
  className="w-full h-full object-cover"
  />
@@ -533,7 +552,7 @@ export default async function CowDetailPage({
  }`}
  >
  {plan.popular && (
- <span className="absolute -top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-full">
+ <span className="absolute -top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider rounded-full">
  Popular
  </span>
  )}
@@ -543,7 +562,7 @@ export default async function CowDetailPage({
  <p className="text-sm font-bold text-surface-900">
  {plan.price}
  </p>
- <p className="text-[11px] text-surface-400 mt-0.5">
+ <p className="text-xs text-surface-400 mt-0.5">
  {plan.description}
  </p>
  </Link>
@@ -592,6 +611,10 @@ export default async function CowDetailPage({
  <div className="rounded-xl overflow-hidden border border-surface-100">
  <img
  src={update.photo}
+ width={500}
+ height={192}
+ loading="lazy"
+ decoding="async"
  alt={`${cow.name} update - ${update.date}`}
  className="w-full h-48 object-cover"
  />
@@ -630,7 +653,7 @@ export default async function CowDetailPage({
  {[
  "Monthly photo & video updates",
  "Visit your cow anytime",
- "80G tax receipt (annual/lifetime)",
+ "Donation receipt PDF, emailed instantly",
  "Digital adoption certificate",
  ].map((item) => (
  <div
@@ -649,7 +672,7 @@ export default async function CowDetailPage({
  <Heart className="w-5 h-5" />
  Donate Now
  </Link>
- <p className="text-emerald-200 text-[11px] text-center mt-3">
+ <p className="text-emerald-200 text-xs text-center mt-3">
  Starting from just Rs 51/day
  </p>
  </div>
@@ -702,7 +725,7 @@ export default async function CowDetailPage({
  {gsInfo.facilities.map((f) => (
  <span
  key={f}
- className="px-2.5 py-1 bg-surface-50 border border-surface-100 rounded-lg text-[11px] font-medium text-surface-600"
+ className="px-2.5 py-1 bg-surface-50 border border-surface-100 rounded-lg text-xs font-medium text-surface-600"
  >
  {f}
  </span>

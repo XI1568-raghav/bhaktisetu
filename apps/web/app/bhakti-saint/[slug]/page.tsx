@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = getBhaktiSaint(slug);
   if (!s) return { title: 'Not found' };
   return {
-    title: `${s.name} (${s.sanskrit}) — ${s.era} ${s.tradition} | Darshya`,
+    title: `${s.name} (${s.sanskrit}) — ${s.era} ${s.tradition}`,
     description: `${s.name}, ${s.era} ${s.region}. ${s.bestKnownFor}. Deity: ${s.deity}.`,
     alternates: { canonical: `${BASE_URL}/bhakti-saint/${s.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${s.name} — ${s.bestKnownFor}`,
       description: s.storySummary.slice(0, 180),
       url: `${BASE_URL}/bhakti-saint/${s.slug}`,

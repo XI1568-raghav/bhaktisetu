@@ -73,12 +73,12 @@ export default function MobileContent() {
  <div className="flex-1 min-w-0">
  <h3 className="text-sm font-semibold text-surface-900 truncate">{item.title}</h3>
  <div className="flex items-center gap-2 mt-0.5">
- <span className="text-[10px] font-medium text-saffron-600 bg-saffron-50 px-1.5 py-0.5 rounded">{item.type}</span>
- <span className="text-[10px] text-surface-400">{item.deity}</span>
+ <span className="text-xs font-medium text-saffron-600 bg-saffron-50 px-1.5 py-0.5 rounded">{item.type}</span>
+ <span className="text-xs text-surface-400">{item.deity}</span>
  </div>
  </div>
  <div className="text-right shrink-0">
- <p className="text-[10px] text-surface-400 flex items-center gap-0.5">
+ <p className="text-xs text-surface-400 flex items-center gap-0.5">
  <Clock className="w-2.5 h-2.5" /> {item.duration}
  </p>
  <button className="mt-1">
@@ -98,7 +98,7 @@ export default function MobileContent() {
  <div className="flex-1 min-w-0">
  <p className="text-xs font-semibold text-white truncate">{playing}</p>
  <div className="w-full h-1 bg-surface-700 rounded-full mt-1.5">
- <div className="w-1/3 h-full bg-saffron-500 rounded-full" />
+ <div className="w-1/3 h-full bg-saffron-600 rounded-full" />
  </div>
  </div>
  <div className="flex items-center gap-1 shrink-0">

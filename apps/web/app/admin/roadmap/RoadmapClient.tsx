@@ -196,7 +196,7 @@ export default function RoadmapClient() {
                     : 'bg-surface-50 border-surface-200';
               return (
                 <div key={key} className={`border rounded-lg p-3 ${bg}`}>
-                  <div className="font-mono text-[10px] text-surface-500 truncate" title={key}>
+                  <div className="font-mono text-xs text-surface-500 truncate" title={key}>
                     {key}
                   </div>
                   {item && (
@@ -212,7 +212,7 @@ export default function RoadmapClient() {
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-[10px] text-surface-400 mt-1">
+                  <div className="text-xs text-surface-400 mt-1">
                     {v.fetchedAt ? new Date(v.fetchedAt).toLocaleTimeString() : ''}
                     {fmt.status === 'stale' && (
                       <span className="ml-2 text-amber-700">⚠ stale</span>
@@ -257,8 +257,8 @@ export default function RoadmapClient() {
                   const item = itemById[q.itemId];
                   const title = q.itemTitle || item?.title || '(item not in index)';
                   const srcBadge = q.source === 'dryrun'
-                    ? <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800">dryrun</span>
-                    : <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800">live</span>;
+                    ? <span className="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-800">dryrun</span>
+                    : <span className="px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800">live</span>;
                   return (
                     <tr key={q.queueId + q.filename} className="border-b border-surface-100">
                       <td className="py-2 pr-3 font-mono text-xs text-surface-600">{q.queueId}</td>

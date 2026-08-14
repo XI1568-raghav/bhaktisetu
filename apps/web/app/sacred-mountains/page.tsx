@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '10 Sacred Mountains of Hindu Tradition — Pilgrim & Cosmology Guide | Darshya',
+  title: '10 Sacred Mountains of Hindu Tradition — Pilgrim & Cosmology Guide',
   description:
     'Mount Kailash, Govardhan, Arunachala, Tirumala Seven Hills, Vindhya, Nilgiri, Mahendragiri, Palani Hills, Parashuram Kund, and cosmic Mount Meru — height, legends, pilgrim parikrama routes, best seasons, and modern access for India\'s most sacred peaks.',
   alternates: { canonical: `${BASE_URL}/sacred-mountains` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: '10 Sacred Mountains of Hindu Tradition',
     description:
       'Deep guide to Hindu sacred peaks — Kailash, Govardhan, Arunachala, Tirumala, Meru — with parikrama routes, legends, and pilgrim access.',
@@ -82,7 +83,7 @@ export default function SacredMountainsIndexPage() {
                 {m.height !== null ? `${m.height.toLocaleString()} m` : 'cosmic / non-geographic'}
               </p>
               <p className="mt-3 line-clamp-3 text-sm text-gray-700">{m.significance}</p>
-              <div className="mt-3 flex flex-wrap gap-1 text-[10px] font-medium uppercase tracking-wide">
+              <div className="mt-3 flex flex-wrap gap-1 text-xs font-medium uppercase tracking-wide">
                 <span className={`rounded px-2 py-0.5 ${access.cls}`}>{access.label}</span>
                 <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-700">
                   {m.associatedDeity.split('(')[0]?.trim()}

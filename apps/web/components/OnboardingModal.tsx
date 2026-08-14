@@ -378,7 +378,7 @@ function Step2({
                   <span className="text-xs text-surface-400">{opt.label}</span>
                 </div>
                 {!opt.active && (
-                  <span className="text-[10px] uppercase tracking-wide font-semibold text-surface-400 bg-surface-100 px-2 py-0.5 rounded-full">
+                  <span className="text-xs uppercase tracking-wide font-semibold text-surface-400 bg-surface-100 px-2 py-0.5 rounded-full">
                     coming soon
                   </span>
                 )}

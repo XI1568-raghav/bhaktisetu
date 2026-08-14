@@ -64,7 +64,7 @@ export default function ChoghadiyaClient() {
       </select>
      </label>
     </div>
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Sunrise/sunset via Almanac for Computers (~1 min accuracy — sufficient for 90-minute period
      granularity). Each day-period = (sunset − sunrise) / 8; each night-period = (next sunrise − sunset) / 8.
     </p>
@@ -83,7 +83,7 @@ export default function ChoghadiyaClient() {
 
       {result.currentPeriod && (
        <div className={`mt-5 rounded-xl border-2 p-4 ${QUALITY_STYLE[result.currentPeriod.quality].border} ${QUALITY_STYLE[result.currentPeriod.quality].bg}`}>
-        <p className="text-[11px] uppercase tracking-wider text-gray-600">Right now</p>
+        <p className="text-xs uppercase tracking-wider text-gray-600">Right now</p>
         <p className="mt-1 font-serif text-xl text-gray-900">
          {result.currentPeriod.kind} <span className="text-sm font-normal text-gray-600">· {result.currentPeriod.startTime} → {result.currentPeriod.endTime}</span>
         </p>
@@ -142,7 +142,7 @@ export default function ChoghadiyaClient() {
 function Stat({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-gray-200 bg-white/90 p-3 text-center">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 font-serif text-lg text-gray-900">{value}</p>
   </div>
  );
@@ -155,10 +155,10 @@ function PeriodRow({ p }: { p: ChoghadiyaPeriod }) {
    p.isCurrent ? 'ring-2 ring-saffron-400 ring-offset-1' : ''
   } ${s.border} ${s.bg}`}>
    <div className="flex flex-wrap items-center gap-2">
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${s.pill}`}>{s.label}</span>
+    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${s.pill}`}>{s.label}</span>
     <span className="font-serif text-base font-semibold text-gray-900">{p.kind}</span>
     {p.isCurrent && (
-     <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-[10px] font-bold text-white">NOW</span>
+     <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-xs font-bold text-white">NOW</span>
     )}
    </div>
    <div className="text-xs text-gray-700">
