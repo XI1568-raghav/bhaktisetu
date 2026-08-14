@@ -7,6 +7,7 @@ import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // exposes the name to importers but does not bind it in local scope.
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
 import { notifyUser } from '../routes/notifications.js';
+import { notifyVideoReady } from './booking-notify.service.js';
 import { ensureConversationForBooking } from './conversation.service.js';
 import { paymentService } from './payment.service.js';
 
@@ -27,12 +28,48 @@ export interface CreateBookingInput {
   dispatchTier?: 'instant' | 'one_hour' | 'senior' | 'scheduled';
 }
 
+/**
+ * The four tabs the devotee's My Bookings page renders. DB-01 (2026-08-12):
+ * these used to be computed in the browser from whatever page of rows the API
+ * happened to return, so "All" showed 20 when the devotee had 81 bookings.
+ * The server owns both the filter and the count now, so a chip can never
+ * disagree with the list under it.
+ */
+export const MY_BOOKINGS_VIEWS = ['all', 'upcoming', 'completed', 'cancelled'] as const;
+export type MyBookingsView = (typeof MY_BOOKINGS_VIEWS)[number];
+
+/** Terminal success states — what a devotee reads as "done". */
+export const COMPLETED_BOOKING_STATUSES: BookingStatus[] = [
+  'completed',
+  'video_uploaded',
+  'delivered',
+];
+
+/**
+ * Anything in here can never be "upcoming", whatever the date says.
+ *
+ * DB-03 (2026-08-12): `pending_payment` used to be missing, so every abandoned
+ * or failed checkout — each of which mints a real booking row BEFORE the
+ * gateway opens — showed up under Upcoming as if it were a paid puja. One
+ * seeded devotee carried 8 such ghosts. The customer is told "You have NOT
+ * been charged" and then sees the un-charged row listed among their upcoming
+ * pujas; the tab has to mean "booked and paid for" or it means nothing.
+ * `refunded` was missing for the same reason — it is as terminal as cancelled.
+ */
+export const NON_UPCOMING_BOOKING_STATUSES: BookingStatus[] = [
+  'pending_payment',
+  'cancelled',
+  'refunded',
+  ...COMPLETED_BOOKING_STATUSES,
+];
+
 export interface UserBookingsFilters {
   status?: BookingStatus;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
   limit?: number;
+  view?: MyBookingsView;
 }
 
 // P0 #PBO-3 (2026-07-09): fees that the booking wizard shows but previously
@@ -298,6 +335,21 @@ export const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
 const CANCELLABLE_STATUSES: BookingStatus[] = ['pending_payment', 'confirmed', 'priest_assigned'];
 
 /**
+ * Transitions after which an assigned pandit has an earning on this booking.
+ *
+ * DI-05: deliberately EXCLUDES 'confirmed' (the confirm branch mints its own
+ * row) and every terminal state — a cancelled or refunded booking must never
+ * mint a new payable.
+ */
+const EARNING_ATTACH_STATUSES = new Set<BookingStatus>([
+  'priest_assigned',
+  'in_progress',
+  'completed',
+  'video_uploaded',
+  'delivered',
+]);
+
+/**
  * How many times one booking may be moved (S3-25). `PujaBooking.rescheduleCount`
  * was added to bound this and was never incremented or read, so the cap did not
  * exist. Exported so the web wizard and admin tooling can show the same number.
@@ -551,6 +603,64 @@ export class BookingService {
         tx,
         slotKeyFor(data.templePujaOfferingId, scheduledDate, data.scheduledTimeSlot),
       );
+
+      // ── RES-05 (2026-08-12): IDEMPOTENT ON THE NATURAL BOOKING KEY ────────
+      //
+      // Three byte-identical POSTs to /create-order in the same tick returned
+      // [201,201,201] with three distinct bookings and three distinct payable
+      // Razorpay orders for one puja. Capacity was never oversold (this lock
+      // and maxBookingsPerSlot hold), so it is duplicate INTENT: a devotee
+      // whose response is lost to a mobile handover retries and now owns two
+      // live orders — two charges to reverse, or one paid booking plus a
+      // phantom hold burning 1 of the 5 slot places for the whole hold window.
+      //
+      // The lookup runs INSIDE the advisory lock, which is the only place
+      // racers are already serialised, so it closes the parallel case as well
+      // as the sequential retry. `createRazorpayOrder` is already idempotent
+      // per booking (it returns an existing initiated/authorized order), so
+      // reusing the booking makes the whole endpoint idempotent end to end
+      // without the caller doing anything.
+      //
+      // Deliberately NARROW: only a hold for the SAME devotee, offering, date
+      // and slot, still inside UNPAID_HOLD_MINUTES, AND carrying the same
+      // charged amount and the same devotees. A different prasad choice or a
+      // different sankalp party is a genuinely different booking, and handing
+      // back the earlier one would charge this devotee for something they did
+      // not ask for.
+      const holdCutoff = new Date(Date.now() - UNPAID_HOLD_MINUTES * 60 * 1000);
+      const liveHold = await tx.pujaBooking.findFirst({
+        where: {
+          userId: data.userId,
+          templePujaOfferingId: data.templePujaOfferingId,
+          scheduledDate: scheduledDate,
+          scheduledTimeSlot: data.scheduledTimeSlot,
+          status: 'pending_payment',
+          createdAt: { gte: holdCutoff },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          bookingNumber: true,
+          status: true,
+          priceAmount: true,
+          currency: true,
+          scheduledDate: true,
+          scheduledTimeSlot: true,
+          createdAt: true,
+          devoteeNames: true,
+          prasadDeliveryRequested: true,
+        },
+      });
+      if (
+        liveHold &&
+        liveHold.prasadDeliveryRequested === data.prasadDeliveryRequested &&
+        new Prisma.Decimal(liveHold.priceAmount as Prisma.Decimal).equals(priceAmount) &&
+        JSON.stringify(liveHold.devoteeNames ?? null) === JSON.stringify(data.devoteeNames ?? null)
+      ) {
+        const { devoteeNames: _dn, prasadDeliveryRequested: _pd, ...reused } = liveHold;
+        return reused;
+      }
+
       await assertSlotCapacity(tx, slotWhere, offering.maxBookingsPerSlot);
       return tx.pujaBooking.create({
         data: {
@@ -755,6 +865,61 @@ export class BookingService {
         await writeTemplePayoutOnConfirm(row.id, tx);
       }
 
+      // ── DI-05 (2026-08-12): MINT THE EARNING WHEN THE PANDIT IS ATTACHED ──
+      //
+      // Commission rows are minted at CONFIRM time keyed to whoever is on the
+      // booking then. On the temple booking path nobody is: the pandit is
+      // attached later by a PATCH, so `writePujaCommissionOnConfirm` hit its
+      // `if (!booking.priestId) return` and nothing ever re-ran it. The
+      // reassignment block in routes/bookings.ts only calls
+      // `commission.updateMany`, which matches ZERO rows when none was minted.
+      //
+      // Driven end to end 2026-08-12: create-order -> verify-payment ->
+      // priest_assigned -> in_progress -> completed, all 200, and `commissions`
+      // stayed empty for that booking while `priest_payout` read Rs 770. The
+      // pandit's own /payouts/balance answered {availableInr: 0}. He is owed
+      // money and the product's own payout page tells him he has none.
+      //
+      // Safe to run here because it is idempotent on bookingId — the same
+      // findFirst guard both minting writers use — and gated on a CAPTURED
+      // payment, so it can never mint withdrawable balance for an unpaid
+      // booking (the S3-08 hole, on the transition instead of the confirm).
+      if (EARNING_ATTACH_STATUSES.has(newStatus) && row.priestId) {
+        const alreadyOwned = await tx.commission.findFirst({
+          where: { bookingId: row.id },
+          select: { id: true },
+        });
+        if (!alreadyOwned) {
+          const capturedForEarning = await tx.payment.count({
+            where: { bookingId: row.id, status: 'captured' },
+          });
+          if (capturedForEarning > 0) {
+            const priestUser = await tx.priest.findUnique({
+              where: { id: row.priestId },
+              select: { userId: true },
+            });
+            // No linked User means no payable provider — writing the row anyway
+            // is what produced the orphans RV-04 exists to stop creating.
+            if (priestUser?.userId) {
+              // amount = the PROVIDER's earning, percentage = the PLATFORM's
+              // take rate, against the same fee-inclusive base every other
+              // writer uses. lib/commission-math.ts — one column, one meaning.
+              const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
+              const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
+              await tx.commission.create({
+                data: {
+                  bookingId: row.id,
+                  providerId: priestUser.userId,
+                  amount: providerEarning,
+                  percentage: platformRateOf(price.sub(providerEarning), price),
+                  status: 'PENDING',
+                },
+              });
+            }
+          }
+        }
+      }
+
       return row;
     });
 
@@ -774,10 +939,29 @@ export class BookingService {
         .catch((err) => console.warn('[booking.service] priest payout write failed:', err));
     }
 
+    // NOTIF-05 (2026-08-12): the video-proof fan-out.
+    //
+    // Video proof is business rule #1 and the whole justification for 9-10x NRI
+    // pricing, and we promise its delivery in writing — by email in the booking
+    // confirmation, by WhatsApp on /nri-pujas. Neither was implemented: the only
+    // thing that fired here was the bare `notifyUser` push below, which needs a
+    // desktop browser with granted permission, i.e. essentially nobody in that
+    // cohort. notifyVideoReady owns the whole fan-out (push + WhatsApp + email),
+    // so the generic push leg is skipped for this status rather than firing a
+    // second, duplicate push.
+    if (newStatus === 'video_uploaded') {
+      void notifyVideoReady(updated.id).catch((err) =>
+        console.warn('[booking.service] video-ready notify failed:', err),
+      );
+    }
+
     // Push notification on key transitions. Fire-and-forget — push failure
     // must never break booking flow. notifyUser no-ops if VAPID is unset
     // or the user has no subscriptions.
-    const message = pushMessageFor(newStatus, updated.pujaType.name, updated.temple.name);
+    const message =
+      newStatus === 'video_uploaded'
+        ? null
+        : pushMessageFor(newStatus, updated.pujaType.name, updated.temple.name);
     if (message) {
       void notifyUser(updated.user.id, {
         ...message,
@@ -1249,7 +1433,7 @@ export class BookingService {
    * Get a paginated list of bookings for a user with optional filters.
    */
   async getUserBookings(userId: string, filters?: UserBookingsFilters) {
-    const { status, dateFrom, dateTo, page = 1, limit = 20 } = filters ?? {};
+    const { status, dateFrom, dateTo, page = 1, limit = 20, view = 'all' } = filters ?? {};
 
     const where: Prisma.PujaBookingWhereInput = {
       userId,
@@ -1271,9 +1455,40 @@ export class BookingService {
 
     const skip = (page - 1) * limit;
 
-    const [bookings, total] = await Promise.all([
+    // DB-01: the view predicate always rides in `AND` so it composes with an
+    // explicit `status`/date filter instead of overwriting `where.status`.
+    const viewPredicate = (v: MyBookingsView): Prisma.PujaBookingWhereInput | null => {
+      switch (v) {
+        case 'upcoming': {
+          // scheduledDate is a @db.Date (UTC midnight); compare against the
+          // start of today so a puja later TODAY still reads as upcoming.
+          const startOfToday = new Date();
+          startOfToday.setUTCHours(0, 0, 0, 0);
+          return {
+            status: { notIn: NON_UPCOMING_BOOKING_STATUSES },
+            scheduledDate: { gte: startOfToday },
+          };
+        }
+        case 'completed':
+          return { status: { in: COMPLETED_BOOKING_STATUSES } };
+        case 'cancelled':
+          return { status: 'cancelled' };
+        default:
+          return null;
+      }
+    };
+
+    const whereForView = (v: MyBookingsView): Prisma.PujaBookingWhereInput => {
+      const predicate = viewPredicate(v);
+      return predicate ? { ...where, AND: [predicate] } : where;
+    };
+
+    // One count per tab, over the WHOLE filtered set — never over the page.
+    // These are indexed `userId` counts; the page query dominates the cost.
+    const [bookings, allCount, upcomingCount, completedCount, cancelledCount] =
+      await Promise.all([
       prisma.pujaBooking.findMany({
-        where,
+        where: whereForView(view),
         select: {
           id: true,
           bookingNumber: true,
@@ -1316,19 +1531,41 @@ export class BookingService {
             },
           },
         },
-        orderBy: { scheduledDate: 'desc' },
+        // Newest puja first, then a UNIQUE tiebreaker. `scheduledDate` alone
+        // is not a total order — this devotee has dozens of bookings on the
+        // same date — so Postgres could order ties differently per query and
+        // a row would fall through the seam between two pages. Measured on
+        // the seeded account: walking all 5 pages yielded 80 distinct rows of
+        // 81 before `id` was added here.
+        orderBy: [{ scheduledDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
         skip,
         take: limit,
       }),
-      prisma.pujaBooking.count({ where }),
+      prisma.pujaBooking.count({ where: whereForView('all') }),
+      prisma.pujaBooking.count({ where: whereForView('upcoming') }),
+      prisma.pujaBooking.count({ where: whereForView('completed') }),
+      prisma.pujaBooking.count({ where: whereForView('cancelled') }),
     ]);
+
+    const counts = {
+      all: allCount,
+      upcoming: upcomingCount,
+      completed: completedCount,
+      cancelled: cancelledCount,
+    };
+
+    // `total` paginates the ACTIVE view. For the default 'all' view this is
+    // exactly the number the endpoint returned before, so existing callers
+    // (and their tests) are unaffected.
+    const total = counts[view];
 
     return {
       bookings,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      counts,
     };
   }
 
@@ -1398,6 +1635,21 @@ export class BookingService {
       .catch((err) =>
         console.warn('[booking.service] priest payout write failed after video proof:', err),
       );
+
+    // NOTIF-05 (2026-08-12): tell the devotee their video is ready.
+    //
+    // This is the path the pandit portal actually uses, and it was silent —
+    // it did not even fire the web-push that updateBookingStatus managed,
+    // because it writes `video_uploaded` with a raw update and bypasses that
+    // method entirely (see the payout note above, same root cause). The devotee
+    // who paid a premium specifically for video proof could not learn it
+    // existed until they logged in and looked.
+    //
+    // Same contract as the payout write: fire-and-forget, never fails the
+    // upload the pandit just completed.
+    void notifyVideoReady(updated.id).catch((err) =>
+      console.warn('[booking.service] video-ready notify failed:', err),
+    );
 
     return updated;
   }

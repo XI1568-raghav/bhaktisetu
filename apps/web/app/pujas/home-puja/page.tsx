@@ -18,6 +18,7 @@ import {
 import { homePujaCategories } from '../../../lib/home-pujas';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/pujas/home-puja' },
  title: 'Home Puja — Book a Pandit at Your Residence',
  description:
  'Book verified, Aadhaar-authenticated pandits to perform pujas at your home. Griha Pravesh, Satyanarayan Katha, Navratri, Rudrabhishek, and more. Starting ₹1,100.',
@@ -87,7 +88,7 @@ export default function HomePujaHubPage() {
 
  {/* ── Trust callout card ───────────────────────────────────── */}
  <div className="relative bg-white rounded-2xl border border-[var(--color-border)] shadow-warm-sm p-6 md:p-8">
- <div className="absolute -top-3 -right-3 bg-saffron-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+ <div className="absolute -top-3 -right-3 bg-saffron-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
  Verified pandits & video proof
  </div>
  <h3 className="text-xl font-bold text-surface-800 mb-5">Why Darshya Home Puja</h3>
@@ -106,8 +107,8 @@ export default function HomePujaHubPage() {
  <Star className="w-4.5 h-4.5 text-saffron-600" />
  </div>
  <div>
- <div className="font-semibold text-surface-800 text-sm">500+ pujas completed</div>
- <div className="text-xs text-surface-500">Experienced pandits from Vedic gurukuls</div>
+ <div className="font-semibold text-surface-800 text-sm">Gurukul-trained pandits</div>
+ <div className="text-xs text-surface-500">Shastra-tested on vidhi, sankalp and recitation</div>
  </div>
  </li>
  <li className="flex gap-3">

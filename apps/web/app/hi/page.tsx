@@ -1,8 +1,22 @@
 // Hindi landing — single Devanagari surface today. Routes that have not
 // been fully translated link back to the canonical English route rather
-// than fake /hi/* paths (which would harm SEO).
+// than fake /hi/* paths (which would harm SEO — and which 404 today).
+//
+// Audit I-02 / I18N-01 (2026-08-12): those onward links now carry the locale
+// (`?lang=hi`), which the middleware converts into the durable
+// `poojly_language` cookie and strips off the URL. Previously the visitor's
+// language choice survived exactly zero clicks.
+//
+// They are all prefetch={false} for the same reason as components/LangLanding
+// (see the note there): the cookie is only written when the click actually
+// reaches the middleware, and a prefetched static route can be replayed from the
+// Next 15 client Router Cache for minutes without any request going out.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+
+import { localeHref } from '../../lib/i18n/locales';
+
+const href = (to: string) => localeHref(to, 'hi');
 
 
 export const metadata: Metadata = {
@@ -43,7 +57,7 @@ export default function HindiLanding() {
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10" lang="hi">
       <div className="text-right mb-4 text-sm">
-        <Link href="/" className="text-saffron-700 hover:underline">English →</Link>
+        <Link href="/?lang=en" className="text-saffron-700 hover:underline" prefetch={false}>English →</Link>
       </div>
 
       <header className="text-center mb-12">
@@ -58,14 +72,16 @@ export default function HindiLanding() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
-            href="/pujas"
+            href={href('/pujas')}
             className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            prefetch={false}
           >
             पूजा बुक करें
           </Link>
           <Link
-            href="/darshan"
+            href={href('/darshan')}
             className="px-6 py-3 border border-saffron-600 text-saffron-700 rounded-md text-sm font-semibold hover:bg-saffron-50"
+            prefetch={false}
           >
             लाइव दर्शन देखें
           </Link>
@@ -76,8 +92,9 @@ export default function HindiLanding() {
         {FEATURES.map((f) => (
           <Link
             key={f.href}
-            href={f.href}
+            href={href(f.href)}
             className="block rounded-xl border border-surface-200 bg-white p-5 hover:border-saffron-300 hover:shadow-sm transition"
+            prefetch={false}
           >
             <h2 className="text-lg font-semibold text-surface-900 mb-2">{f.title}</h2>
             <p className="text-sm text-surface-700 leading-relaxed">{f.body}</p>
@@ -91,8 +108,9 @@ export default function HindiLanding() {
           NRI के लिए विशेष लेन — अपने नाम से भारत के मंदिर में पूजा, वीडियो प्रमाण आपके WhatsApp पर। साल भर सदस्यता ₹5000 / $60।
         </p>
         <Link
-          href="/nri"
+          href={href('/nri')}
           className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          prefetch={false}
         >
           NRI पैकेज देखें →
         </Link>
@@ -100,7 +118,7 @@ export default function HindiLanding() {
 
       <footer className="border-t border-surface-200 pt-6 text-center text-sm text-surface-600">
         <p>पूर्ण हिंदी अनुवाद प्रगति पर है। अधिकांश पृष्ठ अभी अंग्रेज़ी में हैं।</p>
-        <Link href="/" className="text-saffron-700 hover:underline mt-2 inline-block">
+        <Link href="/?lang=en" className="text-saffron-700 hover:underline mt-2 inline-block" prefetch={false}>
           अंग्रेज़ी संस्करण देखें →
         </Link>
       </footer>

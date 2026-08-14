@@ -136,7 +136,7 @@ function TempleBookingsContent() {
                       {b.status.replace(/_/g, ' ')}
                     </span>
                     {b.dispatchTier !== 'scheduled' && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 uppercase">
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 uppercase">
                         {b.dispatchTier.replace(/_/g, ' ')}
                       </span>
                     )}

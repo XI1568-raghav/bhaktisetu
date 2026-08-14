@@ -1,0 +1,344 @@
+{
+ "capturedAt": "2026-08-13T06:22:47.481Z",
+ "apiBase": "http://127.0.0.1:4000",
+ "note": "Verbatim responses captured from the running dev API. Truncated only where noted.",
+ "panchangToday": {
+  "status": 200,
+  "body": {
+   "id": "e7ed7cf8-82cc-4c7f-bc1f-2f7c3878ca29",
+   "date": "2026-08-12T00:00:00.000Z",
+   "tithi": "Amavasya",
+   "nakshatra": "Ashlesha",
+   "yoga": "Vyatipata",
+   "karana": "Chatushpada",
+   "sunrise": "05:45",
+   "sunset": "18:55",
+   "rahuKaal": "12:20 - 13:58",
+   "shubhMuhurat": {
+    "vijayMuhurat": "14:31 - 15:24",
+    "brahmaMuhurta": "04:09 - 04:57",
+    "abhijitMuhurat": "11:56 - 12:44"
+   },
+   "festivals": [],
+   "vrat": [
+    "Amavasya Tarpan"
+   ],
+   "specialInfo": "Amavasya (new moon day) — perform Pitru Tarpan. Avoid starting new ventures. Good for meditation.",
+   "locationCity": "Delhi"
+  }
+ },
+ "templePortalDashboard": {
+  "status": 200,
+  "body": {
+   "profile": null,
+   "stats": {
+    "totalBookings": 0,
+    "monthBookings": 0,
+    "totalRevenueInr": 0,
+    "monthRevenueInr": 0,
+    "totalStreams": 0
+   },
+   "recentBookings": []
+  }
+ },
+ "templePortalPujas": {
+  "status": 200,
+  "body": {
+   "offerings": []
+  }
+ },
+ "templePortalDarshan": {
+  "status": 200,
+  "body": {
+   "streams": []
+  }
+ },
+ "wellnessSessions": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": "476dee2f-d552-4591-b577-110edac183d5",
+     "instructorId": "9e15c3a2-0dc7-4677-ac45-f7dfaec619a6",
+     "title": "QA Deep Hatha Yoga",
+     "description": "Adversarial QA class.",
+     "type": "YOGA",
+     "scheduledAt": "2026-08-15T08:20:33.901Z",
+     "durationMinutes": 60,
+     "capacity": 10,
+     "priceInr": "1000",
+     "status": "SCHEDULED",
+     "createdAt": "2026-08-12T08:20:35.855Z",
+     "updatedAt": "2026-08-12T09:02:40.059Z"
+    },
+    {
+     "id": "bcdc49d8-922d-4a91-81ad-116b89b54006",
+     "instructorId": "9e15c3a2-0dc7-4677-ac45-f7dfaec619a6",
+     "title": "ADMINOPS QA paid class",
+     "description": "admin-ops audit fixture",
+     "type": "YOGA",
+     "scheduledAt": "2026-08-17T08:49:08.468Z",
+     "durationMinutes": 45,
+     "capacity": 5,
+     "priceInr": "2500",
+     "status": "SCHEDULED",
+     "createdAt": "2026-08-12T08:49:08.799Z",
+     "updatedAt": "2026-08-12T08:49:08.799Z"
+    }
+   ]
+  }
+ },
+ "priestProfile": {
+  "status": 200,
+  "body": {
+   "id": "6a56eba6-e340-40bc-b236-97440ada4001",
+   "userId": "b61f02c9-b795-4e2e-a1e8-1f10660520b9",
+   "displayName": "Demo Pandit",
+   "bio": "Demo pandit for testing.",
+   "avatarUrl": null,
+   "specializations": [
+    "Ganesh Puja",
+    "Lakshmi Puja",
+    "Hanuman Chalisa Path"
+   ],
+   "languages": [
+    "Hindi",
+    "English"
+   ],
+   "experienceYears": 8,
+   "aadhaarVerified": true,
+   "isVerified": true,
+   "verificationStatus": "approved",
+   "ratingAvg": 4.61,
+   "ratingCount": 43,
+   "commissionRate": 0.7,
+   "status": "active",
+   "user": {
+    "fullName": "Demo Pandit",
+    "phone": "+919000000002",
+    "email": "pandit@demo.com"
+   },
+   "temples": [
+    {
+     "id": "402aea1e-5e0e-4215-8855-38e08d954d83",
+     "name": "Siddhivinayak Temple",
+     "city": "Mumbai",
+     "state": "Maharashtra",
+     "slug": "siddhivinayak-mumbai",
+     "isPrimary": false
+    }
+   ],
+   "stats": {
+    "totalBookings": 51,
+    "completedBookings": 13
+   },
+   "createdAt": "2026-08-11T19:18:45.752Z"
+  }
+ },
+ "gaushalaPortalCowsEmpty": {
+  "status": 200,
+  "body": {
+   "cows": []
+  }
+ },
+ "gaushalaPortalCowsOneRow": {
+  "status": 200,
+  "body": {
+   "cows": [
+    {
+     "id": "063a05f7-a0fd-4114-8d3a-4eec7a0feeea",
+     "gaushalaId": "9bf8adb8-721f-4d94-8e60-00017adfdce3",
+     "tagNumber": "AUDIT-PAR12-TMP",
+     "name": "Audit Probe",
+     "breed": "Gir",
+     "ageYears": 4,
+     "gender": "female",
+     "healthStatus": "healthy",
+     "arrivalDate": "2026-08-13T06:24:44.859Z",
+     "notes": "temporary audit probe",
+     "createdAt": "2026-08-13T06:24:44.859Z",
+     "updatedAt": "2026-08-13T06:24:44.859Z"
+    }
+   ]
+  }
+ },
+ "gaushalaPublicCows": {
+  "status": 200,
+  "body": {
+   "cows": [
+    {
+     "id": "cow_001",
+     "name": "Lakshmi",
+     "breed": "Gir",
+     "age": 5,
+     "gaushalaId": "gs_001",
+     "gaushalaName": "Shri Krishna Gaushala",
+     "photo": "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=600&q=80",
+     "healthStatus": "healthy",
+     "description": "Lakshmi is a gentle 5-year-old Gir cow with beautiful long e…",
+     "isAdopted": false,
+     "adopterName": null
+    },
+    {
+     "id": "cow_002",
+     "name": "Nandini",
+     "breed": "Sahiwal",
+     "age": 7,
+     "gaushalaId": "gs_001",
+     "gaushalaName": "Shri Krishna Gaushala",
+     "photo": "https://images.unsplash.com/photo-1527153907836-a9a0438ff035?w=600&q=80",
+     "healthStatus": "healthy",
+     "description": "Nandini is a 7-year-old Sahiwal breed cow, known for her hea…",
+     "isAdopted": true,
+     "adopterName": "Rajesh Kumar"
+    }
+   ],
+   "total": 19
+  }
+ },
+ "astrologerPortalDashboard": {
+  "status": 500,
+  "body": {
+   "statusCode": 500,
+   "code": "P2023",
+   "error": "Internal Server Error",
+   "message": "\nInvalid `prisma.astrologerProfile.findUnique()` invocation in\nE:\\NewClaude\\bhaktisetu\\apps\\api\\src\\routes\\astrologer-portal.ts:53:52\n\n  50   return reply.code(403).send({ error: 'ASTROLOGER role required' });\n  51 }\n  52 \n→ 53 const profile = await prisma.astrologerProfile.findUnique(\nInconsistent column data: Error creating UUID, invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `m` at 3"
+  }
+ },
+ "storeProducts": {
+  "status": 200,
+  "body": {
+   "products": [
+    {
+     "id": "prod_015",
+     "handle": "bhagavad-gita-deluxe-edition",
+     "title": "Bhagavad Gita (Hindi-English, Deluxe Edition)",
+     "description": "Deluxe hardbound edition of the Bhagavad Gita with…",
+     "price": 349,
+     "compareAtPrice": 599,
+     "discount": 42,
+     "currency": "INR",
+     "images": [
+      {
+       "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/Bhagavad_Gita_book_%28small%29_01.jpg",
+       "alt": "Bhagavad Gita Deluxe Edition"
+      }
+     ],
+     "category": "Books & Scriptures",
+     "collection": "books-scriptures",
+     "tag": "Bestseller",
+     "inStock": true,
+     "freeDelivery": false,
+     "rating": 4.9,
+     "reviewCount": 2100,
+     "weight": "650g",
+     "sku": "BS-BK-001"
+    },
+    {
+     "id": "prod_004",
+     "handle": "organic-camphor-250g",
+     "title": "Organic Camphor (Kapur) - 250g",
+     "description": "Pure organic camphor (kapur) tablets for daily aar…",
+     "price": 199,
+     "compareAtPrice": 299,
+     "discount": 33,
+     "currency": "INR",
+     "images": [
+      {
+       "url": "https://images.unsplash.com/photo-1551690935-a9e6f0a7e788?w=600&h=600&fit=crop&auto=format&q=80",
+       "alt": "Organic Camphor"
+      }
+     ],
+     "category": "Puja Essentials",
+     "collection": "puja-essentials",
+     "tag": null,
+     "inStock": true,
+     "freeDelivery": false,
+     "rating": 4.5,
+     "reviewCount": 1230,
+     "weight": "250g",
+     "sku": "BS-PE-004"
+    },
+    {
+     "id": "prod_003",
+     "handle": "pure-sandalwood-incense-sticks",
+     "title": "Pure Sandalwood Incense Sticks (100 pack)",
+     "description": "Premium sandalwood agarbatti made from pure chanda…",
+     "price": 249,
+     "compareAtPrice": 399,
+     "discount": 38,
+     "currency": "INR",
+     "images": [
+      {
+       "url": "https://images.unsplash.com/photo-1541795083-1b160cf4f3d7?w=600&h=600&fit=crop&auto=format&q=80",
+       "alt": "Pure Sandalwood Incense Sticks"
+      }
+     ],
+     "category": "Puja Essentials",
+     "collection": "puja-essentials",
+     "tag": "Top Rated",
+     "inStock": true,
+     "freeDelivery": false,
+     "rating": 4.6,
+     "reviewCount": 891,
+     "weight": "200g",
+     "sku": "BS-PE-003"
+    }
+   ],
+   "total": 24,
+   "page": 1,
+   "limit": 20,
+   "totalPages": 2
+  }
+ },
+ "storeCartEmpty": {
+  "status": 200,
+  "body": {
+   "cart": {
+    "id": "cart_2b5bd615-1633-4c95-9b09-03efb2b9e429",
+    "items": [],
+    "subtotal": 0,
+    "deliveryFee": 49,
+    "tax": 0,
+    "total": 49,
+    "currency": "INR",
+    "itemCount": 0
+   }
+  }
+ },
+ "storeAddToCart": {
+  "status": 200,
+  "body": {
+   "message": "Item added to cart.",
+   "cart": {
+    "id": "cart_2b5bd615-1633-4c95-9b09-03efb2b9e429",
+    "items": [
+     {
+      "id": "ci_1786602167987_1",
+      "productId": "prod_015",
+      "product": {
+       "id": "prod_015",
+       "handle": "bhagavad-gita-deluxe-edition",
+       "title": "Bhagavad Gita (Hindi-English, Deluxe Edition)",
+       "price": 349,
+       "images": [
+        {
+         "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/Bhagavad_Gita_book_%28small%29_01.jpg",
+         "alt": "Bhagavad Gita Deluxe Edition"
+        }
+       ]
+      },
+      "quantity": 1,
+      "subtotal": 349
+     }
+    ],
+    "subtotal": 349,
+    "deliveryFee": 49,
+    "tax": 17,
+    "total": 415,
+    "currency": "INR",
+    "itemCount": 1
+   }
+  }
+ }
+}

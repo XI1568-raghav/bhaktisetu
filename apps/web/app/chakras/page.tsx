@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '7 Chakras (Muladhara → Sahasrara) — Bija Mantras, Deities, Awakening | Darshya',
+  title: '7 Chakras (Muladhara → Sahasrara) — Bija Mantras, Deities, Awakening',
   description:
     'Complete Tantric guide to all 7 chakras — Muladhara, Svadhisthana, Manipura, Anahata, Vishuddha, Ajna, Sahasrara. Bija mantras, presiding deities, petals, elements, yoga practices, awakening path.',
   alternates: { canonical: `${BASE_URL}/chakras` },

@@ -2,10 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
  ArrowRight,
- Star,
- Calendar,
- Clock,
- Users,
  Heart,
  Leaf,
  Sun,
@@ -15,8 +11,11 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../components/ScrollReveal';
 import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip';
+import UpcomingClassesSection from './UpcomingClassesSection';
+import FeaturedInstructorsSection from './FeaturedInstructorsSection';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/wellness' },
  title: 'Yoga, Meditation & Vipassana',
  description:
  'Discover inner peace through guided yoga, meditation, and Vipassana retreats with certified instructors on Darshya.',
@@ -52,23 +51,19 @@ const categories = [
  },
 ];
 
-const featuredInstructors = [
- { id: 'inst-001', name: 'Aarav Sharma', specialty: 'Hatha Yoga & Pranayama', rating: 4.9, experience: 12, price: 599, category: 'yoga' },
- { id: 'inst-003', name: 'Swami Dhyanananda', specialty: 'Guided & Transcendental Meditation', rating: 4.9, experience: 20, price: 799, category: 'meditation' },
- { id: 'inst-005', name: 'Rajesh Kulkarni', specialty: 'Kundalini Yoga & Sound Bath', rating: 4.8, experience: 15, price: 699, category: 'yoga' },
- { id: 'inst-007', name: 'Acharya Goenkaji', specialty: 'Vipassana & Insight Meditation', rating: 4.9, experience: 25, price: 999, category: 'vipassana' },
- { id: 'inst-002', name: 'Meera Iyer', specialty: 'Vinyasa Flow & Ashtanga', rating: 4.8, experience: 8, price: 499, category: 'yoga' },
- { id: 'inst-004', name: 'Anita Desai', specialty: 'Mindfulness & Chakra Meditation', rating: 4.7, experience: 10, price: 449, category: 'meditation' },
-];
+// COM-14 (prod sweep 2026-08-12, P2): six invented instructors used to sit
+// here — name, 4.9 rating, years of experience and a per-session price for
+// people who teach nothing on this platform, each card linking to a fixture
+// profile. The section is now <FeaturedInstructorsSection />, derived from
+// the same live wellness_sessions rows the class catalog reads.
 
-const upcomingSessions = [
- { id: 'ses-001', title: 'Morning Hatha Flow', instructor: 'Aarav Sharma', date: 'Apr 18', time: '6:00 AM', duration: '60 min', spotsLeft: 8, category: 'yoga' },
- { id: 'ses-003', title: 'Guided Morning Meditation', instructor: 'Swami Dhyanananda', date: 'Apr 18', time: '5:30 AM', duration: '45 min', spotsLeft: 20, category: 'meditation' },
- { id: 'ses-005', title: 'Kundalini Awakening', instructor: 'Rajesh Kulkarni', date: 'Apr 19', time: '6:00 AM', duration: '90 min', spotsLeft: 6, category: 'yoga' },
- { id: 'ses-007', title: 'Vipassana Introduction', instructor: 'Acharya Goenkaji', date: 'Apr 20', time: '5:00 AM', duration: '120 min', spotsLeft: 10, category: 'vipassana' },
- { id: 'ses-009', title: 'Sound Bath Healing', instructor: 'Rajesh Kulkarni', date: 'Apr 21', time: '7:00 PM', duration: '60 min', spotsLeft: 3, category: 'meditation' },
- { id: 'ses-004', title: 'Chakra Alignment', instructor: 'Anita Desai', date: 'Apr 19', time: '7:00 PM', duration: '60 min', spotsLeft: 12, category: 'meditation' },
-];
+// AW-07 (2026-08-12, P1): the six invented "upcoming sessions" that used to
+// live here — 'Morning Hatha Flow · Aarav Sharma · Apr 18 · 8 spots left' and
+// friends — were fixtures. None of them existed in `wellness_sessions`, none
+// was bookable (each card linked to a static category page), and the real class
+// an instructor had just published was nowhere on this page. The section is now
+// <UpcomingClassesSection />, which renders live rows and links to
+// /wellness/classes/<id> where a devotee can actually enrol and pay.
 
 const benefits = [
  { title: 'Reduce Stress & Anxiety', description: 'Regular practice lowers cortisol levels and activates the parasympathetic nervous system for deep calm.' },
@@ -78,15 +73,6 @@ const benefits = [
  { title: 'Emotional Resilience', description: 'Vipassana and mindfulness develop equanimity — the ability to remain balanced through life\'s ups and downs.' },
  { title: 'Community & Connection', description: 'Join a sangha of practitioners who support each other on the path to inner peace.' },
 ];
-
-function getCategoryBadgeColor(category: string) {
- switch (category) {
- case 'yoga': return { bg: 'var(--color-art-2)', text: 'var(--color-primary-active)' };
- case 'meditation': return { bg: 'var(--color-art-1)', text: '#1a5c4a' };
- case 'vipassana': return { bg: 'var(--color-art-3)', text: 'var(--color-text)' };
- default: return { bg: 'var(--color-surface-offset)', text: 'var(--color-text-muted)' };
- }
-}
 
 export default function WellnessPage() {
  return (
@@ -126,11 +112,18 @@ export default function WellnessPage() {
 
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <Link
- href="/wellness/yoga"
+ href="/wellness/classes"
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
  style={{ background: 'var(--color-primary)' }}
  >
- Explore Yoga <ArrowRight className="w-4 h-4" />
+ Browse live classes <ArrowRight className="w-4 h-4" />
+ </Link>
+ <Link
+ href="/wellness/yoga"
+ className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg"
+ style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
+ >
+ Explore Yoga
  </Link>
  <Link
  href="/wellness/meditation"
@@ -196,131 +189,11 @@ export default function WellnessPage() {
  </div>
  </section>
 
- {/* ═══ FEATURED INSTRUCTORS ═══════════════════════════════════════════ */}
- <section className="py-14 md:py-20">
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
- Our Instructors
- </p>
- <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Learn from experienced practitioners
- </h2>
+ {/* ═══ FEATURED INSTRUCTORS (live rows — COM-14) ══════════════════════ */}
+ <FeaturedInstructorsSection />
 
- <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
- {featuredInstructors.map((inst, i) => {
- const badge = getCategoryBadgeColor(inst.category);
- return (
- <Link
- key={inst.id}
- href={`/wellness/instructors/${inst.id}`}
- data-reveal="scale-up"
- data-delay={String((i % 3) + 1)}
- className="group p-5 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <div className="flex items-start gap-4">
- <div
- className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-lg font-semibold"
- style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}
- >
- {inst.name.split(' ').map((n) => n[0]).join('')}
- </div>
- <div className="flex-1 min-w-0">
- <h3 className="text-sm font-medium group-hover:underline" style={{ color: 'var(--color-text)' }}>
- {inst.name}
- </h3>
- <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
- {inst.specialty}
- </p>
- <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <span className="flex items-center gap-0.5">
- <Star className="w-3 h-3 fill-current" style={{ color: '#D4A438' }} />
- {inst.rating}
- </span>
- <span>{inst.experience} yrs</span>
- <span style={{ color: 'var(--color-primary)' }}>
- &#8377;{inst.price}/session
- </span>
- </div>
- </div>
- </div>
- <div className="mt-3">
- <span
- className="text-[10px] font-medium px-2 py-0.5 rounded-full capitalize"
- style={{ background: badge.bg, color: badge.text }}
- >
- {inst.category}
- </span>
- </div>
- </Link>
- );
- })}
- </div>
- </div>
- </section>
-
- {/* ═══ UPCOMING SESSIONS ══════════════════════════════════════════════ */}
- <section className="py-14 md:py-20" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
- <div className="flex items-end justify-between mb-10">
- <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
- Live Sessions
- </p>
- <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Upcoming this week
- </h2>
- </div>
- </div>
-
- <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
- {upcomingSessions.map((session, i) => {
- const badge = getCategoryBadgeColor(session.category);
- return (
- <Link
- key={session.id}
- href={`/wellness/${session.category}`}
- data-reveal="up"
- data-delay={String((i % 3) + 1)}
- className="block p-4 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
- >
- <div className="flex items-center justify-between mb-3">
- <span
- className="text-[10px] font-medium px-2 py-0.5 rounded-full capitalize"
- style={{ background: badge.bg, color: badge.text }}
- >
- {session.category}
- </span>
- <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: session.spotsLeft <= 5 ? '#fef2f2' : 'var(--color-surface-offset)', color: session.spotsLeft <= 5 ? '#b91c1c' : 'var(--color-text-muted)' }}>
- {session.spotsLeft} spots left
- </span>
- </div>
- <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>
- {session.title}
- </h3>
- <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
- {session.instructor}
- </p>
- <div className="flex items-center justify-between gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <div className="flex items-center gap-3">
- <span className="flex items-center gap-1">
- <Calendar className="w-3 h-3" /> {session.date}
- </span>
- <span className="flex items-center gap-1">
- <Clock className="w-3 h-3" /> {session.time}
- </span>
- </div>
- <span className="font-medium" style={{ color: 'var(--color-primary)' }}>
- Book →
- </span>
- </div>
- </Link>
- );
- })}
- </div>
- </div>
- </section>
+ {/* ═══ UPCOMING SESSIONS (live rows — see UpcomingClassesSection) ═════ */}
+ <UpcomingClassesSection />
 
  {/* ═══ BENEFITS ═══════════════════════════════════════════════════════ */}
  <section className="py-14 md:py-20">

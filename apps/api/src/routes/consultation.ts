@@ -10,8 +10,11 @@ import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
-import { astrologyService } from '../services/astrology.service.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
+import {
+  reverseBookingLedger,
+  type LedgerReversalResult,
+} from '../services/ledger-reversal.service.js';
 
 assertNotProductionDemo('routes/consultation');
 
@@ -226,23 +229,49 @@ export async function consultationRoutes(server: FastifyInstance) {
     const userId = request.currentUser!.id;
 
     // Resolve the astrologer for rate + identity (server-side, so the client
-    // cannot inject a fake rate). A UUID means a REAL onboarded
-    // AstrologerProfile (from /astrologers/live) — resolve against the DB and
-    // verify it's approved. A legacy slug falls back to the in-memory
-    // directory until the full directory swap lands.
-    let astrologer: { name: string; perMinuteRate: number; userId?: string } | null = null;
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(astrologerId)) {
-      const p = await prisma.astrologerProfile.findUnique({ where: { id: astrologerId } });
-      if (p && p.approved) {
-        astrologer = {
-          name: p.displayName,
-          perMinuteRate: Number(p.pricePerMinute),
-          userId: p.userId,
-        };
-      }
-    } else {
-      const a = astrologyService.getAstrologerById(astrologerId);
-      if (a) astrologer = { name: a.name, perMinuteRate: Number(a.perMinuteRate) };
+    // cannot inject a fake rate).
+    //
+    // AW-02 (2026-08-12, P0): this used to fall back to
+    // `astrologyService.getAstrologerById(slug)` — the 15-row in-memory MOCK
+    // fixture at services/astrology.service.ts:118-374 ('astro_001'..'astro_015').
+    // A devotee clicking any card on /astrology therefore paid real money to a
+    // person who does not exist: the row was inserted, the payment captured, a
+    // Jitsi room minted, "Your astrologer has been notified" shown — and then
+    // verify-payment silently skipped the Commission write because no real
+    // provider existed to credit. Guaranteed no-show, guaranteed manual refund.
+    //
+    // The ONLY bookable astrologer is now an approved AstrologerProfile row
+    // (the same set `GET /astrology/astrologers/live` serves). A fixture slug is
+    // REFUSED before any money moves. Refusing a sale is strictly better than
+    // capturing money nobody can fulfil.
+    //
+    // Note on astrologer-resolver.ts: it exists and could map slug → user UUID,
+    // but `astrologer_slug_map` is EMPTY and `astrologer_profiles.slug` does not
+    // exist, so every lookup returns null. Wiring it would only add a DB round
+    // trip before the same refusal — worse, it would imply the fixtures are one
+    // admin action away from being bookable, which they are not: they are
+    // invented people. Supply must be onboarded, not mapped.
+    let astrologer: { name: string; perMinuteRate: number; userId: string } | null = null;
+    const looksLikeProfileId =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(astrologerId);
+    if (!looksLikeProfileId) {
+      request.log.warn(
+        { astrologerId, userId },
+        '[consultation] refused booking against a non-onboarded astrologer id',
+      );
+      return reply.code(409).send({
+        code: 'ASTROLOGER_NOT_BOOKABLE',
+        error:
+          'This astrologer is not available for booking. Browse verified astrologers at /astrology/astrologers/live.',
+      });
+    }
+    const p = await prisma.astrologerProfile.findUnique({ where: { id: astrologerId } });
+    if (p && p.approved) {
+      astrologer = {
+        name: p.displayName,
+        perMinuteRate: Number(p.pricePerMinute),
+        userId: p.userId,
+      };
     }
     if (!astrologer) {
       return reply.code(404).send({ error: 'Astrologer not found.' });
@@ -430,7 +459,32 @@ export async function consultationRoutes(server: FastifyInstance) {
         const profile = looksLikeUuid
           ? await prisma.astrologerProfile.findUnique({ where: { id: row.astrologer_id }, select: { id: true, userId: true } })
           : await prisma.astrologerProfile.findFirst({ where: { displayName: row.astrologer_name }, select: { id: true, userId: true } });
-        if (!profile?.userId) return; // mock astrologer — no real provider to credit
+        if (!profile?.userId) {
+          // AW-02 (2026-08-12, P0): this used to be a bare `return` — money was
+          // captured and the ledger gap was invisible. /book now refuses
+          // non-onboarded astrologer ids, so reaching here means one of:
+          //   (a) a legacy row booked against a fixture BEFORE that guard shipped
+          //       and only now being verified, or
+          //   (b) the AstrologerProfile was deleted between /book and /verify.
+          // Either way a devotee has paid and nobody can be credited — that is an
+          // operational incident, not a no-op. Log it at ERROR (greppable by
+          // `commission_gap`) and surface it on GET /consultation/admin/all via
+          // `commissionMissing` so an operator can refund. Never fabricate a
+          // provider to make the ledger look balanced.
+          server.log.error(
+            {
+              event: 'commission_gap',
+              consultationId: row.id,
+              reference: row.reference,
+              astrologerId: row.astrologer_id,
+              astrologerName: row.astrologer_name,
+              amountInr: Number(row.amount_inr),
+              devoteeUserId: row.user_id,
+            },
+            '[consultation] PAID consultation has no creditable astrologer — no Commission row written, manual refund required',
+          );
+          return;
+        }
         const total = Number(row.amount_inr);
         // Astrologer revamp (2026-08-05): align with the priest take-rate cut —
         // platform 20% / astrologer 80% (was 30/70). Research: AstroTalk takes
@@ -544,18 +598,63 @@ export async function consultationRoutes(server: FastifyInstance) {
       }
     }
 
-    await prisma.$executeRawUnsafe(
-      `UPDATE astrologer_consultations
-       SET status = 'cancelled'
-       WHERE id = $1::uuid;`,
-      id,
-    );
+    // AW-06 (2026-08-12, P1): the flip used to be the ONLY thing this handler
+    // did. The Commission written at verify-payment (amount = the astrologer's
+    // 80%) stayed PENDING and fully withdrawable, so a refund-eligible
+    // cancellation refunded the devotee the whole gross AND still paid the
+    // astrologer their share through /payouts and the weekly settlement cron —
+    // a 100% loss plus an 80% payout, repeatable by anyone willing to book and
+    // cancel against their own second account.
+    //
+    // The unwind runs in the SAME transaction as the status flip, through the
+    // shared leaf module both puja refund rails already use — never a second
+    // inlined copy of the reversal rules (which is exactly how the two puja
+    // rails drifted apart in the first place). Only refund-eligible
+    // cancellations reverse: outside the window no refund is owed, so the
+    // astrologer keeps the earning.
+    let reversal: LedgerReversalResult = {
+      reversedCommissions: 0,
+      reversedTemplePayouts: 0,
+      alreadySettled: 0,
+    };
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `UPDATE astrologer_consultations
+         SET status = 'cancelled'
+         WHERE id = $1::uuid;`,
+        id,
+      );
+      if (refundEligible) {
+        reversal = await reverseBookingLedger(
+          tx,
+          row.id,
+          `consultation cancelled by devotee (${row.reference})`,
+        );
+      }
+    });
+
+    if (reversal.alreadySettled > 0) {
+      // Money has left or is mid-transfer — a refund handler must not claw it
+      // back silently. Greppable by `consultation_ledger_manual_review`.
+      server.log.error(
+        {
+          event: 'consultation_ledger_manual_review',
+          consultationId: row.id,
+          reference: row.reference,
+          alreadySettled: reversal.alreadySettled,
+          amountInr: Number(row.amount_inr ?? 0),
+        },
+        '[consultation] refund-eligible cancellation on a consultation whose commission is already settled — reconcile by hand',
+      );
+    }
 
     return reply.send({
       cancelled: true,
       refundEligible,
       consultationId: row.id,
       reference: row.reference,
+      commissionReversed: reversal.reversedCommissions,
+      ledgerManualReview: reversal.alreadySettled,
       note: refundEligible
         ? 'Cancellation accepted. Refund will be processed within 5-7 business days.'
         : 'Cancellation accepted. Refund not eligible — past the 24-hour cancellation window.',
@@ -668,11 +767,21 @@ export async function consultationRoutes(server: FastifyInstance) {
 
   // ─── GET /astrologer/mine ───────────────────────────────────────────────
   // Astrologer-side LIST of AstrologerConsultation rows assigned to the
-  // calling user. Filter is `astrologer_id = currentUser.id` (UUID equality).
-  // The slug↔UUID onboarding gap means rows whose astrologer_id is still a
-  // slug like 'astro_002' won't match a real User.id UUID — those simply
-  // don't appear in the result. Once onboarding maps slug → User row this
-  // endpoint surfaces them transparently.
+  // calling user.
+  //
+  // AW-01 (2026-08-12, P0): the filter was `astrologer_id = currentUser.id`
+  // (the User UUID) alone. /book writes the AstrologerProfile.id, so a real
+  // astrologer's own list was permanently empty — total 0 — while
+  // /astrologer-portal/dashboard, which matches on BOTH identities
+  // (routes/astrologer-portal.ts:63-65), could see the very same row. The web
+  // Consultations page therefore reported "Upcoming 0" for a consultation the
+  // devotee had already paid for: a guaranteed no-show.
+  //
+  // astrologer_consultations.astrologer_id is TEXT and has carried three forms
+  // over time — AstrologerProfile.id (current), the User UUID (legacy), and the
+  // mock slug (now un-bookable, see /book). Match the caller's profile id AND
+  // user id so every attribution form resolves; mock-slug rows deliberately
+  // still don't match, because they belong to nobody.
   server.get(
     '/astrologer/mine',
     { preHandler: [authenticateUser, requireRole('ASTROLOGER')] },
@@ -682,11 +791,17 @@ export async function consultationRoutes(server: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid query', issues: parsed.error.flatten() });
       }
       const { status, limit, offset } = parsed.data;
-      const astrologerId = request.currentUser!.id;
+      const callerId = request.currentUser!.id;
+      const profile = await prisma.astrologerProfile
+        .findUnique({ where: { userId: callerId }, select: { id: true } })
+        .catch(() => null);
+      const astrologerIdValues = [profile?.id, callerId].filter(
+        (v): v is string => typeof v === 'string' && v.length > 0,
+      );
       await ensureConsultationTables();
 
-      const params: unknown[] = [astrologerId];
-      let whereSql = `WHERE astrologer_id = $1`;
+      const params: unknown[] = [astrologerIdValues];
+      let whereSql = `WHERE astrologer_id = ANY($1::text[])`;
       if (status) {
         params.push(status);
         whereSql += ` AND status = $${params.length}`;
@@ -764,6 +879,28 @@ export async function consultationRoutes(server: FastifyInstance) {
     const countRows = await prisma.$queryRawUnsafe<{ total: number }[]>(countSql, ...countParams);
     const total = countRows[0]?.total ?? 0;
 
+    // AW-02 (2026-08-12, P0): make the Commission gap VISIBLE. A consultation
+    // can be 'confirmed' (money captured, room minted) and still have no ledger
+    // row — that used to be a silent `return` in verify-payment, so the only way
+    // an operator could find an unfulfillable paid booking was to diff this list
+    // against /admin/commissions by hand. `commissionMissing: true` on a paid row
+    // means: a devotee paid, nobody can be credited, refund manually.
+    const paidIds = rows.filter((r) => r.status === 'confirmed' || r.status === 'completed').map((r) => r.id);
+    let creditedIds = new Set<string>();
+    if (paidIds.length > 0) {
+      try {
+        const credited = await prisma.commission.findMany({
+          where: { bookingId: { in: paidIds } },
+          select: { bookingId: true },
+        });
+        creditedIds = new Set(
+          credited.map((c) => c.bookingId).filter((id): id is string => typeof id === 'string'),
+        );
+      } catch (err) {
+        server.log.warn({ err }, '[consultation] commission lookup failed for admin list');
+      }
+    }
+
     return reply.send({
       total,
       limit,
@@ -783,6 +920,9 @@ export async function consultationRoutes(server: FastifyInstance) {
         scheduledAt: row.scheduled_at,
         createdAt: row.created_at,
         paidAt: row.paid_at,
+        // Only meaningful for paid rows; an unpaid row has nothing to credit yet.
+        commissionMissing:
+          (row.status === 'confirmed' || row.status === 'completed') && !creditedIds.has(row.id),
       })),
     });
   });

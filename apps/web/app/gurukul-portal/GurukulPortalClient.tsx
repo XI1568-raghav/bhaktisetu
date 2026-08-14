@@ -52,7 +52,7 @@ export default function GurukulPortalClient() {
           <Link href="/gurukul-portal/applications" className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-surface-200 rounded-lg text-sm font-semibold text-surface-700 hover:border-saffron-400">
             <ClipboardList className="w-4 h-4" /> Applications
           </Link>
-          <Link href="/become-gurukul" className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-500 text-white rounded-lg text-sm font-semibold hover:bg-saffron-600">
+          <Link href="/become-gurukul" className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white rounded-lg text-sm font-semibold hover:bg-saffron-700">
             <Plus className="w-4 h-4" /> Register new
           </Link>
         </div>
@@ -64,7 +64,7 @@ export default function GurukulPortalClient() {
         <div className="p-8 bg-white border border-surface-200 rounded-xl text-center">
           <Building2 className="w-10 h-10 text-surface-400 mx-auto mb-2" />
           <p className="text-surface-700 mb-3">You haven&apos;t registered any gurukul yet.</p>
-          <Link href="/become-gurukul" className="inline-block px-4 py-2 bg-saffron-500 text-white rounded-lg text-sm font-semibold">Register your first</Link>
+          <Link href="/become-gurukul" className="inline-block px-4 py-2 bg-saffron-600 text-white rounded-lg text-sm font-semibold">Register your first</Link>
         </div>
       )}
 

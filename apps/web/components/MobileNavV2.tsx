@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
@@ -35,6 +35,9 @@ const HELP_LINKS = [
   { href: '/contact', label: 'Contact' },
 ];
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 /**
  * Mobile-only nav. Hamburger -> full-screen sheet with:
  *  - sticky header (logo + close + search input)
@@ -46,6 +49,12 @@ const HELP_LINKS = [
  * Body scroll-lock + Escape-to-close mirrors MobileNav.tsx.
  * Renders the sheet via portal at document.body to escape the
  * fixed header's stacking context.
+ *
+ * The sheet is a real modal dialog (A11Y-04): while it is open the rest of the
+ * document is `inert`, focus is moved to the Close button, Tab is trapped, and
+ * closing restores focus to the hamburger. While it is CLOSED the sheet itself
+ * is `inert` — it stays mounted and merely translated off-screen, so without
+ * that its ~22 links remained tab stops inside an `aria-hidden` subtree.
  */
 export function MobileNavV2() {
   const [open, setOpen] = useState(false);
@@ -53,6 +62,11 @@ export function MobileNavV2() {
   const [activeKey, setActiveKey] = useState<CategoryKey>('worship');
   const [search, setSearch] = useState('');
   const { isAuthenticated } = useAuth();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
+  const portalRootRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -76,7 +90,61 @@ export function MobileNavV2() {
     return () => window.removeEventListener('keydown', onEsc);
   }, [open]);
 
+  // Everything outside the sheet is inert while the sheet is open, so the
+  // background controls behind the opaque overlay hold no tab stops and are
+  // not announced. Declared before the focus effect so focus lands last.
+  useEffect(() => {
+    if (!open) return;
+    const root = portalRootRef.current;
+    const marked: HTMLElement[] = [];
+    for (const el of Array.from(document.body.children)) {
+      if (!(el instanceof HTMLElement) || el === root) continue;
+      if (el.hasAttribute('inert')) continue;
+      el.setAttribute('inert', '');
+      marked.push(el);
+    }
+    return () => {
+      for (const el of marked) el.removeAttribute('inert');
+    };
+  }, [open]);
+
+  // Move focus into the sheet on open; restore it to the hamburger on close.
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true;
+      closeButtonRef.current?.focus();
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [open]);
+
   const close = () => setOpen(false);
+
+  // Tab trap. `inert` already keeps the background out of the tab order in
+  // supporting browsers; this makes the cycle explicit and wraps at the ends.
+  const onSheetKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Tab') return;
+    const root = asideRef.current;
+    if (!root) return;
+    const items = Array.from(
+      root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    );
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+    const inside = !!active && root.contains(active);
+    // `items.length` is guarded above, but noUncheckedIndexedAccess still widens
+    // an index read to `| undefined`, so these stay optional-chained.
+    if (e.shiftKey && (!inside || active === first)) {
+      e.preventDefault();
+      last?.focus();
+    } else if (!e.shiftKey && (!inside || active === last)) {
+      e.preventDefault();
+      first?.focus();
+    }
+  }, []);
 
   const accountLinks = isAuthenticated
     ? ACCOUNT_LINKS_AUTHED
@@ -95,7 +163,7 @@ export function MobileNavV2() {
 
   const sheet =
     mounted && (
-      <>
+      <div ref={portalRootRef}>
         {open && (
           <div
             className="md:hidden fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
@@ -104,11 +172,16 @@ export function MobileNavV2() {
           />
         )}
         <aside
+          ref={asideRef}
           className={`md:hidden fixed inset-0 z-[101] bg-[#faf9f6] flex flex-col transition-transform duration-200 ease-out ${
             open ? 'translate-x-0' : 'translate-x-full pointer-events-none'
           }`}
+          role="dialog"
+          aria-modal="true"
           aria-hidden={!open}
+          inert={!open}
           aria-label="Mobile navigation"
+          onKeyDown={onSheetKeyDown}
         >
           {/* Sticky top: logo + close + search */}
           <div className="sticky top-0 z-10 bg-[#faf9f6] border-b border-surface-200/60">
@@ -121,6 +194,7 @@ export function MobileNavV2() {
                 Darsh<span className="text-saffron-600">ya</span>
               </Link>
               <button
+                ref={closeButtonRef}
                 type="button"
                 aria-label="Close menu"
                 onClick={close}
@@ -166,7 +240,11 @@ export function MobileNavV2() {
                     <button
                       type="button"
                       aria-expanded={isOpenAcc}
-                      aria-controls={panelId}
+                      // A11Y-14: the panel below is only rendered while this
+                      // accordion is the open one, so pointing aria-controls
+                      // at its id unconditionally left four dangling IDREFs on
+                      // every page of the site.
+                      aria-controls={isOpenAcc ? panelId : undefined}
                       onClick={() => setActiveKey(category.key)}
                       className="w-full flex items-center justify-between gap-2 px-2 py-3 text-left min-h-[44px] rounded-md hover:bg-surface-100 transition-colors"
                     >
@@ -214,7 +292,7 @@ export function MobileNavV2() {
 
             {/* Account */}
             <div className="mt-6">
-              <p className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-widest text-surface-400">
+              <p className="px-2 mb-2 text-xs font-semibold uppercase tracking-widest text-surface-400">
                 Account
               </p>
               <div className="space-y-0.5">
@@ -237,7 +315,7 @@ export function MobileNavV2() {
 
             {/* Help */}
             <div className="mt-6">
-              <p className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-widest text-surface-400">
+              <p className="px-2 mb-2 text-xs font-semibold uppercase tracking-widest text-surface-400">
                 Help
               </p>
               <div className="space-y-0.5">
@@ -271,12 +349,13 @@ export function MobileNavV2() {
             </Link>
           </div>
         </aside>
-      </>
+      </div>
     );
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}

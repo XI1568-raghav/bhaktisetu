@@ -1,7 +1,13 @@
 // TODO(2026-06): v2 draft pending lawyer review — see docs/legal/refund-policy-v2-draft.md
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import { COMPANY, postalContactLine } from "../../lib/company";
+import {
+ COMPANY,
+ grievanceOfficerLine,
+ grievanceSlaLine,
+ operatedByLine,
+ postalContactLine,
+} from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Refund & Cancellation Policy",
@@ -9,6 +15,7 @@ export const metadata: Metadata = {
  "Darshya\u2019s refund policy for puja bookings, store orders, gaushala contributions, and chadhava offerings.",
  alternates: { canonical: "https://darshya.online/refunds" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Refund & Cancellation Policy | Darshya",
  description:
  "Refund timelines and rules for pujas, astrology, donations, and store orders. Refunds via Razorpay in 5\u20137 business days.",
@@ -98,8 +105,14 @@ export default function RefundsPage() {
  <td className="py-1.5">100% refund + 10% platform credit</td>
  </tr>
  <tr>
- <td className="py-1.5">Video proof not provided within 48 hours</td>
- <td className="py-1.5">Full refund or reschedule option</td>
+ <td className="py-1.5">
+ No video proof {COMPANY.refunds.missingVideoEscalationHours} hours
+ after the scheduled time
+ </td>
+ <td className="py-1.5">
+ Booking cancelled and sent for manual review. Where the pandit
+ is at fault, the refund is 100% of everything you paid.
+ </td>
  </tr>
  </tbody>
  </table>
@@ -120,6 +133,18 @@ export default function RefundsPage() {
  <li>
  Prasad delivery charges are refunded only if the entire
  booking is cancelled before the puja is performed.
+ </li>
+ <li>
+ <strong>Missing video proof.</strong> Video is mandatory on
+ every puja booking. If no video has been uploaded{" "}
+ {COMPANY.refunds.missingVideoEscalationHours} hours after your
+ scheduled time, we cancel the booking automatically and place it
+ in our refund review queue. The refund itself is issued by a
+ person, not by the automatic sweep, so allow us{" "}
+ {COMPANY.grievance.acknowledgeHours} hours to come back to you.
+ Where the pandit is at fault you are refunded in full; you do not
+ need to wait for the {COMPANY.refunds.missingVideoEscalationHours}-hour
+ mark to contact {COMPANY.supportEmail}.
  </li>
  </ul>
  </RefundSection>
@@ -217,22 +242,43 @@ export default function RefundsPage() {
  </RefundSection>
 
  <RefundSection title="9. How to Request a Refund">
+ {/*
+  LEG-18 (prod sweep 2026-08-12): step 2 named a refund button that has
+  never existed anywhere in the app. The two controls that do exist live
+  in apps/web/app/bookings/view/page.tsx, and the labels quoted below are
+  asserted against that file by __tests__/legal-content-p2.test.ts — so
+  renaming a button breaks the test instead of silently making this
+  policy wrong again.
+ */}
  <ol className="list-decimal pl-5 space-y-2">
  <li>
- Log in to your Darshya account and navigate to your
- booking or order history.
+ Log in to your Darshya account and open{" "}
+ <a
+ href="/bookings"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ My Bookings
+ </a>
+ , then open the booking you want to cancel.
  </li>
  <li>
- Select the item or booking and click &quot;Request Refund.&quot;
+ On the booking page, use{" "}
+ &quot;Cancel Booking&quot; if the puja has not been paid for or is
+ still awaiting a pandit, or{" "}
+ &quot;Request cancellation &amp; refund&quot; once it is confirmed.
+ The page shows whichever of the two applies to that booking.
  </li>
  <li>
  Provide the reason for your refund request and any
- supporting information.
+ supporting information. The refund amount is the one set by the
+ cancellation policy in section 2 above, not necessarily the full
+ amount paid.
  </li>
  <li>
- Alternatively, email support@darshya.online with your
- booking/order ID, registered email, and reason for the
- refund.
+ Store orders, and anything you cannot reach from the booking
+ page: email {COMPANY.supportEmail} with your booking or order ID,
+ your registered email, and the reason.
  </li>
  </ol>
  </RefundSection>
@@ -240,10 +286,12 @@ export default function RefundsPage() {
  <RefundSection title="10. Disputes">
  <p>
  If you believe a refund has been incorrectly denied, you may
- escalate the matter by emailing grievance@darshya.online. Our
- Grievance Officer will review and respond within 15 business
- days.
+ escalate the matter to our grievance contact:
  </p>
+ <ul>
+ <li>{grievanceOfficerLine()}</li>
+ <li>{grievanceSlaLine()}</li>
+ </ul>
  </RefundSection>
 
  <RefundSection title="11. Contact">
@@ -253,6 +301,7 @@ export default function RefundsPage() {
  <li>Response window: {COMPANY.supportHours}</li>
  {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
+ <p>{operatedByLine()}</p>
  </RefundSection>
  </div>
 

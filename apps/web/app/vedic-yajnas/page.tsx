@@ -13,11 +13,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Vedic Yajnas — 10 Fire Rituals of the Shrauta Tradition | Darshya',
+  title: 'Vedic Yajnas — 10 Fire Rituals of the Shrauta Tradition',
   description:
     'Ten classical Vedic fire rituals — Agnihotra, Darshapurnamasa, Chaturmasya, Pashubandha, Soma-yajna, Ashvamedha, Rajasuya, Vajapeya, Sarvamedha, Gosava. Category, deities, mantra source, modern status.',
   alternates: { canonical: `${BASE_URL}/vedic-yajnas` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Vedic Yajnas — 10 Fire Rituals of the Shrauta Tradition',
     description:
       'From the daily Agnihotra to the imperial Ashvamedha — ten classical Vedic fire rituals, their scriptural sources, and their living or historical status today.',

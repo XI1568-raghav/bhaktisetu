@@ -65,7 +65,7 @@ async function loadPuja(slug: string): Promise<PujaDetail | null> {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const puja = await loadPuja(slug);
-  if (!puja) return { title: 'Puja temples — Darshya' };
+  if (!puja) return { title: 'Puja temples' };
   const count = puja.temples?.filter((t) => t.isActive).length || 0;
   return {
     title: `${puja.name} temples — book online${count > 0 ? ` (${count} options)` : ''}`,

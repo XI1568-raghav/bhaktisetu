@@ -12,10 +12,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Find My Nakshatra by Date of Birth — Free Vedic Birth Star Calculator | Darshya',
+ title: 'Find My Nakshatra by Date of Birth — Free Vedic Birth Star Calculator',
  description: 'Free janma nakshatra finder. Enter your date + time of birth to get your Vedic birth star, pada, moon sign (rashi), ruling lord, and deity — computed with Meeus moon longitude + Lahiri ayanamsa. No signup.',
  alternates: { canonical: `${BASE_URL}/astrology/nakshatra-finder` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Find My Nakshatra — Free Vedic Birth Star Calculator',
   description: 'Janma nakshatra finder by DOB + time. 27 nakshatras × 4 padas, rashi, lord, deity. Free, no signup.',
   url: `${BASE_URL}/astrology/nakshatra-finder`,
@@ -119,10 +120,10 @@ export default function NakshatraFinderPage() {
       >
        <div className="flex items-baseline justify-between">
         <p className="font-serif text-sm font-semibold text-gray-900">{n.name}</p>
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{n.lord}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{n.lord}</span>
        </div>
-       <p className="text-[11px] text-indigo-700">{n.sanskritName}</p>
-       <p className="mt-1 text-[11px] text-gray-600">Deity: {n.deity}</p>
+       <p className="text-xs text-indigo-700">{n.sanskritName}</p>
+       <p className="mt-1 text-xs text-gray-600">Deity: {n.deity}</p>
       </Link>
      ))}
     </div>

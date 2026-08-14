@@ -71,7 +71,7 @@ export default function HoraClient() {
       </select>
      </label>
     </div>
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      24 horas per civil day in Chaldean planetary order. Day hora length ≈ 60 min,
      varying with sunrise/sunset.
     </p>
@@ -90,7 +90,7 @@ export default function HoraClient() {
 
       {result.currentHora && (
        <div className={`mt-5 rounded-xl border-2 p-4 ${QUALITY_STYLE[result.currentHora.quality].border} ${QUALITY_STYLE[result.currentHora.quality].bg}`}>
-        <p className="text-[11px] uppercase tracking-wider text-gray-600">Right now — Hora {result.currentHora.index}</p>
+        <p className="text-xs uppercase tracking-wider text-gray-600">Right now — Hora {result.currentHora.index}</p>
         <p className="mt-1 font-serif text-xl text-gray-900">
          {PLANET_GLYPH[result.currentHora.planet]} {result.currentHora.planet} Hora
          <span className="ml-2 text-sm font-normal text-gray-600">· {result.currentHora.startTime} → {result.currentHora.endTime}</span>
@@ -146,7 +146,7 @@ export default function HoraClient() {
 function Stat({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-gray-200 bg-white/90 p-3 text-center">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 font-serif text-lg text-gray-900">{value}</p>
   </div>
  );
@@ -160,9 +160,9 @@ function HoraRow({ h }: { h: Hora }) {
     <div className="flex items-center gap-2">
      <span className="text-lg">{PLANET_GLYPH[h.planet]}</span>
      <span className="font-serif text-sm font-semibold text-gray-900">{h.planet}</span>
-     <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${s.pill}`}>{s.label}</span>
+     <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${s.pill}`}>{s.label}</span>
      {h.isCurrent && (
-      <span className="rounded-full bg-saffron-600 px-1.5 py-0.5 text-[9px] font-bold text-white">NOW</span>
+      <span className="rounded-full bg-saffron-600 px-1.5 py-0.5 text-xs font-bold text-white">NOW</span>
      )}
     </div>
     <span className="font-mono text-xs text-gray-700">{h.startTime}→{h.endTime}</span>

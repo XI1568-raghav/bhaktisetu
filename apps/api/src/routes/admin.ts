@@ -498,7 +498,7 @@ export async function adminRoutes(server: FastifyInstance) {
       if (to) (where.createdAt as Prisma.DateTimeFilter).lte = new Date(to);
     }
     const skip = (page - 1) * pageSize;
-    const [rows, total] = await Promise.all([
+    const [rows, total, totalsByRate] = await Promise.all([
       prisma.commission.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -511,6 +511,18 @@ export async function adminRoutes(server: FastifyInstance) {
         },
       }),
       prisma.commission.count({ where }),
+      // DI-08 (2026-08-12): /admin/revenue reported 1142.91 and this ledger
+      // 6580 at the same instant, both under the word "commissions" — the
+      // first is the PLATFORM's take, the second is PROVIDER earnings, and
+      // nothing said so. Ship both totals here too, over the SAME filter the
+      // rows use (not over the page), so the relationship is visible instead
+      // of inferred. Grouping by rate keeps it exact and bounded: there are a
+      // handful of distinct take rates, not a row per commission.
+      prisma.commission.groupBy({
+        by: ['percentage'],
+        where,
+        _sum: { amount: true },
+      }),
     ]);
 
     // batch9-review (2026-08-11): this endpoint returned the raw Commission row
@@ -612,7 +624,33 @@ export async function adminRoutes(server: FastifyInstance) {
         processedAt: c.paidAt ?? payoutRequest?.processedAt ?? null,
       };
     });
-    return { data, page, pageSize, total };
+    // Every figure below goes through lib/commission-math.ts for the same
+    // reason the per-row columns do: one module owns `gross = amount /
+    // (1 - percentage)`, so a total can never disagree with the rows under it.
+    const totals = (
+      totalsByRate as Array<{
+        percentage: Prisma.Decimal;
+        _sum: { amount: Prisma.Decimal | null };
+      }>
+    ).reduce(
+      (acc, bucket) => {
+        const providerEarning = bucket._sum.amount;
+        // A rate bucket with no summed amount contributes nothing; skipping it
+        // is the only honest reading (a fabricated zero row would still be
+        // zero, but the guard keeps the arithmetic total rather than partial).
+        if (!providerEarning) return acc;
+        acc.providerEarningsInr += providerEarning.toNumber();
+        acc.platformTakeInr += commissionPlatformCut(
+          providerEarning,
+          bucket.percentage,
+        ).toNumber();
+        acc.grossInr += commissionGross(providerEarning, bucket.percentage).toNumber();
+        return acc;
+      },
+      { providerEarningsInr: 0, platformTakeInr: 0, grossInr: 0 },
+    );
+
+    return { data, page, pageSize, total, totals };
   });
 
   // ─── Ratings moderation ───────────────────────────────────────────────────

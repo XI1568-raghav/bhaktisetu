@@ -40,9 +40,10 @@ export async function generateMetadata({
  }
 
  return {
- title: `${article.title} | Darshya Help`,
+ title: `${article.title} — Help`,
  description: article.summary,
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: article.title,
  description: article.summary,
  locale: article.lang,

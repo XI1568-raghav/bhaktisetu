@@ -7,6 +7,7 @@ import { dispatchService } from '../services/dispatch.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
 import { presignR2Upload, r2 } from '../lib/r2.js';
+import { isDemoMode } from '../lib/supabase.js';
 import { BookingStatus, PayoutStatus } from '@prisma/client';
 
 // Zod gates for the pandit-owned puja offering CRUD. Hoisted to module
@@ -30,6 +31,18 @@ const priestOfferingUpdateSchema = priestOfferingCreateSchema.partial();
 export const __testing = {
   priestOfferingCreateSchema,
   priestOfferingUpdateSchema,
+  get bookingsQuerySchema() {
+    return bookingsQuerySchema;
+  },
+  get payoutsQuerySchema() {
+    return payoutsQuerySchema;
+  },
+  get videoProofBodySchema() {
+    return videoProofBodySchema;
+  },
+  get storageReady() {
+    return storageReady;
+  },
 };
 
 const MAX_VIDEO_MB = 200;
@@ -37,13 +50,57 @@ const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime
 
 // Pagination clamp — without this, an attacker (or a buggy client) can
 // request limit=100000 and force a full-table scrape into memory.
+//
+// `status` is an enum, not a free string: an unknown value used to reach
+// Prisma and come back as a 400 whose body carried the server's absolute path,
+// the source file, the line number and the surrounding source lines.
 const bookingsQuerySchema = z.object({
-  status: z.string().optional(),
+  status: z.nativeEnum(BookingStatus).optional(),
+  view: z.enum(['all', 'confirmed', 'priest_assigned', 'in_progress', 'completed']).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
+
+// PF-13: the bookings route got the enum treatment; the payouts route did not.
+// `?status=zzz` was cast straight to PayoutStatus, reached Prisma, and came back
+// as a 400 whose body carried the server's absolute path, the source file, the
+// line number and the surrounding source lines. page/limit were `Number(...)`
+// with no clamp either, so `?limit=100000` scraped the whole payout table.
+const payoutsQuerySchema = z.object({
+  status: z.nativeEnum(PayoutStatus).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+const videoProofBodySchema = z.object({
+  // PF-06: `"  "` and `"not-a-url-at-all"` were both persisted verbatim as the
+  // booking's video proof, then permanently blocked delivery. Mirrors the
+  // `z.string().url()` gate the PATCH /bookings/:id proof field already uses.
+  videoUrl: z.string().trim().url().max(2000),
+});
+
+/**
+ * PF-05: two modules disagreed about what "storage is configured" means.
+ * `r2.enabled` is `r2Enabled || supabaseEnabled`, and lib/r2's `supabaseEnabled`
+ * is true whenever SUPABASE_URL + a service key are set — including the
+ * `https://demo.supabase.co` placeholder that lib/supabase treats as demo mode
+ * and answers with a Proxy whose `storage` is a bare throwing function. So the
+ * designed 503 never fired and the pandit got
+ * `400 {"error":"supabaseAdmin.storage.from is not a function"}`.
+ */
+function storageReady(input: { enabled: boolean; backend: string; demoMode: boolean }): boolean {
+  if (!input.enabled) return false;
+  if (input.backend === 'supabase' && input.demoMode) return false;
+  return true;
+}
+
+const STORAGE_UNCONFIGURED = {
+  error: 'Storage backend not configured.',
+  message:
+    'Set R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY (preferred) or SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY.',
+};
 
 export async function priestRoutes(server: FastifyInstance) {
   // All priest routes require authentication and priest role
@@ -116,11 +173,12 @@ export async function priestRoutes(server: FastifyInstance) {
       if (!parsed.success) {
         return reply.code(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
       }
-      const { status, dateFrom, dateTo, page, limit } = parsed.data;
+      const { status, view, dateFrom, dateTo, page, limit } = parsed.data;
 
       const priestId = await getPriestId(request.currentUser!.id);
       const result = await priestService.getAssignedBookings(priestId, {
-        status: status as BookingStatus | undefined,
+        status,
+        view,
         dateFrom,
         dateTo,
         page,
@@ -128,6 +186,32 @@ export async function priestRoutes(server: FastifyInstance) {
       });
 
       return result;
+    } catch (err: any) {
+      reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // ─── GET /bookings/:id ──────────────────────────────────────────────────────
+  // PF-08: the detail page had no by-id read, so it downloaded the paginated
+  // list and searched it client-side — anything past row 20 was unreachable,
+  // and that page carries the only video-proof control.
+
+  server.get('/bookings/:id', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      if (!z.string().uuid().safeParse(id).success) {
+        return reply.code(404).send({ error: 'Booking not found.' });
+      }
+      const priestId = await getPriestId(request.currentUser!.id);
+      const result = await priestService.getAssignedBookingById(priestId, id);
+      if (!result.ok) {
+        return result.reason === 'not_found'
+          ? reply.code(404).send({ error: 'Booking not found.' })
+          : reply
+              .code(403)
+              .send({ error: 'This booking is not assigned to you.' });
+      }
+      return { booking: result.booking };
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
     }
@@ -296,12 +380,8 @@ export async function priestRoutes(server: FastifyInstance) {
             error: `Unsupported contentType. Allowed: ${[...ALLOWED_VIDEO_TYPES].join(', ')}.`,
           });
         }
-        if (!r2.enabled) {
-          return reply.code(503).send({
-            error: 'Storage backend not configured.',
-            message:
-              'Set R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY (preferred) or SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY.',
-          });
+        if (!storageReady({ enabled: r2.enabled, backend: r2.backend, demoMode: isDemoMode })) {
+          return reply.code(503).send(STORAGE_UNCONFIGURED);
         }
 
         const priestId = await getPriestId(request.currentUser!.id);
@@ -325,7 +405,17 @@ export async function priestRoutes(server: FastifyInstance) {
         const rand = randomBytes(6).toString('hex');
         const key = `booking-proofs/${id}/${Date.now()}-${rand}.${ext}`;
 
-        const signed = await presignR2Upload({ key, contentType, expiresInSec: 300 });
+        // A storage misconfiguration must surface as an actionable 503, not as
+        // a 400 carrying an internal TypeError. The generic catch below maps
+        // everything to 400, which is how the pandit ended up reading
+        // "supabaseAdmin.storage.from is not a function".
+        let signed: Awaited<ReturnType<typeof presignR2Upload>>;
+        try {
+          signed = await presignR2Upload({ key, contentType, expiresInSec: 300 });
+        } catch (storageErr) {
+          request.log.error({ err: storageErr }, 'video-proof presign failed');
+          return reply.code(503).send(STORAGE_UNCONFIGURED);
+        }
         if (!signed) {
           return reply.code(500).send({ error: 'Failed to generate upload URL' });
         }
@@ -351,11 +441,15 @@ export async function priestRoutes(server: FastifyInstance) {
   server.post('/bookings/:id/video', { preHandler: priestAuth }, async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
-      const { videoUrl } = request.body as { videoUrl: string };
-
-      if (!videoUrl || typeof videoUrl !== 'string') {
-        return reply.code(400).send({ error: 'videoUrl is required.' });
+      const parsed = videoProofBodySchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error:
+            'videoUrl must be a full URL to the recording, e.g. https://drive.google.com/… .',
+          details: parsed.error.flatten(),
+        });
       }
+      const videoUrl = parsed.data.videoUrl;
 
       const priestId = await getPriestId(request.currentUser!.id);
       const result = await priestService.uploadVideoProof(id, priestId, videoUrl);
@@ -369,17 +463,17 @@ export async function priestRoutes(server: FastifyInstance) {
 
   server.get('/payouts', { preHandler: priestAuth }, async (request, reply) => {
     try {
-      const { status, page, limit } = request.query as {
-        status?: string;
-        page?: string;
-        limit?: string;
-      };
+      const parsed = payoutsQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
+      }
+      const { status, page, limit } = parsed.data;
 
       const priestId = await getPriestId(request.currentUser!.id);
       const result = await priestService.getPayoutHistory(priestId, {
-        status: status as PayoutStatus | undefined,
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
+        status,
+        page,
+        limit,
       });
 
       return result;
@@ -422,30 +516,85 @@ export async function priestRoutes(server: FastifyInstance) {
   });
 
   // ─── GET /reviews ───────────────────────────────────────────────────────────
-  // Reviews authored by devotees about this priest. The Review.providerId
-  // column stores the User UUID of the provider (not Priest.id) — mirrors
-  // the ratings.ts convention. Empty array when none.
+  // Reviews authored by devotees about this priest, from BOTH writers.
+  //
+  // PF-11 (prod sweep 2026-08-12): there are two of them and this endpoint read
+  // only one. `POST /bookings/:id/review` (booking.service.submitReview) writes
+  // `PujaBooking.rating`/`reviewText` and bumps the priests aggregate — it never
+  // inserts a Review row. `Review` rows come from the separate provider-review
+  // flow (provider.service). So the dashboard Rating card climbed to 43 while
+  // /priest/reviews stayed at "0.0 average, no reviews yet", and a pandit could
+  // never read a single word of devotee feedback. Reading the booking column
+  // also backfills every historical rating for free.
+  //
+  // Review.providerId stores the provider's User UUID (not Priest.id) — the
+  // ratings.ts convention.
+
+  const REVIEW_PAGE = 100;
 
   server.get('/reviews', { preHandler: priestAuth }, async (request, reply) => {
     try {
       const userId = request.currentUser!.id;
-      const rows = await prisma.review.findMany({
-        where: { providerId: userId, providerType: 'PANDIT' },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-      });
-      return reply.send({
-        reviews: rows.map((r) => ({
-          id: r.id,
-          userId: r.userId,
-          providerId: r.providerId,
-          providerType: r.providerType,
-          rating: r.rating,
-          comment: r.comment,
-          createdAt: r.createdAt.toISOString(),
-        })),
-        total: rows.length,
-      });
+      const priestId = await getPriestId(userId);
+
+      const [rows, ratedBookings] = await Promise.all([
+        prisma.review.findMany({
+          where: { providerId: userId, providerType: 'PANDIT' },
+          orderBy: { createdAt: 'desc' },
+          take: REVIEW_PAGE,
+        }),
+        prisma.pujaBooking.findMany({
+          where: { priestId, rating: { not: null } },
+          orderBy: { updatedAt: 'desc' },
+          take: REVIEW_PAGE,
+          select: {
+            id: true,
+            bookingNumber: true,
+            userId: true,
+            rating: true,
+            reviewText: true,
+            createdAt: true,
+            updatedAt: true,
+            pujaType: { select: { name: true } },
+          },
+        }),
+      ]);
+
+      const iso = (d: Date | string | null | undefined) =>
+        d instanceof Date ? d.toISOString() : (d ?? new Date(0).toISOString());
+
+      const fromReviewTable = rows.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        providerId: r.providerId,
+        providerType: r.providerType,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: iso(r.createdAt),
+        source: 'review' as const,
+        bookingNumber: null as string | null,
+        pujaName: null as string | null,
+      }));
+
+      const fromBookings = (ratedBookings ?? []).map((b) => ({
+        // Prefixed so it can never collide with a Review row id.
+        id: `booking:${b.id}`,
+        userId: b.userId,
+        providerId: userId,
+        providerType: 'PANDIT' as const,
+        rating: b.rating ?? 0,
+        comment: b.reviewText,
+        createdAt: iso(b.updatedAt ?? b.createdAt),
+        source: 'booking' as const,
+        bookingNumber: b.bookingNumber,
+        pujaName: b.pujaType?.name ?? null,
+      }));
+
+      const reviews = [...fromReviewTable, ...fromBookings]
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+        .slice(0, REVIEW_PAGE);
+
+      return reply.send({ reviews, total: reviews.length });
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
     }

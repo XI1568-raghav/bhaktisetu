@@ -1,7 +1,22 @@
-import { Prisma, type BookingStatus } from '@prisma/client';
+import { Prisma, type BookingStatus, type UserRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { commissionPlatformCut } from '../lib/commission-math.js';
 import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
+import { invalidateAuthUser } from '../lib/auth-cache.js';
+import { clampLimit, clampPage } from '../lib/pagination.js';
+
+/** SCAL-09: the UserRole enum, as a set, so an unknown ?role= is a clean empty
+ *  answer rather than a Prisma enum error surfaced as HTTP 500. */
+const USER_ROLES = new Set<string>([
+  'DEVOTEE',
+  'PANDIT',
+  'STORE_OWNER',
+  'ASTROLOGER',
+  'WELLNESS_INSTRUCTOR',
+  'GAUSHALA_MANAGER',
+  'TEMPLE_MANAGER',
+  'ADMIN',
+]);
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -33,7 +48,18 @@ interface DashboardStats {
 }
 
 interface RevenueBreakdown {
+  /**
+   * DI-08 (2026-08-12): DEPRECATED NAME, unchanged VALUE. This has always been
+   * the PLATFORM's cut, while /admin/commissions lists PROVIDER earnings — the
+   * two were 5.8x apart on prod (1142.91 vs 6580) and both were labelled
+   * "commissions", so an admin could not tell whether the platform was
+   * under-collecting or the ledger was corrupt. Read `platformTakeInr`.
+   */
   totalCommissions: number;
+  /** The platform's own revenue from the take rate on PAID commissions. */
+  platformTakeInr: number;
+  /** What providers earned on those same PAID commissions (sum of `amount`). */
+  providerEarningsInr: number;
   totalSubscriptions: number;
   pendingPayouts: number;
   commissions: Array<{
@@ -90,8 +116,11 @@ interface ReportsResponse {
 export class AdminService {
   async getUsers(filters: UserFilters) {
     try {
-      const page = filters.page ?? 1;
-      const limit = filters.limit ?? 20;
+      // SCAL-09: `filters.limit` arrived unbounded from routes/admin.ts, and a
+      // negative page produced a negative OFFSET. Public list routes already
+      // clamp to [1, 100]; the admin list is the one an operator hammers.
+      const page = clampPage(filters.page);
+      const limit = clampLimit(filters.limit);
       const skip = (page - 1) * limit;
 
       const where: Record<string, unknown> = {};
@@ -102,6 +131,36 @@ export class AdminService {
           { email: { contains: filters.search, mode: 'insensitive' } },
           { phone: { contains: filters.search } },
         ];
+      }
+
+      // SCAL-09: the role filter used to run as a JS `.filter()` on the 20 rows
+      // page 1 had already fetched, while `total` came from an UNFILTERED
+      // count. Filtering by ADMIN therefore returned "however many of the first
+      // 20 users are admins" next to a total counting everyone — an operator
+      // reads that as "there are no pandits" when there are thousands. The
+      // predicate has to constrain the query so the page AND the count agree.
+      //
+      // The natural shape is `where.roleAssignments = { some: { role } }`, but
+      // UserRoleAssignment.userId is a bare @db.Uuid column with NO `@relation`
+      // to User (prisma/schema.prisma), so Prisma rejects that argument
+      // outright — verified live: `Unknown argument 'roleAssignments'` → HTTP
+      // 500 "Failed to list users". Adding the relation is a schema change.
+      // Until then, resolve the role to its user ids first and constrain on
+      // `id`: one narrow indexed column, bounded by how many people hold that
+      // role, and it gives the page and the count the same answer.
+      if (filters.role) {
+        if (!USER_ROLES.has(filters.role)) {
+          // An unknown role matches nobody. Say so honestly (empty page, total
+          // 0) rather than letting Prisma throw on an invalid enum value and
+          // answering 500 to what is really a bad query parameter.
+          return { users: [], total: 0, page, limit };
+        }
+        const holders = await prisma.userRoleAssignment.findMany({
+          where: { role: filters.role as UserRole },
+          select: { userId: true },
+          distinct: ['userId'],
+        });
+        where.id = { in: holders.map((h) => h.userId) };
       }
 
       const [users, total] = await Promise.all([
@@ -144,12 +203,11 @@ export class AdminService {
         createdAt: u.createdAt.toISOString(),
       }));
 
-      // Filter by role if specified
-      const filtered = filters.role
-        ? enriched.filter((u) => u.roles.includes(filters.role!))
-        : enriched;
-
-      return { users: filtered, total, page, limit };
+      // No post-pagination filtering: the `where.id` restriction above already
+      // constrained BOTH the page and `total`, so every row fetched belongs in
+      // the answer. Re-filtering here would drop rows whose role assignments
+      // arrive in the second query and re-open SCAL-09.
+      return { users: enriched, total, page, limit };
     } catch (err) {
       // Previously this catch served MOCK_USERS — a DB blip silently returned
       // 8 fake admin users to the admin UI. Fail loud instead so the operator
@@ -378,6 +436,14 @@ export class AdminService {
         });
       }
 
+      // SCAL-05: the auth middleware caches a verified session for up to a
+      // minute, so a moderation action has to evict it explicitly or the ban
+      // would not bite until the cache expired — the operator would get a green
+      // confirmation while the account kept taking bookings, which is the exact
+      // failure AO-01 just removed. Roles are cached in the same entry, so an
+      // approval/role change evicts too.
+      invalidateAuthUser(id);
+
       return { message: 'User updated', userId: id, blocked: updates.blocked };
     } catch (err) {
       // NEVER report success on failure. This used to answer
@@ -408,7 +474,15 @@ export class AdminService {
       ] =
         await Promise.all([
           prisma.user.count(),
-          prisma.userRoleAssignment.findMany(),
+          // SCAL-04 (2026-08-13): count roles in SQL.
+          //
+          // This was `userRoleAssignment.findMany()` — no where clause, the
+          // whole table — read only to tally roles in the JS loop below.
+          // EXPLAIN (ANALYZE, SERIALIZE) put that at 33,360 kB against a
+          // 200k-row table: the largest single transfer in the API, on the
+          // first page an admin opens, into a 512 MB container. groupBy
+          // returns one row per role instead.
+          prisma.userRoleAssignment.groupBy({ by: ['role'], _count: { _all: true } }),
           prisma.marketplaceSubscription.count({ where: { status: 'ACTIVE' } }),
           prisma.transaction.findMany({
             where: { status: 'COMPLETED' },
@@ -443,8 +517,8 @@ export class AdminService {
         ]);
 
       const usersByRole: Record<string, number> = {};
-      for (const ra of roleAssignments) {
-        usersByRole[ra.role] = (usersByRole[ra.role] ?? 0) + 1;
+      for (const group of roleAssignments) {
+        usersByRole[group.role] = group._count._all;
       }
 
       // Money collected this month = captured marketplace payments + completed
@@ -539,10 +613,19 @@ export class AdminService {
       // (lib/commission-math.ts). Summing it into "Commissions Earned" reported
       // provider payouts as platform revenue — a ~4x overstatement on a 20/80
       // split. The platform's share is derived from the stored take rate.
-      const totalCommissions = paidByRate.reduce((sum, bucket) => {
+      const platformTakeInr = paidByRate.reduce((sum, bucket) => {
         const providerTotal = bucket._sum.amount ?? new Prisma.Decimal(0);
         return sum + commissionPlatformCut(providerTotal, bucket.percentage).toNumber();
       }, 0);
+
+      // DI-08: the other half of the same money, reported next to it. Without
+      // this an admin comparing the dashboard to /admin/commissions sees two
+      // numbers 5.8x apart with no way to tell that one is the platform's cut
+      // and the other is what providers earned.
+      const providerEarningsInr = paidByRate.reduce(
+        (sum, bucket) => sum + Number(bucket._sum.amount ?? 0),
+        0,
+      );
 
       // Pending payouts genuinely IS what providers are owed, so this one keeps
       // summing `amount` — it was the under-reported figure before.
@@ -569,7 +652,12 @@ export class AdminService {
       }
 
       return {
-        totalCommissions,
+        // Same value it has always carried — see the interface note. Kept so
+        // the deployed web/mobile admin screens do not lose the figure while
+        // they migrate to `platformTakeInr`.
+        totalCommissions: platformTakeInr,
+        platformTakeInr,
+        providerEarningsInr,
         totalSubscriptions,
         pendingPayouts,
         commissions: recentCommissions.map((c) => ({

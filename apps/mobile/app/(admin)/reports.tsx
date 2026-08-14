@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdminDashboard } from '@poojly/api-client';
 import { PortalScreen, Section, StatCard } from '../../lib/portal-screen';
+import { selectAdminDashboard, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Report {
@@ -26,7 +27,9 @@ export default function AdminReports() {
   const dashboardQuery = useAdminDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
-  const dash = dashboardQuery.data;
+  // PAR-04: `dash.totalBookings.toLocaleString('en-IN')` crashed here exactly as
+  // it did on the admin home — /api/v1/admin/dashboard returns no totalBookings.
+  const dash = selectAdminDashboard(dashboardQuery.data);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -34,18 +37,15 @@ export default function AdminReports() {
     setRefreshing(false);
   }
 
+  // PAR-20 (adjacent, P1): Generate used to fire no request at all and then
+  // tell the admin "Your report is being generated. You will receive an email
+  // shortly." No export endpoint is wired to this screen, so that email never
+  // arrives — a compliance hazard at tax time. Until the exports exist, say so.
   function exportReport(r: Report) {
     Alert.alert(
-      `Generate ${r.title}?`,
-      `Format: ${r.format}\n\nThe export will be emailed to your admin address.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Generate',
-          onPress: () =>
-            Alert.alert('Queued', 'Your report is being generated. You will receive an email shortly.'),
-        },
-      ],
+      r.title,
+      `${r.format} export.\n\nReport exports are not available in the mobile app yet — this screen cannot generate or email a file. Use the web admin console.`,
+      [{ text: 'OK' }],
     );
   }
 
@@ -59,18 +59,24 @@ export default function AdminReports() {
       {dash ? (
         <View style={{ flexDirection: 'row' }}>
           <StatCard
-            label="Total Bookings"
-            value={dash.totalBookings.toLocaleString('en-IN')}
+            label="Total Users"
+            value={dash.totalUsers.toLocaleString('en-IN')}
             accent={colors.saffron[700]}
           />
           <View style={{ width: spacing.sm }} />
           <StatCard
             label="Total Revenue"
-            value={`₹${dash.totalRevenue.toLocaleString('en-IN')}`}
+            value={formatInr(dash.totalRevenue)}
             accent={colors.green[600]}
           />
         </View>
       ) : null}
+
+      <Text style={styles.notice}>
+        Exports are not wired up in the app yet. The list below documents the
+        reports the platform is meant to produce; generating them requires the
+        web admin console.
+      </Text>
 
       <Section title="Available Reports">
         {REPORTS.map((r) => (
@@ -122,4 +128,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone[100],
   },
   formatText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.stone[700] },
+  notice: {
+    fontSize: fontSize.sm,
+    color: colors.stone[600],
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginTop: spacing.md,
+  },
 });

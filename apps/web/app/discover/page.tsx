@@ -129,10 +129,11 @@ const GROUPS: DiscoverGroup[] = [
 const TOTAL = GROUPS.reduce((sum, g) => sum + g.items.length, 0);
 
 export const metadata: Metadata = {
-  title: `Discover Hindu Wisdom — All ${TOTAL} Guides on Scriptures, Cosmology, Practice & Tools | Darshya`,
+  title: `Discover Hindu Wisdom — All ${TOTAL} Guides on Scriptures, Cosmology, Practice & Tools`,
   description: `One-page index of every Hindu wisdom guide on Darshya — Bhagavad Gita, Mahabharata, all ${TOTAL} programmatic guides covering scriptures, cosmology, ritual practice and devotional tools. Grouped, searchable, internally linked.`,
   alternates: { canonical: `${BASE_URL}/discover` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Discover Hindu Wisdom — every guide on Darshya',
     description: `${TOTAL} curated guides across scriptures, cosmology, practice and tools.`,
     url: `${BASE_URL}/discover`,
@@ -237,7 +238,7 @@ export default function DiscoverPage() {
                       {it.label}
                     </h3>
                     {it.count ? (
-                      <span className={`shrink-0 rounded-full ${a.pill} px-2 py-0.5 text-[11px] font-semibold`}>
+                      <span className={`shrink-0 rounded-full ${a.pill} px-2 py-0.5 text-xs font-semibold`}>
                         {it.count}
                       </span>
                     ) : null}

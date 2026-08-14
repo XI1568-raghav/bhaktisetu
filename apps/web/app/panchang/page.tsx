@@ -21,9 +21,16 @@ import {
  getUpcomingFestivals,
  type Panchang,
 } from '../../lib/api';
+import {
+ buildCalendarDays,
+ calendarMonthLabel,
+ formatUpcomingFestivals,
+} from '../../lib/panchang-calendar';
+import { FESTIVALS } from '../../lib/festivals';
 
 export const metadata: Metadata = {
- title: 'Panchang Today — Tithi, Nakshatra, Rahu Kaal | Darshya',
+ alternates: { canonical: 'https://darshya.online/panchang' },
+ title: 'Panchang Today — Tithi, Nakshatra, Rahu Kaal',
  description:
  'Daily Hindu Panchang with tithi, nakshatra, yoga, karana, sunrise/sunset times, auspicious muhurat, rahu kaal, and festival calendar.',
 };
@@ -61,42 +68,16 @@ const fallbackFestivals: Array<{
  type?: string;
 }> = [];
 
-const calendarDays = [
- { day: 30, month: 'prev' as const, tithi: 'Pratipada' },
- { day: 31, month: 'prev' as const, tithi: 'Dwitiya' },
- { day: 1, month: 'current' as const, tithi: 'Tritiya' },
- { day: 2, month: 'current' as const, tithi: 'Chaturthi' },
- { day: 3, month: 'current' as const, tithi: 'Panchami' },
- { day: 4, month: 'current' as const, tithi: 'Shashthi' },
- { day: 5, month: 'current' as const, tithi: 'Saptami' },
- { day: 6, month: 'current' as const, tithi: 'Ashtami', festival: 'Rama Navami' },
- { day: 7, month: 'current' as const, tithi: 'Navami' },
- { day: 8, month: 'current' as const, tithi: 'Dashami' },
- { day: 9, month: 'current' as const, tithi: 'Ekadashi', vrat: 'Kamada Ekadashi' },
- { day: 10, month: 'current' as const, tithi: 'Dwadashi' },
- { day: 11, month: 'current' as const, tithi: 'Trayodashi' },
- { day: 12, month: 'current' as const, tithi: 'Chaturdashi' },
- { day: 13, month: 'current' as const, tithi: 'Purnima', festival: 'Hanuman Jayanti' },
- { day: 14, month: 'current' as const, tithi: 'Pratipada' },
- { day: 15, month: 'current' as const, tithi: 'Trayodashi', isToday: true, vrat: 'Pradosh Vrat' },
- { day: 16, month: 'current' as const, tithi: 'Chaturdashi' },
- { day: 17, month: 'current' as const, tithi: 'Amavasya' },
- { day: 18, month: 'current' as const, tithi: 'Pratipada' },
- { day: 19, month: 'current' as const, tithi: 'Dwitiya' },
- { day: 20, month: 'current' as const, tithi: 'Tritiya', festival: 'Akshaya Tritiya' },
- { day: 21, month: 'current' as const, tithi: 'Chaturthi' },
- { day: 22, month: 'current' as const, tithi: 'Panchami' },
- { day: 23, month: 'current' as const, tithi: 'Shashthi' },
- { day: 24, month: 'current' as const, tithi: 'Saptami' },
- { day: 25, month: 'current' as const, tithi: 'Ashtami' },
- { day: 26, month: 'current' as const, tithi: 'Navami', vrat: 'Mohini Ekadashi' },
- { day: 27, month: 'current' as const, tithi: 'Dashami' },
- { day: 28, month: 'current' as const, tithi: 'Ekadashi' },
- { day: 29, month: 'current' as const, tithi: 'Dwadashi' },
- { day: 30, month: 'current' as const, tithi: 'Trayodashi' },
- { day: 1, month: 'next' as const, tithi: 'Chaturdashi' },
- { day: 2, month: 'next' as const, tithi: 'Purnima' },
-];
+// DF-09 (prod sweep 2026-08-12): a 32-entry hardcoded April 2026 grid used to
+// live here, rendered under a hardcoded "April 2026" heading, while the header
+// above it correctly said "Tuesday, August 11, 2026". The grid is now derived
+// from the clock in lib/panchang-calendar.ts.
+
+// DF-09: the editorial calendar in lib/festivals.ts is the fallback name
+// source when the API sends a date with no name, and the source of the dots on
+// the month grid. Keyed on the ISO date so nothing has to be parsed twice.
+const festivalByIso = new Map<string, string>(FESTIVALS.map((f) => [f.date2026, f.name]));
+const festivalNameForIso = (isoDate: string): string | undefined => festivalByIso.get(isoDate);
 
 // ─── Data Fetching ────────────────────────────────────────────────────────────
 
@@ -403,7 +384,12 @@ async function PanchangDetailsSection({
 }
 
 async function FestivalsSidebar() {
- const festivals = await fetchFestivals();
+ // DF-09: the API returns rows whose `name` can be empty, and this list used
+ // to print the raw `date` in the name slot — which is how
+ // "2026-08-14T00:00:00.000Z" ended up rendering as a festival name. Format
+ // the date, recover the name from the local calendar when the API omits it,
+ // and drop the row entirely when neither source has a name.
+ const festivals = formatUpcomingFestivals(await fetchFestivals(), festivalNameForIso);
 
  return (
  <div className="bg-white rounded-xl p-6 border border-surface-100">
@@ -413,7 +399,7 @@ async function FestivalsSidebar() {
  <div className="space-y-4">
  {festivals.map((f) => (
  <div
- key={f.name}
+ key={`${f.label}-${f.name}`}
  className="flex items-start gap-3 pb-4 border-b border-surface-50 last:border-0 last:pb-0"
  >
  <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-saffron-100 text-saffron-600">
@@ -421,16 +407,12 @@ async function FestivalsSidebar() {
  </div>
  <div>
  <div className="text-xs text-surface-400 font-medium">
- {f.date}
+ {f.label}
  </div>
  <div className="font-semibold text-surface-800 text-sm">
  {f.name}
  </div>
- {'description' in f && f.description && (
- <p className="text-xs text-surface-500 mt-0.5">
- {f.description}
- </p>
- )}
+
  </div>
  </div>
  ))}
@@ -473,9 +455,14 @@ export default async function PanchangPage({
  <MapPin className="w-4 h-4" />
  Delhi, India
  </span>
+ {/* DF-09: this read "Chaitra-Vaishakha, Vikram Samvat 2083" — the
+   March-May window — all year. The lunar masa is not computed anywhere
+   this page can reach (the API returns tithi/nakshatra/yoga/karana, not
+   masa), so the honest move is to print the Gregorian month the panchang
+   below is actually for and leave the masa to the day it can be derived. */}
  <span className="flex items-center gap-1">
  <Calendar className="w-4 h-4" />
- Chaitra-Vaishakha, Vikram Samvat 2083
+ {calendarMonthLabel(new Date())}
  </span>
  </div>
  </div>
@@ -511,7 +498,7 @@ export default async function PanchangPage({
  {/* Mini Calendar */}
  <div className="bg-white rounded-xl p-6 border border-surface-100">
  <div className="flex items-center justify-between mb-4">
- <h3 className="font-semibold text-surface-800">April 2026</h3>
+ <h3 className="font-semibold text-surface-800">{calendarMonthLabel(new Date())}</h3>
  <div className="flex items-center gap-1">
  <button className="p-1.5 hover:bg-surface-50 rounded-lg">
  <ChevronLeft className="w-4 h-4 text-surface-400" />
@@ -536,27 +523,29 @@ export default async function PanchangPage({
 
  {/* Calendar grid */}
  <div className="grid grid-cols-7 gap-1">
- {calendarDays.map((d, i) => (
- <button
- key={i}
- className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-colors ${
+ {buildCalendarDays(new Date()).map((d) => {
+ const festival = festivalByIso.get(d.iso);
+ return (
+ <div
+ key={d.iso}
+ title={festival}
+ className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-sm ${
  d.isToday
  ? 'bg-saffron-600 text-white font-bold'
  : d.month !== 'current'
  ? 'text-surface-300'
- : d.festival
+ : festival
  ? 'bg-saffron-50 text-saffron-700 font-medium'
- : d.vrat
- ? 'bg-amber-50 text-amber-700'
- : 'text-surface-600 hover:bg-surface-50'
+ : 'text-surface-600'
  }`}
  >
  {d.day}
- {(d.festival || d.vrat) && !d.isToday && (
- <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-saffron-500" />
+ {festival && !d.isToday && (
+ <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-saffron-600" />
  )}
- </button>
- ))}
+ </div>
+ );
+ })}
  </div>
 
  {/* Legend */}
@@ -568,10 +557,6 @@ export default async function PanchangPage({
  <span className="flex items-center gap-1">
  <span className="w-2 h-2 bg-saffron-200 rounded-full" />
  Festival
- </span>
- <span className="flex items-center gap-1">
- <span className="w-2 h-2 bg-amber-200 rounded-full" />
- Vrat
  </span>
  </div>
  </div>

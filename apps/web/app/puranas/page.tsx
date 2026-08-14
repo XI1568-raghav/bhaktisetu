@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 18 Mahapuranas, Complete List, Summaries, Presiding Deities | Darshya',
+  title: 'The 18 Mahapuranas, Complete List, Summaries, Presiding Deities',
   description: 'All 18 Mahapuranas of Sanatana Dharma, Bhagavata, Vishnu, Shiva, Skanda, Markandeya (Devi Mahatmya), Garuda, Brahma, Padma, Agni and 9 more. Sanskrit, verse counts, central themes.',
   alternates: { canonical: `${BASE_URL}/puranas` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'The 18 Mahapuranas',
     description: '~400,000 verses across 18 Mahapuranas, the smriti foundation of every living Hindu temple tradition.',
     url: `${BASE_URL}/puranas`,
@@ -95,13 +96,13 @@ export default function PuranasIndexPage() {
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs font-semibold text-gray-500">#{p.number}</span>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">{p.verseCount.toLocaleString()} verses</span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{p.verseCount.toLocaleString()} verses</span>
                   </div>
                   <h3 className="mt-1 text-base font-semibold text-gray-900 group-hover:text-indigo-700">{p.name}</h3>
                   <p className="mt-0.5 font-serif text-sm text-gray-700">{p.sanskrit}</p>
                   <p className="mt-1 text-xs text-gray-500">Presiding: {p.presidingDeity}</p>
                   <p className="mt-2 text-xs text-gray-700 line-clamp-2">{p.centralTheme}</p>
-                  <p className="mt-2 rounded bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-900">{p.bestKnownFor}</p>
+                  <p className="mt-2 rounded bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-900">{p.bestKnownFor}</p>
                 </Link>
               ))}
             </div>

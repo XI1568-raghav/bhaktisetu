@@ -6,7 +6,7 @@ import RefreshButton from "./refresh-button";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Offline — Darshya",
+  title: "Offline",
   description:
     "You appear to be offline. Reconnect to load live darshan, book pujas, or browse temples on Darshya.",
   robots: { index: false, follow: false },

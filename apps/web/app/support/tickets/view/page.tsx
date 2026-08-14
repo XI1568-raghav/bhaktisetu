@@ -276,7 +276,7 @@ function TicketDetailInner() {
  <span className="w-2 h-2 rounded-full bg-saffron-400 mt-1.5 shrink-0" />
  <div>
  <div className="text-sm text-surface-800">{a.text}</div>
- <div className="text-[11px] text-surface-500">{formatDateTime(a.createdAt)}</div>
+ <div className="text-xs text-surface-500">{formatDateTime(a.createdAt)}</div>
  </div>
  </li>
  ))}
@@ -325,7 +325,7 @@ function MessageBubble({ message }: { message: TicketMessage }) {
  <div>
  <div className="text-xs font-semibold text-amber-800 mb-1">{message.authorName}</div>
  <div className="text-sm text-surface-700">{message.body}</div>
- <div className="text-[11px] text-surface-500 mt-1">{formatDateTime(message.createdAt)}</div>
+ <div className="text-xs text-surface-500 mt-1">{formatDateTime(message.createdAt)}</div>
  </div>
  </div>
  );
@@ -351,7 +351,7 @@ function MessageBubble({ message }: { message: TicketMessage }) {
  </div>
  <div className="text-sm whitespace-pre-line">{message.body}</div>
  </div>
- <div className={`text-[11px] text-surface-500 mt-1 ${isUser ? 'text-right' : ''}`}>
+ <div className={`text-xs text-surface-500 mt-1 ${isUser ? 'text-right' : ''}`}>
  {formatDateTime(message.createdAt)}
  </div>
  </div>

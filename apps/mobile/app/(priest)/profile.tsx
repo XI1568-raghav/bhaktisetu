@@ -6,31 +6,28 @@ import { usePriestProfile } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
+import { selectPriestProfile } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-interface PriestProfileShape {
-  displayName?: string;
-  bio?: string;
-  languages?: string[];
-  specializations?: string[];
-  experienceYears?: number;
-  avatarUrl?: string | null;
-  rating?: number;
-  ratingCount?: number;
-  aadhaarVerified?: boolean;
-  bankLinked?: boolean;
-  gstStatus?: string;
-}
-
+/**
+ * PAR-11. GET /api/v1/priest/profile returns the profile FLAT — there is no
+ * `profile` wrapper — so `profileQuery.data?.profile` was undefined and this
+ * screen rendered an empty shell for every pandit: no name, no bio, no
+ * specializations, no rating, no temple.
+ *
+ * The Verification block was worse than empty. `aadhaarVerified ?? false`,
+ * `bankLinked ?? false` and `gstStatus ?? 'pending'` ran against a payload
+ * that has no bank or GST field at all, so every pandit — including verified
+ * ones — was told "Bank Account Not linked" and "GST Pending Review". Those
+ * two rows now say "not reported by this endpoint" instead of asserting a
+ * compliance state the app cannot know.
+ */
 export default function PriestProfile() {
   const { user, signOut } = useAuth();
   const profileQuery = usePriestProfile();
   const [refreshing, setRefreshing] = useState(false);
 
-  const profile = (profileQuery.data?.profile as PriestProfileShape | undefined) ?? null;
-  const aadhaarVerified = profile?.aadhaarVerified ?? false;
-  const bankLinked = profile?.bankLinked ?? false;
-  const gstStatus = profile?.gstStatus ?? 'pending';
+  const profile = selectPriestProfile(profileQuery.data);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -65,13 +62,39 @@ export default function PriestProfile() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{profile?.displayName ?? user?.fullName ?? 'Pandit'}</Text>
-          {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
-          {user?.phone ? <Text style={styles.email}>{user.phone}</Text> : null}
+          {profile?.email ?? user?.email ? (
+            <Text style={styles.email}>{profile?.email ?? user?.email}</Text>
+          ) : null}
+          {profile?.phone ?? user?.phone ? (
+            <Text style={styles.email}>{profile?.phone ?? user?.phone}</Text>
+          ) : null}
           {profile?.experienceYears ? (
             <Text style={styles.email}>{profile.experienceYears} years experience</Text>
           ) : null}
+          {profile?.rating !== null && profile?.rating !== undefined ? (
+            <Text style={styles.email}>
+              ★ {profile.rating.toFixed(2)} ({profile.ratingCount}{' '}
+              {profile.ratingCount === 1 ? 'rating' : 'ratings'})
+            </Text>
+          ) : null}
         </View>
       </View>
+
+      {profile && profile.temples.length > 0 ? (
+        <Section title="Temples">
+          <View style={styles.chipWrap}>
+            {profile.temples.map((t) => (
+              <View key={t.id} style={styles.chip}>
+                <Text style={styles.chipText}>
+                  {t.name}
+                  {t.city ? ` · ${t.city}` : ''}
+                  {t.isPrimary ? ' · primary' : ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
       {profile?.bio ? (
         <Section title="About">
@@ -109,41 +132,46 @@ export default function PriestProfile() {
         <MessagesEntry roleGroup="priest" />
       </Section>
 
-      <Section title="Verification">
-        <View style={styles.verifyRow}>
-          <Ionicons
-            name={aadhaarVerified ? 'shield-checkmark' : 'time-outline'}
-            size={18}
-            color={aadhaarVerified ? colors.green[600] : colors.amber[600]}
-          />
-          <Text style={styles.verifyText}>
-            Aadhaar {aadhaarVerified ? 'Verified' : 'Pending'}
+      {profile ? (
+        <Section title="Verification">
+          <View style={styles.verifyRow}>
+            <Ionicons
+              name={profile.aadhaarVerified ? 'shield-checkmark' : 'time-outline'}
+              size={18}
+              color={profile.aadhaarVerified ? colors.green[600] : colors.amber[600]}
+            />
+            <Text style={styles.verifyText}>
+              Aadhaar {profile.aadhaarVerified ? 'Verified' : 'Pending'}
+            </Text>
+          </View>
+          <View style={styles.verifyRow}>
+            <Ionicons
+              name={profile.isVerified ? 'shield-checkmark' : 'time-outline'}
+              size={18}
+              color={profile.isVerified ? colors.green[600] : colors.amber[600]}
+            />
+            <Text style={styles.verifyText}>
+              Listing {profile.verificationStatus ?? (profile.isVerified ? 'approved' : 'pending')}
+            </Text>
+          </View>
+          {/* Bank and GST are NOT on this endpoint. Saying "Not linked" for a
+              pandit whose bank details are on file would be a false statement
+              about their payout eligibility. */}
+          <Text style={styles.verifyNote}>
+            Bank account and GST status are not reported by the app. Check them
+            in the web portal.
           </Text>
-        </View>
-        <View style={styles.verifyRow}>
-          <Ionicons
-            name={bankLinked ? 'shield-checkmark' : 'time-outline'}
-            size={18}
-            color={bankLinked ? colors.green[600] : colors.amber[600]}
-          />
-          <Text style={styles.verifyText}>
-            Bank Account {bankLinked ? 'Linked' : 'Not linked'}
-          </Text>
-        </View>
-        <View style={styles.verifyRow}>
-          <Ionicons
-            name={gstStatus === 'verified' ? 'shield-checkmark' : 'time-outline'}
-            size={18}
-            color={gstStatus === 'verified' ? colors.green[600] : colors.amber[600]}
-          />
-          <Text style={styles.verifyText}>
-            GST {gstStatus === 'verified' ? 'Verified' : 'Pending Review'}
-          </Text>
-        </View>
-      </Section>
+        </Section>
+      ) : null}
 
-      {profileQuery.isError && !profile ? (
-        <EmptyHint text="Couldn't load profile right now. Pull to retry." />
+      {!profile ? (
+        <EmptyHint
+          text={
+            profileQuery.isLoading
+              ? 'Loading your profile…'
+              : "Couldn't load your profile right now. Pull down to retry."
+          }
+        />
       ) : null}
 
       <TouchableOpacity style={styles.signOut} activeOpacity={0.7} onPress={handleSignOut}>
@@ -209,6 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   verifyText: { fontSize: fontSize.base, color: colors.stone[800], fontWeight: '600' },
+  verifyNote: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
   signOut: {
     marginTop: spacing.lg,
     flexDirection: 'row',

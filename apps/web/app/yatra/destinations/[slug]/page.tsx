@@ -8,6 +8,7 @@ import {
   formatINRPrice,
   type AffiliatePartner,
 } from '../../../../lib/yatra-destinations';
+import { remoteImage, remoteSrcSet, IMG_W } from '../../../../lib/images';
 
 type Params = { slug: string };
 
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const dest = getDestinationBySlug(slug);
   if (!dest) return {};
   const url = `https://darshya.online/yatra/destinations/${dest.slug}`;
-  const title = `${dest.name} Yatra — Itinerary, Best Time, Booking | Darshya`;
+  const title = `${dest.name} Yatra — Itinerary, Best Time, Booking`;
   const description = dest.shortDescription;
   return {
     title,
@@ -71,12 +72,12 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
       {/* Hero */}
       <section className="relative">
         <div className="aspect-[16/7] relative overflow-hidden">
-          <img src={dest.heroImage} alt={dest.name} className="w-full h-full object-cover" />
+          <img src={remoteImage(dest.heroImage, IMG_W.WIDE)} srcSet={remoteSrcSet(dest.heroImage, [IMG_W.CARD, IMG_W.WIDE])} sizes="100vw" width={960} height={420} loading="eager" fetchPriority="high" decoding="async" alt={dest.name} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         </div>
         <div className="absolute inset-x-0 bottom-0 p-6 md:p-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] font-medium text-white mb-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-xs font-medium text-white mb-3">
               <Compass className="w-3 h-3" /> {dest.region}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -125,7 +126,7 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
           {/* Partner cards (the revenue) */}
           <aside className="space-y-4">
             <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <p className="text-[11px] font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--color-primary)' }}>Book your yatra</p>
+              <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--color-primary)' }}>Book your yatra</p>
               <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
                 Compare on trusted partners. Darshya earns a small commission at no extra cost to you.
               </p>
@@ -144,7 +145,7 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
                     >
                       <div>
                         <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label.name}</div>
-                        <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{label.tag}</div>
+                        <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{label.tag}</div>
                       </div>
                       <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--color-primary)' }} />
                     </a>

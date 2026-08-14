@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Dwadasha Aditya — 12 Forms of Surya (Names, Mantras, Months) | Darshya',
+  title: 'Dwadasha Aditya — 12 Forms of Surya (Names, Mantras, Months)',
   description:
     'All 12 Adityas (sons of Aditi) per Bhagavata Purana — Vivasvan, Aryaman, Pushan, Tvashta, Savitar, Bhaga, Dhata, Vidhata, Varuna, Mitra, Indra, Trivikrama. Each presides over one solar month with unique mantra, ratna, vahana and Surya Namaskar invocation.',
   alternates: { canonical: `${BASE_URL}/aditya` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Dwadasha Aditya — 12 forms of Surya',
     description: 'Names, mantras, presiding months and Surya Namaskar invocations for all 12 Adityas.',
     url: `${BASE_URL}/aditya`,

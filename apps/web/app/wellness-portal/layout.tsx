@@ -97,7 +97,7 @@ function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
  key={link.href}
  href={link.href}
  onClick={() => setSidebarOpen(false)}
- className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+ className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
  active
  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
  : 'text-white/60 hover:bg-white/5 hover:text-white/80'

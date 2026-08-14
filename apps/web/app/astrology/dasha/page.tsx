@@ -11,10 +11,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline | Darshya',
+ title: 'Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline',
  description: 'Free Vedic Vimshottari dasha calculator. Enter DOB + birth time to get your current mahadasha, antardasha sub-period, and complete 120-year planetary timeline (Ketu, Venus, Sun, Moon, Mars, Rahu, Jupiter, Saturn, Mercury). Per Brihat Parashara Hora Shastra.',
  alternates: { canonical: `${BASE_URL}/astrology/dasha` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline',
   description: 'Current mahadasha + antardasha + full 120-yr timeline. Computed from your janma nakshatra. Free, no signup.',
   url: `${BASE_URL}/astrology/dasha`,
@@ -124,9 +125,9 @@ export default function DashaPage() {
       <div key={p.lord} className="rounded-xl border border-saffron-200 bg-saffron-50/30 p-4">
        <div className="flex items-baseline justify-between">
         <p className="font-serif text-base font-semibold text-gray-900">{p.lord}</p>
-        <span className="text-[11px] font-semibold text-gray-500">{p.yrs} yrs</span>
+        <span className="text-xs font-semibold text-gray-500">{p.yrs} yrs</span>
        </div>
-       <p className="text-[11px] text-saffron-700">{p.hindi}</p>
+       <p className="text-xs text-saffron-700">{p.hindi}</p>
        <p className="mt-1 text-xs text-gray-700">{p.theme}</p>
       </div>
      ))}

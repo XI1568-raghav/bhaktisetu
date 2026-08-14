@@ -96,7 +96,7 @@ export default function AdminWaitlistPage() {
                   title={`${d.date}: ${d.signups} signups`}
                 >
                   <div
-                    className="w-full bg-saffron-500 rounded-t"
+                    className="w-full bg-saffron-600 rounded-t"
                     style={{ height: `${(d.signups / maxSignup) * 100}%` }}
                   />
                   {d.signups === 0 && <div className="w-full h-px bg-surface-200" />}

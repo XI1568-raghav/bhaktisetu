@@ -1,7 +1,7 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
  Calendar,
@@ -15,7 +15,12 @@ import {
  Flame,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 import EarningsCard from '../../components/provider/EarningsCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
@@ -28,6 +33,11 @@ interface DashboardData {
  avatarUrl: string | null;
  ratingAvg: number;
  ratingCount: number;
+ // PF-14: the dispatch pool's view of this pandit. Optional on the type only
+ // because an older API build may not send it — treated as false when absent,
+ // never as "unknown".
+ isOnDuty?: boolean;
+ lastSeenAt?: string | null;
  };
  earnings: {
  total: number;
@@ -56,7 +66,7 @@ interface DashboardData {
 
 function zeroDashboard(displayName: string): DashboardData {
  return {
- priest: { id: '', displayName, avatarUrl: null, ratingAvg: 0, ratingCount: 0 },
+ priest: { id: '', displayName, avatarUrl: null, ratingAvg: 0, ratingCount: 0, isOnDuty: false, lastSeenAt: null },
  earnings: { total: 0, thisMonth: 0, pending: 0 },
  bookings: { total: 0, upcoming: 0, completed: 0 },
  upcomingBookings: [],
@@ -73,9 +83,20 @@ function formatCurrency(amount: number): string {
  }).format(amount);
 }
 
+// PF-09 (prod sweep 2026-08-12): concatenating 'T00:00:00' onto an ISO instant
+// ("2026-08-19T00:00:00.000Z") produced Invalid Date on every Upcoming Booking
+// row. scheduledDate is a Postgres DATE serialised at UTC midnight, so the
+// puja's own zone is pinned — otherwise every viewer west of UTC reads the
+// previous day.
 function formatDate(dateStr: string): string {
- const d = new Date(dateStr + 'T00:00:00');
- return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+ const d = new Date(dateStr);
+ if (Number.isNaN(d.getTime())) return dateStr;
+ return d.toLocaleDateString('en-IN', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'Asia/Kolkata',
+ });
 }
 
 function formatTime(time: string): string {
@@ -102,44 +123,87 @@ export default function PriestDashboard() {
  const [data, setData] = useState<DashboardData | null>(null);
  const [loading, setLoading] = useState(true);
  const [fetchError, setFetchError] = useState<string | null>(null);
- const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ // RES-06 (2026-08-12): 'unknown' until /provider-kyc actually ANSWERS.
+ // Defaulting to 'unsubmitted' and returning early on !r.ok meant every
+ // backend hiccup told a verified, approved pandit "KYC required for payout"
+ // — the most alarming sentence we can put in front of a provider, produced
+ // by a transient 500. priests.is_verified was true for all seeded priests
+ // while the badge said otherwise.
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected' | 'unknown'>('unknown');
  const [kycReason, setKycReason] = useState<string | null>(null);
 
  // T1 instant-pool on-duty toggle (booking revamp). When on, the pandit is a
  // candidate for instant dispatch offers. PATCH /priest/availability bumps
  // lastSeenAt (the heartbeat) so the pool knows they're live.
+ // PF-14: this used to be `useState(false)` and was never hydrated — the
+ // dashboard payload carried no isOnDuty at all. A pandit already in the pool
+ // was shown "Go on duty", and to go OFF after a reload he had to click ON
+ // first (sending isOnDuty:true and re-arming himself for 1-minute-SLA
+ // offers) and then click again.
  const [onDuty, setOnDuty] = useState(false);
  const [dutySaving, setDutySaving] = useState(false);
+ // RES-11 (2026-08-12): the toggle used to be `if (res.ok) setOnDuty(next)`
+ // with an empty catch that just kept the prior state. On any non-2xx or network
+ // failure the switch simply snapped back with NO message. The T1
+ // instant-dispatch pool is driven by this flag, so a pandit who flips it,
+ // assumes a rendering lag and walks away believes he is accepting work all
+ // day while receiving nothing — lost revenue for him, unfilled T1 demand for
+ // the platform. A control whose failure is invisible is worse than no
+ // control.
+ const [dutyError, setDutyError] = useState<string | null>(null);
  async function toggleDuty(next: boolean) {
  if (!session?.accessToken) return;
  setDutySaving(true);
+ setDutyError(null);
  try {
- const res = await fetch(`${API_BASE_URL}/priest/availability`, {
+ // RES-01: a stalled PATCH used to hang here with the toggle mid-flight.
+ const res = await fetchWithTimeout(`${API_BASE_URL}/priest/availability`, {
  method: 'PATCH',
  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
  body: JSON.stringify({ isOnDuty: next }),
- });
- if (res.ok) setOnDuty(next);
- } catch { /* keep prior state */ }
+ }, DATA_FETCH_TIMEOUT_MS);
+ if (res.ok) {
+ setOnDuty(next);
+ } else {
+ setDutyError(
+ next
+ ? `Could not go on duty (HTTP ${res.status}) — you are still OFF duty and will not receive instant requests. Try again.`
+ : `Could not go off duty (HTTP ${res.status}) — you are still ON duty. Try again.`,
+ );
+ }
+ } catch {
+ setDutyError(
+ next
+ ? 'Could not reach Darshya — you are still OFF duty and will not receive instant requests. Check your connection and try again.'
+ : 'Could not reach Darshya — you are still ON duty. Check your connection and try again.',
+ );
+ }
  setDutySaving(false);
  }
 
- useEffect(() => {
+ const loadAll = useCallback(async () => {
  async function fetchDashboard() {
  const displayName = user?.fullName || user?.email?.split('@')[0] || 'Pandit';
  try {
- const res = await fetch(`${API_BASE_URL}/priest/dashboard`, {
+ // RES-01: bare fetch has no timeout. Held open, /priest showed
+ // "Loading dashboard..." at T+10s AND at T+30s — the finally below
+ // sits after an await that never returns.
+ const res = await fetchWithTimeout(`${API_BASE_URL}/priest/dashboard`, {
  headers: { Authorization: `Bearer ${session?.accessToken}` },
- });
+ }, DATA_FETCH_TIMEOUT_MS);
  if (res.ok) {
- setData(await res.json());
+ const payload = (await res.json()) as DashboardData;
+ setData(payload);
+ // PF-14: seed the toggle from the server row. A dashboard we could not
+ // read leaves the toggle where it was rather than asserting "off".
+ setOnDuty(payload.priest?.isOnDuty === true);
  setFetchError(null);
  } else {
  setFetchError(`Could not load dashboard (status ${res.status}). Showing baseline.`);
  setData(zeroDashboard(displayName));
  }
  } catch (e) {
- setFetchError(e instanceof Error ? e.message : 'Network error loading dashboard. Showing baseline.');
+ setFetchError(loadErrorMessage(e));
  setData(zeroDashboard(displayName));
  } finally {
  setLoading(false);
@@ -152,9 +216,11 @@ export default function PriestDashboard() {
  // non-prod; a non-OK / catch keeps the existing fallback.
  if (!session?.accessToken) return;
  try {
- const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ const r = await fetchWithTimeout(`${API_BASE_URL}/provider-kyc`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },
- });
+ }, DATA_FETCH_TIMEOUT_MS);
+ // RES-06: an unread KYC state stays 'unknown' (the badge renders
+ // nothing) rather than falling back to the accusation.
  if (!r.ok) return;
  const j = await r.json();
  if (!j.kyc) setKycState('unsubmitted');
@@ -167,9 +233,10 @@ export default function PriestDashboard() {
  // graceful fallback
  }
  }
- fetchDashboard();
- fetchKyc();
- }, [session]);
+ await Promise.all([fetchDashboard(), fetchKyc()]);
+ }, [session, user?.fullName, user?.email]);
+
+ useEffect(() => { void loadAll(); }, [loadAll]);
 
  if (loading) {
  return (
@@ -199,7 +266,7 @@ export default function PriestDashboard() {
  <div className="space-y-6 max-w-5xl">
  {/* Welcome */}
  <div>
- <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
+ <h1 className={H1.portal}>
  Namaste, {data.priest.displayName.split(' ')[0]}!
  </h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
@@ -209,7 +276,13 @@ export default function PriestDashboard() {
  </div>
 
  {/* T1 instant-pool on-duty toggle */}
- <div className={`flex items-center justify-between rounded-xl border p-4 ${onDuty ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
+ <div className={`rounded-xl border p-4 ${onDuty ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
+ {dutyError && (
+ <p role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+ {dutyError}
+ </p>
+ )}
+ <div className="flex items-center justify-between">
  <div>
  <p className="font-semibold text-surface-800">
  {onDuty ? 'You are ON DUTY' : 'Go on duty for instant bookings'}
@@ -219,16 +292,37 @@ export default function PriestDashboard() {
  ? 'You will receive instant puja requests near you. Respond within a minute.'
  : 'Turn on to receive instant puja requests near you (Uber-style dispatch).'}
  </p>
+ {/* PJ-04: this toggle opted the pandit INTO dispatch and then left him
+ with nowhere to see a request — offered bookings never appear under
+ /priest/bookings because that list filters on priestId, which an
+ un-accepted offer does not have yet. */}
+ <Link
+ href="/priest/offers"
+ className="mt-1 inline-block text-xs font-semibold text-saffron-700 underline underline-offset-2"
+ >
+ View your open offers
+ </Link>
  </div>
+ {/* RESP-11: measured 48x28 at 390px — the easiest control on the page to
+     miss or flip by accident, and it is the one that decides whether this
+     pandit receives dispatched work. The track grows to 56x32 and the
+     button itself becomes the 72x48 hit area via padding; the negative
+     margin gives the row back the space so nothing shifts. The track is an
+     inner span so the padding is not painted green. */}
  <button
  onClick={() => toggleDuty(!onDuty)}
  disabled={dutySaving}
- className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${onDuty ? 'bg-tulsi-green' : 'bg-surface-300'}`}
+ className="-m-2 inline-flex shrink-0 items-center justify-center p-2 disabled:opacity-50"
  aria-pressed={onDuty}
  aria-label="Toggle on-duty"
  >
- <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${onDuty ? 'translate-x-6' : 'translate-x-1'}`} />
+ <span
+ className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${onDuty ? 'bg-tulsi-green' : 'bg-surface-300'}`}
+ >
+ <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${onDuty ? 'translate-x-7' : 'translate-x-1'}`} />
+ </span>
  </button>
+ </div>
  </div>
 
  <MyProviderProfileCard role="PANDIT" onboardingSlug="priest" publicListingType="pandit" />
@@ -240,8 +334,11 @@ export default function PriestDashboard() {
  />
 
  {fetchError && (
- <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
- {fetchError}
+ <div role="alert" className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+ <span className="flex-1 min-w-[12rem]">{fetchError}</span>
+ <button type="button" onClick={() => { void loadAll(); }} className="font-semibold underline underline-offset-2">
+ Retry
+ </button>
  </div>
  )}
 
@@ -267,10 +364,12 @@ export default function PriestDashboard() {
  {/* Upcoming Bookings */}
  <div className="bg-white rounded-xl border border-surface-100">
  <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100">
- <h2 className="font-semibold text-surface-800">Upcoming Bookings</h2>
+ {/* DU-07: this and the h3s below it all measured 16px/600 — visually
+     identical, so a pandit scanning for the section had no anchor. */}
+ <h2 className="text-lg font-semibold text-surface-800">Upcoming Bookings</h2>
  <Link
  href="/priest/bookings"
- className="text-sm text-saffron-600 hover:text-saffron-700 font-medium inline-flex items-center gap-1"
+ className="text-sm text-saffron-600 hover:text-saffron-700 font-medium tap-safe gap-1"
  >
  View All <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -340,7 +439,7 @@ export default function PriestDashboard() {
  <CheckCircle2 className="w-6 h-6 text-saffron-600" />
  </div>
  <div>
- <h3 className="font-semibold text-surface-800">Accept Bookings</h3>
+ <h3 className="text-sm font-semibold text-surface-800">Accept Bookings</h3>
  <p className="text-sm text-surface-500">Review and accept new bookings</p>
  </div>
  <ArrowRight className="w-5 h-5 text-surface-300 ml-auto" />
@@ -354,7 +453,7 @@ export default function PriestDashboard() {
  <Video className="w-6 h-6 text-purple-600" />
  </div>
  <div>
- <h3 className="font-semibold text-surface-800">Upload Video</h3>
+ <h3 className="text-sm font-semibold text-surface-800">Upload Video</h3>
  <p className="text-sm text-surface-500">Upload video proof for completed pujas</p>
  </div>
  <ArrowRight className="w-5 h-5 text-surface-300 ml-auto" />

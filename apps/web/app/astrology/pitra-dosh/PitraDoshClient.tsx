@@ -90,7 +90,7 @@ export default function PitraDoshClient() {
             <p className="font-serif text-lg font-semibold">{d.name}</p>
             <p className="text-sm">{d.sanskrit}</p>
            </div>
-           <span className="rounded-full bg-white/70 px-2.5 py-0.5 text-[11px] font-semibold">
+           <span className="rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-semibold">
             {SEVERITY_LABEL[d.severity]}
            </span>
           </div>

@@ -21,6 +21,7 @@ import ScrollReveal from '../../../components/ScrollReveal';
 import { companions, formatINR } from '../../../lib/yatra-data';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/yatra/companion' },
  title: 'Travel Companions — Verified helpers for elderly yatris',
  description: 'Book verified travel companions for elderly devotees undertaking sacred pilgrimages. Aadhaar verified, background checked, first-aid certified.',
 };
@@ -79,7 +80,7 @@ export default function CompanionListingPage() {
  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-primary-highlight)' }}>
  <s.icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  </div>
- <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Step {s.n}</span>
+ <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Step {s.n}</span>
  </div>
  <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>{s.title}</h3>
  <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{s.desc}</p>
@@ -118,7 +119,7 @@ export default function CompanionListingPage() {
  {c.initials}
  </div>
  <span
- className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+ className="text-xs font-medium px-2 py-0.5 rounded-full"
  style={{
  background: c.availability === 'available' ? 'color-mix(in oklch, #16a34a 15%, transparent)' : c.availability === 'limited' ? 'color-mix(in oklch, #b87333 15%, transparent)' : 'color-mix(in oklch, #a12c7b 15%, transparent)',
  color: c.availability === 'available' ? '#16a34a' : c.availability === 'limited' ? 'var(--color-primary)' : '#a12c7b',
@@ -130,7 +131,7 @@ export default function CompanionListingPage() {
 
  <div>
  <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{c.name}</h3>
- <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{c.age} yrs · {c.gender === 'male' ? 'Male' : 'Female'} · {c.city}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{c.age} yrs · {c.gender === 'male' ? 'Male' : 'Female'} · {c.city}</p>
  </div>
 
  {/* Rating */}
@@ -140,16 +141,16 @@ export default function CompanionListingPage() {
  <Star key={s} className="w-3 h-3" fill={s < Math.round(c.rating) ? 'var(--color-primary)' : 'transparent'} style={{ color: 'var(--color-primary)' }} />
  ))}
  </div>
- <span className="text-[11px] font-semibold" style={{ color: 'var(--color-text)' }}>{c.rating.toFixed(1)}</span>
- <span className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>({c.reviewCount})</span>
+ <span className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{c.rating.toFixed(1)}</span>
+ <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>({c.reviewCount})</span>
  </div>
 
- <div className="mt-3 flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="mt-3 flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.yatrasCompleted} yatras completed
  </div>
 
  {/* Languages */}
- <div className="mt-2 flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <Languages className="w-3 h-3" style={{ color: 'var(--color-primary)' }} />
  <span className="truncate">{c.languages.join(', ')}</span>
  </div>
@@ -157,7 +158,7 @@ export default function CompanionListingPage() {
  {/* Specializations */}
  <div className="mt-3 flex flex-wrap gap-1">
  {c.specializations.slice(0, 2).map((s) => (
- <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
+ <span key={s} className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
  {s}
  </span>
  ))}
@@ -165,15 +166,15 @@ export default function CompanionListingPage() {
 
  {/* Verified badges */}
  <div className="mt-3 flex items-center gap-1 flex-wrap">
- {c.verified.aadhaar && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><CheckCircle2 className="w-2.5 h-2.5" /> Aadhaar</span>}
- {c.verified.background && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Shield className="w-2.5 h-2.5" /> BG check</span>}
- {c.verified.medical && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Stethoscope className="w-2.5 h-2.5" /> Medical</span>}
+ {c.verified.aadhaar && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><CheckCircle2 className="w-2.5 h-2.5" /> Aadhaar</span>}
+ {c.verified.background && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Shield className="w-2.5 h-2.5" /> BG check</span>}
+ {c.verified.medical && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Stethoscope className="w-2.5 h-2.5" /> Medical</span>}
  </div>
 
  <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
  <div>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>Price</p>
- <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(c.pricePerDay)} <span className="text-[10px] font-normal" style={{ color: 'var(--color-text-muted)' }}>/ day</span></p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>Price</p>
+ <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(c.pricePerDay)} <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>/ day</span></p>
  </div>
  </div>
 

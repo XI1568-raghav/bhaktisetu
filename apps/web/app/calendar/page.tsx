@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { FESTIVALS } from '../../lib/festivals';
+import { FESTIVALS, resolveBookablePujas } from '../../lib/festivals';
+import { getCatalogueSlugs } from '../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 
@@ -8,10 +9,11 @@ const BASE_URL = 'https://darshya.online';
 const YEAR = 2026;
 
 export const metadata: Metadata = {
-  title: `Hindu Calendar ${YEAR} — Complete Festival & Vrat Calendar | Darshya`,
+  title: `Hindu Calendar ${YEAR} — Complete Festival & Vrat Calendar`,
   description: `Full Hindu festival calendar for ${YEAR}: dates, rituals, fasting type, presiding deity for all 30+ major festivals. Maha Shivratri, Holi, Ram Navami, Diwali, Janmashtami, Ekadashi, and more.`,
   alternates: { canonical: `${BASE_URL}/calendar` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: `Hindu Calendar ${YEAR} — month by month`,
     description: 'Every Hindu festival in 2026 with dates, deity, rituals, fasting requirements, and direct puja booking.',
     url: `${BASE_URL}/calendar`,
@@ -30,7 +32,14 @@ const MONTH_SANSKRIT = [
   'भाद्रपद / आश्विन', 'आश्विन / कार्तिक', 'कार्तिक / मार्गशीर्ष', 'मार्गशीर्ष / पौष',
 ];
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
+  // DF-02: `pujasAvailable` is editorial, not inventory. Counting it printed
+  // "2 pujas bookable" for festivals whose pujas both 404. Count only what the
+  // live catalogue confirms.
+  const catalogue = await getCatalogueSlugs();
+  const bookableCount = (f: { pujasAvailable: string[] }) =>
+    resolveBookablePujas(f.pujasAvailable, catalogue).length;
+
   const byMonth: Map<number, typeof FESTIVALS> = new Map();
   for (let m = 0; m < 12; m++) byMonth.set(m, []);
   for (const f of FESTIVALS) {
@@ -142,21 +151,21 @@ export default function CalendarPage() {
                         <div className="flex items-baseline justify-between">
                           <h3 className="text-base font-semibold text-gray-900">
                             {f.name}
-                            {isToday && <span className="ml-2 rounded bg-saffron-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Today</span>}
+                            {isToday && <span className="ml-2 rounded bg-saffron-600 px-1.5 py-0.5 text-xs font-bold uppercase text-white">Today</span>}
                           </h3>
                           <span className="font-serif text-sm text-gray-600">{f.sanskrit}</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-600">{f.deity}</p>
                         <p className="mt-2 line-clamp-2 text-sm text-gray-700">{f.description}</p>
-                        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+                        <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                           {f.fastingType !== 'none' && (
                             <span className={`rounded px-2 py-0.5 font-semibold uppercase ${
                               f.fastingType === 'full' ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'
                             }`}>{f.fastingType} fast</span>
                           )}
-                          {f.pujasAvailable.length > 0 && (
+                          {bookableCount(f) > 0 && (
                             <span className="rounded bg-emerald-100 px-2 py-0.5 font-semibold uppercase text-emerald-800">
-                              {f.pujasAvailable.length} puja{f.pujasAvailable.length > 1 ? 's' : ''} bookable
+                              {bookableCount(f)} puja{bookableCount(f) > 1 ? 's' : ''} bookable
                             </span>
                           )}
                         </div>

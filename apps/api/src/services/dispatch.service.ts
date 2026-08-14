@@ -36,6 +36,7 @@ import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
 import { activeSlotHoldWhere } from './booking.service.js';
 import {
   notifyDevotee,
+  notifyPriest,
   sendOfferToPriest,
   buildBookingCtx,
   priestContact,
@@ -70,6 +71,38 @@ const TIER_CONFIG: Record<
 // fills a batch.
 
 type TierKey = keyof typeof TIER_CONFIG;
+
+/**
+ * NOTIF-10 — act on the accept window we actually sold.
+ *
+ * `instant` promises a 60-SECOND accept window, but nothing acted on an expired
+ * offer except sweepExpiredOffers, which ran as tick 13 of an 18-tick chain on a
+ * 30-minute cadence (jobs/scheduler.ts DEFAULT_INTERVAL_MS). So round 2 of a
+ * 60-second offer landed up to 30 minutes late, and the devotee's "we're
+ * re-matching" notice up to an hour late — on the tier sold as the paid
+ * differentiator against SmartPuja/Harivara. cancellation.service's
+ * `offerExpiresAt: new Date()  // trigger immediate re-broadcast` had the word
+ * "immediate" doing work the scheduler did not do.
+ *
+ * So every broadcast arms a timer for its own window instead of waiting to be
+ * polled. Properties that make this safe:
+ *   - `unref()` — never holds the process open, never delays a shutdown;
+ *   - one timer per booking, replaced on rebroadcast, cleared once it fires;
+ *   - the work is `sweepBookingOffers`, which is idempotent and re-reads state,
+ *     so a timer that fires late, twice, or alongside the cron changes nothing;
+ *   - the cron sweep REMAINS the safety net — a process restart drops the
+ *     timers, and the sweep is what catches those bookings.
+ */
+const offerTimers = new Map<string, NodeJS.Timeout>();
+
+/** Small grace so the timer never fires a hair before `expiresAt`. */
+const OFFER_TIMEOUT_GRACE_MS = 2_000;
+
+/** Test seam — drop every armed timer so a suite cannot leak one into the next. */
+export function __clearOfferTimersForTests(): void {
+  for (const t of offerTimers.values()) clearTimeout(t);
+  offerTimers.clear();
+}
 
 /** Haversine distance in km between two lat/lng points. */
 function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
@@ -244,7 +277,26 @@ export class DispatchService {
       }).catch(() => undefined);
     }
 
+    this.armOfferTimeout(bookingId, cfg.acceptWindowSec);
+
     return candidates.length;
+  }
+
+  /**
+   * Arm the per-booking offer timeout. Overridable/spy-able; see offerTimers.
+   */
+  armOfferTimeout(bookingId: string, acceptWindowSec: number): void {
+    const existing = offerTimers.get(bookingId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      offerTimers.delete(bookingId);
+      void this.sweepBookingOffers(bookingId).catch((err) =>
+        console.warn('[dispatch] offer timeout sweep failed:', err),
+      );
+    }, acceptWindowSec * 1000 + OFFER_TIMEOUT_GRACE_MS);
+    // Never keep the API process alive for a pending offer window.
+    timer.unref?.();
+    offerTimers.set(bookingId, timer);
   }
 
   /**
@@ -391,18 +443,95 @@ export class DispatchService {
   }
 
   /**
+   * Expire every `sent` offer past its window and TELL THE PANDITS.
+   *
+   * NOTIF-06: this used to be a bare `updateMany`, which discards the identity
+   * of the offers it just closed — so `notifyPriest` had no caller anywhere in
+   * the repo and `offer_timeout` was a declared BookingEvent with a written,
+   * unreachable WhatsApp template. A pandit was never told his offer expired or
+   * that the booking moved on; the first he knew was the request vanishing from
+   * his portal. Reading the rows before closing them costs one bounded query and
+   * is the only way to name the pandits.
+   *
+   * `bookingId` narrows to a single booking (the per-offer timeout path).
+   */
+  private async expireSentOffers(
+    now: Date,
+    bookingId?: string,
+  ): Promise<number> {
+    // `as const` keeps the literal from widening to `string`, which does not
+    // satisfy DispatchOfferWhereInput['state'] (the OfferState enum).
+    const where = {
+      state: 'sent' as const,
+      expiresAt: { lt: now },
+      ...(bookingId ? { bookingId } : {}),
+    };
+    const expiring =
+      (await prisma.dispatchOffer.findMany({
+        where,
+        select: { id: true, bookingId: true, priestId: true },
+        take: 200,
+      })) ?? [];
+    const closed = await prisma.dispatchOffer.updateMany({
+      where,
+      data: { state: 'expired', respondedAt: now },
+    });
+    if (expiring.length) void this.notifyExpiredOfferPriests(expiring);
+    return closed?.count ?? 0;
+  }
+
+  /** Fire-and-forget `offer_timeout` to each pandit whose offer just lapsed. */
+  private async notifyExpiredOfferPriests(
+    offers: Array<{ bookingId: string; priestId: string }>,
+  ): Promise<void> {
+    const bookings = new Map<string, unknown>();
+    for (const o of offers) {
+      try {
+        if (!bookings.has(o.bookingId)) {
+          bookings.set(
+            o.bookingId,
+            await prisma.pujaBooking.findUnique({
+              where: { id: o.bookingId },
+              include: {
+                pujaType: { select: { name: true } },
+                temple: { select: { name: true } },
+                user: { select: { id: true, fullName: true, phone: true } },
+              },
+            }),
+          );
+        }
+        const full = bookings.get(o.bookingId);
+        if (!full) continue;
+        const contact = await priestContact(o.priestId).catch(() => null);
+        if (!contact) continue;
+        await notifyPriest(
+          contact.userId,
+          contact.phone,
+          'offer_timeout',
+          buildBookingCtx(full as never),
+        );
+      } catch (err) {
+        // A pandit notification must never break the sweep that reassigns the
+        // devotee's booking — that is the part with money attached.
+        console.warn('[dispatch] offer_timeout notify failed:', err);
+      }
+    }
+  }
+
+  /**
    * Cron sweep (wire into master-cron). Marks expired sent offers; for each
    * booking that still has no accepted offer and no priest, either rebroadcasts
    * (bounded) or escalates: notifies the devotee we're re-matching / offering a
    * refund, and leaves the booking confirmed for admin pickup.
    * Returns a small result for the cron report.
+   *
+   * Still the SAFETY NET, not the primary path: per-booking timers armed by
+   * broadcast() (NOTIF-10) handle the normal case within the tier's own accept
+   * window, and this catches whatever a process restart dropped.
    */
   async sweepExpiredOffers(): Promise<{ expired: number; rebroadcast: number; escalated: number }> {
     const now = new Date();
-    const expiredOffers = await prisma.dispatchOffer.updateMany({
-      where: { state: 'sent', expiresAt: { lt: now } },
-      data: { state: 'expired', respondedAt: now },
-    });
+    const expiredCount = await this.expireSentOffers(now);
 
     // Bookings past their offer window, still unassigned & confirmed.
     const stale = await prisma.pujaBooking.findMany({
@@ -419,7 +548,62 @@ export class DispatchService {
     let rebroadcast = 0;
     let escalated = 0;
     for (const b of stale) {
-      const tier = b.dispatchTier as TierKey;
+      const r = await this.resolveUnassigned(b.id, b.dispatchTier as TierKey);
+      rebroadcast += r.rebroadcast;
+      escalated += r.escalated;
+    }
+
+    return { expired: expiredCount, rebroadcast, escalated };
+  }
+
+  /**
+   * Resolve ONE booking whose offer window has lapsed — the per-offer timeout
+   * path (NOTIF-10). Same decision as the cron sweep, scoped to one id and
+   * costing no table scan, so a 60-second instant window is acted on in ~60
+   * seconds instead of up to 30 minutes.
+   *
+   * Idempotent: it re-reads the booking and does nothing once a pandit has
+   * accepted, so firing alongside the cron sweep is harmless.
+   */
+  async sweepBookingOffers(
+    bookingId: string,
+  ): Promise<{ expired: number; rebroadcast: number; escalated: number }> {
+    const now = new Date();
+    const expired = await this.expireSentOffers(now, bookingId);
+
+    const booking = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: { id: true, status: true, priestId: true, dispatchTier: true, offerExpiresAt: true },
+    });
+    if (
+      !booking ||
+      booking.status !== 'confirmed' ||
+      booking.priestId ||
+      !booking.offerExpiresAt ||
+      booking.offerExpiresAt > now ||
+      !['instant', 'one_hour', 'senior'].includes(String(booking.dispatchTier))
+    ) {
+      return { expired, rebroadcast: 0, escalated: 0 };
+    }
+
+    const r = await this.resolveUnassigned(bookingId, booking.dispatchTier as TierKey);
+    return { expired, ...r };
+  }
+
+  /**
+   * Rebroadcast (bounded by the tier's maxRounds) or escalate one unassigned
+   * booking. Extracted so the cron sweep and the per-offer timeout make the
+   * SAME decision — two copies of this would drift, and the escalation branch is
+   * the one that tells a paying devotee what is happening.
+   */
+  private async resolveUnassigned(
+    bookingId: string,
+    tier: TierKey,
+  ): Promise<{ rebroadcast: number; escalated: number }> {
+    let rebroadcast = 0;
+    let escalated = 0;
+    {
+      const b = { id: bookingId };
       const cfg = TIER_CONFIG[tier];
 
       // Rounds so far, counted EXACTLY rather than inferred.
@@ -484,7 +668,7 @@ export class DispatchService {
       }
     }
 
-    return { expired: expiredOffers.count, rebroadcast, escalated };
+    return { rebroadcast, escalated };
   }
 }
 

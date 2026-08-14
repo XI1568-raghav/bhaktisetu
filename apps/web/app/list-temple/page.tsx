@@ -4,7 +4,8 @@ import SelfOnboardForm, { ExtraInput } from '../../components/SelfOnboardForm';
 
 
 export const metadata: Metadata = {
-  title: 'List your temple on Darshya',
+  alternates: { canonical: 'https://darshya.online/list-temple' },
+  title: 'List your temple',
   description:
     'Bring your temple online. Live darshan, puja bookings, devotee donations and 80G receipts — all on Darshya.',
 };

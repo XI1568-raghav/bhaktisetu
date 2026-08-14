@@ -7,6 +7,7 @@ export const metadata: Metadata = {
  "Terms of service for using Darshya \u2014 puja bookings, live darshan, store purchases, and all platform services.",
  alternates: { canonical: "https://darshya.online/terms" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Terms of Service | Darshya",
  description:
  "Eligibility, services, payments, liability, and dispute resolution for the Darshya platform.",
@@ -178,14 +179,19 @@ export default function TermsPage() {
  conversion rate and any foreign-transaction fee.
  </li>
  <li>
- Platform commission rates by service category:
- <ul className="mt-2">
- <li>Puja booking: 25% (configurable 20&ndash;40% per temple)</li>
- <li>Astrology consultation: 30%</li>
- <li>Wellness session: 25%</li>
- <li>Donations: 0% commission + &#8377;100 flat fee per 80G receipt</li>
- <li>Store products: standard MedusaJS take rate</li>
- </ul>
+ Platform commission is a uniform <strong>20%</strong> of the
+ transaction value across every service category &mdash; puja
+ bookings, astrology consultations, wellness sessions and store
+ products alike. The provider (pandit, astrologer, instructor,
+ store owner) receives the remaining <strong>80%</strong>. Where a
+ temple is party to a booking, the temple&apos;s revenue share is
+ paid out of the platform&apos;s 20%, not deducted from the
+ provider&apos;s 80%.
+ </li>
+ <li>
+ Donations carry <strong>0% commission</strong>. Where the donee is
+ eligible, the 80G receipt is issued free of charge &mdash; there is
+ no per-receipt fee.
  </li>
  <li>
  Priest, astrologer, and provider payouts are processed

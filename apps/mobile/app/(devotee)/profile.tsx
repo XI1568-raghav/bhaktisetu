@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useBookings, useUserAddresses } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
+import { selectAddresses, selectBookingTotal } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface QuickLink {
@@ -194,8 +195,11 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showOnboardOptions, setShowOnboardOptions] = useState(false);
 
-  const bookingCount = bookingsQuery.data?.data?.length ?? 0;
-  const addressCount = addressesQuery.data?.data?.length ?? 0;
+  // PAR-02: the envelopes are {success,bookings,pagination} and
+  // {success,addresses}. Reading `.data` made both counters permanently 0.
+  // The booking counter uses pagination.total, not the page length.
+  const bookingCount = selectBookingTotal(bookingsQuery.data);
+  const addressCount = selectAddresses(addressesQuery.data).length;
   const phone = user?.phone ?? '';
   const displayName = user?.fullName ?? 'Devotee';
 

@@ -64,7 +64,13 @@ describe('AdminService.getUsers', () => {
     expect(u2!.roles).toEqual(['DEVOTEE']);
   });
 
-  it('post-filters by role when filter present', async () => {
+  // SCAL-09 (2026-08-12): this used to assert the POST-pagination JS filter —
+  // i.e. it asserted the bug. Filtering after `skip/take` returns only the
+  // matches that happen to fall on the fetched page, next to a `total` from an
+  // unfiltered count. The role predicate now lives in the query, so the
+  // contract is "the where clause carries the role", not "the service drops
+  // rows the database already returned".
+  it('filters by role inside the query, so the page and the count agree', async () => {
     prismaMock.user.findMany.mockResolvedValue([
       {
         id: 'u-1',
@@ -74,25 +80,20 @@ describe('AdminService.getUsers', () => {
         subscriptionTier: null,
         createdAt: new Date(),
       },
-      {
-        id: 'u-2',
-        fullName: 'B',
-        email: 'b@e',
-        phone: '2',
-        subscriptionTier: null,
-        createdAt: new Date(),
-      },
     ]);
-    prismaMock.user.count.mockResolvedValue(2);
+    prismaMock.user.count.mockResolvedValue(1);
     prismaMock.userRoleAssignment.findMany.mockResolvedValue([
       { userId: 'u-1', role: 'PANDIT' },
-      { userId: 'u-2', role: 'STORE_OWNER' },
     ]);
 
     const out = await service.getUsers({ role: 'PANDIT' });
 
+    const listWhere = prismaMock.user.findMany.mock.calls[0]![0]!.where;
+    expect(listWhere.id).toEqual({ in: ['u-1'] });
+    expect(prismaMock.user.count.mock.calls[0]![0]!.where).toEqual(listWhere);
     expect(out.users).toHaveLength(1);
     expect(out.users[0]!.id).toBe('u-1');
+    expect(out.total).toBe(1);
   });
 
   it('throws on DB failure instead of serving mock data', async () => {
@@ -182,10 +183,11 @@ describe('AdminService.getDashboard', () => {
     // took its first Rs 1,00,000.
     prismaMock.payment.aggregate.mockResolvedValue({ _sum: { amount: 4500 } });
     prismaMock.user.count.mockResolvedValue(100);
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
-      { role: 'DEVOTEE' },
-      { role: 'DEVOTEE' },
-      { role: 'PANDIT' },
+    // SCAL-04: role counts come from groupBy now, not from reading every
+    // assignment row and tallying them in JS.
+    prismaMock.userRoleAssignment.groupBy.mockResolvedValue([
+      { role: 'DEVOTEE', _count: { _all: 2 } },
+      { role: 'PANDIT', _count: { _all: 1 } },
     ]);
     prismaMock.marketplaceSubscription.count.mockResolvedValue(8);
     prismaMock.transaction.findMany.mockResolvedValue([

@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '12 Sacred Trees of Sanatana Dharma — Peepal, Banyan, Bilva, Tulsi & More | Darshya',
+  title: '12 Sacred Trees of Sanatana Dharma — Peepal, Banyan, Bilva, Tulsi & More',
   description:
     'The twelve most sacred trees and plants of Hindu tradition — Peepal, Banyan, Bilva, Tulsi, Neem, Ashoka, Mango, Coconut, Banana, Sandalwood, Kadamba and Palash. Spiritual significance, associated deities, planting muhurta, and uses in puja and daily practice.',
   alternates: { canonical: `${BASE_URL}/sacred-trees` },

@@ -154,19 +154,35 @@ function sumAmounts(rows: Array<{ amount: Prisma.Decimal | number | string }>): 
   return rows.reduce((s, r) => s.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0));
 }
 
+/**
+ * SCAL-04 (2026-08-13): sum in SQL, not in Node.
+ *
+ * These three balances were each a `findMany({ select: { amount } })` reduced in
+ * JavaScript — an unbounded read of the provider's entire commission ledger
+ * measured at 10,309 kB by EXPLAIN (ANALYZE, SERIALIZE) at 200k rows, three
+ * times per dashboard load, into a 512 MB container.
+ *
+ * Postgres SUM over `numeric` is exact, so the Decimal correctness `sumAmounts`
+ * was written to protect is preserved: Prisma hands the aggregate back as a
+ * Decimal and it stays one until the display boundary at the end of this
+ * function. `_sum` is null when nothing matched — that is zero, not NaN.
+ */
+async function sumCommissionAmounts(
+  where: Prisma.CommissionWhereInput,
+): Promise<Prisma.Decimal> {
+  const agg = await prisma.commission.aggregate({ where, _sum: { amount: true } });
+  return new Prisma.Decimal(agg._sum?.amount ?? 0);
+}
+
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
-  const rows = await prisma.commission.findMany({
-    where: { providerId, status: 'PENDING', payoutRequestId: null },
-    select: { amount: true },
+  const pending = await sumCommissionAmounts({
+    providerId,
+    status: 'PENDING',
+    payoutRequestId: null,
   });
-  const pending = sumAmounts(rows);
 
-  const paidRows = await prisma.commission.findMany({
-    where: { providerId, status: 'PAID' },
-    select: { amount: true },
-  });
-  const paid = sumAmounts(paidRows);
+  const paid = await sumCommissionAmounts({ providerId, status: 'PAID' });
 
   // In-flight (requested but not yet completed) — already linked to a request,
   // so NOT part of `pending` above. Reported for display only.
@@ -176,15 +192,11 @@ export async function getPayoutBalance(providerId: string) {
   // under both "Pending" and "Paid out", overstating the provider's position.
   // Nothing reachable writes that state today, but the two sibling queries scope
   // themselves and this one must too.
-  const inFlightRows = await prisma.commission.findMany({
-    where: {
-      providerId,
-      status: 'PENDING',
-      payoutRequest: { status: { in: ['pending', 'processing'] } },
-    },
-    select: { amount: true },
+  const inFlight = await sumCommissionAmounts({
+    providerId,
+    status: 'PENDING',
+    payoutRequest: { status: { in: ['pending', 'processing'] } },
   });
-  const inFlight = sumAmounts(inFlightRows);
 
   // RV-05 (2026-08-10): availableInr used to be `pending - inFlight`, but the two
   // sets are disjoint by construction — the `pending` query filters

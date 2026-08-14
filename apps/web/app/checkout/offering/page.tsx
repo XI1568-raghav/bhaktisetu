@@ -19,35 +19,27 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { DateInput } from '../../../components/ui/DateInput';
+// PF-03: the same-origin, query-preserving login redirect the temple wizard
+// already uses (DF-01). Sharing it is the point — this page dropped ?id=.
+import { buildLoginRedirect } from '../../../lib/booking-draft';
 
-// Server constant (apps/api/src/services/booking.service.ts PLATFORM_FEE_INR).
-// Kept in sync by hand, as the temple wizard already does.
-const PLATFORM_FEE_INR = 51;
+import {
+  PLATFORM_FEE_INR,
+  feeDisclosureLine,
+  formatInr,
+  pujaTotalInr,
+} from '../../../lib/puja-pricing';
+import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 
 // ─── Razorpay loader ───────────────────────────────────────────
-// Lifted verbatim from /pujas/[slug]/book — keep the two flows
-// using identical loader semantics so a future migration to a
-// shared util touches one call site, not two.
-type RazorpayInstance = {
-  open: () => void;
-  on: (event: string, handler: (response: { error?: { description?: string } }) => void) => void;
-};
-type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
-type RazorpayWindow = typeof window & { Razorpay?: RazorpayConstructor };
-
-const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
-  return new Promise((resolve) => {
-    const w = window as RazorpayWindow;
-    if (w.Razorpay) {
-      resolve(w.Razorpay);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve((window as RazorpayWindow).Razorpay);
-    document.body.appendChild(script);
-  });
-};
+// RES-04 (2026-08-12): the loader used to live inline here (and, verbatim, in
+// /pujas/[slug]/book) with NO `script.onerror` and no timer — so an
+// ad-blocker, an ISP filter or a CDN blip left the promise unsettled forever,
+// AFTER create-order had already minted a pending_payment booking and a live
+// Razorpay order. The Pay button stayed disabled behind a spinner and the
+// `if (!Razorpay)` branch below — which has always had the right message —
+// could never be reached. It now lives in lib/razorpay-loader so one
+// implementation serves every flow instead of a copy each.
 
 // ─── Types ─────────────────────────────────────────────────────
 
@@ -100,9 +92,17 @@ function OfferingCheckoutInner() {
     // Wait for the auth context to settle. If session is missing after
     // mount, push the user to /auth/login with a redirect-back param so
     // they land back on the same checkout after signing in.
+    // PF-03 (2026-08-12): this used to encode the PATHNAME only, so
+    // /checkout/offering?id=<offeringId> became a bare /checkout/offering and
+    // the devotee came back from login to a checkout that had forgotten which
+    // offering they picked — `id` is this page's only input. buildLoginRedirect
+    // (the DF-01 helper the temple wizard already uses) keeps the search string
+    // and still refuses an off-origin target.
     if (isAuthenticated === false) {
-      const back = encodeURIComponent(window.location.pathname);
-      window.location.href = `/auth/login?redirect=${back}`;
+      window.location.href = buildLoginRedirect(
+        window.location.pathname,
+        window.location.search,
+      );
     }
   }, [isAuthenticated]);
 
@@ -190,11 +190,7 @@ function OfferingCheckoutInner() {
   // POST /bookings/from-offering charges basePrice + PLATFORM_FEE_INR (+ the
   // prasad fee when requested, which this page does not offer), so quoting
   // basePrice alone on the pay button understated the Razorpay sheet by Rs 51.
-  // Mirrors PLATFORM_FEE in apps/web/app/pujas/book/page.tsx, which is the
-  // temple wizard's copy of the same server constant
-  // (booking.service.PLATFORM_FEE_INR — the single source of truth).
-  const platformFeeInr = PLATFORM_FEE_INR;
-  const totalPayableInr = priceInr + platformFeeInr;
+  const totalPayableInr = pujaTotalInr(priceInr, false);
   const canPay =
     !!offering &&
     !!priest &&
@@ -207,7 +203,11 @@ function OfferingCheckoutInner() {
   const handlePayment = async () => {
     if (!offering || !priest) return;
     if (!isAuthenticated) {
-      window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      // PF-03: same drop as the auth-gate effect above — keep ?id=.
+      window.location.href = buildLoginRedirect(
+        window.location.pathname,
+        window.location.search,
+      );
       return;
     }
 
@@ -260,7 +260,7 @@ function OfferingCheckoutInner() {
       const amount: number = data.amount;
 
       // 2. Open Razorpay checkout.
-      const Razorpay = await loadRazorpay();
+      const Razorpay = await loadRazorpayCheckout();
       if (!Razorpay) {
         setPaymentError('Could not load Razorpay checkout. Please retry.');
         setPaymentLoading(false);
@@ -455,13 +455,18 @@ function OfferingCheckoutInner() {
               <div className="flex items-center gap-4 mt-3 text-sm text-surface-600">
                 <span className="inline-flex items-center gap-1 font-semibold text-surface-800">
                   <IndianRupee className="w-3.5 h-3.5" />
-                  {priceInr.toLocaleString('en-IN')}
+                  {formatInr(priceInr)}
                 </span>
                 <span className="inline-flex items-center gap-1 text-surface-500">
                   <Clock className="w-3.5 h-3.5" />
                   {offering.durationMinutes} min
                 </span>
               </div>
+              {/* CM-03: this card is the advertised price and sits a full form
+                  above the breakdown, so on mobile the two are never co-visible.
+                  Disclose the fee here rather than letting Rs 51 first appear
+                  after the devotee has filled in the sankalp. */}
+              <p className="mt-1 text-xs text-surface-500">{feeDisclosureLine(priceInr)}</p>
             </div>
           </div>
         </div>
@@ -588,15 +593,15 @@ function OfferingCheckoutInner() {
         <div className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm">
           <div className="flex items-center justify-between py-1">
             <span className="text-surface-600">Puja</span>
-            <span className="text-surface-800">&#8377;{priceInr.toLocaleString('en-IN')}</span>
+            <span className="text-surface-800">&#8377;{formatInr(priceInr)}</span>
           </div>
           <div className="flex items-center justify-between py-1">
             <span className="text-surface-600">Platform fee</span>
-            <span className="text-surface-800">&#8377;{platformFeeInr.toLocaleString('en-IN')}</span>
+            <span className="text-surface-800">&#8377;{formatInr(PLATFORM_FEE_INR)}</span>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2 font-semibold">
             <span className="text-surface-800">Total</span>
-            <span className="text-surface-900">&#8377;{totalPayableInr.toLocaleString('en-IN')}</span>
+            <span className="text-surface-900">&#8377;{formatInr(totalPayableInr)}</span>
           </div>
         </div>
 
@@ -614,7 +619,7 @@ function OfferingCheckoutInner() {
           ) : (
             <>
               <CreditCard className="w-4 h-4" />
-              Pay &#8377;{totalPayableInr.toLocaleString('en-IN')} with Razorpay
+              Pay &#8377;{formatInr(totalPayableInr)} with Razorpay
             </>
           )}
         </button>

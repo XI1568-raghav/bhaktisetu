@@ -4,7 +4,10 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
-import { reverseBookingLedger } from './ledger-reversal.service.js';
+import {
+  reverseBookingLedger,
+  reduceBookingLedgerForPartialRefund,
+} from './ledger-reversal.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -1304,8 +1307,50 @@ export class PaymentService {
               `[partially-refunded ${refundAmount.toFixed(2)}] ${reason}`.slice(0, 500),
           },
         });
+
+        // DI-02 (2026-08-12): UNWIND THE LEDGER PROPORTIONALLY.
+        //
+        // This branch used to touch nothing but cancellationReason, and the
+        // sibling rail's reversal was gated on `refundType === 'full'` too — so
+        // NEITHER rail reversed a partial. The cancellation ladder
+        // (100/75/50/25/0) makes a fractional refund the designed common path,
+        // which meant every mid-ladder cancellation paid the provider in full
+        // on revenue the platform had handed back: Rs 825 refunded on a
+        // Rs 1,100 puja while the pandit kept all Rs 770 and the temple Rs 55.
+        //
+        // `refundable` is what was still refundable BEFORE this call
+        // (paid - alreadyRefunded), which is what makes successive partials
+        // compose to the same ledger as one combined refund.
+        await reduceBookingLedgerForPartialRefund(tx, bookingId, {
+          refundAmount,
+          refundableBefore: refundable,
+          reason,
+        });
       }
     });
+
+    // NOTIF-04 (2026-08-12): TELL THE DEVOTEE. This rail was 100% silent.
+    //
+    // refund.service's rail at least emailed devotees who had an address. This
+    // one — the admin panel's — sent nothing at all: no email, no push, no
+    // WhatsApp. An admin could refund a booking and the devotee's only notice
+    // was their bank statement days later. No `emailAlreadySent` flag is passed
+    // because there is no email here to duplicate; the notifier owns the
+    // written notice on this path.
+    //
+    // Fired after the transaction commits, never inside it. Awaited so a throw
+    // cannot escape as an unhandled rejection, and caught so a notification can
+    // never fail a refund Razorpay has already made.
+    try {
+      const { notifyRefundProcessed } = await import('./booking-notify.service.js');
+      await notifyRefundProcessed({
+        bookingId: booking.id,
+        // Decimal -> string, never Number(): the devotee is shown the stored figure.
+        amountInr: refundAmount.toFixed(2),
+      });
+    } catch (err) {
+      console.warn('[payment.service] refund notification failed:', err);
+    }
 
     return {
       refundId: refund.id,

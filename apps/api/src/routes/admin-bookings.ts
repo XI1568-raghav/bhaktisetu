@@ -56,24 +56,22 @@ function resolveScanLimit(raw: string | undefined): number {
   return Math.min(PAYOUT_SCAN_MAX, Math.max(PAYOUT_SCAN_MIN, Math.floor(n)));
 }
 
-// PRIEST/WELLNESS = 25% commission, ASTROLOGER = 30%, GAUSHALA = 0%.
-// NOTE: these predate the uniform 20%/80% take-rate doctrine and are therefore
-// inconsistent with booking.service.DEFAULT_PRIEST_SHARE. Left as-is on purpose
-// — this endpoint only RENDERS a summary (settlement runs through
-// payout.service.processPayout), and correcting the number changes what an
-// admin believes a provider is owed, which is an owner decision, not a
-// pagination fix.
-function payoutMultiplier(role: string): number {
-  if (role === 'PRIEST' || role === 'WELLNESS_INSTRUCTOR') return 0.75;
-  if (role === 'ASTROLOGER') return 0.7;
-  if (role === 'GAUSHALA_MANAGER') return 1.0;
-  return 0.75;
-}
-
-/** Money aggregation stays in Decimal — a float sum over thousands of rows drifts. */
-function multiplyMoney(amount: Prisma.Decimal | number | string, multiplier: number): Prisma.Decimal {
-  return new Prisma.Decimal(amount.toString()).mul(new Prisma.Decimal(multiplier.toString()));
-}
+// DI-03 (2026-08-12): `payoutMultiplier` is GONE, not corrected.
+//
+// It recomputed a pandit's earning as `price_amount * 0.75`, which was wrong
+// twice over. 0.75 is a legacy 25% take that matches neither the uniform
+// 20%/80% doctrine nor the pandit's own negotiated `commissionRate`; and
+// `price_amount` carries the Rs 51 platform fee plus the Rs 150 prasad-delivery
+// pass-through that routes/bookings.ts documents as platform revenue, on which
+// no pandit has a claim. Measured over priest 6a56eba6's 42 payable bookings:
+// authoritative sum(priest_payout) Rs 32,340 versus this formula's Rs 34,803 —
+// Rs 2,463 (+7.6%) overstated. Settlement here is a MANUAL bank/UPI transfer,
+// so that inflated figure is what an admin actually paid.
+//
+// `PujaBooking.priestPayout` already holds the resolved split, written at
+// creation time honouring that pandit's rate. Sum the column. A second
+// recomputation anywhere in the codebase is guaranteed to drift from
+// booking.service again — which is exactly how this one got here.
 
 export const __testing = {
   resolveScanLimit,
@@ -132,6 +130,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       role: string;
       bookingsCount: number;
       totalPayout: number;
+      // DI-04: per-rail breakdown so a merged row stays reconcilable against
+      // the two underlying ledgers. Additive — existing consumers ignore it.
+      rails: Array<{ rail: 'priest_payout' | 'commission'; bookingsCount: number; totalPayout: number }>;
     }> = [];
     const parsedQuery = payoutScanQuerySchema.safeParse(request.query ?? {});
     const scanLimit = resolveScanLimit(parsedQuery.success ? parsedQuery.data.limit : undefined);
@@ -149,7 +150,10 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       // PRIEST: use priestId on Booking, exclude bookings already in PriestPayout.
       const priestBookings = await prisma.pujaBooking.findMany({
         where: { status: { in: paidStatuses as unknown as never }, priestId: { not: null } },
-        select: { id: true, priestId: true, priceAmount: true },
+        // DI-03: priestPayout is the authoritative, fee-exclusive, per-pandit
+        // split written at booking creation. It is what the pandit's own portal
+        // shows, and it is what must be settled.
+        select: { id: true, priestId: true, priestPayout: true },
         orderBy: { createdAt: 'desc' },
         take: scanLimit,
       });
@@ -193,29 +197,86 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
           if (c.bookingId) alreadyPaidIds.add(c.bookingId);
         }
       }
+      // DI-04 (2026-08-12): ONE ROW PER HUMAN.
+      //
+      // The priest rail was keyed on `Priest.id` and the ledger rail on
+      // `User.id`, so the same pandit appeared twice — {6a56eba6, 'Demo
+      // Pandit', PRIEST, Rs 10,763.25} AND {b61f02c9, 'Demo Pandit', PANDIT,
+      // Rs 770} — with nothing on the screen saying they are one person or
+      // that the rails are mutually exclusive. Settlement is a manual
+      // transfer; paying both rows is the natural mistake, and it pays the
+      // same provider twice. Everything below aggregates into ONE map keyed on
+      // the canonical User.id, carrying a per-rail breakdown so the total
+      // stays reconcilable.
+      const byUser = new Map<
+        string,
+        {
+          name: string | null;
+          count: number;
+          total: Prisma.Decimal;
+          rails: Map<'priest_payout' | 'commission', { count: number; total: Prisma.Decimal }>;
+        }
+      >();
+      const addToUser = (
+        userId: string,
+        rail: 'priest_payout' | 'commission',
+        amount: Prisma.Decimal,
+        name?: string | null,
+      ) => {
+        const cur = byUser.get(userId) ?? {
+          name: null,
+          count: 0,
+          total: new Prisma.Decimal(0),
+          rails: new Map<'priest_payout' | 'commission', { count: number; total: Prisma.Decimal }>(),
+        };
+        if (name && !cur.name) cur.name = name;
+        cur.count += 1;
+        cur.total = cur.total.add(amount);
+        const r = cur.rails.get(rail) ?? { count: 0, total: new Prisma.Decimal(0) };
+        r.count += 1;
+        r.total = r.total.add(amount);
+        cur.rails.set(rail, r);
+        byUser.set(userId, cur);
+      };
+
       const byPriest = new Map<string, { count: number; total: Prisma.Decimal }>();
       for (const b of priestBookings) {
         if (alreadyPaidIds.has(b.id) || !b.priestId) continue;
         const cur = byPriest.get(b.priestId) ?? { count: 0, total: new Prisma.Decimal(0) };
         cur.count += 1;
-        cur.total = cur.total.add(multiplyMoney(b.priceAmount, payoutMultiplier('PRIEST')));
+        // DI-03: the persisted split, not a recomputation. `priestPayout` is
+        // fee-exclusive and rate-correct per pandit; `priceAmount * 0.75` was
+        // neither.
+        cur.total = cur.total.add(new Prisma.Decimal((b.priestPayout ?? 0).toString()));
         byPriest.set(b.priestId, cur);
       }
+      // Priest rows whose User link is missing: the money is still owed, so it
+      // is reported under the Priest id rather than silently dropped.
+      const orphanPriestRail: Array<{ priestId: string; name: string; count: number; total: Prisma.Decimal }> = [];
       if (byPriest.size > 0) {
         const priests = await prisma.priest.findMany({
           where: { id: { in: Array.from(byPriest.keys()) } },
-          select: { id: true, user: { select: { fullName: true } } },
+          select: { id: true, userId: true, user: { select: { fullName: true } } },
         });
         for (const p of priests) {
           const agg = byPriest.get(p.id);
           if (!agg) continue;
-          groups.push({
-            providerId: p.id,
-            providerName: p.user?.fullName ?? 'Unknown priest',
-            role: 'PRIEST',
-            bookingsCount: agg.count,
-            totalPayout: agg.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
-          });
+          const name = p.user?.fullName ?? 'Unknown priest';
+          if (!p.userId) {
+            orphanPriestRail.push({ priestId: p.id, name, count: agg.count, total: agg.total });
+            continue;
+          }
+          const entry = byUser.get(p.userId) ?? {
+            name: null,
+            count: 0,
+            total: new Prisma.Decimal(0),
+            rails: new Map<'priest_payout' | 'commission', { count: number; total: Prisma.Decimal }>(),
+          };
+          entry.name = entry.name ?? name;
+          entry.count += agg.count;
+          entry.total = entry.total.add(agg.total);
+          entry.rails.set('priest_payout', { count: agg.count, total: agg.total });
+          byUser.set(p.userId, entry);
         }
       }
 
@@ -266,23 +327,27 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       // STORE_OWNER and TEMPLE_MANAGER, which the hardcoded role list above
       // never queried — their pending commissions appeared nowhere at all.
       if (pendingEarnings.length > 0) {
+        // `Commission.amount` is ALREADY the provider's net earning
+        // (lib/commission-math.ts) and `providerId` is ALREADY a User.id, so it
+        // merges straight into the canonical map beside the priest rail.
+        // Applying a payout multiplier here discounted it a second time
+        // (0.80 x 0.70 = 56% of gross reported as owed) — found by adversarial
+        // review 2026-08-11.
+        for (const e of pendingEarnings) {
+          addToUser(e.providerId, 'commission', new Prisma.Decimal(e.amount));
+        }
+      }
+
+      // ── Resolve every payee once, across both rails ────────────────────────
+      if (byUser.size > 0) {
+        const providerIds = Array.from(byUser.keys());
+        // Both lookups are bounded by an IN list built from the already-bounded
+        // scan windows, so no `take` belongs here — a truncated join would drop
+        // providers who ARE owed money out of the only screen that shows it.
+        let assignments: Array<{ userId: string; role: string; isPrimary: boolean }> = [];
+        let users: Array<{ id: string; fullName: string | null }> = [];
         try {
-          const byProvider = new Map<string, { count: number; total: Prisma.Decimal }>();
-          for (const e of pendingEarnings) {
-            const cur = byProvider.get(e.providerId) ?? { count: 0, total: new Prisma.Decimal(0) };
-            cur.count += 1;
-            // `Commission.amount` is ALREADY the provider's net earning
-            // (lib/commission-math.ts), so applying payoutMultiplier here
-            // discounted it a second time — 0.80 x 0.70 = 56% of gross reported
-            // as owed. Found by adversarial review 2026-08-11.
-            cur.total = cur.total.add(new Prisma.Decimal(e.amount));
-            byProvider.set(e.providerId, cur);
-          }
-          const providerIds = Array.from(byProvider.keys());
-          // Both lookups are bounded by an IN list built from the already-bounded
-          // commission window, so no `take` belongs here — a truncated join would
-          // drop providers who ARE owed money out of the only screen that shows it.
-          const [assignments, users] = await Promise.all([
+          [assignments, users] = await Promise.all([
             prisma.userRoleAssignment.findMany({
               where: { userId: { in: providerIds } },
               select: { userId: true, role: true, isPrimary: true },
@@ -292,43 +357,63 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
               select: { id: true, fullName: true },
             }),
           ]);
-          const rolesByUser = new Map<string, Array<{ role: string; isPrimary: boolean }>>();
-          for (const a of assignments) {
-            const list = rolesByUser.get(a.userId) ?? [];
-            list.push({ role: a.role as string, isPrimary: a.isPrimary });
-            rolesByUser.set(a.userId, list);
-          }
-          const userById = new Map(users.map((u) => [u.id, u.fullName] as const));
-          for (const providerId of providerIds) {
-            const agg = byProvider.get(providerId);
-            if (!agg) continue;
-            const held = rolesByUser.get(providerId) ?? [];
-            // Primary assignment wins, then declared precedence — identical to
-            // resolveProviderRoleForUser, which is what stamps PayoutRequest.role.
-            const role =
-              resolveProviderRole(held.filter((h) => h.isPrimary).map((h) => h.role)) ??
-              resolveProviderRole(held.map((h) => h.role));
-            if (!role) {
-              // A commission with no payout-capable role assignment is a data
-              // fault, but the money is still owed. Reporting it as UNKNOWN gets
-              // it investigated; dropping it silently is how a balance goes
-              // unsettled forever.
-              request.log.warn(
-                { providerId },
-                'pending commissions for a provider with no payout role assignment',
-              );
-            }
-            groups.push({
-              providerId,
-              providerName: userById.get(providerId) ?? 'Unknown',
-              role: role ?? 'UNKNOWN',
-              bookingsCount: agg.count,
-              totalPayout: agg.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
-            });
-          }
         } catch (err) {
-          request.log.warn({ err }, 'commission payout aggregation skipped (model missing)');
+          request.log.warn({ err }, 'payee identity lookup failed');
         }
+        const rolesByUser = new Map<string, Array<{ role: string; isPrimary: boolean }>>();
+        for (const a of assignments) {
+          const list = rolesByUser.get(a.userId) ?? [];
+          list.push({ role: a.role as string, isPrimary: a.isPrimary });
+          rolesByUser.set(a.userId, list);
+        }
+        const userById = new Map(users.map((u) => [u.id, u.fullName] as const));
+        for (const providerId of providerIds) {
+          const agg = byUser.get(providerId);
+          if (!agg) continue;
+          const held = rolesByUser.get(providerId) ?? [];
+          // Primary assignment wins, then declared precedence — identical to
+          // resolveProviderRoleForUser, which is what stamps PayoutRequest.role.
+          const resolved =
+            resolveProviderRole(held.filter((h) => h.isPrimary).map((h) => h.role)) ??
+            resolveProviderRole(held.map((h) => h.role));
+          const onPriestRail = agg.rails.has('priest_payout');
+          if (!resolved && !onPriestRail) {
+            // A commission with no payout-capable role assignment is a data
+            // fault, but the money is still owed. Reporting it as UNKNOWN gets
+            // it investigated; dropping it silently is how a balance goes
+            // unsettled forever.
+            request.log.warn(
+              { providerId },
+              'pending commissions for a provider with no payout role assignment',
+            );
+          }
+          groups.push({
+            providerId,
+            providerName: agg.name ?? userById.get(providerId) ?? 'Unknown',
+            role: resolved ?? (onPriestRail ? 'PRIEST' : 'UNKNOWN'),
+            bookingsCount: agg.count,
+            totalPayout: agg.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
+            rails: Array.from(agg.rails.entries()).map(([rail, r]) => ({
+              rail,
+              bookingsCount: r.count,
+              totalPayout: r.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
+            })),
+          });
+        }
+      }
+
+      // A Priest row with no linked User cannot be merged onto a human, but the
+      // money is real — surface it under the Priest id and say so.
+      for (const o of orphanPriestRail) {
+        const total = o.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber();
+        groups.push({
+          providerId: o.priestId,
+          providerName: `${o.name} (no linked user account)`,
+          role: 'PRIEST',
+          bookingsCount: o.count,
+          totalPayout: total,
+          rails: [{ rail: 'priest_payout', bookingsCount: o.count, totalPayout: total }],
+        });
       }
 
       groups.sort((a, b) => b.totalPayout - a.totalPayout);
@@ -338,7 +423,7 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         scanLimit,
         truncated,
         schemaNote:
-          'payoutPaidAt column missing on Booking; PRIEST uses the PriestPayout sidecar plus the Commission ledger, every other role uses the ledger alone. Balance already claimed by an open payout request is excluded here — settle it from the payout queue.',
+          'One row per payee, keyed on User.id. The PriestPayout sidecar rail and the Commission ledger are mutually exclusive per booking and are MERGED here — see `rails` for the split. Priest amounts are the persisted PujaBooking.priestPayout, never a recomputation. Balance already claimed by an open payout request is excluded — settle that from the payout queue.',
       };
     } catch (err) {
       // RV-22: the failure branch used to be indistinguishable from a genuinely

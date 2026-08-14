@@ -1722,6 +1722,228 @@ describe('BookingService.getUserBookings', () => {
   });
 });
 
+// ─── getUserBookings: DB-01 view filters + honest counts ─────────────────────
+//
+// DB-01 (prod sweep 2026-08-12): My Bookings rendered 20 of the devotee's 81
+// bookings and labelled that page "All 20". The page could not do better —
+// the endpoint returned only a page of rows plus a single `total`, so the tab
+// chips were computed from the truncated array. The server now owns both the
+// per-tab filter and the per-tab count, so the chip and the list can never
+// disagree.
+
+describe('BookingService.getUserBookings — view filters and honest counts', () => {
+  // ALIAS the shared mock's method — never reassign it (a past reassignment of
+  // a shared-mock method returned undefined and broke 26 unrelated tests).
+  const countMock = prismaMock.pujaBooking.count;
+
+  /** The view predicate always rides in `where.AND[0]` so an explicit `status`
+   *  filter can coexist with it. Identify which view a count() is for. */
+  function viewOf(args: any): 'all' | 'upcoming' | 'completed' | 'cancelled' {
+    const p = args?.where?.AND?.[0];
+    if (!p) return 'all';
+    if (p.status === 'cancelled') return 'cancelled';
+    if (p.status?.in) return 'completed';
+    return 'upcoming';
+  }
+
+  function stubCounts(v: {
+    all: number;
+    upcoming: number;
+    completed: number;
+    cancelled: number;
+  }) {
+    countMock.mockImplementation(async (args: any) => v[viewOf(args)]);
+  }
+
+  afterEach(() => {
+    // vi.clearAllMocks() clears calls but NOT implementations, so drop the
+    // implementation set above rather than leaking it into later suites.
+    countMock.mockReset();
+  });
+
+  it('returns a count per tab computed over the whole set, not the page', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue(
+      Array.from({ length: 20 }, (_, i) => ({ id: `b${i}` })),
+    );
+    stubCounts({ all: 81, upcoming: 62, completed: 13, cancelled: 1 });
+
+    const result = await service.getUserBookings('user-1', { limit: 20 });
+
+    expect(result.bookings).toHaveLength(20);
+    expect(result.counts).toEqual({ all: 81, upcoming: 62, completed: 13, cancelled: 1 });
+    // The whole point: the page is 20 rows but the truth is 81.
+    expect(result.total).toBe(81);
+    expect(result.totalPages).toBe(5);
+  });
+
+  it('defaults to the "all" view — no view predicate, same rows as before', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 7, upcoming: 3, completed: 2, cancelled: 1 });
+
+    await service.getUserBookings('user-1');
+
+    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any;
+    expect(where.userId).toBe('user-1');
+    expect(where.AND).toBeUndefined();
+  });
+
+  it('filters "cancelled" server-side so the chip and the list agree', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 81, upcoming: 62, completed: 13, cancelled: 1 });
+
+    const result = await service.getUserBookings('user-1', { view: 'cancelled' });
+
+    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any;
+    expect(where.AND[0].status).toBe('cancelled');
+    // `total` paginates the ACTIVE view, not the whole table.
+    expect(result.total).toBe(1);
+    expect(result.counts.all).toBe(81);
+  });
+
+  it('"completed" covers the three terminal success states', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 81, upcoming: 62, completed: 13, cancelled: 1 });
+
+    await service.getUserBookings('user-1', { view: 'completed' });
+
+    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any;
+    expect(where.AND[0].status.in).toEqual(
+      expect.arrayContaining(['completed', 'video_uploaded', 'delivered']),
+    );
+  });
+
+  it('"upcoming" is future-dated and excludes every terminal state', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 81, upcoming: 62, completed: 13, cancelled: 1 });
+
+    await service.getUserBookings('user-1', { view: 'upcoming' });
+
+    const p = (prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any).AND[0];
+    expect(p.scheduledDate.gte).toBeInstanceOf(Date);
+    expect(p.status.notIn).toEqual(
+      expect.arrayContaining(['cancelled', 'completed', 'video_uploaded', 'delivered']),
+    );
+  });
+
+  it('orders by a UNIQUE tiebreaker so paging cannot skip or repeat a row', async () => {
+    // Caught live: walking pages 1..5 of the seeded devotee's 81 bookings
+    // returned only 80 DISTINCT booking numbers. `orderBy: { scheduledDate:
+    // 'desc' }` is not a total order — dozens of these bookings share a date,
+    // so Postgres is free to order ties differently per query and a row can
+    // fall through the seam between two pages. Truncation was the reported
+    // bug; an unstable sort loses rows just as invisibly.
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 81, upcoming: 62, completed: 13, cancelled: 1 });
+
+    await service.getUserBookings('user-1', { page: 2 });
+
+    const orderBy = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.orderBy as any[];
+    expect(Array.isArray(orderBy)).toBe(true);
+    expect(orderBy[0]).toEqual({ scheduledDate: 'desc' });
+    // `id` is the primary key — the last key must be unique or the order is
+    // still ambiguous whenever every preceding key ties.
+    expect(orderBy[orderBy.length - 1]).toHaveProperty('id');
+  });
+
+  it('keeps an explicit status filter alongside the view predicate', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 2, upcoming: 2, completed: 0, cancelled: 0 });
+
+    await service.getUserBookings('user-1', {
+      status: 'confirmed' as any,
+      view: 'upcoming',
+    });
+
+    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any;
+    expect(where.status).toBe('confirmed');
+    expect(where.AND[0].status.notIn).toContain('cancelled');
+  });
+});
+
+// ─── getUserBookings: DB-03 unpaid holds are not "Upcoming" ──────────────────
+//
+// DB-03 (prod sweep 2026-08-12): clicking Pay mints a real `pending_payment`
+// booking BEFORE the gateway opens, so every abandoned or failed checkout
+// leaves a row behind. The devotee is told "You have NOT been charged", and
+// then the Upcoming tab shows those unpaid ghosts as if they were real,
+// paid-for pujas — the sweep found one devotee with 8 of them. `Upcoming` is
+// the tab a customer reads as "pujas I have booked and paid for"; an unpaid
+// 30-minute hold is not that.
+//
+// The view predicate excluded cancelled + the three terminal success states,
+// but NOT pending_payment (and not refunded, which is terminal for the same
+// reason). Both belong in the exclusion set.
+
+describe('BookingService.getUserBookings — DB-03: unpaid holds are not Upcoming', () => {
+  const countMock = prismaMock.pujaBooking.count;
+
+  function viewOf(args: any): 'all' | 'upcoming' | 'completed' | 'cancelled' {
+    const p = args?.where?.AND?.[0];
+    if (!p) return 'all';
+    if (p.status === 'cancelled') return 'cancelled';
+    if (p.status?.in) return 'completed';
+    return 'upcoming';
+  }
+
+  function stubCounts(v: {
+    all: number;
+    upcoming: number;
+    completed: number;
+    cancelled: number;
+  }) {
+    countMock.mockImplementation(async (args: any) => v[viewOf(args)]);
+  }
+
+  afterEach(() => {
+    countMock.mockReset();
+  });
+
+  it('excludes pending_payment from the Upcoming predicate', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 33, upcoming: 12, completed: 7, cancelled: 1 });
+
+    await service.getUserBookings('user-1', { view: 'upcoming' });
+
+    const p = (prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any).AND[0];
+    expect(p.status.notIn).toContain('pending_payment');
+  });
+
+  it('excludes refunded from the Upcoming predicate — it is terminal too', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 33, upcoming: 12, completed: 7, cancelled: 1 });
+
+    await service.getUserBookings('user-1', { view: 'upcoming' });
+
+    const p = (prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any).AND[0];
+    expect(p.status.notIn).toContain('refunded');
+  });
+
+  it('the Upcoming COUNT uses the same predicate, so the chip cannot disagree', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 33, upcoming: 12, completed: 7, cancelled: 1 });
+
+    await service.getUserBookings('user-1');
+
+    const upcomingCountArgs = countMock.mock.calls
+      .map((c: any[]) => c[0])
+      .find((a: any) => viewOf(a) === 'upcoming');
+    expect(upcomingCountArgs).toBeTruthy();
+    expect((upcomingCountArgs as any).where.AND[0].status.notIn).toContain('pending_payment');
+  });
+
+  it('still keeps pending_payment visible under All — the row exists and holds a slot', async () => {
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    stubCounts({ all: 33, upcoming: 12, completed: 7, cancelled: 1 });
+
+    await service.getUserBookings('user-1', { view: 'all' });
+
+    const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any;
+    // No predicate at all on `all` — hiding the ghost rather than letting the
+    // devotee complete or release them would be the worse bug.
+    expect(where.AND).toBeUndefined();
+  });
+});
+
 // ─── uploadVideoProof ────────────────────────────────────────────────────────
 
 describe('BookingService.uploadVideoProof', () => {

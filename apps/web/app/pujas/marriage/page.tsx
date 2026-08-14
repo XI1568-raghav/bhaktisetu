@@ -25,6 +25,7 @@ import {
  marriageTestimonials,
 } from '../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../lib/pandit-api';
+import { remoteImage, IMG_W } from '../../../lib/images';
 
 const MARRIAGE_KEYWORDS = ['marriage', 'wedding', 'vivah', 'kalyanam', 'anand karaj'];
 
@@ -36,7 +37,8 @@ function panditInitials(name: string): string {
 }
 
 export const metadata: Metadata = {
- title: 'Book a Pandit for Your Wedding — Darshya',
+ alternates: { canonical: 'https://darshya.online/pujas/marriage' },
+ title: 'Book a Pandit for Your Wedding',
  description:
  'Sampoorna vivah sanskar by Vedic-certified pandits. Hindu Vivah, Arya Samaj, South Indian Kalyanam, Anand Karaj. Starting ₹11,000.',
 };
@@ -97,7 +99,7 @@ export default async function MarriagePage() {
  <div className="mt-10 flex flex-wrap gap-5 text-sm text-surface-600">
  {[
  { icon: Shield, label: 'Vedic certified' },
- { icon: Star, label: '1,500+ weddings' },
+ { icon: Star, label: 'Muhurat matched' },
  { icon: CheckCircle, label: 'Full samagri' },
  ].map((b) => {
  const I = b.icon;
@@ -186,7 +188,7 @@ export default async function MarriagePage() {
  }`}
  >
  {isFeatured && (
- <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-saffron-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md">
+ <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-saffron-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md">
  Most Chosen
  </div>
  )}
@@ -223,7 +225,7 @@ export default async function MarriagePage() {
  href={`/pujas/marriage/book?tier=${tier.slug}`}
  className={`block text-center py-3.5 rounded-lg font-semibold transition-colors ${
  isFeatured
- ? 'bg-saffron-500 text-white hover:bg-saffron-600'
+ ? 'bg-saffron-600 text-white hover:bg-saffron-700'
  : 'bg-surface-100 text-surface-800 hover:bg-surface-200 border border-[var(--color-border)]'
  }`}
  >
@@ -297,7 +299,11 @@ export default async function MarriagePage() {
  {p.avatarUrl ? (
  // eslint-disable-next-line @next/next/no-img-element
  <img
- src={p.avatarUrl}
+ src={remoteImage(p.avatarUrl, IMG_W.THUMB)}
+ width={64}
+ height={64}
+ loading="lazy"
+ decoding="async"
  alt={p.displayName}
  className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
  />

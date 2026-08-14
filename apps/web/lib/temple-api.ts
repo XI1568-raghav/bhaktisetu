@@ -82,6 +82,41 @@ export async function listTemplePujas(token: string | undefined): Promise<Temple
   return body.offerings;
 }
 
+/**
+ * S-06 (prod sweep 2026-08-12): a bare `{offerings: []}` looked identical
+ * whether the manager had no offerings or no linked Temple at all — and every
+ * create in the second case 409s. GET /temple-portal/pujas now also returns
+ * `templeLinked` plus a human `message`, so the page can name the blocker
+ * instead of rendering an empty list that reads as "nothing added yet".
+ */
+export interface TemplePujaListResult {
+  offerings: TemplePujaOffering[];
+  templeLinked: boolean;
+  /** Present only when templeLinked is false. */
+  linkMessage?: string;
+}
+
+export async function listTemplePujasWithLinkState(
+  token: string | undefined,
+): Promise<TemplePujaListResult> {
+  const res = await fetch(`${API_BASE_URL}/temple-portal/pujas`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
+  const body = (await res.json()) as {
+    offerings?: TemplePujaOffering[];
+    templeLinked?: boolean;
+    message?: string;
+  };
+  return {
+    offerings: body.offerings ?? [],
+    // Absent means an older API build that predates the flag; treat as linked
+    // so the blocker banner is never shown on a false positive.
+    templeLinked: body.templeLinked !== false,
+    linkMessage: body.message,
+  };
+}
+
 export async function createTemplePuja(
   token: string | undefined,
   input: CreateTemplePujaInput,

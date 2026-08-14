@@ -4,7 +4,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Send, Video, Phone, ArrowLeft, Loader2, MessageSquare, Star } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import { API_BASE_URL } from '../lib/api-config';
+import {
+  API_BASE_URL,
+  DATA_FETCH_TIMEOUT_MS,
+  fetchWithTimeout,
+} from '../lib/api-config';
 
 /**
  * Shared inbox surface used by:
@@ -52,6 +56,32 @@ interface Message {
 
 const POLL_INTERVAL_MS = 3000;
 
+/**
+ * RES-08 (2026-08-12): the inbox polled on a flat 3s `setInterval` with no
+ * in-flight guard, no timeout and no backoff. Held open with every request
+ * accepted and never answered, /messages fired 12 API calls in 37 seconds
+ * while the UI sat on "Loading inbox…" — each new poll issued with the
+ * previous ones still pending and none of them ever aborted. Opening a thread
+ * starts a SECOND 3s loop, so an active conversation is ~40 req/min per tab.
+ * During a backend incident every open Messages tab therefore adds load to an
+ * already failing API, and Chrome's 6-connections-per-host ceiling means the
+ * tab eventually cannot issue any request at all. The client amplified the
+ * outage and the user just saw a spinner.
+ *
+ * Three changes, applied to BOTH loops: (1) skip a tick while a request is
+ * still out, (2) give every poll an AbortSignal so a stalled socket dies
+ * instead of accumulating, (3) back off geometrically on repeated failures and
+ * say "Reconnecting…" out loud, resetting on the first success.
+ */
+const POLL_TIMEOUT_MS = 10_000;
+const POLL_BACKOFF_MAX_MS = 60_000;
+
+/** 3s while healthy, then 6 / 12 / 24 / 48 / 60s while the API is failing. */
+function nextPollDelay(failStreak: number): number {
+  if (failStreak <= 0) return POLL_INTERVAL_MS;
+  return Math.min(POLL_INTERVAL_MS * 2 ** failStreak, POLL_BACKOFF_MAX_MS);
+}
+
 export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto' }) {
   const { session } = useAuth();
   const token = session?.accessToken;
@@ -62,59 +92,104 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
   // P2 #220 (2026-08-03): track consecutive auth failures and STOP polling on
   // a 401 (bad/expired token) instead of hammering the API every 3s forever.
   const authFailCount = useRef(0);
+  // RES-08: a poll already on the wire. Without this a 3s tick fires straight
+  // over a request that has not come back.
+  const inFlight = useRef(false);
+  const failStreak = useRef(0);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const fetchConvs = useCallback(async (): Promise<boolean> => {
     if (!token) return false;
+    if (inFlight.current) return true;
+    inFlight.current = true;
     try {
-      const res = await fetch(`${API_BASE_URL}/conversations?role=${role}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/conversations?role=${role}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+        POLL_TIMEOUT_MS,
+      );
       if (res.status === 401 || res.status === 403) {
         authFailCount.current += 1;
         return false; // signal: stop polling
       }
-      if (!res.ok) return true; // transient — keep polling
+      if (!res.ok) {
+        // Transient — keep polling, but SLOWER each time, and say so.
+        failStreak.current += 1;
+        setReconnecting(true);
+        return true;
+      }
       authFailCount.current = 0;
+      failStreak.current = 0;
+      setReconnecting(false);
       const data = await res.json();
       setConversations(data.conversations ?? []);
       return true;
+    } catch {
+      // A timeout or a dead network is the same class of failure as a 5xx for
+      // scheduling purposes. Previously there was no catch at all here, so a
+      // network error escaped as an unhandled rejection.
+      failStreak.current += 1;
+      setReconnecting(true);
+      return true;
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   }, [token, role]);
 
   useEffect(() => {
     authFailCount.current = 0;
-    fetchConvs();
+    failStreak.current = 0;
     // Phase D P1 #1: visibility-pause — poll only when tab visible.
     // P2 #220: also stop after repeated auth failures (bad token) — no point
     // polling an endpoint that will never authorize this session.
-    let i: ReturnType<typeof setInterval> | null = null;
-    const start = (): void => {
-      if (i !== null) return;
-      i = setInterval(async () => {
-        if (authFailCount.current >= 3) {
-          stop();
-          return;
-        }
-        await fetchConvs();
-      }, POLL_INTERVAL_MS);
-    };
-    const stop = (): void => {
-      if (i !== null) {
-        clearInterval(i);
-        i = null;
+    // RES-08: a self-scheduling timeout rather than setInterval, because the
+    // gap between polls now depends on how the last one went.
+    let stopped = false;
+    let paused = document.visibilityState !== 'visible';
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const clear = (): void => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
       }
     };
-    const onVisibility = (): void => {
-      if (document.visibilityState === 'visible' && authFailCount.current < 3) start();
-      else stop();
+    const schedule = (): void => {
+      clear();
+      if (stopped || paused || authFailCount.current >= 3) return;
+      timer = setTimeout(() => {
+        void run();
+      }, nextPollDelay(failStreak.current));
     };
-    onVisibility();
+    const run = async (): Promise<void> => {
+      timer = null;
+      if (stopped || paused || authFailCount.current >= 3) return;
+      await fetchConvs();
+      schedule();
+    };
+
+    // First load fires regardless of tab visibility, as it always did.
+    void fetchConvs().then(() => {
+      if (!stopped) schedule();
+    });
+
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible' && authFailCount.current < 3) {
+        if (paused) {
+          paused = false;
+          void run();
+        }
+      } else {
+        paused = true;
+        clear();
+      }
+    };
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      stopped = true;
       document.removeEventListener('visibilitychange', onVisibility);
-      stop();
+      clear();
     };
   }, [fetchConvs]);
 
@@ -134,6 +209,15 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
         <div className="px-4 py-3 border-b border-surface-100">
           <h2 className="font-semibold text-surface-800 text-sm">Messages</h2>
           <p className="text-xs text-surface-400">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
+          {/* RES-08: during an incident the list simply stopped updating and
+              said nothing. Name the state instead of letting the user read a
+              stale list as a live one. */}
+          {reconnecting && (
+            <p role="status" className="mt-1 flex items-center gap-1.5 text-xs text-amber-700">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Reconnecting&hellip;
+            </p>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
@@ -163,7 +247,7 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-surface-800 truncate">{c.counterparty.fullName}</p>
                       {c.unread > 0 && (
-                        <span className="bg-saffron-600 text-white text-[10px] font-bold rounded-full px-1.5 min-w-5 h-5 flex items-center justify-center">
+                        <span className="bg-saffron-600 text-white text-xs font-bold rounded-full px-1.5 min-w-5 h-5 flex items-center justify-center">
                           {c.unread}
                         </span>
                       )}
@@ -173,7 +257,7 @@ export function Inbox({ role = 'auto' }: { role?: 'devotee' | 'provider' | 'auto
                       {c.lastMessage?.kind === 'call_link' && '📞 '}
                       {c.lastMessage?.body ?? 'No messages yet'}
                     </p>
-                    <p className="text-[10px] text-surface-400 mt-0.5">
+                    <p className="text-xs text-surface-400 mt-0.5">
                       {new Date(c.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {c.kind.replace(/_/g, ' ')}
                     </p>
                   </div>
@@ -226,6 +310,15 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
   const [ratingLoaded, setRatingLoaded] = useState(false);
   const sinceRef = useRef<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  // RES-08: the thread poll is the SECOND 3s interval on this screen.
+  const msgInFlight = useRef(false);
+  const msgFailStreak = useRef(0);
+  // RES-10: send() had no else and no catch, so a 500 left the draft in the
+  // box, rendered nothing, re-enabled the button, and never delivered the
+  // message. A devotee asking about tomorrow's puja pressed Send twice and the
+  // conversation died silently at the worst possible moment.
+  const [sendFailed, setSendFailed] = useState(false);
+  const [callFailed, setCallFailed] = useState(false);
 
   // Load any existing rating once per conversation switch. We only need
   // to know whether one exists (to suppress the prompt) and what the
@@ -253,8 +346,26 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
     const url = `${API_BASE_URL}/conversations/${conversationId}/messages${
       sinceRef.current && !reset ? `?since=${encodeURIComponent(sinceRef.current)}` : ''
     }`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return;
+    if (msgInFlight.current) return;
+    msgInFlight.current = true;
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(
+        url,
+        { headers: { Authorization: `Bearer ${token}` } },
+        POLL_TIMEOUT_MS,
+      );
+    } catch {
+      msgFailStreak.current += 1;
+      msgInFlight.current = false;
+      return;
+    }
+    msgInFlight.current = false;
+    if (!res.ok) {
+      msgFailStreak.current += 1;
+      return;
+    }
+    msgFailStreak.current = 0;
     const data = await res.json();
     sinceRef.current = data.serverTime;
     if (reset) {
@@ -283,26 +394,51 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
     }).catch(() => undefined);
 
     // Phase D P1 #1: visibility-pause for active thread polling.
-    let i: ReturnType<typeof setInterval> | null = null;
-    const start = (): void => {
-      if (i !== null) return;
-      i = setInterval(() => fetchMessages(false), POLL_INTERVAL_MS);
-    };
-    const stop = (): void => {
-      if (i !== null) {
-        clearInterval(i);
-        i = null;
+    // RES-08: same self-scheduling + backoff treatment as the conversation
+    // list — this was the other 3s interval, and an open thread meant BOTH
+    // were running against a failing API at once.
+    let stopped = false;
+    let paused = document.visibilityState !== 'visible';
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const clear = (): void => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
       }
     };
-    const onVisibility = (): void => {
-      if (document.visibilityState === 'visible') start();
-      else stop();
+    const schedule = (): void => {
+      clear();
+      if (stopped || paused) return;
+      timer = setTimeout(() => {
+        void run();
+      }, nextPollDelay(msgFailStreak.current));
     };
-    onVisibility();
+    const run = async (): Promise<void> => {
+      timer = null;
+      if (stopped || paused) return;
+      await fetchMessages(false);
+      schedule();
+    };
+
+    schedule();
+
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') {
+        if (paused) {
+          paused = false;
+          void run();
+        }
+      } else {
+        paused = true;
+        clear();
+      }
+    };
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      stopped = true;
       document.removeEventListener('visibilitychange', onVisibility);
-      stop();
+      clear();
     };
   }, [conversationId, fetchMessages, token]);
 
@@ -316,35 +452,62 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
     const body = draft.trim();
     if (!body || sending) return;
     setSending(true);
+    setSendFailed(false);
     try {
-      const res = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/conversations/${conversationId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ body }),
         },
-        body: JSON.stringify({ body }),
-      });
+        DATA_FETCH_TIMEOUT_MS,
+      );
       if (res.ok) {
         setDraft('');
         await fetchMessages(false);
         onMessagesChanged();
+      } else {
+        // RES-10: there used to be no else. The draft stayed, the button
+        // re-enabled, nothing rendered, and the message was never delivered.
+        setSendFailed(true);
       }
+    } catch {
+      // …and no catch either, so a network failure became an unhandled
+      // promise rejection because send() is called straight from onClick.
+      setSendFailed(true);
     } finally {
       setSending(false);
     }
   };
 
   const startCall = async () => {
-    const res = await fetch(`${API_BASE_URL}/conversations/${conversationId}/start-call`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    setActiveCall({ jitsiUrl: data.jitsiUrl, callId: data.callId });
-    fetchMessages(false);
-    onMessagesChanged();
+    setCallFailed(false);
+    try {
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/conversations/${conversationId}/start-call`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+        DATA_FETCH_TIMEOUT_MS,
+      );
+      if (!res.ok) {
+        // RES-10: this was a bare `return` — pressing the call button during
+        // an outage did literally nothing visible.
+        setCallFailed(true);
+        return;
+      }
+      const data = await res.json();
+      setActiveCall({ jitsiUrl: data.jitsiUrl, callId: data.callId });
+      void fetchMessages(false);
+      onMessagesChanged();
+    } catch {
+      setCallFailed(true);
+    }
   };
 
   return (
@@ -359,17 +522,17 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-surface-800 truncate">{counterpartyName}</p>
-          <p className="text-[11px] text-surface-400">Online</p>
+          <p className="text-xs text-surface-400">Online</p>
         </div>
         <button
-          onClick={startCall}
+          onClick={() => void startCall()}
           aria-label="Start video call"
           className="p-2 text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors"
         >
           <Video className="w-5 h-5" />
         </button>
         <button
-          onClick={startCall}
+          onClick={() => void startCall()}
           aria-label="Start voice call"
           className="p-2 text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors"
         >
@@ -398,7 +561,7 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
           if (m.kind === 'system') {
             return (
               <div key={m.id} className="text-center">
-                <span className="text-[11px] text-surface-500 bg-surface-100 px-3 py-1 rounded-full inline-block max-w-md">
+                <span className="text-xs text-surface-500 bg-surface-100 px-3 py-1 rounded-full inline-block max-w-md">
                   {m.body}
                 </span>
               </div>
@@ -437,7 +600,7 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap break-words">{m.body}</p>
-                <p className={`text-[10px] mt-1 ${m.mine ? 'text-saffron-100' : 'text-surface-400'}`}>
+                <p className={`text-xs mt-1 ${m.mine ? 'text-saffron-100' : 'text-surface-400'}`}>
                   {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -465,15 +628,33 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
         />
       )}
 
+      {/* RES-10: a failed call attempt used to be a bare `return`. */}
+      {callFailed && (
+        <div role="alert" className="px-4 py-2 bg-red-50 border-t border-red-100 text-xs text-red-700">
+          Could not start the call. Check your connection and try again.
+        </div>
+      )}
+
       {/* Composer */}
-      <div className="border-t border-surface-100 px-3 py-2 flex items-end gap-2 bg-white">
+      <div className="border-t border-surface-100 px-3 py-2 flex flex-col gap-1 bg-white">
+        {sendFailed && (
+          <button
+            type="button"
+            role="alert"
+            onClick={() => void send()}
+            className="self-start text-xs font-medium text-red-700 hover:underline"
+          >
+            Not sent — tap to retry
+          </button>
+        )}
+        <div className="flex items-end gap-2">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              send();
+              void send();
             }
           }}
           placeholder="Type a message..."
@@ -481,13 +662,14 @@ function Thread({ conversationId, token, onBack, onMessagesChanged, counterparty
           className="flex-1 resize-none bg-surface-50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300 max-h-32"
         />
         <button
-          onClick={send}
+          onClick={() => void send()}
           disabled={sending || !draft.trim()}
           className="bg-saffron-600 text-white p-2.5 rounded-xl hover:bg-saffron-700 disabled:opacity-40 transition-colors"
           aria-label="Send"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
+        </div>
       </div>
     </>
   );
@@ -517,7 +699,7 @@ function RatingBar({ existing, counterpartyName, onSubmit }: RatingBarProps) {
           <button
             type="button"
             onClick={() => setCollapsed(true)}
-            className="text-[10px] text-saffron-700 hover:underline"
+            className="text-xs text-saffron-700 hover:underline"
           >
             Hide
           </button>

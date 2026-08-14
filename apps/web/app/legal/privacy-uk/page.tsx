@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 
 
 export const metadata: Metadata = {
- title: "UK Privacy Notice | Darshya",
+ title: "UK Privacy Notice",
  description:
  "UK-specific privacy notice for Darshya users. Lawful basis, your UK GDPR rights, transfers, and how to contact us.",
  alternates: { canonical: "https://darshya.online/legal/privacy-uk" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "UK Privacy Notice | Darshya",
  description:
  "UK-specific privacy notice for Darshya users. Lawful basis, your UK GDPR rights, transfers, and how to contact us.",

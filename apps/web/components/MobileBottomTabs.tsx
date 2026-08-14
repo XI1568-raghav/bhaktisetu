@@ -25,8 +25,8 @@ type Tab = {
 // 4-tab pattern (was 5) per UX rebuke 2026-06-08 — "bottom-nav too much content".
 // Apple/Linear ship 4 tabs max. Darshan absorbed into Library prefixes + Home hero.
 const TABS: Tab[] = [
-  { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/', '/darshan'], activeColor: '#9E3F0A' },
-  { href: '/pujas', label: 'Book', icon: Flame, primary: true, prefixes: ['/pujas', '/checkout', '/booking'], activeColor: '#9E3F0A' },
+  { href: '/', label: 'Home', icon: HomeIcon, prefixes: ['/', '/darshan'], activeColor: '#7d4e1f' },
+  { href: '/pujas', label: 'Book', icon: Flame, primary: true, prefixes: ['/pujas', '/checkout', '/booking'], activeColor: '#7d4e1f' },
   { href: '/discover', label: 'Library', icon: BookOpen, prefixes: ['/discover', '/ved', '/vedas', '/upanishads', '/puranas', '/bhakti-saint', '/deity', '/festival', '/calendar', '/aarti', '/chalisa', '/chants', '/mantra', '/shlokas', '/sankalp', '/gita', '/ramayana', '/mahabharata', '/sanskrit', '/hindu-philosophies', '/hindu-symbols', '/devi/mahavidyas', '/devi/navadurga', '/dashavatar', '/sapta-rishis', '/aditya', '/chakras', '/vedic-yajnas', '/sacred-rivers', '/sacred-trees', '/sacred-mountains', '/rudraksha', '/tithi', '/nakshatra', '/ekadashi', '/vrat', '/muhurat'], activeColor: '#3730A3' },
   { href: '/profile', label: 'Profile', icon: User, prefixes: ['/profile', '/dashboard', '/bookings', '/auth'], activeColor: '#3a3530' },
 ];
@@ -71,7 +71,7 @@ export function MobileBottomTabs() {
                   <span className="flex items-center justify-center w-12 h-12 rounded-full bg-saffron-600 text-white shadow-lg shadow-saffron-600/30 ring-4 ring-white">
                     <Icon className="w-5 h-5" />
                   </span>
-                  <span className="text-[10px] font-semibold text-saffron-700">
+                  <span className="text-xs font-semibold text-saffron-700">
                     {tab.label}
                   </span>
                 </Link>
@@ -88,7 +88,7 @@ export function MobileBottomTabs() {
                 style={{ color: active ? tab.activeColor : '#7a756e' }}
               >
                 <Icon className="w-5 h-5" style={{ color: active ? tab.activeColor : '#7a756e' }} />
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className="text-xs font-medium">{tab.label}</span>
               </Link>
             </li>
           );

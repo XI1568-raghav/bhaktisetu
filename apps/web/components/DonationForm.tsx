@@ -13,7 +13,6 @@ import {
   Mail,
   Phone,
   User,
-  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
@@ -590,16 +589,23 @@ export default function DonationForm({
         />
       </div>
 
-      {/* Trust strip */}
-      <div className="mb-5 flex flex-wrap items-center gap-3 text-[11px] text-surface-500">
+      {/* Trust strip.
+          COM-16 (prod sweep 2026-08-12): a third badge here read "100% to
+          cause". Donations settle into Darshya's own Razorpay account and
+          apps/api/src/routes/donations.ts writes no Commission, no
+          TemplePayout and no PayoutRequest on any donation path — the temple
+          and gaushala portals only LIST donations, nothing disburses them. So
+          the claim had no mechanism behind it and no way to be evidenced, on a
+          consumer-facing charitable collection. It is removed rather than
+          reworded; put it back when a donation settlement rail exists and can
+          show the donor where the money went. The two remaining badges are
+          both backed by code that runs. */}
+      <div className="mb-5 flex flex-wrap items-center gap-3 text-xs text-surface-500">
         <span className="flex items-center gap-1">
           <Shield className="h-3.5 w-3.5 text-emerald-600" /> Razorpay secured
         </span>
         <span className="flex items-center gap-1">
           <FileText className="h-3.5 w-3.5 text-saffron-600" /> 80G receipt
-        </span>
-        <span className="flex items-center gap-1">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" /> 100% to cause
         </span>
       </div>
 

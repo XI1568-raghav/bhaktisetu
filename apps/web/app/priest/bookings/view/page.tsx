@@ -46,13 +46,30 @@ interface BookingDetail {
  user: { fullName: string; phone: string };
 }
 
-function formatCurrency(amount: number): string {
- return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+// PF-10: `formatCurrency(undefined)` yields the literal string "₹NaN", which is
+// exactly what the Platform Commission line rendered when the API did not send
+// the column. The value is now selected server-side, and a missing/unparseable
+// amount degrades to an em dash instead of printing a broken number on the one
+// screen where a pandit checks the platform's cut.
+function formatCurrency(amount: number | string | null | undefined): string {
+ const n = typeof amount === 'string' ? Number(amount) : amount;
+ if (n === null || n === undefined || !Number.isFinite(n)) return '—';
+ return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 }
 
+// PF-09: was `new Date(dateStr + 'T00:00:00')` against an ISO instant, which
+// parsed to Invalid Date. See the note in ../page.tsx — the puja's own zone is
+// pinned so a UTC-midnight DATE never renders as the previous day.
 function formatDate(dateStr: string): string {
- const d = new Date(dateStr + 'T00:00:00');
- return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+ const d = new Date(dateStr);
+ if (Number.isNaN(d.getTime())) return dateStr;
+ return d.toLocaleDateString('en-IN', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'Asia/Kolkata',
+ });
 }
 
 function formatTime(time: string): string {
@@ -85,13 +102,17 @@ function PriestBookingDetailInner() {
  const [error, setError] = useState<string | null>(null);
  const [actionLoading, setActionLoading] = useState(false);
  const [actionError, setActionError] = useState<string | null>(null);
- const [videoUrl, setVideoUrl] = useState('');
- const [videoSubmitted, setVideoSubmitted] = useState(false);
+ const [replacingProof, setReplacingProof] = useState(false);
 
+ // PF-08: this used to GET the whole `/priest/bookings` list (server default:
+ // 20 rows) and `.find()` the id inside it, so any booking from row 21 down
+ // could only ever throw "Booking not found" — and this page holds the only
+ // video-proof control, so those bookings could never be completed. It also
+ // downloaded the entire list on every detail view.
  async function fetchBooking() {
  setError(null);
  try {
- const res = await fetch(`${API_BASE_URL}/priest/bookings`, {
+ const res = await fetch(`${API_BASE_URL}/priest/bookings/${bookingId}`, {
  headers: { Authorization: `Bearer ${session?.accessToken ?? ''}` },
  });
  if (!res.ok) {
@@ -99,11 +120,10 @@ function PriestBookingDetailInner() {
  throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
  }
  const data = await res.json();
- const found = (data.bookings || []).find((b: any) => b.id === bookingId);
- if (!found) {
+ if (!data?.booking) {
  throw new Error('Booking not found');
  }
- setBooking(found);
+ setBooking(data.booking);
  } catch (e) {
  const msg = e instanceof Error ? e.message : 'Network error';
  setError(msg);
@@ -149,6 +169,73 @@ function PriestBookingDetailInner() {
  } catch (e) {
  const msg = e instanceof Error ? e.message : 'Network error';
  setActionError(msg);
+ } finally {
+ setActionLoading(false);
+ }
+ }
+
+ /**
+  * PF-03: this used to be `await fetch(...); setVideoSubmitted(true);` — no
+  * `res.ok` check, no catch. A rejected upload (the booking left `completed`
+  * since the page loaded; proof filed from the phone; admin refunded) still
+  * painted a green "Video Proof Uploaded". The pandit walked away believing the
+  * proof was filed, the devotee never got the video they paid for, the payout
+  * never fired, and the dispute surfaced days later with no evidence.
+  *
+  * It throws on failure so the uploader keeps its input open for a retry
+  * instead of collapsing into its own success state.
+  */
+ async function submitProof(url: string) {
+ if (!booking) return;
+ const trimmed = url.trim();
+ setActionError(null);
+ try {
+ // Same shape the API now enforces — fail here rather than storing a
+ // value that permanently blocks delivery.
+ new URL(trimmed);
+ } catch {
+ const msg = 'That does not look like a valid link. Paste the full https:// URL of the recording.';
+ setActionError(msg);
+ throw new Error(msg);
+ }
+ const res = await fetch(`${API_BASE_URL}/priest/bookings/${booking.id}/video`, {
+ method: 'POST',
+ headers: {
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({ videoUrl: trimmed }),
+ });
+ if (!res.ok) {
+ const body = await res.text().catch(() => '');
+ const msg = `API ${res.status}${body ? `: ${body.slice(0, 200)}` : ''}`;
+ setActionError(msg);
+ throw new Error(msg);
+ }
+ await fetchBooking();
+ }
+
+ /** PF-04 — the only in-product path from `video_uploaded` to `delivered`. */
+ async function markDelivered() {
+ if (!booking) return;
+ setActionLoading(true);
+ setActionError(null);
+ try {
+ const res = await fetch(`${API_BASE_URL}/bookings/${booking.id}`, {
+ method: 'PATCH',
+ headers: {
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({ status: 'delivered' }),
+ });
+ if (!res.ok) {
+ const body = await res.text().catch(() => '');
+ throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 200)}` : ''}`);
+ }
+ await fetchBooking();
+ } catch (e) {
+ setActionError(e instanceof Error ? e.message : 'Network error');
  } finally {
  setActionLoading(false);
  }
@@ -322,7 +409,7 @@ function PriestBookingDetailInner() {
  </button>
  )}
 
- {booking.status === 'completed' && !videoSubmitted && (
+ {booking.status === 'completed' && (
  <div className="space-y-3">
  <p className="text-sm text-surface-600">
  Upload video proof of the completed puja. This is mandatory before payout is processed.
@@ -330,32 +417,20 @@ function PriestBookingDetailInner() {
  <VideoProofUpload
  bookingId={booking.id}
  existingUrl={booking.videoProofUrl}
- onUploaded={async (url) => {
- setVideoUrl(url);
- await fetch(`${API_BASE_URL}/priest/bookings/${booking.id}/video`, {
- method: 'POST',
- headers: {
- Authorization: `Bearer ${session?.accessToken ?? ''}`,
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify({ videoUrl: url }),
- });
- setVideoSubmitted(true);
- await fetchBooking();
- }}
+ onUploaded={submitProof}
  />
  </div>
  )}
 
- {(booking.status === 'video_uploaded' || booking.status === 'delivered' || videoSubmitted) && (
+ {(booking.status === 'video_uploaded' || booking.status === 'delivered') && (
  <div className="space-y-3">
  <div className="flex items-center gap-2 text-tulsi-green">
  <CheckCircle2 className="w-5 h-5" />
  <span className="font-semibold text-sm">Video Proof Uploaded</span>
  </div>
- {(booking.videoProofUrl || videoUrl) && (
+ {booking.videoProofUrl && (
  <a
- href={booking.videoProofUrl || videoUrl}
+ href={booking.videoProofUrl}
  target="_blank"
  rel="noopener noreferrer"
  className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700"
@@ -370,6 +445,47 @@ function PriestBookingDetailInner() {
  <p className="text-xs text-surface-400">Video preview</p>
  </div>
  </div>
+
+ {booking.status === 'video_uploaded' && (
+ <>
+ {/* PF-06: a wrong link used to brick the booking — re-upload 400'd
+     and the delivery gate refused a blank proof, so nothing could
+     move without support running curl. */}
+ {replacingProof ? (
+ <VideoProofUpload
+ bookingId={booking.id}
+ onUploaded={async (url) => {
+ await submitProof(url);
+ setReplacingProof(false);
+ }}
+ />
+ ) : (
+ <button
+ type="button"
+ onClick={() => setReplacingProof(true)}
+ className="text-sm font-medium text-saffron-600 hover:text-saffron-700"
+ >
+ Wrong link? Replace video proof
+ </button>
+ )}
+
+ {/* PF-04: no client anywhere could move a booking to `delivered`,
+     so fulfilment stopped one step short of done and every booking
+     piled up here forever. */}
+ <button
+ type="button"
+ onClick={markDelivered}
+ disabled={actionLoading}
+ className="w-full flex items-center justify-center gap-2 py-3 bg-tulsi-green text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
+ >
+ {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+ Mark delivered
+ </button>
+ <p className="text-xs text-surface-400 text-center">
+ Confirms the devotee has received the recording and closes the booking.
+ </p>
+ </>
+ )}
  </div>
  )}
 

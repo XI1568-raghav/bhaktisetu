@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Clock, ExternalLink, Pencil, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import { API_BASE_URL } from '../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../lib/api-config';
 
 interface Props {
  // Backend MarketplaceRole enum string. The dashboard hosting this card
@@ -54,6 +59,14 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  const [profile, setProfile] = useState<ProviderProfile | null>(null);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
+ // RES-06 (2026-08-12): "no profile" and "we could not READ the profile" are
+ // different facts and this card used to render both as the onboarding nag —
+ // "Complete your Pandit profile / Submit your details so an admin can review
+ // and approve your listing" — on all six portals whenever the API 500'd.
+ // Providers who onboarded months ago re-submit documents or conclude we lost
+ // their verification. Track the unread case separately.
+ const [loadFailed, setLoadFailed] = useState<string | null>(null);
+ const [reloadKey, setReloadKey] = useState(0);
 
  useEffect(() => {
  if (!token) return;
@@ -67,24 +80,31 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  let cancelled = false;
  (async () => {
  try {
- const res = await fetch(`${API_BASE_URL}/onboarding/provider?role=${role}`, {
+ setLoadFailed(null);
+ // RES-01: bare fetch has no timeout, so a stalled read left this card on
+ // "Loading your profile…" forever at the top of every portal.
+ const res = await fetchWithTimeout(`${API_BASE_URL}/onboarding/provider?role=${role}`, {
  headers: { Authorization: `Bearer ${token}` },
- });
+ }, DATA_FETCH_TIMEOUT_MS);
  if (!res.ok) {
- throw new Error(`Failed to load profile (${res.status})`);
+ if (!cancelled) setLoadFailed(loadErrorMessage(res));
+ return;
  }
  const data = await res.json();
  if (!cancelled) {
  setProfile(data.profile ?? null);
  }
  } catch (err) {
- if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
+ if (!cancelled) {
+ setLoadFailed(loadErrorMessage(err));
+ setError(err instanceof Error ? err.message : 'Failed to load');
+ }
  } finally {
  if (!cancelled) setLoading(false);
  }
  })();
  return () => { cancelled = true; };
- }, [token, role]);
+ }, [token, role, reloadKey]);
 
  if (loading) {
  return (
@@ -97,16 +117,41 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  );
  }
 
- // No profile yet — prompt to complete onboarding.
+ // We could not READ the profile. Say so — never the onboarding nag, which
+ // reads to an approved provider as "we lost your verification".
+ if (loadFailed) {
+ return (
+ <div role="alert" className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+ <div className="flex flex-wrap items-start gap-2 text-sm text-amber-800">
+ <span className="flex-1 min-w-[12rem]">
+ {loadFailed} Your listing and approval status are unchanged.
+ </span>
+ <button
+ type="button"
+ onClick={() => { setLoading(true); setReloadKey((k) => k + 1); }}
+ className="font-semibold underline underline-offset-2 hover:text-amber-900"
+ >
+ Retry
+ </button>
+ </div>
+ </div>
+ );
+ }
+
+ // No profile yet — the API ANSWERED and said there isn't one. Prompt to
+ // complete onboarding.
  if (!profile) {
  return (
  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
  <div className="flex items-start gap-3">
  <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
  <div className="flex-1">
- <h3 className="font-semibold text-amber-900 mb-1">
+ {/* DU-08: this was an h3 rendered above the first h2 on /priest, so the
+     level sequence skipped from the page h1 straight to h3. It is a
+     top-level section of the dashboard, so it is an h2. */}
+ <h2 className="font-semibold text-amber-900 mb-1">
  Complete your {ROLE_LABEL[role]} profile
- </h3>
+ </h2>
  <p className="text-sm text-amber-800 mb-3">
  Submit your details so an admin can review and approve your listing.
  {error && <span className="block text-xs text-amber-700 mt-1">{error}</span>}
@@ -139,12 +184,12 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  <div className="flex flex-wrap items-center gap-2 mb-1">
  <h3 className="font-semibold text-surface-800 truncate">{name}</h3>
  {approved ? (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-[11px] font-medium rounded-full border border-green-200">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-200">
  <CheckCircle2 className="w-3 h-3" />
  Live on Darshya
  </span>
  ) : (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-[11px] font-medium rounded-full border border-amber-200">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200">
  <Clock className="w-3 h-3" />
  Pending approval
  </span>

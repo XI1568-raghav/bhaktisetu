@@ -295,8 +295,12 @@ export default function WhyDarshya() {
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-8 text-center">
         <h2 className="text-2xl font-bold text-surface-900 mb-3">Try us with a small puja</h2>
         <p className="text-surface-700 text-base mb-5 max-w-xl mx-auto">
-          Book a ₹501 puja, get video proof in 48 hours, judge for yourself. Full refund if
-          you&apos;re not satisfied.
+          Book a ₹501 puja, get video proof in 48 hours, judge for yourself. If the video never
+          arrives, we cancel and refund you in full &mdash; see the{' '}
+          <Link href="/refunds" className="underline">
+            refund policy
+          </Link>{' '}
+          for the cancellation tiers that apply when you cancel.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           <Link

@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 10 Principal Upanishads (Dashopanishads), Mahavakyas & Summaries | Darshya',
+  title: 'The 10 Principal Upanishads (Dashopanishads), Mahavakyas & Summaries',
   description: 'Complete guide to the 10 principal Upanishads commented on by Adi Shankaracharya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chhandogya, Brihadaranyaka. Sanskrit, mahavakyas, key concepts.',
   alternates: { canonical: `${BASE_URL}/upanishads` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'The 10 Principal Upanishads',
     description: 'The Vedanta foundation, 10 Upanishads, 4 mahavakyas, the path of self-knowledge.',
     url: `${BASE_URL}/upanishads`,

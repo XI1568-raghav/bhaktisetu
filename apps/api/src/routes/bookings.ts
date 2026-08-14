@@ -7,6 +7,8 @@ import {
   PLATFORM_FEE_INR,
   PRASAD_DELIVERY_FEE_INR,
   DEFAULT_PRIEST_SHARE,
+  MY_BOOKINGS_VIEWS,
+  type MyBookingsView,
 } from '../services/booking.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { paymentService } from '../services/payment.service.js';
@@ -17,8 +19,42 @@ import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { localizedError, pickLang } from '../lib/error-i18n.js';
+import {
+  deliveryAddressSchema,
+  deliveryCountryName,
+  type DeliveryAddress,
+} from '@poojly/shared';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
+
+// CM-06 (2026-08-13, P0): the prasad delivery address used to be validated
+// inline, twice, with two India-only regexes — /^\d{6}$/ for pincode and
+// /^[6-9]\d{9}$/ for phone. A Hoboken ZIP and a US mobile each returned HTTP
+// 400, so the NRI cohort the pricing doctrine is built on could not check out.
+// Both call sites now share `deliveryAddressSchema` from @poojly/shared, which
+// the web form validates against too — one source of truth so the two layers
+// cannot drift apart again.
+//
+// This changes the ADDRESS contract only. Billing is still `const currency =
+// 'INR'` through Razorpay for every country; no foreign-currency path is
+// reintroduced here (see RV-01).
+//
+// Builds the UserAddress row for a prasad delivery. UserAddress has no
+// recipient/phone columns, so the recipient name + a canonical E.164 number are
+// packed into `label` — previously as a hardcoded `+91-` literal, which
+// stamped an Indian dial code onto a Dubai number.
+function buildPrasadAddressRow(userId: string, addr: DeliveryAddress) {
+  return {
+    userId,
+    label: `${addr.fullName} (${addr.phone})`,
+    line1: addr.line1,
+    line2: addr.line2 ?? null,
+    city: addr.city,
+    state: addr.state,
+    pincode: addr.pincode,
+    country: deliveryCountryName(addr.country),
+  };
+}
 
 const createBookingSchema = z.object({
   templeId: z.string().uuid(),
@@ -168,6 +204,39 @@ const submitReviewSchema = z
 const paramsWithId = z.object({
   id: z.string().uuid(),
 });
+
+/** Default page size for GET /bookings/my — also the devotee page's page size. */
+export const MY_BOOKINGS_PAGE_SIZE = 20;
+/** Hard ceiling so one client cannot pull an entire booking history in a page. */
+export const MY_BOOKINGS_MAX_LIMIT = 100;
+
+/**
+ * DB-01 (2026-08-12): GET /bookings/my read `page`/`limit` straight off the
+ * query string (`Number(limit) || 20`) and had no notion of which tab the
+ * caller was on. The devotee page sent neither, so it always received page 1
+ * of 20 and then presented those 20 rows as the devotee's whole history — 81
+ * bookings on the seeded account. Normalisation lives here as a pure function
+ * so the contract is unit-testable without booting Fastify.
+ */
+function parseMyBookingsQuery(query: {
+  view?: string;
+  page?: string;
+  limit?: string;
+}): { view: MyBookingsView; page: number; limit: number } {
+  const view = (MY_BOOKINGS_VIEWS as readonly string[]).includes(query.view ?? '')
+    ? (query.view as MyBookingsView)
+    : 'all';
+
+  const rawPage = Math.floor(Number(query.page));
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+
+  const rawLimit = Math.floor(Number(query.limit));
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0
+    ? Math.min(rawLimit, MY_BOOKINGS_MAX_LIMIT)
+    : MY_BOOKINGS_PAGE_SIZE;
+
+  return { view, page, limit };
+}
 
 // ─── Guards ─────────────────────────────────────────────────────────────────────
 //
@@ -645,6 +714,117 @@ function evaluatePriestSlot(input: {
   return { ok: true };
 }
 
+// ─── Order-creation bodies ──────────────────────────────────────────────────
+//
+// Both checkout entry points (`POST /create-order` for the temple wizard and
+// `POST /from-offering` for the pandit-direct flow) charge money, so their
+// bodies live at module scope and are exported through `__testing`: the
+// contract is pinned by unit tests instead of only by a booted server.
+
+const orderDevoteesSchema = z
+  .array(
+    z.object({
+      name: z.string().min(1),
+      gotra: z.string().optional(),
+      nakshatra: z.string().optional(),
+    }),
+  )
+  .min(1)
+  .max(5);
+
+// Past-date guard mirrors createBookingSchema. Without it, the web wizard
+// would happily create a Razorpay order for yesterday's puja, which the
+// booking service never validates again — payment captures, ledger writes,
+// then ops gets a confused devotee.
+const futureBookingDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+  .refine(
+    (d) => {
+      const requested = new Date(`${d}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return !Number.isNaN(requested.getTime()) && requested >= today;
+    },
+    { message: 'Cannot book a past date.' },
+  );
+
+/**
+ * DB-05 (prod sweep 2026-08-12): `prasadDelivery: true` with no
+ * `deliveryAddress` used to parse cleanly. The route only persisted an address
+ * `if (body.prasadDelivery && body.deliveryAddress)`, while
+ * booking.service.createBooking adds PRASAD_DELIVERY_FEE_INR on the boolean
+ * alone — so the devotee was charged ₹150 for a prasad courier with
+ * `prasadDeliveryAddressId = null`. Reproduced live against a booted API:
+ * a create-order body with `prasadDelivery: true` and no address key returned
+ * 201 / amount 130100 (₹1,100 + ₹51 + ₹150) and a booking row with a null
+ * address id. The web wizard validates the address client-side, so this was
+ * only reachable from the mobile app, a retried request, or any direct client.
+ *
+ * Money can never be taken for a delivery with nowhere to ship it, so the
+ * pairing is enforced in the schema — the request is rejected before any
+ * booking row or Razorpay order exists.
+ */
+function requirePrasadDeliveryAddress(
+  body: { prasadDelivery?: boolean; deliveryAddress?: unknown },
+  ctx: z.RefinementCtx,
+): void {
+  if (body.prasadDelivery && body.deliveryAddress == null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['deliveryAddress'],
+      message: 'A delivery address is required when prasad delivery is selected.',
+    });
+  }
+}
+
+// POST /create-order - Used by the web booking wizard
+// (apps/web/app/pujas/book/page.tsx). Combines the existing createBooking +
+// paymentService.createRazorpayOrder steps so the client makes ONE round-trip
+// to launch checkout. Body shape mirrors the web form rather than the legacy
+// POST /book schema.
+const createOrderBodySchema = z
+  .object({
+    pujaSlug: z.string().min(1),
+    templeOfferingId: z.string().uuid(),
+    scheduledDate: futureBookingDateSchema,
+    scheduledTime: z.string().min(1),
+    devotees: orderDevoteesSchema,
+    sankalp: z.string().optional(),
+    specialInstructions: z.string().optional(),
+    prasadDelivery: z.boolean().optional().default(false),
+    // CM-06: country-aware, shared with the web form. Was India-only.
+    deliveryAddress: deliveryAddressSchema.optional(),
+  })
+  .superRefine(requirePrasadDeliveryAddress);
+
+// Slot capacity (S2C-13, corrected 2026-08-10): if offering.availableSlots
+// is set, the scheduledTime must match one of the slots. INDEPENDENTLY of
+// that — availableSlots is nullable and unset by default — the pandit must
+// be free at (date, slot) and the offering must be under
+// maxBookingsPerSlot; both are re-checked under an advisory lock inside the
+// create transaction. See the block at step 6 of POST /from-offering.
+const fromOfferingBodySchema = z
+  .object({
+    offeringId: z.string().uuid(),
+    scheduledDate: futureBookingDateSchema,
+    scheduledTime: z.string().min(1),
+    devotees: orderDevoteesSchema,
+    sankalp: z.string().optional(),
+    specialInstructions: z.string().optional(),
+    prasadDelivery: z.boolean().optional().default(false),
+    // Accepted for backwards compatibility with older clients that still post
+    // 'USD'; it is an analytics hint only. It never changes the amount and
+    // never changes the gateway currency — `const currency = 'INR'` below is
+    // unconditional. The old comment here described this enum as a switch that
+    // "forces the NRI/USD path", which is an invitation to wire it back into
+    // the order currency; that path was RV-01 and is gone.
+    currency: z.enum(['INR', 'USD']).optional(),
+    // CM-06: country-aware, shared with the web form. Was India-only.
+    deliveryAddress: deliveryAddressSchema.optional(),
+  })
+  .superRefine(requirePrasadDeliveryAddress);
+
 // ─── Routes ─────────────────────────────────────────────────────────────────────
 
 export async function bookingRoutes(server: FastifyInstance) {
@@ -700,20 +880,27 @@ export async function bookingRoutes(server: FastifyInstance) {
     async (request, reply) => {
       try {
         const userId = request.currentUser!.id;
-        const { status, dateFrom, dateTo, page, limit } = request.query as {
+        const query = request.query as {
           status?: string;
           dateFrom?: string;
           dateTo?: string;
           page?: string;
           limit?: string;
+          view?: string;
         };
+        const { status, dateFrom, dateTo } = query;
+        const { view, page, limit } = parseMyBookingsQuery(query);
 
+        // Returns { bookings, total, page, limit, totalPages, counts } — the
+        // per-tab `counts` are what the devotee page's chips render, so the
+        // list and its own header can no longer contradict each other.
         const result = await bookingService.getUserBookings(userId, {
           status: status as BookingStatus | undefined,
           dateFrom,
           dateTo,
-          page: Number(page) || 1,
-          limit: Math.min(Number(limit) || 20, 100),
+          page,
+          limit,
+          view,
         });
 
         return result;
@@ -1595,57 +1782,8 @@ export async function bookingRoutes(server: FastifyInstance) {
     }
   });
 
-  // POST /create-order - Used by the web booking wizard
-  // (apps/web/app/pujas/[slug]/book/page.tsx). Combines the existing
-  // createBooking + paymentService.createRazorpayOrder steps so the client
-  // makes ONE round-trip to launch checkout. Body shape mirrors the web
-  // form rather than the legacy POST /book schema.
-  const createOrderBodySchema = z.object({
-    pujaSlug: z.string().min(1),
-    templeOfferingId: z.string().uuid(),
-    // Past-date guard mirrors createBookingSchema. Without it, the web
-    // wizard / Stripe NRI path would happily create a Razorpay order for
-    // yesterday's puja, which the booking service never validates again
-    // — payment captures, ledger writes, then ops gets a confused devotee.
-    scheduledDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-      .refine(
-        (d) => {
-          const requested = new Date(`${d}T00:00:00`);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return !Number.isNaN(requested.getTime()) && requested >= today;
-        },
-        { message: 'Cannot book a past date.' },
-      ),
-    scheduledTime: z.string().min(1),
-    devotees: z
-      .array(
-        z.object({
-          name: z.string().min(1),
-          gotra: z.string().optional(),
-          nakshatra: z.string().optional(),
-        }),
-      )
-      .min(1)
-      .max(5),
-    sankalp: z.string().optional(),
-    specialInstructions: z.string().optional(),
-    prasadDelivery: z.boolean().optional().default(false),
-    deliveryAddress: z
-      .object({
-        fullName: z.string().min(1),
-        line1: z.string().min(1),
-        line2: z.string().optional(),
-        city: z.string().min(1),
-        state: z.string().min(1),
-        pincode: z.string().regex(/^\d{6}$/),
-        phone: z.string().regex(/^[6-9]\d{9}$/),
-      })
-      .optional(),
-  });
-
+  // POST /create-order — body schema is `createOrderBodySchema` at module
+  // scope (exported through `__testing`).
   server.post(
     '/create-order',
     { preHandler: [authenticateUser] },
@@ -1678,29 +1816,37 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
-        // 2. Optional: persist a delivery address if prasad requested.
+        // 2. Persist the delivery address if prasad was requested. The schema
+        // has already guaranteed an address is present whenever
+        // body.prasadDelivery is true (requirePrasadDeliveryAddress).
         let prasadAddressId: string | undefined;
         if (body.prasadDelivery && body.deliveryAddress) {
           // UserAddress has no dedicated recipient/phone columns. We pack
           // them into `label` so the priest can still reach the devotee
           // when the prasad is dispatched. Schema cleanup is tracked but
-          // this row keeps the data round-trippable.
+          // this row keeps the data round-trippable. See
+          // buildPrasadAddressRow — it also persists the real country, which
+          // used to be silently left at the "India" column default.
           const addr = await prisma.userAddress.create({
-            data: {
-              userId,
-              label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
-              line1: body.deliveryAddress.line1,
-              line2: body.deliveryAddress.line2 ?? null,
-              city: body.deliveryAddress.city,
-              state: body.deliveryAddress.state,
-              pincode: body.deliveryAddress.pincode,
-            },
+            data: buildPrasadAddressRow(userId, body.deliveryAddress),
             select: { id: true },
           }).catch(() => null);
-          prasadAddressId = addr?.id;
+          // DB-05: the write used to be allowed to fail silently, and the
+          // booking was still created with prasadDeliveryRequested = true —
+          // which is what booking.service charges PRASAD_DELIVERY_FEE_INR on.
+          // The ₹150 would have been taken with nowhere to ship to. Fail the
+          // request instead: no booking row, no Razorpay order, no charge.
+          if (!addr) {
+            return reply.status(500).send({
+              error: 'Could not save your prasad delivery address. Please try again.',
+            });
+          }
+          prasadAddressId = addr.id;
         }
 
-        // 3. Create the booking (status pending_payment).
+        // 3. Create the booking (status pending_payment). The prasad fee rides
+        // on `prasadDeliveryRequested`, so it is only ever true alongside a
+        // persisted address id.
         const booking = await bookingService.createBooking({
           userId,
           templeId: offering.templeId,
@@ -1711,7 +1857,7 @@ export async function bookingRoutes(server: FastifyInstance) {
           devoteeNames: body.devotees,
           sankalpDetails: body.sankalp,
           specialInstructions: body.specialInstructions,
-          prasadDeliveryRequested: body.prasadDelivery,
+          prasadDeliveryRequested: body.prasadDelivery && !!prasadAddressId,
           prasadDeliveryAddressId: prasadAddressId,
         });
 
@@ -1781,59 +1927,8 @@ export async function bookingRoutes(server: FastifyInstance) {
   // note lives with the pricing block below; this comment is kept only to stop
   // the deleted behaviour being re-implemented from a stale instruction.
   //
-  // Slot capacity (S2C-13, corrected 2026-08-10): if offering.availableSlots
-  // is set, the scheduledTime must match one of the slots. INDEPENDENTLY of
-  // that — availableSlots is nullable and unset by default — the pandit must
-  // be free at (date, slot) and the offering must be under
-  // maxBookingsPerSlot; both are re-checked under an advisory lock inside the
-  // create transaction. See the block at step 6.
-  const fromOfferingBodySchema = z.object({
-    offeringId: z.string().uuid(),
-    scheduledDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-      .refine(
-        (d) => {
-          const requested = new Date(`${d}T00:00:00`);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return !Number.isNaN(requested.getTime()) && requested >= today;
-        },
-        { message: 'Cannot book a past date.' },
-      ),
-    scheduledTime: z.string().min(1),
-    devotees: z
-      .array(
-        z.object({
-          name: z.string().min(1),
-          gotra: z.string().optional(),
-          nakshatra: z.string().optional(),
-        }),
-      )
-      .min(1)
-      .max(5),
-    sankalp: z.string().optional(),
-    specialInstructions: z.string().optional(),
-    prasadDelivery: z.boolean().optional().default(false),
-    // Accepted for backwards compatibility with older clients that still post
-    // 'USD'; it is an analytics hint only. It never changes the amount and
-    // never changes the gateway currency — `const currency = 'INR'` below is
-    // unconditional. The old comment here described this enum as a switch that
-    // "forces the NRI/USD path", which is an invitation to wire it back into
-    // the order currency; that path was RV-01 and is gone.
-    currency: z.enum(['INR', 'USD']).optional(),
-    deliveryAddress: z
-      .object({
-        fullName: z.string().min(1),
-        line1: z.string().min(1),
-        line2: z.string().optional(),
-        city: z.string().min(1),
-        state: z.string().min(1),
-        pincode: z.string().regex(/^\d{6}$/),
-        phone: z.string().regex(/^[6-9]\d{9}$/),
-      })
-      .optional(),
-  });
+  // Body schema is `fromOfferingBodySchema` at module scope (exported through
+  // `__testing`); the slot-capacity rules it pairs with are enforced at step 6.
   // NRI multiplier for priest-offering pricing. Business rule #2 (NRI
   // pricing 9-10× domestic) — we pick 9x as the lower bound; temple-side
   // offerings already use PujaType.nriPrice which is set explicitly.
@@ -1993,24 +2088,24 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
-        // 4. Optional prasad delivery address (mirrors /create-order).
+        // 4. Prasad delivery address (mirrors /create-order). The schema has
+        // already guaranteed one is present whenever prasadDelivery is true;
+        // DB-05: a failed write must not leave the ₹150 prasadFee charged
+        // above against a null address, so it aborts before any booking row.
         let prasadAddressId: string | undefined;
         if (body.prasadDelivery && body.deliveryAddress) {
           const addr = await prisma.userAddress
             .create({
-              data: {
-                userId,
-                label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
-                line1: body.deliveryAddress.line1,
-                line2: body.deliveryAddress.line2 ?? null,
-                city: body.deliveryAddress.city,
-                state: body.deliveryAddress.state,
-                pincode: body.deliveryAddress.pincode,
-              },
+              data: buildPrasadAddressRow(userId, body.deliveryAddress),
               select: { id: true },
             })
             .catch(() => null);
-          prasadAddressId = addr?.id;
+          if (!addr) {
+            return reply.status(500).send({
+              error: 'Could not save your prasad delivery address. Please try again.',
+            });
+          }
+          prasadAddressId = addr.id;
         }
 
         // 5. Generate booking number (retry on collision, same pattern as
@@ -2344,4 +2439,14 @@ export const __testing = {
   PRIEST_REASSIGNABLE_STATUSES,
   OWNER_ALLOWED_TRANSITIONS,
   ASSIGNED_PRIEST_ALLOWED_TRANSITIONS,
+  parseMyBookingsQuery,
+  // CM-06 — the country-aware delivery address contract, shared with the web
+  // form via @poojly/shared. Exported so the schema + the persisted row are
+  // pinned by tests without booting Fastify.
+  deliveryAddressSchema,
+  buildPrasadAddressRow,
+  // DB-05 — the two money-taking order bodies. Exported so the
+  // prasadDelivery/deliveryAddress pairing is pinned without booting Fastify.
+  createOrderBodySchema,
+  fromOfferingBodySchema,
 };

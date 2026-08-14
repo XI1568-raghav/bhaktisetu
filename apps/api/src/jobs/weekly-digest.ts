@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { panchangService } from '../services/panchang.service.js';
+import { parseSchedule } from '../lib/darshan-schedule.js';
 
 /**
  * Weekly devotee digest — Sunday 9 AM IST fan-out.
@@ -103,9 +104,16 @@ function digestEmailHtml(params: {
          </ul>`
       : '';
 
+  // NOTIF-13: the old copy read "Based on your <gotra> gotra, devotees often
+  // book:" while fetchRecommendedPuja took the user and never read it — the
+  // gotra branch was an empty block and the query returned the same row for
+  // everybody. Claiming a personalisation we did not perform is worse than
+  // offering none, for a product whose differentiator is knowing the devotee's
+  // gotra and rashi. Say what this actually is until a real gotra-to-deity
+  // mapping exists (owner/content call, see the note on fetchRecommendedPuja).
   const recoBlock = ctx.recommendedPuja
-    ? `<h2 style="font-size:15px;font-weight:600;margin:20px 0 8px;color:#5b3a1d;">Recommended for you</h2>
-       <p style="font-size:14px;line-height:1.5;margin:0 0 8px;">Based on your ${user.gotra ? `${escapeHtml(user.gotra)} gotra` : 'profile'}, devotees often book:</p>
+    ? `<h2 style="font-size:15px;font-weight:600;margin:20px 0 8px;color:#5b3a1d;">Popular this week</h2>
+       <p style="font-size:14px;line-height:1.5;margin:0 0 8px;">Devotees are booking:</p>
        <p style="font-size:14px;margin:0 0 4px;"><strong>${escapeHtml(ctx.recommendedPuja.name)}</strong> for ${escapeHtml(ctx.recommendedPuja.deity)} — ${escapeHtml(ctx.recommendedPuja.price)}</p>
        <p style="margin:8px 0 12px;"><a href="https://darshya.online/pujas/${encodeURIComponent(ctx.recommendedPuja.slug)}" style="display:inline-block;background:#ea580c;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Book this puja</a></p>`
     : '';
@@ -171,30 +179,70 @@ async function fetchOptOutSet(): Promise<Set<string>> {
   }
 }
 
-async function fetchUpcomingAartisForUser(
-  userId: string,
-): Promise<DigestContext['upcomingAartis']> {
-  // TempleFollow has no `temple` relation in the Prisma schema (the table
-  // uses a loose UUID column to survive temple deletions), so we drop to
-  // raw SQL for the join. Best-effort — any DB hiccup yields [].
+/** "3:00 AM IST" from a minutes-past-IST-midnight offset. */
+function formatIstClock(minutes: number): string {
+  const h24 = Math.floor(minutes / 60) % 24;
+  const mm = String(minutes % 60).padStart(2, '0');
+  const suffix = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${mm} ${suffix} IST`;
+}
+
+/**
+ * Every followed temple's REAL aarti windows, for a whole batch of users, in
+ * ONE query.
+ *
+ * NOTIF-13 replaced two things here:
+ *
+ *  - the FABRICATION. This returned `aarti: 'Sandhya Aarti'` and
+ *    `whenLocal: 'today 6:30 PM IST'` for every followed temple regardless of
+ *    that temple's actual timings, while the DB holds real per-temple windows
+ *    (Govind Dev Ji has 6, Shirdi 4). A devotee acting on that time misses the
+ *    aarti — the one thing this email exists to prevent. Times now come from
+ *    Temple.timingInfo through the same parseSchedule the darshan pages use, and
+ *    a temple with no parseable aarti window contributes no row at all.
+ *  - the N+1. It ran once per recipient, inside the send loop.
+ *
+ * TempleFollow has no `temple` relation in the Prisma schema (the table uses a
+ * loose UUID column to survive temple deletions), so the join is raw SQL.
+ * Best-effort: any DB hiccup yields an empty map and the section is omitted.
+ */
+async function fetchUpcomingAartisForBatch(
+  userIds: string[],
+): Promise<Map<string, DigestContext['upcomingAartis']>> {
+  const out = new Map<string, DigestContext['upcomingAartis']>();
+  if (userIds.length === 0) return out;
   try {
-    const rows = await prisma.$queryRawUnsafe<{ name: string | null }[]>(
-      `SELECT t.name
+    const rows = await prisma.$queryRawUnsafe<
+      { user_id: string; name: string | null; timing_info: unknown }[]
+    >(
+      `SELECT tf.user_id, t.name, t.timing_info
          FROM temple_follows tf
          LEFT JOIN temples t ON t.id = tf.temple_id
-        WHERE tf.user_id = $1::uuid
-        ORDER BY tf.created_at DESC
-        LIMIT 5`,
-      userId,
+        WHERE tf.user_id = ANY($1::uuid[])
+        ORDER BY tf.created_at DESC`,
+      userIds,
     );
-    return rows.map((r) => ({
-      templeName: r.name ?? 'Your followed temple',
-      aarti: 'Sandhya Aarti',
-      whenLocal: 'today 6:30 PM IST',
-    }));
+    for (const r of rows) {
+      const list = out.get(r.user_id) ?? [];
+      out.set(r.user_id, list);
+      if (list.length >= 5) continue;
+      const aartis = parseSchedule(r.timing_info)
+        .filter((sl) => sl.isAarti)
+        .slice(0, 2);
+      for (const sl of aartis) {
+        if (list.length >= 5) break;
+        list.push({
+          templeName: r.name ?? 'Your followed temple',
+          aarti: sl.label,
+          whenLocal: `daily at ${formatIstClock(sl.start)}`,
+        });
+      }
+    }
   } catch {
-    return [];
+    return new Map();
   }
+  return out;
 }
 
 async function fetchNewContent(): Promise<DigestContext['newContent']> {
@@ -215,18 +263,25 @@ async function fetchNewContent(): Promise<DigestContext['newContent']> {
   }
 }
 
-async function fetchRecommendedPuja(
-  user: UserRow,
-): Promise<DigestContext['recommendedPuja']> {
+/**
+ * The one puja this week's digest promotes.
+ *
+ * NOTIF-13: this took `user` and never read it. The gotra branch was an empty
+ * block with a comment, and the query was `findFirst({isActive:true},
+ * orderBy:sortOrder)` — identical for every recipient — so N identical queries
+ * returned one identical row while the email claimed the result was personal.
+ * It is now what it always was: ONE query for the whole run, honestly labelled
+ * "Popular this week" in the template.
+ *
+ * A real gotra-to-deity mapping is a content decision (which rishi lineage maps
+ * to which deity, and which puja follows from it) that belongs to the owner, not
+ * to this function inventing one. Until that exists, no personalisation is
+ * claimed.
+ */
+async function fetchRecommendedPuja(): Promise<DigestContext['recommendedPuja']> {
   try {
-    const where: Record<string, unknown> = { isActive: true };
-    if (user.gotra) {
-      // Gotra has no direct schema link to puja, so we use it as a soft
-      // hint by deity overlap — Bharadwaj gotra → Vishnu, Kashyap → Surya,
-      // etc. Keep it lightweight: just sort by sortOrder for now.
-    }
     const puja = await prisma.pujaType.findFirst({
-      where,
+      where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
       select: { name: true, deity: true, slug: true, basePrice: true },
     });
@@ -269,6 +324,9 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
   const optOut = await fetchOptOutSet();
   const newContent = await fetchNewContent();
   const panchang = await fetchPanchang();
+  // Shared across every recipient — hoisted out of the per-user loop, which is
+  // what made the job 1+2N queries (20,001 at 10,000 users).
+  const recommendedPuja = await fetchRecommendedPuja();
 
   const weekStartLabel = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -303,6 +361,9 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
     }
     if (batch.length === 0) break;
 
+    // One join for the whole batch instead of one per recipient.
+    const aartisByUser = await fetchUpcomingAartisForBatch(batch.map((u) => u.id));
+
     for (const user of batch) {
       if (!user.email) {
         skipped++;
@@ -313,10 +374,8 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
         continue;
       }
 
-      const upcomingAartis = await fetchUpcomingAartisForUser(user.id);
-      const recommendedPuja = await fetchRecommendedPuja(user);
       const ctx: DigestContext = {
-        upcomingAartis,
+        upcomingAartis: aartisByUser.get(user.id) ?? [],
         newContent,
         recommendedPuja,
         panchang,
@@ -346,6 +405,23 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
   }
 
   // Persist run metadata for master-cron gating.
+  //
+  // NOTIF-13: this stamped UNCONDITIONALLY, and maybeRunWeeklyDigest enforces a
+  // 6-day cooldown off the row. So the moment the Resend free-tier cap (100/day,
+  // docs/free-tier-budgets.md) started answering ok:false, recipients 101+ were
+  // counted as `failed`, never retried, and written off for a week — no
+  // dead-letter, and nothing in the product aware of it. A run that did not
+  // reach everyone is not a completed run: leave the stamp alone so the next
+  // tick tries again. `skipped` (opted out, no address, or the channel being
+  // unconfigured) is NOT a failure and must never block the stamp forever.
+  if (failed > 0) {
+    console.warn(
+      '[weekly-digest][INCOMPLETE]',
+      JSON.stringify({ sent, skipped, failed, note: 'run not stamped; will retry next tick' }),
+    );
+    return { sent, skipped, failed, reason: 'incomplete run - not stamped, will retry' };
+  }
+
   try {
     await prisma.$executeRawUnsafe(
       `INSERT INTO "WeeklyDigestRun" (id, last_run_at, last_sent, last_skipped)

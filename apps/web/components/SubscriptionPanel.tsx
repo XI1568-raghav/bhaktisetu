@@ -14,7 +14,8 @@ import { useAuth } from '../lib/auth-context';
 import {
  listPlans,
  getMySubscription,
- subscribeToPlan,
+ subscribeToFreePlan,
+ createSubscriptionCheckout,
  cancelMySubscription,
  openRazorpayCheckout,
  type SubscriptionPlan,
@@ -53,6 +54,8 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  const [error, setError] = useState<string | null>(null);
  const [actionPlanId, setActionPlanId] = useState<string | null>(null);
  const [actionError, setActionError] = useState<string | null>(null);
+ /** Plan name whose checkout is open and unconfirmed. Never a success claim. */
+ const [pendingPayment, setPendingPayment] = useState<string | null>(null);
  const [cancelling, setCancelling] = useState(false);
 
  useEffect(() => {
@@ -78,16 +81,61 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  };
  }, [role, session?.accessToken]);
 
+ /**
+  * PM-04 — free and paid plans take different rails, and a paid plan is never
+  * marked current until the server says it is.
+  *
+  * This used to call POST /subscriptions/subscribe for every plan and then run
+  * `setCurrent(resp.subscription)` unconditionally. That endpoint takes no
+  * payment — it writes an ACTIVE row and a COMPLETED transaction for the plan
+  * price — and it returns no `keyId`/`razorpaySubscriptionId`, so the checkout
+  * branch below it could never fire. Net effect: click Subscribe on Pandit Pro
+  * and the panel confirmed a ₹2,999/mo plan that nothing had charged for.
+  *
+  * Paid plans now go to POST /subscriptions/create, the rail that mints a real
+  * Razorpay subscription and records the transaction as PENDING. Its success
+  * means "checkout is ready", so the panel says exactly that and re-reads
+  * GET /my after the gateway reports payment — the current-plan card only ever
+  * renders server state.
+  */
  const handleSubscribe = async (plan: SubscriptionPlan) => {
  setActionError(null);
+ setPendingPayment(null);
  setActionPlanId(plan.id);
  try {
- const resp = await subscribeToPlan(session?.accessToken, plan.id);
- setCurrent(resp.subscription);
- if (resp.keyId && resp.razorpaySubscriptionId) {
- const opened = await openRazorpayCheckout({
- keyId: resp.keyId,
- subscriptionId: resp.razorpaySubscriptionId,
+ if (plan.priceMonthly <= 0) {
+ const claimed = await subscribeToFreePlan(session?.accessToken, plan.id);
+ if (!claimed) {
+ setActionError(
+ 'We could not confirm the plan change with our server. Please reload and check your current plan before trying again.',
+ );
+ return;
+ }
+ setCurrent(claimed);
+ return;
+ }
+
+ const checkout = await createSubscriptionCheckout(
+ session?.accessToken,
+ plan.id,
+ role,
+ );
+
+ // No usable handle = no way to take the money. Say so; do NOT present the
+ // plan as bought. `sub_demo_*` means the gateway keys are unset on the
+ // server, which is a misconfiguration, not a purchase.
+ if (!checkout || checkout.isDemo) {
+ setActionError(
+ `We could not start a secure payment for ${plan.name}, so nothing has been charged and your plan is unchanged. Please try again shortly or contact support.`,
+ );
+ return;
+ }
+
+ const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+ const opened = keyId
+ ? await openRazorpayCheckout({
+ keyId,
+ subscriptionId: checkout.subscriptionId,
  name: 'Darshya',
  description: `${plan.name} subscription`,
  prefill: {
@@ -96,16 +144,28 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  contact: user?.phone,
  },
  onSuccess: async () => {
- const refreshed = await getMySubscription(session?.accessToken).catch(() => null);
- if (refreshed) setCurrent(refreshed);
+ // Only the server can say the mandate was authorised.
+ const refreshed = await getMySubscription(session?.accessToken).catch(
+ () => null,
+ );
+ if (refreshed) {
+ setCurrent(refreshed);
+ setPendingPayment(null);
+ }
  },
- });
- if (!opened && resp.shortUrl) {
- window.open(resp.shortUrl, '_blank', 'noopener');
+ })
+ : false;
+
+ if (!opened) {
+ if (!checkout.shortUrl) {
+ setActionError(
+ `We could not open the payment page for ${plan.name}. Nothing has been charged. Please try again shortly or contact support.`,
+ );
+ return;
  }
- } else if (resp.shortUrl) {
- window.open(resp.shortUrl, '_blank', 'noopener');
+ window.open(checkout.shortUrl, '_blank', 'noopener');
  }
+ setPendingPayment(plan.name);
  } catch (err) {
  setActionError(err instanceof Error ? err.message : 'Could not start subscription');
  } finally {
@@ -152,9 +212,31 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  )}
 
  {actionError && (
- <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+ <div
+ data-testid="subscription-action-error"
+ role="alert"
+ className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700"
+ >
  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
  {actionError}
+ </div>
+ )}
+
+ {/* PM-04: checkout opened, payment NOT confirmed. This is deliberately not
+   a current-plan card — the subscription becomes active only when the
+   webhook records the authorised mandate. */}
+ {pendingPayment && (
+ <div
+ data-testid="subscription-pending-payment"
+ role="status"
+ className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800"
+ >
+ <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+ <span>
+ Payment for <strong>{pendingPayment}</strong> is waiting to be completed in
+ the checkout window. Your plan changes once the payment is confirmed —
+ nothing has been charged yet.
+ </span>
  </div>
  )}
 
@@ -203,7 +285,13 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  ) : (
  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
  {plans.map((plan) => {
- const isCurrent = current?.planId === plan.id && current.status === 'active';
+ // PM-04: GET /my identifies the live subscription by TIER ('PRO'), not by
+ // plan id, so an id-only comparison never matched and the panel offered
+ // "Subscribe" on the plan the user was already paying for.
+ const isCurrent =
+ current?.status === 'active' &&
+ (current.planId === plan.id ||
+ (!!plan.tier && current.planId === plan.tier));
  const busy = actionPlanId === plan.id;
  return (
  <div
@@ -215,7 +303,7 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  <div className="flex items-center justify-between mb-1">
  <h3 className="text-sm font-semibold text-surface-900">{plan.name}</h3>
  {plan.popular && (
- <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-saffron-100 text-saffron-700">
+ <span className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-saffron-100 text-saffron-700">
  Popular
  </span>
  )}
@@ -232,14 +320,23 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  <p className="text-xs text-surface-500 mb-3">{plan.description}</p>
  )}
  <ul className="space-y-1.5 mb-4 text-xs text-surface-700">
+ {/* PM-02b: these two lines used to render unconditionally against fields
+   /subscriptions/plans does not send. `undefined` printed as "% commission",
+   and `maxListings === null` claimed "Unlimited listings" on every plan
+   including a 5-bookings/month Starter. Show them only when the server
+   actually said something. */}
+ {typeof plan.commissionOverride === 'number' && (
  <li className="flex items-start gap-2">
  <Check className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
  {plan.commissionOverride}% commission
  </li>
+ )}
+ {plan.maxListings !== undefined && (
  <li className="flex items-start gap-2">
  <Check className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
  {plan.maxListings === null ? 'Unlimited listings' : `${plan.maxListings} listings`}
  </li>
+ )}
  {plan.features?.map((f) => (
  <li key={f} className="flex items-start gap-2">
  <Check className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
@@ -278,7 +375,7 @@ function StatusPill({ status }: { status: string }) {
  };
  return (
  <span
- className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+ className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${
  map[status] ?? 'bg-surface-100 text-surface-600'
  }`}
  >

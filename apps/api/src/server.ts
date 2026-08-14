@@ -14,6 +14,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { clientIp, rateLimitKey } from './lib/rate-limit-key.js';
+import { startOpsScheduler, getSchedulerStatus } from './jobs/scheduler.js';
 import fastifyRawBody from 'fastify-raw-body';
 import fastifyCookie from '@fastify/cookie';
 import { registerAuthDecorators, authenticateUser, requireRole } from './middlewares/auth.js';
@@ -162,7 +163,21 @@ async function bootstrap() {
           // Explicit fail in prod — refuse to start with a wide-open default.
           throw new Error('CORS_ORIGIN env var is required in production. Set it to the comma-separated list of allowed origins.');
         })()
-      : ['http://localhost:3000', 'http://localhost:3001'];
+      : [
+          // A11Y-16 (prod sweep 2026-08-12): the dev fallback listed only the
+          // `localhost` spelling. A page served from http://127.0.0.1:3000 got
+          // a 200 with NO access-control-allow-origin header, so the browser
+          // blocked every client fetch and the booking wizard rendered its
+          // "we couldn't reach the catalog" state instead of the four-step
+          // form — at HTTP 200, so it looked like the real product. Two
+          // accessibility passes were spent auditing that error page.
+          // 127.0.0.1 and localhost are the same host; only the string
+          // differed. Development only — prod still requires CORS_ORIGIN.
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://127.0.0.1:3000',
+          'http://127.0.0.1:3001',
+        ];
   await server.register(cors, {
     origin: corsOrigins,
     credentials: true,
@@ -246,6 +261,17 @@ async function bootstrap() {
   // resolves to /api/v1/cron/health — NOT a root-level duplicate of this /health.
   // Only ONE root /health exists. No removal needed.
   server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+
+  // NOTIF-01: the scheduler was dead for the entire life of the product and
+  // nothing surfaced that. Age of the last completed tick is the signal — a
+  // silent scheduler is indistinguishable from a working one without it.
+  // Unauthenticated by design: it exposes only timings and counters, no data,
+  // and an external pinger must be able to read it. Rate-limited normally.
+  server.get('/ops/scheduler', async (_request, reply) => {
+    const status = getSchedulerStatus();
+    // 503 when stale so an uptime monitor can alarm on it without parsing JSON.
+    return reply.code(status.stale ? 503 : 200).send(status);
+  });
 
   // /ready = READINESS — actually verifies dependencies. Returns 503 if the DB
   // is unreachable or (when REDIS_URL is set) Redis won't ping. Used by
@@ -455,6 +481,13 @@ async function bootstrap() {
   try {
     await server.listen({ port, host });
     server.log.info(`Darshya API running at http://${host}:${port}`);
+    // NOTIF-01: nothing anywhere invoked runDailyOps, so every time-based
+    // feature — panchang push, aarti reminders, weekly digest, expired-offer
+    // rebroadcast, auto-refunds, weekly settlement — was dead code in
+    // production. Start it here, after listen, so a scheduler fault can never
+    // stop the API from serving. See jobs/scheduler.ts for why this is
+    // in-process rather than a GitHub Actions schedule.
+    startOpsScheduler(server.log);
   } catch (err) {
     server.log.error(err);
     captureException(err);

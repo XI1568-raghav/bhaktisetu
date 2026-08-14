@@ -130,11 +130,15 @@ describe('commission-api — provider self-serve endpoint', () => {
 });
 
 describe('commission-api — pagination', () => {
-  it('listCommissions requests the route maximum page size, not the default 20', async () => {
+  it('listCommissions requests the shared page size, not the default 20', async () => {
     const fetchMock = mockLedger();
     await listCommissions('tok');
     const url = new URL(String(fetchMock.mock.calls[0][0]), 'https://x.test');
-    expect(url.searchParams.get('pageSize')).toBe('200');
+    // AW-05: was hardcoded '200'. The constant is now bound to the TIGHTER of
+    // the two route caps (the provider route's 100), because the same client
+    // constant is sent to both — see commission-page-size-contract.test.ts.
+    expect(url.searchParams.get('pageSize')).toBe(String(COMMISSION_PAGE_SIZE));
+    expect(Number(url.searchParams.get('pageSize'))).toBeGreaterThan(20);
     expect(url.searchParams.get('page')).toBe('1');
   });
 

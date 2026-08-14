@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
  if (!c) return { title: 'Companion not found' };
  return {
  title: `${c.name} — Travel Companion`,
+ alternates: { canonical: `https://darshya.online/yatra/companion/${id}` },
  description: `${c.experience} experience. ${c.yatrasCompleted} yatras. Languages: ${c.languages.join(', ')}.`,
  };
 }
@@ -85,7 +86,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  {c.name}
  </h1>
- <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 12%, transparent)', color: '#16a34a' }}>
+ <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 12%, transparent)', color: '#16a34a' }}>
  <BadgeCheck className="w-2.5 h-2.5" /> Verified
  </span>
  </div>
@@ -109,18 +110,18 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
 
  {/* Verified badges */}
  <div className="flex items-center gap-1.5 flex-wrap mb-4">
- {c.verified.aadhaar && <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><CheckCircle2 className="w-3 h-3" /> Aadhaar verified</span>}
- {c.verified.background && <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Shield className="w-3 h-3" /> Background checked</span>}
- {c.verified.medical && <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Stethoscope className="w-3 h-3" /> Medical trained</span>}
+ {c.verified.aadhaar && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><CheckCircle2 className="w-3 h-3" /> Aadhaar verified</span>}
+ {c.verified.background && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Shield className="w-3 h-3" /> Background checked</span>}
+ {c.verified.medical && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 10%, transparent)', color: '#16a34a' }}><Stethoscope className="w-3 h-3" /> Medical trained</span>}
  </div>
  </div>
 
  {/* Pricing + CTA */}
  <div className="w-full md:w-64 shrink-0">
  <div className="rounded-xl p-4 text-center" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
- <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-faint)' }}>Starting from</p>
+ <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-faint)' }}>Starting from</p>
  <p className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(c.pricePerDay)}</p>
- <p className="text-[11px] mb-3" style={{ color: 'var(--color-text-muted)' }}>per day · all inclusive</p>
+ <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>per day · all inclusive</p>
  <Link
  href="/yatra"
  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white btn-press"
@@ -150,7 +151,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <Languages className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <div className="flex flex-wrap gap-1.5">
  {c.languages.map((l) => (
- <span key={l} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>{l}</span>
+ <span key={l} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>{l}</span>
  ))}
  </div>
  </div>
@@ -158,7 +159,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Specializations</h3>
  <div className="flex flex-wrap gap-1.5 mb-5">
  {c.specializations.map((s) => (
- <span key={s} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{s}</span>
+ <span key={s} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{s}</span>
  ))}
  </div>
 
@@ -179,12 +180,12 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <div className="rounded-xl p-3" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <div className="grid grid-cols-7 gap-1">
  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
- <div key={i} className="text-center text-[10px] font-semibold py-1" style={{ color: 'var(--color-text-faint)' }}>{d}</div>
+ <div key={i} className="text-center text-xs font-semibold py-1" style={{ color: 'var(--color-text-faint)' }}>{d}</div>
  ))}
  {days.map((d, i) => (
  <div
  key={i}
- className="aspect-square rounded text-center flex flex-col items-center justify-center text-[10px]"
+ className="aspect-square rounded text-center flex flex-col items-center justify-center text-xs"
  style={{
  background: d.available ? 'color-mix(in oklch, #16a34a 12%, transparent)' : 'color-mix(in oklch, #a12c7b 10%, transparent)',
  color: d.available ? '#16a34a' : '#a12c7b',
@@ -195,7 +196,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  </div>
  ))}
  </div>
- <div className="flex items-center justify-between mt-3 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="flex items-center justify-between mt-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ background: 'color-mix(in oklch, #16a34a 50%, transparent)' }} /> Available</span>
  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ background: 'color-mix(in oklch, #a12c7b 50%, transparent)' }} /> Booked</span>
  </div>
@@ -209,9 +210,9 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <div key={t.label} className="rounded-lg p-3 flex items-center justify-between text-xs" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <div>
  <p className="font-medium" style={{ color: 'var(--color-text)' }}>{t.label}</p>
- {t.discount > 0 && <p className="text-[10px]" style={{ color: 'var(--color-status-success)' }}>{t.discount}% off</p>}
+ {t.discount > 0 && <p className="text-xs" style={{ color: 'var(--color-status-success)' }}>{t.discount}% off</p>}
  </div>
- <p className="font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(price)}<span className="text-[10px] font-normal" style={{ color: 'var(--color-text-muted)' }}>/day</span></p>
+ <p className="font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(price)}<span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>/day</span></p>
  </div>
  );
  })}
@@ -237,7 +238,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  </div>
  <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text)' }}>&ldquo;{r.comment}&rdquo;</p>
  <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{r.author}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>After {r.yatra}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>After {r.yatra}</p>
  </div>
  ))}
  </div>

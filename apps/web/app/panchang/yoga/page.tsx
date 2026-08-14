@@ -7,11 +7,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: '27 Nitya Yogas — 4th Anga of Panchang | Free Vedic Reference | Darshya',
+ title: '27 Nitya Yogas — 4th Anga of Panchang | Free Vedic Reference',
  description:
   'All 27 nitya yogas of Vedic Panchang: Vishkambha, Priti, Ayushman, Saubhagya, Shobhana, Atiganda, Sukarma, Dhriti, Shoola, Ganda, Vriddhi, Dhruva, Vyaghata, Harshana, Vajra, Siddhi, Vyatipata, Variyan, Parigha, Shiva, Siddha, Sadhya, Shubha, Shukla, Brahma, Indra, Vaidhriti. Auspicious vs inauspicious classification + deity + mantra + best-for + avoid-for per yoga.',
  alternates: { canonical: `${BASE_URL}/panchang/yoga` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: '27 Nitya Yogas — 4th Anga of Panchang',
   description: '4th anga of Panchang. 9 inauspicious yogas to avoid for muhurat. Free reference with deity + mantra + best-for per yoga.',
   url: `${BASE_URL}/panchang/yoga`,
@@ -92,11 +93,11 @@ export default function YogaIndexPage() {
       >
        <div className="flex items-start justify-between">
         <div>
-         <p className="text-[11px] uppercase tracking-wider text-gray-600">#{y.number}</p>
+         <p className="text-xs uppercase tracking-wider text-gray-600">#{y.number}</p>
          <p className="font-serif text-lg text-gray-900">{y.name}</p>
          <p className="text-sm text-saffron-700">{y.sanskrit}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-gray-800">
+        <span className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-gray-800">
          {NATURE_LABEL[y.nature]}
         </span>
        </div>

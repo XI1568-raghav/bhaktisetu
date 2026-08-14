@@ -43,6 +43,7 @@ export async function generateMetadata({
     description: `${book.title}, Chapter ${ch.number}: ${ch.title}. ${book.description}`,
     alternates: { canonical: url },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title,
       description: `${book.title} · Chapter ${ch.number}`,
       url,

@@ -71,6 +71,10 @@ beforeEach(() => {
   );
   prismaMock.commission.findMany.mockResolvedValue([] as never);
   prismaMock.commission.count.mockResolvedValue(0 as never);
+  // DI-08 (2026-08-12): the route now also aggregates provider earnings vs the
+  // platform take by rate, so the grouped query needs a default here. The
+  // shared mock's `groupBy` is a bare vi.fn() and would resolve undefined.
+  prismaMock.commission.groupBy.mockResolvedValue([] as never);
   prismaMock.user.findMany.mockResolvedValue([] as never);
   prismaMock.userRoleAssignment.findMany.mockResolvedValue([] as never);
   prismaMock.pujaBooking.findMany.mockResolvedValue([] as never);

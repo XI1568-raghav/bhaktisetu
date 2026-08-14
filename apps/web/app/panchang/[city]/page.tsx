@@ -46,12 +46,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
  const { city: citySlug } = await params;
  const city = CITIES.find((c) => c.slug === citySlug);
- if (!city) return { title: 'Panchang — city not found | Darshya' };
+ if (!city) return { title: 'Panchang — city not found' };
  return {
-  title: `Panchang ${city.name} Today — Tithi, Nakshatra, Sunrise, Rahu Kaal | Darshya`,
+  title: `Panchang ${city.name} Today — Tithi, Nakshatra, Sunrise, Rahu Kaal`,
   description: `Today's Hindu Panchang for ${city.name}, ${city.state}: sunrise, sunset, tithi, nakshatra, yoga, karana, Rahu Kaal, Abhijit Muhurat. Accurate local times for ${city.hindi}.`,
   alternates: { canonical: `${BASE_URL}/panchang/${city.slug}` },
   openGraph: {
+   images: ['/images/golden-temple-og.jpg'],
    title: `Panchang ${city.name} — Today's Tithi, Sunrise, Muhurat`,
    description: `Local panchang for ${city.name}: sunrise/sunset, 5 limbs, Rahu Kaal, Abhijit. ${city.significance.slice(0, 120)}`,
    url: `${BASE_URL}/panchang/${city.slug}`,

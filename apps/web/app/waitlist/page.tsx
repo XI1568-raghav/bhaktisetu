@@ -3,6 +3,7 @@ import WaitlistForm from './WaitlistForm';
 
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/waitlist' },
   title: 'Early-access waitlist',
   description:
     'Devotion. Verified. Be among the first 1000 devotees on Darshya. Join the early-access waitlist.',
@@ -54,7 +55,7 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
           Devotion. Verified. Be among the first 1000 devotees on Darshya.
         </h1>
         <p className="mt-4 text-sm leading-relaxed max-w-xl mx-auto" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
-          Live darshan from 200+ temples, video-proof pujas, AI Pandit, daily panchang. Join the
+          Live darshan from verified temples, video-proof pujas, AI Pandit, daily panchang. Join the
           waitlist to lock your spot and unlock priority access.
         </p>
       </section>
@@ -70,7 +71,7 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
         >
           <WaitlistForm initialRef={ref} cities={TOP_CITIES} deities={DEITIES} />
         </div>
-        <p className="mt-4 text-[11px] text-center" style={{ color: 'var(--color-text-faint, #9a8f80)' }}>
+        <p className="mt-4 text-xs text-center" style={{ color: 'var(--color-text-faint, #9a8f80)' }}>
           By joining you agree to occasional emails about your spot, panchang updates, and launch news.
         </p>
       </section>

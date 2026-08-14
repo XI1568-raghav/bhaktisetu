@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MapPin, Clock, Briefcase, Heart, Zap, Users, BookOpen, Coffee } from "lucide-react";
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/careers' },
  title: "Careers",
  description:
  "Join Darshya and help build India\u2019s devotional super-app. We\u2019re hiring engineers, designers, and operators who care about faith and technology.",

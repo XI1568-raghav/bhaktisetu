@@ -15,12 +15,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
  const { slug } = await params;
  const k = PANCHANG_KARANAS.find((it) => it.slug === slug);
- if (!k) return { title: 'Karana not found | Darshya' };
+ if (!k) return { title: 'Karana not found' };
  return {
-  title: `${k.name} Karana (${k.sanskrit}) — Effect, Deity, Best For | Darshya`,
+  title: `${k.name} Karana (${k.sanskrit}) — Effect, Deity, Best For`,
   description: `${k.name} is karana #${k.number} of 11. ${k.category === 'chara' ? 'Chara (movable)' : 'Sthira (fixed)'}. Deity ${k.deity}. ${k.effect.slice(0, 130)}`,
   alternates: { canonical: `${BASE_URL}/panchang/karana/${k.slug}` },
   openGraph: {
+   images: ['/images/golden-temple-og.jpg'],
    title: `${k.name} Karana — ${k.sanskrit}`,
    description: k.effect.slice(0, 200),
    url: `${BASE_URL}/panchang/karana/${k.slug}`,

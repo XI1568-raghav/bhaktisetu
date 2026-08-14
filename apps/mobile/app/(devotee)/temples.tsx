@@ -13,118 +13,32 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTemples } from '@poojly/api-client';
+import { selectTemples, selectTotal, type TempleVM } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-interface Temple {
-  id: string;
-  name: string;
-  city: string;
-  state: string;
-  deity: string;
-  tradition: string;
-  trustScore: number;
-  liveDarshanEnabled: boolean;
-  viewers: number;
-  isVerified: boolean;
-  description: string;
-}
+/**
+ * PAR-07. This screen read `templesQuery.data?.data`, which does not exist —
+ * GET /api/v1/temples returns {temples,total,page,limit,totalPages} — so it
+ * always fell through to a hardcoded five-temple array and the header claimed
+ * "5 verified temples" while the catalogue holds 20.
+ *
+ * Deleted with the mock: `trustScore` (a star rating computed from an invented
+ * 0-100 score) and `viewers` (a made-up live viewer count). The temples
+ * endpoint returns neither, so neither is rendered any more. An invented
+ * five-star rating on a temple listing is not a placeholder, it is a claim.
+ *
+ * PAR-17 falls out of the same fix: the card deep-linked with `temple.id`, but
+ * the web route is /temples/[slug], so every link 404'd. It uses `slug` now.
+ */
 
-const templesData: Temple[] = [
-  {
-    id: '1',
-    name: 'Shri Kashi Vishwanath Temple',
-    city: 'Varanasi',
-    state: 'Uttar Pradesh',
-    deity: 'Lord Shiva',
-    tradition: 'Shaiva',
-    trustScore: 98,
-    liveDarshanEnabled: true,
-    viewers: 12450,
-    isVerified: true,
-    description: 'One of the 12 Jyotirlingas, dedicated to Lord Shiva on the banks of the Ganga.',
-  },
-  {
-    id: '2',
-    name: 'Tirumala Venkateswara Temple',
-    city: 'Tirupati',
-    state: 'Andhra Pradesh',
-    deity: 'Lord Venkateswara',
-    tradition: 'Vaishnava',
-    trustScore: 99,
-    liveDarshanEnabled: true,
-    viewers: 28300,
-    isVerified: true,
-    description: 'The richest and most visited temple in the world, dedicated to Lord Venkateswara.',
-  },
-  {
-    id: '3',
-    name: 'Shree Siddhivinayak Temple',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    deity: 'Lord Ganesha',
-    tradition: 'Smarta',
-    trustScore: 96,
-    liveDarshanEnabled: true,
-    viewers: 8760,
-    isVerified: true,
-    description: "Mumbai's most revered temple, the deity is called Navasacha Ganpati.",
-  },
-  {
-    id: '4',
-    name: 'Somnath Temple',
-    city: 'Somnath',
-    state: 'Gujarat',
-    deity: 'Lord Shiva',
-    tradition: 'Shaiva',
-    trustScore: 97,
-    liveDarshanEnabled: true,
-    viewers: 5420,
-    isVerified: true,
-    description: 'First among the twelve Jyotirlinga shrines at the confluence of three rivers.',
-  },
-  {
-    id: '5',
-    name: 'Shri Jagannath Temple',
-    city: 'Puri',
-    state: 'Odisha',
-    deity: 'Lord Jagannath',
-    tradition: 'Vaishnava',
-    trustScore: 98,
-    liveDarshanEnabled: false,
-    viewers: 0,
-    isVerified: true,
-    description: 'One of the Char Dham, famous for the annual Rath Yatra and Mahaprasad.',
-  },
-];
-
-function renderStars(trustScore: number) {
-  const rating = trustScore / 20;
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating - fullStars >= 0.5;
-  const stars: React.ReactNode[] = [];
-  for (let i = 0; i < 5; i++) {
-    if (i < fullStars) {
-      stars.push(
-        <Ionicons key={i} name="star" size={14} color={colors.amber[500]} />
-      );
-    } else if (i === fullStars && hasHalf) {
-      stars.push(
-        <Ionicons key={i} name="star-half" size={14} color={colors.amber[500]} />
-      );
-    } else {
-      stars.push(
-        <Ionicons key={i} name="star-outline" size={14} color={colors.stone[300]} />
-      );
-    }
-  }
-  return stars;
-}
-
-const TempleCard = React.memo(function TempleCard({ temple }: { temple: Temple }) {
-  const detailUrl = `https://darshya.online/temples/${encodeURIComponent(temple.id)}?utm_source=mobile-app&utm_medium=temple-card`;
+const TempleCard = React.memo(function TempleCard({ temple }: { temple: TempleVM }) {
+  const detailUrl = `https://darshya.online/temples/${encodeURIComponent(temple.slug)}?utm_source=mobile-app&utm_medium=temple-card`;
   const openTemple = () => {
     if (temple.liveDarshanEnabled) {
-      router.push({ pathname: '/(devotee)/darshan-player' as any, params: { id: temple.id, title: temple.name } } as any);
+      router.push({
+        pathname: '/(devotee)/darshan-player' as never,
+        params: { id: temple.slug, title: temple.name, deity: temple.deity ?? '' },
+      } as never);
     } else {
       Linking.openURL(detailUrl);
     }
@@ -153,39 +67,25 @@ const TempleCard = React.memo(function TempleCard({ temple }: { temple: Temple }
           {temple.name}
         </Text>
 
-        <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={14} color={colors.stone[400]} />
-          <Text style={styles.locationText}>
-            {temple.city}, {temple.state}
-          </Text>
-        </View>
-
-        <View style={styles.deityRow}>
-          <Ionicons name="flower-outline" size={14} color={colors.saffron[500]} />
-          <Text style={styles.deityText}>{temple.deity}</Text>
-          <Text style={styles.traditionText}>{temple.tradition}</Text>
-        </View>
-
-        <Text style={styles.description} numberOfLines={2}>
-          {temple.description}
-        </Text>
-
-        <View style={styles.cardFooter}>
-          <View style={styles.ratingRow}>
-            <View style={styles.starsRow}>{renderStars(temple.trustScore)}</View>
-            <Text style={styles.ratingValue}>
-              {(temple.trustScore / 20).toFixed(1)}
-            </Text>
+        {temple.location ? (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={14} color={colors.stone[400]} />
+            <Text style={styles.locationText}>{temple.location}</Text>
           </View>
-          {temple.liveDarshanEnabled && temple.viewers > 0 && (
-            <View style={styles.viewersRow}>
-              <Ionicons name="eye-outline" size={13} color={colors.stone[400]} />
-              <Text style={styles.viewersText}>
-                {temple.viewers.toLocaleString('en-IN')}
-              </Text>
-            </View>
-          )}
-        </View>
+        ) : null}
+
+        {temple.deity ? (
+          <View style={styles.deityRow}>
+            <Ionicons name="flower-outline" size={14} color={colors.saffron[500]} />
+            <Text style={styles.deityText}>{temple.deity}</Text>
+          </View>
+        ) : null}
+
+        {temple.nameLocal ? (
+          <Text style={styles.description} numberOfLines={1}>
+            {temple.nameLocal}
+          </Text>
+        ) : null}
 
         <TouchableOpacity style={styles.viewButton} activeOpacity={0.7} onPress={openTemple}>
           <Text style={styles.viewButtonText}>{temple.liveDarshanEnabled ? 'Watch Live' : 'View Temple'}</Text>
@@ -201,33 +101,24 @@ export default function TemplesScreen() {
   const templesQuery = useTemples();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Map API temples (real data) to local UI shape, fall back to mock if empty
-  const apiTemples = templesQuery.data?.data ?? [];
-  const sourceTemples: Temple[] = apiTemples.length > 0
-    ? apiTemples.map((t, i) => {
-        const fb = templesData[i % templesData.length]!;
-        return {
-          id: t.id,
-          name: t.name,
-          city: t.city,
-          state: t.state,
-          deity: t.deity,
-          tradition: String(t.tradition),
-          trustScore: Math.round((t.rating ?? 4.5) * 20),
-          liveDarshanEnabled: t.liveDarshanAvailable ?? fb.liveDarshanEnabled,
-          viewers: fb.viewers,
-          isVerified: t.isVerified ?? true,
-          description: t.shortDescription ?? t.description ?? fb.description,
-        };
-      })
-    : templesData;
+  const sourceTemples = selectTemples(templesQuery.data);
+  const total = selectTotal(templesQuery.data, sourceTemples.length);
 
-  const filteredTemples = sourceTemples.filter(
-    (t) =>
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.deity.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const q = searchQuery.trim().toLowerCase();
+  const filteredTemples = q
+    ? sourceTemples.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          (t.city ?? '').toLowerCase().includes(q) ||
+          (t.deity ?? '').toLowerCase().includes(q),
+      )
+    : sourceTemples;
+
+  const errorText = templesQuery.isError
+    ? templesQuery.error instanceof Error
+      ? templesQuery.error.message
+      : 'Unknown error'
+    : null;
 
   async function onRefresh() {
     setRefreshing(true);
@@ -241,7 +132,11 @@ export default function TemplesScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Sacred Temples</Text>
         <Text style={styles.headerSubtitle}>
-          {sourceTemples.length} verified temples
+          {templesQuery.isLoading
+            ? 'Loading temples…'
+            : errorText
+              ? 'Temples unavailable'
+              : `${total} temples`}
         </Text>
       </View>
 
@@ -269,7 +164,7 @@ export default function TemplesScreen() {
         data={filteredTemples}
         keyExtractor={(item) => item.id}
         renderItem={useCallback(
-          ({ item }: { item: Temple }) => <TempleCard temple={item} />,
+          ({ item }: { item: TempleVM }) => <TempleCard temple={item} />,
           []
         )}
         contentContainerStyle={styles.listContent}
@@ -277,9 +172,25 @@ export default function TemplesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={48} color={colors.stone[300]} />
-            <Text style={styles.emptyText}>No temples found</Text>
-            <Text style={styles.emptySubtext}>Try a different search term</Text>
+            <Ionicons
+              name={errorText ? 'cloud-offline-outline' : 'search-outline'}
+              size={48}
+              color={colors.stone[300]}
+            />
+            <Text style={styles.emptyText}>
+              {templesQuery.isLoading
+                ? 'Loading…'
+                : errorText
+                  ? 'Could not load temples'
+                  : 'No temples found'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {errorText
+                ? `${errorText} — pull down to retry.`
+                : q
+                  ? 'Try a different search term'
+                  : 'The temple catalogue is empty right now.'}
+            </Text>
           </View>
         }
       />

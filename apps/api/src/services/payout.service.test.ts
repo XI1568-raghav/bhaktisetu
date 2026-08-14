@@ -9,6 +9,9 @@ const { prismaMock } = vi.hoisted(() => {
       updateMany: vi.fn(),
       // listPayoutRequests joins each request to what it actually owns.
       groupBy: vi.fn(),
+      // SCAL-04: getPayoutBalance sums in SQL now — three aggregates instead of
+      // three unbounded findMany reads of the whole ledger.
+      aggregate: vi.fn(),
     },
     payoutRequest: {
       create: vi.fn(),
@@ -45,7 +48,41 @@ const commission = prismaMock.commission as {
   findMany: ReturnType<typeof vi.fn>;
   updateMany: ReturnType<typeof vi.fn>;
   groupBy: ReturnType<typeof vi.fn>;
+  aggregate: ReturnType<typeof vi.fn>;
 };
+
+/**
+ * SCAL-04: getPayoutBalance now asks Postgres for three SUMs instead of reading
+ * three unbounded row sets. Tests describe the ledger; this answers whichever
+ * slice of it the where clause selects, exactly as the DB would.
+ */
+type BalanceRow = {
+  amount: number | string;
+  status?: string;
+  /** true when the row is linked to a pending/processing PayoutRequest */
+  linked?: boolean;
+};
+function wireBalance(rows: BalanceRow[]) {
+  commission.aggregate.mockImplementation(async (args: any) => {
+    const where = args?.where ?? {};
+    const matched = rows.filter((row) => {
+      const status = row.status ?? 'PENDING';
+      if (where.status && status !== where.status) return false;
+      if (where.payoutRequestId === null && row.linked) return false;
+      if (where.payoutRequest && !row.linked) return false;
+      return true;
+    });
+    if (matched.length === 0) return { _sum: { amount: null } };
+    return {
+      _sum: {
+        amount: matched.reduce(
+          (s, r) => s.add(new Prisma.Decimal(r.amount)),
+          new Prisma.Decimal(0),
+        ),
+      },
+    };
+  });
+}
 const payoutRequest = prismaMock.payoutRequest as {
   create: ReturnType<typeof vi.fn>;
   findUnique: ReturnType<typeof vi.fn>;
@@ -73,10 +110,11 @@ describe('payout.service — getPayoutBalance', () => {
     // Audit worked example: Rs 5,000 linked to a still-pending request, Rs 9,000
     // of newly earned commissions. Old code paid Rs 4,000 and marked all
     // Rs 9,000 PAID, destroying Rs 5,000.
-    commission.findMany
-      .mockResolvedValueOnce([{ amount: 4000 }, { amount: 5000 }]) // PENDING unlinked
-      .mockResolvedValueOnce([]) // PAID
-      .mockResolvedValueOnce([{ amount: 5000 }]); // in-flight (linked, NOT in the set above)
+    wireBalance([
+      { amount: 4000 }, // PENDING unlinked
+      { amount: 5000 }, // PENDING unlinked
+      { amount: 5000, linked: true }, // in-flight (linked, NOT in the set above)
+    ]);
     const b = await getPayoutBalance('prov-1');
     expect(b.availableInr).toBe(9000);
     expect(b.pendingInr).toBe(5000);
@@ -86,26 +124,27 @@ describe('payout.service — getPayoutBalance', () => {
   it('RV-05: stays positive when in-flight exceeds newly earned (no lockout)', async () => {
     // Inverse case: old code returned -3,000 → web showed "-Rs 3,000", Withdraw
     // disabled, requestPayout threw "No withdrawable balance".
-    commission.findMany
-      .mockResolvedValueOnce([{ amount: 2000 }]) // PENDING unlinked
-      .mockResolvedValueOnce([]) // PAID
-      .mockResolvedValueOnce([{ amount: 5000 }]); // in-flight
+    wireBalance([
+      { amount: 2000 }, // PENDING unlinked
+      { amount: 5000, linked: true }, // in-flight
+    ]);
     const b = await getPayoutBalance('prov-1');
     expect(b.availableInr).toBe(2000);
     expect(b.pendingInr).toBe(5000);
   });
 
   it('reports PAID separately as paidOut', async () => {
-    commission.findMany
-      .mockResolvedValueOnce([{ amount: 100 }, { amount: 250 }])
-      .mockResolvedValueOnce([{ amount: 500 }])
-      .mockResolvedValueOnce([]);
+    wireBalance([
+      { amount: 100 },
+      { amount: 250 },
+      { amount: 500, status: 'PAID', linked: true },
+    ]);
     const b = await getPayoutBalance('prov-1');
     expect(b).toEqual({ availableInr: 350, pendingInr: 0, paidOutInr: 500 });
   });
 
   it('returns zeros for a provider with no commissions', async () => {
-    commission.findMany.mockResolvedValue([]);
+    wireBalance([]);
     const b = await getPayoutBalance('prov-none');
     expect(b).toEqual({ availableInr: 0, pendingInr: 0, paidOutInr: 0 });
   });
@@ -117,21 +156,10 @@ describe('payout.service — getPayoutBalance', () => {
   it('batch9: a non-PENDING linked row counts once (paid out), never as in-flight', async () => {
     // A tiny ledger the mock actually filters on, so the assertion binds to the
     // where clause rather than to call ordering.
-    const ledger = [
-      { amount: 9000, status: 'PENDING', linkedToOpenRequest: false },
-      { amount: 4000, status: 'PAID', linkedToOpenRequest: true },
-    ];
-    commission.findMany.mockImplementation(async (args: any) => {
-      const where = args?.where ?? {};
-      return ledger
-        .filter((row) => {
-          if (where.status && row.status !== where.status) return false;
-          if (where.payoutRequestId === null && row.linkedToOpenRequest) return false;
-          if (where.payoutRequest && !row.linkedToOpenRequest) return false;
-          return true;
-        })
-        .map((row) => ({ amount: row.amount }));
-    });
+    wireBalance([
+      { amount: 9000, status: 'PENDING', linked: false },
+      { amount: 4000, status: 'PAID', linked: true },
+    ]);
 
     const b = await getPayoutBalance('prov-1');
 
@@ -170,7 +198,7 @@ describe('payout.service — requestPayout gating', () => {
 
   it('rejects when no withdrawable balance', async () => {
     $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
-    commission.findMany.mockResolvedValue([]); // no commissions at all
+    wireBalance([]); // no commissions at all
     await expect(requestPayout('prov-1', 'PANDIT')).rejects.toThrow(/No withdrawable balance/);
   });
 });
@@ -182,11 +210,13 @@ describe('payout.service — requestPayout sizing (RV-05 / RV-06)', () => {
     previewInFlight?: Array<{ amount: number | string }>;
     txRows: Array<{ id: string; amount: number | string }>;
   }) {
-    commission.findMany
-      .mockResolvedValueOnce(opts.previewPending) // getPayoutBalance: PENDING unlinked
-      .mockResolvedValueOnce([]) // getPayoutBalance: PAID
-      .mockResolvedValueOnce(opts.previewInFlight ?? []) // getPayoutBalance: in-flight
-      .mockResolvedValueOnce(opts.txRows); // inside the transaction
+    // getPayoutBalance is three SQL SUMs now (SCAL-04); only the in-transaction
+    // read still streams rows, because it needs their ids to link them.
+    wireBalance([
+      ...opts.previewPending.map((r) => ({ amount: r.amount })),
+      ...(opts.previewInFlight ?? []).map((r) => ({ amount: r.amount, linked: true })),
+    ]);
+    commission.findMany.mockResolvedValueOnce(opts.txRows); // inside the transaction
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
       fn({ payoutRequest, commission }),
     );
@@ -339,6 +369,19 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
     const read = async ({ where }: { where: Record<string, any> }) =>
       select(where).map((r) => ({ id: r.id, amount: r.amount }));
 
+    // SCAL-04: the balance pre-check is a SQL SUM over the same live state, so
+    // the race still snapshots exactly what the rival transaction can steal.
+    const aggregate = async ({ where }: { where: Record<string, any> }) => {
+      const hit = select(where);
+      return {
+        _sum: {
+          amount: hit.length
+            ? hit.reduce((s, r) => s.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0))
+            : null,
+        },
+      };
+    };
+
     const txClient = (mine: string[]) => ({
       commission: {
         findMany: read,
@@ -360,6 +403,7 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
     });
 
     commission.findMany.mockImplementation(read);
+    commission.aggregate.mockImplementation(aggregate);
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const mine: string[] = [];
       try {
@@ -434,6 +478,14 @@ describe('payout.service — runWeeklySettlement', () => {
         return [{ id: 'c-1', amount: new Prisma.Decimal(opts.unlinkedInr), status: 'PENDING' }];
       }
       return []; // PAID rows and in-flight rows
+    });
+    // SCAL-04: the balance the sweep reads is a SQL SUM — same ledger, one row.
+    commission.aggregate.mockImplementation(async (args: any) => {
+      const where = args?.where ?? {};
+      const unlinkedPending = where.status === 'PENDING' && where.payoutRequestId === null;
+      return {
+        _sum: { amount: unlinkedPending ? new Prisma.Decimal(opts.unlinkedInr) : null },
+      };
     });
     $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
   }

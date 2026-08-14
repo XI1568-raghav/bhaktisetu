@@ -310,3 +310,114 @@ export function storeItemListJsonLd(products: StoreProductLite[]) {
     })),
   };
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// Puja offers (SEO-05, prod sweep 2026-08-12)
+//
+// /pujas/rudrabhishek shipped `highPrice: Number(puja.basePrice) * 5` — ₹5,500
+// against a ₹1,100 puja whose two enumerated Offers were both ₹1,100, whose DB
+// row is 1100.00, and whose page renders exactly one distinct rupee amount.
+// Google's structured-data policy requires the marked-up price to match the
+// price on the page: an AggregateOffer spanning ₹1,100–₹5,500 is a manual-action
+// risk, and it breaks trust for the first devotee who clicks a ₹5,500
+// expectation and lands on ₹1,100.
+//
+// Rules encoded here, all of them "quote only what a devotee can actually pay":
+//   * bounds come from the ENUMERATED offers, never from an arithmetic guess;
+//   * only bookable (active) temples set those bounds — a price nobody can buy
+//     must not become the ceiling advertised to Google;
+//   * one distinct price ⇒ one `Offer`, not an `AggregateOffer` with a
+//     degenerate range;
+//   * every Offer url points at /pujas/book?slug=… , the URL that actually
+//     serves the form. /pujas/{slug}/book is a redirect stub, so the old markup
+//     handed Google a set of 307s.
+// Guarded by __tests__/seo/structured-data-honesty.test.ts.
+// ──────────────────────────────────────────────────────────────────────────
+
+export type PujaOfferTemple = {
+  templeSlug: string;
+  templeName: string;
+  templeCity?: string | null;
+  templeState?: string | null;
+  priceOverride?: number | string | null;
+  isActive: boolean;
+};
+
+const IN_STOCK = 'https://schema.org/InStock';
+const OUT_OF_STOCK = 'https://schema.org/OutOfStock';
+
+/** Effective price for one temple: its override when it has a usable one, else
+ *  the catalogue base price. Never NaN — a NaN in JSON-LD serialises to null. */
+function effectivePrice(basePrice: number | string, override: number | string | null | undefined): number {
+  const base = Number(basePrice);
+  if (override === null || override === undefined || override === '') {
+    return Number.isFinite(base) ? base : 0;
+  }
+  const p = Number(override);
+  return Number.isFinite(p) && p > 0 ? p : Number.isFinite(base) ? base : 0;
+}
+
+export function bookingUrl(pujaSlug: string, templeSlug?: string): string {
+  const q = new URLSearchParams({ slug: pujaSlug });
+  if (templeSlug) q.set('temple', templeSlug);
+  return `${SITE_URL}/pujas/book?${q.toString()}`;
+}
+
+export function pujaOffersJsonLd(puja: {
+  slug: string;
+  name?: string;
+  basePrice: number | string;
+  temples: PujaOfferTemple[];
+}): Record<string, unknown> {
+  const bookable = puja.temples.filter((t) => t.isActive);
+
+  // No bookable temple: the page still shows the catalogue price, so mark that
+  // one price out of stock rather than inventing a range or omitting the offer.
+  if (bookable.length === 0) {
+    return {
+      '@type': 'Offer',
+      priceCurrency: 'INR',
+      price: effectivePrice(puja.basePrice, null),
+      availability: OUT_OF_STOCK,
+      url: bookingUrl(puja.slug),
+    };
+  }
+
+  const offers = bookable.map((temple) => {
+    const area = [temple.templeCity, temple.templeState].filter(Boolean).join(', ');
+    return {
+      '@type': 'Offer',
+      name: puja.name ? `${puja.name} at ${temple.templeName}` : temple.templeName,
+      price: effectivePrice(puja.basePrice, temple.priceOverride),
+      priceCurrency: 'INR',
+      availability: IN_STOCK,
+      url: bookingUrl(puja.slug, temple.templeSlug),
+      ...(area ? { areaServed: { '@type': 'Place', name: area } } : {}),
+    };
+  });
+
+  const prices = offers.map((o) => o.price);
+  const lowPrice = Math.min(...prices);
+  const highPrice = Math.max(...prices);
+
+  if (lowPrice === highPrice) {
+    return {
+      '@type': 'Offer',
+      priceCurrency: 'INR',
+      price: lowPrice,
+      availability: IN_STOCK,
+      url: bookingUrl(puja.slug),
+    };
+  }
+
+  return {
+    '@type': 'AggregateOffer',
+    priceCurrency: 'INR',
+    lowPrice,
+    highPrice,
+    offerCount: offers.length,
+    availability: IN_STOCK,
+    url: `${SITE_URL}/pujas/${puja.slug}`,
+    offers,
+  };
+}

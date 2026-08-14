@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!v) return { title: 'Vrat not found' };
 
   return {
-    title: `${v.name} (${v.sanskritName}) — Vidhi, Fasting Rules, Katha, Mantra | Darshya`,
+    title: `${v.name} (${v.sanskritName}) — Vidhi, Fasting Rules, Katha, Mantra`,
     description: `${v.name}: ${v.significance.slice(0, 140)}. Fasting rules, rituals, prasad, mantra, story. Observed by ${v.whoObserves.slice(0, 80)}.`,
     alternates: { canonical: `${BASE_URL}/vrat/${v.slug}` },
     openGraph: {

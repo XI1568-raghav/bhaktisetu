@@ -2,9 +2,14 @@
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 import Link from 'next/link';
 import { Beef, Heart, IndianRupee, HandHeart, Plus, Settings, Users } from 'lucide-react';
 
@@ -55,36 +60,55 @@ const statusColor: Record<string, string> = {
 
 export default function GaushalaDashboard() {
  const { user, session } = useAuth();
- const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected'>('unsubmitted');
+ // RES-06: 'unknown' until a KYC read SUCCEEDS. Defaulting to 'unsubmitted'
+ // meant any 500 told a verified manager their KYC was missing.
+ const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected' | 'unknown'>('unknown');
  const [kycReason, setKycReason] = useState<string | null>(null);
  const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
  const [recentDonations, setRecentDonations] = useState<DashboardDonation[]>([]);
  const [recentCows, setRecentCows] = useState<DashboardCow[]>([]);
+ // S-08: the API returns `profile: null` for a manager who has never set their
+ // gaushala up. The dashboard used to render four zero-filled stat tiles and
+ // "No donations yet" for that case — every screen a row of zeros with no hint
+ // of why or what to do next. Track it so we can say so.
+ const [profileMissing, setProfileMissing] = useState(false);
+ // RES-02: `if (!r.ok) return;` rendered "0 Total Cows / 0 Active Donors /
+ // Rs 0 Monthly Donations / No donations yet" on an HTTP 500 with no error at
+ // all — a gaushala manager mid-incident was shown a dead gaushala.
+ const [loadError, setLoadError] = useState<string | null>(null);
 
- useEffect(() => {
+ const load = useCallback(async () => {
  // P0 #AP-07 (2026-07-10): fetch for demo sessions too (see KYC block below).
  if (!session?.accessToken) return;
- (async () => {
+ setLoadError(null);
  try {
- const r = await fetch(`${API_BASE_URL}/gaushala-portal/dashboard`, {
+ // RES-01: bare fetch has no timeout; a stalled socket froze this loader.
+ const r = await fetchWithTimeout(`${API_BASE_URL}/gaushala-portal/dashboard`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },
- });
- if (!r.ok) return;
+ }, DATA_FETCH_TIMEOUT_MS);
+ if (!r.ok) {
+ setLoadError(loadErrorMessage(r));
+ return;
+ }
  const j = await r.json();
  if (j.stats) setDashStats(j.stats);
  if (Array.isArray(j.recentDonations)) setRecentDonations(j.recentDonations);
  if (Array.isArray(j.recentCows)) setRecentCows(j.recentCows);
- } catch {
- // graceful — leave defaults
+ setProfileMissing(j.profile === null || j.profile === undefined);
+ } catch (err) {
+ setLoadError(loadErrorMessage(err));
  }
- })();
- }, [session]);
+ }, [session?.accessToken]);
 
+ useEffect(() => { void load(); }, [load]);
+
+ // A figure the server never sent is an em dash, never a zero.
+ const unread = !!loadError && !dashStats;
  const stats = [
- { label: 'Total Cows', value: String(dashStats?.totalCows ?? 0), change: '', Icon: Beef, iconClass: 'text-amber-600' },
- { label: 'Active Donors', value: (dashStats?.totalDonors ?? 0).toLocaleString('en-IN'), change: '', Icon: Heart, iconClass: 'text-rose-600' },
- { label: 'Monthly Donations', value: formatInr(dashStats?.monthDonationsInr ?? 0), change: '', Icon: IndianRupee, iconClass: 'text-green-600' },
- { label: 'Total Donations', value: formatInr(dashStats?.totalDonationsInr ?? 0), change: '', Icon: HandHeart, iconClass: 'text-blue-600' },
+ { label: 'Total Cows', value: unread ? '—' : String(dashStats?.totalCows ?? 0), change: '', Icon: Beef, iconClass: 'text-amber-600' },
+ { label: 'Active Donors', value: unread ? '—' : (dashStats?.totalDonors ?? 0).toLocaleString('en-IN'), change: '', Icon: Heart, iconClass: 'text-rose-600' },
+ { label: 'Monthly Donations', value: unread ? '—' : formatInr(dashStats?.monthDonationsInr ?? 0), change: '', Icon: IndianRupee, iconClass: 'text-green-600' },
+ { label: 'Total Donations', value: unread ? '—' : formatInr(dashStats?.totalDonationsInr ?? 0), change: '', Icon: HandHeart, iconClass: 'text-blue-600' },
  ];
 
  useEffect(() => {
@@ -96,9 +120,11 @@ export default function GaushalaDashboard() {
  if (!session?.accessToken) return;
  (async () => {
  try {
- const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+ const r = await fetchWithTimeout(`${API_BASE_URL}/provider-kyc`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },
- });
+ }, DATA_FETCH_TIMEOUT_MS);
+ // RES-06: leave the badge on 'unknown' rather than accusing a verified
+ // manager of missing KYC because one request failed.
  if (!r.ok) return;
  const j = await r.json();
  if (!j.kyc) setKycState('unsubmitted');
@@ -126,7 +152,40 @@ export default function GaushalaDashboard() {
  </div>
  </div>
 
+ {loadError && (
+ <div role="alert" className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+ <span className="flex-1 min-w-[12rem]">{loadError}</span>
+ <button type="button" onClick={() => { void load(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
+ Retry
+ </button>
+ </div>
+ )}
+
  <MyProviderProfileCard role="GAUSHALA_MANAGER" onboardingSlug="gaushala_manager" publicListingType="gaushala" />
+
+ {/* S-08: explain the zeros. Without a gaushala profile there is nothing for
+     donations, cows or volunteers to attach to, so every number below is
+     structurally zero rather than "no activity yet". */}
+ {profileMissing && !loadError && (
+ <div className="rounded-xl border p-6" style={{ borderColor: 'var(--color-border)', background: 'var(--color-primary-highlight)' }}>
+ <h2 className="font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ Finish setting up your gaushala
+ </h2>
+ <p className="mt-1.5 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+ Your gaushala profile has not been created yet, so there is nothing for cows,
+ donations or volunteers to be recorded against — that is why every figure below
+ reads zero. Add your gaushala details to start receiving donations.
+ </p>
+ <Link
+ href="/gaushala-portal/profile"
+ className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white"
+ style={{ background: 'var(--color-primary)' }}
+ >
+ <Settings className="w-4 h-4" />
+ Set up my gaushala
+ </Link>
+ </div>
+ )}
 
  {/* Stats */}
  <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -158,7 +217,7 @@ export default function GaushalaDashboard() {
  </div>
  <div className="divide-y divide-[var(--color-border)]">
  {recentDonations.length === 0 ? (
- <p className="px-6 py-6 text-xs text-[var(--color-text-faint)]">No donations yet.</p>
+ <p className="px-6 py-6 text-xs text-[var(--color-text-faint)]">{loadError ? 'Donations unavailable — retry above.' : 'No donations yet.'}</p>
  ) : recentDonations.map((d) => (
  <div key={d.id} className="px-6 py-3 flex items-center justify-between">
  <div>
@@ -183,7 +242,7 @@ export default function GaushalaDashboard() {
  {recentCows.length === 0 ? (
  <div className="px-6 py-8 text-center">
  <Beef className="w-10 h-10 text-[var(--color-text-faint)] mx-auto mb-3" />
- <p className="text-sm text-[var(--color-text-muted)]">No cows registered</p>
+ <p className="text-sm text-[var(--color-text-muted)]">{loadError ? 'Cows unavailable — retry above' : 'No cows registered'}</p>
  <Link href="/gaushala-portal/cows" className="text-xs text-[var(--color-primary)] hover:underline mt-1 inline-block">
  + Register your first cow
  </Link>

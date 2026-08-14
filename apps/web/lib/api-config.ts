@@ -71,3 +71,50 @@ export function isNetworkFailure(err: unknown): boolean {
 /** The one message every stalled/unreachable auth call should show. */
 export const NETWORK_ERROR_MESSAGE =
  'Could not reach Darshya — check your connection and try again.';
+
+/**
+ * Timeout budget for ordinary DATA loads (dashboards, portals, profile).
+ *
+ * RES-01 (2026-08-12): `fetchWithTimeout` was added for the auth pair only, so
+ * the other ~230 awaited fetches in this app still had no timeout at all. Held
+ * open with a route interception that accepts and never answers, /priest,
+ * /profile, /messages, /dashboard and /payouts all sat on their loading
+ * spinner at T+10s AND at T+30s — no error, no retry, nothing. `fetch` never
+ * rejects on a stalled socket, so the `finally { setLoading(false) }` those
+ * pages already have could never run.
+ *
+ * Shorter than the auth budget on purpose: a sign-in is a deliberate act the
+ * user is watching and will wait out, a dashboard load is not.
+ */
+export const DATA_FETCH_TIMEOUT_MS = 15_000;
+
+/**
+ * The one honest sentence to render when a data load fails.
+ *
+ * RES-02 (2026-08-12): 7 of 10 authenticated pages answered an HTTP 500 by
+ * rendering fabricated zeros with NO error — /payouts said "Available to
+ * withdraw ₹0", /temple-portal "₹0 Revenue This Month", /dashboard "No
+ * Bookings Yet — begin your spiritual journey" to a devotee with confirmed
+ * pujas. During a backend incident that tells every provider on the platform
+ * that their business earned nothing. A zero the server never sent is a
+ * fabricated number; it must always carry the banner saying so.
+ *
+ * Pass a `Response` (or anything carrying a numeric `status`) for an HTTP
+ * failure, or the thrown value for a network/timeout failure.
+ */
+export function loadErrorMessage(cause: unknown): string {
+ const status =
+  typeof cause === 'object' && cause !== null && 'status' in cause
+   ? Number((cause as { status: unknown }).status)
+   : Number.NaN;
+ if (Number.isFinite(status)) {
+  if (status === 401 || status === 403) {
+   return 'Your session has expired — sign in again to see your live figures.';
+  }
+  return `Couldn't load live data (HTTP ${status}). The figures below are placeholders, not your real numbers — retry.`;
+ }
+ if (isNetworkFailure(cause)) {
+  return `${NETWORK_ERROR_MESSAGE} The figures below are placeholders, not your real numbers.`;
+ }
+ return "Couldn't load live data. The figures below are placeholders, not your real numbers — retry.";
+}

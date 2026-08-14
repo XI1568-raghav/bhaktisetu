@@ -61,7 +61,7 @@ const statusBadge: Record<string, string> = {
 // (DEVOTEE, PANDIT, …); we map to the UI's lowercase form for label lookup.
 const roleBreakdownConfig: Array<{ backendKey: string; uiKey: string; color: string }> = [
  { backendKey: 'DEVOTEE', uiKey: 'devotee', color: 'bg-blue-500' },
- { backendKey: 'PANDIT', uiKey: 'priest', color: 'bg-saffron-500' },
+ { backendKey: 'PANDIT', uiKey: 'priest', color: 'bg-saffron-600' },
  { backendKey: 'STORE_OWNER', uiKey: 'store_owner', color: 'bg-green-500' },
  { backendKey: 'ASTROLOGER', uiKey: 'astrologer', color: 'bg-purple-500' },
  { backendKey: 'WELLNESS_INSTRUCTOR', uiKey: 'wellness_instructor', color: 'bg-teal-500' },
@@ -265,7 +265,10 @@ export default function AdminDashboardPage() {
  {/* Page header */}
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-lg font-semibold text-surface-800">Dashboard</h1>
+ {/* DU-07: measured 18px — the smallest h1 in the product and smaller
+     than an h3 on /pujas. The portal archetype is the compact one, but the
+     page title still has to outrank its own sections. */}
+ <h1 className={H1.portal}>Dashboard</h1>
  <p className="text-sm text-surface-500 mt-0.5">Platform overview and key metrics</p>
  </div>
  <div className="flex items-center gap-2">
@@ -348,7 +351,7 @@ export default function AdminDashboardPage() {
  {/* User breakdown — hidden if backend returned no per-role data */}
  {showRoleBreakdownCard && (
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <h2 className="text-sm font-semibold text-surface-800 mb-4">User Breakdown by Role</h2>
+ <h2 className="text-base font-semibold text-surface-800 mb-4">User Breakdown by Role</h2>
  {loading && !dashboard ? (
  <div className="space-y-3 animate-pulse">
  {Array.from({ length: 5 }).map((_, i) => (
@@ -387,10 +390,11 @@ export default function AdminDashboardPage() {
  {/* Recent signups */}
  <div className={`${showRoleBreakdownCard ? 'lg:col-span-2' : ''} bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]`}>
  <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
- <h2 className="text-sm font-semibold text-surface-800">Recent Signups</h2>
+ {/* DU-07: measured 13.4px — smaller than the 16px body text under it. */}
+ <h2 className="text-base font-semibold text-surface-800">Recent Signups</h2>
  <Link
  href="/admin/users"
- className="text-xs text-saffron-600 font-medium hover:text-saffron-700 flex items-center gap-1"
+ className="text-xs text-saffron-600 font-medium hover:text-saffron-700 tap-safe gap-1"
  >
  View All <ChevronRight className="w-3.5 h-3.5" />
  </Link>

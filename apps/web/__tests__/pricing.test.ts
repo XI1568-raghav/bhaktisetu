@@ -38,7 +38,7 @@ describe('pricing — getCommissionRate', () => {
   });
 });
 
-describe('pricing — formatPrice', () => {
+describe('pricing — formatPrice (renders API amounts only)', () => {
   it('returns "Free" for zero', () => {
     expect(formatPrice(0)).toBe('Free');
   });
@@ -72,9 +72,19 @@ describe('pricing — PLANS data integrity', () => {
     expect(COMMISSION_RATES.length).toBeGreaterThanOrEqual(6);
   });
 
-  it('orders plans by price ascending', () => {
-    const prices = PLANS.map((p) => p.price);
-    const sorted = [...prices].sort((a, b) => a - b);
-    expect(prices).toEqual(sorted);
+  // PM-02b: this used to assert `PLANS` was "ordered by price ascending",
+  // which quietly certified a ₹0/₹499/₹1,499/₹4,999 ladder that nothing
+  // charges. Plan tiers no longer carry a price at all; the ordering that
+  // matters is now asserted against the API payload in
+  // __tests__/subscription-price-source.test.ts.
+  it('carries no price — prices live in the API, not here', () => {
+    for (const plan of PLANS) {
+      expect(plan).not.toHaveProperty('price');
+    }
+    expect(JSON.stringify(PLANS)).not.toMatch(/499|1499|4999/);
+  });
+
+  it('orders tiers from cheapest commission cut to richest', () => {
+    expect(PLANS.map((p) => p.id)).toEqual(['free', 'basic', 'pro', 'enterprise']);
   });
 });

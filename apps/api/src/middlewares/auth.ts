@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
+import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
 
 export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER' | 'ADMIN';
 
@@ -140,9 +141,7 @@ export async function authenticateUser(
       const handle = stripped.toLowerCase();
       const profile = DEMO_ROLE_MAP[handle] ?? DEMO_ROLE_MAP['devotee']!;
 
-      // Look up the seeded demo user. If the seed hasn't run yet, fall back
-      // to the synthetic-id behaviour so non-DB routes (e.g. /consultation/start
-      // before the Phase A migration) keep working.
+      // Look up the seeded demo user.
       const dbUser = await prisma.user.findUnique({ where: { email: profile.email } });
       if (dbUser) {
         if (rejectIfBlocked(dbUser, reply)) return;
@@ -158,16 +157,28 @@ export async function authenticateUser(
         return;
       }
 
-      // Fallback (pre-seed) — synthetic id, DB-bound routes will reject these.
-      request.currentUser = {
-        id: `demo-${handle}`,
-        supabaseId: `demo-${handle}`,
-        phone: '+919876543210',
-        email: profile.email,
-        fullName: handle.charAt(0).toUpperCase() + handle.slice(1),
-        subscriptionTier: 'bhakti_pass',
-        roles: profile.roles,
-      };
+      // AW-08 (2026-08-12, P1): FAIL CLOSED.
+      //
+      // This used to mint a synthetic identity — `id: 'demo-astro'` — whenever
+      // the mapped demo User row was absent, on the theory that non-DB routes
+      // would still work. In practice astro@demo.com was never seeded into this
+      // database (prisma/seed.ts seeds astrologer@demo.com), so the demo
+      // astrologer authenticated with a non-UUID id and then blew up on every
+      // DB-backed route with a raw Prisma error carrying the invocation site,
+      // the absolute source path and the SQL text (P2023 / P2010 22P02). The
+      // portal rendered confident zeros; the API leaked its filesystem layout.
+      //
+      // A missing seed is a configuration problem, and 401 with a sentence
+      // naming the account is the honest answer. It also means no route ever
+      // has to defend against a non-UUID currentUser.id again.
+      request.log.warn(
+        { event: 'demo_user_not_seeded', handle, email: profile.email },
+        'demo token presented for an account that is not seeded',
+      );
+      reply.code(401).send({
+        error: 'Unauthorized',
+        message: `Demo account ${profile.email} is not seeded in this database. Run the demo seed before using this token.`,
+      });
       return;
     }
 
@@ -236,6 +247,18 @@ export async function authenticateUser(
         subscriptionTier: dbUser.subscriptionTier,
         roles,
       };
+      return;
+    }
+
+    // SCAL-05: a token verified moments ago does not need another cross-Pacific
+    // round trip to Supabase plus 2–4 more SQL statements. The cache key is a
+    // hash of this exact token and entries never outlive the token's own `exp`,
+    // so nothing unverified can be served from here. Blocked users are never
+    // written (the gate below runs first) and admin.service.updateUser evicts a
+    // user the moment it blocks them or changes their roles.
+    const cachedAuth = getCachedAuth(token);
+    if (cachedAuth) {
+      request.currentUser = { ...cachedAuth, roles: [...cachedAuth.roles] } as AuthUser;
       return;
     }
 
@@ -316,6 +339,9 @@ export async function authenticateUser(
       subscriptionTier: dbUser.subscriptionTier,
       roles,
     };
+    // SCAL-05: remember it for the next request on this token. Reached only
+    // after the blocked gate above, so a suspended account is never cached.
+    setCachedAuth(token, request.currentUser);
   } catch (err) {
     const errName = err instanceof Error ? err.name : 'UnknownError';
     const errMsg = err instanceof Error ? err.message : String(err);

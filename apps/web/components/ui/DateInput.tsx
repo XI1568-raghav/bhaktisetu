@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DateInputProps {
@@ -9,6 +9,11 @@ interface DateInputProps {
   min?: string;
   max?: string;
   label?: string;
+  /**
+   * Accessible name for call sites that render no visible label. Falls back to
+   * "Date" — a date field announced as "edit text, blank" is A11Y-09.
+   */
+  ariaLabel?: string;
   required?: boolean;
   className?: string;
   /** Optional per-date muhurat marker: iso (YYYY-MM-DD) → grade. */
@@ -86,12 +91,16 @@ export function DateInput({
   min,
   max,
   label,
+  ariaLabel,
   required,
   className,
   dateMarkers,
   disabledDates,
 }: DateInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const reactId = useId();
+  const inputId = `date-${reactId}`;
+  const hintId = `date-hint-${reactId}`;
   const [display, setDisplay] = useState(value ? formatForDisplay(value) : '');
   const [open, setOpen] = useState(false);
 
@@ -187,20 +196,33 @@ export function DateInput({
   return (
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
       {label && (
-        <label className="block text-sm font-semibold text-surface-700 mb-1.5">{label}</label>
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-semibold text-surface-700 mb-1.5"
+        >
+          {label}
+        </label>
       )}
       <div className="relative">
         <input
+          id={inputId}
           type="text"
           value={display}
           onChange={handleTextChange}
           onBlur={handleTextBlur}
           placeholder="DD/MM/YYYY"
           required={required}
+          aria-required={required || undefined}
+          aria-label={label ? undefined : (ariaLabel ?? 'Date')}
+          aria-describedby={hintId}
           inputMode="numeric"
           autoComplete="off"
           className="w-full px-4 py-3 pr-12 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
         />
+        {/* The placeholder disappears on the first keystroke; this does not. */}
+        <span id={hintId} className="sr-only">
+          Format: DD/MM/YYYY
+        </span>
         <button
           type="button"
           tabIndex={-1}
@@ -252,7 +274,7 @@ export function DateInput({
           {/* Day-of-week header */}
           <div className="grid grid-cols-7 gap-1 mb-1">
             {DAYS_OF_WEEK.map((d) => (
-              <div key={d} className="text-center text-[10px] font-semibold text-surface-500 uppercase tracking-wider py-1">
+              <div key={d} className="text-center text-xs font-semibold text-surface-500 uppercase tracking-wider py-1">
                 {d}
               </div>
             ))}
@@ -338,9 +360,13 @@ export function DateTimeInput({
   min,
   max,
   label,
+  ariaLabel,
   required,
   className,
 }: DateInputProps) {
+  const groupId = useId();
+  const groupLabelId = `datetime-label-${groupId}`;
+  const groupName = label ?? ariaLabel;
   // For datetime, keep simpler text+time approach.
   // value ISO format: YYYY-MM-DDTHH:MM
   const [datePart, setDatePart] = useState(value ? value.split('T')[0] ?? '' : '');
@@ -359,9 +385,19 @@ export function DateTimeInput({
   }
 
   return (
-    <div className={className}>
+    <div
+      className={className}
+      role="group"
+      aria-labelledby={label ? groupLabelId : undefined}
+      aria-label={label ? undefined : (ariaLabel ?? 'Date and time')}
+    >
       {label && (
-        <label className="block text-sm font-semibold text-surface-700 mb-1.5">{label}</label>
+        <span
+          id={groupLabelId}
+          className="block text-sm font-semibold text-surface-700 mb-1.5"
+        >
+          {label}
+        </span>
       )}
       <div className="grid grid-cols-2 gap-2">
         <DateInput
@@ -370,12 +406,15 @@ export function DateTimeInput({
           min={min?.split('T')[0]}
           max={max?.split('T')[0]}
           required={required}
+          ariaLabel={groupName ? `${groupName} — date` : 'Date'}
         />
         <input
           type="time"
           value={timePart}
           onChange={(e) => { setTimePart(e.target.value); commit(datePart, e.target.value); }}
           required={required}
+          aria-required={required || undefined}
+          aria-label={groupName ? `${groupName} — time` : 'Time'}
           className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
         />
       </div>

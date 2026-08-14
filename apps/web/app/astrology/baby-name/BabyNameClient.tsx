@@ -150,7 +150,7 @@ function PadaCard({ pada, syllable, names }: { pada: number; syllable: string; n
  return (
   <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
    <div className="flex items-baseline justify-between">
-    <p className="text-[11px] font-semibold uppercase tracking-wider text-saffron-700">Pada {pada}</p>
+    <p className="text-xs font-semibold uppercase tracking-wider text-saffron-700">Pada {pada}</p>
     <p className="font-serif text-3xl font-bold text-saffron-700">{syllable}</p>
    </div>
    <p className="mt-1 text-xs text-gray-500">Names beginning with this sound</p>
@@ -168,11 +168,11 @@ function PadaCard({ pada, syllable, names }: { pada: number; syllable: string; n
         <p className="font-serif text-lg font-semibold text-gray-900">{n.name}</p>
         <div className="flex shrink-0 items-center gap-1.5">
          {n.deity && (
-          <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-[10px] font-semibold text-saffron-800">
+          <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-xs font-semibold text-saffron-800">
            {n.deity}
           </span>
          )}
-         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
           n.gender === 'boy' ? 'bg-indigo-100 text-indigo-800' : 'bg-pink-100 text-pink-800'
          }`}>
           {n.gender === 'boy' ? '♂ Boy' : '♀ Girl'}

@@ -22,6 +22,7 @@ import ContentPageHeader from '../../components/ContentPageHeader';
 import { getContentImage, getDeityImage } from '../../lib/images';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/content' },
  title: 'Content',
  description:
  'Explore a vast library of devotional content — Aartis, Chalisas, Mantras, Bhajans, and spiritual stories. Stream or download for offline listening.',

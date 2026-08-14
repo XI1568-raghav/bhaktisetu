@@ -23,7 +23,7 @@ export default function VedicTimeline() {
       <ol className="relative border-l-2 border-saffron-200 pl-6 space-y-6">
         {ERAS.map((e, i) => (
           <li key={i} className="relative">
-            <span className="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-saffron-500 border-2 border-white shadow" />
+            <span className="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-saffron-600 border-2 border-white shadow" />
             <div className="text-xs font-semibold uppercase tracking-wider text-saffron-700">{e.period}</div>
             <h3 className="text-lg font-bold text-surface-900 mt-0.5">{e.name}</h3>
             <p className="text-sm text-surface-600 mt-1 leading-relaxed">{e.description}</p>

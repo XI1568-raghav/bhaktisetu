@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { homePujaCategories, homePandits, type Pandit } from '../../../../lib/home-pujas';
 import { DateInput } from '../../../../components/ui/DateInput';
+import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
 type StepId = 1 | 2 | 3 | 4 | 5;
 
@@ -39,8 +40,24 @@ const timeSlots = [
  { id: 'evening', label: 'Evening', window: '5:00 PM – 8:00 PM' },
 ];
 
+const PUJA_TIERS = ['basic', 'standard', 'premium'] as const;
+type PujaTier = (typeof PUJA_TIERS)[number];
+
+// PF-01, second half. Each ceremony page exposes four CTAs — "Book Now",
+// "Choose basic", "Choose standard", "Choose premium" — and all four carry the
+// chosen tier through to this wizard. The wizard read `slug` but hardcoded the
+// tier to 'standard', so "Choose premium" silently downgraded the devotee to a
+// cheaper package and quoted a price they had not picked. Same defect class as
+// the rest of this sweep: one side of the contract honoured, the other not.
+function readTier(raw: string | null): PujaTier {
+  return (PUJA_TIERS as readonly string[]).includes(raw ?? '')
+    ? (raw as PujaTier)
+    : 'standard';
+}
+
 function BookHomePujaInner() {
- const slug = (useSearchParams().get('slug') ?? '') as string;
+ const searchParams = useSearchParams();
+ const slug = (searchParams.get('slug') ?? '') as string;
  const category = useMemo(
  () => homePujaCategories.find((c) => c.slug === slug),
  [slug],
@@ -63,8 +80,8 @@ function BookHomePujaInner() {
  // Step 2
  const [panditId, setPanditId] = useState<string>('');
 
- // Step 3
- const [tier, setTier] = useState<'basic' | 'standard' | 'premium'>('standard');
+ // Step 3 — seeded from the CTA the devotee actually clicked.
+ const [tier, setTier] = useState<PujaTier>(() => readTier(searchParams.get('tier')));
 
  // Step 4
  const [name, setName] = useState('');
@@ -201,34 +218,7 @@ function BookHomePujaInner() {
  {/* Stepper */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
  <div className="bg-white border border-[var(--color-border)] rounded-xl p-4 md:p-5">
- <div className="flex items-center gap-2 md:gap-3 overflow-x-auto">
- {steps.map((s, i) => {
- const Icon = s.icon;
- const active = s.id === step;
- const done = s.id < step;
- return (
- <div key={s.id} className="flex items-center gap-2 md:gap-3 flex-shrink-0">
- <div
- className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm transition-colors ${
- active
- ? 'bg-saffron-500 text-white'
- : done
- ? 'bg-tulsi-green text-white'
- : 'bg-surface-100 text-surface-400'
- }`}
- >
- {done ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
- </div>
- <div className={`text-xs md:text-sm font-medium whitespace-nowrap ${active ? 'text-surface-800' : 'text-surface-500'}`}>
- {s.label}
- </div>
- {i < steps.length - 1 && (
- <div className={`w-4 md:w-8 h-px ${done ? 'bg-tulsi-green' : 'bg-surface-200'}`} />
- )}
- </div>
- );
- })}
- </div>
+ <WizardSteps steps={steps} current={step} />
  </div>
  </div>
 
@@ -408,7 +398,7 @@ function BookHomePujaInner() {
  </div>
  </div>
  {t === 'standard' && (
- <span className="bg-saffron-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+ <span className="bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
  Recommended
  </span>
  )}

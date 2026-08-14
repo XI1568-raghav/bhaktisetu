@@ -12,10 +12,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Sade Sati Calculator — Am I in Sade Sati? Free Saturn Transit Check | Darshya',
+ title: 'Sade Sati Calculator — Am I in Sade Sati? Free Saturn Transit Check',
  description: 'Free Vedic Sade Sati calculator. Enter DOB + birth time to check if you are in Shani Sade Sati (Saturn in 12th/1st/2nd from natal Moon, 7.5 yrs) or Dhaiya (Kantaka Shani 4th/8th, 2.5 yrs). Full lifetime phase timeline + Shani Shanti remedies. Per Brihat Parashara.',
  alternates: { canonical: `${BASE_URL}/astrology/sade-sati` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Sade Sati Calculator — Am I in Sade Sati? Free Check',
   description: 'Free chandra-lagna Saturn transit check. Phase, start+end dates, full lifetime timeline + Shani Shanti remedies. No signup.',
   url: `${BASE_URL}/astrology/sade-sati`,
@@ -128,7 +129,7 @@ export default function SadeSatiPage() {
        <div key={p.house} className={`rounded-xl border p-4 ${cls.border} ${cls.bg}`}>
         <div className="flex items-baseline justify-between gap-2">
          <p className="font-serif text-base font-semibold text-gray-900">{p.name}</p>
-         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${cls.pill}`}>{p.house} from Moon</span>
+         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${cls.pill}`}>{p.house} from Moon</span>
         </div>
         <p className="mt-1 text-xs font-medium text-gray-600">{p.sub}</p>
         <p className="mt-2 text-xs text-gray-700">{p.note}</p>

@@ -217,9 +217,14 @@ describe('GET /admin/bookings/payouts/pending — double-transfer locks', () => 
   });
 
   it('drops a priest booking the Commission ledger owns — the legacy rail must not re-bill it', async () => {
+    // DI-03 (2026-08-12): the payout figure is now the PERSISTED
+    // PujaBooking.priestPayout, not `priceAmount * 0.75`. The old multiplier
+    // over-reported every priest settlement by 7.6% and ignored each pandit's
+    // negotiated commissionRate. These fixtures carry both columns; only
+    // priestPayout drives the number.
     prismaMock.pujaBooking.findMany.mockResolvedValue([
-      { id: 'bk-1', priestId: 'pr-1', priceAmount: new Prisma.Decimal('5000') },
-      { id: 'bk-2', priestId: 'pr-1', priceAmount: new Prisma.Decimal('1000') },
+      { id: 'bk-1', priestId: 'pr-1', priceAmount: new Prisma.Decimal('5000'), priestPayout: new Prisma.Decimal('4000') },
+      { id: 'bk-2', priestId: 'pr-1', priceAmount: new Prisma.Decimal('1000'), priestPayout: new Prisma.Decimal('800') },
     ] as never);
     // createPriestPayout REFUSES when a Commission owns the booking, so bk-1 has
     // no PriestPayout row at all and could never enter `alreadyPaidIds` the old
@@ -231,8 +236,9 @@ describe('GET /admin/bookings/payouts/pending — double-transfer locks', () => 
       if (where.bookingId) return [{ bookingId: 'bk-1' }] as never; // rail-A owns bk-1
       return [] as never;
     });
+    // DI-04: the group is keyed on the pandit's User.id, not the Priest row id.
     prismaMock.priest.findMany.mockResolvedValue([
-      { id: 'pr-1', user: { fullName: 'Pandit Ramesh' } },
+      { id: 'pr-1', userId: 'u-ramesh', user: { fullName: 'Pandit Ramesh' } },
     ] as never);
 
     const groups = (await getPending()).json().groups as Array<{
@@ -241,8 +247,8 @@ describe('GET /admin/bookings/payouts/pending — double-transfer locks', () => 
     }>;
     expect(groups).toHaveLength(1);
     expect(groups[0]!.bookingsCount).toBe(1);
-    // Only bk-2: 0.75 x 1,000. bk-1's Rs 3,750 is not this rail's to pay.
-    expect(groups[0]!.totalPayout).toBe(750);
+    // Only bk-2's persisted Rs 800. bk-1's earning is not this rail's to pay.
+    expect(groups[0]!.totalPayout).toBe(800);
   });
 
   it('emits ONE group per dual-role provider, not one per role each carrying the full total', async () => {

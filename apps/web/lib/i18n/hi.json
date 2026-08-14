@@ -1,0 +1,27 @@
+{
+  "nav": {
+    "temples": "मंदिर",
+    "darshan": "दर्शन",
+    "pujas": "पूजा",
+    "content": "सामग्री",
+    "panchang": "पंचांग",
+    "gauseva": "गौ सेवा",
+    "gurukuls": "गुरुकुल",
+    "sanatan": "सनातन धर्म",
+    "sanskrit": "संस्कृत",
+    "ved": "वेद",
+    "deity": "देवता",
+    "search": "खोजें"
+  },
+  "footer": {
+    "liveDarshan": "लाइव दर्शन",
+    "bookPuja": "पूजा बुक करें"
+  },
+  "content": {
+    "pageTitle": "भक्ति संगीत पुस्तकालय",
+    "tabAarti": "आरती",
+    "tabChalisa": "चालीसा",
+    "tabMantra": "मंत्र",
+    "tabBhajan": "भजन"
+  }
+}

@@ -34,8 +34,14 @@
 import { sendWhatsappTemplate, sendWhatsappText } from '../lib/whatsapp.js';
 import { notifyUser } from '../routes/notifications.js';
 import { prisma } from '../lib/prisma.js';
-import { sendEmail, bookingConfirmationEmail } from '../lib/email.js';
+import {
+  sendEmail,
+  bookingConfirmationEmail,
+  videoReadyEmail,
+  refundProcessedEmail,
+} from '../lib/email.js';
 import { parseSlotMinutes } from '../lib/slot-time.js';
+import { recordNotification } from '../lib/notification-log.js';
 
 export interface BookingCtx {
   bookingId: string;
@@ -103,6 +109,18 @@ function formatSlot(slot: string | null | undefined): string {
   return `${h12}:${mm} ${suffix} IST`;
 }
 
+/**
+ * NOTIF-06 (2026-08-12): 'eta' is GONE.
+ *
+ * It was declared here, mapped to the `pandit_eta` WhatsApp template and given
+ * push copy ("Pandit on the way"), and no code path anywhere produced it —
+ * there is no day-of trigger in the repo. A declared event with no producer
+ * reads as shipped policy that was not shipped: it inflates the 11-template
+ * Meta approval effort tracked in TASKS.md and tells the next reader that
+ * devotees get an on-the-way notice they have never received. Deleted rather
+ * than left as a promise the product does not keep; re-add it together with the
+ * trigger that fires it.
+ */
 export type BookingEvent =
   | 'confirmed' // payment captured, booking confirmed
   | 'assigned' // pandit assigned/accepted
@@ -113,8 +131,7 @@ export type BookingEvent =
   | 'completed' // puja done
   | 'video_ready' // video proof uploaded
   | 'cancelled' // booking cancelled
-  | 'refund' // refund processed
-  | 'eta'; // day-of: pandit on the way
+  | 'refund'; // refund processed
 
 const TEMPLATE: Record<BookingEvent, string> = {
   confirmed: 'booking_confirmed',
@@ -127,7 +144,6 @@ const TEMPLATE: Record<BookingEvent, string> = {
   video_ready: 'puja_video_ready',
   cancelled: 'booking_cancelled',
   refund: 'booking_refund',
-  eta: 'pandit_eta',
 };
 
 function pushTextFor(event: BookingEvent, ctx: BookingCtx): { title: string; body: string } {
@@ -163,8 +179,6 @@ function pushTextFor(event: BookingEvent, ctx: BookingCtx): { title: string; bod
           : `Refund for your ${puja} is on its way (5-7 business days).`,
       };
     }
-    case 'eta':
-      return { title: 'Pandit on the way', body: `${priest} is on the way for your ${puja}.` };
   }
 }
 
@@ -180,36 +194,253 @@ function varsFor(event: BookingEvent, ctx: BookingCtx): string[] {
   ];
 }
 
-/** Send WhatsApp + push to the DEVOTEE for a booking event. Never throws. */
+/**
+ * What actually happened on one channel.
+ *
+ *   sent      — the transport accepted the message.
+ *   skipped   — the channel is UNCONFIGURED (no Resend key, no WhatsApp BSP
+ *               credentials, no VAPID keys, or no stored push subscription).
+ *               Every integration here is env-or-noop by convention, so this is
+ *               the normal outcome today — see NOTIF-03, owner-gated.
+ *   failed    — the channel is configured and rejected or errored.
+ *   no-target — we had no address for this devotee on this channel at all.
+ *
+ * `skipped` is deliberately NOT folded into `sent`. That conflation is what
+ * NOTIF-03 measured on the diagnostic endpoint (`{ok:true, sent:0}`) and it is
+ * why a paying devotee hearing nothing looked green to an operator.
+ */
+export type ChannelOutcome = 'sent' | 'skipped' | 'failed' | 'no-target';
+
+export interface NotifyOutcome {
+  event: BookingEvent;
+  bookingId: string;
+  push: ChannelOutcome;
+  whatsapp: ChannelOutcome;
+  email: ChannelOutcome;
+  /** True only when at least one channel actually accepted the message. */
+  delivered: boolean;
+}
+
+export interface NotifyDevoteeOptions {
+  /**
+   * The caller has ALREADY DELIVERED this event's email itself — not merely
+   * attempted it. Used by refund.service.processRefund, which has its own
+   * refundSuccessEmail, so wiring the fan-out in cannot produce a duplicate.
+   *
+   * Callers must set this from the transport's actual result (`res.ok`), never
+   * from "I called sendEmail": with RESEND_API_KEY unset sendEmail returns
+   * {ok:false, skipped:true}, and passing true there would both suppress this
+   * function's fallback email and book a delivery that never happened.
+   */
+  emailAlreadySent?: boolean;
+}
+
+/** Map a lib SendResult ({ok, skipped}) onto a ChannelOutcome. */
+function outcomeOfSend(res: { ok: boolean; skipped?: boolean } | undefined): ChannelOutcome {
+  if (!res) return 'failed';
+  if (res.ok) return 'sent';
+  return res.skipped ? 'skipped' : 'failed';
+}
+
+/**
+ * Make every attempt durable, and a devotee who heard NOTHING loud.
+ *
+ * Two records, deliberately:
+ *
+ *  - a `notification_log` ROW (NOTIF-14). Before this nothing persisted the
+ *    result of any send, so a devotee who missed a push had no history to look
+ *    at, support could not answer "did the confirmation go out?" for any
+ *    booking, and no retry was possible because nothing knew a send had failed.
+ *  - a structured stdout line with a stable, greppable marker for the
+ *    undelivered case — the same convention the ledger uses for
+ *    `[ledger-manual-review]`. It survives the log table being unavailable,
+ *    which is exactly when you most want it.
+ *
+ * Fire-and-forget by contract: the write is awaited only far enough to swallow
+ * its own failure. A logging problem must never break a booking flow.
+ */
+async function reportOutcome(
+  outcome: NotifyOutcome,
+  meta: {
+    audience: 'devotee' | 'priest';
+    userId?: string | null;
+    title: string;
+    body: string;
+    url?: string | null;
+  },
+): Promise<NotifyOutcome> {
+  if (!outcome.delivered) {
+    console.warn(
+      `[booking-notify][UNDELIVERED][${meta.audience}]`,
+      JSON.stringify({
+        bookingId: outcome.bookingId,
+        event: outcome.event,
+        push: outcome.push,
+        whatsapp: outcome.whatsapp,
+        email: outcome.email,
+      }),
+    );
+  }
+  try {
+    await recordNotification({
+      userId: meta.userId ?? null,
+      audience: meta.audience,
+      event: outcome.event,
+      bookingId: outcome.bookingId,
+      title: meta.title,
+      body: meta.body,
+      url: meta.url ?? null,
+      push: outcome.push,
+      whatsapp: outcome.whatsapp,
+      email: outcome.email,
+      delivered: outcome.delivered,
+    });
+  } catch (err) {
+    console.warn('[booking-notify] notification log write failed:', err);
+  }
+  return outcome;
+}
+
+/** The undelivered-on-every-channel record, for the paths that bail early. */
+async function missOutcome(
+  event: BookingEvent,
+  bookingId: string,
+  audience: 'devotee' | 'priest' = 'devotee',
+): Promise<NotifyOutcome> {
+  return reportOutcome(
+    {
+      event,
+      bookingId,
+      push: 'no-target',
+      whatsapp: 'no-target',
+      email: 'no-target',
+      delivered: false,
+    },
+    { audience, title: '', body: '' },
+  );
+}
+
+/**
+ * The email leg, per event. Returns 'no-target' for events that carry no email
+ * by design (a pandit-assignment does not warrant one).
+ */
+async function emailLegFor(
+  event: BookingEvent,
+  ctx: BookingCtx,
+  opts: NotifyDevoteeOptions,
+): Promise<ChannelOutcome> {
+  // The caller delivered it. Counts as a real delivery — the devotee was
+  // reached in writing — so this event must NOT be reported as undelivered.
+  if (opts.emailAlreadySent) return 'sent';
+  switch (event) {
+    case 'confirmed': {
+      // RV-18 (2026-08-10): the confirmation email rides the SAME event the
+      // payment path already fires, so the devotee finally gets the schedule in
+      // writing without a new call site having to be remembered anywhere. The
+      // send re-reads the booking by id rather than trusting the ctx, because
+      // the callers' `include` blocks do not select User.email.
+      const res = await sendBookingConfirmationEmail(ctx.bookingId);
+      if (res.sent) return 'sent';
+      if (res.reason === 'no-email') return 'no-target';
+      return res.reason === 'email-disabled' ? 'skipped' : 'failed';
+    }
+    case 'video_ready':
+      return sendCtxEmail(
+        ctx,
+        videoReadyEmail({
+          devoteeName: ctx.devoteeName ?? 'Devotee',
+          pujaName: ctx.pujaName ?? 'Puja',
+          templeName: ctx.templeName ?? 'Darshya',
+          bookingNumber: ctx.bookingNumber ?? ctx.bookingId,
+          // Deep-link to the booking page, never the raw storage URL — the
+          // proof object is served through the authorised route.
+          videoUrl: `https://darshya.online/bookings/${encodeURIComponent(
+            ctx.bookingNumber ?? ctx.bookingId,
+          )}`,
+          priestName: ctx.priestName,
+          performedOn: ctx.scheduledDate,
+        }),
+      );
+    case 'refund':
+      return sendCtxEmail(
+        ctx,
+        refundProcessedEmail({
+          devoteeName: ctx.devoteeName ?? 'Devotee',
+          pujaName: ctx.pujaName ?? 'Puja',
+          templeName: ctx.templeName ?? 'Darshya',
+          bookingNumber: ctx.bookingNumber ?? ctx.bookingId,
+          amount: formatInr(ctx.amountInr),
+        }),
+      );
+    default:
+      return 'no-target';
+  }
+}
+
+/** Send a prebuilt template to ctx.devoteeEmail. Never throws. */
+async function sendCtxEmail(
+  ctx: BookingCtx,
+  tpl: { subject: string; html: string; text: string },
+): Promise<ChannelOutcome> {
+  if (!ctx.devoteeEmail) return 'no-target';
+  try {
+    return outcomeOfSend(await sendEmail({ to: ctx.devoteeEmail, ...tpl }));
+  } catch {
+    return 'failed';
+  }
+}
+
+/**
+ * Send WhatsApp + push (+ email, where the event carries one) to the DEVOTEE.
+ *
+ * Never throws — a notification must never break a booking flow. Returns a
+ * per-channel report instead of swallowing the result, because the honest
+ * answer to "was the devotee told?" is the whole point of NOTIF-04.
+ */
 export async function notifyDevotee(
   event: BookingEvent,
   ctx: BookingCtx,
-): Promise<void> {
+  opts: NotifyDevoteeOptions = {},
+): Promise<NotifyOutcome> {
+  let push: ChannelOutcome = 'no-target';
+  let whatsapp: ChannelOutcome = 'no-target';
+  let email: ChannelOutcome = 'no-target';
+  const text = pushTextFor(event, ctx);
+  const url = `/bookings/${ctx.bookingId}`;
+
   try {
-    const push = pushTextFor(event, ctx);
     if (ctx.devoteeUserId) {
-      await notifyUser(ctx.devoteeUserId, { ...push, url: `/bookings/${ctx.bookingId}` }).catch(
-        () => undefined,
+      // notifyUser returns the number of subscriptions that actually accepted
+      // the push. Zero means VAPID is unset or the devotee has no live
+      // subscription — a skip, never a delivery.
+      push = await notifyUser(ctx.devoteeUserId, { ...text, url }).then(
+        (n) => (typeof n === 'number' && n > 0 ? 'sent' : 'skipped'),
+        () => 'failed' as ChannelOutcome,
       );
     }
     if (ctx.devoteePhone) {
-      await sendWhatsappTemplate({
+      whatsapp = await sendWhatsappTemplate({
         to: ctx.devoteePhone,
         template: TEMPLATE[event],
         variables: varsFor(event, ctx),
-      }).catch(() => undefined);
+      }).then(outcomeOfSend, () => 'failed' as ChannelOutcome);
     }
-    // RV-18 (2026-08-10): the confirmation email rides the SAME event the
-    // payment path already fires, so the devotee finally gets the schedule in
-    // writing without a new call site having to be remembered anywhere. The
-    // send re-reads the booking by id rather than trusting the ctx, because the
-    // callers' `include` blocks do not select User.email.
-    if (event === 'confirmed') {
-      await sendBookingConfirmationEmail(ctx.bookingId).catch(() => undefined);
-    }
+    email = await emailLegFor(event, ctx, opts);
   } catch (err) {
     console.warn('[booking-notify] devotee notify failed:', err);
   }
+
+  return reportOutcome(
+    {
+      event,
+      bookingId: ctx.bookingId,
+      push,
+      whatsapp,
+      email,
+      delivered: push === 'sent' || whatsapp === 'sent' || email === 'sent',
+    },
+    { audience: 'devotee', userId: ctx.devoteeUserId, title: text.title, body: text.body, url },
+  );
 }
 
 /**
@@ -275,10 +506,15 @@ export async function sendBookingConfirmationEmail(
  * their money went back. Worst on the cron auto-refund path, which runs an hour
  * after cancellation with no user-initiated trigger at all.
  *
- * DELIBERATELY DOES NOT SEND EMAIL: refund.service.processRefund already sends
- * refundSuccessEmail for devotees who have one. This function is the missing
- * half — the channels that reach everyone else — so wiring it in is purely
- * additive and cannot produce a duplicate email.
+ * WIRED 2026-08-12 (NOTIF-04) into BOTH refund rails, immediately after each
+ * one's transaction commits:
+ *   refund.service.processRefund   — devotee-initiated + the cron auto-refund
+ *   payment.service.processRefund  — the admin rail
+ *
+ * EMAIL IS CONDITIONAL, not absent. refund.service has its own local
+ * refundSuccessEmail and passes `emailAlreadySent: true`, so that rail cannot
+ * double-email. The admin rail sends nothing of its own, so there this function
+ * owns the written notice too.
  *
  * Never throws; safe to call after the refund transaction has committed.
  */
@@ -286,7 +522,10 @@ export async function notifyRefundProcessed(params: {
   bookingId: string;
   /** Refunded amount. Pass a Prisma.Decimal via `.toString()`, not Number(). */
   amountInr?: number | string | null;
-}): Promise<void> {
+  /** The caller already emailed the devotee — suppress this function's email leg. */
+  emailAlreadySent?: boolean;
+}): Promise<NotifyOutcome> {
+  const miss = (): Promise<NotifyOutcome> => missOutcome('refund', params.bookingId);
   try {
     const b = await prisma.pujaBooking.findUnique({
       where: { id: params.bookingId },
@@ -295,44 +534,118 @@ export async function notifyRefundProcessed(params: {
         bookingNumber: true,
         scheduledDate: true,
         scheduledTimeSlot: true,
-        user: { select: { id: true, fullName: true, phone: true } },
+        user: { select: { id: true, fullName: true, phone: true, email: true } },
         temple: { select: { name: true } },
         pujaType: { select: { name: true } },
         priest: { select: { displayName: true } },
       },
     });
-    if (!b) return;
-    await notifyDevotee('refund', {
-      ...buildBookingCtx(b),
-      amountInr: params.amountInr ?? null,
-    });
+    if (!b) return miss();
+    return await notifyDevotee(
+      'refund',
+      { ...buildBookingCtx(b), amountInr: params.amountInr ?? null },
+      { emailAlreadySent: params.emailAlreadySent === true },
+    );
   } catch (err) {
     console.warn('[booking-notify] notifyRefundProcessed failed:', err);
+    return miss();
   }
 }
 
-/** Send WhatsApp + push to the PANDIT for a booking event. Never throws. */
+/**
+ * NOTIF-05 (2026-08-12): announce a READY VIDEO PROOF on push + WhatsApp + email.
+ *
+ * Video proof is business rule #1 and the entire justification for 9-10x NRI
+ * pricing, and we promise its delivery in writing in two places:
+ *   lib/email.ts (bookingConfirmationEmail) — "You'll receive an email when the
+ *     recording is ready."
+ *   apps/web /nri-pujas — "a 3-7 minute video clip arrives on WhatsApp".
+ * Neither was implemented. The BookingEvent 'video_ready' and its template
+ * 'puja_video_ready' were declared here and passed to notifyDevotee from
+ * nowhere; the only thing that fired was a web-push, which needs a desktop
+ * browser with granted permission — essentially nobody in the NRI cohort. They
+ * could not know the puja had happened until they logged in and looked.
+ *
+ * Called from BOTH paths that set `video_uploaded` (booking.service's
+ * uploadVideoProof and updateBookingStatus). Re-reads the booking by id rather
+ * than trusting a ctx, because neither caller's select carries User.email.
+ *
+ * Never throws; safe to call fire-and-forget once the proof is stored.
+ */
+export async function notifyVideoReady(bookingId: string): Promise<NotifyOutcome> {
+  const miss = (): Promise<NotifyOutcome> => missOutcome('video_ready', bookingId);
+  try {
+    const b = await prisma.pujaBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        bookingNumber: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+        user: { select: { id: true, fullName: true, phone: true, email: true } },
+        temple: { select: { name: true } },
+        pujaType: { select: { name: true } },
+        priest: { select: { displayName: true } },
+      },
+    });
+    if (!b) return miss();
+    return await notifyDevotee('video_ready', buildBookingCtx(b));
+  } catch (err) {
+    console.warn('[booking-notify] notifyVideoReady failed:', err);
+    return miss();
+  }
+}
+
+/**
+ * Send WhatsApp + push to the PANDIT for a booking event. Never throws.
+ *
+ * NOTIF-06 (2026-08-12): this had ZERO call sites — not even a test — so a
+ * pandit was never notified of anything after the initial dispatch offer: not
+ * that his offer expired, not that the booking was reassigned away from him.
+ * Wired into dispatch.service's offer sweep, where an expiry is actually known.
+ *
+ * It also discarded both channel results (`.catch(() => undefined)` on each leg,
+ * `Promise<void>` out), so "was the pandit told?" had no answer anywhere. It now
+ * returns the same per-channel NotifyOutcome as notifyDevotee and persists the
+ * attempt — `skipped` (channel unconfigured) stays distinct from `sent`.
+ */
 export async function notifyPriest(
   priestUserId: string,
   priestPhone: string | null | undefined,
   event: BookingEvent,
   ctx: BookingCtx,
-): Promise<void> {
+): Promise<NotifyOutcome> {
+  let push: ChannelOutcome = 'no-target';
+  let whatsapp: ChannelOutcome = 'no-target';
+  const text = pushTextFor(event, ctx);
+  const url = `/priest/bookings/${ctx.bookingId}`;
   try {
-    const push = pushTextFor(event, ctx);
-    await notifyUser(priestUserId, { ...push, url: `/priest/bookings/${ctx.bookingId}` }).catch(
-      () => undefined,
+    push = await notifyUser(priestUserId, { ...text, url }).then(
+      (n) => (typeof n === 'number' && n > 0 ? 'sent' : 'skipped'),
+      () => 'failed' as ChannelOutcome,
     );
     if (priestPhone) {
-      await sendWhatsappTemplate({
+      whatsapp = await sendWhatsappTemplate({
         to: priestPhone,
         template: TEMPLATE[event],
         variables: varsFor(event, ctx),
-      }).catch(() => undefined);
+      }).then(outcomeOfSend, () => 'failed' as ChannelOutcome);
     }
   } catch (err) {
     console.warn('[booking-notify] priest notify failed:', err);
   }
+  return reportOutcome(
+    {
+      event,
+      bookingId: ctx.bookingId,
+      push,
+      whatsapp,
+      // A pandit-facing event carries no email by design.
+      email: 'no-target',
+      delivered: push === 'sent' || whatsapp === 'sent',
+    },
+    { audience: 'priest', userId: priestUserId, title: text.title, body: text.body, url },
+  );
 }
 
 /** Free-text WhatsApp to the pandit with a one-tap accept/deep-link (used by the

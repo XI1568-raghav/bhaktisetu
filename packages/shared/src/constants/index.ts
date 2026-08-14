@@ -310,8 +310,13 @@ export const API_ENDPOINTS = {
 
   // Live Darshan
   DARSHAN_LIVE: "/api/v1/darshan/live",
+  // PAR-05: this used to be `/api/v1/darshan/${streamId}`, which is not a
+  // registered route — every player request 404'd, four times a minute, for as
+  // long as the screen stayed open. The real handler is
+  // apps/api/src/routes/darshan.ts:380 and it accepts either a stream id or a
+  // temple slug.
   DARSHAN_STREAM: (streamId: string) =>
-    `/api/v1/darshan/${streamId}` as const,
+    `/api/v1/darshan/${streamId}/stream` as const,
 
   // Search
   SEARCH: "/api/v1/search",

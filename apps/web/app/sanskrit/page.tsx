@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import CategoryIndex from '../../components/CategoryIndex';
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/sanskrit' },
   title: 'Sanskrit — Knowledge & History',
   description: 'Learn Sanskrit grammar, history, literature, and philosophy. Articles on Devanagari script, Panini, sandhi, prosody, and the Vedic to classical evolution of the language.',
 };

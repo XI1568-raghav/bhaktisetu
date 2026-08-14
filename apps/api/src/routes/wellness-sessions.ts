@@ -236,7 +236,14 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
     }
   );
 
-  // GET /sessions — public; lists upcoming SCHEDULED + LIVE sessions
+  // GET /sessions — public; lists upcoming SCHEDULED + LIVE sessions.
+  //
+  // AW-07 (2026-08-12, P1): this is the ONLY read a devotee-facing catalog can
+  // build on, and it carried neither the instructor's name nor the seats left.
+  // A catalog then either omits both or invents them — and inventing them is
+  // exactly what /wellness shipped (six fictional classes, hardcoded "8 spots
+  // left", against a real table). Both facts are now real and derived here so
+  // no client re-implements the arithmetic.
   server.get('/sessions', async (request, reply) => {
     const sessions = await prisma.wellnessSession.findMany({
       where: {
@@ -245,12 +252,35 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       },
       orderBy: { scheduledAt: 'asc' },
       take: 200,
+      include: {
+        instructor: { select: { id: true, fullName: true } },
+        // PAID + PENDING_PAYMENT both hold a seat — the same set the enroll
+        // handler's capacity gate counts, so the catalog cannot advertise a
+        // seat that /enroll will refuse with 409 "Session is full".
+        _count: { select: { enrollments: { where: { status: { in: ['PAID', 'PENDING_PAYMENT'] } } } } },
+      },
     });
     // Strip roomUrl from public listing — only enrolled paid users / instructor see it.
     const stripped = sessions.map((s) => {
-      const { roomUrl: _omitRoomUrl, ...rest } = s;
+      const {
+        roomUrl: _omitRoomUrl,
+        instructor,
+        _count,
+        ...rest
+      } = s as typeof s & {
+        instructor?: { id: string; fullName: string | null } | null;
+        _count?: { enrollments: number };
+      };
       void _omitRoomUrl;
-      return serializeSession(rest);
+      const enrolledCount = _count?.enrollments ?? 0;
+      const capacity = Number(rest.capacity ?? 0);
+      return {
+        ...serializeSession(rest),
+        instructorName: instructor?.fullName ?? null,
+        enrolledCount,
+        // Never negative: an over-held class reads "0 left", not "-3 left".
+        spotsLeft: Math.max(0, capacity - enrolledCount),
+      };
     });
     return reply.send({ data: stripped });
   });

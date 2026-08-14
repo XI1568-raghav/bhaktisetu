@@ -13,9 +13,9 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const p = await getBlogPost(slug);
-  if (!p) return { title: 'Blog post — Darshya' };
+  if (!p) return { title: 'Blog post' };
   return {
-    title: `${p.title} — Darshya blog`,
+    title: `${p.title} — Blog`,
     description: p.excerpt,
     alternates: { canonical: `https://darshya.online/blog/${p.slug}` },
     openGraph: {

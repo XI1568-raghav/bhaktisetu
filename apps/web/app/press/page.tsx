@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 
 export const metadata: Metadata = {
-  title: 'Press kit — Darshya',
+  title: 'Press kit',
   description:
     'Press resources for journalists, partners, investors. Logos, founder bio, screenshots, one-liner. Reach: press@darshya.online.',
   alternates: { canonical: 'https://darshya.online/press' },
@@ -89,7 +89,7 @@ export default function PressKitPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-surface-900">Darshya</p>
-            <p className="text-sm text-surface-600 mt-1">Saffron #E16318 · OM symbol · serif wordmark</p>
+            <p className="text-sm text-surface-600 mt-1">Saffron #9e6229 · OM symbol · serif wordmark</p>
             <a
               href="/og/default.png"
               target="_blank"

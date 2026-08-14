@@ -38,6 +38,7 @@ const {
   PRIEST_REASSIGNABLE_STATUSES,
   OWNER_ALLOWED_TRANSITIONS,
   ASSIGNED_PRIEST_ALLOWED_TRANSITIONS,
+  parseMyBookingsQuery,
 } = __testing;
 
 // Coverage note: the route harness in apps/api/src/routes is pure-function/Zod
@@ -857,5 +858,47 @@ describe('take-rate doctrine — 20% platform / 80% provider', () => {
     for (const bad of [0, -0.5, 1.5, NaN]) {
       expect(resolvePriestShare(bad as number)).toBe(DEFAULT_PRIEST_SHARE);
     }
+  });
+});
+
+// ─── DB-01 — GET /bookings/my query normalisation ────────────────────────────
+//
+// The handler used to read `page`/`limit` straight off the query string with
+// `Number(limit) || 20`, and had no notion of which tab the devotee was on.
+// The devotee page sent neither, so every caller silently got page 1 of 20 and
+// the UI presented those 20 rows as the whole history (81 rows in the seeded
+// account). Normalisation is a pure function so the contract is pinned here.
+
+describe('DB-01 — parseMyBookingsQuery', () => {
+  it('defaults to page 1 of the "all" view with the documented page size', () => {
+    expect(parseMyBookingsQuery({})).toEqual({ view: 'all', page: 1, limit: 20 });
+  });
+
+  it('accepts the four tabs the devotee page renders', () => {
+    for (const view of ['all', 'upcoming', 'completed', 'cancelled'] as const) {
+      expect(parseMyBookingsQuery({ view }).view).toBe(view);
+    }
+  });
+
+  it('falls back to "all" for an unknown view instead of 500ing on the query', () => {
+    expect(parseMyBookingsQuery({ view: 'refunded' }).view).toBe('all');
+    expect(parseMyBookingsQuery({ view: '' }).view).toBe('all');
+  });
+
+  it('still caps limit at 100 so a client cannot ask for the whole table', () => {
+    expect(parseMyBookingsQuery({ limit: '100' }).limit).toBe(100);
+    expect(parseMyBookingsQuery({ limit: '5000' }).limit).toBe(100);
+  });
+
+  it('coerces junk page/limit to a usable page rather than skip:NaN', () => {
+    expect(parseMyBookingsQuery({ page: '0' }).page).toBe(1);
+    expect(parseMyBookingsQuery({ page: '-3' }).page).toBe(1);
+    expect(parseMyBookingsQuery({ page: 'abc' }).page).toBe(1);
+    expect(parseMyBookingsQuery({ page: '2.7' }).page).toBe(2);
+    // A non-positive or unparseable limit falls back to the default page size
+    // rather than producing take:0 (an empty list that looks like "no bookings").
+    expect(parseMyBookingsQuery({ limit: '0' }).limit).toBe(20);
+    expect(parseMyBookingsQuery({ limit: '-9' }).limit).toBe(20);
+    expect(parseMyBookingsQuery({ limit: 'abc' }).limit).toBe(20);
   });
 });

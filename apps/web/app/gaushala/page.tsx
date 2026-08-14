@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IMAGES } from "../../lib/images";
+import { getGaushalaImage, IMG_W } from "../../lib/images";
 import { ApprovedProvidersStrip } from "../../components/ApprovedProvidersStrip";
 import {
  Heart,
@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/gaushala' },
  title: "Gau Seva — Adopt a Cow",
  description:
  "Adopt a cow at a verified gaushala. Get monthly photo updates, visit anytime, and earn divine blessings. Support cow protection across India with Darshya.",
@@ -47,7 +48,7 @@ const gaushalas = [
  totalCows: 500,
  availableCows: 3,
  affiliation: "ISKCON-affiliated",
- image: IMAGES.gaushala['cow-shelter'],
+ image: getGaushalaImage('cow-shelter'),
  description:
  "One of the most revered gaushalas in Vrindavan, affiliated with ISKCON. Home to 500+ cows including rare indigenous breeds.",
  },
@@ -58,7 +59,7 @@ const gaushalas = [
  totalCows: 1200,
  availableCows: 5,
  affiliation: "Government Registered",
- image: IMAGES.gaushala['tharparkar-cow'],
+ image: getGaushalaImage('tharparkar-cow'),
  description:
  "A government-registered gaushala spanning 50 acres. Houses 1200+ rescued cows with modern veterinary facility.",
  },
@@ -69,7 +70,7 @@ const gaushalas = [
  totalCows: 350,
  availableCows: 4,
  affiliation: "Organic Products Certified",
- image: IMAGES.gaushala['gir-cow'],
+ image: getGaushalaImage('gir-cow'),
  description:
  "A heritage gaushala in Mathura, operating since 1952. Known for preserving rare Indian cow breeds and organic A2 products.",
  },
@@ -82,7 +83,7 @@ const featuredCows = [
  breed: "Gir",
  age: 5,
  gaushalaName: "Shri Krishna Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  },
  {
@@ -91,7 +92,7 @@ const featuredCows = [
  breed: "Tharparkar",
  age: 3,
  gaushalaName: "Shri Krishna Gaushala",
- photo: IMAGES.gaushala['tharparkar-cow'],
+ photo: getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  },
  {
@@ -100,7 +101,7 @@ const featuredCows = [
  breed: "Gir",
  age: 4,
  gaushalaName: "Kamdhenu Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  },
  {
@@ -109,7 +110,7 @@ const featuredCows = [
  breed: "Kankrej",
  age: 6,
  gaushalaName: "Kamdhenu Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "under_treatment",
  },
  {
@@ -118,7 +119,7 @@ const featuredCows = [
  breed: "Tharparkar",
  age: 2,
  gaushalaName: "Kamdhenu Gaushala",
- photo: IMAGES.gaushala['tharparkar-cow'],
+ photo: getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  },
  {
@@ -127,7 +128,7 @@ const featuredCows = [
  breed: "Gir",
  age: 6,
  gaushalaName: "Gokul Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  },
  {
@@ -136,7 +137,7 @@ const featuredCows = [
  breed: "Sahiwal",
  age: 4,
  gaushalaName: "Gokul Gaushala",
- photo: IMAGES.gaushala['sahiwal-cow'],
+ photo: getGaushalaImage('sahiwal-cow'),
  healthStatus: "healthy",
  },
  {
@@ -145,7 +146,7 @@ const featuredCows = [
  breed: "Red Sindhi",
  age: 9,
  gaushalaName: "Shri Krishna Gaushala",
- photo: IMAGES.gaushala['red-sindhi-cow'],
+ photo: getGaushalaImage('red-sindhi-cow'),
  healthStatus: "senior_care",
  },
 ];
@@ -251,21 +252,21 @@ function healthBadge(status: string) {
  switch (status) {
  case "healthy":
  return (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
  Healthy
  </span>
  );
  case "under_treatment":
  return (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
  Under Treatment
  </span>
  );
  case "senior_care":
  return (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
  Senior Care
  </span>
@@ -387,11 +388,16 @@ export default function GaushalaPage() {
  <div className="relative h-48 overflow-hidden">
  <img
  src={gs.image}
+ sizes="(max-width: 768px) 100vw, 380px"
+ width={500}
+ height={288}
+ loading="lazy"
+ decoding="async"
  alt={gs.name}
  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
  />
  <div className="absolute top-3 left-3">
- <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[11px] font-semibold text-emerald-700">
+ <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-xs font-semibold text-emerald-700">
  <BadgeCheck className="w-3.5 h-3.5" />
  Verified
  </span>
@@ -413,14 +419,14 @@ export default function GaushalaPage() {
  <p className="text-lg font-bold text-surface-900">
  {gs.totalCows}+
  </p>
- <p className="text-[11px] text-surface-500">Total Cows</p>
+ <p className="text-xs text-surface-500">Total Cows</p>
  </div>
  <div className="h-8 w-px bg-surface-200" />
  <div className="text-center">
  <p className="text-lg font-bold text-emerald-600">
  {gs.availableCows}
  </p>
- <p className="text-[11px] text-surface-500">
+ <p className="text-xs text-surface-500">
  Available to Adopt
  </p>
  </div>
@@ -470,6 +476,10 @@ export default function GaushalaPage() {
  <div className="relative h-44 overflow-hidden">
  <img
  src={cow.photo}
+ width={330}
+ height={176}
+ loading="lazy"
+ decoding="async"
  alt={cow.name}
  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
  />
@@ -529,7 +539,7 @@ export default function GaushalaPage() {
  >
  {plan.popular && (
  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
- <span className="px-3 py-1 bg-saffron-600 text-white text-[10px] font-semibold uppercase tracking-wider rounded-full">
+ <span className="px-3 py-1 bg-saffron-600 text-white text-xs font-semibold uppercase tracking-wider rounded-full">
  Most Popular
  </span>
  </div>
@@ -561,15 +571,20 @@ export default function GaushalaPage() {
  </li>
  ))}
  </ul>
- <button
- className={`w-full py-3 rounded-lg font-medium text-sm transition-all btn-press ${
+ {/* LC-09: was a bare <button> with no onClick inside a plain <div> —
+     all four tiers dead, with no wrapping link to fall back to. The
+     cow detail page already deep-links this way (app/gaushala/[id]/
+     page.tsx); the index grid was simply left behind. */}
+ <Link
+ href={`/donations?planId=${encodeURIComponent(plan.id)}`}
+ className={`w-full py-3 rounded-lg font-medium text-sm transition-all btn-press text-center ${
  plan.popular
  ? "bg-saffron-600 text-white hover:bg-saffron-700"
  : "bg-saffron-50 text-saffron-700 hover:bg-saffron-100"
  }`}
  >
  Select Plan
- </button>
+ </Link>
  </div>
  ))}
  </div>

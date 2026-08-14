@@ -48,6 +48,26 @@ export function getStoredConsent(): ConsentState | null {
   return loadConsent();
 }
 
+/**
+ * LEG-15 (prod sweep 2026-08-12) — there was no way to change a cookie choice
+ * once made. The banner unmounts after Accept/Reject and nothing re-opened it;
+ * a scan of every <a> and <button> for /cookie|consent|preferen/i after
+ * "Reject all" returned []. The cookie policy's own remedy was, verbatim,
+ * "clearing the darshya_cookie_consent_v1 entry in your browser storage" —
+ * self-documenting non-compliance, because UK GDPR and the DPDP Act both
+ * require withdrawal to be as easy as consent.
+ *
+ * The banner now listens for this event, so any surface can re-open the
+ * preference panel with the stored choices pre-filled.
+ */
+export const OPEN_CONSENT_EVENT = 'darshya:open-consent';
+
+/** Re-open the consent panel from anywhere (footer link, cookie policy page). */
+export function openCookieSettings() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(OPEN_CONSENT_EVENT));
+}
+
 export function hasConsent(category: ConsentCategory): boolean {
   const state = loadConsent();
   if (!state) return category === "essential";
@@ -90,6 +110,21 @@ export default function CookieBanner() {
     }
     setAnalytics(state.analytics);
     setMarketing(state.marketing);
+  }, []);
+
+  // LEG-15: re-open on request, with the stored choices pre-filled and the
+  // per-category panel already expanded — withdrawing has to be at least as
+  // easy as the one click that granted consent.
+  useEffect(() => {
+    const reopen = () => {
+      const state = loadConsent();
+      setAnalytics(state?.analytics ?? false);
+      setMarketing(state?.marketing ?? false);
+      setShowSettings(true);
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_CONSENT_EVENT, reopen);
+    return () => window.removeEventListener(OPEN_CONSENT_EVENT, reopen);
   }, []);
 
   useLayoutEffect(() => {
@@ -226,7 +261,6 @@ export default function CookieBanner() {
               type="button"
               onClick={() => save({ analytics, marketing })}
               className="inline-flex h-11 items-center justify-center rounded-lg bg-saffron-600 px-4 text-sm font-medium text-white hover:bg-saffron-700"
-              style={{ background: "var(--color-primary, #E16318)" }}
             >
               Save preferences
             </button>
@@ -235,7 +269,6 @@ export default function CookieBanner() {
               type="button"
               onClick={() => save({ analytics: true, marketing: true })}
               className="inline-flex h-11 items-center justify-center rounded-lg bg-saffron-600 px-4 text-sm font-medium text-white hover:bg-saffron-700"
-              style={{ background: "var(--color-primary, #E16318)" }}
             >
               Accept all
             </button>

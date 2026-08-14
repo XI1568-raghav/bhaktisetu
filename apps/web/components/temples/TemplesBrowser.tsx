@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { H1 } from '../ui/heading-recipe';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
  MapPin,
  Star,
@@ -15,10 +16,19 @@ import {
  Filter,
  X,
 } from 'lucide-react';
-import { getTempleHero, getDeityImage, wikiThumb } from '../../lib/images';
+import { getTempleHero, getDeityImage, remoteImage, remoteSrcSet, IMG_W } from '../../lib/images';
+import {
+ ALL_STATES,
+ DEFAULT_TEMPLE_FILTERS,
+ buildTempleQuery,
+ hasActiveTempleFilters,
+ parseTempleFilters,
+ type DeityTypeFilter,
+ type SortMode,
+ type TempleFilters,
+} from '../../lib/temple-filters';
 
-export type DeityTypeFilter = 'All' | 'Shiva' | 'Vishnu' | 'Shakti' | 'Ganesha' | 'Sikh' | 'Other';
-export type SortMode = 'popularity' | 'alphabetical' | 'state';
+export type { DeityTypeFilter, SortMode };
 
 export interface TempleCardData {
  slug: string;
@@ -51,6 +61,20 @@ function deityFallbackKey(deityType: DeityTypeFilter): string {
  }
 }
 
+/**
+ * Base URL for a temple card. `imageUrl` comes off the API row and can be a
+ * raw Wikimedia original, so callers must resize it before it reaches an
+ * <img>. Returned unresized here so remoteSrcSet can build every candidate
+ * from one source.
+ */
+function templeCardImage(temple: TempleCardData): string {
+  return (
+    temple.imageUrl ??
+    getTempleHero(temple.slug, IMG_W.WIDE) ??
+    getDeityImage(deityFallbackKey(temple.deityType), 'portrait', IMG_W.WIDE)
+  );
+}
+
 const DEITY_FILTERS: { value: DeityTypeFilter; label: string }[] = [
  { value: 'All', label: 'All Deities' },
  { value: 'Shiva', label: 'Lord Shiva' },
@@ -62,56 +86,94 @@ const DEITY_FILTERS: { value: DeityTypeFilter; label: string }[] = [
 
 export function TemplesBrowser({
  temples,
- total,
+ total: totalProp,
 }: {
  temples: TempleCardData[];
  total: number;
 }) {
- const router = useRouter();
- const pathname = usePathname();
+ // The count line divides a subset of `temples` by `total`, so a total below
+ // `temples.length` is arithmetically impossible on screen — it renders as
+ // "Showing 33 of 22 temples". The caller is where that gets decided (see the
+ // note in app/temples/page.tsx); this floor just makes the contradiction
+ // unreachable from here regardless of what a caller passes.
+ const total = Math.max(totalProp, temples.length);
+
  const searchParams = useSearchParams();
 
- const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
- // Debounced mirror of `search` — filter logic reads this, not the raw input.
- // Avoids re-filtering 200+ temples on every keystroke.
- const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') ?? '');
- const [deityType, setDeityType] = useState<DeityTypeFilter>(
-  () => (searchParams.get('deity') as DeityTypeFilter) || 'All'
+ // LC-12: the URL is the shareable copy of this state, and it used to never be
+ // written. The old effect called `router.replace()`, which in the App Router
+ // is a NAVIGATION: every chip click and every debounced keystroke fired
+ // `GET /temples?…&_rsc=…`, re-rendering the server component behind the
+ // Suspense boundary — including its `getTemples()` call — and the address bar
+ // only moved once that round trip committed. On a cold or wedged API (Render
+ // free tier spins down) it never committed, so filtering "worked" on screen
+ // while the URL sat at /temples forever. `replace` also writes no history
+ // entry, so Back could not undo a filter.
+ //
+ // Every one of these filters runs client-side over an array we already hold,
+ // so the server has nothing to contribute. The native History API — which the
+ // App Router has synced with usePathname/useSearchParams since 14.1 — writes
+ // the URL with no request at all.
+ const [filters, setFilters] = useState<TempleFilters>(() =>
+  parseTempleFilters(new URLSearchParams(searchParams?.toString() ?? ''))
  );
- const [state, setState] = useState<string>(() => searchParams.get('state') || 'All States');
- const [liveOnly, setLiveOnly] = useState(() => searchParams.get('live') === '1');
- const [sort, setSort] = useState<SortMode>(
-  () => (searchParams.get('sort') as SortMode) || 'popularity'
- );
+ // Raw text in the box. `filters.q` is the debounced, committed copy that the
+ // filtering and the URL both read, so typing doesn't re-filter 200+ temples
+ // (or rewrite the URL) on every keystroke.
+ const [search, setSearch] = useState(filters.q);
 
- // 200ms debounce on search input
- useEffect(() => {
- const id = setTimeout(() => setDebouncedSearch(search), 200);
- return () => clearTimeout(id);
- }, [search]);
+ // Mirror for `commit`, which must merge onto the freshest filters without
+ // taking them as a dependency (and without doing history side effects inside
+ // a setState updater, which React re-invokes).
+ const filtersRef = useRef(filters);
 
+ const commit = useCallback((next: Partial<TempleFilters>, mode: 'push' | 'replace' = 'push') => {
+  const merged = { ...filtersRef.current, ...next };
+  filtersRef.current = merged;
+  setFilters(merged);
+  if (typeof window === 'undefined') return;
+  const url = `${window.location.pathname}${buildTempleQuery(merged)}`;
+  if (url === `${window.location.pathname}${window.location.search}`) return;
+  // push for the discrete controls (Back undoes one filter); replace for the
+  // debounced search box, so typing doesn't bury the page under one history
+  // entry per keystroke.
+  if (mode === 'push') window.history.pushState(null, '', url);
+  else window.history.replaceState(null, '', url);
+ }, []);
+
+ // 200ms debounce: raw input -> committed filter + URL.
  useEffect(() => {
-  const params = new URLSearchParams();
-  if (debouncedSearch) params.set('q', debouncedSearch);
-  if (deityType !== 'All') params.set('deity', deityType);
-  if (state !== 'All States') params.set('state', state);
-  if (liveOnly) params.set('live', '1');
-  if (sort !== 'popularity') params.set('sort', sort);
-  const qs = params.toString();
-  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
- }, [debouncedSearch, deityType, state, liveOnly, sort, pathname, router]);
+  if (search === filters.q) return;
+  const id = setTimeout(() => commit({ q: search }, 'replace'), 200);
+  return () => clearTimeout(id);
+ }, [search, filters.q, commit]);
+
+ // Back/Forward: re-read the URL so the LIST reverts, not just the address bar.
+ useEffect(() => {
+  const onPop = () => {
+   const next = parseTempleFilters(new URLSearchParams(window.location.search));
+   filtersRef.current = next;
+   setFilters(next);
+   setSearch(next.q);
+  };
+  window.addEventListener('popstate', onPop);
+  return () => window.removeEventListener('popstate', onPop);
+ }, []);
+
+ const { deity: deityType, state, live: liveOnly, sort } = filters;
+ const debouncedSearch = filters.q;
 
  // Derive state list from data
  const states = useMemo(() => {
  const uniq = Array.from(new Set(temples.map((t) => t.state).filter(Boolean))).sort();
- return ['All States', ...uniq];
+ return [ALL_STATES, ...uniq];
  }, [temples]);
 
  const filtered = useMemo(() => {
  const q = debouncedSearch.trim().toLowerCase();
  const list = temples.filter((t) => {
  if (deityType !== 'All' && t.deityType !== deityType) return false;
- if (state !== 'All States' && t.state !== state) return false;
+ if (state !== ALL_STATES && t.state !== state) return false;
  if (liveOnly && !t.liveDarshanEnabled) return false;
  if (q) {
  const hay = `${t.name} ${t.city} ${t.state} ${t.deityPrimary}`.toLowerCase();
@@ -130,15 +192,11 @@ export function TemplesBrowser({
  return list;
  }, [temples, debouncedSearch, deityType, state, liveOnly, sort]);
 
- const hasActiveFilters =
- search !== '' || deityType !== 'All' || state !== 'All States' || liveOnly;
+ const hasActiveFilters = hasActiveTempleFilters(filters) || search.trim() !== '';
 
  const resetFilters = () => {
  setSearch('');
- setDebouncedSearch('');
- setDeityType('All');
- setState('All States');
- setLiveOnly(false);
+ commit(DEFAULT_TEMPLE_FILTERS);
  };
 
  return (
@@ -146,7 +204,7 @@ export function TemplesBrowser({
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
- <h1 className="mb-3 text-3xl font-bold text-surface-800 md:text-4xl">
+ <h1 className={`${H1.catalogue} mb-3`}>
  Sacred Temples of India
  </h1>
  <p className="max-w-2xl text-lg text-surface-500">
@@ -166,7 +224,11 @@ export function TemplesBrowser({
  />
  {search && (
  <button
- onClick={() => setSearch('')}
+ type="button"
+ onClick={() => {
+  setSearch('');
+  commit({ q: '' }, 'replace');
+ }}
  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-surface-400 hover:bg-surface-100"
  aria-label="Clear search"
  >
@@ -190,7 +252,9 @@ export function TemplesBrowser({
  {DEITY_FILTERS.map((f) => (
  <button
  key={f.value}
- onClick={() => setDeityType(f.value)}
+ type="button"
+ aria-pressed={deityType === f.value}
+ onClick={() => commit({ deity: f.value })}
  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
  deityType === f.value
  ? 'border-saffron-600 bg-saffron-600 text-white'
@@ -204,8 +268,9 @@ export function TemplesBrowser({
 
  {/* State dropdown */}
  <select
+ aria-label="Filter by state"
  value={state}
- onChange={(e) => setState(e.target.value)}
+ onChange={(e) => commit({ state: e.target.value })}
  className="cursor-pointer rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200"
  >
  {states.map((s) => (
@@ -215,8 +280,9 @@ export function TemplesBrowser({
 
  {/* Sort */}
  <select
+ aria-label="Sort temples"
  value={sort}
- onChange={(e) => setSort(e.target.value as SortMode)}
+ onChange={(e) => commit({ sort: e.target.value as SortMode })}
  className="cursor-pointer rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-medium text-surface-600 hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-200"
  >
  <option value="popularity">Most Popular</option>
@@ -226,7 +292,9 @@ export function TemplesBrowser({
 
  {/* Live toggle */}
  <button
- onClick={() => setLiveOnly(!liveOnly)}
+ type="button"
+ aria-pressed={liveOnly}
+ onClick={() => commit({ live: !liveOnly })}
  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
  liveOnly
  ? 'border-red-300 bg-red-50 text-red-700'
@@ -238,6 +306,7 @@ export function TemplesBrowser({
 
  {hasActiveFilters && (
  <button
+ type="button"
  onClick={resetFilters}
  className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-medium text-surface-500 hover:border-saffron-300 hover:text-saffron-700"
  >
@@ -264,6 +333,7 @@ export function TemplesBrowser({
  <div className="font-medium text-surface-700">No temples match your filters</div>
  <p className="mt-1 text-sm text-surface-500">Try a different search or clear filters.</p>
  <button
+ type="button"
  onClick={resetFilters}
  className="mt-4 inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-medium text-white hover:bg-saffron-700"
  >
@@ -272,12 +342,22 @@ export function TemplesBrowser({
  </div>
  )}
 
- {/* Temple Grid */}
+ {/* Temple Grid
+   DU-08 / A11Y-15: the level sequence was h1 followed by 21 consecutive h3
+   card titles with no h2 anywhere. Screen-reader users navigating by
+   heading got a flat list of 21 same-level items and no way to jump past
+   the grid. The label is visually hidden - the hero above already reads
+   "Sacred Temples of India" on screen. */}
+ <section aria-labelledby="temples-all">
+ <h2 id="temples-all" className="sr-only">
+ All temples
+ </h2>
  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
  {filtered.map((t) => (
  <TempleCard key={t.slug} temple={t} />
  ))}
  </div>
+ </section>
  </div>
  </div>
  );
@@ -291,11 +371,13 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
  >
  <div className="relative aspect-[16/10] bg-gradient-to-br from-orange-100 to-amber-50">
  <img
- src={wikiThumb(temple.imageUrl ?? getTempleHero(temple.slug) ?? getDeityImage(deityFallbackKey(temple.deityType)), 800)}
+ src={remoteImage(templeCardImage(temple), IMG_W.CARD)}
+ srcSet={remoteSrcSet(templeCardImage(temple), [IMG_W.THUMB, IMG_W.CARD])}
+ sizes="(max-width: 768px) 100vw, 380px"
  alt={`${temple.name} - ${temple.city}`}
  loading="lazy"
- width={800}
- height={500}
+ width={500}
+ height={313}
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
  decoding="async"
  />
@@ -303,28 +385,28 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
 
  <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
  {temple.liveDarshanEnabled && (
- <span className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+ <span className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
  LIVE
  </span>
  )}
  {temple.isJyotirlinga && (
- <span className="flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
+ <span className="flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
  <Star className="h-3 w-3" /> Jyotirlinga
  </span>
  )}
  {temple.isShaktiPeetha && (
- <span className="flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
+ <span className="flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">
  <Heart className="h-3 w-3" /> Shakti
  </span>
  )}
  {temple.isDivyaDesam && (
- <span className="flex items-center gap-1 rounded-full bg-indigo-500 px-2 py-0.5 text-[10px] font-bold text-white">
+ <span className="flex items-center gap-1 rounded-full bg-indigo-500 px-2 py-0.5 text-xs font-bold text-white">
  <Star className="h-3 w-3" /> Divya Desam
  </span>
  )}
  {temple.isVerified && (
- <span className="flex items-center gap-1 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white">
+ <span className="flex items-center gap-1 rounded-full bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
  <Shield className="h-3 w-3" /> Verified
  </span>
  )}

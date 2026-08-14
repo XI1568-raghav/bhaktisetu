@@ -17,6 +17,7 @@ import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepRes
 import { runDailyPanchangCompute } from './daily-panchang-compute-cron.js';
 import { tickConsultationExpire, type ConsultationExpireResult } from './consultation-expire.js';
 import { runWeeklySettlement } from '../services/payout.service.js';
+import { claimRun, releaseRun } from '../lib/notification-run-log.js';
 
 interface RefundCronResult {
   processed: number;
@@ -216,18 +217,44 @@ async function tickWaitlistNudges(): Promise<WaitlistResult> {
   return { nudged };
 }
 
-async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
-  const now = new Date();
+/** IST calendar date for an instant — the unit one panchang blast belongs to. */
+function istDateKey(now: Date): string {
+  return new Date(now.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export async function tickPanchangBlast(
+  force: boolean,
+  now: Date = new Date(),
+): Promise<PanchangResult> {
   if (!force && !isFiveAmIstWindow(now)) {
     return { sent: 0, skipped: true, reason: 'outside 5am IST window' };
   }
+
+  // NOTIF-12: the 5am window is an HOUR wide and the ops tick is 30 minutes, so
+  // the clock gate alone let every subscriber be pushed the identical
+  // "Today's Panchang" twice each morning (six times at a 10-minute tick). The
+  // weekly digest persists a run row for exactly this reason; do the same here.
+  // Claimed BEFORE the fan-out — a claim taken after the first send is not a
+  // lock, it is a race.
+  const runKey = `panchang-blast:${istDateKey(now)}`;
+  if (!(await claimRun(runKey))) {
+    return { sent: 0, skipped: true, reason: 'already blasted today' };
+  }
+
   // Cross-cutting Phase 2: real daily-panchang push. Push subs are now
   // persisted in the push_subscriptions table (were in-memory, lost on restart
   // — which is why this used to no-op with "no push subscription model").
   // Fan out today's panchang to every opted-in subscriber.
+  let sent = 0;
+  let attempted = 0;
   try {
     const panchang = await panchangService.getToday();
-    if (!panchang) return { sent: 0, skipped: true, reason: 'no panchang data for today' };
+    if (!panchang) {
+      // Nothing went out, so the day is not spent — hand the claim back rather
+      // than silently consuming today's only chance to send.
+      await releaseRun(runKey);
+      return { sent: 0, skipped: true, reason: 'no panchang data for today' };
+    }
     const p = panchang as { tithi?: string; nakshatra?: string; festivals?: string[] };
     const title = "Today's Panchang";
     const body = [
@@ -241,7 +268,6 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
       where: { panchangOptIn: true },
       take: 5000,
     });
-    let sent = 0;
     let expired = 0;
     for (const s of subs) {
       const res = await sendPush(
@@ -249,6 +275,7 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
         { title, body, url: '/panchang' },
       );
       if (res.ok) sent++;
+      attempted++;
       if (res.expired) {
         expired++;
         await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => undefined);
@@ -256,7 +283,11 @@ async function tickPanchangBlast(force: boolean): Promise<PanchangResult> {
     }
     return { sent, skipped: false, reason: expired > 0 ? `pruned ${expired} expired` : undefined };
   } catch (err) {
-    return { sent: 0, skipped: true, reason: err instanceof Error ? err.message : String(err) };
+    // Only give the day back if the fan-out never started. Releasing after a
+    // partial send would re-push everyone who already got it — the very defect
+    // the claim exists to prevent.
+    if (attempted === 0) await releaseRun(runKey);
+    return { sent, skipped: true, reason: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -357,6 +388,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
         aartisMatched: 0,
         pushesSent: 0,
         expiredTokens: 0,
+        invalidTokens: 0,
         failed: 0,
         skipped: true,
         reason: 'outreachOnly',
@@ -594,6 +626,7 @@ async function tickAartiNotify(): Promise<AartiNotifyResult> {
       aartisMatched: 0,
       pushesSent: 0,
       expiredTokens: 0,
+      invalidTokens: 0,
       failed: 0,
       skipped: true,
       reason: err instanceof Error ? err.message : String(err),

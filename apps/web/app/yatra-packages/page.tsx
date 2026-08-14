@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { Calendar, Users, MapPin, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Yatra Packages — Curated Pilgrimage Tours | Darshya',
+  title: 'Yatra Packages — Curated Pilgrimage Tours',
   description: 'Book curated multi-day pilgrimage tours operated by Darshya. Vaishno Devi, Tirupati, Char Dham, Shirdi, Kashi, Dwarka-Somnath. All-inclusive with hotel + transport + pandit.',
   alternates: { canonical: 'https://darshya.online/yatra-packages' },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Yatra Packages — Darshya',
     description: 'All-inclusive curated pilgrimage tours.',
     url: 'https://darshya.online/yatra-packages',
@@ -89,7 +90,7 @@ export default async function YatraPackagesPage() {
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-1">
-                      <div className="flex items-center gap-3 text-[11px] mb-2" style={{ color: 'var(--color-text-muted)' }}>
+                      <div className="flex items-center gap-3 text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {pkg.duration_days} days</span>
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {seatsLeft} seats</span>
                       </div>
@@ -98,13 +99,13 @@ export default async function YatraPackagesPage() {
                       </p>
                       <div className="mt-auto pt-4 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
                         <div>
-                          <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>From</p>
+                          <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>From</p>
                           <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
                             ₹{Number(pkg.price_inr).toLocaleString('en-IN')}
-                            <span className="text-[10px] font-normal ml-1" style={{ color: 'var(--color-text-muted)' }}>/ person</span>
+                            <span className="text-xs font-normal ml-1" style={{ color: 'var(--color-text-muted)' }}>/ person</span>
                           </p>
                         </div>
-                        <div className="flex items-center gap-1 text-[11px] font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
+                        <div className="flex items-center gap-1 text-xs font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
                           View <ArrowRight className="w-3 h-3" />
                         </div>
                       </div>

@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Nava-Graha — 9 Planets of Vedic Astrology, Mantras & Remedies | Darshya',
+  title: 'Nava-Graha — 9 Planets of Vedic Astrology, Mantras & Remedies',
   description:
     'All 9 grahas of Jyotish — Surya, Chandra, Mangal, Budh, Brihaspati, Shukra, Shani, Rahu, Ketu. Beej mantra, gemstone, fasting day, remedies for each. Find your weak planet.',
   alternates: { canonical: `${BASE_URL}/nava-graha` },
@@ -127,7 +127,7 @@ export default function NavaGrahaIndex() {
                 className={`rounded-md border px-2 py-2 font-semibold ${dayBadge(d)} hover:opacity-80`}
               >
                 {d}
-                <div className="text-[10px] font-normal mt-0.5">{g.sanskritName}</div>
+                <div className="text-xs font-normal mt-0.5">{g.sanskritName}</div>
               </Link>
             ) : null;
           })}

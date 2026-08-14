@@ -18,13 +18,13 @@ type PageProps = { params: Promise<{ topic: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
  const { topic } = await params;
  const t = getTopicBySlug(topic);
- if (!t) return { title: 'Free Pandit Advice — Darshya' };
+ if (!t) return { title: 'Free Pandit Advice' };
  const url = `${BASE_URL}/free-pandit-advice/${t.slug}`;
  return {
-  title: `${t.title} | Darshya`,
+  title: `${t.title}`,
   description: t.metaDescription,
   alternates: { canonical: url },
-  openGraph: { title: t.title, description: t.metaDescription, url, type: 'article' },
+  openGraph: { title: t.title, description: t.metaDescription, url, type: 'article', images: ['/images/golden-temple-og.jpg'] },
  };
 }
 

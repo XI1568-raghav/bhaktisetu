@@ -120,7 +120,7 @@ export default function AdminSupportPage() {
  <div className="bg-white rounded-xl border border-surface-200 p-4 mb-5">
  <div className="flex flex-wrap items-end gap-3">
  <div className="flex-1 min-w-[220px]">
- <label className="text-[11px] font-semibold uppercase tracking-wide text-surface-500 block mb-1">
+ <label className="text-xs font-semibold uppercase tracking-wide text-surface-500 block mb-1">
  Search
  </label>
  <div className="relative">
@@ -281,7 +281,7 @@ function SelectFilter({
 }) {
  return (
  <div>
- <label className="text-[11px] font-semibold uppercase tracking-wide text-surface-500 block mb-1">
+ <label className="text-xs font-semibold uppercase tracking-wide text-surface-500 block mb-1">
  {label}
  </label>
  <select

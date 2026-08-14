@@ -81,17 +81,30 @@ export const queryKeys = {
 
 // ─── Temple Hooks ────────────────────────────
 
+/**
+ * GET /api/v1/temples -> { temples, total, page, limit, totalPages }
+ *
+ * PAR-07: this was typed `PaginatedResponse<Temple>` (i.e. `{ data, meta }`),
+ * an envelope the endpoint has never sent. Callers read `.data`, got
+ * `undefined`, and fell back to a hardcoded five-temple mock. The type now
+ * matches the wire.
+ */
+export interface TempleListResponse {
+  temples: Temple[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export function useTemples(
   params?: TempleSearchParams,
-  options?: Omit<
-    UseQueryOptions<PaginatedResponse<Temple>>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<TempleListResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.temples.list(params),
     queryFn: () =>
-      api.get<PaginatedResponse<Temple>>(API_ENDPOINTS.TEMPLES, {
+      api.get<TempleListResponse>(API_ENDPOINTS.TEMPLES, {
         params: params as Record<string, string | number | boolean | undefined>,
       }),
     ...options,
@@ -134,17 +147,29 @@ export function useTemplePujas(
 
 // ─── Puja Hooks ──────────────────────────────
 
+/**
+ * GET /api/v1/pujas/types -> { pujaTypes, total, page, limit, totalPages }
+ *
+ * PAR-07: same envelope lie as useTemples. Every row carries `basePrice` and
+ * `nriPrice` as Decimal strings — the app used to claim "PujaType doesn't carry
+ * price" and substitute mock rupee figures that disagreed with the website.
+ */
+export interface PujaTypeListResponse {
+  pujaTypes: PujaType[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export function usePujas(
   params?: PujaSearchParams,
-  options?: Omit<
-    UseQueryOptions<PaginatedResponse<PujaType>>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<PujaTypeListResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.pujas.list(params),
     queryFn: () =>
-      api.get<PaginatedResponse<PujaType>>(API_ENDPOINTS.PUJAS, {
+      api.get<PujaTypeListResponse>(API_ENDPOINTS.PUJAS, {
         params: params as Record<string, string | number | boolean | undefined>,
       }),
     ...options,
@@ -186,17 +211,28 @@ export function usePujaCategories(
 
 // ─── Booking Hooks ───────────────────────────
 
+/**
+ * GET /api/v1/users/me/bookings
+ *   -> { success, bookings, pagination:{page,limit,total,totalPages} }
+ *
+ * PAR-02: was typed `PaginatedResponse<PujaBooking>` and read as `.data`, so
+ * "My Bookings" was blank for every devotee and Profile reported 0 bookings —
+ * against 81 real rows for devotee@demo.com.
+ */
+export interface UserBookingsResponse {
+  success: boolean;
+  bookings: PujaBooking[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
 export function useBookings(
   params?: BookingFilterParams,
-  options?: Omit<
-    UseQueryOptions<PaginatedResponse<PujaBooking>>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<UserBookingsResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.bookings.list(params),
     queryFn: () =>
-      api.get<PaginatedResponse<PujaBooking>>(API_ENDPOINTS.USER_BOOKINGS, {
+      api.get<UserBookingsResponse>(API_ENDPOINTS.USER_BOOKINGS, {
         params: params as Record<string, string | number | boolean | undefined>,
       }),
     ...options,
@@ -367,35 +403,83 @@ export function usePanchangByDate(
 
 // ─── Darshan Hooks ───────────────────────────
 
+/**
+ * GET /api/v1/darshan/live -> { streams, total, upcoming }
+ *
+ * PAR-05/PAR-07: was `ApiResponse<LiveDarshanStream[]>` read as `.data`, so the
+ * Darshan tab showed eight invented streams and hid the genuinely live temple.
+ * Each row nests the temple as `{name,slug,city,deityPrimary,images}`.
+ */
+export interface LiveDarshanRow {
+  id: string;
+  templeId: string;
+  playbackUrl: string | null;
+  status: string;
+  viewerCount: number;
+  peakViewers?: number;
+  isPremium?: boolean;
+  scheduledStart?: string | null;
+  currentSlot?: string;
+  endsInMin?: number;
+  temple: {
+    name: string;
+    slug: string;
+    city?: string;
+    deityPrimary?: string;
+    images?: string[];
+  };
+}
+
+export interface DarshanLiveResponse {
+  streams: LiveDarshanRow[];
+  total: number;
+  upcoming?: Array<{ templeSlug: string; nextSlot: string; startsInMin: number }>;
+}
+
 export function useDarshan(
-  options?: Omit<
-    UseQueryOptions<ApiResponse<LiveDarshanStream[]>>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<DarshanLiveResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.darshan.live,
-    queryFn: () =>
-      api.get<ApiResponse<LiveDarshanStream[]>>(API_ENDPOINTS.DARSHAN_LIVE),
+    queryFn: () => api.get<DarshanLiveResponse>(API_ENDPOINTS.DARSHAN_LIVE),
     refetchInterval: 30_000, // Refresh live streams every 30s
     ...options,
   });
 }
 
+/**
+ * GET /api/v1/darshan/:idOrSlug/stream — FLAT, no envelope.
+ *
+ * PAR-05: the endpoint constant used to omit the `/stream` suffix, so this
+ * 404'd on every call and re-polled the 404 every 15 seconds. `retry: false`
+ * stops a genuinely-missing stream from being hammered, and the poll only runs
+ * while a playable stream exists (callers pass `refetchInterval: false` once
+ * they know it is offline).
+ */
+export interface DarshanStreamResponse {
+  streamId: string;
+  templeId: string;
+  templeName: string;
+  status: string;
+  playbackUrl: string | null;
+  recentVideoUrl?: string | null;
+  recentVideoTitle?: string | null;
+  youtubeChannelId?: string;
+  thumbnailUrl: string | null;
+  viewerCount: number;
+  startedAt: string | null;
+}
+
 export function useDarshanStream(
   streamId: string,
-  options?: Omit<
-    UseQueryOptions<ApiResponse<LiveDarshanStream>>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<DarshanStreamResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.darshan.stream(streamId),
     queryFn: () =>
-      api.get<ApiResponse<LiveDarshanStream>>(
-        API_ENDPOINTS.DARSHAN_STREAM(streamId)
-      ),
+      api.get<DarshanStreamResponse>(API_ENDPOINTS.DARSHAN_STREAM(streamId)),
     enabled: !!streamId,
+    retry: false,
     refetchInterval: 15_000, // Refresh stream details every 15s
     ...options,
   });
@@ -429,16 +513,22 @@ export function useUpdateProfile(
   });
 }
 
+/**
+ * GET /api/v1/users/me/addresses -> { success, addresses }
+ * PAR-02: was `ApiResponse<UserAddress[]>` read as `.data` -> always 0.
+ */
+export interface UserAddressesResponse {
+  success: boolean;
+  addresses: UserAddress[];
+}
+
 export function useUserAddresses(
-  options?: Omit<
-    UseQueryOptions<ApiResponse<UserAddress[]>>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<UserAddressesResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.user.addresses,
     queryFn: () =>
-      api.get<ApiResponse<UserAddress[]>>(API_ENDPOINTS.USER_ADDRESSES),
+      api.get<UserAddressesResponse>(API_ENDPOINTS.USER_ADDRESSES),
     ...options,
   });
 }

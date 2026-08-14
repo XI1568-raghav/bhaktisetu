@@ -16,14 +16,14 @@ const PRODUCTS: Product[] = [
     category: 'Prasad',
     price: '₹399',
     href: '/store',
-    accentColor: '#E16318',
+    accentColor: '#9e6229',
   },
   {
     name: 'Brass Krishna Murti',
     category: 'Idols',
     price: '₹2,499',
     href: '/store',
-    accentColor: '#E16318',
+    accentColor: '#9e6229',
   },
   {
     name: 'Bhagavad Gita Hardcover',
@@ -87,7 +87,7 @@ export default function ShopStrip() {
               }}
             >
               <p
-                className="text-[10px] sm:text-[11px] font-medium uppercase tracking-widest mb-2"
+                className="text-xs sm:text-xs font-medium uppercase tracking-widest mb-2"
                 style={{ color: 'var(--color-text-muted)' }}
               >
                 {p.category}

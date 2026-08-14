@@ -240,6 +240,10 @@ model User {
   credit               UserCredit?
   creditLedgerEntries  CreditLedgerEntry[]
 
+  // SCAL-03: admin.getUsers is "ORDER BY created_at DESC LIMIT 20" with no
+  // index to serve it — 155 ms warm / 2,114 ms cold at 200k rows, 0.109 ms
+  // indexed. Every growth table below gets the same treatment.
+  @@index([createdAt(sort: Desc)])
   @@map("users")
 }
 
@@ -517,6 +521,9 @@ model PujaBooking {
   // portal (my-bookings, earnings, dispatch) and was unindexed — every pandit
   // page did a full scan of puja_bookings.
   @@index([priestId])
+  // SCAL-03: 10 indexes here, none on created_at — what every admin list
+  // sorts by. 225 ms warm / 1,463 ms cold at 200k rows.
+  @@index([createdAt(sort: Desc)])
   @@index([dispatchTier, status])
   @@map("puja_bookings")
 }
@@ -617,6 +624,8 @@ model Payment {
   @@index([gatewayPaymentId])
   @@index([userId])
   @@index([status])
+  // SCAL-03: payments are always filtered by status, then sorted by date.
+  @@index([status, createdAt(sort: Desc)])
   @@map("payments")
 }
 
@@ -673,6 +682,7 @@ model ContentItem {
   @@index([deity])
   @@index([language])
   @@index([status])
+  @@index([createdAt(sort: Desc)])
   @@map("content_items")
 }
 
@@ -1109,6 +1119,10 @@ model Commission {
   @@index([storeOrderId])
   @@index([wellnessEnrollmentId])
   @@index([payoutRequestId])
+  // SCAL-03: admin revenue sorts by date — 893 ms top-50, 0.111 ms indexed.
+  @@index([createdAt(sort: Desc)])
+  // getPayoutBalance filters provider + status + unlinked payout request.
+  @@index([providerId, status, payoutRequestId])
   @@map("commissions")
 }
 
@@ -1151,6 +1165,9 @@ model Transaction {
   updatedAt DateTime          @updatedAt @map("updated_at")
 
   @@index([userId])
+  // SCAL-03: dashboard reads latest-N filtered by status — 1,418 ms at 200k.
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
   @@index([type])
   @@map("transactions")
 }
@@ -1173,6 +1190,7 @@ model Review {
   @@index([providerId])
   @@index([userId])
   @@index([productId])
+  @@index([createdAt(sort: Desc)])
   @@map("reviews")
 }
 

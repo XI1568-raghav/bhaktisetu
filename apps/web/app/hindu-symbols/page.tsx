@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Hindu Sacred Symbols — Om, Swastika, Sri Yantra, Kalash, Lotus & 8 More | Darshya',
+  title: 'Hindu Sacred Symbols — Om, Swastika, Sri Yantra, Kalash, Lotus & 8 More',
   description:
     'Complete guide to 12 sacred symbols of Sanatana Dharma — Om, Swastika (Hindu auspiciousness mark), Sri Yantra, Kalash, Lotus, Conch, Trishul, Damaru, Kamandalu, Peacock Feather, Rudraksha and Tilaka. Meaning, presiding deity, ritual use, placement and materials for each.',
   alternates: { canonical: `${BASE_URL}/hindu-symbols` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Hindu Sacred Symbols — 12 Pratika of Sanatana Dharma',
     description: 'Meaning, deity, ritual use and placement for every classical Hindu symbol.',
     url: `${BASE_URL}/hindu-symbols`,

@@ -1,6 +1,7 @@
 import { Prisma, Tradition } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { cached, CACHE_TTL } from '../lib/cache.js';
+import { clampLimit, clampPage } from '../lib/pagination.js';
 
 export interface TempleListParams {
   city?: string;
@@ -62,7 +63,11 @@ export class TempleService {
       ];
     }
 
-    const skip = (page - 1) * limit;
+    // RES-12: `?page=-1` used to reach Prisma as OFFSET -40 and return
+    // HTTP 500 "Failed to fetch temples". A page is an ordinal — clamp it.
+    const safePage = clampPage(page);
+    const safeLimit = clampLimit(limit);
+    const skip = (safePage - 1) * safeLimit;
     // Stable cache key: serialize params in a known order so identical
     // queries collide. Page + limit included so paginated views cache cleanly.
     const cacheKey = `temple:list:${JSON.stringify({
@@ -73,8 +78,8 @@ export class TempleService {
       search: search ?? '',
       isVerified: isVerified ?? null,
       liveDarshan: liveDarshan ?? null,
-      page,
-      limit,
+      page: safePage,
+      limit: safeLimit,
     })}`;
 
     return cached(cacheKey, CACHE_TTL.TEMPLE_LIST, async () => {
@@ -104,7 +109,7 @@ export class TempleService {
           },
           orderBy: [{ trustScore: 'desc' }, { name: 'asc' }],
           skip,
-          take: limit,
+          take: safeLimit,
         }),
         prisma.temple.count({ where }),
       ]);
@@ -112,9 +117,9 @@ export class TempleService {
       return {
         temples,
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
       };
     });
   }
@@ -282,8 +287,12 @@ export class TempleService {
    * Full-text search across temple name, description, city, and deity.
    */
   async search(query: string, page: number = 1, limit: number = 20) {
+    // RES-12: same negative-page 500 as findAll — /temples/search?page=-1
+    // returned HTTP 500 before this clamp.
+    const safePage = clampPage(page);
+    const safeLimit = clampLimit(limit);
     if (!query || query.trim().length === 0) {
-      return { results: [], total: 0, query, page, limit };
+      return { results: [], total: 0, query, page: safePage, limit: safeLimit };
     }
 
     const where: Prisma.TempleWhereInput = {
@@ -297,7 +306,7 @@ export class TempleService {
       ],
     };
 
-    const skip = (page - 1) * limit;
+    const skip = (safePage - 1) * safeLimit;
 
     const [results, total] = await Promise.all([
       prisma.temple.findMany({
@@ -318,7 +327,7 @@ export class TempleService {
         },
         orderBy: [{ trustScore: 'desc' }, { name: 'asc' }],
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       prisma.temple.count({ where }),
     ]);
@@ -327,9 +336,9 @@ export class TempleService {
       results,
       total,
       query,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 
@@ -337,6 +346,9 @@ export class TempleService {
    * Get reviews for a temple (from completed bookings that have ratings).
    */
   async getReviews(templeSlug: string, page: number = 1, limit: number = 10) {
+    // RES-12: negative page would reach Prisma as a negative OFFSET here too.
+    const safePage = clampPage(page);
+    const safeLimit = clampLimit(limit, 10);
     const temple = await prisma.temple.findUnique({
       where: { slug: templeSlug },
       select: { id: true },
@@ -351,7 +363,7 @@ export class TempleService {
       rating: { not: null },
     };
 
-    const skip = (page - 1) * limit;
+    const skip = (safePage - 1) * safeLimit;
 
     const [reviews, total, avgResult] = await Promise.all([
       prisma.pujaBooking.findMany({
@@ -378,7 +390,7 @@ export class TempleService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       prisma.pujaBooking.count({ where }),
       prisma.pujaBooking.aggregate({
@@ -391,9 +403,9 @@ export class TempleService {
       reviews,
       total,
       averageRating: avgResult._avg.rating ?? 0,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 

@@ -348,6 +348,8 @@ function FormInput({
  onChange,
  icon: Icon,
  optional,
+ name,
+ autoComplete,
 }: {
  id: string;
  label: string;
@@ -357,6 +359,9 @@ function FormInput({
  onChange: (val: string) => void;
  icon?: typeof User;
  optional?: boolean;
+ /** WCAG 2.1 AA 1.3.5 — input purpose, so password managers can autofill. */
+ name?: string;
+ autoComplete?: string;
 }) {
  return (
  <div className="mb-4">
@@ -370,7 +375,9 @@ function FormInput({
  )}
  <input
  id={id}
+ name={name}
  type={type}
+ autoComplete={autoComplete}
  placeholder={placeholder}
  value={value}
  onChange={(e) => onChange(e.target.value)}
@@ -390,7 +397,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
  <div
  key={i}
  className={`h-1.5 flex-1 rounded-full transition-colors ${
- i < current ? 'bg-saffron-500' : i === current ? 'bg-saffron-300' : 'bg-surface-200'
+ i < current ? 'bg-saffron-600' : i === current ? 'bg-saffron-300' : 'bg-surface-200'
  }`}
  />
  ))}
@@ -647,7 +654,7 @@ export default function SignupPage() {
  </p>
  </div>
  {option.isProvider && (
- <span className="absolute top-2 right-2 text-[10px] font-medium text-surface-400 bg-surface-100 px-1.5 py-0.5 rounded-md">
+ <span className="absolute top-2 right-2 text-xs font-medium text-surface-400 bg-surface-100 px-1.5 py-0.5 rounded-md">
  Provider
  </span>
  )}
@@ -912,6 +919,8 @@ export default function SignupPage() {
  value={formData.fullName}
  onChange={(v) => updateField('fullName', v)}
  icon={User}
+ name="name"
+ autoComplete="name"
  />
  {fieldErrors.fullName && (
  <p className="-mt-3 mb-3 text-xs text-red-600">{fieldErrors.fullName}</p>
@@ -925,6 +934,8 @@ export default function SignupPage() {
  value={formData.email}
  onChange={(v) => updateField('email', v)}
  icon={Mail}
+ name="email"
+ autoComplete="email"
  />
  {fieldErrors.email && (
  <p className="-mt-3 mb-3 text-xs text-red-600">{fieldErrors.email}</p>
@@ -941,7 +952,9 @@ export default function SignupPage() {
  </div>
  <input
  id="signupPhone"
+ name="phone"
  type="tel"
+ autoComplete="tel"
  inputMode="numeric"
  maxLength={12}
  placeholder="98765 43210"
@@ -967,7 +980,9 @@ export default function SignupPage() {
  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
  <input
  id="signupPassword"
+ name="password"
  type={showPassword ? 'text' : 'password'}
+ autoComplete="new-password"
  placeholder="Min 8 chars, letter + digit"
  value={formData.password}
  onChange={(e) => updateField('password', e.target.value)}
@@ -976,6 +991,8 @@ export default function SignupPage() {
  <button
  type="button"
  onClick={() => setShowPassword(!showPassword)}
+ aria-label={showPassword ? 'Hide password' : 'Show password'}
+ aria-pressed={showPassword}
  className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600"
  >
  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

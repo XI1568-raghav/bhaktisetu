@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '51 Shakti Peeth — Complete List, Devi-Bhairava Pairings, Darshan Guide | Darshya',
+  title: '51 Shakti Peeth — Complete List, Devi-Bhairava Pairings, Darshan Guide',
   description:
     "All 51 Shakti Peeths across India, Nepal, Bangladesh, Sri Lanka, Pakistan and Tibet. Each site marks where part of Sati's body fell after Daksha Yajna. Includes Kamakhya, Kalighat, Tarapith, Jwalamukhi, Ambaji, Hinglaj, Sharada Peeth, Gandaki — with darshan timings, Navratri rituals, body-part-fallen and Devi-Bhairava pairing.",
   alternates: { canonical: `${BASE_URL}/shakti-peeth` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: '51 Shakti Peeth — complete pilgrim guide',
     description: 'Devi-Bhairava pairings, body-part-fallen, darshan timings and Navratri rituals for all 51 Shakti Peeths.',
     url: `${BASE_URL}/shakti-peeth`,

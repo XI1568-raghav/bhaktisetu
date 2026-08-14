@@ -59,13 +59,26 @@ export async function reverseBookingLedger(
   if (alreadySettled > 0) {
     // Flag it on the booking so an operator can reconcile by hand. Truncated to
     // the column width; the marker is what the ops query greps for.
-    await tx.pujaBooking.update({
-      where: { id: bookingId },
-      data: {
-        cancellationReason:
-          `[refunded][ledger-manual-review ${alreadySettled}] ${reason}`.slice(0, 500),
-      },
-    });
+    //
+    // AW-06 (2026-08-12): best-effort. `Commission.bookingId` is NOT an FK — it
+    // also carries astrologer-consultation ids (routes/consultation.ts) and, on
+    // other rows, a store order. For those the PujaBooking lookup raises P2025
+    // and would abort the caller's whole transaction, losing the REVERSED write
+    // above — i.e. the flag for a hand-reconcile would destroy the reversal it
+    // was meant to annotate. `alreadySettled` is returned to the caller either
+    // way, so the signal is never lost: log/persist it there.
+    try {
+      await tx.pujaBooking.update({
+        where: { id: bookingId },
+        data: {
+          cancellationReason:
+            `[refunded][ledger-manual-review ${alreadySettled}] ${reason}`.slice(0, 500),
+        },
+      });
+    } catch {
+      // Not a puja booking (or already gone) — the caller still gets
+      // `alreadySettled` and is responsible for surfacing it.
+    }
   }
 
   let reversedTemplePayouts = 0;
@@ -83,4 +96,130 @@ export async function reverseBookingLedger(
   }
 
   return { reversedCommissions: reversed.count, reversedTemplePayouts, alreadySettled };
+}
+
+export interface PartialLedgerResult {
+  /** Commission rows whose amount was scaled down. */
+  scaledCommissions: number;
+  /** Temple payout rows whose amount was scaled down. */
+  scaledTemplePayouts: number;
+  /** Total rupees removed from provider earnings, as a 2dp string. */
+  clawedBackInr: string;
+  /** Rows that could NOT be reduced because the money has left or is mid-transfer. */
+  alreadySettled: number;
+}
+
+/**
+ * Unwind the ledger PROPORTIONALLY for a partially-refunded booking.
+ *
+ * DI-02 (2026-08-12). Both reversal paths were gated on a FULL refund —
+ * `refund.service.ts:280` and the else branch at `payment.service.ts:1281` —
+ * while the cancellation engine picks a tier off the 100/75/50/25/0 ladder, so
+ * a devotee cancelling inside the window is refunded a FRACTION. That is the
+ * designed common path and the marketing promise, not an edge case.
+ *
+ * The result: on a 75%-tier cancellation of a Rs 1,100 puja the devotee got
+ * Rs 825 back while the pandit kept the whole Rs 770 commission and the temple
+ * its Rs 55 — the platform collected Rs 275 and paid out Rs 825. Every
+ * mid-ladder cancellation was loss-making, and nothing on any screen said so.
+ *
+ * WHY PROPORTIONAL IS NOT A BUSINESS GUESS. The take-rate doctrine is a uniform
+ * 20% platform / 80% provider. Applying it to the revenue actually RETAINED is
+ * the same rule, not a new one: the provider keeps 80% of what the platform
+ * kept, exactly as they keep 80% of what it collects. Anything else would need
+ * an owner decision; this does not.
+ *
+ * COMPOSABILITY. The scale factor is expressed against what was still
+ * REFUNDABLE before this refund, not against the original price, so N
+ * successive partials land on the same ledger as one combined refund:
+ *
+ *   target = current x (refundableBefore - refundAmount) / refundableBefore
+ *
+ * A row that is already PAID or linked to a PayoutRequest is left alone and
+ * counted in `alreadySettled` — that money has left the building, and clawing
+ * it back is a finance decision. The booking is flagged for manual review in
+ * that case so the loss is visible instead of silent, mirroring
+ * `reverseBookingLedger`.
+ */
+export async function reduceBookingLedgerForPartialRefund(
+  tx: TxClient,
+  bookingId: string,
+  opts: { refundAmount: Prisma.Decimal; refundableBefore: Prisma.Decimal; reason: string },
+): Promise<PartialLedgerResult> {
+  const result: PartialLedgerResult = {
+    scaledCommissions: 0,
+    scaledTemplePayouts: 0,
+    clawedBackInr: '0.00',
+    alreadySettled: 0,
+  };
+
+  const { refundAmount, refundableBefore } = opts;
+  // Nothing refunded, or nothing was refundable — either way there is no
+  // fraction to apply and pretending otherwise would corrupt the ledger.
+  if (refundAmount.lte(0) || refundableBefore.lte(0)) return result;
+
+  // Clamped: a refund larger than what remained refundable retains nothing, and
+  // must never produce a NEGATIVE earning.
+  let retain = refundableBefore.sub(refundAmount).div(refundableBefore);
+  if (retain.lt(0)) retain = new Prisma.Decimal(0);
+  if (retain.gt(1)) retain = new Prisma.Decimal(1);
+
+  let clawedBack = new Prisma.Decimal(0);
+
+  const claimable = await tx.commission.findMany({
+    where: { bookingId, status: 'PENDING', payoutRequestId: null },
+    select: { id: true, amount: true },
+  });
+  for (const row of claimable) {
+    const before = new Prisma.Decimal(row.amount as Prisma.Decimal);
+    const after = before.mul(retain).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    if (after.equals(before)) continue;
+    await tx.commission.update({ where: { id: row.id }, data: { amount: after } });
+    clawedBack = clawedBack.add(before.sub(after));
+    result.scaledCommissions += 1;
+  }
+  result.clawedBackInr = clawedBack.toFixed(2);
+
+  result.alreadySettled = await tx.commission.count({
+    where: { bookingId, OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }] },
+  });
+  if (result.alreadySettled > 0) {
+    // Same best-effort flag as the full-refund path: `Commission.bookingId` is
+    // not an FK and also carries consultation ids, so a PujaBooking lookup can
+    // raise P2025 and would abort the caller's transaction — losing the scaling
+    // writes above along with it. The caller still receives `alreadySettled`.
+    try {
+      await tx.pujaBooking.update({
+        where: { id: bookingId },
+        data: {
+          cancellationReason:
+            `[partially-refunded ${refundAmount.toFixed(2)}][ledger-manual-review ${result.alreadySettled}] ${opts.reason}`.slice(
+              0,
+              500,
+            ),
+        },
+      });
+    } catch {
+      // Not a puja booking (or already gone) — the caller surfaces the signal.
+    }
+  }
+
+  try {
+    const temple = await tx.templePayout.findMany({
+      where: { bookingId, status: 'pending' },
+      select: { id: true, amount: true },
+    });
+    for (const row of temple) {
+      const before = new Prisma.Decimal(row.amount as Prisma.Decimal);
+      const after = before.mul(retain).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      if (after.equals(before)) continue;
+      await tx.templePayout.update({ where: { id: row.id }, data: { amount: after } });
+      result.scaledTemplePayouts += 1;
+    }
+  } catch {
+    // Never let temple bookkeeping fail a refund Razorpay has already made —
+    // a stuck exception would also lose the Payment/Booking writes.
+  }
+
+  return result;
 }

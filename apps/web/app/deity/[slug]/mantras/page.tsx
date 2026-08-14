@@ -16,9 +16,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const d = getDeity(slug);
   const mantras = getMantrasForDeity(slug);
-  if (!d || mantras.length === 0) return { title: 'Mantras — Darshya' };
+  if (!d || mantras.length === 0) return { title: 'Mantras' };
   return {
-    title: `${d.name} Mantras — Sanskrit, Meaning, Benefits — Darshya`,
+    title: `${d.name} Mantras — Sanskrit, Meaning, Benefits`,
     description: `${mantras.length} sacred mantras for ${d.name} (${d.sanskrit}) — Panchakshari, Gayatri, Beej and more with Sanskrit, transliteration, meaning, and benefits.`,
     alternates: { canonical: `https://darshya.online/deity/${d.slug}/mantras` },
     openGraph: {
@@ -113,7 +113,7 @@ export default async function DeityMantrasPage({ params }: Params) {
             className="rounded-2xl border border-surface-200 bg-white p-6 sm:p-8"
           >
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-amber-100 rounded-full">
+              <span className="inline-block px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-800 bg-amber-100 rounded-full">
                 {TYPE_LABELS[m.type] || m.type}
               </span>
               <span className="inline-flex items-center gap-1 text-xs text-surface-500">

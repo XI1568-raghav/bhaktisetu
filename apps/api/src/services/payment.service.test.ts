@@ -466,6 +466,14 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
       .mockResolvedValueOnce({ cancelPolicyJson });
     prismaMock.payment.update.mockResolvedValue({});
     prismaMock.pujaBooking.update.mockResolvedValue({});
+    // DI-02: the partial rail now reads the claimable ledger rows before
+    // scaling them. Rs 880 is the pandit's 80% of a Rs 1,100 puja.
+    prismaMock.commission.findMany.mockResolvedValue([
+      { id: 'c1', amount: new Prisma.Decimal('880.00') },
+    ]);
+    prismaMock.commission.update.mockResolvedValue({});
+    prismaMock.commission.count.mockResolvedValue(0);
+    prismaMock.templePayout.findMany.mockResolvedValue([]);
   }
 
   async function loadLiveService() {
@@ -528,13 +536,17 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
     });
   });
 
-  it('does NOT reverse the ledger on a PARTIAL refund', async () => {
-    // Deliberate, and an OPEN OWNER DECISION rather than an oversight: the
-    // published ladder (100/75/50/25/0) makes partial the NORMAL case, and on a
-    // 75% tier the platform keeps Rs 275 while still owing the pandit Rs 825 —
-    // roughly -Rs 550 per mid-ladder cancellation. Making it proportional
-    // changes what providers earn, so it is the founder's call. This test pins
-    // TODAY's behaviour so the change is deliberate when it happens.
+  it('unwinds the ledger PROPORTIONALLY on a PARTIAL refund (DI-02)', async () => {
+    // This test used to assert the opposite — that a partial reversed NOTHING —
+    // on the grounds that splitting an earning was an owner decision. It is
+    // not: the take-rate doctrine is a uniform 20/80, and applying it to the
+    // revenue actually retained is the same rule. Meanwhile the published
+    // ladder (100/75/50/25/0) makes partial the NORMAL case, so every
+    // mid-ladder cancellation refunded the devotee AND paid the pandit in full
+    // — about -Rs 550 per cancellation on a Rs 1,100 puja.
+    //
+    // 50% tier: Rs 550 refunded of Rs 1,100, so the pandit keeps half of his
+    // Rs 880 and the row is SCALED, never REVERSED.
     const service = await loadLiveService();
     arrange(
       makeBooking({
@@ -547,6 +559,11 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
     const out = await service.processRefund('bk-1', 'admin-1');
     expect(out.status).toBe('partially_refunded');
     expect(prismaMock.commission.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.commission.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'c1' } }),
+    );
+    const amount = prismaMock.commission.update.mock.calls[0]![0].data.amount;
+    expect(amount.toString()).toBe('440');
   });
 
   it('applies the 50% tier (12h out) instead of refunding 100%', async () => {

@@ -3,7 +3,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search as SearchIcon, ArrowRight } from 'lucide-react';
+import { Search as SearchIcon, ArrowRight, Flame, Landmark } from 'lucide-react';
+import { API_BASE_URL } from '../../lib/api-config';
+
+/**
+ * CM-12 (prod sweep 2026-08-12) — this page searched ONLY the static
+ * /search-index.json of Sanskrit/Veda/Sanatan articles, under an H1 reading
+ * "Search knowledge", while the header box that feeds it rotates placeholders
+ * promising "Search puja, temple, kundli, saint…". Someone who already knows
+ * they want Rudrabhishek typed it here and got scripture articles or nothing.
+ *
+ * The federated endpoint already existed — components/GlobalSearch.tsx calls
+ * `${API_BASE_URL}/search?q=` and gets back { temples, pujas, content }. This
+ * page now calls the same one, puts pujas first (they are the only results a
+ * devotee can act on with money), and degrades to the article index alone if
+ * the API is unreachable rather than showing an error wall.
+ */
+interface ApiHit {
+  id: string;
+  slug: string;
+  name: string;
+  subtitle?: string;
+  href: string;
+}
+
+interface ApiResults {
+  temples: ApiHit[];
+  pujas: ApiHit[];
+}
 
 interface Entry {
   category: 'sanskrit' | 'ved' | 'sanatan';
@@ -44,6 +71,7 @@ export default function SearchClient() {
   const [input, setInput] = useState(q);
   const [idx, setIdx] = useState<Entry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [api, setApi] = useState<ApiResults>({ temples: [], pujas: [] });
 
   useEffect(() => { setInput(q); }, [q]);
 
@@ -54,7 +82,34 @@ export default function SearchClient() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'));
   }, []);
 
+  useEffect(() => {
+    const trimmed = q.trim();
+    if (!trimmed) {
+      setApi({ temples: [], pujas: [] });
+      return;
+    }
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&limit=8`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((body: { results?: Partial<ApiResults> }) => {
+        if (cancelled) return;
+        setApi({
+          temples: Array.isArray(body.results?.temples) ? body.results!.temples! : [],
+          pujas: Array.isArray(body.results?.pujas) ? body.results!.pujas! : [],
+        });
+      })
+      .catch(() => {
+        // Catalogue search unavailable — fall back to the article index alone.
+        // Never invent a puja result to fill the gap.
+        if (!cancelled) setApi({ temples: [], pujas: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [q]);
+
   const hits = useMemo(() => (idx ? search(idx, q, 50) : []), [idx, q]);
+  const totalHits = hits.length + api.pujas.length + api.temples.length;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,8 +119,10 @@ export default function SearchClient() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-surface-900 mb-2">Search knowledge</h1>
-      <p className="text-sm text-surface-600 mb-6">Across Sanskrit, Vedas, and Sanatan Dharma articles.</p>
+      <h1 className="text-3xl font-bold text-surface-900 mb-2">Search Darshya</h1>
+      <p className="text-sm text-surface-600 mb-6">
+        Pujas you can book, temples, and the Sanskrit / Veda / Sanatan Dharma library.
+      </p>
 
       <form onSubmit={submit} className="flex gap-2 mb-6">
         <div className="relative flex-1">
@@ -73,12 +130,12 @@ export default function SearchClient() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="dharma, mantra, gayatri, atman..."
+            placeholder="rudrabhishek, kashi vishwanath, gayatri..."
             className="w-full pl-10 pr-3 py-2.5 border border-surface-200 rounded-lg"
             autoFocus
           />
         </div>
-        <button type="submit" className="px-5 py-2.5 bg-saffron-500 text-white font-semibold rounded-lg hover:bg-saffron-600">
+        <button type="submit" className="px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700">
           Search
         </button>
       </form>
@@ -87,12 +144,77 @@ export default function SearchClient() {
       {!idx && !error && <p className="text-sm text-surface-500">Loading index...</p>}
 
       {idx && q && (
-        <p className="text-sm text-surface-500 mb-4">{hits.length} result{hits.length === 1 ? '' : 's'} for &ldquo;{q}&rdquo;</p>
-      )}
-      {idx && q && hits.length === 0 && (
-        <p className="text-sm text-surface-500">No matches. Try a different term.</p>
+        <p className="text-sm text-surface-500 mb-4">{totalHits} result{totalHits === 1 ? '' : 's'} for &ldquo;{q}&rdquo;</p>
       )}
 
+      {q && api.pujas.length > 0 && (
+        <section className="mb-6">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
+            <Flame className="w-3.5 h-3.5" /> Pujas
+          </h2>
+          <div className="space-y-2">
+            {api.pujas.map((r) => (
+              <Link
+                key={`puja-${r.id || r.slug}`}
+                href={r.href || `/pujas/${r.slug}`}
+                className="block p-4 bg-white border border-surface-200 rounded-xl hover:border-saffron-400 transition-colors"
+              >
+                <h3 className="font-bold text-surface-900">{r.name}</h3>
+                {r.subtitle && <p className="text-sm text-surface-600 mt-0.5">{r.subtitle}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {q && api.temples.length > 0 && (
+        <section className="mb-6">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
+            <Landmark className="w-3.5 h-3.5" /> Temples
+          </h2>
+          <div className="space-y-2">
+            {api.temples.map((r) => (
+              <Link
+                key={`temple-${r.id || r.slug}`}
+                href={r.href || `/temples/${r.slug}`}
+                className="block p-4 bg-white border border-surface-200 rounded-xl hover:border-saffron-400 transition-colors"
+              >
+                <h3 className="font-bold text-surface-900">{r.name}</h3>
+                {r.subtitle && <p className="text-sm text-surface-600 mt-0.5">{r.subtitle}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {idx && q && totalHits === 0 && (
+        <div className="rounded-xl border border-surface-200 bg-white p-6">
+          <p className="text-sm text-surface-700">No matches for &ldquo;{q}&rdquo;.</p>
+          <p className="text-sm text-surface-500 mt-1">
+            Try a shorter term, or start from a catalogue:
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/pujas"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-saffron-600 px-4 text-sm font-semibold text-white hover:bg-saffron-700"
+            >
+              Browse all pujas
+            </Link>
+            <Link
+              href="/temples"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-surface-200 px-4 text-sm font-semibold text-surface-700 hover:border-saffron-400"
+            >
+              Browse temples
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {q && hits.length > 0 && (api.pujas.length > 0 || api.temples.length > 0) && (
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
+          Library
+        </h2>
+      )}
       <div className="space-y-2">
         {hits.map((h) => (
           <Link

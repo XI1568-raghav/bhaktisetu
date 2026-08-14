@@ -14,7 +14,7 @@ import {
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Canada NRI — Live Puja Booking & Darshan from India | Darshya',
+  title: 'Canada NRI — Live Puja Booking & Darshan from India',
   description:
     'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at verified temples in India. Live darshan, 80G receipts, weekly 1:1 priest call. CAD checkout, transparent pricing.',
   alternates: {
@@ -98,7 +98,7 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: 'Pandit-verified, video proof mandatory',
-    body: 'Every booking ships a video of your puja being performed. Refund if no video uploaded within 48h. Pandits Aadhaar-verified before payout.',
+    body: 'Every booking ships a video of your puja being performed. If no video arrives within 72h of your slot we cancel the booking and review it for a full refund. Pandits Aadhaar-verified before payout.',
   },
   {
     icon: Sparkles,

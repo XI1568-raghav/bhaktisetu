@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     "Read the Bhagavad Gita (18 chapters), Valmiki Ramayana (Bala Kanda, 77 sargas), and the Upanishads online. Sanskrit + English translations with reader controls.",
   alternates: { canonical: "https://darshya.online/content/books" },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: "Sacred Texts — Darshya",
     description:
       "Bhagavad Gita, Ramayana, Upanishads — full reader with Sanskrit + English.",

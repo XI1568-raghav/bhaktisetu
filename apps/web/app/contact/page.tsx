@@ -2,7 +2,13 @@
 
 import { Mail, Clock, Send, Briefcase, Handshake, Scale, Newspaper, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { COMPANY, postalContactLine } from "../../lib/company";
+import {
+  COMPANY,
+  grievanceOfficerLine,
+  grievanceSlaLine,
+  operatedByLine,
+  postalContactLine,
+} from "../../lib/company";
 
 type EscalationItem = { label: string; email: string; icon: typeof Briefcase };
 const escalationEmails: EscalationItem[] = ([
@@ -256,12 +262,41 @@ export default function ContactPage() {
                     <Send className="w-3.5 h-3.5" />
                     Open in email
                   </button>
-                  <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     Opens your default mail client pre-filled. Or write directly to {COMPANY.supportEmail}.
                   </p>
                 </form>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LEG-10 / LEG-11: the Consumer Protection (E-Commerce) Rules 2020 require
+          the operator's identity and a grievance contact to be displayed. Both
+          are rendered from lib/company.ts so /contact, /privacy and /refunds
+          cannot publish three different answers. */}
+      <section className="pb-16 sm:pb-24">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8">
+          <div
+            className="rounded-xl p-5 space-y-3"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+          >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
+              Operator &amp; grievance redressal
+            </h2>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+              {operatedByLine()}
+            </p>
+            {postalContactLine() && (
+              <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+                {postalContactLine()}
+              </p>
+            )}
+            <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+              <strong style={{ color: "var(--color-text)" }}>Grievances:</strong>{" "}
+              {grievanceOfficerLine()} {grievanceSlaLine()}
+            </p>
           </div>
         </div>
       </section>

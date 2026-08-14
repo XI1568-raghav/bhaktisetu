@@ -1,503 +1,458 @@
 'use client';
 
-import { useState } from 'react';
-import {
- Save,
- IndianRupee,
- Crown,
- Settings,
- Bell,
- Shield,
- AlertTriangle,
- CheckCircle2,
- UserPlus,
- Trash2,
- Loader2,
- X,
-} from 'lucide-react';
+/**
+ * /admin/settings — what the platform is configured to do, read-only.
+ *
+ * AO-10 (prod sweep 2026-08-12, P1): this screen was a control panel with
+ * nothing behind it. `handleSave` was `await new Promise(r => setTimeout(r,
+ * 700))` — it rendered "Saved!", issued ZERO requests, and every value reverted
+ * on reload. A founder discounting a category to win supply would believe the
+ * discount was live while the ledger kept charging the old rate.
+ *
+ * The numbers were invented as well. Six hardcoded rates ["25","15","30","20",
+ * "10","20"] were presented as the platform's take, including "Astrology
+ * Consultations 30%" while the live commission for Acharya Vinod Sharma was
+ * gross Rs 500 / platform cut Rs 100 = 20%. The Admins tab listed three people
+ * who do not exist and its Add / Remove buttons only pushed to local state
+ * (POST /admin/users answers "User created" and creates nobody — AO-16). The
+ * subscription plans were a fixture price list with dead Active/Inactive
+ * switches, and four Platform toggles persisted nothing at all.
+ *
+ * There is no GET/PUT /admin/settings endpoint of any kind — no config table,
+ * nothing for the ledger to read. So this screen becomes the honest version of
+ * itself: the take rates the ledger HAS applied, the plans the API actually
+ * serves, and the accounts that actually hold the admin role. No control that
+ * cannot write, and no number this page invented.
+ */
 
-// ── Mock Settings Data ────────────────────────────────────────────────────────
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { AlertTriangle, Crown, IndianRupee, Loader2, Shield } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
+import AuthGuard from '../../../components/AuthGuard';
+import { listCommissions, type Commission } from '../../../lib/commission-api';
+import { listPlans, type SubscriptionPlan } from '../../../lib/subscription-api';
+import { fetchAllAdminUsers, type AdminUserRecord } from '../users/users-api';
 
-interface CommissionRate {
- category: string;
- rate: number;
+/**
+ * The INTENDED platform take: `DEFAULT_PRIEST_SHARE = 0.8` in
+ * apps/api/src/services/booking.service.ts, and the 0.20 default on
+ * StoreProfile.commission.
+ *
+ * Deliberately labelled "intended" and never rendered as the rate in force.
+ * booking.service.ts carries an open, owner-gated schema mismatch: prisma still
+ * declares `Priest.commissionRate @default(0.70)`, so a pandit onboarded through
+ * the normal flow is billed at a 30% platform take, and the ledger on this
+ * machine holds 10 rows at 33.10%, 5 at 20% and 1 at 23.54%. A screen that
+ * announced a flat "20%" would be wrong for most of the money that has actually
+ * moved — which is the class of defect this page is being fixed for.
+ */
+const INTENDED_TAKE_RATE_PCT = 20;
+
+const roleLabels: Record<string, string> = {
+  PANDIT: 'Pandit',
+  PRIEST: 'Pandit',
+  STORE_OWNER: 'Store',
+  ASTROLOGER: 'Astrologer',
+  WELLNESS_INSTRUCTOR: 'Wellness',
+  GAUSHALA_MANAGER: 'Gaushala',
+  TEMPLE_MANAGER: 'Temple Mgr',
+  DEVOTEE: 'Devotee',
+  ADMIN: 'Admin',
+};
+
+type TabId = 'commissions' | 'subscriptions' | 'admins';
+
+const TABS: Array<{ id: TabId; label: string; icon: typeof IndianRupee }> = [
+  { id: 'commissions', label: 'Commissions', icon: IndianRupee },
+  { id: 'subscriptions', label: 'Subscriptions', icon: Crown },
+  { id: 'admins', label: 'Admins', icon: Shield },
+];
+
+interface RateBucket {
+  ratePercent: number;
+  rows: number;
+  providerEarnings: number;
+  platformCut: number;
 }
 
-interface SubscriptionPlan {
- id: string;
- name: string;
- price: number;
- interval: string;
- features: string[];
- active: boolean;
+function formatInr(amount: number): string {
+  return `Rs. ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const initialCommissionRates: CommissionRate[] = [
- { category: 'Puja Bookings', rate: 25 },
- { category: 'Store Sales', rate: 15 },
- { category: 'Astrology Consultations', rate: 30 },
- { category: 'Wellness Classes', rate: 20 },
- { category: 'Gaushala Donations', rate: 10 },
- { category: 'Temple Chadhava', rate: 20 },
-];
-
-const initialPlans: SubscriptionPlan[] = [
- {
- id: 'free',
- name: 'Free',
- price: 0,
- interval: 'forever',
- features: ['Basic darshan access', 'Limited content', 'Standard booking'],
- active: true,
- },
- {
- id: 'bhakti_pass',
- name: 'Bhakti Pass',
- price: 199,
- interval: 'month',
- features: ['Ad-free darshan', 'Premium content', '10% booking discount', 'Priority support'],
- active: true,
- },
- {
- id: 'bhakti_pass_annual',
- name: 'Bhakti Pass Annual',
- price: 1999,
- interval: 'year',
- features: ['All Bhakti Pass benefits', '15% booking discount', 'Exclusive events', 'Free prasad delivery'],
- active: true,
- },
- {
- id: 'temple_trust',
- name: 'Temple Trust',
- price: 499,
- interval: 'month',
- features: ['Multiple temple management', 'Analytics dashboard', 'Priority listing', 'Dedicated support'],
- active: false,
- },
-];
-
-const initialAdmins = [
- { id: '1', name: 'Admin User', email: 'admin@demo.com', role: 'Super Admin', addedDate: '2025-01-01' },
- { id: '2', name: 'Rahul Verma', email: 'rahul.v@darshya.online', role: 'Admin', addedDate: '2025-06-15' },
- { id: '3', name: 'Meena Kapoor', email: 'meena.k@darshya.online', role: 'Moderator', addedDate: '2025-09-20' },
-];
+/** Distinct take rates the ledger has actually charged, biggest bucket first. */
+function bucketByRate(rows: Commission[]): RateBucket[] {
+  const buckets = new Map<number, RateBucket>();
+  for (const row of rows) {
+    const rate = typeof row.ratePercent === 'number' ? row.ratePercent : null;
+    if (rate === null) continue;
+    const bucket = buckets.get(rate) ?? {
+      ratePercent: rate,
+      rows: 0,
+      providerEarnings: 0,
+      platformCut: 0,
+    };
+    bucket.rows += 1;
+    bucket.providerEarnings += Number(row.amount) || 0;
+    bucket.platformCut += Number(row.platformCut ?? 0) || 0;
+    buckets.set(rate, bucket);
+  }
+  return Array.from(buckets.values()).sort((a, b) => b.rows - a.rows);
+}
 
 export default function AdminSettingsPage() {
- const [commissionRates, setCommissionRates] = useState(initialCommissionRates);
- const [plans, setPlans] = useState(initialPlans);
- const [admins, setAdmins] = useState(initialAdmins);
- const [maintenanceMode, setMaintenanceMode] = useState(false);
- const [emailNotifications, setEmailNotifications] = useState(true);
- const [smsNotifications, setSmsNotifications] = useState(true);
- const [pushNotifications, setPushNotifications] = useState(false);
- const [autoApproveDevotees, setAutoApproveDevotees] = useState(true);
- const [saved, setSaved] = useState(false);
- const [saving, setSaving] = useState(false);
- const [activeTab, setActiveTab] = useState<'commissions' | 'subscriptions' | 'platform' | 'admins'>('commissions');
- const [showAddAdmin, setShowAddAdmin] = useState(false);
- const [newAdminName, setNewAdminName] = useState('');
- const [newAdminEmail, setNewAdminEmail] = useState('');
- const [newAdminRole, setNewAdminRole] = useState('Admin');
+  return (
+    <AuthGuard allowedRoles={['admin']}>
+      <AdminSettingsContent />
+    </AuthGuard>
+  );
+}
 
- const handleRateChange = (index: number, newRate: number) => {
- setCommissionRates((prev) => {
- const updated = [...prev];
- updated[index] = { ...updated[index]!, rate: newRate };
- return updated;
- });
- setSaved(false);
- };
+function AdminSettingsContent() {
+  const { session } = useAuth();
+  const token = session?.accessToken;
 
- const handleSave = async () => {
- setSaving(true);
- setSaved(false);
- await new Promise((r) => setTimeout(r, 700));
- setSaving(false);
- setSaved(true);
- setTimeout(() => setSaved(false), 3000);
- };
+  const [activeTab, setActiveTab] = useState<TabId>('commissions');
 
- const handleAddAdmin = () => {
- if (!newAdminName.trim() || !newAdminEmail.trim()) return;
- setAdmins((prev) => [
- ...prev,
- {
- id: Date.now().toString(),
- name: newAdminName.trim(),
- email: newAdminEmail.trim(),
- role: newAdminRole,
- addedDate: new Date().toISOString().split('T')[0]!,
- },
- ]);
- setNewAdminName('');
- setNewAdminEmail('');
- setNewAdminRole('Admin');
- setShowAddAdmin(false);
- };
+  const [ledger, setLedger] = useState<Commission[]>([]);
+  const [ledgerTotal, setLedgerTotal] = useState(0);
+  const [ledgerLoading, setLedgerLoading] = useState(true);
+  const [ledgerError, setLedgerError] = useState<string | null>(null);
 
- const handleRemoveAdmin = (id: string) => {
- setAdmins((prev) => prev.filter((a) => a.id !== id));
- };
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState<string | null>(null);
 
- const togglePlan = (planId: string) => {
- setPlans((prev) =>
- prev.map((p) => (p.id === planId ? { ...p, active: !p.active } : p))
- );
- setSaved(false);
- };
+  const [admins, setAdmins] = useState<AdminUserRecord[]>([]);
+  const [adminsLoading, setAdminsLoading] = useState(true);
+  const [adminsError, setAdminsError] = useState<string | null>(null);
 
- const tabs = [
- { id: 'commissions' as const, label: 'Commissions', icon: IndianRupee },
- { id: 'subscriptions' as const, label: 'Subscriptions', icon: Crown },
- { id: 'platform' as const, label: 'Platform', icon: Settings },
- { id: 'admins' as const, label: 'Admins', icon: Shield },
- ];
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
 
- return (
- <div className="space-y-6">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-lg font-semibold text-surface-800">Settings</h1>
- <p className="text-sm text-surface-500 mt-0.5">Configure platform settings, commissions, and subscriptions</p>
- </div>
- <button
- onClick={handleSave}
- disabled={saving}
- className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-60"
- >
- {saving ? (
- <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
- ) : saved ? (
- <><CheckCircle2 className="w-4 h-4" /> Saved!</>
- ) : (
- <><Save className="w-4 h-4" /> Save Changes</>
- )}
- </button>
- </div>
+    (async () => {
+      try {
+        const page = await listCommissions(token, { pageSize: 200 });
+        if (cancelled) return;
+        setLedger(page.items);
+        setLedgerTotal(page.total);
+      } catch (err) {
+        if (!cancelled) {
+          setLedger([]);
+          setLedgerError(err instanceof Error ? err.message : 'Could not load the commission ledger.');
+        }
+      } finally {
+        if (!cancelled) setLedgerLoading(false);
+      }
+    })();
 
- {/* Tabs */}
- <div className="flex gap-1 bg-[var(--color-surface)] rounded-lg p-1 border border-[var(--color-border)] w-fit">
- {tabs.map((tab) => {
- const Icon = tab.icon;
- return (
- <button
- key={tab.id}
- onClick={() => setActiveTab(tab.id)}
- className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
- activeTab === tab.id
- ? 'bg-saffron-600 text-white'
- : 'text-surface-500 hover:text-surface-700 hover:bg-surface-50'
- }`}
- >
- <Icon className="w-4 h-4" />
- {tab.label}
- </button>
- );
- })}
- </div>
+    (async () => {
+      try {
+        const rows = await listPlans();
+        if (!cancelled) setPlans(rows);
+      } catch (err) {
+        if (!cancelled) {
+          setPlans([]);
+          setPlansError(err instanceof Error ? err.message : 'Could not load subscription plans.');
+        }
+      } finally {
+        if (!cancelled) setPlansLoading(false);
+      }
+    })();
 
- {/* Commission rates */}
- {activeTab === 'commissions' && (
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <h2 className="text-sm font-semibold text-surface-800 mb-1">Commission Rates by Category</h2>
- <p className="text-xs text-surface-500 mb-5">Set the platform commission percentage for each service category.</p>
- <div className="space-y-4">
- {commissionRates.map((cr, i) => (
- <div key={cr.category} className="flex items-center gap-4">
- <label className="text-sm text-surface-700 w-52 shrink-0">{cr.category}</label>
- <div className="flex-1 max-w-xs">
- <input
- type="range"
- min={5}
- max={50}
- step={1}
- value={cr.rate}
- onChange={(e) => handleRateChange(i, Number(e.target.value))}
- className="w-full accent-saffron-600"
- />
- </div>
- <div className="flex items-center gap-1 w-20">
- <input
- type="number"
- min={5}
- max={50}
- value={cr.rate}
- onChange={(e) => handleRateChange(i, Number(e.target.value))}
- className="w-14 px-2 py-1.5 text-center bg-surface-50 border border-[var(--color-border)] rounded-md text-sm text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-500/30"
- />
- <span className="text-sm text-surface-500">%</span>
- </div>
- </div>
- ))}
- </div>
- </div>
- )}
+    (async () => {
+      try {
+        const directory = await fetchAllAdminUsers(token);
+        if (cancelled) return;
+        setAdmins(directory.users.filter((u) => (u.roles ?? []).includes('ADMIN')));
+      } catch (err) {
+        if (!cancelled) {
+          setAdmins([]);
+          setAdminsError(err instanceof Error ? err.message : 'Could not load admin accounts.');
+        }
+      } finally {
+        if (!cancelled) setAdminsLoading(false);
+      }
+    })();
 
- {/* Subscription plans */}
- {activeTab === 'subscriptions' && (
- <div className="space-y-4">
- {plans.map((plan) => (
- <div
- key={plan.id}
- className={`bg-[var(--color-surface)] rounded-xl border p-5 transition-colors ${
- plan.active ? 'border-[var(--color-border)]' : 'border-[var(--color-border)] opacity-60'
- }`}
- >
- <div className="flex items-start justify-between mb-3">
- <div>
- <div className="flex items-center gap-2">
- <h3 className="font-semibold text-surface-800">{plan.name}</h3>
- <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${plan.active ? 'bg-green-50 text-green-700' : 'bg-surface-100 text-surface-500'}`}>
- {plan.active ? 'Active' : 'Inactive'}
- </span>
- </div>
- <p className="text-sm text-surface-500 mt-0.5">
- {plan.price === 0 ? 'Free forever' : `Rs. ${plan.price}/${plan.interval}`}
- </p>
- </div>
- <button
- onClick={() => togglePlan(plan.id)}
- className={`relative w-11 h-6 rounded-full transition-colors ${
- plan.active ? 'bg-green-500' : 'bg-surface-300'
- }`}
- >
- <span
- className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
- plan.active ? 'translate-x-5' : 'translate-x-0'
- }`}
- />
- </button>
- </div>
- <div className="flex flex-wrap gap-2">
- {plan.features.map((f) => (
- <span key={f} className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-50 text-surface-600 text-xs rounded-full">
- <CheckCircle2 className="w-3 h-3 text-green-500" /> {f}
- </span>
- ))}
- </div>
- </div>
- ))}
- </div>
- )}
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
- {/* Platform settings */}
- {activeTab === 'platform' && (
- <div className="space-y-4">
- {/* Maintenance mode */}
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <div className="flex items-start justify-between">
- <div>
- <div className="flex items-center gap-2">
- <AlertTriangle className={`w-4 h-4 ${maintenanceMode ? 'text-amber-500' : 'text-surface-400'}`} />
- <h3 className="font-semibold text-surface-800">Maintenance Mode</h3>
- </div>
- <p className="text-xs text-surface-500 mt-1 ml-6">
- When enabled, the platform shows a maintenance page to all non-admin users.
- </p>
- </div>
- <button
- onClick={() => { setMaintenanceMode(!maintenanceMode); setSaved(false); }}
- className={`relative w-11 h-6 rounded-full transition-colors ${
- maintenanceMode ? 'bg-amber-500' : 'bg-surface-300'
- }`}
- >
- <span
- className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
- maintenanceMode ? 'translate-x-5' : 'translate-x-0'
- }`}
- />
- </button>
- </div>
- </div>
+  const rateBuckets = bucketByRate(ledger);
 
- {/* Notification toggles */}
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <h3 className="font-semibold text-surface-800 flex items-center gap-2 mb-4">
- <Bell className="w-4 h-4 text-blue-500" /> Notification Settings
- </h3>
- <div className="space-y-4">
- {[
- { label: 'Email Notifications', desc: 'Send transactional emails (booking confirmations, payment receipts)', value: emailNotifications, set: setEmailNotifications },
- { label: 'SMS Notifications', desc: 'Send SMS alerts for critical events (OTP, booking reminders)', value: smsNotifications, set: setSmsNotifications },
- { label: 'Push Notifications', desc: 'Browser push notifications for admin alerts', value: pushNotifications, set: setPushNotifications },
- ].map((toggle) => (
- <div key={toggle.label} className="flex items-start justify-between">
- <div>
- <p className="text-sm font-medium text-surface-800">{toggle.label}</p>
- <p className="text-xs text-surface-500 mt-0.5">{toggle.desc}</p>
- </div>
- <button
- onClick={() => { toggle.set(!toggle.value); setSaved(false); }}
- className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ml-4 ${
- toggle.value ? 'bg-green-500' : 'bg-surface-300'
- }`}
- >
- <span
- className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
- toggle.value ? 'translate-x-5' : 'translate-x-0'
- }`}
- />
- </button>
- </div>
- ))}
- </div>
- </div>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold text-surface-800">Settings</h1>
+        <p className="text-sm text-surface-500 mt-0.5">
+          What the platform is configured to do. Everything here is read-only — there is no
+          settings endpoint, so a control on this screen could only pretend.
+        </p>
+      </div>
 
- {/* Auto-approve devotees */}
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
- <div className="flex items-start justify-between">
- <div>
- <div className="flex items-center gap-2">
- <UserPlus className="w-4 h-4 text-green-500" />
- <h3 className="font-semibold text-surface-800">Auto-Approve Devotees</h3>
- </div>
- <p className="text-xs text-surface-500 mt-1 ml-6">
- Automatically approve devotee signups without manual review. Provider roles still require approval.
- </p>
- </div>
- <button
- onClick={() => { setAutoApproveDevotees(!autoApproveDevotees); setSaved(false); }}
- className={`relative w-11 h-6 rounded-full transition-colors ${
- autoApproveDevotees ? 'bg-green-500' : 'bg-surface-300'
- }`}
- >
- <span
- className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
- autoApproveDevotees ? 'translate-x-5' : 'translate-x-0'
- }`}
- />
- </button>
- </div>
- </div>
- </div>
- )}
+      <div className="flex gap-1 bg-[var(--color-surface)] rounded-lg p-1 border border-[var(--color-border)] w-fit">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-saffron-600 text-white'
+                  : 'text-surface-500 hover:text-surface-700 hover:bg-surface-50'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
- {/* Admin management */}
- {activeTab === 'admins' && (
- <div className="space-y-4">
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
- <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
- <h2 className="text-sm font-semibold text-surface-800">Admin Accounts</h2>
- <button
- onClick={() => setShowAddAdmin(true)}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors"
- >
- <UserPlus className="w-3.5 h-3.5" /> Add Admin
- </button>
- </div>
- <div className="overflow-x-auto">
- <table className="w-full text-sm">
- <thead>
- <tr className="border-b border-[var(--color-border)]">
- <th className="text-left py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Name</th>
- <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Email</th>
- <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Role</th>
- <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Added</th>
- <th className="text-right py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Action</th>
- </tr>
- </thead>
- <tbody>
- {admins.map((admin, i) => (
- <tr key={admin.id} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}>
- <td className="py-3 px-5">
- <div className="flex items-center gap-2">
- <div className="w-7 h-7 bg-saffron-100 rounded-full flex items-center justify-center">
- <span className="text-xs font-bold text-saffron-700">{admin.name.charAt(0)}</span>
- </div>
- <span className="font-medium text-surface-800">{admin.name}</span>
- </div>
- </td>
- <td className="py-3 px-4 text-surface-500">{admin.email}</td>
- <td className="py-3 px-4">
- <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
- admin.role === 'Super Admin' ? 'bg-red-50 text-red-700' : admin.role === 'Admin' ? 'bg-blue-50 text-blue-700' : 'bg-surface-100 text-surface-600'
- }`}>
- {admin.role}
- </span>
- </td>
- <td className="py-3 px-4 text-surface-500">
- {new Date(admin.addedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
- </td>
- <td className="py-3 px-5 text-right">
- {admin.role !== 'Super Admin' && (
- <button
- onClick={() => handleRemoveAdmin(admin.id)}
- className="p-1.5 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
- title="Remove"
- >
- <Trash2 className="w-4 h-4" />
- </button>
- )}
- </td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- </div>
+      {/* ─── commissions ──────────────────────────────────────────────────── */}
+      {activeTab === 'commissions' && (
+        <div className="space-y-4">
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
+            <h2 className="text-sm font-semibold text-surface-800 mb-1">Take rate in force</h2>
+            <p className="text-xs text-surface-500 mb-4">
+              The rate is stamped on each Commission row when it is created, so the only truthful
+              answer to &ldquo;what do we charge?&rdquo; is what the ledger has charged.
+            </p>
 
- {/* Add Admin Modal */}
- {showAddAdmin && (
- <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
- <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
- <div className="flex items-center justify-between mb-5">
- <h3 className="text-base font-semibold text-surface-800">Add Admin</h3>
- <button onClick={() => setShowAddAdmin(false)} className="text-surface-400 hover:text-surface-600">
- <X className="w-5 h-5" />
- </button>
- </div>
- <div className="space-y-4">
- <div>
- <label className="block text-xs text-surface-500 uppercase tracking-wide mb-1">Full Name *</label>
- <input
- value={newAdminName}
- onChange={(e) => setNewAdminName(e.target.value)}
- className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
- placeholder="e.g. Rahul Verma"
- />
- </div>
- <div>
- <label className="block text-xs text-surface-500 uppercase tracking-wide mb-1">Email *</label>
- <input
- type="email"
- value={newAdminEmail}
- onChange={(e) => setNewAdminEmail(e.target.value)}
- className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
- placeholder="admin@darshya.online"
- />
- </div>
- <div>
- <label className="block text-xs text-surface-500 uppercase tracking-wide mb-1">Role</label>
- <select
- value={newAdminRole}
- onChange={(e) => setNewAdminRole(e.target.value)}
- className="w-full px-3 py-2 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-300"
- >
- <option>Admin</option>
- <option>Moderator</option>
- </select>
- </div>
- </div>
- <div className="flex gap-3 mt-6">
- <button
- onClick={handleAddAdmin}
- className="flex-1 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
- >
- Add Admin
- </button>
- <button
- onClick={() => setShowAddAdmin(false)}
- className="px-4 py-2.5 border border-surface-200 text-surface-600 text-sm font-medium rounded-lg hover:bg-surface-50 transition-colors"
- >
- Cancel
- </button>
- </div>
- </div>
- </div>
- )}
- </div>
- )}
- </div>
- );
+            {ledgerError && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Commission ledger unavailable — {ledgerError}. The rates actually charged cannot
+                  be shown, and no figure is substituted for them.
+                </span>
+              </div>
+            )}
+
+            {ledgerLoading ? (
+              <p className="mt-4 flex items-center gap-2 text-sm text-surface-500">
+                <Loader2 className="w-4 h-4 animate-spin" /> Reading the ledger…
+              </p>
+            ) : rateBuckets.length === 0 ? (
+              !ledgerError && (
+                <p className="mt-4 text-sm text-surface-500">
+                  No commission has been charged yet, so no rate has been applied. The intended take
+                  rate is {INTENDED_TAKE_RATE_PCT}% platform / {100 - INTENDED_TAKE_RATE_PCT}%
+                  provider — an intention, not a measurement.
+                </p>
+              )
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border)]">
+                      <th className="text-left py-2.5 pr-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Rate charged</th>
+                      <th className="text-center py-2.5 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Commissions</th>
+                      <th className="text-right py-2.5 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Provider earned</th>
+                      <th className="text-right py-2.5 pl-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Platform cut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rateBuckets.map((b) => (
+                      <tr key={b.ratePercent} className="border-b border-[var(--color-border)] last:border-0">
+                        <td className="py-2.5 pr-4 font-medium text-surface-800">{b.ratePercent}%</td>
+                        <td className="py-2.5 px-4 text-center text-surface-600">{b.rows}</td>
+                        <td className="py-2.5 px-4 text-right text-surface-700">{formatInr(b.providerEarnings)}</td>
+                        <td className="py-2.5 pl-4 text-right font-medium text-surface-800">{formatInr(b.platformCut)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {ledgerTotal > ledger.length && (
+                  <p className="mt-3 text-xs text-amber-700">
+                    Measured over the {ledger.length} most recent of {ledgerTotal} commissions —
+                    older rows may carry other rates.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
+            <h2 className="text-sm font-semibold text-surface-800 mb-2">Where the rate is set</h2>
+            <ul className="text-sm text-surface-600 space-y-1.5 list-disc pl-5">
+              <li>
+                Intended take: {INTENDED_TAKE_RATE_PCT}% platform /{' '}
+                {100 - INTENDED_TAKE_RATE_PCT}% provider. Rows above that differ are not a display
+                fault — a pandit&apos;s stored share is the source of truth, and its schema default
+                is still the pre-revamp 70% (a 30% platform take). Reconciling the two is an open
+                owner decision recorded in the booking service.
+              </li>
+              <li>
+                A pandit&apos;s own share lives on their provider record and is applied when the
+                booking creates its commission — it cannot be changed retroactively.
+              </li>
+              <li>
+                Rates already charged are immutable: <code>Commission.percentage</code> is what that
+                booking was billed, and reconciliation depends on it staying that way.
+              </li>
+              <li>
+                There is no platform-wide rate switch. Editing one from here would need a config
+                table the ledger reads, which does not exist yet.
+              </li>
+            </ul>
+            <Link href="/admin/commissions" className="inline-block mt-3 text-sm text-saffron-600 font-medium">
+              Open the commission ledger
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ─── subscriptions ────────────────────────────────────────────────── */}
+      {activeTab === 'subscriptions' && (
+        <div className="space-y-4">
+          <p className="text-xs text-surface-500">
+            Plans as the API serves them to providers. Prices come from the same rows
+            /subscriptions/subscribe charges, so this screen cannot disagree with the bill.
+          </p>
+
+          {plansError && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>Plans unavailable — {plansError}. This is not an empty plan list.</span>
+            </div>
+          )}
+
+          {plansLoading ? (
+            <p className="flex items-center gap-2 text-sm text-surface-500">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading plans…
+            </p>
+          ) : plans.length === 0 ? (
+            !plansError && (
+              <p className="text-sm text-surface-500">The API is serving no subscription plans.</p>
+            )
+          ) : (
+            plans.map((plan) => (
+              <div
+                key={plan.id}
+                className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-surface-800">{plan.name}</h3>
+                    {plan.role && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-100 text-surface-600">
+                        {roleLabels[plan.role] ?? plan.role}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-surface-700">
+                    {plan.priceMonthly === 0
+                      ? 'Free'
+                      : `Rs. ${plan.priceMonthly.toLocaleString('en-IN')}/month`}
+                  </p>
+                </div>
+                {plan.description && (
+                  <p className="text-sm text-surface-500 mt-1">{plan.description}</p>
+                )}
+                {plan.features.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {plan.features.map((f) => (
+                      <span
+                        key={f}
+                        className="inline-flex items-center px-2 py-0.5 bg-surface-50 text-surface-600 text-xs rounded-full"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ─── admins ───────────────────────────────────────────────────────── */}
+      {activeTab === 'admins' && (
+        <div className="space-y-4">
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+            <div className="px-5 py-4 border-b border-[var(--color-border)]">
+              <h2 className="text-sm font-semibold text-surface-800">Admin accounts</h2>
+              <p className="text-xs text-surface-500 mt-0.5">
+                Accounts holding the ADMIN role assignment.
+              </p>
+            </div>
+
+            {adminsError && (
+              <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>Admin accounts unavailable — {adminsError}. This is not &ldquo;no admins&rdquo;.</span>
+              </div>
+            )}
+
+            {adminsLoading ? (
+              <p className="flex items-center gap-2 text-sm text-surface-500 p-5">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading admin accounts…
+              </p>
+            ) : admins.length === 0 ? (
+              <p className="p-5 text-sm text-surface-500">
+                {adminsError ? 'Admin accounts could not be loaded.' : 'No account holds the admin role.'}
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border)]">
+                      <th className="text-left py-3 px-5 text-xs font-medium text-surface-500 uppercase tracking-wide">Name</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Email</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wide">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {admins.map((a, i) => (
+                      <tr
+                        key={a.id}
+                        className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}
+                      >
+                        <td className="py-3 px-5">
+                          <Link
+                            href={`/admin/users/${a.id}`}
+                            className="font-medium text-surface-800 hover:text-saffron-600"
+                          >
+                            {a.fullName}
+                          </Link>
+                        </td>
+                        <td className="py-3 px-4 text-surface-500">{a.email ?? '—'}</td>
+                        <td className="py-3 px-4 text-surface-500">
+                          {new Date(a.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5">
+            <h2 className="text-sm font-semibold text-surface-800 mb-2">Granting admin access</h2>
+            <p className="text-sm text-surface-600">
+              Change an existing account&apos;s role from{' '}
+              <Link href="/admin/users" className="text-saffron-600 font-medium">
+                User Management
+              </Link>
+              . There is deliberately no &ldquo;Add Admin&rdquo; form here: POST /admin/users answers
+              &ldquo;User created&rdquo; without creating anyone, so a form on this screen would hand
+              out admin access that does not exist.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

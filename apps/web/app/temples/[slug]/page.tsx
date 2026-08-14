@@ -7,7 +7,7 @@ export const dynamicParams = true;
 export const revalidate = 3600;
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import {
  MapPin,
  Star,
@@ -32,13 +32,17 @@ import {
  BookOpen,
  ArrowUpRight,
 } from 'lucide-react';
-import { getTempleBySlug, type TempleDetail } from '../../../lib/api';
-import { getTempleHero, getTempleGallery, getDeityImage } from '../../../lib/images';
+import { getTempleBySlug, getTemples, type TempleDetail } from '../../../lib/api';
+import { getTempleHero, getTempleGallery, getDeityImage, remoteSrcSet, IMG_W } from '../../../lib/images';
 import {
  getTempleDetail,
  getSimilarTemples,
  type TempleDetailRich,
 } from '../../../lib/temple-details';
+import { canonicalTempleSlug } from '../../../lib/temple-slug';
+import { resolveApiTemple } from '../../../lib/temple-resolve';
+import { matchTempleOffering, templeBookHref } from '../../../lib/temple-booking';
+import TempleBookPujaCta from '../../../components/temple/TempleBookPujaCta';
 import TempleHeartShareButtons from '../../../components/TempleHeartShareButtons';
 import AnalyticsEvent from '../../../components/AnalyticsEvent';
 import { TEMPLE_DETAILS } from '../../../lib/temple-details';
@@ -92,37 +96,16 @@ const apiFallback: TempleDetail = {
  darshanStream: [],
 };
 
-// P0 #202 (2026-08-03): sitemap + API seed temples with `<name>-<city>` slugs
-// (e.g. `kashi-vishwanath-varanasi`) but the curated rich-detail map keys on the
-// short slug (`kashi-vishwanath`). A request for the long slug found no rich
-// match, and `getApiTemple` always returned the non-null `apiFallback` object —
-// so the page 200'd with a generic "Temple" shell instead of resolving. Map the
-// long API slug back to its rich short slug so every sitemap URL renders real
-// content instead of an empty shell.
-function canonicalTempleSlug(slug: string): string {
-  const rich = getTempleDetail(slug);
-  if (rich) return slug;
-  const parts = slug.split('-');
-  while (parts.length > 1) {
-    parts.pop();
-    const candidate = parts.join('-');
-    if (getTempleDetail(candidate)) return candidate;
-  }
-  return slug;
-}
+// `canonicalTempleSlug` now lives in lib/temple-slug.ts. It used to be defined
+// here AND re-implemented independently in app/sitemap.ts (as
+// `toCanonicalTempleSlug`, keyed off a hardcoded slug array rather than
+// TEMPLE_DETAILS) — two normalisers that could and did disagree, which is how
+// the sitemap came to advertise one URL while the DB and every internal link
+// pointed at another (SEO-06).
 
-async function getApiTemple(slug: string): Promise<TempleDetail | null> {
-  // `getTempleBySlug` throws on a non-OK response, so a throw OR null means
-  // "API has no such temple". Previously this ALWAYS returned the non-null
-  // `apiFallback` shell on error, which masked 404s AND — worse — prevented
-  // `notFound()` from firing for genuinely-missing temples.
-  try {
-    const temple = await getTempleBySlug(slug);
-    return temple ?? null;
-  } catch {
-    return null;
-  }
-}
+// DF-04: the resolver now lives in lib/temple-api.ts so this page and its
+// /pujas child route agree on which temples exist (they used to disagree).
+const getApiTemple = resolveApiTemple;
 
 // ──────────────────────────────────────────────────────────────
 // Metadata
@@ -133,9 +116,14 @@ export async function generateMetadata({
 }: {
  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
- const { slug } = await params;
+ const { slug: rawSlug } = await params;
+ // SEO-06: resolve the alias BEFORE building the canonical. This used to
+ // interpolate the raw incoming slug, so /temples/kashi-vishwanath-varanasi
+ // declared itself canonical while the PlaceOfWorship JSON-LD on the very same
+ // page declared .../kashi-vishwanath. One helper, one URL, no contradiction.
+ const slug = canonicalTempleSlug(rawSlug);
  const rich = getTempleDetail(slug);
- const fallback = await getApiTemple(slug);
+ const fallback = (await getApiTemple(slug)) ?? (await getApiTemple(rawSlug));
  const name = rich?.name ?? fallback?.name ?? 'Temple';
  const location = rich ? `${rich.location}, ${rich.state}` : `${fallback?.city ?? ''}, ${fallback?.state ?? ''}`;
  const deity = rich?.deity ?? fallback?.deityPrimary ?? 'Devotees';
@@ -202,6 +190,18 @@ export default async function TempleDetailPage({
  // P0 #202: resolve a long `<name>-<city>` API slug to its rich short slug so
  // sitemap URLs render the curated detail instead of an empty shell.
  const slug = canonicalTempleSlug(rawSlug);
+
+ // SEO-06 (prod sweep 2026-08-12): resolving the alias was only half the job —
+ // the page then RENDERED it, so /temples/kashi-vishwanath and
+ // /temples/kashi-vishwanath-varanasi both returned 200 and each declared
+ // ITSELF canonical, splitting the link equity of the highest-intent page on
+ // the site while the JSON-LD on the long-slug page pointed at the short one.
+ // The API seeds the long slug, so internal links and any URL built from API
+ // data land on the twin the sitemap does not advertise. 308 to the one URL
+ // this route actually owns. Guarded by
+ // __tests__/seo/structured-data-honesty.test.ts.
+ if (slug !== rawSlug) permanentRedirect(`/temples/${slug}`);
+
  const rich = getTempleDetail(slug);
  const apiTemple = (await getApiTemple(slug)) ?? (await getApiTemple(rawSlug));
 
@@ -252,16 +252,16 @@ export default async function TempleDetailPage({
    ? { geo: { '@type': 'GeoCoordinates', latitude: apiTemple.lat, longitude: apiTemple.lng } }
    : {}),
   ...(ldPhone ? { telephone: ldPhone } : {}),
-  ...(typeof ldTrustScore === 'number' && ldTrustScore > 0
-   ? {
-      aggregateRating: {
-       '@type': 'AggregateRating',
-       ratingValue: Math.min(5, ldTrustScore / 20),
-       bestRating: 5,
-       ratingCount: 1,
-      },
-     }
-   : {}),
+  // SEO-05 (prod sweep 2026-08-12): NO aggregateRating here. This used to emit
+  //   ratingValue: Math.min(5, ldTrustScore / 20), bestRating: 5, ratingCount: 1
+  // — an internal operations metric published to Google, and to a devotee
+  // deciding where to send money, as if it were the average of real user
+  // reviews. There is no review behind it and ratingCount: 1 names a reviewer
+  // who does not exist. That is a misrepresentation first and a spammy-markup
+  // manual-action risk second. Re-add ONLY when it is computed from real rows
+  // in the `reviews` table, with the true ratingCount.
+  // The trust score itself is fine and is still rendered on the page — as a
+  // trust score, labelled as one.
  };
  const ldScript = (
   <script
@@ -315,9 +315,16 @@ function RichTemplePage({
  apiTemple: TempleDetail | null;
 }) {
  const heroImg = getTempleHero(slug);
- const gallery = getTempleGallery(slug);
+ const gallery = getTempleGallery(slug, IMG_W.CARD);
  const similar = getSimilarTemples(slug, 3);
  const liveDarshanEnabled = apiTemple?.liveDarshanEnabled ?? true;
+
+ // DF-04 (prod sweep 2026-08-12): every CTA below used to be
+ // `/pujas?temple=<slug>`, a param nothing reads — the devotee lost both the
+ // puja and the temple at the moment of highest commitment. Booking targets are
+ // now built from what the API says this temple actually offers.
+ const apiTempleSlug = apiTemple?.slug ?? null;
+ const apiOfferings = (apiTemple?.pujaOfferings ?? []).filter((o) => o.isActive !== false);
 
  return (
  <div className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]">
@@ -339,6 +346,13 @@ function RichTemplePage({
  <div className="relative h-[480px] w-full overflow-hidden md:h-[560px]">
  <img
  src={heroImg}
+ srcSet={remoteSrcSet(heroImg, [IMG_W.CARD, IMG_W.WIDE, IMG_W.HERO])}
+ sizes="100vw"
+ width={1280}
+ height={560}
+ loading="eager"
+ fetchPriority="high"
+ decoding="async"
  alt={rich.name}
  className="absolute inset-0 h-full w-full object-cover"
  />
@@ -354,7 +368,7 @@ function RichTemplePage({
  {rich.isDivyaDesam && <HeroBadge icon={Star} text="Divya Desam" tone="amber" />}
  <HeroBadge icon={Shield} text="Verified" tone="green" />
  </div>
- <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white drop-shadow-lg md:text-5xl">
+ <h1 className={`${H1.detail} max-w-3xl`}>
  {rich.name}
  </h1>
  <p className="mt-3 flex items-center gap-2 text-lg text-white/90">
@@ -416,17 +430,16 @@ function RichTemplePage({
 
  {/* 3. CTAs — Book Darshan / Puja / Live */}
  <section data-reveal className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
- <Link
- href={`/pujas?temple=${rich.slug}`}
- className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-saffron-600 to-saffron-700 p-6 text-white shadow-warm-md transition-transform hover:-translate-y-0.5"
- >
- <Flame className="mb-3 h-7 w-7 text-amber-200" />
- <div className="text-lg font-semibold">Book Puja via Darshya</div>
- <p className="mt-1 text-sm text-white/80">
- Verified priests, video proof, prasad delivery to your door
- </p>
- <ArrowUpRight className="absolute right-4 top-4 h-5 w-5 text-white/70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
- </Link>
+ {/* COM-12: this used to be an unconditional booking promise. 15 of the 20
+ seeded temples have no active offering, so three quarters of temple pages
+ promised verified priests and prasad delivery and then handed the devotee
+ an empty list. The card is now rendered from what the API actually
+ offers. */}
+ <TempleBookPujaCta
+ templeSlug={slug}
+ apiTempleSlug={apiTempleSlug}
+ offerings={apiTemple?.pujaOfferings}
+ />
 
  {rich.officialBookingUrl ? (
  <a
@@ -442,7 +455,7 @@ function RichTemplePage({
  <p className="mt-1 text-sm text-surface-500">
  Direct booking on the temple's official site
  </p>
- <p className="mt-2 text-[11px] italic text-surface-400">
+ <p className="mt-2 text-xs italic text-surface-400">
  Opens the temple's official website in a new tab
  </p>
  <ArrowUpRight className="absolute right-4 top-4 h-5 w-5 text-surface-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -466,7 +479,7 @@ function RichTemplePage({
  <div className="mb-3 flex items-center gap-2">
  <Video className="h-7 w-7 text-red-600" />
  {liveDarshanEnabled && (
- <span className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+ <span className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold uppercase text-white">
  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
  </span>
  )}
@@ -515,7 +528,14 @@ function RichTemplePage({
  </h2>
 
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
- {rich.pujasOffered.map((puja, i) => (
+ {rich.pujasOffered.map((puja, i) => {
+ // DF-04: a curated card only gets a Book control when the API confirms
+ // this temple offers that puja. Otherwise it is descriptive content, not
+ // a purchase — a "Book Now" that lands on an unfiltered catalogue costs
+ // more than an honest "not bookable here yet".
+ const offering = matchTempleOffering(puja.name, apiOfferings);
+ const bookHref = templeBookHref(slug, apiTempleSlug, offering);
+ return (
  <article
  key={`${puja.name}-${i}`}
  className="group flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-all hover:-translate-y-0.5 hover:border-saffron-300 hover:shadow-warm-md"
@@ -525,7 +545,7 @@ function RichTemplePage({
  {puja.name}
  </h3>
  {puja.bookExternal && (
- <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+ <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
  Official
  </span>
  )}
@@ -563,17 +583,20 @@ function RichTemplePage({
  >
  Book Official <ExternalLink className="h-3 w-3" />
  </a>
- ) : (
+ ) : offering ? (
  <Link
- href={`/pujas?temple=${rich.slug}`}
+ href={bookHref}
  className="inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-saffron-700"
  >
  Book Now
  </Link>
+ ) : (
+ <span className="text-xs text-surface-500">Not bookable on Darshya yet</span>
  )}
  </div>
  </article>
- ))}
+ );
+ })}
  </div>
  </section>
 
@@ -639,7 +662,7 @@ function RichTemplePage({
  <ul className="space-y-2 text-sm text-surface-600">
  {rich.accommodation.map((a) => (
  <li key={a} className="flex items-start gap-2">
- <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-saffron-500" />
+ <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-saffron-600" />
  <span>{a}</span>
  </li>
  ))}
@@ -655,7 +678,7 @@ function RichTemplePage({
  <ul className="space-y-2 text-sm text-surface-600">
  {rich.nearbyAttractions.map((a) => (
  <li key={a} className="flex items-start gap-2">
- <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-saffron-500" />
+ <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-saffron-600" />
  <span>{a}</span>
  </li>
  ))}
@@ -813,14 +836,18 @@ function RichTemplePage({
  >
  <div className="relative aspect-[16/10] overflow-hidden bg-orange-100">
  <img
- src={getTempleHero(t.slug)}
+ src={getTempleHero(t.slug, IMG_W.CARD)}
+ sizes="(max-width: 768px) 100vw, 380px"
+ width={500}
+ height={313}
+ decoding="async"
  alt={t.name}
  loading="lazy"
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
  {t.isJyotirlinga && (
- <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
+ <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
  <Star className="h-3 w-3" /> Jyotirlinga
  </span>
  )}
@@ -848,12 +875,14 @@ function RichTemplePage({
  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-warm-sm">
  <h3 className="mb-3 font-semibold text-surface-800">Quick Actions</h3>
  <div className="space-y-2.5">
- <Link
- href={`/pujas?temple=${rich.slug}`}
- className="flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-saffron-700"
- >
- <Flame className="h-4 w-4" /> Book a Puja
- </Link>
+ {/* COM-12: the sidebar action carries the same guard as the hero card —
+ no Book button for a temple with nothing bookable. */}
+ <TempleBookPujaCta
+ variant="button"
+ templeSlug={slug}
+ apiTempleSlug={apiTempleSlug}
+ offerings={apiTemple?.pujaOfferings}
+ />
  <Link
  href={`/darshan/${rich.slug}`}
  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white py-2.5 text-sm font-medium text-surface-700 transition-colors hover:border-saffron-300 hover:bg-saffron-50 hover:text-saffron-700"
@@ -888,7 +917,7 @@ function RichTemplePage({
  </div>
 
  {rich.officialWebsite && (
- <p className="mt-3 text-[11px] italic text-surface-400">
+ <p className="mt-3 text-xs italic text-surface-400">
  External links open the temple&apos;s official website.
  </p>
  )}
@@ -920,7 +949,7 @@ function RichTemplePage({
 
 function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail }) {
  const heroImg = getTempleHero(slug);
- const gallery = getTempleGallery(slug);
+ const gallery = getTempleGallery(slug, IMG_W.CARD);
 
  return (
  <div className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]">
@@ -937,10 +966,10 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  </div>
 
  <section className="relative h-80 overflow-hidden md:h-96">
- <img src={heroImg} alt={temple.name} className="absolute inset-0 h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
+ <img src={heroImg} srcSet={remoteSrcSet(heroImg, [IMG_W.CARD, IMG_W.WIDE, IMG_W.HERO])} sizes="100vw" width={1280} height={384} alt={temple.name} className="absolute inset-0 h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
  <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
- <h1 className="text-3xl font-semibold text-white md:text-4xl">{temple.name}</h1>
+ <h1 className={H1.detail}>{temple.name}</h1>
  <p className="mt-2 flex items-center gap-2 text-white/90">
  <MapPin className="h-4 w-4" /> {temple.city}, {temple.state}
  </p>
@@ -993,7 +1022,7 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
  {gallery.slice(0, 6).map((img, i) => (
  <div key={i} className="aspect-[4/3] overflow-hidden rounded-lg">
- <img src={img} alt={`${temple.name} photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
+ <img src={img} srcSet={remoteSrcSet(img, [IMG_W.CARD, IMG_W.WIDE])} sizes="(max-width: 768px) 50vw, 260px" width={500} height={375} alt={`${temple.name} photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
  </div>
  ))}
  </div>
@@ -1005,12 +1034,14 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  <div className="sticky top-24 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
  <h3 className="mb-3 font-semibold text-surface-800">Actions</h3>
  <div className="space-y-2">
- <Link
- href={`/pujas?temple=${slug}`}
- className="flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 py-2.5 text-sm font-medium text-white hover:bg-saffron-700"
- >
- <Flame className="h-4 w-4" /> Book Puja
- </Link>
+ {/* COM-12: same guard as the rich page — a temple with no active
+ offering does not get a Book Puja button. */}
+ <TempleBookPujaCta
+ variant="button"
+ templeSlug={slug}
+ apiTempleSlug={temple.slug ?? null}
+ offerings={temple.pujaOfferings}
+ />
  <Link
  href={`/darshan/${slug}`}
  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white py-2.5 text-sm font-medium text-surface-700 hover:border-saffron-300"
@@ -1034,7 +1065,7 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  </a>
  )}
  </div>
- <p className="mt-3 text-[11px] italic text-surface-400">
+ <p className="mt-3 text-xs italic text-surface-400">
  Full details for this temple coming soon.
  </p>
  </div>
@@ -1153,6 +1184,11 @@ function PhotoGallery({
  >
  <img
  src={img}
+ srcSet={remoteSrcSet(img, [IMG_W.CARD, IMG_W.WIDE])}
+ sizes="(max-width: 768px) 50vw, 300px"
+ width={500}
+ height={500}
+ decoding="async"
  alt={`${templeName} photo ${i + 1}`}
  loading="lazy"
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"

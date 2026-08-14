@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Video, Flame, Heart, Gift, ArrowRight } from 'lucide-react';
-import { getTempleHero, getDeityImage } from '../../lib/images';
+import { getTempleHero, getDeityImage, IMG_W } from '../../lib/images';
 import TextReveal from '../motion/TextReveal';
+import { liveDarshanClaim } from '../../lib/platform-stats';
+import { GAUSHALA_ENTRY_CLAIM } from '../../lib/gaushala-plans';
 
 type WorshipCard = {
   href: string;
@@ -13,14 +15,23 @@ type WorshipCard = {
   badge?: string;
 };
 
-const CARDS: WorshipCard[] = [
+/**
+ * CM-11 / DF-05 (darshan count) and DF-06 (gaushala entry price), prod sweep
+ * 2026-08-12. This strip used to hardcode "Watch live aarti from 200+ temples"
+ * against 20 seeded temples, and "Adopt a cow from Rs 500 a month" against a
+ * /gaushala page whose cheapest monthly plan is Rs 3,000 — no Rs 500 tier has
+ * ever existed. Both numbers are now derived: the temple count from a server
+ * count (null -> digit-free copy) and the cow price from the same plan table
+ * /gaushala renders.
+ */
+const cards = (liveDarshanTemples: number | null): WorshipCard[] => [
   {
     href: '/darshan',
     label: 'Live Darshan',
-    body: 'Watch live aarti from 200+ temples',
+    body: liveDarshanClaim(liveDarshanTemples),
     cta: 'Watch live',
     Icon: Video,
-    image: getTempleHero('jagannath-puri'),
+    image: getTempleHero('jagannath-puri', IMG_W.CARD),
     badge: 'LIVE',
   },
   {
@@ -29,15 +40,15 @@ const CARDS: WorshipCard[] = [
     body: 'Rudrabhishek at Kashi, ₹1,100',
     cta: 'Book a puja',
     Icon: Flame,
-    image: getTempleHero('kashi-vishwanath'),
+    image: getTempleHero('kashi-vishwanath', IMG_W.CARD),
   },
   {
     href: '/gaushala',
     label: 'Gaushala Seva',
-    body: 'Adopt a cow from ₹500 a month',
+    body: `Adopt a cow ${GAUSHALA_ENTRY_CLAIM}`,
     cta: 'Sponsor seva',
     Icon: Heart,
-    image: getDeityImage('krishna'),
+    image: getDeityImage('krishna', 'portrait', IMG_W.CARD),
   },
   {
     href: '/donations',
@@ -45,12 +56,19 @@ const CARDS: WorshipCard[] = [
     body: 'Tax deductible giving',
     cta: 'Donate now',
     Icon: Gift,
-    image: getTempleHero('somnath'),
+    image: getTempleHero('somnath', IMG_W.CARD),
     badge: '80G',
   },
 ];
 
-export default function WorshipStrip() {
+interface Props {
+  /** Server-counted distinct temples with a live darshan stream; `null` when
+   *  the count is unavailable (CM-11). */
+  liveDarshanTemples?: number | null;
+}
+
+export default function WorshipStrip({ liveDarshanTemples = null }: Props) {
+  const CARDS = cards(liveDarshanTemples);
   return (
     <section className="py-6 md:py-8" aria-labelledby="worship-strip-heading">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -83,6 +101,9 @@ export default function WorshipStrip() {
               <div className="relative h-32 sm:h-36 overflow-hidden">
                 <img
                   src={card.image}
+                  sizes="(max-width: 640px) 50vw, 300px"
+                  width={500}
+                  height={288}
                   alt={card.label}
                   loading="lazy"
                   decoding="async"
@@ -93,7 +114,7 @@ export default function WorshipStrip() {
                   <card.Icon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
                 </div>
                 {card.badge && (
-                  <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full bg-white shadow-sm" style={{ color: 'var(--color-text)' }}>
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full bg-white shadow-sm" style={{ color: 'var(--color-text)' }}>
                     {card.badge === 'LIVE' && (
                       <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#C53030' }} />
                     )}

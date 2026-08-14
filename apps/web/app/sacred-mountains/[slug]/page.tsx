@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!m) return { title: 'Not found' };
   const heightLabel = m.height !== null ? `${m.height.toLocaleString()} m` : 'cosmic axis';
   return {
-    title: `${m.name} (${m.sanskrit}) — Sacred Mountain Guide | Darshya`,
+    title: `${m.name} (${m.sanskrit}) — Sacred Mountain Guide`,
     description: `${m.name}: ${heightLabel}, ${m.location}. Associated with ${m.associatedDeity}. ${m.significance.slice(0, 110)}…`,
     alternates: { canonical: `${BASE_URL}/sacred-mountains/${m.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${m.name} — Sacred Mountain`,
       description: m.significance,
       url: `${BASE_URL}/sacred-mountains/${m.slug}`,

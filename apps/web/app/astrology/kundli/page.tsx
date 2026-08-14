@@ -175,7 +175,7 @@ export default function KundliPage() {
  </button>
  </form>
 
- <p className="text-[10px] text-surface-400 mt-4 text-center">
+ <p className="text-xs text-surface-400 mt-4 text-center">
  Uses Vedic sidereal zodiac with Lahiri ayanamsa. Planetary positions are approximate (+/- 1-2 degrees).
  </p>
  </div>
@@ -316,10 +316,10 @@ export default function KundliPage() {
  const house = kundli.houses.find(h => h.house === houseNum)!;
  return (
  <div key={houseNum} className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-saffron-400 mb-0.5">{houseNum}</p>
- <p className="text-[9px] text-surface-400">{house.signHindi}</p>
+ <p className="text-xs font-bold text-saffron-400 mb-0.5">{houseNum}</p>
+ <p className="text-xs text-surface-400">{house.signHindi}</p>
  {house.planets.length > 0 && (
- <p className={`text-[10px] font-semibold mt-0.5 ${houseNum === 1 ? 'text-red-600' : 'text-saffron-600'}`}>
+ <p className={`text-xs font-semibold mt-0.5 ${houseNum === 1 ? 'text-red-600' : 'text-saffron-600'}`}>
  {house.planets.join(', ')}
  </p>
  )}
@@ -328,10 +328,10 @@ export default function KundliPage() {
  })}
  {/* Row 2: house 11, center, -, house 4 */}
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-saffron-400 mb-0.5">11</p>
- <p className="text-[9px] text-surface-400">{kundli.houses[10]!.signHindi}</p>
+ <p className="text-xs font-bold text-saffron-400 mb-0.5">11</p>
+ <p className="text-xs text-surface-400">{kundli.houses[10]!.signHindi}</p>
  {kundli.houses[10]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{kundli.houses[10]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-saffron-600 mt-0.5">{kundli.houses[10]!.planets.join(', ')}</p>
  )}
  </div>
  <div className="bg-saffron-50 p-2 col-span-2 row-span-2 flex items-center justify-center min-h-[140px]">
@@ -342,25 +342,25 @@ export default function KundliPage() {
  </div>
  </div>
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-saffron-400 mb-0.5">4</p>
- <p className="text-[9px] text-surface-400">{kundli.houses[3]!.signHindi}</p>
+ <p className="text-xs font-bold text-saffron-400 mb-0.5">4</p>
+ <p className="text-xs text-surface-400">{kundli.houses[3]!.signHindi}</p>
  {kundli.houses[3]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{kundli.houses[3]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-saffron-600 mt-0.5">{kundli.houses[3]!.planets.join(', ')}</p>
  )}
  </div>
  {/* Row 3: house 10, -, -, house 5 */}
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-saffron-400 mb-0.5">10</p>
- <p className="text-[9px] text-surface-400">{kundli.houses[9]!.signHindi}</p>
+ <p className="text-xs font-bold text-saffron-400 mb-0.5">10</p>
+ <p className="text-xs text-surface-400">{kundli.houses[9]!.signHindi}</p>
  {kundli.houses[9]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{kundli.houses[9]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-saffron-600 mt-0.5">{kundli.houses[9]!.planets.join(', ')}</p>
  )}
  </div>
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-saffron-400 mb-0.5">5</p>
- <p className="text-[9px] text-surface-400">{kundli.houses[4]!.signHindi}</p>
+ <p className="text-xs font-bold text-saffron-400 mb-0.5">5</p>
+ <p className="text-xs text-surface-400">{kundli.houses[4]!.signHindi}</p>
  {kundli.houses[4]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-amber-600 mt-0.5">{kundli.houses[4]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-amber-600 mt-0.5">{kundli.houses[4]!.planets.join(', ')}</p>
  )}
  </div>
  {/* Row 4: houses 9, 8, 7, 6 */}
@@ -368,10 +368,10 @@ export default function KundliPage() {
  const house = kundli.houses.find(h => h.house === houseNum)!;
  return (
  <div key={houseNum} className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-saffron-400 mb-0.5">{houseNum}</p>
- <p className="text-[9px] text-surface-400">{house.signHindi}</p>
+ <p className="text-xs font-bold text-saffron-400 mb-0.5">{houseNum}</p>
+ <p className="text-xs text-surface-400">{house.signHindi}</p>
  {house.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-saffron-600 mt-0.5">{house.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-saffron-600 mt-0.5">{house.planets.join(', ')}</p>
  )}
  </div>
  );
@@ -423,10 +423,10 @@ export default function KundliPage() {
  const house = kundli.navamsa.find(h => h.house === houseNum)!;
  return (
  <div key={`n-${houseNum}`} className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-indigo-400 mb-0.5">{houseNum}</p>
- <p className="text-[9px] text-surface-400">{house.signHindi}</p>
+ <p className="text-xs font-bold text-indigo-400 mb-0.5">{houseNum}</p>
+ <p className="text-xs text-surface-400">{house.signHindi}</p>
  {house.planets.length > 0 && (
- <p className={`text-[10px] font-semibold mt-0.5 ${houseNum === 1 ? 'text-red-600' : 'text-indigo-600'}`}>
+ <p className={`text-xs font-semibold mt-0.5 ${houseNum === 1 ? 'text-red-600' : 'text-indigo-600'}`}>
  {house.planets.join(', ')}
  </p>
  )}
@@ -434,10 +434,10 @@ export default function KundliPage() {
  );
  })}
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-indigo-400 mb-0.5">11</p>
- <p className="text-[9px] text-surface-400">{kundli.navamsa[10]!.signHindi}</p>
+ <p className="text-xs font-bold text-indigo-400 mb-0.5">11</p>
+ <p className="text-xs text-surface-400">{kundli.navamsa[10]!.signHindi}</p>
  {kundli.navamsa[10]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[10]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[10]!.planets.join(', ')}</p>
  )}
  </div>
  <div className="bg-indigo-50 p-2 col-span-2 row-span-2 flex items-center justify-center min-h-[140px]">
@@ -448,40 +448,40 @@ export default function KundliPage() {
  </div>
  </div>
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-indigo-400 mb-0.5">4</p>
- <p className="text-[9px] text-surface-400">{kundli.navamsa[3]!.signHindi}</p>
+ <p className="text-xs font-bold text-indigo-400 mb-0.5">4</p>
+ <p className="text-xs text-surface-400">{kundli.navamsa[3]!.signHindi}</p>
  {kundli.navamsa[3]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[3]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[3]!.planets.join(', ')}</p>
  )}
  </div>
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-indigo-400 mb-0.5">10</p>
- <p className="text-[9px] text-surface-400">{kundli.navamsa[9]!.signHindi}</p>
+ <p className="text-xs font-bold text-indigo-400 mb-0.5">10</p>
+ <p className="text-xs text-surface-400">{kundli.navamsa[9]!.signHindi}</p>
  {kundli.navamsa[9]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[9]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-indigo-600 mt-0.5">{kundli.navamsa[9]!.planets.join(', ')}</p>
  )}
  </div>
  <div className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-indigo-400 mb-0.5">5</p>
- <p className="text-[9px] text-surface-400">{kundli.navamsa[4]!.signHindi}</p>
+ <p className="text-xs font-bold text-indigo-400 mb-0.5">5</p>
+ <p className="text-xs text-surface-400">{kundli.navamsa[4]!.signHindi}</p>
  {kundli.navamsa[4]!.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-amber-600 mt-0.5">{kundli.navamsa[4]!.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-amber-600 mt-0.5">{kundli.navamsa[4]!.planets.join(', ')}</p>
  )}
  </div>
  {[9, 8, 7, 6].map(houseNum => {
  const house = kundli.navamsa.find(h => h.house === houseNum)!;
  return (
  <div key={`n-${houseNum}`} className="bg-white p-2 min-h-[70px]">
- <p className="text-[9px] font-bold text-indigo-400 mb-0.5">{houseNum}</p>
- <p className="text-[9px] text-surface-400">{house.signHindi}</p>
+ <p className="text-xs font-bold text-indigo-400 mb-0.5">{houseNum}</p>
+ <p className="text-xs text-surface-400">{house.signHindi}</p>
  {house.planets.length > 0 && (
- <p className="text-[10px] font-semibold text-indigo-600 mt-0.5">{house.planets.join(', ')}</p>
+ <p className="text-xs font-semibold text-indigo-600 mt-0.5">{house.planets.join(', ')}</p>
  )}
  </div>
  );
  })}
  </div>
- <p className="text-[11px] text-surface-500 mt-4 text-center">
+ <p className="text-xs text-surface-500 mt-4 text-center">
  D9 (Varga 9) — Parashara divisional chart. Strong planet in D9 = strong in life results. 7th house D9 reveals spouse nature.
  </p>
  </div>
@@ -511,14 +511,14 @@ export default function KundliPage() {
  <div>
  <span className="font-medium text-surface-700">{p.planet}</span>
  {p.isRetrograde && (
- <span className="ml-1 text-[10px] font-bold text-red-500">(R)</span>
+ <span className="ml-1 text-xs font-bold text-red-500">(R)</span>
  )}
  </div>
- <span className="text-[10px] text-surface-400">{p.planetHindi}</span>
+ <span className="text-xs text-surface-400">{p.planetHindi}</span>
  </td>
  <td className="py-2.5 px-2">
  <span className="text-surface-600">{p.signSymbol} {p.sign}</span>
- <span className="block text-[10px] text-surface-400">{p.signHindi}</span>
+ <span className="block text-xs text-surface-400">{p.signHindi}</span>
  </td>
  <td className="py-2.5 px-2 text-center">
  <span className="inline-flex items-center justify-center w-6 h-6 bg-saffron-100 text-saffron-700 text-xs font-bold rounded-md">
@@ -528,7 +528,7 @@ export default function KundliPage() {
  <td className="py-2.5 px-2 text-surface-600 font-mono text-xs">{p.degree}</td>
  <td className="py-2.5 px-2">
  <span className="text-xs text-surface-600">{p.nakshatra}</span>
- <span className="block text-[10px] text-surface-400">{p.nakshatraHindi} (P{p.nakshatraPada})</span>
+ <span className="block text-xs text-surface-400">{p.nakshatraHindi} (P{p.nakshatraPada})</span>
  </td>
  <td className="py-2.5 px-2">
  <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
@@ -577,7 +577,7 @@ export default function KundliPage() {
  <span className="text-sm font-bold text-surface-800">{d.planet} Mahadasha</span>
  <span className="text-xs text-surface-400">({d.planetHindi})</span>
  {d.isCurrent && (
- <span className="text-[10px] font-bold text-saffron-700 bg-saffron-200 px-2 py-0.5 rounded-full">
+ <span className="text-xs font-bold text-saffron-700 bg-saffron-200 px-2 py-0.5 rounded-full">
  CURRENT
  </span>
  )}
@@ -628,7 +628,7 @@ export default function KundliPage() {
  <h4 className="text-sm font-bold text-surface-800">{d.name}</h4>
  <span className="text-xs text-surface-500">({d.nameHindi})</span>
  {d.present && (
- <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+ <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
  d.severity === 'Strong'
  ? 'bg-red-200 text-red-700'
  : d.severity === 'Moderate'

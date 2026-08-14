@@ -10,47 +10,62 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useWellnessSessions,
   useCreateWellnessSession,
   useSetWellnessRoom,
 } from '@poojly/api-client';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import {
+  selectWellnessSessions,
+  buildWellnessSessionInput,
+  WellnessSessionInputError,
+  type WellnessSessionVM,
+} from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 
-interface WellnessSessionRow {
-  id: string;
-  title: string;
-  description?: string;
-  type?: string;
-  duration?: number;
-  level?: string;
-  instructorId?: string;
-  instructorName?: string;
-  startTime?: string;
-  roomUrl?: string | null;
-}
+/**
+ * PAR-10, both directions.
+ *
+ * READ: `sessionsQuery.data?.sessions` — the endpoint answers {data:[…]}, so
+ * an instructor with real classes saw "No sessions yet". The row fields were
+ * wrong too (`duration`, `level`, `startTime` against `durationMinutes`,
+ * `scheduledAt`), so even a fixed envelope would have rendered "undefined min".
+ *
+ * WRITE: the create form posted {type:'yoga', duration, level, startTime} at a
+ * schema wanting {type:'YOGA', durationMinutes, capacity, priceInr,
+ * scheduledAt} — every submission 400'd, and capacity/priceInr (both required)
+ * had no inputs. buildWellnessSessionInput now mirrors the server schema and
+ * the modal collects the missing fields.
+ *
+ * The list is also invalidated by hand: useCreateWellnessSession invalidates
+ * ['wellnessSessions'] while useWellnessSessions is keyed ['wellness',
+ * 'sessions'], so a successful create never refreshed this screen.
+ */
+const EMPTY_FORM = {
+  title: '',
+  description: '',
+  type: 'YOGA',
+  durationMinutes: '60',
+  capacity: '20',
+  priceInr: '0',
+  scheduledAt: '',
+};
 
 export default function WellnessSessionsScreen() {
   const sessionsQuery = useWellnessSessions();
   const createSession = useCreateWellnessSession();
   const setRoom = useSetWellnessRoom();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    type: 'yoga',
-    duration: '60',
-    level: 'beginner',
-    startTime: '',
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  const allSessions =
-    (sessionsQuery.data?.sessions as WellnessSessionRow[] | undefined) ?? [];
+  const allSessions = selectWellnessSessions(sessionsQuery.data);
   const mySessions = user?.id
     ? allSessions.filter((s) => !s.instructorId || s.instructorId === user.id)
     : allSessions;
@@ -61,51 +76,52 @@ export default function WellnessSessionsScreen() {
     setRefreshing(false);
   }
 
-  function handleSetRoom(s: WellnessSessionRow) {
-    Alert.prompt?.(
+  function handleSetRoom(s: WellnessSessionVM) {
+    if (!Alert.prompt) {
+      Alert.alert('Set Room URL', 'Use the desktop app or web portal to set room URLs.');
+      return;
+    }
+    Alert.prompt(
       'Set Room URL',
       `Jitsi/Zoom link for "${s.title}"`,
       async (input?: string) => {
         const roomUrl = (input ?? '').trim();
         if (!roomUrl) return;
+        // The server takes z.string().url(); catch it here so the instructor
+        // gets a sentence instead of a 400.
+        if (!/^https?:\/\/\S+\.\S+/.test(roomUrl)) {
+          Alert.alert('Invalid link', 'Enter a full URL, e.g. https://meet.jit.si/your-room.');
+          return;
+        }
         try {
           await setRoom.mutateAsync({ sessionId: s.id, roomUrl });
+          await queryClient.invalidateQueries({ queryKey: ['wellness', 'sessions'] });
           Alert.alert('Saved', 'Room URL updated.');
         } catch (err) {
           Alert.alert('Error', err instanceof Error ? err.message : 'Failed');
         }
       },
       'plain-text',
-      s.roomUrl ?? ''
+      '',
     );
-    if (!Alert.prompt) {
-      Alert.alert('Set Room URL', 'Use the desktop app or web portal to set room URLs.');
-    }
   }
 
   async function handleCreate() {
-    if (!form.title.trim()) {
-      Alert.alert('Required', 'Title is required.');
+    let body;
+    try {
+      body = buildWellnessSessionInput(form);
+    } catch (err) {
+      Alert.alert(
+        'Check the form',
+        err instanceof WellnessSessionInputError ? err.message : 'Invalid session details.',
+      );
       return;
     }
     try {
-      await createSession.mutateAsync({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        type: form.type.trim() || 'yoga',
-        duration: Number(form.duration) || 60,
-        level: form.level.trim() || 'beginner',
-        startTime: form.startTime.trim() || new Date().toISOString(),
-      });
+      await createSession.mutateAsync(body);
+      await queryClient.invalidateQueries({ queryKey: ['wellness', 'sessions'] });
       setCreateOpen(false);
-      setForm({
-        title: '',
-        description: '',
-        type: 'yoga',
-        duration: '60',
-        level: 'beginner',
-        startTime: '',
-      });
+      setForm(EMPTY_FORM);
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not create session');
     }
@@ -146,12 +162,22 @@ export default function WellnessSessionsScreen() {
             <View key={s.id} style={styles.card}>
               <Text style={styles.cardPrimary}>{s.title}</Text>
               <Text style={styles.cardSecondary}>
-                {(s.type ?? 'Yoga')} • {s.duration ?? 0} min
-                {s.level ? ` • ${s.level}` : ''}
+                {[
+                  s.type,
+                  s.durationMinutes !== null ? `${s.durationMinutes} min` : null,
+                  s.capacity !== null ? `${s.capacity} seats` : null,
+                  s.priceInr === null
+                    ? null
+                    : s.priceInr === 0
+                      ? 'Free'
+                      : `₹${s.priceInr.toLocaleString('en-IN')}`,
+                ]
+                  .filter(Boolean)
+                  .join(' • ')}
               </Text>
-              {s.startTime ? (
+              {s.scheduledAt ? (
                 <Text style={styles.cardSecondary}>
-                  {new Date(s.startTime).toLocaleString('en-IN', {
+                  {new Date(s.scheduledAt).toLocaleString('en-IN', {
                     day: 'numeric',
                     month: 'short',
                     hour: '2-digit',
@@ -159,11 +185,7 @@ export default function WellnessSessionsScreen() {
                   })}
                 </Text>
               ) : null}
-              {s.roomUrl ? (
-                <Text style={styles.roomLink} numberOfLines={1}>
-                  Room: {s.roomUrl}
-                </Text>
-              ) : null}
+              {s.status ? <Text style={styles.cardSecondary}>Status: {s.status}</Text> : null}
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.actionPrimary]}
@@ -171,9 +193,9 @@ export default function WellnessSessionsScreen() {
                   activeOpacity={0.8}
                   disabled={setRoom.isPending}
                 >
-                  <Text style={styles.actionPrimaryText}>
-                    {s.roomUrl ? 'Update Room URL' : 'Set Room URL'}
-                  </Text>
+                  {/* The list payload carries no roomUrl, so this button cannot
+                      truthfully say "Update" vs "Set". */}
+                  <Text style={styles.actionPrimaryText}>Set Room URL</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -203,30 +225,39 @@ export default function WellnessSessionsScreen() {
                 style={styles.input}
                 value={form.type}
                 onChangeText={(t) => setForm({ ...form, type: t })}
-                placeholder="yoga / meditation / pranayama"
+                placeholder="YOGA / MEDITATION / VIPASSANA / PRANAYAMA / OTHER"
+                autoCapitalize="characters"
               />
               <Text style={styles.label}>Duration (minutes)</Text>
               <TextInput
                 style={styles.input}
-                value={form.duration}
-                onChangeText={(t) => setForm({ ...form, duration: t })}
+                value={form.durationMinutes}
+                onChangeText={(t) => setForm({ ...form, durationMinutes: t })}
                 keyboardType="number-pad"
               />
-              <Text style={styles.label}>Level</Text>
+              <Text style={styles.label}>Capacity (seats)</Text>
               <TextInput
                 style={styles.input}
-                value={form.level}
-                onChangeText={(t) => setForm({ ...form, level: t })}
-                placeholder="beginner / intermediate / advanced"
+                value={form.capacity}
+                onChangeText={(t) => setForm({ ...form, capacity: t })}
+                keyboardType="number-pad"
               />
-              <Text style={styles.label}>Start time (ISO)</Text>
+              <Text style={styles.label}>Price (₹ — 0 for a free class)</Text>
               <TextInput
                 style={styles.input}
-                value={form.startTime}
-                onChangeText={(t) => setForm({ ...form, startTime: t })}
-                placeholder="2026-05-01T08:00:00.000Z"
+                value={form.priceInr}
+                onChangeText={(t) => setForm({ ...form, priceInr: t })}
+                keyboardType="number-pad"
               />
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>Start time (ISO, must be in the future)</Text>
+              <TextInput
+                style={styles.input}
+                value={form.scheduledAt}
+                onChangeText={(t) => setForm({ ...form, scheduledAt: t })}
+                placeholder="2026-09-01T08:00:00.000Z"
+                autoCapitalize="none"
+              />
+              <Text style={styles.label}>Description (required)</Text>
               <TextInput
                 style={[styles.input, { height: 80 }]}
                 value={form.description}

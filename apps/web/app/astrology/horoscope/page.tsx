@@ -158,7 +158,7 @@ export default function HoroscopePage() {
  </div>
  <div className="text-right">
  {renderStars(h.overallRating)}
- <p className="text-[10px] text-surface-400 mt-0.5">{h.rulingPlanet}</p>
+ <p className="text-xs text-surface-400 mt-0.5">{h.rulingPlanet}</p>
  </div>
  </div>
 
@@ -183,7 +183,7 @@ export default function HoroscopePage() {
 
  {/* Element badge */}
  <div className="flex items-center gap-2 mt-2">
- <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/60 text-surface-600">
+ <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-white/60 text-surface-600">
  <Flame className="w-2.5 h-2.5" />
  {h.element}
  </span>
@@ -203,7 +203,7 @@ export default function HoroscopePage() {
  </div>
  <p className="text-sm font-medium text-saffron-800 mb-1">{h.mantra}</p>
  <p className="text-sm text-saffron-700 font-devanagari">{h.mantraHindi}</p>
- <p className="text-[10px] text-surface-500 mt-2">
+ <p className="text-xs text-surface-500 mt-2">
  Chant 108 times daily for best results. Ruling Planet: {h.rulingPlanet}
  </p>
  </div>
@@ -246,22 +246,22 @@ export default function HoroscopePage() {
  {/* Lucky Details Row */}
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
  <div className="bg-white/60 rounded-lg p-3 text-center">
- <p className="text-[10px] text-surface-400 uppercase tracking-wide">Lucky Number</p>
+ <p className="text-xs text-surface-400 uppercase tracking-wide">Lucky Number</p>
  <p className="text-lg font-bold text-surface-800">{h.luckyNumber}</p>
  </div>
  <div className="bg-white/60 rounded-lg p-3 text-center">
- <p className="text-[10px] text-surface-400 uppercase tracking-wide">Lucky Color</p>
+ <p className="text-xs text-surface-400 uppercase tracking-wide">Lucky Color</p>
  <p className="text-sm font-bold text-surface-800">{h.luckyColor}</p>
  </div>
  <div className="bg-white/60 rounded-lg p-3 text-center">
- <p className="text-[10px] text-surface-400 uppercase tracking-wide">Direction</p>
+ <p className="text-xs text-surface-400 uppercase tracking-wide">Direction</p>
  <p className="text-sm font-bold text-surface-800 flex items-center justify-center gap-1">
  <Compass className="w-3.5 h-3.5 text-saffron-500" />
  {h.luckyDirection}
  </p>
  </div>
  <div className="bg-white/60 rounded-lg p-3 text-center">
- <p className="text-[10px] text-surface-400 uppercase tracking-wide">Element</p>
+ <p className="text-xs text-surface-400 uppercase tracking-wide">Element</p>
  <p className="text-sm font-bold text-surface-800 flex items-center justify-center gap-1">
  <Flame className="w-3.5 h-3.5 text-orange-500" />
  {h.element}

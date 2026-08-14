@@ -121,12 +121,22 @@ function unwrapPage(payload: unknown, fallbackPageSize: number): CommissionPage 
 }
 
 /**
- * The route's maximum (admin.ts caps pageSize at 200). The client used to send
- * no pagination at all, so it silently took the route's default of 20 and threw
- * away `total` — an admin with a 500-row ledger saw 20 rows, filtered and
- * summed over those 20, and had nothing on screen saying 480 more existed.
+ * Page size sent to BOTH commission routes.
+ *
+ * The client used to send no pagination at all, so it silently took the route's
+ * default of 20 and threw away `total` — an admin with a 500-row ledger saw 20
+ * rows, filtered and summed over those 20, and had nothing on screen saying 480
+ * more existed. That was fixed by sending 200, admin.ts's cap.
+ *
+ * AW-05 (2026-08-12, P1): 200 is admin.ts's cap, but this same constant is also
+ * sent to the PROVIDER route `GET /payouts/commissions`, whose zod cap is 100
+ * (payout-requests.ts). Every wellness instructor and astrologer therefore got
+ * a 400 `{"error":"Invalid query"}` and an Earnings page that read "No
+ * commission records yet." while ₹800 sat PENDING in the ledger. It must stay
+ * <= the TIGHTER of the two caps; `__tests__/commission-page-size-contract.test.ts`
+ * reads both caps out of the API source and fails if this drifts above either.
  */
-export const COMMISSION_PAGE_SIZE = 200;
+export const COMMISSION_PAGE_SIZE = 100;
 
 export interface ListCommissionOptions {
   providerId?: string;

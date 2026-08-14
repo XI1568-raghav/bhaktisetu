@@ -21,7 +21,7 @@ export async function generateMetadata({
   const n = getNakshatra(slug);
   if (!n) return { title: 'Nakshatra not found' };
 
-  const title = `${n.name} Nakshatra (${n.sanskritName}) — Lord ${n.lord}, Deity ${n.deity} | Darshya`;
+  const title = `${n.name} Nakshatra (${n.sanskritName}) — Lord ${n.lord}, Deity ${n.deity}`;
   const description = `${n.name} nakshatra: ${n.meaning}. Ruled by ${n.lord}, deity ${n.deity}. ${n.gana} gana. Full guide — qualities, career, marriage compatibility, spiritual practice.`;
 
   return {

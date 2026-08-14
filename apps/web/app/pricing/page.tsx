@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { buttonClass } from "../../components/ui/button-recipe";
 import {
  Check,
- X,
  Flame,
  Store,
  Moon,
@@ -12,14 +12,31 @@ import {
  Sparkles,
  ArrowRight,
 } from "lucide-react";
+// PM-02b (prod sweep 2026-08-12): this page used to publish a hardcoded ladder
+// — Basic ₹499 / Pro ₹1,499 / Enterprise ₹4,999 — that nothing in the platform
+// charges. Live on 2026-08-13 the API sold Pandit Basic at ₹999 (2.0x) and
+// Store Basic at ₹1,499 (3.0x), and no Enterprise plan existed for any provider
+// role. Prices now come from the same server-side table Razorpay is billed
+// from; PLANS keeps only tier copy and commission percentages.
+// PM-03b/PM-08b (same sweep): the commission table published a four-column
+// tier ladder (pandit 30/20/15/10, astrologer 35/25/18/12, …). Its free column
+// was wrong for all six roles, and the three paid columns describe a discount
+// no server code applies — grep `commissionOverride` across apps/api returns
+// nothing. The table now prints one number per role: the rate actually charged,
+// read off the server constant named in `chargedRateSource`.
 import {
- PLANS,
  COMMISSION_RATES,
  formatPrice,
- type PlanId,
+ fetchSubscriptionPlans,
+ groupPlansByRole,
+ planCheckoutPath,
+ intervalSuffix,
 } from "../../lib/pricing";
+import { taxTreatmentLine } from "../../lib/company";
+import { PRICING_FAQS } from "./faqs";
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/pricing' },
  title: "Pricing — Free & Paid Plans for Devotees and Providers",
  description:
  "Simple, transparent pricing for devotees, pandits, store owners, astrologers, gaushalas and gurukuls. Browse Darshya free or grow your devotional business with low-commission paid plans built for India and NRI audiences.",
@@ -34,40 +51,13 @@ const roleIcons: Record<string, React.ElementType> = {
  gaushala: Heart,
 };
 
-const faqs = [
- {
- question: "How does billing work?",
- answer:
- "Subscription fees are billed monthly to your linked payment method. Commission is deducted automatically from each transaction before payout. You can view a full breakdown in your earnings dashboard.",
- },
- {
- question: "When do I get paid?",
- answer:
- "Payouts are processed every Monday for the previous week's completed orders. Funds typically reach your bank account within 2-3 business days after processing.",
- },
- {
- question: "Can I change plans anytime?",
- answer:
- "Yes. You can upgrade or downgrade at any time from your subscription settings. Upgrades take effect immediately and you'll be charged the prorated difference. Downgrades take effect at the start of your next billing cycle.",
- },
- {
- question: "Is there a lock-in period?",
- answer:
- "No. All plans are month-to-month with no long-term commitment. Cancel anytime from your settings page — your plan stays active until the end of the current billing period.",
- },
- {
- question: "What payment methods do you accept?",
- answer:
- "We accept UPI, credit/debit cards, net banking, and wallets via Razorpay. International cards are accepted too — billing is in INR.",
- },
- {
- question: "Do devotees need to pay?",
- answer:
- "No. Browsing temples, watching live darshan, reading content, and checking your daily horoscope is completely free. Premium devotee features may be introduced in the future, but the core experience will always remain free.",
- },
-];
+export const revalidate = 300;
 
-export default function PricingPage() {
+export default async function PricingPage() {
+ const apiPlans = await fetchSubscriptionPlans();
+ const groups = groupPlansByRole(apiPlans);
+ const providerGroups = groups.filter((g) => g.role !== "DEVOTEE");
+ const devoteePlans = groups.find((g) => g.role === "DEVOTEE")?.plans ?? [];
  return (
  <div className="min-h-[100dvh]" style={{ background: "var(--color-bg)" }}>
  {/* ── Hero ────────────────────────────────────────────────────────── */}
@@ -107,6 +97,20 @@ export default function PricingPage() {
  Free for devotees, always. Service providers pay a small commission
  on each transaction — or subscribe to reduce it and unlock premium
  tools.
+ </p>
+ {/* PM-09 (prod sweep 2026-08-12): every price on this page was published
+   with nothing said about tax — a provider could not tell whether GST
+   would be added at checkout. It is not: subscription.service writes
+   `amount: plan.price` and bills that same figure, and the store totals
+   helper computes subtotal + delivery with no tax line. Rendered from
+   company.ts so the day a GSTIN is issued this sentence becomes the
+   tax-inclusive one instead of staying wrong. */}
+ <p
+ className="text-xs sm:text-sm max-w-2xl mx-auto mt-5 leading-relaxed"
+ style={{ color: "var(--color-text-faint)" }}
+ data-testid="pricing-tax-treatment"
+ >
+ {taxTreatmentLine()}
  </p>
  </div>
  </section>
@@ -185,12 +189,34 @@ export default function PricingPage() {
  );
  })}
  </div>
- <p
- className="text-xs mt-6"
- style={{ color: "var(--color-text-faint)" }}
- >
- Premium features coming soon — early users will be grandfathered.
+ {/* PM-02b: the page used to say "Premium features coming soon". They
+   are not coming — the API sells them today (astro_session ₹99,
+   astro_monthly ₹499, NRI Premium ₹5,000/yr) and astro_monthly is what
+   grants AI Pandit quota. Listing them at the price the gateway
+   charges, or saying nothing at all if the API is unreachable. */}
+ {devoteePlans.length > 0 ? (
+ <div className="mt-6 pt-6 border-t" style={{ borderColor: "var(--color-border)" }}>
+ <p className="text-xs mb-3" style={{ color: "var(--color-text-muted)" }}>
+ Optional paid add-ons for devotees — everything listed above stays free.
  </p>
+ <ul className="flex flex-wrap justify-center gap-2">
+ {devoteePlans.map((plan) => (
+ <li
+ key={plan.id}
+ className="text-xs px-3 py-1.5 rounded-full"
+ style={{
+ background: "var(--color-bg)",
+ border: "1px solid var(--color-border)",
+ color: "var(--color-text)",
+ }}
+ >
+ {plan.name} — {formatPrice(plan.price)}
+ {plan.price > 0 ? intervalSuffix(plan.interval) : ""}
+ </li>
+ ))}
+ </ul>
+ </div>
+ ) : null}
  </div>
  </div>
  </section>
@@ -230,11 +256,48 @@ export default function PricingPage() {
  </p>
  </div>
 
- {/* Pricing cards */}
- <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
- {PLANS.map((plan) => (
+ {/* Pricing cards — PM-02b: rendered from GET /api/v1/subscriptions/plans,
+   the same table subscription.service.ts bills Razorpay from, grouped by
+   the role each plan is actually sold to. If that fetch fails there is no
+   fallback ladder: the page states it cannot show prices. */}
+ {providerGroups.length === 0 ? (
  <div
- key={plan.id}
+ className="rounded-xl p-6 text-center"
+ style={{
+ background: "var(--color-bg)",
+ border: "1px solid var(--color-border)",
+ }}
+ >
+ <p className="text-sm" style={{ color: "var(--color-text)" }}>
+ Plan prices are temporarily unavailable.
+ </p>
+ <p
+ className="text-xs mt-2 max-w-md mx-auto leading-relaxed"
+ style={{ color: "var(--color-text-muted)" }}
+ >
+ We could not reach our billing system, so we are showing no price
+ rather than one we cannot honour at checkout. Commission rates below
+ are unaffected.
+ </p>
+ <a href="/auth/signup" className={buttonClass('primary', 'md', 'mt-4')}>
+ Create a provider account
+ <ArrowRight className="w-3.5 h-3.5" />
+ </a>
+ </div>
+ ) : (
+ <div className="space-y-12">
+ {providerGroups.map((group) => (
+ <div key={group.role}>
+ <h3
+ className="text-sm font-semibold mb-4"
+ style={{ color: "var(--color-text)" }}
+ >
+ {group.label}
+ </h3>
+ <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+ {group.plans.map((plan) => (
+ <div
+ key={`${group.role}-${plan.id}`}
  className="relative rounded-xl p-5 flex flex-col card-hover"
  style={{
  background: "var(--color-bg)",
@@ -255,20 +318,12 @@ export default function PricingPage() {
  </div>
  )}
 
- <div className="mb-4">
- <h3
- className="text-sm font-semibold mb-1"
+ <h4
+ className="text-sm font-semibold mb-4"
  style={{ color: "var(--color-text)" }}
  >
  {plan.name}
- </h3>
- <p
- className="text-xs leading-relaxed"
- style={{ color: "var(--color-text-muted)" }}
- >
- {plan.description}
- </p>
- </div>
+ </h4>
 
  <div className="mb-5">
  <span
@@ -285,69 +340,51 @@ export default function PricingPage() {
  className="text-xs ml-1"
  style={{ color: "var(--color-text-faint)" }}
  >
- /month
+ {intervalSuffix(plan.interval)}
  </span>
  )}
  </div>
 
- <div
- className="flex items-center gap-2 px-3 py-2 rounded-lg mb-4 text-xs font-medium"
- style={{
- background: "var(--color-primary-highlight)",
- color: "var(--color-primary)",
- }}
- >
- {plan.commissionOverride}% commission rate
- </div>
-
  <ul className="space-y-2 mb-6 flex-1">
  {plan.features.map((feature) => (
- <li key={feature.text} className="flex items-start gap-2">
- {feature.included ? (
+ <li key={feature} className="flex items-start gap-2">
  <Check
  className="w-3.5 h-3.5 mt-0.5 shrink-0"
  style={{ color: "var(--color-status-success)" }}
  />
- ) : (
- <X
- className="w-3.5 h-3.5 mt-0.5 shrink-0"
- style={{ color: "var(--color-text-faint)" }}
- />
- )}
  <span
  className="text-xs"
- style={{
- color: feature.included
- ? "var(--color-text)"
- : "var(--color-text-faint)",
- }}
+ style={{ color: "var(--color-text)" }}
  >
- {feature.text}
+ {feature}
  </span>
  </li>
  ))}
  </ul>
 
+ {/* PM-02b: "Start Free Trial" sat on every paid card and no plan
+   object carries any trial — the first charge is immediate. */}
  <a
- href={plan.price === 0 ? "/auth/signup" : "/settings/subscription"}
- className="block w-full text-center py-2.5 rounded-lg text-sm font-medium btn-press transition-colors"
- style={
- plan.popular
- ? {
- background: "var(--color-primary)",
- color: "var(--color-text-inverse)",
+ href={
+ plan.price === 0
+ ? "/auth/signup"
+ : planCheckoutPath(group.role)
  }
- : {
- background: "var(--color-surface-offset)",
- color: "var(--color-text)",
- }
- }
+ className={buttonClass(
+ plan.popular ? 'primary' : 'secondary',
+ 'md',
+ 'w-full btn-press',
+ )}
  >
- {plan.price === 0 ? "Start Free" : "Start Free Trial"}
+ {plan.price === 0 ? "Start Free" : "Subscribe"}
  </a>
  </div>
  ))}
  </div>
+ </div>
+ ))}
+ </div>
+ )}
  </div>
  </section>
 
@@ -368,14 +405,14 @@ export default function PricingPage() {
  color: "var(--color-text)",
  }}
  >
- Pay Less as You Grow
+ What Darshya Takes
  </h2>
  <p
  className="text-sm max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
  >
- Commission rates decrease with higher subscription tiers. The
- table below shows rates by provider type and plan.
+ The platform&apos;s share of each transaction, by provider type.
+ This is the rate applied today — everything else reaches you.
  </p>
  </div>
 
@@ -396,19 +433,12 @@ export default function PricingPage() {
  >
  Provider Type
  </th>
- {PLANS.map((plan) => (
  <th
- key={plan.id}
  className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wide"
- style={{
- color: plan.popular
- ? "var(--color-primary)"
- : "var(--color-text-muted)",
- }}
+ style={{ color: "var(--color-text-muted)" }}
  >
- {plan.name}
+ Platform Commission
  </th>
- ))}
  </tr>
  </thead>
  <tbody>
@@ -439,23 +469,20 @@ export default function PricingPage() {
  </span>
  </span>
  </td>
- {(["free", "basic", "pro", "enterprise"] as PlanId[]).map(
- (planId) => (
  <td
- key={planId}
  className="text-center px-4 py-3 text-sm"
  style={{
  color:
- planId === "pro"
- ? "var(--color-primary)"
+ row.chargedRate === null
+ ? "var(--color-text-muted)"
  : "var(--color-text)",
- fontWeight: planId === "pro" ? 600 : 400,
+ fontWeight: row.chargedRate === null ? 400 : 600,
  }}
  >
- {row.rates[planId]}%
+ {row.chargedRate === null
+ ? "Not charged"
+ : `${row.chargedRate}%`}
  </td>
- ),
- )}
  </tr>
  );
  })}
@@ -463,6 +490,21 @@ export default function PricingPage() {
  </table>
  </div>
  </div>
+
+ {/* Footnote sits OUTSIDE the table: the notes quote the temple share,
+   and a rate inside the table must only ever be a charged rate. */}
+ <ul className="mt-4 space-y-1.5">
+ {COMMISSION_RATES.filter((row) => row.note).map((row) => (
+ <li
+ key={row.role}
+ className="text-xs leading-relaxed"
+ style={{ color: "var(--color-text-muted)" }}
+ >
+ <span style={{ color: "var(--color-text)" }}>{row.label}:</span>{" "}
+ {row.note}
+ </li>
+ ))}
+ </ul>
  </div>
  </section>
 
@@ -491,7 +533,7 @@ export default function PricingPage() {
  </div>
 
  <div className="space-y-3">
- {faqs.map((faq) => (
+ {PRICING_FAQS.map((faq) => (
  <details
  key={faq.question}
  className="group rounded-xl"
@@ -543,14 +585,7 @@ export default function PricingPage() {
  Join Darshya as a service provider. Start free, upgrade when you are
  ready. No lock-in, no hidden fees.
  </p>
- <a
- href="/auth/signup"
- className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
- style={{
- background: "var(--color-primary)",
- color: "var(--color-text-inverse)",
- }}
- >
+ <a href="/auth/signup" className={buttonClass('primary', 'lg', 'btn-press')}>
  Get Started Free
  <ArrowRight className="w-4 h-4" />
  </a>

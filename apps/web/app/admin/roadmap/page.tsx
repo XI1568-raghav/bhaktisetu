@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import RoadmapClient from './RoadmapClient';
 
 export const metadata: Metadata = {
-  title: 'Roadmap · Darshya Admin',
+  title: 'Roadmap · Admin',
   robots: { index: false, follow: false },
 };
 

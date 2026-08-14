@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Bhakti Saints — 12 Medieval Devotional Masters | Darshya',
+  title: 'Bhakti Saints — 12 Medieval Devotional Masters',
   description: 'Twelve saints who shaped Hindu devotion across 8 centuries — Tulsidas, Mirabai, Kabir, Surdas, Tukaram, Namdev, Andal, Chaitanya, Adi Shankara, Ramanuja, Madhva, Ramakrishna.',
   alternates: { canonical: `${BASE_URL}/bhakti-saint` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Bhakti Saints — 12 Devotional Masters',
     description: 'Saguna + Nirguna, Vaishnava + Shaiva + Shakta, North + South + East + West — twelve medieval saints who carried bhakti to the people.',
     url: `${BASE_URL}/bhakti-saint`,

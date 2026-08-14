@@ -4,7 +4,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { FESTIVALS, getFestival } from '../../../lib/festivals';
+import { FESTIVALS, getFestival, resolveBookablePujas } from '../../../lib/festivals';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -31,7 +32,7 @@ function daysUntil(iso: string): number {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const f = getFestival(slug);
-  if (!f) return { title: 'Festival — Darshya' };
+  if (!f) return { title: 'Festival' };
   return {
     title: `${f.name} 2026 — ${fmtDate(f.date2026)}, rituals, pujas online`,
     description: `${f.name} 2026 on ${fmtDate(f.date2026)}. ${f.description.slice(0, 120)} Book ${f.deity} pujas with verified pandits + video proof.`,
@@ -55,6 +56,9 @@ export default async function FestivalPage({ params }: Params) {
   const isPast = days < 0;
   const isToday = days === 0;
   const isSoon = days > 0 && days <= 30;
+
+  // DF-02: only slugs the live catalogue confirms become booking links.
+  const bookable = resolveBookablePujas(f.pujasAvailable, await getCatalogueSlugs());
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -147,13 +151,19 @@ export default async function FestivalPage({ params }: Params) {
         </div>
       </section>
 
-      {f.pujasAvailable.length > 0 ? (
+      {/* DF-02 (prod sweep 2026-08-12): this block used to render every entry of
+          the hand-written `pujasAvailable` as a booking link. 84 of the 87 slugs
+          the calendar names are not in the catalogue, so 81% of the orange
+          "Book with verified pandit" CTAs 404'd. Links are now the intersection
+          with the live catalogue; when that intersection is empty the section
+          says so and routes to the catalogue instead of pretending. */}
+      {bookable.length > 0 ? (
         <section className="mb-10">
           <h2 className="text-xl font-bold text-surface-900 mb-4">
             Book {f.name} pujas online
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {f.pujasAvailable.map((slug) => (
+            {bookable.map((slug) => (
               <Link
                 key={slug}
                 href={`/pujas/${slug}`}
@@ -167,7 +177,23 @@ export default async function FestivalPage({ params }: Params) {
             ))}
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-surface-900 mb-4">
+            Book a puja for {f.name}
+          </h2>
+          <p className="text-sm text-surface-700">
+            No {f.deity} puja is bookable on Darshya for this festival yet. Browse the full
+            catalogue — every listing there has a verified pandit and a confirmed price.
+          </p>
+          <Link
+            href="/pujas"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+          >
+            Browse all pujas →
+          </Link>
+        </section>
+      )}
 
       <section className="mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-4">Other festivals this year</h2>

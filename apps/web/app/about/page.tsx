@@ -15,6 +15,7 @@ import {
   Star,
 } from 'lucide-react';
 import { organizationJsonLd, brandFaqJsonLd } from '../../lib/jsonld';
+import { fetchPublicStats, type PublicStats } from '../../lib/live-stats';
 import ScrollReveal from '../../components/ScrollReveal';
 import RoadmapRail, { type Milestone } from '../../components/RoadmapRail';
 
@@ -75,8 +76,14 @@ const founders = [
 const principles = [
   {
     icon: Flame,
-    title: 'Video proof, every time',
-    body: 'Every puja booking gets a video recording from the priest before payout. No exceptions, no opt-outs. If a temple cannot commit to it, they do not list with us.',
+    title: 'Video proof, or it is not delivered',
+    // LEG-13: this used to read "Every puja booking gets a video recording from
+    // the priest before payout. No exceptions, no opt-outs." Neither half held.
+    // The proof gate (apps/api/src/routes/bookings.ts:276) blocks the
+    // `video_uploaded` and `delivered` transitions only — a booking can reach
+    // `completed` with videoProofUrl NULL, and four have — and no payout path
+    // reads videoProofUrl at all. What is enforced is described here instead.
+    body: 'A booking cannot be moved to video-uploaded or delivered without a proof link attached by the assigned pandit — the server refuses the transition. If proof is still missing after the window in our Refund Policy, the booking goes to a refund review queue rather than being quietly closed.',
   },
   {
     icon: Heart,
@@ -85,8 +92,15 @@ const principles = [
   },
   {
     icon: Compass,
-    title: 'NRI without exploitation',
-    body: 'Yes, NRI pricing is higher than domestic — that is how we fund seva for temples that need it. The multiplier is documented (9–10×), not hidden.',
+    title: 'One price, wherever you live',
+    // LEG-13 neighbour: this claimed "NRI pricing is higher than domestic —
+    // the multiplier is documented (9–10×)". No such premium is charged.
+    // booking.service.ts:482-506 records that the `isNri ? nriPrice : basePrice`
+    // swap was deliberately removed (isNri is self-settable via PATCH
+    // /users/me, and it discarded the temple-level override), and the puja
+    // pages' NRI price lines were deleted with it. A page cannot advertise a
+    // premium the gateway is never asked for.
+    body: 'A devotee in San Jose is charged the same rupee amount for the same puja as a devotee in Varanasi — there is no diaspora multiplier on a booking. If a diaspora tier ever returns it will be quoted by the server before you pay, not implied by a page.',
   },
   {
     icon: Globe2,
@@ -110,8 +124,12 @@ const roadmap: Milestone[] = [
   {
     when: 'February 2026',
     phase: 'Foundation',
-    title: 'Our first 200 temples opened their doors.',
-    body: 'We sat with temple administrators and priests across India. By the end of the month, 200 temples were listed, every priest was verified by name and photograph, and the very first video-proof puja went out to a devotee in Toronto.',
+    // LEG-13: this said "Our first 200 temples opened their doors" / "200
+    // temples were listed". GET /api/v1/temples answers total 20. The strip
+    // above now reads the live count, so restating 200 here would put the same
+    // 10x overstatement back on the page in prose.
+    title: 'The first temples opened their doors.',
+    body: 'We sat with temple administrators and priests across India. By the end of the month the first temples were listed, every priest was verified by name and photograph, and the very first video-proof puja went out to a devotee in Toronto. The live count is in the strip above — it is read from our catalogue, not typed into this page.',
     status: 'shipped',
     icon: 'building',
     accent: '#c4814a',
@@ -132,8 +150,12 @@ const roadmap: Milestone[] = [
   {
     when: 'April 2026',
     phase: 'Trust',
-    title: 'Gaushala seva with real 80G receipts.',
-    body: 'Every donation now flows to the correct legal entity. Every receipt is real, deductible, and downloadable on the spot. We also ripped out every placeholder number from our admin dashboards — what you see is what is actually happening, today.',
+    // LEG-02/LEG-14: "Every receipt is real, deductible" asserted Section 80G
+    // eligibility while lib/company.ts donationLegal.HAS_80G_VERIFIED is false
+    // and both the donee 80G registration number and PAN are null. Deductibility
+    // is the registration's to confer, not this page's.
+    title: 'Gaushala seva, with a receipt for every donation.',
+    body: 'Every donation is routed to the gaushala it was given to, and an itemised receipt is downloadable on the spot. We do not claim a tax outcome for you here: whether a donation is deductible depends on the donee\'s own 80G registration, which is between you, the gaushala and your assessor. We also ripped out every placeholder number from our admin dashboards — what you see is what is actually happening, today.',
     status: 'shipped',
     icon: 'shield',
     accent: '#a88454',
@@ -175,14 +197,39 @@ const roadmap: Milestone[] = [
   },
 ];
 
-const shipped = [
-  { value: '200+', label: 'Temples partnered' },
-  { value: '8', label: 'Role portals live' },
-  { value: '9–10×', label: 'NRI multiplier · documented' },
-  { value: '100%', label: 'Bookings with video proof' },
-];
+/**
+ * LEG-13 (prod sweep 2026-08-12) — this strip used to read
+ * "200+ Temples partnered · 8 Role portals live · 9–10× NRI multiplier ·
+ * 100% Bookings with video proof". The catalogue held 20 temples, and four
+ * bookings sat in status `completed` with videoProofUrl NULL — the proof gate
+ * (apps/api/src/routes/bookings.ts:276) only covers `video_uploaded` and
+ * `delivered`, and no payout path reads videoProofUrl at all. Both headline
+ * numbers were false on the page whose whole argument is that we tell the
+ * truth about whether the puja happened.
+ *
+ * Counts now come from the live API. A count that could not be read is
+ * DROPPED from the strip — never replaced with a remembered figure.
+ */
+function shippedStats(stats: PublicStats): { value: string; label: string }[] {
+  const rows: { value: string; label: string }[] = [];
+  if (stats.templeCount !== null) {
+    rows.push({
+      value: stats.templeCount.toLocaleString('en-IN'),
+      label: stats.templeCount === 1 ? 'Temple listed' : 'Temples listed',
+    });
+  }
+  if (stats.pujaTypeCount !== null) {
+    rows.push({
+      value: stats.pujaTypeCount.toLocaleString('en-IN'),
+      label: stats.pujaTypeCount === 1 ? 'Puja you can book' : 'Pujas you can book',
+    });
+  }
+  rows.push({ value: '8', label: 'Role portals live' });
+  return rows;
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const shipped = shippedStats(await fetchPublicStats());
   return (
     <ScrollReveal>
       <div className="bg-[#faf9f6]">
@@ -402,7 +449,7 @@ export default function AboutPage() {
                       >
                         {f.role} · {f.location}
                       </p>
-                      <p className="mt-1 text-[12px] leading-snug text-surface-500">
+                      <p className="mt-1 text-xs leading-snug text-surface-500">
                         {f.headline}
                       </p>
                     </div>
@@ -417,7 +464,7 @@ export default function AboutPage() {
                       {f.threads.map((t) => (
                         <li
                           key={t}
-                          className="flex items-start gap-2 text-[13px] text-surface-600"
+                          className="flex items-start gap-2 text-xs text-surface-600"
                         >
                           <span
                             aria-hidden
@@ -476,7 +523,7 @@ export default function AboutPage() {
                     className="group relative overflow-hidden rounded-2xl border border-surface-200/70 bg-[#fbfaf6] p-6 transition-all hover:-translate-y-0.5 hover:border-saffron-300/60 hover:bg-white hover:shadow-[0_14px_28px_-14px_rgba(0,0,0,0.10)]"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-700 transition-colors group-hover:bg-saffron-600 group-hover:text-white">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-700 transition-colors group-hover:bg-saffron-700 group-hover:text-white">
                         <Icon className="h-5 w-5" strokeWidth={1.75} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -571,7 +618,7 @@ export default function AboutPage() {
             >
               <a
                 href="mailto:support@darshya.online"
-                className="inline-flex items-center gap-2 rounded-lg bg-saffron-500 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-saffron-400"
+                className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-saffron-700"
               >
                 <Mail className="h-4 w-4" />
                 support@darshya.online

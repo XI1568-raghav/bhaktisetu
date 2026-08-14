@@ -165,7 +165,7 @@ export default function CustomPlanPage() {
  return (
  <div key={label} className="flex items-center gap-1.5 shrink-0">
  <div
- className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold"
+ className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold"
  style={{
  background: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-surface-offset)',
  color: active || done ? '#fff' : 'var(--color-text-faint)',
@@ -173,7 +173,7 @@ export default function CustomPlanPage() {
  >
  {done ? <Check className="w-3 h-3" /> : n}
  </div>
- <span className="text-[11px] font-medium" style={{ color: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-text-faint)' }}>{label}</span>
+ <span className="text-xs font-medium" style={{ color: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-text-faint)' }}>{label}</span>
  {i < STEPS.length - 1 && <ChevronRight className="w-3 h-3" style={{ color: 'var(--color-text-faint)' }} />}
  </div>
  );
@@ -207,8 +207,8 @@ export default function CustomPlanPage() {
  <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{s.name}</p>
  {selected && <Check className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />}
  </div>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{s.location}, {s.state}</p>
- <p className="text-[10px] mt-1" style={{ color: 'var(--color-primary)' }}>{s.deity}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{s.location}, {s.state}</p>
+ <p className="text-xs mt-1" style={{ color: 'var(--color-primary)' }}>{s.deity}</p>
  </button>
  );
  })}
@@ -413,7 +413,7 @@ export default function CustomPlanPage() {
  <p className="text-xs leading-relaxed mb-2" style={{ color: 'var(--color-text-muted)' }}>{d.description}</p>
  <div className="flex flex-wrap gap-1">
  {d.stops.map((s, i) => (
- <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{s}</span>
+ <span key={i} className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{s}</span>
  ))}
  </div>
  </div>
@@ -425,9 +425,9 @@ export default function CustomPlanPage() {
 
  <aside className="h-fit sticky top-20">
  <div className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-[10px] uppercase tracking-widest font-semibold mb-1" style={{ color: 'var(--color-primary)' }}>Estimated quote</p>
+ <p className="text-xs uppercase tracking-widest font-semibold mb-1" style={{ color: 'var(--color-primary)' }}>Estimated quote</p>
  <p className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text)' }}>{formatINR(generated.estimate)}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>For {data.adults + data.seniors} travelers · {durationDays} days · {data.budget} tier</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>For {data.adults + data.seniors} travelers · {durationDays} days · {data.budget} tier</p>
 
  <div className="mt-4 pt-4 space-y-2 text-xs" style={{ borderTop: '1px solid var(--color-divider)' }}>
  <p style={{ color: 'var(--color-text-muted)' }}>This is a preliminary estimate. Our advisor will share a detailed quote with stays, transport and inclusions within 24 hours.</p>
@@ -484,7 +484,7 @@ function CounterRow({ label, value, onChange, hint }: { label: string; value: nu
  <div className="flex items-center justify-between">
  <div>
  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label}</p>
- {hint && <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{hint}</p>}
+ {hint && <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{hint}</p>}
  </div>
  <div className="flex items-center gap-3">
  <button onClick={() => onChange(Math.max(0, value - 1))} className="w-8 h-8 rounded-lg text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>-</button>
@@ -527,7 +527,7 @@ function ChipButton({ active, onClick, label }: { active: boolean; onClick: () =
 function ReviewRow({ label, value }: { label: string; value: string }) {
  return (
  <div>
- <p className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-faint)' }}>{label}</p>
+ <p className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-text-faint)' }}>{label}</p>
  <p className="text-sm font-medium capitalize mt-0.5" style={{ color: 'var(--color-text)' }}>{value}</p>
  </div>
  );

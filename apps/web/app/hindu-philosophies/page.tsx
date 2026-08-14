@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Hindu Philosophies — Shad Darshana + Vedanta Sub-Schools | Darshya',
+  title: 'Hindu Philosophies — Shad Darshana + Vedanta Sub-Schools',
   description:
     'The six orthodox darshanas (Nyaya, Vaisheshika, Samkhya, Yoga, Mimamsa, Vedanta) and four major Vedanta sub-schools (Advaita, Vishishtadvaita, Dvaita, Achintya-Bheda-Abheda). Founders, central thesis, pramana, liberation view, key concepts.',
   alternates: { canonical: `${BASE_URL}/hindu-philosophies` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Hindu Philosophies — Shad Darshana + Vedanta Sub-Schools',
     description:
       'A neutral, scholarly overview of the six orthodox schools of Hindu philosophy and four major Vedanta sub-schools.',

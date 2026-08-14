@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Prisma } from '@prisma/client';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -59,6 +60,15 @@ describe('refund.service — RV-02 ledger reversal', () => {
     prismaMock.commission.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.commission.count.mockResolvedValue(0);
     prismaMock.templePayout.updateMany.mockResolvedValue({ count: 1 });
+    // DI-02: the partial rail reads the claimable rows before scaling them.
+    prismaMock.commission.findMany.mockResolvedValue([
+      { id: 'c1', amount: new Prisma.Decimal('880.00') },
+    ]);
+    prismaMock.commission.update.mockResolvedValue({});
+    prismaMock.templePayout.findMany.mockResolvedValue([
+      { id: 't1', amount: new Prisma.Decimal('55.00') },
+    ]);
+    prismaMock.templePayout.update.mockResolvedValue({});
     prismaMock.$transaction.mockImplementation(async (fn: any) => fn(prismaMock));
     vi.stubGlobal(
       'fetch',
@@ -112,14 +122,29 @@ describe('refund.service — RV-02 ledger reversal', () => {
     expect(patched).toBe(true);
   });
 
-  it('a PARTIAL refund does NOT touch the ledger (splitting an earning needs a policy decision)', async () => {
+  it('a PARTIAL refund unwinds the ledger PROPORTIONALLY (DI-02)', async () => {
+    // Rs 550 refunded of Rs 1,100 paid: the platform retained half, so the
+    // pandit keeps half of his Rs 880 and the temple half of its Rs 55.
+    //
+    // This test used to assert the OPPOSITE — that a partial touched nothing —
+    // which is how every mid-ladder cancellation shipped loss-making: Rs 825
+    // refunded on a Rs 1,100 puja while the pandit kept all Rs 770. The ladder
+    // (100/75/50/25/0) makes partial the NORMAL path, not an edge case.
     await processRefund({
       bookingId: BOOKING_ID,
       reason: 'test',
       refundType: 'partial',
       amountInr: 550,
     });
+    // A full REVERSAL is still wrong for a partial — the row is scaled, not killed.
     expect(prismaMock.commission.updateMany).not.toHaveBeenCalled();
     expect(prismaMock.templePayout.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.commission.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'c1' } }),
+    );
+    const amount = prismaMock.commission.update.mock.calls[0]![0].data.amount;
+    expect(amount.toString()).toBe('440');
+    const templeAmount = prismaMock.templePayout.update.mock.calls[0]![0].data.amount;
+    expect(templeAmount.toString()).toBe('27.5');
   });
 });

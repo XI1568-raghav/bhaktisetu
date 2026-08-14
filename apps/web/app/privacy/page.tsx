@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { COMPANY, operatedByLine, postalContactLine } from "../../lib/company";
+import {
+ COMPANY,
+ grievanceOfficerLine,
+ grievanceSlaLine,
+ operatedByLine,
+ postalContactLine,
+} from "../../lib/company";
+import CookieSettingsButton from "../../components/CookieSettingsButton";
 
 export const metadata: Metadata = {
  title: "Privacy Policy",
@@ -7,6 +14,7 @@ export const metadata: Metadata = {
  "Darshya\u2019s privacy policy. Learn how we collect, use, and protect your personal and devotional data.",
  alternates: { canonical: "https://darshya.online/privacy" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Privacy Policy | Darshya",
  description:
  "How Darshya collects, uses, and protects your personal and devotional data. DPDP Act 2023 compliant.",
@@ -229,7 +237,15 @@ export default function PrivacyPage() {
  active. Booking records and transaction history are retained for
  7 years as required by Indian tax and accounting regulations.
  You may request deletion of your account and associated data at
- any time by contacting support@darshya.online. Upon deletion,
+ any time from{" "}
+ <a
+ href="/account/privacy"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ Your data &amp; privacy
+ </a>
+ , or by contacting {COMPANY.supportEmail}. Upon deletion,
  we remove personal data within 30 days, except where retention
  is required by law.
  </p>
@@ -239,10 +255,30 @@ export default function PrivacyPage() {
  <p>
  We use essential cookies for authentication and session
  management. We use PostHog for anonymous product analytics to
- understand feature usage and improve the Platform. You may
- disable non-essential cookies through your browser settings.
- Our Platform functions without non-essential cookies, though
- some personalization features may be limited.
+ understand feature usage and improve the Platform. Our Platform
+ functions without non-essential cookies, though some
+ personalization features may be limited.
+ </p>
+ {/* LEG-15: withdrawal must be as easy as consent, so the control sits
+     here as well as on the Cookie Policy — not an instruction to go
+     hunting through browser settings. */}
+ <p>
+ Analytics and marketing cookies run only with your consent, and you
+ can change or withdraw that choice at any time:
+ </p>
+ <p>
+ <CookieSettingsButton />
+ </p>
+ <p>
+ Full detail is in our{" "}
+ <a
+ href="/legal/cookies"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ Cookie Policy
+ </a>
+ .
  </p>
  </PolicySection>
 
@@ -256,9 +292,27 @@ export default function PrivacyPage() {
  <li>Request a copy of your data in a portable format.</li>
  <li>Object to processing of your data for specific purposes.</li>
  </ul>
+ {/* LEG-16: this section used to offer exactly one channel — an email
+     address this file's own single source of truth calls "aspirational" —
+     while POST /api/v1/dpdp/dsar had been shipped and reachable from no UI
+     at all. The self-serve screen is the primary route now; the inbox stays
+     as the fallback for people without an account. */}
  <p>
- To exercise any of these rights, email us at
- privacy@darshya.online with your registered email address.
+ Signed in? Exercise any of these rights yourself at{" "}
+ <a
+ href="/account/privacy"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ Your data &amp; privacy
+ </a>
+ . Every request is logged with a statutory deadline and answered in
+ writing.
+ </p>
+ <p>
+ No account, or prefer email? Write to{" "}
+ {COMPANY.specialtyEmails.privacy ?? COMPANY.supportEmail} from your
+ registered email address and we will file it for you.
  </p>
  </PolicySection>
 
@@ -295,9 +349,17 @@ export default function PrivacyPage() {
  </li>
  </ul>
  <p>
- <strong>Grievance Officer:</strong> For DPDP-related complaints,
- email grievance@darshya.online. We aim to acknowledge within 48
- hours and resolve within 30 days as required by the Act.
+ <strong>Grievance redressal:</strong> For DPDP-related complaints,
+ contact {grievanceOfficerLine()} {grievanceSlaLine()} This is the
+ same contact and the same timeline published in our{" "}
+ <a
+ href="/refunds"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ Refund Policy
+ </a>
+ .
  </p>
  </PolicySection>
 

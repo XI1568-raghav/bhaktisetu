@@ -357,15 +357,80 @@ export function useCancelSubscription() {
 
 // ─── Donations ──────────────────────────────
 
+/**
+ * POST /api/v1/donations/create-order
+ *
+ * PAR-06: this mutation used to be typed `input: unknown`, so the compiler
+ * never noticed that the donations screen sent `{amount, currency, cause,
+ * donorName}` while the server's zod schema (apps/api/src/routes/donations.ts
+ * :224-250) requires `amountInr` plus a real donee id. Every donation from the
+ * app returned 400 {"fieldErrors":{"amountInr":["Required"]}} and the user saw
+ * a bare "Invalid request body" alert.
+ *
+ * Mirrors the server schema exactly: whole rupees, ₹101..₹10,00,000, and
+ * exactly one of gaushalaId / templeId matching causeKind.
+ */
+export interface CreateDonationOrderInput {
+  amountInr: number;
+  causeKind?: "gaushala" | "temple";
+  gaushalaId?: string;
+  templeId?: string;
+  planId?: string;
+  donorPan?: string;
+  dedication?: string;
+}
+
+export interface CreateDonationOrderResponse {
+  donationId: string;
+  razorpayOrderId: string;
+  /** paise, i.e. amountInr * 100 */
+  amount: number;
+  currency: string;
+  keyId: string;
+  isDemoPayment: boolean;
+}
+
 export function useCreateDonationOrder() {
   return useMutation({
-    mutationFn: (input: unknown) =>
-      api.post("/api/v1/donations/create-order", input),
+    mutationFn: (input: CreateDonationOrderInput) =>
+      api.post<CreateDonationOrderResponse>(
+        "/api/v1/donations/create-order",
+        input,
+      ),
   });
+}
+
+export interface VerifyDonationInput {
+  donationId: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
 }
 
 export function useVerifyDonation() {
   return useMutation({
-    mutationFn: (input: unknown) => api.post("/api/v1/donations/verify", input),
+    mutationFn: (input: VerifyDonationInput) =>
+      api.post<{ success?: boolean; verified?: boolean; receiptNumber?: string }>(
+        "/api/v1/donations/verify",
+        input,
+      ),
+  });
+}
+
+/**
+ * GET /api/v1/payments/config -> { keyId, isDemo }
+ *
+ * PAR-01: the only server-truthful signal the client has for "is there a real
+ * payment rail". The Upgrade screen gates on this rather than assuming a
+ * missing checkout URL means the plan was granted.
+ */
+export function usePaymentConfig() {
+  return useQuery({
+    queryKey: ["payments", "config"],
+    queryFn: () =>
+      api.get<{ keyId: string | null; isDemo: boolean }>(
+        "/api/v1/payments/config",
+      ),
+    staleTime: 5 * 60 * 1000,
   });
 }

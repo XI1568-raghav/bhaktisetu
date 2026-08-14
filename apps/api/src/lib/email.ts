@@ -28,12 +28,123 @@ interface SendEmailResult {
   skipped?: boolean;
   id?: string;
   error?: string;
+  /** SCAL-11: true when the provider refused because the daily budget is gone. */
+  rateLimited?: boolean;
+}
+
+// ─── SCAL-11: daily send budget ────────────────────────────────────────────
+//
+// Resend free is 100 emails/day (3,000/mo). docs/free-tier-budgets.md does the
+// arithmetic: at ~3 mails per signup that is ~33 signups a day, and the same
+// allowance has to cover welcome mails, booking receipts, 80G donation
+// receipts, password resets and referral notifications. It is the FIRST hard
+// business cap this platform hits — well before storage or rows.
+//
+// Before this, hitting it was silent: Resend answers 429, the catch below
+// folded it into an anonymous `{ ok:false, error }`, and no caller checks the
+// result. On the day a temple partnership lands, devotee number 34 simply
+// never receives the receipt that IS her proof of purchase, and the first
+// signal is a support ticket accusing the platform of fraud.
+//
+// So: count every attempt against the UTC day Resend resets on, name a 429 for
+// what it is, and announce the threshold BEFORE the cap bites. This does not
+// buy headroom — splitting drip/marketing traffic off Resend and budgeting the
+// paid tier are business calls — it makes the wall visible while there is
+// still time to act.
+//
+// Caveat, stated rather than hidden: this counter is per PROCESS. Render free
+// runs a single always-on API instance today, so it is accurate now; if the
+// API is ever scaled out, each instance counts only its own share and the
+// warning fires late. A shared counter needs Redis, which SCAL-08 records as
+// unconfigured.
+const DAILY_CAP = Number(process.env.RESEND_DAILY_CAP ?? 100);
+const WARN_AT = Number(process.env.RESEND_DAILY_WARN_AT ?? 70);
+
+interface EmailQuotaSnapshot {
+  /** UTC calendar day these counters belong to, YYYY-MM-DD. */
+  day: string;
+  attempted: number;
+  sent: number;
+  failed: number;
+  rateLimited: number;
+  cap: number;
+  warnAt: number;
+}
+
+const quota = {
+  day: '',
+  attempted: 0,
+  sent: 0,
+  failed: 0,
+  rateLimited: 0,
+  warned: false,
+  capAnnounced: false,
+};
+
+function utcDay(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function rollDay(): void {
+  const today = utcDay();
+  if (quota.day === today) return;
+  quota.day = today;
+  quota.attempted = 0;
+  quota.sent = 0;
+  quota.failed = 0;
+  quota.rateLimited = 0;
+  quota.warned = false;
+  quota.capAnnounced = false;
+}
+
+/** Current day's send counters. Exported for ops surfaces and tests. */
+export function getEmailQuotaSnapshot(): EmailQuotaSnapshot {
+  rollDay();
+  return {
+    day: quota.day,
+    attempted: quota.attempted,
+    sent: quota.sent,
+    failed: quota.failed,
+    rateLimited: quota.rateLimited,
+    cap: DAILY_CAP,
+    warnAt: WARN_AT,
+  };
+}
+
+/** True when the provider's refusal is a quota refusal rather than a bad address. */
+function looksRateLimited(error: { message?: string; name?: string; statusCode?: number }): boolean {
+  if (error.statusCode === 429) return true;
+  return /429|rate limit|too many requests|daily quota|quota exceeded/i.test(
+    `${error.name ?? ''} ${error.message ?? ''}`,
+  );
+}
+
+function announceIfNearCap(): void {
+  if (!quota.warned && quota.sent >= WARN_AT) {
+    quota.warned = true;
+    console.warn(
+      `[email][SCAL-11] ${quota.sent}/${DAILY_CAP} Resend sends used on ${quota.day}. ` +
+        'Transactional receipts and password resets share this allowance — ' +
+        'pause any drip/digest sends now or they will consume the rest.',
+    );
+  }
+  if (!quota.capAnnounced && quota.sent >= DAILY_CAP) {
+    quota.capAnnounced = true;
+    console.error(
+      `[email][SCAL-11] Resend daily cap reached (${quota.sent}/${DAILY_CAP}) on ${quota.day}. ` +
+        'Further sends will be refused with 429 — booking receipts and password ' +
+        'resets are now failing for real users.',
+    );
+  }
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
   if (!resend) {
+    // No key configured — nothing was sent, so nothing is charged to the day.
     return { ok: false, skipped: true };
   }
+  rollDay();
+  quota.attempted += 1;
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
@@ -44,9 +155,23 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       replyTo: REPLY_TO,
       attachments: params.attachments,
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      quota.failed += 1;
+      const rateLimited = looksRateLimited(error as { message?: string; name?: string });
+      if (rateLimited) {
+        quota.rateLimited += 1;
+        console.error(
+          `[email][SCAL-11] Resend refused a send as rate-limited on ${quota.day} ` +
+            `(subject: ${params.subject}). This mail was NOT delivered.`,
+        );
+      }
+      return { ok: false, error: error.message, rateLimited };
+    }
+    quota.sent += 1;
+    announceIfNearCap();
     return { ok: true, id: data?.id };
   } catch (err) {
+    quota.failed += 1;
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -148,6 +273,92 @@ export function bookingConfirmationEmail(params: {
       <a class="btn" href="https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}">View booking</a>
     `),
     text: `Namaste ${devoteeName}, your puja is booked.\n\nBooking #${bookingNumber}\nPuja: ${pujaName}\nTemple: ${templeName}\nDate: ${scheduledDate}\nTime: ${scheduledTimeSlot}\n${panditText}Amount: ${amount}\n\nCancellation is open until 24 hours before the slot time.\nView at: https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}`,
+  };
+}
+
+/**
+ * NOTIF-05 (2026-08-12): the email bookingConfirmationEmail PROMISES.
+ *
+ * Its body says, to every paying devotee: "The priest will perform the puja and
+ * upload a video proof. You'll receive an email when the recording is ready."
+ * No such template existed. The only thing that fired when a proof landed was a
+ * web-push — which needs a desktop browser with granted permission, i.e.
+ * essentially nobody in the NRI cohort that pays 9-10x precisely for this
+ * artefact. Video proof is business rule #1; this is the written half of it.
+ */
+export function videoReadyEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  bookingNumber: string;
+  /** Deep link to the booking's video page. */
+  videoUrl: string;
+  priestName?: string | null;
+  performedOn?: string | null;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, bookingNumber, videoUrl, priestName, performedOn } =
+    params;
+  const priestHtml = priestName ? `<strong>Pandit:</strong> ${esc(priestName)}<br>` : '';
+  const priestText = priestName ? `Pandit: ${priestName}\n` : '';
+  const performedHtml = performedOn ? `<strong>Performed on:</strong> ${esc(performedOn)}<br>` : '';
+  const performedText = performedOn ? `Performed on: ${performedOn}\n` : '';
+  return {
+    subject: `Your ${pujaName} video is ready`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your puja video is ready</h1>
+      <p>The recording of your puja has been uploaded. It shows the sankalp taken in your name,
+      the ritual itself, and the prasad offering.</p>
+      <p><strong>Puja:</strong> ${esc(pujaName)}<br>
+      <strong>Temple:</strong> ${esc(templeName)}<br>
+      ${priestHtml}${performedHtml}
+      <strong>Booking:</strong> ${esc(bookingNumber)}</p>
+      <a class="btn" href="${esc(videoUrl)}">Watch your puja video</a>
+      <p style="font-size:12px;color:#999;">If the button doesn't work, paste this URL into your browser:<br>
+      <span style="word-break:break-all;">${esc(videoUrl)}</span></p>
+    `),
+    text: `Namaste ${devoteeName}, your puja video is ready.\n\nPuja: ${pujaName}\nTemple: ${templeName}\n${priestText}${performedText}Booking: ${bookingNumber}\n\nWatch it here: ${videoUrl}`,
+  };
+}
+
+/**
+ * NOTIF-04 (2026-08-12): the refund notice for the ADMIN refund rail.
+ *
+ * refund.service.processRefund has always had its own local refundSuccessEmail.
+ * The other rail — payment.service.processRefund, which is what the admin panel
+ * calls — sent nothing at all: no email, no push, no WhatsApp. A devotee
+ * refunded by an admin got their money back with zero written notice, and the
+ * predictable next step is a chargeback on a refund that was already paid.
+ *
+ * Fired from booking-notify.notifyRefundProcessed, which suppresses it when the
+ * caller reports it already sent one — so the two rails cannot double-email.
+ */
+export function refundProcessedEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  bookingNumber: string;
+  /** Pre-formatted display amount, e.g. "₹1,100.50". Built from the stored Decimal, never a float. */
+  amount?: string | null;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, bookingNumber, amount } = params;
+  const amountHtml = amount
+    ? `<p><strong>Amount refunded:</strong> ${esc(amount)}</p>`
+    : '<p>Your refund has been issued.</p>';
+  const amountText = amount ? `Amount refunded: ${amount}\n` : 'Your refund has been issued.\n';
+  return {
+    subject: `Refund processed for your ${pujaName} booking`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your refund is on its way</h1>
+      ${amountHtml}
+      <p><strong>Puja:</strong> ${esc(pujaName)}<br>
+      <strong>Temple:</strong> ${esc(templeName)}<br>
+      <strong>Booking:</strong> ${esc(bookingNumber)}</p>
+      <p>The amount has been returned to the payment method you used. Banks typically take
+      5-7 business days to post it to your statement.</p>
+      <p style="font-size:12px;color:#999;">If you do not see it after 7 business days, reply to this
+      email with your booking number and we will trace it with the payment gateway.</p>
+    `),
+    text: `Namaste ${devoteeName}, your refund is on its way.\n\n${amountText}Puja: ${pujaName}\nTemple: ${templeName}\nBooking: ${bookingNumber}\n\nThe amount has been returned to your original payment method. Banks typically take 5-7 business days to post it.`,
   };
 }
 

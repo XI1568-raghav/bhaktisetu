@@ -1,40 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAdminDashboard } from '@poojly/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { api, useAdminDashboard } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section } from '../../lib/portal-screen';
+import { selectAdminDashboard } from '../../lib/api-contracts';
+import { describePlatformFlagSupport, describeGatewayStatus } from '../../lib/platform-flags';
+import type { PaymentConfig } from '../../lib/subscription-gate';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-const FLAGS = [
-  { id: 'video_proof_required', label: 'Video Proof Required', description: 'Mandatory for puja payouts' },
-  { id: 'nri_pricing', label: 'NRI Pricing Live', description: '9-10x markup for NRI users' },
-  { id: 'razorpay', label: 'Razorpay Domestic', description: 'Indian payment gateway' },
-  { id: 'ai_jyotish', label: 'AI Jyotish Beta', description: 'Claude-powered astrology Q&A' },
-  { id: 'auto_approve', label: 'Auto-approve Devotees', description: 'New devotee accounts skip review' },
-];
-
+/**
+ * PAR-19. The five "Feature Flags" switches were `useState` and nothing else:
+ * no fetch, no mutation, no persistence, values invented at mount and lost on
+ * unmount. An admin could believe they had disabled a payment gateway, turned
+ * off mandatory video proof for payouts, or stopped auto-approving devotee
+ * accounts — over money and over trust-and-safety — and nothing had changed.
+ * The state also still carried a `stripe: true` flag after the Stripe rail was
+ * removed from the API.
+ *
+ * There is no platform-flag endpoint to wire these to (see lib/platform-flags
+ * for the search). So the toggles are gone rather than faked, and the one
+ * value that CAN be read from a real endpoint — the Razorpay gateway, via
+ * GET /api/v1/payments/config — is shown read-only, defaulting to "Unknown"
+ * when the request fails.
+ */
 export default function AdminSettings() {
   const { user, signOut } = useAuth();
   const dashboardQuery = useAdminDashboard();
-  const [refreshing, setRefreshing] = useState(false);
-  const [state, setState] = useState<Record<string, boolean>>({
-    video_proof_required: true,
-    nri_pricing: true,
-    razorpay: true,
-    stripe: true,
-    ai_jyotish: false,
-    auto_approve: true,
+  const paymentConfigQuery = useQuery<PaymentConfig>({
+    queryKey: ['payments', 'config'],
+    queryFn: () => api.get<PaymentConfig>('/api/v1/payments/config'),
   });
+  const [refreshing, setRefreshing] = useState(false);
 
-  function toggle(id: string) {
-    setState((s) => ({ ...s, [id]: !s[id] }));
-  }
+  const dash = selectAdminDashboard(dashboardQuery.data);
+  const flagSupport = describePlatformFlagSupport();
+  const gateway = describeGatewayStatus({
+    config: paymentConfigQuery.data,
+    isLoading: paymentConfigQuery.isLoading,
+    error: paymentConfigQuery.error,
+  });
+  const gatewayColor =
+    gateway.state === 'live'
+      ? colors.green[600]
+      : gateway.state === 'demo'
+        ? colors.amber[600]
+        : colors.stone[500];
 
   async function onRefresh() {
     setRefreshing(true);
-    await dashboardQuery.refetch();
+    await Promise.all([dashboardQuery.refetch(), paymentConfigQuery.refetch()]);
     setRefreshing(false);
   }
 
@@ -66,9 +83,9 @@ export default function AdminSettings() {
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{user?.fullName ?? 'Admin'}</Text>
           {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
-          {dashboardQuery.data?.totalUsers ? (
+          {dash ? (
             <Text style={styles.email}>
-              {dashboardQuery.data.totalUsers.toLocaleString('en-IN')} users on platform
+              {dash.totalUsers.toLocaleString('en-IN')} users on platform
             </Text>
           ) : null}
         </View>
@@ -104,19 +121,18 @@ export default function AdminSettings() {
         </TouchableOpacity>
       </Section>
 
-      <Section title="Feature Flags">
-        {FLAGS.map((f) => (
+      <Section title="Platform Configuration">
+        <Text style={styles.flagNotice}>{flagSupport.message}</Text>
+        {flagSupport.readableFlags.map((f) => (
           <View key={f.id} style={styles.flagRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.flagLabel}>{f.label}</Text>
               <Text style={styles.flagDesc}>{f.description}</Text>
+              <Text style={styles.flagDesc}>{gateway.detail}</Text>
             </View>
-            <Switch
-              value={!!state[f.id]}
-              onValueChange={() => toggle(f.id)}
-              trackColor={{ false: colors.stone[200], true: colors.saffron[400] }}
-              thumbColor={state[f.id] ? colors.saffron[600] : colors.stone[400]}
-            />
+            <View style={[styles.statusPill, { borderColor: gatewayColor }]}>
+              <Text style={[styles.statusText, { color: gatewayColor }]}>{gateway.label}</Text>
+            </View>
           </View>
         ))}
       </Section>
@@ -157,6 +173,24 @@ const styles = StyleSheet.create({
   },
   flagLabel: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   flagDesc: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
+  flagNotice: {
+    fontSize: fontSize.sm,
+    color: colors.stone[700],
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    lineHeight: 18,
+  },
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+  },
+  statusText: { fontSize: fontSize.xs, fontWeight: '700' },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',

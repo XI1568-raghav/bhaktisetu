@@ -1,86 +1,91 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
-import { usePujas } from '@poojly/api-client';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { usePujas, usePriestProfile } from '@poojly/api-client';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import { selectPujaTypes, selectPriestProfile } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-interface ServiceOffer {
-  id: string;
-  name: string;
-  deity: string;
-  basePrice: number;
-  enabled: boolean;
-}
-
-const FALLBACK: ServiceOffer[] = [
-  { id: '1', name: 'Rudrabhishek', deity: 'Lord Shiva', basePrice: 1100, enabled: true },
-  { id: '2', name: 'Satyanarayan Katha', deity: 'Lord Vishnu', basePrice: 2100, enabled: true },
-  { id: '3', name: 'Ganesh Atharvashirsha', deity: 'Lord Ganesha', basePrice: 751, enabled: true },
-  { id: '4', name: 'Navagraha Shanti', deity: 'Nine Planets', basePrice: 3100, enabled: false },
-  { id: '5', name: 'Durga Saptashati Path', deity: 'Goddess Durga', basePrice: 1551, enabled: true },
-  { id: '6', name: 'Sunderkand Path', deity: 'Lord Hanuman', basePrice: 551, enabled: false },
-];
-
+/**
+ * PAR-11 (services half). `(pujasQuery.data)?.data` is not a key on
+ * {pujaTypes,total,…}, so this screen always fell through to a six-row
+ * hardcoded FALLBACK — with prices that contradicted the live catalogue
+ * (Satyanarayan Katha ₹2,100 here vs ₹1,501 in the API) and one puja,
+ * "Ganesh Atharvashirsha", that Darshya does not sell at all. A pandit was
+ * reviewing, and could have quoted from, a price list that did not exist.
+ *
+ * The per-row Switch is gone with it. It was `useState` only — no endpoint,
+ * no persistence — so a pandit could "deactivate" a service, navigate away,
+ * and find it active again, having believed they had stopped taking those
+ * bookings. There is no priest-service-toggle endpoint to wire it to, so the
+ * screen shows the catalogue read-only and says where it can be changed.
+ */
 export default function PriestServices() {
-  const pujasQuery = usePujas({ limit: 20 } as never);
+  const pujasQuery = usePujas();
+  const profileQuery = usePriestProfile();
   const [refreshing, setRefreshing] = useState(false);
-  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
 
-  const services = useMemo<ServiceOffer[]>(() => {
-    const apiPujas = (pujasQuery.data as { data?: { id: string; name?: string; title?: string; deity?: string; basePrice?: number; basePriceInr?: number }[] } | undefined)?.data;
-    if (apiPujas && apiPujas.length > 0) {
-      return apiPujas.map((p, i) => ({
-        id: p.id,
-        name: p.name ?? p.title ?? `Puja ${i + 1}`,
-        deity: p.deity ?? 'All deities',
-        basePrice: p.basePrice ?? p.basePriceInr ?? 0,
-        enabled: overrides[p.id] ?? true,
-      }));
-    }
-    return FALLBACK.map((s) => ({ ...s, enabled: overrides[s.id] ?? s.enabled }));
-  }, [pujasQuery.data, overrides]);
-
-  function toggle(id: string) {
-    setOverrides((prev) => {
-      const current = services.find((s) => s.id === id)?.enabled ?? true;
-      return { ...prev, [id]: !current };
-    });
-  }
+  const services = selectPujaTypes(pujasQuery.data);
+  const profile = selectPriestProfile(profileQuery.data);
+  const specializations = profile?.specializations ?? [];
 
   async function onRefresh() {
     setRefreshing(true);
-    await pujasQuery.refetch();
+    await Promise.all([pujasQuery.refetch(), profileQuery.refetch()]);
     setRefreshing(false);
   }
 
-  const enabledCount = services.filter((s) => s.enabled).length;
+  const subtitle = pujasQuery.isLoading
+    ? 'Loading catalogue…'
+    : pujasQuery.isError
+      ? 'Catalogue unavailable'
+      : `${services.length} puja types on the platform`;
 
   return (
     <PortalScreen
       title="My Services"
-      subtitle={`${enabledCount} of ${services.length} active`}
+      subtitle={subtitle}
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
-      <Section title="Puja Offerings">
-        {services.length === 0 ? (
-          <EmptyHint text="No puja types available yet." />
+      {specializations.length > 0 ? (
+        <Section title="Your Specializations">
+          <View style={styles.chipWrap}>
+            {specializations.map((s) => (
+              <View key={s} style={styles.chip}>
+                <Text style={styles.chipText}>{s}</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
+
+      <Section title="Platform Puja Catalogue">
+        <Text style={styles.note}>
+          These are the puja types and base prices Darshya lists. Your own
+          service list and pricing are managed in the web portal — this screen
+          is read-only.
+        </Text>
+        {pujasQuery.isLoading ? (
+          <EmptyHint text="Loading the catalogue…" />
+        ) : pujasQuery.isError ? (
+          <EmptyHint text="Could not load the catalogue. Pull down to retry." />
+        ) : services.length === 0 ? (
+          <EmptyHint text="No puja types are listed right now." />
         ) : (
           services.map((s) => (
             <View key={s.id} style={styles.row}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{s.name}</Text>
                 <Text style={styles.meta}>
-                  {s.deity}
-                  {s.basePrice > 0 ? ` • ₹${s.basePrice.toLocaleString('en-IN')}` : ''}
+                  {[
+                    s.deity,
+                    s.durationMinutes !== null ? `${s.durationMinutes} min` : null,
+                    s.priceInr !== null ? `₹${s.priceInr.toLocaleString('en-IN')}` : 'Price not set',
+                  ]
+                    .filter(Boolean)
+                    .join(' • ')}
                 </Text>
               </View>
-              <Switch
-                value={s.enabled}
-                onValueChange={() => toggle(s.id)}
-                trackColor={{ false: colors.stone[200], true: colors.saffron[400] }}
-                thumbColor={s.enabled ? colors.saffron[600] : colors.stone[400]}
-              />
             </View>
           ))
         )}
@@ -102,4 +107,19 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   meta: { fontSize: fontSize.sm, color: colors.stone[500], marginTop: 2 },
+  note: {
+    fontSize: fontSize.sm,
+    color: colors.stone[600],
+    marginBottom: spacing.sm,
+  },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.saffron[100],
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+  },
+  chipText: { fontSize: fontSize.xs, fontWeight: '600', color: colors.stone[700] },
 });

@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '27 Nakshatras — Vedic Lunar Mansions, Lords, Deities, Compatibility | Darshya',
+  title: '27 Nakshatras — Vedic Lunar Mansions, Lords, Deities, Compatibility',
   description:
     'Complete guide to all 27 Vedic nakshatras (lunar mansions). Find your birth nakshatra, ruling planet, deity, qualities, career, marriage compatibility, and spiritual practice.',
   alternates: { canonical: `${BASE_URL}/nakshatra` },

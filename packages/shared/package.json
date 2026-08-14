@@ -10,7 +10,8 @@
     "./types": "./src/types/index.ts",
     "./validators": "./src/validators/index.ts",
     "./constants": "./src/constants/index.ts",
-    "./utils": "./src/utils/index.ts"
+    "./utils": "./src/utils/index.ts",
+    "./delivery-address": "./src/validators/delivery-address.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit",

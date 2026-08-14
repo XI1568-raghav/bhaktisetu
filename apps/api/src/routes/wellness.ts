@@ -370,26 +370,15 @@ const programs = [
   },
 ];
 
-// ─── Sessions (upcoming live sessions) ──────────────────────────────────────
-
-const sessions = [
-  { id: 'ses-001', title: 'Morning Hatha Flow', instructorId: 'inst-001', instructorName: 'Aarav Sharma', category: 'yoga', type: 'Hatha Yoga', date: '2026-04-25', time: '06:00 AM', duration: 60, spotsLeft: 8, totalSpots: 20, price: 299, isLive: true },
-  { id: 'ses-002', title: 'Power Vinyasa', instructorId: 'inst-002', instructorName: 'Meera Iyer', category: 'yoga', type: 'Vinyasa', date: '2026-04-25', time: '07:00 AM', duration: 75, spotsLeft: 5, totalSpots: 15, price: 349, isLive: true },
-  { id: 'ses-003', title: 'Guided Morning Meditation', instructorId: 'inst-003', instructorName: 'Swami Dhyanananda', category: 'meditation', type: 'Guided Meditation', date: '2026-04-25', time: '05:30 AM', duration: 45, spotsLeft: 20, totalSpots: 50, price: 199, isLive: true },
-  { id: 'ses-004', title: 'Chakra Alignment Session', instructorId: 'inst-004', instructorName: 'Anita Desai', category: 'meditation', type: 'Chakra Meditation', date: '2026-04-26', time: '07:00 PM', duration: 60, spotsLeft: 12, totalSpots: 25, price: 249, isLive: true },
-  { id: 'ses-005', title: 'Kundalini Awakening', instructorId: 'inst-005', instructorName: 'Rajesh Kulkarni', category: 'yoga', type: 'Kundalini Yoga', date: '2026-04-26', time: '06:00 AM', duration: 90, spotsLeft: 6, totalSpots: 15, price: 449, isLive: true },
-  { id: 'ses-006', title: 'Yin & Restore', instructorId: 'inst-006', instructorName: 'Nandini Raghavan', category: 'yoga', type: 'Yin Yoga', date: '2026-04-27', time: '08:00 PM', duration: 60, spotsLeft: 15, totalSpots: 20, price: 249, isLive: true },
-  { id: 'ses-007', title: 'Vipassana Introduction', instructorId: 'inst-007', instructorName: 'Acharya Goenkaji', category: 'vipassana', type: 'Vipassana', date: '2026-04-27', time: '05:00 AM', duration: 120, spotsLeft: 10, totalSpots: 30, price: 0, isLive: true },
-  { id: 'ses-008', title: 'Mindfulness for Beginners', instructorId: 'inst-008', instructorName: 'Kavya Menon', category: 'meditation', type: 'Mindfulness', date: '2026-04-28', time: '06:30 AM', duration: 30, spotsLeft: 25, totalSpots: 40, price: 149, isLive: true },
-  { id: 'ses-009', title: 'Sound Bath Healing', instructorId: 'inst-010', instructorName: 'Arjun Kapoor', category: 'meditation', type: 'Sound Bath', date: '2026-04-28', time: '07:00 PM', duration: 60, spotsLeft: 3, totalSpots: 12, price: 499, isLive: true },
-  { id: 'ses-010', title: 'Ashtanga Primary Series', instructorId: 'inst-002', instructorName: 'Meera Iyer', category: 'yoga', type: 'Ashtanga', date: '2026-04-29', time: '06:00 AM', duration: 90, spotsLeft: 4, totalSpots: 10, price: 399, isLive: true },
-  { id: 'ses-011', title: 'Ayurveda: Know Your Dosha', instructorId: 'inst-009', instructorName: 'Dr. Kavita Nair', category: 'ayurveda', type: 'Consultation', date: '2026-04-29', time: '10:00 AM', duration: 60, spotsLeft: 8, totalSpots: 15, price: 799, isLive: true },
-  { id: 'ses-012', title: 'Pranayama Masterclass', instructorId: 'inst-001', instructorName: 'Aarav Sharma', category: 'yoga', type: 'Pranayama', date: '2026-04-30', time: '06:00 AM', duration: 45, spotsLeft: 12, totalSpots: 20, price: 349, isLive: true },
-  { id: 'ses-013', title: 'Yoga Nidra — Deep Rest', instructorId: 'inst-006', instructorName: 'Nandini Raghavan', category: 'yoga', type: 'Yoga Nidra', date: '2026-04-30', time: '09:00 PM', duration: 45, spotsLeft: 18, totalSpots: 30, price: 199, isLive: true },
-  { id: 'ses-014', title: 'Nada Yoga & Mantra', instructorId: 'inst-010', instructorName: 'Arjun Kapoor', category: 'meditation', type: 'Nada Yoga', date: '2026-05-01', time: '06:30 AM', duration: 60, spotsLeft: 10, totalSpots: 15, price: 399, isLive: true },
-];
-
-const bookings: Array<{ id: string; sessionId: string; userId: string; status: string; bookedAt: string }> = [];
+// COM-15 (prod sweep 2026-08-12, P2/trust): the fourteen fixture "upcoming
+// live sessions" and the in-memory `bookings` array that used to sit here
+// backed `POST /wellness/book` — an unauthenticated, unpaid endpoint that
+// decremented `spotsLeft` on shared process state and answered "Session
+// booked successfully." Nothing in web or mobile called it. The real rail is
+// wellness-sessions.ts, registered at this same /api/v1/wellness prefix: it
+// authenticates, persists to wellness_enrollments, and charges. Two booking
+// endpoints at one prefix was the defect, so this one is gone rather than
+// patched. Guarded by wellness-book-endpoint-removed.test.ts.
 
 export async function wellnessRoutes(server: FastifyInstance) {
   // ─── GET /instructors ──────────────────────────────────────────────────────
@@ -457,51 +446,5 @@ export async function wellnessRoutes(server: FastifyInstance) {
     }
 
     return { program };
-  });
-
-  // ─── POST /book ────────────────────────────────────────────────────────────
-  server.post('/book', async (request, reply) => {
-    const { sessionId, userId, name, email } = request.body as {
-      sessionId: string;
-      userId?: string;
-      name?: string;
-      email?: string;
-    };
-
-    if (!sessionId) {
-      return reply.code(400).send({ error: 'sessionId is required.' });
-    }
-
-    const session = sessions.find((s) => s.id === sessionId);
-    if (!session) {
-      return reply.code(404).send({ error: 'Session not found.' });
-    }
-
-    if (session.spotsLeft <= 0) {
-      return reply.code(400).send({ error: 'Session is fully booked.' });
-    }
-
-    session.spotsLeft -= 1;
-
-    const booking = {
-      id: `bk-${Date.now()}`,
-      sessionId,
-      userId: userId || 'guest',
-      status: 'confirmed',
-      bookedAt: new Date().toISOString(),
-    };
-
-    bookings.push(booking);
-
-    return {
-      booking,
-      session: {
-        title: session.title,
-        date: session.date,
-        time: session.time,
-        instructor: session.instructorName,
-      },
-      message: 'Session booked successfully.',
-    };
   });
 }

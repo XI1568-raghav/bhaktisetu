@@ -38,6 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  if (!cat) return { title: 'Home Puja' };
  return {
  title: `${cat.name} at Home — Book a Verified Pandit`,
+ alternates: { canonical: `https://darshya.online/pujas/home-puja/${slug}` },
  description: cat.description,
  };
 }
@@ -227,7 +228,7 @@ export default async function HomePujaDetail({ params }: Props) {
  }`}
  >
  {isFeatured && (
- <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-saffron-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+ <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-saffron-600 text-white text-xs font-bold px-3 py-1 rounded-full">
  Most Popular
  </div>
  )}
@@ -251,7 +252,7 @@ export default async function HomePujaDetail({ params }: Props) {
  href={`/pujas/home-puja/${cat.slug}/book?tier=${tier}`}
  className={`block text-center py-3 rounded-lg font-semibold transition-colors ${
  isFeatured
- ? 'bg-saffron-500 text-white hover:bg-saffron-600'
+ ? 'bg-saffron-600 text-white hover:bg-saffron-700'
  : 'bg-surface-100 text-surface-800 hover:bg-surface-200 border border-[var(--color-border)]'
  }`}
  >

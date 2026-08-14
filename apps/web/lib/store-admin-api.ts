@@ -78,12 +78,50 @@ export interface CreateStoreProductInput {
 export type UpdateStoreProductInput = Partial<CreateStoreProductInput>;
 
 export async function listStoreProducts(token: string | undefined): Promise<StoreProduct[]> {
+  return (await listStoreProductsWithSetupState(token)).products;
+}
+
+// S-07: the owner's product list and their store-setup state come back
+// together, so /store-admin/products can tell "no store yet" apart from
+// "store set up, no products yet" instead of inviting an add that 409s.
+export async function listStoreProductsWithSetupState(
+  token: string | undefined,
+): Promise<{ products: StoreProduct[]; storeProfileMissing: boolean }> {
   const res = await fetch(`${API_BASE_URL}/store-admin/products`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load products'));
-  const body = (await res.json()) as { products: StoreProduct[] };
-  return body.products;
+  const body = (await res.json()) as {
+    products: StoreProduct[];
+    storeProfileMissing?: boolean;
+  };
+  return {
+    products: body.products ?? [],
+    storeProfileMissing: body.storeProfileMissing === true,
+  };
+}
+
+export interface StoreProfile {
+  id: string;
+  storeName: string;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  approved: boolean;
+}
+
+export async function saveStoreProfile(
+  token: string | undefined,
+  input: { storeName: string; city?: string; state?: string; address?: string },
+): Promise<StoreProfile> {
+  const res = await fetch(`${API_BASE_URL}/store-admin/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await describeFailure(res, 'Could not save your store details'));
+  const body = (await res.json()) as { profile: StoreProfile };
+  return body.profile;
 }
 
 export async function createStoreProduct(

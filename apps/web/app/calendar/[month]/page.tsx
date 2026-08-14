@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { FESTIVALS } from '../../../lib/festivals';
+import { FESTIVALS, resolveBookablePujas } from '../../../lib/festivals';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -34,10 +35,11 @@ export async function generateMetadata({ params }: { params: Promise<{ month: st
   if (!m) return { title: 'Not found' };
   const count = FESTIVALS.filter((f) => parseInt(f.date2026.split('-')[1] || '0', 10) === m.idx + 1).length;
   return {
-    title: `Hindu Festivals in ${m.name} ${YEAR} — ${count} Festivals with Dates | Darshya`,
+    title: `Hindu Festivals in ${m.name} ${YEAR} — ${count} Festivals with Dates`,
     description: `Complete list of Hindu festivals in ${m.name} ${YEAR}: ${m.focus} Dates, deities, rituals, fasting requirements, and puja booking.`,
     alternates: { canonical: `${BASE_URL}/calendar/${m.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${m.name} ${YEAR} — ${count} Hindu festivals`,
       description: m.focus,
       url: `${BASE_URL}/calendar/${m.slug}`,
@@ -52,6 +54,10 @@ function getDayOfWeek(iso: string): string {
 }
 
 export default async function CalendarMonthPage({ params }: { params: Promise<{ month: string }> }) {
+  // DF-02: only count pujas the live catalogue can actually sell.
+  const catalogue = await getCatalogueSlugs();
+  const bookableCount = (f: { pujasAvailable: string[] }) =>
+    resolveBookablePujas(f.pujasAvailable, catalogue).length;
   const { month } = await params;
   const m = MONTHS.find((x) => x.slug === month);
   if (!m) notFound();
@@ -143,7 +149,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
                     <div className="flex items-baseline justify-between gap-3">
                       <h2 className="text-xl font-bold text-gray-900">
                         <Link href={`/festival/${f.slug}`} className="hover:text-saffron-700">{f.name}</Link>
-                        {isToday && <span className="ml-2 rounded bg-saffron-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Today</span>}
+                        {isToday && <span className="ml-2 rounded bg-saffron-600 px-1.5 py-0.5 text-xs font-bold uppercase text-white">Today</span>}
                       </h2>
                       <span className="font-serif text-base text-gray-700">{f.sanskrit}</span>
                     </div>
@@ -161,18 +167,18 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
                       </div>
                     )}
 
-                    <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+                    <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
                       {f.fastingType !== 'none' && (
                         <span className={`rounded px-2 py-0.5 font-semibold uppercase ${
                           f.fastingType === 'full' ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'
                         }`}>{f.fastingType} fast</span>
                       )}
-                      {f.pujasAvailable.length > 0 && (
+                      {bookableCount(f) > 0 && (
                         <Link
                           href={`/festival/${f.slug}`}
                           className="rounded bg-emerald-100 px-2 py-0.5 font-semibold uppercase text-emerald-800 hover:bg-emerald-200"
                         >
-                          Book {f.pujasAvailable.length} puja{f.pujasAvailable.length > 1 ? 's' : ''} →
+                          Book {bookableCount(f)} puja{bookableCount(f) > 1 ? 's' : ''} →
                         </Link>
                       )}
                       {f.deitySlug && (
