@@ -96,6 +96,11 @@ export default function UpgradeScreen() {
       return;
     }
     try {
+      // Razorpay returns a hosted short URL for the subscription mandate.
+      // (Was a Stripe Checkout session URL until that rail was removed on
+      // 2026-08-11. Mobile ships as its own binary and does not redeploy with
+      // the API, so the old endpoint would have 404'd for every installed
+      // client the moment the API went out.)
       const res = await createCheckout.mutateAsync();
       const url = extractCheckoutUrl(res);
       if (!url) {
