@@ -114,6 +114,7 @@ import { prisma } from './lib/prisma.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
 import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
+import { redactError } from './lib/error-redaction.js';
 
 const server = Fastify({
   logger: {
@@ -129,6 +130,33 @@ async function bootstrap() {
   // Render start command may have skipped. Runs before routes register so
   // hot-path Prisma queries see the columns they expect.
   await ensureSchemaInvariants(server.log);
+
+  // ── Error handler ─── MUST be installed BEFORE any route plugin ───────────
+  //
+  // AW-08 (prod sweep 2026-08-12, P1). This block used to sit at the BOTTOM of
+  // bootstrap(), after ~90 `server.register(routes, { prefix })` calls. Fastify
+  // resolves a route's error handler from the encapsulation context the route
+  // was registered in, so a handler installed afterwards never reaches any of
+  // them — it was dead code for every route in this API, in every environment,
+  // and Fastify's default serializer answered instead:
+  //
+  //   {"statusCode":500,"code":"P2023","message":"Invalid `prisma.astrologer
+  //    Profile.findUnique()` invocation in E:\\NewClaude\\...\\astrologer-portal.ts:53:52"}
+  //
+  // — the ORM, the query, the SQL and the absolute server path, to any caller.
+  // Moving it here is half the fix; lib/error-redaction.ts is the other half
+  // (driver internals are stripped in ALL environments, not just production).
+  // Both halves are locked by src/lib/error-redaction.test.ts.
+  //
+  // Do not move this below the registers again.
+  const isProdEnv = process.env.NODE_ENV === 'production';
+  server.setErrorHandler((err, _req, reply) => {
+    server.log.error(err);
+    captureException(err);
+    if (reply.sent) return;
+    const body = redactError(err as unknown as Record<string, unknown>, { isProd: isProdEnv });
+    void reply.code(body.statusCode).send({ error: body.error, message: body.message });
+  });
 
   // Security plugins
   // API serves only JSON — no HTML, no inline scripts, no embedded frames.
@@ -435,29 +463,9 @@ async function bootstrap() {
   const port = Number(process.env.PORT || process.env.API_PORT) || 4000;
   const host = process.env.HOST || '0.0.0.0';
 
-  // Forward uncaught Fastify errors to Sentry (no-op when SENTRY_DSN unset).
-  // In production, never echo `err.message` back to the client — Prisma
-  // errors carry table/column/constraint names and query fragments that
-  // leak schema details. Surface a generic message; the full error is in
-  // the server logs and Sentry. Validation errors (4xx) and rate-limit
-  // errors are exempt — those messages are intentionally user-facing.
-  server.setErrorHandler((err, _req, reply) => {
-    server.log.error(err);
-    captureException(err);
-    if (reply.sent) return;
-
-    const e = err as { statusCode?: number; name?: string; message?: string; code?: string };
-    const status = e.statusCode ?? 500;
-    const isClientError = status >= 400 && status < 500;
-    const safeToEcho = !isProd || isClientError || e.code === 'FST_ERR_VALIDATION';
-
-    reply.code(status).send({
-      error: e.name ?? 'InternalServerError',
-      message: safeToEcho
-        ? (e.message ?? 'Something went wrong')
-        : 'Internal server error',
-    });
-  });
+  // (The error handler + Sentry forwarding now live at the TOP of bootstrap().
+  //  AW-08: installed here, after every server.register(), Fastify never routed
+  //  a single error through it. It must stay above the registers.)
 
   try {
     await server.listen({ port, host });

@@ -8,6 +8,11 @@ import {
  operatedByLine,
  postalContactLine,
 } from "../../lib/company";
+import {
+ FULL_REFUND_HOURS_BEFORE,
+ CANCELLATION_CUTOFF_HOURS,
+ PARTIAL_REFUND_PERCENT,
+} from "../../lib/cancellation-policy";
 
 export const metadata: Metadata = {
  title: "Refund & Cancellation Policy",
@@ -88,17 +93,42 @@ export default function RefundsPage() {
  </tr>
  </thead>
  <tbody style={{ color: "var(--color-text-muted)" }}>
+ {/* DB-06 (prod sweep 2026-08-12, P1) — THIS TABLE USED TO PUBLISH A
+     DIFFERENT LADDER FROM THE ONE THAT RUNS.
+
+     It read "More than 24 hours before -> 100% refund" and "6 to 24 hours
+     -> 50% refund". The shipped policy is
+     apps/api/src/services/cancellation.service.ts DEFAULT_CANCEL_POLICY
+     (48h+ -> 100%, 24-48h -> 75%) on top of a HARD REFUSAL inside 24h in
+     booking.service.ts cancelBooking. So the 24h row over-promised by a
+     full tier, and the 6-24h row described a 50% refund the code refuses
+     to produce at all — an unreachable promise on the page a devotee is
+     pointed at from the checkout terms checkbox.
+
+     The numbers now come from lib/cancellation-policy, the same module
+     the checkout badge and the terms checkbox read, so the legal page and
+     the payment screen cannot say different things again. */}
  <tr>
- <td className="py-1.5">More than 24 hours before scheduled puja</td>
+ <td className="py-1.5">
+ {FULL_REFUND_HOURS_BEFORE} hours or more before the scheduled puja
+ </td>
  <td className="py-1.5">100% refund</td>
  </tr>
  <tr>
- <td className="py-1.5">6 to 24 hours before scheduled puja</td>
- <td className="py-1.5">50% refund</td>
+ <td className="py-1.5">
+ {CANCELLATION_CUTOFF_HOURS} to {FULL_REFUND_HOURS_BEFORE} hours
+ before the scheduled puja
+ </td>
+ <td className="py-1.5">{PARTIAL_REFUND_PERCENT}% refund</td>
  </tr>
  <tr>
- <td className="py-1.5">Less than 6 hours before scheduled puja</td>
- <td className="py-1.5">No refund (preparations underway)</td>
+ <td className="py-1.5">
+ Within {CANCELLATION_CUTOFF_HOURS} hours of the scheduled puja
+ </td>
+ <td className="py-1.5">
+ Cancellation is not possible &mdash; the pandit is assigned and
+ samagri is being prepared.
+ </td>
  </tr>
  <tr>
  <td className="py-1.5">Puja not performed by temple</td>

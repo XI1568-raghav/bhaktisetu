@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { TITLE_TEMPLATE } from "../lib/seo/title-template";
 import { Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro } from "next/font/google";
 import { t } from "../lib/t";
 import {
@@ -89,7 +90,11 @@ export const metadata: Metadata = {
  metadataBase: new URL("https://darshya.online"),
  title: {
  default: "Darshya \u2014 India\u2019s Devotional Super App",
- template: "%s | Darshya",
+ // SEO-03: one definition, in lib/seo/title-template.ts. Do not retype the
+ // literal here \u2014 app/auth/layout.tsx used to carry a second copy, and two
+ // copies of a format string brand two parts of the site differently the
+ // moment one is edited, with nothing failing.
+ template: TITLE_TEMPLATE,
  },
  description:
  "Experience live darshan, book pujas, explore panchang, listen to bhajans, and shop for sacred items. Darshya brings the divine into daily life.",

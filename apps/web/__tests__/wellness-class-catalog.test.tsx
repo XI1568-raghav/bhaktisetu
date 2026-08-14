@@ -141,6 +141,17 @@ describe('AW-07 — devotee class catalog', () => {
   });
 });
 
+/** Route a stubbed fetch by URL substring. Any unrouted URL 404s loudly. */
+function routedFetch(handlers: Record<string, () => unknown>) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const key = Object.keys(handlers).find((k) => url.includes(k));
+    if (!key) return { ok: false, status: 404, json: async () => ({ error: 'not found' }) };
+    void init;
+    return handlers[key]!();
+  });
+}
+
 describe('AW-07 — devotee enrolment', () => {
   function fetchFor(handlers: Record<string, () => unknown>) {
     return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -287,5 +298,75 @@ describe('AW-07 — /wellness discovery section is real, not fixtures', () => {
 
     expect(await screen.findByText(/no live classes scheduled/i)).toBeTruthy();
     expect(screen.queryByText(/Morning Hatha Flow/)).toBeNull();
+  });
+});
+
+/**
+ * AW-07 remaining half (2026-08-14) — the two things the first pass shipped
+ * without.
+ *
+ * 1. A FULL class must not present a payable Enrol button. The detail route
+ *    now returns spotsLeft (apps/api/src/routes/wellness-sessions.ts,
+ *    publicSession), so `isFull` finally has a number to read; before this the
+ *    field was absent, `isFull` was permanently false, and a devotee could
+ *    press "Enrol — ₹1,000" only to have POST /enroll answer 409.
+ * 2. A signed-out devotee must be taken to sign-in. The page's own copy says
+ *    "You'll be asked to sign in to complete the enrolment" and the component
+ *    delivered a bare "Unauthorized" string with no way forward.
+ */
+describe('AW-07 — the enrol button obeys the server', () => {
+  it('disables enrolment and says so when the class has no seats left', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { ...REAL_CLASS, enrolledCount: 10, spotsLeft: 0 } }),
+      })),
+    );
+
+    render(<ClassDetailClient />);
+
+    await screen.findByText('QA Deep Hatha Yoga');
+    const button = screen.getByRole('button', { name: /full|enrol|enroll/i });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(button.textContent).toMatch(/full/i);
+    // The price must NOT be offered on a seat the server will refuse to sell.
+    expect(button.textContent).not.toMatch(/1,000/);
+  });
+
+  it('sends a signed-out devotee to sign-in with a return path, not a bare "Unauthorized"', async () => {
+    const fetchMock = routedFetch({
+      [`/wellness/sessions/${SESSION_ID}/enroll`]: () => ({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'Unauthorized', message: 'Missing or invalid token' }),
+      }),
+      [`/wellness/sessions/${SESSION_ID}`]: () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: REAL_CLASS }),
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClassDetailClient />);
+    const button = await screen.findByRole('button', { name: /enrol|enroll/i });
+    await act(async () => { fireEvent.click(button); });
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalled());
+    const target = String(pushMock.mock.calls[0]?.[0] ?? '');
+    expect(target.startsWith('/auth/login')).toBe(true);
+    // The param name is load-bearing: /auth/login reads ONLY `redirect`
+    // (app/auth/login/page.tsx:119, :441 via safeRedirect). A `returnTo` or
+    // `next` spelling is accepted by nothing and silently drops the devotee on
+    // a dashboard instead of back at the class they were paying for.
+    expect(new URLSearchParams(target.split('?')[1] ?? '').get('redirect')).toBe(
+      `/wellness/classes/${SESSION_ID}`,
+    );
+    // No payment step may follow an unauthenticated enrol attempt.
+    expect(fetchMock.mock.calls.map((c) => String(c[0])).some((u) => u.includes('/verify'))).toBe(
+      false,
+    );
   });
 });

@@ -126,3 +126,87 @@ describe('AW-07 — GET /wellness/sessions is a usable public catalog', () => {
     expect(res.json().data).toEqual([]);
   });
 });
+
+/**
+ * AW-07 remaining half (verifier-confirmed gap, 2026-08-14).
+ *
+ * The catalog listing gained instructorName / enrolledCount / spotsLeft, but
+ * GET /wellness/sessions/:id was left a bare findUnique + serializeSession.
+ * ClassDetailClient — the ONLY devotee-facing enrolment surface — reads all
+ * three off the detail payload:
+ *   ClassDetailClient.tsx:276  const spots = typeof detail.spotsLeft === 'number' ? … : null
+ *   ClassDetailClient.tsx:277  const isFull = spots === 0
+ *   ClassDetailClient.tsx:295  {detail.instructorName ? … }
+ * With the field absent, `spots` is null, `isFull` is PERMANENTLY false, and a
+ * class with zero seats presents an enabled "Enrol — ₹1,000" button that
+ * POST /enroll then refuses with 409 "Session is full". The devotee is invited
+ * to pay for a seat the server has already decided not to sell.
+ *
+ * Detail and listing must derive seats from the SAME set the enroll handler's
+ * capacity gate counts (PAID + PENDING_PAYMENT), or the two disagree.
+ */
+describe('AW-07 — GET /wellness/sessions/:id carries the same facts as the listing', () => {
+  it('names the instructor on the detail payload', async () => {
+    prismaMock.wellnessSession.findUnique.mockResolvedValue(sessionRow());
+
+    const app = makeApp();
+    const res = await app.inject({ method: 'GET', url: `/api/v1/wellness/sessions/${SESSION_ID}` });
+    await app.close();
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data.instructorName).toBe('Ananya Devi');
+  });
+
+  it('reports real seats left so a full class cannot present an Enrol button', async () => {
+    prismaMock.wellnessSession.findUnique.mockResolvedValue(
+      sessionRow({ capacity: 10, _count: { enrollments: 10 } }),
+    );
+
+    const app = makeApp();
+    const res = await app.inject({ method: 'GET', url: `/api/v1/wellness/sessions/${SESSION_ID}` });
+    await app.close();
+
+    const row = res.json().data;
+    expect(row.enrolledCount).toBe(10);
+    // The number the client compares against 0 to disable the button.
+    expect(row.spotsLeft).toBe(0);
+  });
+
+  it('counts the SAME enrolment statuses the enroll capacity gate counts', async () => {
+    prismaMock.wellnessSession.findUnique.mockResolvedValue(sessionRow());
+
+    const app = makeApp();
+    await app.inject({ method: 'GET', url: `/api/v1/wellness/sessions/${SESSION_ID}` });
+    await app.close();
+
+    const arg = prismaMock.wellnessSession.findUnique.mock.calls[0]?.[0] as any;
+    const where = arg?.include?._count?.select?.enrollments?.where;
+    expect(where?.status?.in).toEqual(['PAID', 'PENDING_PAYMENT']);
+  });
+
+  it('never reports negative seats on the detail payload either', async () => {
+    prismaMock.wellnessSession.findUnique.mockResolvedValue(
+      sessionRow({ capacity: 2, _count: { enrollments: 5 } }),
+    );
+
+    const app = makeApp();
+    const res = await app.inject({ method: 'GET', url: `/api/v1/wellness/sessions/${SESSION_ID}` });
+    await app.close();
+
+    expect(res.json().data.spotsLeft).toBe(0);
+  });
+
+  it('does not leak the instructor relation, the raw _count, or roomUrl to an anonymous caller', async () => {
+    prismaMock.wellnessSession.findUnique.mockResolvedValue(sessionRow());
+
+    const app = makeApp();
+    const res = await app.inject({ method: 'GET', url: `/api/v1/wellness/sessions/${SESSION_ID}` });
+    await app.close();
+
+    const row = res.json().data;
+    expect(row).not.toHaveProperty('instructor');
+    expect(row).not.toHaveProperty('_count');
+    expect(row).not.toHaveProperty('roomUrl');
+    expect(JSON.stringify(res.json())).not.toContain('secret-room');
+  });
+});

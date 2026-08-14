@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, Clock, Users, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
@@ -78,6 +78,7 @@ async function messageFrom(res: Response, fallback: string): Promise<string> {
 
 export default function ClassDetailClient() {
   const params = useParams();
+  const router = useRouter();
   const sessionId = String((params as { id?: string })?.id ?? '');
   const { session, user } = useAuth();
   const token = session?.accessToken;
@@ -136,8 +137,23 @@ export default function ClassDetailClient() {
         headers: authHeaders(),
         credentials: 'include',
       });
+      if (res.status === 401) {
+        // AW-07 (2026-08-14): this page tells the devotee "You'll be asked to
+        // sign in to complete the enrolment" and then delivered a dead-end
+        // "Unauthorized" string with no way forward. Honour the promise: send
+        // them to sign-in and bring them back to this exact class. Nothing is
+        // claimed and no payment step runs.
+        //
+        // The param name is `redirect` — that is the ONLY one /auth/login
+        // reads (app/auth/login/page.tsx:119 and :441, through safeRedirect).
+        // A `returnTo`/`next` spelling is silently ignored and dumps the
+        // devotee on their role dashboard instead of back at the class.
+        const returnTo = `/wellness/classes/${sessionId}`;
+        router.push(`/auth/login?redirect=${encodeURIComponent(returnTo)}`);
+        return;
+      }
       if (!res.ok) {
-        // 409 full / cancelled / already enrolled, 401 signed out, 403 role.
+        // 409 full / cancelled / already enrolled, 403 wrong role.
         throw new Error(await messageFrom(res, `Enrolment failed (${res.status})`));
       }
       const order = ((await res.json()) as {

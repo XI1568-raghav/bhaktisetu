@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../lib/api-config';
+import {
+ ASTROLOGY_SORT_VALUES,
+ ASTROLOGY_SPECIALIZATIONS,
+ buildAstrologyQuery,
+ parseAstrologyFilters,
+ type AstrologyFilters,
+ type AstrologySort,
+} from '../../lib/astrology-filters';
 import {
  Star,
  Moon,
@@ -98,16 +106,10 @@ const fallbackHoroscopes: DailyHoroscope[] = [
  { rashi: 'pisces', rashiHindi: 'मीन', rashiEnglish: 'Pisces', symbol: '', prediction: 'Spiritual awareness and creativity peak. Dreams carry messages.', luckyNumber: 12, luckyColor: 'Sea Green', luckyDirection: 'Northeast', mantra: 'Om Graam Greem Graum Sah Gurave Namah', mantraHindi: 'ओम ग्रां ग्रीं ग्रौं सः गुरवे नमः', rulingPlanet: 'Jupiter (Guru)', element: 'Water (Jal)', overallRating: 4 },
 ];
 
-const specializations = [
- 'All',
- 'Vedic Astrology',
- 'Tarot Reading',
- 'Numerology',
- 'Vastu',
- 'KP Astrology',
- 'Palmistry',
- 'Nadi Astrology',
-];
+// LC-12: the pills and the URL parser must read from ONE list. A pill the
+// parser does not recognise writes ?filter=X and then reloads as "All" — the
+// same half-shipped contract this finding is about, one drifted string later.
+const specializations = ASTROLOGY_SPECIALIZATIONS;
 
 const sortOptions = [
  { value: '', label: 'Relevance' },
@@ -119,16 +121,23 @@ const sortOptions = [
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function AstrologyPage() {
- const router = useRouter();
- const pathname = usePathname();
  const searchParams = useSearchParams();
 
  const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
  const [horoscopes] = useState<DailyHoroscope[]>(fallbackHoroscopes);
- const [activeFilter, setActiveFilter] = useState(() => searchParams.get('filter') || 'All');
- const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || '');
- const [selectedRashi, setSelectedRashi] = useState<string | null>(() => searchParams.get('rashi'));
- const [showOnlineOnly, setShowOnlineOnly] = useState(() => searchParams.get('online') === '1');
+
+ // LC-12: the four list controls below are the shareable identity of this page
+ // — "online Vastu astrologers, cheapest first" is a query people type into
+ // Google — and none of them used to reach the URL. See lib/astrology-filters.
+ const [filters, setFilters] = useState<AstrologyFilters>(() =>
+  parseAstrologyFilters(new URLSearchParams(searchParams?.toString() ?? ''))
+ );
+ const { spec: activeFilter, sort: sortBy, rashi: selectedRashi, online: showOnlineOnly } = filters;
+
+ // Mirror for `commit`, so it can merge onto the freshest filters without
+ // taking them as a dependency (and without doing history side effects inside
+ // a setState updater, which React re-invokes).
+ const filtersRef = useRef(filters);
 
  // AW-02 (2026-08-12, P0): this fetched `/astrology/astrologers?limit=100` —
  // the 15-row in-memory MOCK fixture — and seeded state with a hardcoded copy
@@ -160,15 +169,34 @@ export default function AstrologyPage() {
   return () => { cancelled = true; };
  }, []);
 
+ // LC-12: this used to be `router.replace(...)` inside an effect. In the App
+ // Router that is a NAVIGATION: every pill click fired `GET /astrology?…&_rsc=…`
+ // and the address bar only moved once that round trip committed, so on a cold
+ // or wedged API the URL never changed at all. `replace` also writes no history
+ // entry, so Back could not undo a filter. Every filter here runs client-side
+ // over an array we already hold, so the server has nothing to contribute — the
+ // native History API (which the App Router has synced with usePathname /
+ // useSearchParams since 14.1) writes the URL with no request at all.
+ const commit = useCallback((next: Partial<AstrologyFilters>) => {
+  const merged = { ...filtersRef.current, ...next };
+  filtersRef.current = merged;
+  setFilters(merged);
+  if (typeof window === 'undefined') return;
+  const url = `${window.location.pathname}${buildAstrologyQuery(merged)}`;
+  if (url === `${window.location.pathname}${window.location.search}`) return;
+  window.history.pushState(null, '', url);
+ }, []);
+
+ // Back/Forward: re-read the URL so the LIST reverts, not just the address bar.
  useEffect(() => {
-  const params = new URLSearchParams();
-  if (activeFilter !== 'All') params.set('filter', activeFilter);
-  if (sortBy) params.set('sort', sortBy);
-  if (selectedRashi) params.set('rashi', selectedRashi);
-  if (showOnlineOnly) params.set('online', '1');
-  const qs = params.toString();
-  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
- }, [activeFilter, sortBy, selectedRashi, showOnlineOnly, pathname, router]);
+  const onPop = () => {
+   const next = parseAstrologyFilters(new URLSearchParams(window.location.search));
+   filtersRef.current = next;
+   setFilters(next);
+  };
+  window.addEventListener('popstate', onPop);
+  return () => window.removeEventListener('popstate', onPop);
+ }, []);
 
  // Kundli form
  const [kundliName, setKundliName] = useState('');
@@ -323,14 +351,20 @@ export default function AstrologyPage() {
  <input
  type="checkbox"
  checked={showOnlineOnly}
- onChange={(e) => setShowOnlineOnly(e.target.checked)}
+ onChange={(e) => commit({ online: e.target.checked })}
  className="w-4 h-4 rounded border-surface-300 text-saffron-600 focus:ring-saffron-400"
  />
  Online only
  </label>
+ {/* LC-12: the sort control had no accessible name — a screen-reader user
+     heard "combo box, Relevance" with nothing saying what it sorts. */}
  <select
+ aria-label="Sort astrologers"
  value={sortBy}
- onChange={(e) => setSortBy(e.target.value)}
+ onChange={(e) => {
+  const v = e.target.value as AstrologySort;
+  commit({ sort: ASTROLOGY_SORT_VALUES.includes(v) ? v : '' });
+ }}
  className="text-sm border border-surface-200 rounded-xl px-3 py-2 bg-white text-surface-700 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400"
  >
  {sortOptions.map((opt) => (
@@ -345,7 +379,9 @@ export default function AstrologyPage() {
  {specializations.map((spec) => (
  <button
  key={spec}
- onClick={() => setActiveFilter(spec)}
+ type="button"
+ aria-pressed={activeFilter === spec}
+ onClick={() => commit({ spec })}
  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
  activeFilter === spec
  ? 'bg-saffron-600 text-white shadow-md'
@@ -582,7 +618,11 @@ export default function AstrologyPage() {
  {horoscopes.slice(0, 12).map((h) => (
  <button
  key={h.rashi}
- onClick={() => setSelectedRashi(selectedRashi === h.rashi ? null : h.rashi)}
+ type="button"
+ data-rashi={h.rashi}
+ aria-pressed={selectedRashi === h.rashi}
+ aria-label={`${h.rashiEnglish} horoscope`}
+ onClick={() => commit({ rashi: selectedRashi === h.rashi ? null : h.rashi })}
  className={`flex flex-col items-center py-2 rounded-lg transition-all text-center ${
  selectedRashi === h.rashi
  ? 'bg-saffron-100 border border-saffron-300'

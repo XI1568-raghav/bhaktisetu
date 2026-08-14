@@ -1,6 +1,16 @@
-// Blog posts live as MDX/MD files in docs/agent-reports/blog-drafts/.
-// Edge runtime can't read filesystem on CF Pages, so fetch from GitHub raw
-// at request time with 1h cache. Pattern matches /changelog.
+// Blog posts come from two sources, in this order:
+//
+//  1. content/blog/published.ts — compiled into the bundle. This is the one
+//     that can actually publish (LC-14): no network, no token, no filesystem,
+//     and it survives the Render standalone image.
+//  2. docs/agent-reports/blog-drafts/ on GitHub, fetched at request time with a
+//     1h cache. Kept because it is how the agent drafts were meant to flow, but
+//     it currently answers 404 — the repo is not publicly readable — so on its
+//     own it can never produce a post. See warnBlogSource below.
+//
+// A published post always wins over a same-slug GitHub draft.
+
+import { PUBLISHED_POSTS } from '../content/blog/published';
 
 const REPO = 'XI1568-raghav/bhaktisetu';
 const PATH = 'docs/agent-reports/blog-drafts';
@@ -13,7 +23,12 @@ export interface BlogPost {
   title: string;
   excerpt: string;
   body: string; // raw markdown
-  source: string; // GH source url
+  /**
+   * GitHub blob url for a draft fetched from the repo, or null for a post
+   * published from content/blog/published.ts — which has no GitHub page, so
+   * the "View source on GitHub" link must not render for it.
+   */
+  source: string | null;
 }
 
 interface GHContentItem {
@@ -64,7 +79,29 @@ function warnBlogSource(reason: string): void {
   console.warn(`[blog] no posts resolved from ${API} — ${reason}`);
 }
 
+/** The in-bundle published set, normalised into the same shape as a draft. */
+function publishedPosts(): BlogPost[] {
+  return PUBLISHED_POSTS.map((p) => ({
+    slug: p.slug,
+    date: p.date,
+    title: extractTitle(p.body, p.slug),
+    excerpt: extractExcerpt(p.body),
+    body: p.body,
+    source: null,
+  }));
+}
+
 export async function listBlogPosts(): Promise<BlogPost[]> {
+  const published = publishedPosts();
+  const drafts = await fetchDraftPosts();
+  const bySlug = new Set(published.map((p) => p.slug));
+  return [...published, ...drafts.filter((d) => !bySlug.has(d.slug))].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
+}
+
+/** The GitHub half. Returns [] on every failure, loudly — never throws. */
+async function fetchDraftPosts(): Promise<BlogPost[]> {
   try {
     const res = await fetch(API, {
       next: { revalidate: 3600 },

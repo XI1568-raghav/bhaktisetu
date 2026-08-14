@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CANCELLATION_POLICY_SENTENCE } from "../../lib/cancellation-policy";
 import { COMPANY, operatedByLine, postalContactLine, legalContactEmail } from "../../lib/company";
 
 export const metadata: Metadata = {
@@ -215,13 +216,17 @@ export default function TermsPage() {
  . Key points:
  </p>
  <ul>
+ {/* DB-06 (prod sweep 2026-08-12, P1) — this clause used to read
+     "cancelled up to 24 hours before the scheduled time for a full
+     refund", a FOURTH ladder, more generous than the one the API runs
+     (cancellation.service.ts DEFAULT_CANCEL_POLICY: 48h+ 100%,
+     24-48h 75%, plus a hard refusal inside 24h). Terms are the
+     operative document in a dispute, so this is the last place that
+     may disagree with checkout. It now renders the same sentence the
+     payment-step checkbox renders, from lib/cancellation-policy. */}
+ <li>{CANCELLATION_POLICY_SENTENCE}</li>
  <li>
- Puja bookings may be cancelled up to 24 hours before the
- scheduled time for a full refund.
- </li>
- <li>
- Cancellations within 24 hours of the scheduled time are
- non-refundable, as preparations may have begun.
+ If the pandit or temple cancels, you are refunded in full.
  </li>
  <li>
  Store orders may be returned within 7 days of delivery for

@@ -140,8 +140,12 @@ describe('RESP-07 — the recovery link is a real tap target', () => {
     const { execSync } = require('node:child_process');
     let hits = '';
     try {
+      // The exclusion is this file: the comment above literally contains
+      // `sm:tap-safe`, so without it the guard permanently flags itself and the
+      // suite is red for a violation that does not exist in any component.
       hits = execSync(
-        'git grep -n -E "[a-z0-9-]+:tap-safe" -- "apps/web/**/*.tsx" "apps/web/**/*.ts"',
+        'git grep -n -E "[a-z0-9-]+:tap-safe" -- "apps/web/**/*.tsx" "apps/web/**/*.ts" ' +
+          '":!apps/web/__tests__/login-page-chrome.test.tsx"',
         { encoding: 'utf8', cwd: require('node:path').resolve(__dirname, '..', '..', '..') },
       );
     } catch {

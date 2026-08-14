@@ -97,7 +97,14 @@ describe('AW-09 — every schema/seed script runs the guard first', () => {
   // These are the commands that can write to (or destroy) whatever database
   // DATABASE_URL happens to name. Each one must be gated by a `pre*` hook — a
   // guard that runs after the migration has started is not a guard.
-  for (const script of ['db:migrate', 'db:push', 'db:seed']) {
+  // AW-09 remaining half (2026-08-14): the first pass gated three scripts and
+  // stopped. `seed:darshan` writes rows through the same client and was
+  // ungated, and `db:studio` opens a full read/WRITE editor on whatever
+  // DATABASE_URL names — with apps/api/.env still pointing at the production
+  // Supabase pooler, either one reaches live customer data from a local
+  // checkout. `start` is deliberately NOT in this list: `prisma migrate
+  // deploy` against production is exactly what it is for.
+  for (const script of ['db:migrate', 'db:push', 'db:seed', 'seed:darshan', 'db:studio']) {
     it(`gates ${script} with a pre-hook`, () => {
       expect(pkg.scripts[script]).toBeTruthy();
       const pre = pkg.scripts[`pre${script}`];

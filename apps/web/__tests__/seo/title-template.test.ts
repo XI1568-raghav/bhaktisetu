@@ -166,7 +166,21 @@ describe('[SEO-03] the site name is appended once, by the root template', () => 
   it('the root layout still declares the template that does the appending', () => {
     // If this is ever removed, every stripped title below silently loses its
     // brand entirely — the opposite failure, equally invisible.
-    expect(fs.readFileSync(LAYOUT, 'utf8')).toMatch(/template\s*:\s*["'`]%s \| Darshya["'`]/);
+    //
+    // The literal moved to lib/seo/title-template.ts (SEO-03, see the dedup
+    // block at the bottom of this file), so the guard is now two-part: the
+    // root layout must resolve a template, and that template must still
+    // produce "%s | Darshya". Asserting only the reference would let someone
+    // point it at an empty string; asserting only the constant would let
+    // someone delete the template from the layout.
+    expect(fs.readFileSync(LAYOUT, 'utf8')).toMatch(/template\s*:\s*TITLE_TEMPLATE\b/);
+    const constSrc = fs.readFileSync(
+      path.resolve(__dirname, '../../lib/seo/title-template.ts'),
+      'utf8',
+    );
+    expect(constSrc).toMatch(/SITE_NAME\s*=\s*['"`]Darshya['"`]/);
+    expect(constSrc).toMatch(/TITLE_SEPARATOR\s*=\s*['"`]\|['"`]/);
+    expect(constSrc).toMatch(/TITLE_TEMPLATE\s*=\s*`%s \$\{TITLE_SEPARATOR\} \$\{SITE_NAME\}`/);
   });
 
   it('no page/layout metadata title ends in the brand', () => {
@@ -187,6 +201,56 @@ describe('[SEO-03] the site name is appended once, by the root template', () => 
     expect(nested.length).toBeGreaterThan(0);
     for (const h of nested) {
       expect(['openGraph', 'twitter']).toContain(h.scope);
+    }
+  });
+});
+
+/**
+ * SEO-03 remaining half, part 1 (2026-08-14) — ONE template, declared once.
+ *
+ * The first pass stripped the brand out of 171 page titles and left the root
+ * `template: "%s | Darshya"` to append it. What it did not check is that the
+ * template itself exists in exactly one place. app/auth/layout.tsx declared a
+ * SECOND, byte-identical copy. Two copies of a format string is the same class
+ * of defect the finding is about — the moment one is edited (a rename, a
+ * tagline change, an em-dash instead of a pipe) the /auth subtree silently
+ * brands differently from the other 1,780 pages, and nothing fails.
+ *
+ * The template string now has one definition (lib/seo/title-template.ts) that
+ * both layouts import.
+ */
+describe('[SEO-03] the title template is declared exactly once', () => {
+  const SRC_ROOT = path.resolve(__dirname, '../..');
+  const litre = (f: string) => fs.readFileSync(path.join(SRC_ROOT, f), 'utf8');
+
+  it('the shared constant exists and is the brand suffix template', () => {
+    expect(litre('lib/seo/title-template.ts')).toMatch(/['"`]%s \| Darshya['"`]/);
+  });
+
+  it('no layout or page hard-codes a second copy of the template string', () => {
+    const offenders: string[] = [];
+    for (const file of FILES) {
+      if (path.resolve(file) === path.resolve(SRC_ROOT, 'lib/seo/title-template.ts')) continue;
+      const src = fs.readFileSync(file, 'utf8');
+      const { masked } = analyse(src);
+      void masked;
+      // Only the literal in a `template:` position counts — prose in a comment
+      // is stripped by the analyser's own masking rules elsewhere.
+      const m = src.match(/template\s*:\s*(['"`])%s \| Darshya\1/g);
+      if (m) offenders.push(`${rel(file)} (${m.length})`);
+    }
+    expect(
+      offenders,
+      'the template string must have a single definition — a second copy brands ' +
+        'part of the site differently the moment one of them is edited',
+    ).toEqual([]);
+  });
+
+  it('both the root layout and the auth layout resolve the template from that constant', () => {
+    for (const f of ['app/layout.tsx', 'app/auth/layout.tsx']) {
+      expect(litre(f), `${f} should import the shared template`).toMatch(
+        /from ['"][^'"]*seo\/title-template['"]/,
+      );
     }
   });
 });

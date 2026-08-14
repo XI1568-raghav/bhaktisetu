@@ -134,3 +134,68 @@ describe('DB-06 — the puja detail badge no longer says "100% refund if not sat
     expect(detailSrc).toContain('CANCELLATION_BADGE_DESC');
   });
 });
+
+/**
+ * DB-06 remaining half (verifier-confirmed, 2026-08-14).
+ *
+ * The first pass fixed the two badges and the checkbox and routed them through
+ * lib/cancellation-policy. It called that "a single source for the promise",
+ * which was a scope over-claim: two MORE ladders were still published, and
+ * they are the legally operative pages.
+ *
+ *   app/refunds/page.tsx  "More than 24 hours before -> 100% refund",
+ *                         "6 to 24 hours before -> 50% refund"
+ *   app/terms/page.tsx    "cancelled up to 24 hours before the scheduled time
+ *                          for a full refund"
+ *
+ * Both are MORE generous than the API (48h+ 100%, 24-48h 75%, hard refusal
+ * inside 24h), which is exactly the promise-exceeds-reality shape DB-06 filed.
+ * /refunds' 6-24h 50% row is unreachable outright — the 24h block refuses that
+ * cancellation entirely. And the first fix made the contradiction self-adjacent:
+ * app/pujas/book/page.tsx renders CANCELLATION_POLICY_SENTENCE ("24-48h before
+ * for 75%") immediately beside a <Link href="/refunds">Refund Policy</Link>
+ * whose page said that same window pays 100% — inside the one checkbox the
+ * devotee ticks to accept the terms.
+ */
+describe('DB-06 — /refunds and /terms publish the SAME ladder as checkout', () => {
+  const refundsCopy = stripComments(read('app/refunds/page.tsx'));
+  const termsCopy = stripComments(read('app/terms/page.tsx'));
+
+  it('/refunds does not promise a full refund at the 24h mark', () => {
+    expect(refundsCopy).not.toMatch(/More than 24 hours before[\s\S]{0,120}100% refund/i);
+    expect(refundsCopy).not.toMatch(/up to 24 hours[\s\S]{0,80}full refund/i);
+  });
+
+  it('/refunds does not advertise the unreachable 50% tier', () => {
+    // The 24h hard block (booking.service.ts cancelBooking) refuses a
+    // devotee cancel inside 24h outright, so a "6 to 24 hours -> 50%" row
+    // describes a refund no code path can produce.
+    expect(refundsCopy).not.toMatch(/6 to 24 hours/i);
+    expect(refundsCopy).not.toMatch(/50% refund/i);
+  });
+
+  it('/refunds renders the real tiers FROM the shared constants, not its own digits', () => {
+    // Deriving is the point: a literal "75%" on this page could drift away
+    // from DEFAULT_CANCEL_POLICY silently, which is how four ladders happened.
+    expect(refundsCopy).toContain('FULL_REFUND_HOURS_BEFORE');
+    expect(refundsCopy).toContain('CANCELLATION_CUTOFF_HOURS');
+    expect(refundsCopy).toContain('PARTIAL_REFUND_PERCENT');
+    expect(refundsCopy).toMatch(/100% refund/i);
+    // And no hand-typed tier digits survive in the cancellation table.
+    expect(refundsCopy).not.toMatch(/50% refund/i);
+  });
+
+  it('/terms does not promise a full refund up to 24 hours before', () => {
+    expect(termsCopy).not.toMatch(/up to 24 hours before[\s\S]{0,120}full refund/i);
+  });
+
+  it('/terms carries the shipped sentence from the shared policy module', () => {
+    expect(termsCopy).toContain('CANCELLATION_POLICY_SENTENCE');
+  });
+
+  it('both legal pages read the ladder from lib/cancellation-policy, not their own numbers', () => {
+    for (const src of [read('app/refunds/page.tsx'), read('app/terms/page.tsx')]) {
+      expect(src).toMatch(/from ['"]\.\.\/\.\.\/lib\/cancellation-policy['"]/);
+    }
+  });
+});

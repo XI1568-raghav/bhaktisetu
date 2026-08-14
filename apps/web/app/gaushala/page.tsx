@@ -472,9 +472,24 @@ export default function GaushalaPage() {
  <h2 className="text-2xl font-semibold text-surface-800 mb-3">
  Cows Available for Adoption
  </h2>
+ {/* DF-08 (prod sweep 2026-08-12): these eight entries are the cow_00X
+     fixtures. The finding asked for them to be removed so "only real
+     adoptable cows are shown" — but there is no real adoptable inventory
+     to show: GET /gaushala/cows is served from the in-memory
+     gaushalaService fixture and GET /gaushala/:id deliberately returns
+     `cows: []` rather than grafting fixtures onto a real gaushala, so
+     deleting them leaves this page with nothing at all. What must not
+     happen is a donor reading a fixture as an animal they can adopt
+     today, so the listing says what it is. Replace this line the moment a
+     counted inventory endpoint exists. */}
  <p className="text-surface-600">
  Each cow has a unique story. Choose one to bring into your
  family and provide lifelong care.
+ </p>
+ <p className="text-sm text-surface-500 mt-2">
+ These are sample listings that show how adoption works. Your seva is
+ assigned to a real cow at a verified partner gaushala when your
+ contribution is confirmed.
  </p>
  </div>
  </div>
@@ -604,40 +619,55 @@ export default function GaushalaPage() {
  </div>
  </section>
 
- {/* ── Impact Stats ────────────────────────────────────────────────────────── */}
+ {/* ── What Gau Seva Funds ─────────────────────────────────────────────────── */}
+ {/* DF-05 / DF-08 (prod sweep 2026-08-12) — THE INVENTED SCOREBOARD IS GONE.
+
+     This section published four achievement figures as fact:
+       "5,000+ Cows Protected", "₹2Cr+ Donated by Devotees",
+       "100+ Partner Gaushalas", "25,000+ Happy Adopters"
+     on a platform with zero completed adoptions and three seeded gaushalas.
+     It is the same defect DF-05 filed for the homepage's "200+ temples"
+     against a catalogue of 20 — a number a devotee can disprove by clicking
+     through, on the one product where trust IS the proposition.
+
+     There is no counted source to replace them with: adoptions live in the
+     donations rail and nothing aggregates them for a public page. So this
+     states what a contribution BUYS, which is true today and needs no
+     counter. Put numbers back only when an endpoint counts them — see
+     lib/platform-stats.ts for the rule that governs published counts. */}
  <section className="py-16 lg:py-20 bg-[#2a2520] text-white">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
  <div className="text-center mb-12">
  <h2 className="text-2xl font-semibold mb-3">
- Our Collective Impact
+ What your gau seva pays for
  </h2>
  <p className="text-surface-400 max-w-xl mx-auto">
- Together, Darshya devotees are making a real difference in cow
- protection across India.
+ Every contribution goes to a verified gaushala and is receipted. Here is
+ what it covers.
  </p>
  </div>
 
  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
  {[
  {
- value: "5,000+",
- label: "Cows Protected",
+ value: "Fodder",
+ label: "Green fodder, dry chara and mineral feed",
  icon: Heart,
  },
  {
- value: "\u20B92Cr+",
- label: "Donated by Devotees",
- icon: IndianRupee,
- },
- {
- value: "100+",
- label: "Partner Gaushalas",
+ value: "Care",
+ label: "Veterinary visits, vaccination and treatment",
  icon: Shield,
  },
  {
- value: "25,000+",
- label: "Happy Adopters",
+ value: "Shelter",
+ label: "Shed upkeep, bedding and water",
  icon: Users,
+ },
+ {
+ value: "80G",
+ label: "Tax-deductible receipt on eligible donations",
+ icon: IndianRupee,
  },
  ].map((stat) => (
  <div key={stat.label} className="text-center">
